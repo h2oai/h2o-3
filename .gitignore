@@ -14,9 +14,10 @@ ice
 pytest_flatfile-*
 sandbox
 syn_datasets
-target/
+build/
 .settings/*
 .idea/*
+.gradle/
 h2o.iml
 h2o.eml
 src/main/java/water/BuildVersion.java
