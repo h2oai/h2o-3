@@ -1,12 +1,8 @@
 // Version number that appears on the H2O start.
 version = '2.2.0.6'
 
-repositories {
-  mavenCentral()
-}
-
 task build << {
-  println 'h2o default'
+  println "h2o default"
 }
 
-build.dependsOn(":h2o:hello")
+//build.dependsOn(":h2o:hello")

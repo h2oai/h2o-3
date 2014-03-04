@@ -4,8 +4,14 @@ apply plugin: 'java'
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
+repositories {
+  mavenCentral()
+}
+
+
 dependencies {
-  compile group: 'joda', name: 'joda', version: '2.4'
+  compile group: 'joda-time', name: 'joda-time', version: '2.3'
+
   testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
@@ -16,5 +22,5 @@ jar {
 }
 
 
-task hello << println 'h2o project says hello'
+task hello << { println "h2o project says hello" }
 
