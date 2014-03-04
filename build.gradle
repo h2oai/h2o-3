@@ -1,7 +1,8 @@
 // Version number that appears on the H2O start.
 version = '2.2.0.6'
 
-task build << {
+task build(type:Exec) {
   println "=== H2O: Building top-level...(${path})"
+  commandLine 'make', '-k', '-s'
 }
 
