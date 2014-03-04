@@ -30,3 +30,9 @@ pkg: h2o-core h2o-r h2o-scala h2o-hadoop docs
 clean:
 	rm -rf build
 	-for d in $(SUBDIRS); do ($(MAKE) -C $$d clean ); done
+
+# Recursive tool discovery.
+# Called "config" here, after auto-conf, but really just asks each sub-make to list tools
+.PHONY: conf
+conf:
+	-for d in $(SUBDIRS); do ($(MAKE) -C $$d conf ); done

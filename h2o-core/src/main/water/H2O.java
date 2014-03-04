@@ -1,5 +1,7 @@
 package water;
 
+import java.net.*;
+
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
@@ -10,6 +12,19 @@ public final class H2O {
 
   public static String VERSION = "(unknown)";
   public static long START_TIME_MILLIS = -1; // When did main() run
+
+  // User name for this Cloud (either the username or the argument for the option -name)
+  public static String NAME;
+
+  // The default port for finding a Cloud
+  public static int DEFAULT_PORT = 54321;
+  public static int UDP_PORT; // Fast/small UDP transfers
+  public static int API_PORT; // RequestServer and the new API HTTP port
+
+  // Myself, as a Node in the Cloud
+  //public static H2ONode SELF = null;
+  public static InetAddress SELF_ADDRESS;
+
 
   // Start up an H2O Node and join any local Cloud
   public static volatile boolean IS_SYSTEM_RUNNING = false;
@@ -66,5 +81,13 @@ public final class H2O {
     //  // it does not exist on the classpath
     //}
     return build_project_version;
+  }
+
+  /**
+   * Notify embedding software instance H2O wants to exit.
+   * @param status H2O's requested process exit value.
+   */
+  public static void exit(int status) {
+    System.exit(status);
   }
 }
