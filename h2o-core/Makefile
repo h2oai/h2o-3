@@ -8,11 +8,11 @@ build/h2o.jar:
 	echo "building classes..."
 	mkdir -p build/classes
 	javac $(JAVAC_ARGS) \
-	-cp "${CLASSPATH}" \
+	-cp "" \
 	-sourcepath "." \
 	-d "build/classes" \
-	src/main/java/water/*.java
-	jar -cfm build/h2o.jar manifest.txt build/classes
+	src/main/water/*.java
+	jar -cfm build/h2o.jar manifest.txt -C build/classes .
 
 .PHONY: clean
 clean:

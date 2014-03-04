@@ -1,6 +1,6 @@
 
 # All the subdirs we might recursively make, in no particular order
-SUBDIRS = h2o-core integ-r integ-scala integ-hadoop
+SUBDIRS = h2o-core h2o-r h2o-scala h2o-hadoop h2o-docs assembly
 
 # subdirs is a (phony) target we can make
 .PHONY: subdirs $(SUBDIRS)
@@ -14,14 +14,16 @@ $(SUBDIRS):
 default: subdirs
 
 # R-integration requires H2O to be built first
-integ-r: h2o-core
+h2o-r: h2o-core
 
 # Scala-integration requires H2O to be built first
-integ-scala: h2o-core
+h2o-scala: h2o-core
 
 # Hadoop/Yarn-integration requires H2O to be built first
-integ-hadoop: h2o-core
+h2o-hadoop: h2o-core
 
+# pkg needs other stuff built first
+pkg: h2o-core h2o-r h2o-scala h2o-hadoop docs
 
 # Recursive clean
 .PHONY: clean
