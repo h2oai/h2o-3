@@ -1,0 +1,10 @@
+// Build task depends on h2o project build task
+task build(dependsOn : ":h2o:build") << {
+  println "=== H2O: Building h2o-r... (${path})"
+}
+
+// Another way how to define dependency on h2o.build tasks
+//build.dependsOn(":h2o:build")
+//evaluationDependsOn(':h2o')
+
+// Input and output for tasks can be specified as well - see documentation: 15.9.1.

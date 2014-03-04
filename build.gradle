@@ -2,7 +2,6 @@
 version = '2.2.0.6'
 
 task build << {
-  println "h2o default"
+  println "=== H2O: Building top-level...(${path})"
 }
 
-//build.dependsOn(":h2o:hello")

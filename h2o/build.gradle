@@ -24,3 +24,9 @@ jar {
 
 task hello << { println "h2o project says hello" }
 
+// Execute println at the beginning of standard java build task
+build.doFirst { println "=== H2O: building h2o (${path})" }
+
+// It is shown only if compile task is invoked (i.e., there was
+// a change in source code)
+compileJava.doFirst { println "=== H2O: before javac (${path})" }
