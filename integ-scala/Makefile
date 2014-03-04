@@ -1,0 +1,11 @@
+
+default: build/foo
+
+build/foo:
+	echo "Touching foo"
+	mkdir -p build
+	touch build/foo
+
+.PHONY: clean
+clean:
+	rm -rf build
