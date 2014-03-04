@@ -5,7 +5,7 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Locale;
 
-//import org.apache.log4j.LogManager;
+import org.apache.log4j.LogManager;
 //import org.apache.log4j.PropertyConfigurator;
 import water.Log.Tag.Kind;
 import water.Log.Tag.Sys;
