@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import org.apache.log4j.LogManager;
-//import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 import water.Log.Tag.Kind;
 import water.Log.Tag.Sys;
 
@@ -229,10 +229,13 @@ public abstract class Log {
 
     private StringBuilder shortHeader(StringBuilder buf) {
       buf.append(when.startAsShortString()).append(" ");
-      String host = H2O.SELF_ADDRESS != null ? H2O.SELF_ADDRESS.getHostAddress() : "";
-      buf.append(fixedLength(host + ":" + H2O.API_PORT + " ", 18));
+      if(H2O.DEBUG) {
+        String host = H2O.SELF_ADDRESS != null ? H2O.SELF_ADDRESS.getHostAddress() : "";
+        buf.append(fixedLength(host + ":" + H2O.API_PORT + " ", 18));
+      }
       if( thread == null ) thread = fixedLength(Thread.currentThread().getName() + " ", 8);
       buf.append(thread);
+      if(!H2O.DEBUG) buf.append(kind.toString()).append(" ").append(sys.toString()).append(": ");
       return buf;
     }
   }
@@ -266,7 +269,7 @@ public abstract class Log {
     }
   }
 
-  //private static org.apache.log4j.Logger _logger = null;
+  private static org.apache.log4j.Logger _logger = null;
 
   public static String getLogDir() {
     if (LOG_DIR == null) {
@@ -297,137 +300,137 @@ public abstract class Log {
     return logFileName;
   }
 
-  //private static org.apache.log4j.Logger getLog4jLogger() {
-  //  return _logger;
-  //}
+  private static org.apache.log4j.Logger getLog4jLogger() {
+    return _logger;
+  }
 
-  //private static org.apache.log4j.Logger createLog4jLogger(String logDirParent) {
-  //  synchronized (water.util.Log.class) {
-  //    if (_logger != null) {
-  //      return _logger;
-  //    }
-  //
-  //    // If a log4j properties file was specified on the command-line, use it.
-  //    // Otherwise, create some default properties on the fly.
-  //    String log4jProperties = System.getProperty ("log4j.properties");
-  //    if (log4jProperties != null) {
-  //      PropertyConfigurator.configure(log4jProperties);
-  //      // TODO:  Need some way to set LOG_DIR here for LogCollectorTask to work.
-  //    }
-  //    else {
-  //      LOG_DIR = logDirParent + File.separator + "h2ologs";
-  //      String logPathFileName = getLogPathFileName();
-  //      java.util.Properties p = new java.util.Properties();
-  //
-  //      p.setProperty("log4j.rootLogger", "INFO, R");
-  //      p.setProperty("log4j.appender.R", "org.apache.log4j.RollingFileAppender");
-  //      p.setProperty("log4j.appender.R.File", logPathFileName);
-  //      p.setProperty("log4j.appender.R.MaxFileSize", "256KB");
-  //      p.setProperty("log4j.appender.R.MaxBackupIndex", "5");
-  //      p.setProperty("log4j.appender.R.layout", "org.apache.log4j.PatternLayout");
-  //
-  //      // Turn down the logging for some class hierarchies.
-  //      p.setProperty("log4j.logger.org.apache.http", "WARN");
-  //      p.setProperty("log4j.logger.com.amazonaws", "WARN");
-  //      p.setProperty("log4j.logger.org.apache.hadoop", "WARN");
-  //      p.setProperty("log4j.logger.org.jets3t.service", "WARN");
-  //
-  //      // See the following document for information about the pattern layout.
-  //      // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
-  //      //
-  //      //  Uncomment this line to find the source of unwanted messages.
-  //      //     p.setProperty("log4j.appender.R.layout.ConversionPattern", "%p %C %m%n");
-  //      p.setProperty("log4j.appender.R.layout.ConversionPattern", "%m%n");
-  //
-  //      PropertyConfigurator.configure(p);
-  //    }
-  //
-  //    _logger = LogManager.getLogger(Log.class.getName());
-  //  }
-  //
-  //  return _logger;
-  //}
+  private static org.apache.log4j.Logger createLog4jLogger(String logDirParent) {
+    synchronized (water.Log.class) {
+      if (_logger != null) {
+        return _logger;
+      }
+  
+      // If a log4j properties file was specified on the command-line, use it.
+      // Otherwise, create some default properties on the fly.
+      String log4jProperties = System.getProperty ("log4j.properties");
+      if (log4jProperties != null) {
+        PropertyConfigurator.configure(log4jProperties);
+        // TODO:  Need some way to set LOG_DIR here for LogCollectorTask to work.
+      }
+      else {
+        LOG_DIR = logDirParent + File.separator + "h2ologs";
+        String logPathFileName = getLogPathFileName();
+        java.util.Properties p = new java.util.Properties();
+  
+        p.setProperty("log4j.rootLogger", "INFO, R");
+        p.setProperty("log4j.appender.R", "org.apache.log4j.RollingFileAppender");
+        p.setProperty("log4j.appender.R.File", logPathFileName);
+        p.setProperty("log4j.appender.R.MaxFileSize", "256KB");
+        p.setProperty("log4j.appender.R.MaxBackupIndex", "5");
+        p.setProperty("log4j.appender.R.layout", "org.apache.log4j.PatternLayout");
+  
+        // Turn down the logging for some class hierarchies.
+        p.setProperty("log4j.logger.org.apache.http", "WARN");
+        p.setProperty("log4j.logger.com.amazonaws", "WARN");
+        p.setProperty("log4j.logger.org.apache.hadoop", "WARN");
+        p.setProperty("log4j.logger.org.jets3t.service", "WARN");
+  
+        // See the following document for information about the pattern layout.
+        // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
+        //
+        //  Uncomment this line to find the source of unwanted messages.
+        //     p.setProperty("log4j.appender.R.layout.ConversionPattern", "%p %C %m%n");
+        p.setProperty("log4j.appender.R.layout.ConversionPattern", "%m%n");
+  
+        PropertyConfigurator.configure(p);
+      }
+  
+      _logger = LogManager.getLogger(Log.class.getName());
+    }
+  
+    return _logger;
+  }
 
   static volatile boolean loggerCreateWasCalled = false;
 
   static private Object startupLogEventsLock = new Object();
   static volatile private ArrayList<Event> startupLogEvents = new ArrayList<Event>();
 
-  //private static void log0(org.apache.log4j.Logger l4j, Event e) {
-  //  String s = e.toString();
-  //  if (e.kind == Kind.ERRR) {
-  //    l4j.error(s);
-  //  }
-  //  else if (e.kind == Kind.WARN) {
-  //    l4j.warn(s);
-  //  }
-  //  else if (e.kind == Kind.INFO) {
-  //    l4j.info(s);
-  //  }
-  //  else {
-  //    // Choose error by default if we can't figure out the right logging level.
-  //    l4j.error(s);
-  //  }
-  //}
+  private static void log0(org.apache.log4j.Logger l4j, Event e) {
+    String s = e.toString();
+    if (e.kind == Kind.ERRR) {
+      l4j.error(s);
+    }
+    else if (e.kind == Kind.WARN) {
+      l4j.warn(s);
+    }
+    else if (e.kind == Kind.INFO) {
+      l4j.info(s);
+    }
+    else {
+      // Choose error by default if we can't figure out the right logging level.
+      l4j.error(s);
+    }
+  }
 
   /** the actual write code. */
   private static void write0(Event e, boolean printOnOut) {
-    //org.apache.log4j.Logger l4j = getLog4jLogger();
-    //
-    //// If no logger object exists, try to build one.
-    //// Disable for debug, causes problems for multiple nodes per VM
-    //if ((l4j == null) && !loggerCreateWasCalled && !H2O.DEBUG) {
-    //  if (H2O.SELF != null) {
-    //    File dir;
-    //    // Use ice folder if local, or default
-    //    if( H2O.ICE_ROOT.getScheme() == null || Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
-    //      dir = new File(H2O.ICE_ROOT.getPath());
-    //    else
-    //      dir = new File(H2O.DEFAULT_ICE_ROOT());
-    //
-    //    loggerCreateWasCalled = true;
-    //    l4j = createLog4jLogger(dir.toString());
-    //  }
-    //}
-    //
-    //// Log if we can, buffer if we cannot.
-    //if (l4j == null) {
-    //  // Calling toString has side-effects about how the output looks.  So call
-    //  // it early here, even if we're just going to buffer the event.
-    //  e.toString();
-    //
-    //  // buffer.
-    //  synchronized (startupLogEventsLock) {
-    //    if (startupLogEvents != null) {
-    //      startupLogEvents.add(e);
-    //    }
-    //    else {
-    //      // there is an inherent race condition here where we might drop a message
-    //      // during startup.  this is only a danger in multithreaded situations.
-    //      // it's ok, just be aware of it.
-    //    }
-    //  }
-    //}
-    //else {
-    //  // drain buffer if it exists.  for performance reasons, don't enter
-    //  // lock unless the buffer exists.
-    //  if (startupLogEvents != null) {
-    //    synchronized (startupLogEventsLock) {
-    //      for (int i = 0; i < startupLogEvents.size(); i++) {
-    //        Event bufferedEvent = startupLogEvents.get(i);
-    //        log0(l4j, bufferedEvent);
-    //      }
-    //      startupLogEvents = null;
-    //    }
-    //  }
-    //
-    //  // log.
-    //  log0(l4j, e);
-    //}
-    //
-    //if( Paxos._cloudLocked ) logToKV(e.when.startAsString(), e.thread, e.kind, e.sys, e.body(0));
-    //if(printOnOut || printAll) unwrap(System.out, e.toShortString());
-    //e.printMe = false;
+    org.apache.log4j.Logger l4j = getLog4jLogger();
+    
+    // If no logger object exists, try to build one.
+    // Disable for debug, causes problems for multiple nodes per VM
+    if ((l4j == null) && !loggerCreateWasCalled && !H2O.DEBUG) {
+      if (H2O.SELF != null) {
+        File dir;
+        // Use ice folder if local, or default
+        if( H2O.ICE_ROOT.getScheme() == null || H2O.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+          dir = new File(H2O.ICE_ROOT.getPath());
+        else
+          dir = new File(H2O.DEFAULT_ICE_ROOT());
+    
+        loggerCreateWasCalled = true;
+        l4j = createLog4jLogger(dir.toString());
+      }
+    }
+    
+    // Log if we can, buffer if we cannot.
+    if (l4j == null) {
+      // Calling toString has side-effects about how the output looks.  So call
+      // it early here, even if we're just going to buffer the event.
+      e.toString();
+    
+      // buffer.
+      synchronized (startupLogEventsLock) {
+        if (startupLogEvents != null) {
+          startupLogEvents.add(e);
+        }
+        else {
+          // there is an inherent race condition here where we might drop a message
+          // during startup.  this is only a danger in multithreaded situations.
+          // it's ok, just be aware of it.
+        }
+      }
+    }
+    else {
+      // drain buffer if it exists.  for performance reasons, don't enter
+      // lock unless the buffer exists.
+      if (startupLogEvents != null) {
+        synchronized (startupLogEventsLock) {
+          for (int i = 0; i < startupLogEvents.size(); i++) {
+            Event bufferedEvent = startupLogEvents.get(i);
+            log0(l4j, bufferedEvent);
+          }
+          startupLogEvents = null;
+        }
+      }
+    
+      // log.
+      log0(l4j, e);
+    }
+    
+    if( Paxos._cloudLocked ) logToKV(e.when.startAsString(), e.thread, e.kind, e.sys, e.body(0));
+    if(printOnOut || printAll) unwrap(System.out, e.toShortString());
+    e.printMe = false;
   }
   /** We also log events to the store. */
   private static void logToKV(final String date, final String thr, final Kind kind, final Sys sys, final String msg) {

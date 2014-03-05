@@ -22,9 +22,29 @@ public final class H2O {
   public static int API_PORT; // RequestServer and the new API HTTP port
 
   // Myself, as a Node in the Cloud
-  //public static H2ONode SELF = null;
+  public static H2ONode SELF = null;
   public static InetAddress SELF_ADDRESS;
 
+  public static class Schemes {
+    public static final String FILE = "file";
+    public static final String HDFS = "hdfs";
+    public static final String S3 = "s3";
+    public static final String NFS = "nfs";
+  }
+
+  public static String DEFAULT_ICE_ROOT() {
+    String username = System.getProperty("user.name");
+    if (username == null) username = "";
+    String u2 = username.replaceAll(" ", "_");
+    if (u2.length() == 0) u2 = "unknown";
+    return "/tmp/h2o-" + u2;
+  }
+
+  public static URI ICE_ROOT;
+
+  // Enables debug features like more logging and multiple instances per JVM
+  public static final String DEBUG_ARG = "h2o.debug";
+  public static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
 
   // Start up an H2O Node and join any local Cloud
   public static volatile boolean IS_SYSTEM_RUNNING = false;

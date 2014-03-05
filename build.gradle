@@ -1,8 +1,33 @@
+apply plugin: 'java'
+
 // Version number that appears on the H2O start.
 version = '2.2.0.6'
 
-task build(type:Exec) {
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  // Required for h2o-core
+  compile "joda-time:joda-time:2.3"
+  compile("log4j:log4j:1.2.15") { 
+    exclude module: "activation" 
+    exclude module: "jms" 
+    exclude module: "jmxri" 
+    exclude module: "jmxtools" 
+    exclude module: "mail" 
+  }
+  testCompile "junit:junit:4.+"
+}
+
+task cpLibs(type: Copy) {
+  println "=== COPY LIBS LOCAL === "
+  configurations.compile.each { println it } 
+  from configurations.compile.files 
+  into 'lib'
+}
+
+task make(dependsOn:cpLibs, type:Exec) {
   println "=== H2O: Building top-level...(${path})"
   commandLine 'make', '-s'
 }
-

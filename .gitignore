@@ -15,6 +15,7 @@ pytest_flatfile-*
 sandbox
 syn_datasets
 build/
+lib/
 .settings/*
 .idea/*
 .gradle/
