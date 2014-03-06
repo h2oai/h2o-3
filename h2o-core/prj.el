@@ -2,7 +2,7 @@
 (jde-set-variables
  '(jde-javadoc-gen-destination-directory "./doc")
  '(jde-run-working-directory "$DESK/h2o2/h2o-core")
- '(jde-run-option-classpath (quote ("./build/classes" "./lib/log4j-1.2.15.jar" "./lib/joda-time-2.3.jar")))
+ '(jde-run-option-classpath (quote ("./build/classes" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar")))
  '(jde-run-executable-args nil)
  '(jde-run-option-debug nil)
  '(jde-run-option-vm-args (quote ("-XX:+PrintGC")))

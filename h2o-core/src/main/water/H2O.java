@@ -1,6 +1,7 @@
 package water;
 
 import java.net.*;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicLong;
 import water.init.*;
 import water.util.*;
@@ -38,7 +39,7 @@ public final class H2O {
     public boolean version = false;
 
     // Common config options
-    public String name;         // Cloud name
+    public String name = System.getProperty("user.name"); // Cloud name
     public String flatfile;     // List of cluster IP addresses
     public int port=54321;      // Browser/API/HTML port
     public int h2o_port;        // port+1
@@ -57,6 +58,12 @@ public final class H2O {
   public static int H2O_PORT; // Both TCP & UDP cluster ports
   public static int API_PORT; // RequestServer and the API HTTP port
 
+  // The multicast discovery port
+  static public MulticastSocket  CLOUD_MULTICAST_SOCKET;
+  static public NetworkInterface CLOUD_MULTICAST_IF;
+  static public InetAddress      CLOUD_MULTICAST_GROUP;
+  static public int              CLOUD_MULTICAST_PORT ;
+
   // Myself, as a Node in the Cloud
   public static H2ONode SELF = null;
   public static InetAddress SELF_ADDRESS;
@@ -69,6 +76,8 @@ public final class H2O {
     public static final String NFS = "nfs";
   }
 
+  // Place to store temp/swap files
+  public static URI ICE_ROOT;
   public static String DEFAULT_ICE_ROOT() {
     String username = System.getProperty("user.name");
     if (username == null) username = "";
@@ -77,7 +86,11 @@ public final class H2O {
     return "/tmp/h2o-" + u2;
   }
 
-  public static URI ICE_ROOT;
+  // Static list of acceptable Cloud members
+  public static HashSet<H2ONode> STATIC_H2OS = null;
+
+  // Reverse cloud index to a cloud; limit of 256 old clouds.
+  static private final H2O[] CLOUDS = new H2O[256];
 
   // Enables debug features like more logging and multiple instances per JVM
   public static final String DEBUG_ARG = "h2o.debug";
@@ -169,7 +182,36 @@ public final class H2O {
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
   }
 
+  /** Initializes the local node and the local cloud with itself as the only member. */
+  private static void startLocalNode() {
+    // Figure self out; this is surprisingly hard
+    NetworkInit.initializeNetworkSockets();
+    // Do not forget to put SELF into the static configuration (to simulate
+    // proper multicast behavior)
+    if( STATIC_H2OS != null && !STATIC_H2OS.contains(SELF)) {
+      Log.warn("Flatfile configuration does not include self: " + SELF+ " but contains " + STATIC_H2OS);
+      STATIC_H2OS.add(SELF);
+    }
+
+    Log.info ("H2O cloud name: '" + ARGS.name + "' on " + SELF+
+              (ARGS.flatfile==null
+               ? (", discovery address "+CLOUD_MULTICAST_GROUP+":"+CLOUD_MULTICAST_PORT)
+               : ", static configuration based on -flatfile "+ARGS.flatfile));
+
+    Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
+            "  1. Open a terminal and run 'ssh -L 55555:localhost:"
+            + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
+            "  2. Point your browser to http://localhost:55555");
+
+
+    // Create the starter Cloud with 1 member
+    SELF._heartbeat._jar_md5 = 0;//Boot._init._jarHash;
+    Paxos.doHeartbeat(SELF);
+    assert SELF._heartbeat._cloud_hash != 0;
+  }
+
   public static void main( String[] args ) {
+    // Record system start-time.
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started
 
@@ -195,20 +237,25 @@ public final class H2O {
     NetworkInit.findInetAddressForSelf();
 
     Log.wrap(); // Wrap stderr
+
+    // Start the local node.  Needed before starting logging.
+    startLocalNode();
+
     String logDir = Log.getLogDir();
     Log.info("Log dir: '"+(logDir==null ? "(unknown)" : Log.getLogDir())+"'");
 
-    // Start the local node
-    //startLocalNode();
     
 
   }
 
-  /**
-   * Notify embedding software instance H2O wants to exit.
-   * @param status H2O's requested process exit value.
-   */
+  /** Notify embedding software instance H2O wants to exit.
+   *  @param status H2O's requested process exit value.  */
   public static void exit(int status) {
     System.exit(status);
+  }
+  // Die horribly
+  public static void die(String s) {
+    System.err.println(s);
+    exit(-1);
   }
 }

@@ -1,11 +1,16 @@
 package water.init;
 
-import water.H2O;
-import water.util.Log;
+import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import water.H2O;
+import water.H2ONode;
+import water.Paxos;
+import water.util.Log;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -308,5 +313,264 @@ public class NetworkInit {
 
     return networkList;
   }
+
+  public static DatagramChannel _udpSocket;
+  public static ServerSocket _apiSocket;
+  // Default NIO Datagram channel
+  static DatagramChannel CLOUD_DGRAM;
+
+  // Parse arguments and set cloud name in any case. Strip out "-name NAME"
+  // and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
+  // function of the name. Parse node ip addresses from the filename.
+  public static void initializeNetworkSockets( ) {
+    // Assign initial ports
+    H2O.API_PORT = H2O.ARGS.port;
+
+    while (true) {
+      H2O.H2O_PORT = H2O.API_PORT+1;
+      try {
+        // kbn. seems like we need to set SO_REUSEADDR before binding?
+        // http://www.javadocexamples.com/java/net/java.net.ServerSocket.html#setReuseAddress:boolean
+        // When a TCP connection is closed the connection may remain in a timeout state
+        // for a period of time after the connection is closed (typically known as the
+        // TIME_WAIT state or 2MSL wait state). For applications using a well known socket address
+        // or port it may not be possible to bind a socket to the required SocketAddress
+        // if there is a connection in the timeout state involving the socket address or port.
+        // Enabling SO_REUSEADDR prior to binding the socket using bind(SocketAddress)
+        // allows the socket to be bound even though a previous connection is in a timeout state.
+        // cnc: this is busted on windows.  Back to the old code.
+        _apiSocket = new ServerSocket(H2O.API_PORT);
+        _udpSocket = DatagramChannel.open();
+        _udpSocket.socket().setReuseAddress(true);
+        _udpSocket.socket().bind(new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT));
+        break;
+      } catch (IOException e) {
+        if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
+        if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException _ ) { }
+        _apiSocket = null;
+        _udpSocket = null;
+        if( H2O.ARGS.port != 0 )
+          H2O.die("On " + H2O.SELF_ADDRESS +
+              " some of the required ports " + (H2O.ARGS.port+0) +
+              ", " + (H2O.ARGS.port+1) +
+              " are not available, change -port PORT and try again.");
+      }
+      H2O.API_PORT += 2;
+    }
+    H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
+    Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http:/",H2O.SELF_ADDRESS,":"+_apiSocket.getLocalPort()+"/");
+
+    String embeddedConfigFlatfile = null;
+    //AbstractEmbeddedH2OConfig ec = getEmbeddedH2OConfig();
+    //if (ec != null) {
+    //  ec.notifyAboutEmbeddedWebServerIpPort (H2O.SELF_ADDRESS, H2O.API_PORT);
+    //  if (ec.providesFlatfile()) {
+    //    try {
+    //      embeddedConfigFlatfile = ec.fetchFlatfile();
+    //    }
+    //    catch (Exception e) {
+    //      Log.err("Failed to get embedded config flatfile");
+    //      Log.err(e);
+    //      H2O.exit(1);
+    //    }
+    //  }
+    //}
+
+    // Read a flatfile of allowed nodes
+    if (embeddedConfigFlatfile != null)
+      H2O.STATIC_H2OS = parseFlatFileFromString(embeddedConfigFlatfile);
+    else 
+      H2O.STATIC_H2OS = parseFlatFile(H2O.ARGS.flatfile);
+
+    // Multi-cast ports are in the range E1.00.00.00 to EF.FF.FF.FF
+    int hash = H2O.ARGS.name.hashCode()&0x7fffffff;
+    int port = (hash % (0xF0000000-0xE1000000))+0xE1000000;
+    byte[] ip = new byte[4];
+    for( int i=0; i<4; i++ )
+      ip[i] = (byte)(port>>>((3-i)<<3));
+    try {
+      H2O.CLOUD_MULTICAST_GROUP = InetAddress.getByAddress(ip);
+    } catch( UnknownHostException e ) { throw  Log.errRTExcept(e); }
+    H2O.CLOUD_MULTICAST_PORT = (port>>>16);
+  }
+
+  // Multicast send-and-close.  Very similar to udp_send, except to the
+  // multicast port (or all the individuals we can find, if multicast is
+  // disabled).
+  static void multicast( ByteBuffer bb ) {
+    try { multicast2(bb); }
+    catch (Exception _) {}
+  }
+
+  static private void multicast2( ByteBuffer bb ) {
+    if( H2O.STATIC_H2OS == null ) {
+      byte[] buf = new byte[bb.remaining()];
+      bb.get(buf);
+
+      synchronized( H2O.class ) { // Sync'd so single-thread socket create/destroy
+        assert H2O.CLOUD_MULTICAST_IF != null;
+        try {
+          if( H2O.CLOUD_MULTICAST_SOCKET == null ) {
+            H2O.CLOUD_MULTICAST_SOCKET = new MulticastSocket();
+            // Allow multicast traffic to go across subnets
+            H2O.CLOUD_MULTICAST_SOCKET.setTimeToLive(2);
+            H2O.CLOUD_MULTICAST_SOCKET.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
+          }
+          // Make and send a packet from the buffer
+          H2O.CLOUD_MULTICAST_SOCKET.send(new DatagramPacket(buf, buf.length, H2O.CLOUD_MULTICAST_GROUP,H2O.CLOUD_MULTICAST_PORT));
+        } catch( Exception e ) {  // On any error from anybody, close all sockets & re-open
+          // No error on multicast fail: common occurrance for laptops coming
+          // awake from sleep.
+          if( H2O.CLOUD_MULTICAST_SOCKET != null )
+            try { H2O.CLOUD_MULTICAST_SOCKET.close(); }
+            catch( Exception e2 ) { Log.err("Got",e2); }
+            finally { H2O.CLOUD_MULTICAST_SOCKET = null; }
+        }
+      }
+    } else {                    // Multicast Simulation
+      // The multicast simulation is little bit tricky. To achieve union of all
+      // specified nodes' flatfiles (via option -flatfile), the simulated
+      // multicast has to send packets not only to nodes listed in the node's
+      // flatfile (H2O.STATIC_H2OS), but also to all cloud members (they do not
+      // need to be specified in THIS node's flatfile but can be part of cloud
+      // due to another node's flatfile).
+      //
+      // Furthermore, the packet have to be send also to Paxos proposed members
+      // to achieve correct functionality of Paxos.  Typical situation is when
+      // this node receives a Paxos heartbeat packet from a node which is not
+      // listed in the node's flatfile -- it means that this node is listed in
+      // another node's flatfile (and wants to create a cloud).  Hence, to
+      // allow cloud creation, this node has to reply.
+      //
+      // Typical example is:
+      //    node A: flatfile (B)
+      //    node B: flatfile (C), i.e., A -> (B), B-> (C), C -> (A)
+      //    node C: flatfile (A)
+      //    Cloud configuration: (A, B, C)
+      //
+
+      // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
+      // this method (since it is heavily used)
+      HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
+      nodes.addAll(Paxos.PROPOSED.values());
+      bb.mark();
+      for( H2ONode h2o : nodes ) {
+        bb.reset();
+        try {
+          CLOUD_DGRAM.send(bb, h2o._key);
+        } catch( IOException e ) {
+          Log.err("Multicast Error to "+h2o, e);
+        }
+      }
+    }
+  }
+
+
+  /**
+   * Read a set of Nodes from a file. Format is:
+   *
+   * name/ip_address:port
+   * - name is unused and optional
+   * - port is optional
+   * - leading '#' indicates a comment
+   *
+   * For example:
+   *
+   * 10.10.65.105:54322
+   * # disabled for testing
+   * # 10.10.65.106
+   * /10.10.65.107
+   * # run two nodes on 108
+   * 10.10.65.108:54322
+   * 10.10.65.108:54325
+   */
+  private static HashSet<H2ONode> parseFlatFile( String fname ) {
+    if( fname == null ) return null;
+    File f = new File(fname);
+    if( !f.exists() ) {
+      Log.warn("-flatfile specified but not found: " + fname);
+      return null; // No flat file
+    }
+    HashSet<H2ONode> h2os = new HashSet<H2ONode>();
+    List<FlatFileEntry> list = parseFlatFile(f);
+    for(FlatFileEntry entry : list)
+      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+    return h2os;
+  }
+
+  public static HashSet<H2ONode> parseFlatFileFromString( String s ) {
+    HashSet<H2ONode> h2os = new HashSet<H2ONode>();
+    InputStream is = new ByteArrayInputStream(s.getBytes());
+    List<FlatFileEntry> list = parseFlatFile(is);
+    for(FlatFileEntry entry : list)
+      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+    return h2os;
+  }
+
+  public static class FlatFileEntry {
+    public InetAddress inet;
+    public int port;
+  }
+
+  public static List<FlatFileEntry> parseFlatFile( File f ) {
+    InputStream is = null;
+    try {
+      is = new FileInputStream(f);
+    }
+    catch (Exception e) { H2O.die(e.toString()); }
+    return parseFlatFile(is);
+  }
+
+  public static List<FlatFileEntry> parseFlatFile( InputStream is ) {
+    List<FlatFileEntry> list = new ArrayList<FlatFileEntry>();
+    BufferedReader br = null;
+    int port = H2O.ARGS.port;
+    try {
+      br = new BufferedReader(new InputStreamReader(is));
+      String strLine = null;
+      while( (strLine = br.readLine()) != null) {
+        strLine = strLine.trim();
+        // be user friendly and skip comments and empty lines
+        if (strLine.startsWith("#") || strLine.isEmpty()) continue;
+
+        String ip = null, portStr = null;
+        int slashIdx = strLine.indexOf('/');
+        int colonIdx = strLine.indexOf(':');
+        if( slashIdx == -1 && colonIdx == -1 ) {
+          ip = strLine;
+        } else if( slashIdx == -1 ) {
+          ip = strLine.substring(0, colonIdx);
+          portStr = strLine.substring(colonIdx+1);
+        } else if( colonIdx == -1 ) {
+          ip = strLine.substring(slashIdx+1);
+        } else if( slashIdx > colonIdx ) {
+          H2O.die("Invalid format, must be name/ip[:port], not '"+strLine+"'");
+        } else {
+          ip = strLine.substring(slashIdx+1, colonIdx);
+          portStr = strLine.substring(colonIdx+1);
+        }
+
+        InetAddress inet = InetAddress.getByName(ip);
+        if( !(inet instanceof Inet4Address) )
+          H2O.die("Only IP4 addresses allowed: given " + ip);
+        if( portStr!=null && !portStr.equals("") ) {
+          try {
+            port = Integer.decode(portStr);
+          } catch( NumberFormatException nfe ) {
+            H2O.die("Invalid port #: "+portStr);
+          }
+        }
+        FlatFileEntry entry = new FlatFileEntry();
+        entry.inet = inet;
+        entry.port = port;
+        list.add(entry);
+      }
+    } catch( Exception e ) { H2O.die(e.toString()); }
+    finally { 
+      if( br != null ) try { br.close(); } catch( IOException _ ) { }
+    }
+    return list;
+  }
+
 }
 
