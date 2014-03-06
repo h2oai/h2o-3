@@ -26,18 +26,18 @@ SEP = ;
 endif
 
 
-default: build/h2o.jar
+default: build/h2o-core.jar
 
-check: build/h2o.jar
-	java -jar build/h2o.jar
+check: build/h2o-core.jar
+	java -jar build/h2o-core.jar
 
 # Compile just the out-of-date files, then make a jar
-build/h2o.jar: $(javas)
+build/h2o-core.jar: $(javas)
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?
 	@echo "jaring " $@
-	@jar -cfm build/h2o.jar manifest.txt -C build/classes .
+	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes .
 
 
 .PHONY: clean

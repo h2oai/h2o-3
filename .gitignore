@@ -17,7 +17,7 @@ syn_datasets
 build/
 lib/
 .settings/*
-.idea/*
+*/.idea/*
 .gradle/
 h2o.iml
 h2o.eml

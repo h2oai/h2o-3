@@ -7,10 +7,8 @@ import java.util.Locale;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 
-import water.H2O;
-import water.Paxos;
+import water.*;
 import water.util.Log.Tag.Kind;
-import water.util.Log.Tag.Sys;
 
 /** Log for H2O. This class should be loaded before we start to print as it wraps around
  * System.{out,err}.
@@ -20,18 +18,6 @@ import water.util.Log.Tag.Sys;
  *  WARN messages and uncaught exceptions are printed on Standard output. Some
  *  INFO messages are also printed on standard output.  Many more messages are
  *  printed to the log file in the ice directory and to the K/V store.
- *
- *  Messages can come from a number of subsystems, Sys.RANDF for instance
- *  denotes the Random forest implementation. Subsystem names are five letter
- *  mnemonics to keep formatting nicely even.
- *
- *  To print messages from a subsystem to the log file, set a property on the command line
- *     -Dlog.RANDF=true
- *     -Dlog.RANDF=false    // turn off
- *  or call the API function
- *     Log.setFlag(Sys.RANDF);
- *     Log.unsetFlag(Sys.RANDF);   // turn off
- *
  *
  *  OOME: when the VM is low on memory, OutOfMemoryError can be thrown in the
  *  logging framework while it is trying to print a message. In this case the
@@ -45,40 +31,19 @@ public abstract class Log {
 
   /** Tags for log messages */
   public static interface Tag {
-    /** Which subsystem of h2o? */
-    public static enum Sys implements Tag {
-      RANDF, GBM__, DRF__, GENLM, KMEAN, PARSE, STORE, WATER, HDFS_, HTTPD, CLEAN, CONFM, EXCEL, SCORM, LOCKS;
-      boolean _enable;
-    }
-
-    /** What kind of message? */
-    public static enum Kind implements Tag {
-      INFO, WARN, ERRR;
-    }
+    public static enum Kind implements Tag { INFO, WARN, ERRR }
   }
-  static {
-    for(Kind k : Kind.values())
-      assert k.name().length() == Kind.INFO.name().length();
-    for(Sys s : Sys.values())
-      assert s.name().length() == Sys.RANDF.name().length();
-  }
-  public static final Kind[] KINDS = Kind.values();
-  public static final Sys[] SYSS = Sys.values();
-
   private static final String NL = System.getProperty("line.separator");
   static public void wrap() {
     ///Turning off wrapping for now...  If this breaks stuff will put it back on.
     /// System.setOut(new Wrapper(System.out));
     System.setErr(new Wrapper(System.err));
   }
-  /** Local log file */
 
   static String LOG_DIR = null;
 
   /** Key for the log in the KV store */
   //public final static Key LOG_KEY = Key.make("Log", (byte) 0, Key.BUILT_IN_KEY);
-  /** Time from when this class loaded. */
-  static final Timer time = new Timer();
   /** Some guess at the process ID. */
   public static final long PID = getPid();
   /** Additional logging for debugging. */
@@ -89,32 +54,14 @@ public abstract class Log {
   static {
     String pa = System.getProperty("log.printAll");
     printAll = (pa!=null && pa.equals("true"));
-
-    setFlag(Sys.WATER);
-    setFlag(Sys.RANDF);
-    setFlag(Sys.HTTPD);
-    for(Sys s : Sys.values()) {
-      String str = System.getProperty("log."+s);
-      if (str == null) continue;
-      if (str.equals("false")) unsetFlag(s); else setFlag(s);
-    }
   }
-
-  /** Check if a subsystem will print debug message to the LOG file */
-  public static boolean flag(Sys t) { return t._enable || printAll; }
-  /** Set the debug flag. */
-  public static void setFlag(Sys t) { t._enable = true; }
-  /** Unset the debug flag. */
-  public static void unsetFlag(Sys t) { t._enable = false; }
 
   /**
    * Events are created for all calls to the logging API.
    **/
   static class Event {
     Kind kind;
-    Sys sys;
     Timer when;
-    long msFromStart;
     Throwable ouch;
     Object[] messages;
     Object message;
@@ -126,33 +73,32 @@ public abstract class Log {
     private volatile static Event lastEvent = new Event();
     private volatile static int missed;
 
-    static Event make(Tag.Sys sys, Tag.Kind kind, Throwable ouch, Object[] messages) {
-      return make0(sys, kind, ouch, messages , null);
+    static Event make(Tag.Kind kind, Throwable ouch, Object[] messages) {
+      return make0(kind, ouch, messages , null);
     }
-    static Event make(Tag.Sys sys, Tag.Kind kind, Throwable ouch, Object message) {
-      return make0(sys, kind, ouch, null , message);
+    static Event make(Tag.Kind kind, Throwable ouch, Object message) {
+      return make0(kind, ouch, null , message);
     }
-    static private Event make0(Tag.Sys sys, Tag.Kind kind, Throwable ouch, Object[] messages, Object message) {
-      Event result = null;
+    static private Event make0(Tag.Kind kind, Throwable ouch, Object[] messages, Object message) {
+      Event result;
       try {
         result = new Event();
-        result.init(sys, kind, ouch, messages, message, lastGoodTimer = new Timer());
+        result.init(kind, ouch, messages, message, lastGoodTimer = new Timer());
       } catch (OutOfMemoryError e){
         synchronized (Event.class){
           if (lastEvent.printMe) {  missed++;  return null; }// Giving up; record the number of lost messages
           result = lastEvent;
-          result.init(sys, kind, ouch, messages, null, lastGoodTimer);
+          result.init(kind, ouch, messages, null, lastGoodTimer);
         }
       }
       return result;
     }
 
-    private void init(Tag.Sys sys, Tag.Kind kind, Throwable ouch, Object[] messages, Object message, Timer t) {
+    private void init(Tag.Kind kind, Throwable ouch, Object[] messages, Object message, Timer t) {
       this.kind = kind;
       this.ouch = ouch;
       this.messages = messages;
       this.message = message;
-      this.sys = sys;
       this.when = t;
       this.printMe = true;
     }
@@ -225,7 +171,7 @@ public abstract class Log {
       buf.append(when.startAsString()).append(" ").append(headers);
       if( thread == null ) thread = fixedLength(Thread.currentThread().getName() + " ", 10);
       buf.append(thread);
-      buf.append(kind.toString()).append(" ").append(sys.toString()).append(": ");
+      buf.append(kind.toString()).append(": ");
       return buf;
     }
 
@@ -237,7 +183,7 @@ public abstract class Log {
       }
       if( thread == null ) thread = fixedLength(Thread.currentThread().getName() + " ", 8);
       buf.append(thread);
-      if(!H2O.DEBUG) buf.append(kind.toString()).append(" ").append(sys.toString()).append(": ");
+      if(!H2O.DEBUG) buf.append(kind.toString()).append(": ");
       return buf;
     }
   }
@@ -255,8 +201,8 @@ public abstract class Log {
             Event.lastEvent = new Event();
           }
           if (Event.missed > 0) {
-            if (Event.lastEvent.printMe==false) {
-              Event.lastEvent.init(Sys.WATER, Kind.WARN, null, null, "Logging framework dropped a message", Event.lastGoodTimer);
+            if( !Event.lastEvent.printMe ) {
+              Event.lastEvent.init(Kind.WARN, null, null, "Logging framework dropped a message", Event.lastGoodTimer);
               Event.missed--;
             }
           }
@@ -264,7 +210,7 @@ public abstract class Log {
       }
     } catch (OutOfMemoryError _) {
       synchronized (Event.class){
-        if (Event.lastEvent.printMe == false)
+        if( !Event.lastEvent.printMe )
          Event.lastEvent = e;
         else Event.missed++;
       }
@@ -291,15 +237,9 @@ public abstract class Log {
     }
     // Somehow, the above process for producing an IP address has a slash
     // in it, which is mystifying.  Remove it.
-
     int port = H2O.H2O_PORT-1;
     String portString = Integer.toString(port);
-
-    String logFileName =
-            getLogDir() + File.separator +
-                    "h2o_" + ip + "_" + portString + ".log";
-
-    return logFileName;
+    return getLogDir() + File.separator + "h2o_" + ip + "_" + portString + ".log";
   }
 
   private static org.apache.log4j.Logger getLog4jLogger() {
@@ -308,9 +248,7 @@ public abstract class Log {
 
   private static org.apache.log4j.Logger createLog4jLogger(String logDirParent) {
     synchronized (water.util.Log.class) {
-      if (_logger != null) {
-        return _logger;
-      }
+      if( _logger != null ) return _logger;
   
       // If a log4j properties file was specified on the command-line, use it.
       // Otherwise, create some default properties on the fly.
@@ -355,7 +293,7 @@ public abstract class Log {
 
   static volatile boolean loggerCreateWasCalled = false;
 
-  static private Object startupLogEventsLock = new Object();
+  static private final Object startupLogEventsLock = new Object();
   static volatile private ArrayList<Event> startupLogEvents = new ArrayList<Event>();
 
   private static void log0(org.apache.log4j.Logger l4j, Event e) {
@@ -418,10 +356,8 @@ public abstract class Log {
       // lock unless the buffer exists.
       if (startupLogEvents != null) {
         synchronized (startupLogEventsLock) {
-          for (int i = 0; i < startupLogEvents.size(); i++) {
-            Event bufferedEvent = startupLogEvents.get(i);
+          for( Event bufferedEvent : startupLogEvents )
             log0(l4j, bufferedEvent);
-          }
           startupLogEvents = null;
         }
       }
@@ -430,85 +366,59 @@ public abstract class Log {
       log0(l4j, e);
     }
     
-    if( Paxos._cloudLocked ) logToKV(e.when.startAsString(), e.thread, e.kind, e.sys, e.body(0));
+    if( Paxos._cloudLocked ) logToKV(e.when.startAsString(), e.thread, e.kind, e.body(0));
     if(printOnOut || printAll) unwrap(System.out, e.toShortString());
     e.printMe = false;
   }
   /** We also log events to the store. */
-  private static void logToKV(final String date, final String thr, final Kind kind, final Sys sys, final String msg) {
+  private static void logToKV(final String date, final String thr, final Kind kind, final String msg) {
     final long pid = PID; // Run locally
-    //final H2ONode h2o = H2O.SELF; // Run locally
+    final water.H2ONode h2o = water.H2O.SELF; // Run locally
     //new TAtomic<LogStr>() {
     //  @Override public LogStr atomic(LogStr l) {
-    //    return new LogStr(l, date, h2o, pid, thr, kind, sys, msg);
+    //    return new LogStr(l, date, h2o, pid, thr, kind, msg);
     //  }
     //}.fork(LOG_KEY);
   }
   /** Record an exception to the log file and store. */
-  static public <T extends Throwable> T err(Sys t, String msg, T exception) {
-    Event e =  Event.make(t, Kind.ERRR, exception, msg );
+  static public <T extends Throwable> T err(String msg, T exception) {
+    Event e =  Event.make(Kind.ERRR, exception, msg );
     write(e,true);
     return exception;
   }
   /** Record a message to the log file and store. */
-  static public void err(Sys t, String msg) {
-    Event e =  Event.make(t, Kind.ERRR, null, msg );
+  static public void err(String msg) {
+    Event e =  Event.make(Kind.ERRR, null, msg );
     write(e,true);
   }
   /** Record an exception to the log file and store. */
-  static public <T extends Throwable> T err(String msg, T exception) {
-    return err(Sys.WATER, msg, exception);
-  }
-  /** Record a message to the log file and store. */
-  static public void err(String msg) {
-    err(Sys.WATER, msg);
-  }
-  /** Record an exception to the log file and store. */
-  static public <T extends Throwable> T err(Sys t, T exception) {
-    return err(t, "", exception);
-  }
-  /** Record an exception to the log file and store. */
   static public <T extends Throwable> T err(T exception) {
-    return err(Sys.WATER, "", exception);
+    return err("", exception);
   }
   /** Record an exception to the log file and store and return a new
    * RuntimeException that wraps around the exception. */
   static public RuntimeException errRTExcept(Throwable exception) {
-    return new RuntimeException(err(Sys.WATER, "", exception));
+    return new RuntimeException(err("", exception));
   }
   /** Log a warning to standard out, the log file and the store. */
-  static public <T extends Throwable> T warn(Sys t, String msg, T exception) {
-    Event e =  Event.make(t, Kind.WARN, exception,  msg);
+  static public <T extends Throwable> T warn(String msg, T exception) {
+    Event e =  Event.make(Kind.WARN, exception,  msg);
     write(e,true);
     return exception;
   }
   /** Log a warning to standard out, the log file and the store. */
-  static public Throwable warn(Sys t, String msg) {
-    return warn(t, msg, null);
-  }
-  /** Log a warning to standard out, the log file and the store. */
   static public Throwable warn(String msg) {
-    return warn(Sys.WATER, msg, null);
-  }
-  /** Log an information message to standard out, the log file and the store. */
-  static public void info(Sys t, Object... objects) {
-    Event e =  Event.make(t, Kind.INFO, null, objects);
-    write(e,true);
+    return warn(msg, null);
   }
   /** Log an information message to standard out, the log file and the store. */
   static public void info(Object... objects) {
-    info(Sys.WATER, objects);
+    Event e =  Event.make(Kind.INFO, null, objects);
+    write(e,true);
   }
   /** Log a debug message to the log file and the store if the subsystem's flag is set. */
   static public void debug(Object... objects) {
-    if (flag(Sys.WATER) == false) return;
-    Event e =  Event.make(Sys.WATER, Kind.INFO, null, objects);
-    write(e,false);
-  }
-  /** Log a debug message to the log file and the store if the subsystem's flag is set. */
-  static public void debug(Sys t, Object... objects) {
-    if (flag(t) == false) return;
-    Event e =  Event.make( t, Kind.INFO, null, objects);
+    if( !H2O.DEBUG ) return;
+    Event e =  Event.make(Kind.INFO, null, objects);
     write(e,false);
   }
   /** Temporary log statement. Search for references to make sure they have been removed. */
@@ -549,12 +459,6 @@ public abstract class Log {
     }
   }
 
-  // Print to the original STDERR & die
-  public static void die(String s) {
-    System.err.println(s);
-    if( !_dontDie ) H2O.exit(-1);
-  }
-
   /** Print a message to the stream without the logging information. */
   public static void unwrap(PrintStream stream, String s) {
     if( stream instanceof Wrapper ) ((Wrapper) stream).printlnParent(s);
@@ -585,25 +489,25 @@ public abstract class Log {
       this.parent=parent;
     }
 
-    private static String log(Locale l, boolean nl, String format, Object... args) {
+    private static String log(Locale l, String format, Object... args) {
       String msg = String.format(l, format, args);
-      Event e =  Event.make(Sys.WATER,Kind.INFO,null, msg);
+      Event e =  Event.make(Kind.INFO,null, msg);
       Log.write(e,false);
       return e.toShortString()+NL;
     }
 
     @Override public PrintStream printf(String format, Object... args) {
-      super.print(log(null, false, format, args));
+      super.print(log(null, format, args));
       return this;
     }
 
     @Override public PrintStream printf(Locale l, String format, Object... args) {
-      super.print(log(l, false, format, args));
+      super.print(log(l, format, args));
       return this;
     }
 
     @Override public void println(String x) {
-      super.print(log(null, true, "%s", x));
+      super.print(log(null, "%s\n", x));
     }
 
     void printlnParent(String s) {
@@ -617,29 +521,23 @@ public abstract class Log {
   public static class LogStr /*extends Iced*/ {
     public static final int MAX = 1024; // Number of log entries
     public final int _idx; // Index into the ring buffer
-    public final byte _kinds[];
-    public final byte _syss[];
     public final String _dates[];
     public final H2ONode _h2os[];
     public final long _pids[];
     public final String _thrs[];
     public final String _msgs[];
 
-    LogStr(LogStr l, String date, H2ONode h2o, long pid, String thr, Kind kind, Sys sys, String msg) {
+    LogStr(LogStr l, String date, H2ONode h2o, long pid, String thr, Kind kind, String msg) {
       _dates = l == null ? new String[MAX] : l._dates;
       _h2os = l == null ? new H2ONode[MAX] : l._h2os;
       _pids = l == null ? new long[MAX] : l._pids;
       _thrs = l == null ? new String[MAX] : l._thrs;
-      _kinds = l == null ? new byte[MAX] : l._kinds;
-      _syss = l == null ? new byte[MAX] : l._syss;
       _msgs = l == null ? new String[MAX] : l._msgs;
       _idx = l == null ? 0 : (l._idx + 1) & (MAX - 1);
       _dates[_idx] = date;
       _h2os[_idx] = h2o;
       _pids[_idx] = pid;
       _thrs[_idx] = thr;
-      _kinds[_idx] = (byte) kind.ordinal();
-      _syss[_idx] = (byte) sys.ordinal();
       _msgs[_idx] = msg;
     }
   }
@@ -655,9 +553,7 @@ public abstract class Log {
    */
 //  private static final Object postLock = new Object();
   public static void POST(int n, String s) {
-      // DO NOTHING UNLESS ENABLED BY REMOVING THIS RETURN!
-      return;
-
+      // DO NOTHING UNLESS ENABLED BY UNCOMMENTING THIS CODE!
 //      synchronized (postLock) {
 //          File f = new File ("/tmp/h2o.POST");
 //          if (! f.exists()) {

@@ -20,8 +20,7 @@ public final class H2O {
       Class klass = Class.forName("water.BuildVersion");
       java.lang.reflect.Constructor constructor = klass.getConstructor();
       abv = (AbstractBuildVersion) constructor.newInstance();
-    } catch (Exception e) {
-    }
+    } catch (Exception _) { }
     ABV = abv;
   }
 
@@ -181,7 +180,7 @@ public final class H2O {
     printAndLogVersion();
     if( ARGS.version ) { exit(0); }
     // Print help & exit
-    if( ARGS.help ) { printHelp(); exit(0); }
+    if( ARGS.help || ARGS.h ) { printHelp(); exit(0); }
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
@@ -192,7 +191,16 @@ public final class H2O {
       throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
     }
 
+    // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
+
+    Log.wrap(); // Wrap stderr
+    String logDir = Log.getLogDir();
+    Log.info("Log dir: '"+(logDir==null ? "(unknown)" : Log.getLogDir())+"'");
+
+    // Start the local node
+    //startLocalNode();
+    
 
   }
 

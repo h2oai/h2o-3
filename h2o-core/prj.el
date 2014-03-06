@@ -10,7 +10,7 @@
  '(jde-run-option-application-args nil)
  '(jde-debugger (quote ("JDEbug")))
  '(jde-compile-option-source (quote ("1.6")))
- '(jde-compile-option-classpath (quote ("./build/classes" "./lib/log4j-1.2.15.jar" "./lib/joda-time-2.3.jar")))
+ '(jde-compile-option-classpath (quote ("./build/classes" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar")))
  '(jde-db-option-classpath (quote ("$DESK/Dropbox/Sris and Cliff/H2O/classes")))
  '(jde-run-option-enable-assertions "Everywhere")
  '(jde-compile-option-sourcepath (quote ("./src")))
