@@ -1,4 +1,4 @@
-package water;
+package water.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

@@ -1,6 +1,8 @@
 
 default: build/foo
 
+check: build/foo
+
 build/foo:
 	echo "Touching foo"
 	mkdir -p build

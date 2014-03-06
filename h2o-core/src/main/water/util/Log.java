@@ -1,14 +1,16 @@
-package water;
+package water.util;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Locale;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import water.Log.Tag.Kind;
-import water.Log.Tag.Sys;
+
+import water.H2O;
+import water.Paxos;
+import water.util.Log.Tag.Kind;
+import water.util.Log.Tag.Sys;
 
 /** Log for H2O. This class should be loaded before we start to print as it wraps around
  * System.{out,err}.
@@ -290,7 +292,7 @@ public abstract class Log {
     // Somehow, the above process for producing an IP address has a slash
     // in it, which is mystifying.  Remove it.
 
-    int port = H2O.UDP_PORT-1;
+    int port = H2O.H2O_PORT-1;
     String portString = Integer.toString(port);
 
     String logFileName =
@@ -305,7 +307,7 @@ public abstract class Log {
   }
 
   private static org.apache.log4j.Logger createLog4jLogger(String logDirParent) {
-    synchronized (water.Log.class) {
+    synchronized (water.util.Log.class) {
       if (_logger != null) {
         return _logger;
       }

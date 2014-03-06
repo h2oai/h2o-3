@@ -1,8 +1,9 @@
-package water;
+package water.init;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import water.util.Log;
 
 /**
  * Utility for processing command

@@ -1,4 +1,4 @@
-package water;
+package water.util;
 
 import java.util.concurrent.TimeUnit;
 
