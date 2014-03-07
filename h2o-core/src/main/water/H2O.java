@@ -1,6 +1,8 @@
 package water;
 
+import java.lang.management.ManagementFactory;
 import java.net.*;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicLong;
 import water.init.*;
@@ -30,6 +32,12 @@ public final class H2O {
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
+  // Best-guess process ID
+  public static long PID = -1L;
+
+  // Convenience error
+  public static final RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
+  public static final RuntimeException fail() { return new RuntimeException("do not call"); }
 
   // List of arguments.
   public static OptArgs ARGS = new OptArgs();
@@ -41,11 +49,12 @@ public final class H2O {
     // Common config options
     public String name = System.getProperty("user.name"); // Cloud name
     public String flatfile;     // List of cluster IP addresses
-    public int port=54321;      // Browser/API/HTML port
-    public int h2o_port;        // port+1
+    public int    port;         // Browser/API/HTML port
+    public int    h2o_port;     // port+1
     public String ip;           // Named IP4/IP6 address instead of the default
-    public String network; // Network specification for acceptable interfaces to bind to.
+    public String network;      // Network specification for acceptable interfaces to bind to.
     public String ice_root;     // ice root directory; where temp files go
+    public String log_level;    // One of DEBUG, INFO, WARN, ERRR.  Null is INFO.
 
     // Less common config options
     public int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
@@ -166,6 +175,7 @@ public final class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   public static void printAndLogVersion() {
+    Log.init(ARGS.log_level);
     Log.info("----- H2O started -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
@@ -184,6 +194,13 @@ public final class H2O {
 
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
+    PID = -1L;
+    try {
+      String n = ManagementFactory.getRuntimeMXBean().getName();
+      int i = n.indexOf('@');
+      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
+    } catch( Throwable _ ) { }
+  
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -205,10 +222,45 @@ public final class H2O {
 
 
     // Create the starter Cloud with 1 member
-    SELF._heartbeat._jar_md5 = 0;//Boot._init._jarHash;
+    SELF._heartbeat._jar_md5 = null;//Boot._init._jarHash;
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0;
   }
+
+  // --------------------------------------------------------------------------
+  // The Current Cloud. A list of all the Nodes in the Cloud. Changes if we
+  // decide to change Clouds via atomic Cloud update.
+  static public volatile H2O CLOUD = new H2O(new H2ONode[0],0,0);
+
+  // ---
+  // A dense array indexing all Cloud members. Fast reversal from "member#" to
+  // Node.  No holes.  Cloud size is _members.length.
+  public final H2ONode[] _memary;
+  public final int _hash;
+
+  // A dense integer identifier that rolls over rarely. Rollover limits the
+  // number of simultaneous nested Clouds we are operating on in-parallel.
+  // Really capped to 1 byte, under the assumption we won't have 256 nested
+  // Clouds. Capped at 1 byte so it can be part of an atomically-assigned
+  // 'long' holding info specific to this Cloud.
+  public final char _idx; // no unsigned byte, so unsigned char instead
+
+  // Construct a new H2O Cloud from the member list
+  public H2O( H2ONode[] h2os, int hash, int idx ) {
+    _memary = h2os;             // Need to clone?
+    Arrays.sort(_memary);       // ... sorted!
+    _hash = hash;               // And record hash for cloud rollover
+    _idx = (char)(idx&0x0ff);   // Roll-over at 256
+  }
+
+  // Find the node index for this H2ONode, or a negative number on a miss
+  public int nidx( H2ONode h2o ) { return Arrays.binarySearch(_memary,h2o); }
+  public boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
+  @Override public String toString() {
+    return Arrays.toString(_memary);
+  }
+  // --------------------------------------------------------------------------
+
 
   public static void main( String[] args ) {
     // Record system start-time.
@@ -217,12 +269,6 @@ public final class H2O {
 
     // Parse args
     new Arguments(args).extract(ARGS);
-
-    // Always print version, whether asked-for or not!
-    printAndLogVersion();
-    if( ARGS.version ) { exit(0); }
-    // Print help & exit
-    if( ARGS.help || ARGS.h ) { printHelp(); exit(0); }
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
@@ -233,10 +279,14 @@ public final class H2O {
       throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
     }
 
+    // Always print version, whether asked-for or not!
+    printAndLogVersion();
+    if( ARGS.version ) { exit(0); }
+    // Print help & exit
+    if( ARGS.help || ARGS.h ) { printHelp(); exit(0); }
+
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
-
-    Log.wrap(); // Wrap stderr
 
     // Start the local node.  Needed before starting logging.
     startLocalNode();
@@ -255,7 +305,11 @@ public final class H2O {
   }
   // Die horribly
   public static void die(String s) {
-    System.err.println(s);
+    Log.err(s);
+    exit(-1);
+  }
+  public static void die(Throwable t) {
+    Log.err(t);
     exit(-1);
   }
 }

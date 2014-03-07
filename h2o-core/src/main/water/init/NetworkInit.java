@@ -170,8 +170,8 @@ public class NetworkInit {
         Log.warn("Failed to determine IP, falling back to localhost.");
         // set default ip address to be 127.0.0.1 /localhost
         local = InetAddress.getByName("127.0.0.1");
-      } catch( UnknownHostException e ) {
-        throw  Log.errRTExcept(e);
+      } catch( UnknownHostException e ) { 
+        Log.throwErr(e);
       }
     }
     return (H2O.SELF_ADDRESS = local);
@@ -317,14 +317,14 @@ public class NetworkInit {
   public static DatagramChannel _udpSocket;
   public static ServerSocket _apiSocket;
   // Default NIO Datagram channel
-  static DatagramChannel CLOUD_DGRAM;
+  public static DatagramChannel CLOUD_DGRAM;
 
   // Parse arguments and set cloud name in any case. Strip out "-name NAME"
   // and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
   // function of the name. Parse node ip addresses from the filename.
   public static void initializeNetworkSockets( ) {
     // Assign initial ports
-    H2O.API_PORT = H2O.ARGS.port;
+    H2O.API_PORT = H2O.ARGS.port == 0 ? 54321/*Default port*/ : H2O.ARGS.port;
 
     while (true) {
       H2O.H2O_PORT = H2O.API_PORT+1;
@@ -390,7 +390,7 @@ public class NetworkInit {
       ip[i] = (byte)(port>>>((3-i)<<3));
     try {
       H2O.CLOUD_MULTICAST_GROUP = InetAddress.getByAddress(ip);
-    } catch( UnknownHostException e ) { throw  Log.errRTExcept(e); }
+    } catch( UnknownHostException e ) { Log.throwErr(e); }
     H2O.CLOUD_MULTICAST_PORT = (port>>>16);
   }
 
