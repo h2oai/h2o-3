@@ -13,7 +13,7 @@
  '(jde-compile-option-classpath (quote ("./build/classes" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar")))
  '(jde-db-option-classpath (quote ("$DESK/Dropbox/Sris and Cliff/H2O/classes")))
  '(jde-run-option-enable-assertions "Everywhere")
- '(jde-compile-option-sourcepath (quote ("./src")))
+ '(jde-compile-option-sourcepath (quote ("./src/main")))
  '(jde-sourcepath (quote ("./src")))
  '(jde-run-option-hotspot-type (quote server))
  '(jde-compile-option-target (quote ("1.6")))

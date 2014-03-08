@@ -222,4 +222,11 @@ public class H2ONode extends Iced implements Comparable {
 
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
+
+
+
+  // This Node rebooted recently; we can quit tracking prior work history
+  void rebooted() {
+    //_work.clear();
+  }
 }

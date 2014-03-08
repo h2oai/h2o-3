@@ -390,7 +390,7 @@ public class NetworkInit {
   // Multicast send-and-close.  Very similar to udp_send, except to the
   // multicast port (or all the individuals we can find, if multicast is
   // disabled).
-  static void multicast( ByteBuffer bb ) {
+  public static void multicast( ByteBuffer bb ) {
     try { multicast2(bb); }
     catch (Exception _) {}
   }

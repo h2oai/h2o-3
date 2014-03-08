@@ -1,6 +1,7 @@
 package water;
 
 import java.io.IOException;
+import water.init.NetworkInit;
 import water.util.Log;
 
 /**
@@ -33,43 +34,43 @@ public class UDPRebooted extends UDP {
 //    suicide( T.values()[type], ab._h2o);
 //  }
 //
-//  public static void suicide( T cause, H2ONode killer ) {
-//    String m;
-//    switch( cause ) {
-//    case none:   return;
-//    case reboot: return;
-//    case shutdown:
-//      closeAll();
-//      Log.info("Orderly shutdown command from "+killer);
-//      H2O.exit(0);
-//      return;
-//    case oom:      m = "Out of Memory and no swap space left";                                                   break;
-//    case error:    m = "Error leading to a cloud kill";                                                          break;
-//    case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
-//    case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
-//    default:       m = "Received kill " + cause;                                                                 break;
-//    }
-//    closeAll();
-//    Log.err(m+" from "+killer);
-//    Log.err("Exiting.");
-//    H2O.exit(-1);
-//  }
-//
-//  AutoBuffer call(AutoBuffer ab) {
-//    if( ab._h2o != null ) ab._h2o.rebooted();
-//    return ab;
-//  }
-//
-//  // Try to gracefully close/shutdown all i/o channels.
-//  public static void closeAll() {
-//    try { H2O._udpSocket.close(); } catch( IOException e ) { }
-//    try { H2O._apiSocket.close(); } catch( IOException e ) { }
-//    try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
-//  }
-//
-//  // Pretty-print bytes 1-15; byte 0 is the udp_type enum
-//  public String print16( AutoBuffer ab ) {
-//    ab.getPort();
-//    return T.values()[ab.get1()].toString();
-//  }
+  public static void suicide( T cause, H2ONode killer ) {
+    String m;
+    switch( cause ) {
+    case none:   return;
+    case reboot: return;
+    case shutdown:
+      closeAll();
+      Log.info("Orderly shutdown command from "+killer);
+      H2O.exit(0);
+      return;
+    case oom:      m = "Out of Memory and no swap space left";                                                   break;
+    case error:    m = "Error leading to a cloud kill";                                                          break;
+    case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
+    case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
+    default:       m = "Received kill " + cause;                                                                 break;
+    }
+    closeAll();
+    Log.err(m+" from "+killer);
+    H2O.die("Exiting.");
+  }
+
+  @Override AutoBuffer call(AutoBuffer ab) {
+    if( ab._h2o != null ) ab._h2o.rebooted();
+    return ab;
+  }
+
+  // Try to gracefully close/shutdown all i/o channels.
+  public static void closeAll() {
+    try { NetworkInit._udpSocket.close(); } catch( IOException e ) { }
+    try { NetworkInit._apiSocket.close(); } catch( IOException e ) { }
+    H2O.fail();
+    //try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
+  }
+
+  // Pretty-print bytes 1-15; byte 0 is the udp_type enum
+  @Override public String print16( AutoBuffer ab ) {
+    ab.getPort();
+    return T.values()[ab.get1()].toString();
+  }
 }

@@ -2,10 +2,10 @@ package water;
 
 import java.lang.management.ManagementFactory;
 import java.net.*;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import water.init.*;
+import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 /**
@@ -76,14 +76,6 @@ public final class H2O {
   // Myself, as a Node in the Cloud
   public static H2ONode SELF = null;
   public static InetAddress SELF_ADDRESS;
-
-  // Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file"
-  public static class Schemes {
-    public static final String FILE = "file";
-    public static final String HDFS = "hdfs";
-    public static final String S3 = "s3";
-    public static final String NFS = "nfs";
-  }
 
   // Place to store temp/swap files
   public static URI ICE_ROOT;
@@ -277,9 +269,81 @@ public final class H2O {
   }
   public static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }
 
+
   // --------------------------------------------------------------------------
+  // The (local) set of Key/Value mappings.
+  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<Key, Value>();
+
+  // PutIfMatch
+  // - Atomically update the STORE, returning the old Value on success
+  // - Kick the persistence engine as needed
+  // - Return existing Value on fail, no change.
+  //
+  // Keys are interned here: I always keep the existing Key, if any. The
+  // existing Key is blind jammed into the Value prior to atomically inserting
+  // it into the STORE and interning.
+  //
+  // Because of the blind jam, there is a narrow unusual race where the Key
+  // might exist but be stale (deleted, mapped to a TOMBSTONE), a fresh put()
+  // can find it and jam it into the Value, then the Key can be deleted
+  // completely (e.g. via an invalidate), the table can resize flushing the
+  // stale Key, an unrelated weak-put can re-insert a matching Key (but as a
+  // new Java object), and delete it, and then the original thread can do a
+  // successful put_if_later over the missing Key and blow the invariant that a
+  // stored Value always points to the physically equal Key that maps to it
+  // from the STORE. If this happens, some of replication management bits in
+  // the Key will be set in the wrong Key copy... leading to extra rounds of
+  // replication.
+
+  //public static final Value putIfMatch( Key key, Value val, Value old ) {
+  //  if( old != null ) // Have an old value?
+  //    key = old._key; // Use prior key
+  //  if( val != null )
+  //    val._key = key;
+  //
+  //  // Insert into the K/V store
+  //  Value res = STORE.putIfMatchUnlocked(key,val,old);
+  //  if( res != old ) return res; // Return the failure cause
+  //  // Persistence-tickle.
+  //  // If the K/V mapping is going away, remove the old guy.
+  //  // If the K/V mapping is changing, let the store cleaner just overwrite.
+  //  // If the K/V mapping is new, let the store cleaner just create
+  //  if( old != null && val == null ) old.removeIce(); // Remove the old guy
+  //  if( val != null ) dirty_store(); // Start storing the new guy
+  //  return old; // Return success
+  //}
+  //
+  //// Raw put; no marking the memory as out-of-sync with disk. Used to import
+  //// initial keys from local storage, or to intern keys.
+  //public static final Value putIfAbsent_raw( Key key, Value val ) {
+  //  Value res = STORE.putIfMatchUnlocked(key,val,null);
+  //  assert res == null;
+  //  return res;
+  //}
+  //
+  //// Get the value from the store
+  //public static Value get( Key key ) {
+  //  Value v = STORE.get(key);
+  //  // Lazily manifest array chunks, if the backing file exists.
+  //  if( v == null ) {
+  //    v = Value.lazyArrayChunk(key);
+  //    if( v == null ) return null;
+  //    // Insert the manifested value, as-if it existed all along
+  //    Value res = putIfMatch(key,v,null);
+  //    if( res != null ) v = res; // This happens racily, so take any prior result
+  //  }
+  //  if( v != null ) v.touch();
+  //  return v;
+  //}
+
+  public static Value raw_get( Key key ) { return STORE.get(key); }
+  public static Key getk( Key key ) { return STORE.getk(key); }
+  public static Set<Key> localKeySet( ) { return STORE.keySet(); }
+  public static Collection<Value> values( ) { return STORE.values(); }
+  public static int store_size() { return STORE.size(); }
 
 
+  // --------------------------------------------------------------------------
   public static void main( String[] args ) {
     // Record system start-time.
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
