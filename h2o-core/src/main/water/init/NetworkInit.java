@@ -38,20 +38,13 @@ public class NetworkInit {
     _bits = bits;
   }
 
-  private boolean oValid(int o) {
-    if (o < 0) return false;
-    if (o > 255) return false;
-    return true;
-  }
-
+  private boolean oValid(int o) { return 0 <= o && o <= 255;  }
   private boolean valid() {
     if (! (oValid(_o1))) return false;
     if (! (oValid(_o2))) return false;
     if (! (oValid(_o3))) return false;
     if (! (oValid(_o4))) return false;
-    if (_bits < 0) return false;
-    if (_bits > 32) return false;
-    return true;
+    return 0 <= _bits && _bits <= 32;
   }
 
   /**

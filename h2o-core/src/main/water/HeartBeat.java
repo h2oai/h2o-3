@@ -1,6 +1,7 @@
 package water;
 
 import java.util.Arrays;
+import water.init.JarHash;
 
 /**
  * Struct holding H2ONode health info.
@@ -42,8 +43,7 @@ public class HeartBeat extends Iced {
   public long get_max_disk ()  { return  ((long)_max_disk)<<20 ; }
 
   public boolean check_jar_md5() {
-    return false;
-    //return Arrays.equals(Boot._init._jarHash, _jar_md5);
+    return Arrays.equals(JarHash.JARHASH, _jar_md5);
   }
 
   public char _rpcs;            // Outstanding DFutureTasks

@@ -222,7 +222,7 @@ public final class H2O {
 
 
     // Create the starter Cloud with 1 member
-    SELF._heartbeat._jar_md5 = null;//Boot._init._jarHash;
+    SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0;
   }
@@ -253,12 +253,30 @@ public final class H2O {
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
 
+  // One-shot atomic setting of the next Cloud, with an empty K/V store.
+  // Called single-threaded from Paxos. Constructs the new H2O Cloud from a
+  // member list.
+  void set_next_Cloud( H2ONode[] h2os, int hash ) {
+    synchronized(this) {
+      int idx = _idx+1; // Unique 1-byte Cloud index
+      if( idx == 256 ) idx=1; // wrap, avoiding zero
+      CLOUDS[idx] = CLOUD = new H2O(h2os,hash,idx);
+    }
+    SELF._heartbeat._cloud_size=(char)CLOUD.size();
+    //Paxos.print("Announcing new Cloud Membership: ",_memary);
+  }
+
+  public final int size() { return _memary.length; }
+  public final H2ONode leader() { return _memary[0]; }
+
   // Find the node index for this H2ONode, or a negative number on a miss
   public int nidx( H2ONode h2o ) { return Arrays.binarySearch(_memary,h2o); }
   public boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
   @Override public String toString() {
     return Arrays.toString(_memary);
   }
+  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }
+
   // --------------------------------------------------------------------------
 
 

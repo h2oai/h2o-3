@@ -43,7 +43,6 @@ public class Arguments {
 
   static public abstract class Arg {
     abstract public String usage();
-    abstract public boolean validate();
     @Override public String toString() {
       Field[] fields = getFields(this);
       String r="";
@@ -60,7 +59,6 @@ public class Arguments {
             else if( cl == Float.TYPE )  r+=" -"+name+"="+field.getFloat(this);
             else if( cl == Double.TYPE )  r+=" -"+name+"="+field.getDouble(this);
             else if( cl == Long.TYPE )  r+=" -"+name+"="+field.getLong(this);
-            else continue;
           } else if( cl == String.class )
             if (field.get(this)!=null) r+=" -"+name+"="+field.get(this);
         } catch( Exception e ) { Log.err("Argument failed with ",e); }
@@ -84,7 +82,6 @@ public class Arguments {
    */
   static public class Opt extends Arg {
     public String usage() {  return ""; }
-    public boolean validate() {  return true;  }
   }
 
   /**
@@ -96,7 +93,6 @@ public class Arguments {
    */
   static public class Req extends Arg {
     public String usage() { return ""; }
-    public boolean validate() { return true; }
   }
 
   /** Current argument list. The list may grow and shrink as arguments are processed.
@@ -108,10 +104,6 @@ public class Arguments {
    *          array of options and argument that will be parsed.
    */
   public Arguments(String[] args) { parse(args);  }
-
-
-  /** Create a new CommandLine object with no arguments.   */
-  public Arguments() { parse(new String[0]); }
 
   /**
    * Returns the number of remaining command line arguments.
@@ -276,10 +268,7 @@ public class Arguments {
       if( Modifier.isStatic(field.getModifiers()) ) continue;
       if( field.getType().isPrimitive() || field.getType() == String.class ) keep[num++] = field;
     }
-    Field[] res = new Field[num];
-    for( int i = 0; i < num; i++ )
-      res[i] = keep[i];
-    return res;
+    return Arrays.copyOf(keep,num);
   }
 
   /**
@@ -304,9 +293,9 @@ public class Arguments {
       name = _name;  val = _val;  flag = _flag;    position = _position;
     }
 
-    public int compareTo(Object o) { return position - ((Entry) o).position;  }
+    @Override public int compareTo(Object o) { return position - ((Entry) o).position;  }
 
-    public String toString() {
+    @Override public String toString() {
       String result = " ";
       if( !name.equals("") )   result += "-";
       result += name;
