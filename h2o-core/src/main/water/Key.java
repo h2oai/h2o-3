@@ -6,4 +6,5 @@ public class Key {
   public Key getVecKey() { return null; }
   public final boolean user_allowed() { return false; }
   public static Key make( byte[]kb ) { return null; }
+  final public boolean home() { return false; }
 }

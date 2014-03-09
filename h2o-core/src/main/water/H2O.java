@@ -62,6 +62,12 @@ public final class H2O {
     public boolean requests_log = true; // logging of Web requests
     public boolean check_rest_params = true; // enable checking unused/unknown REST params
 
+    // HDFS & AWS
+    public String hdfs; // HDFS backend
+    public String hdfs_version; // version of the filesystem
+    public String hdfs_config; // configuration file of the HDFS
+    public String hdfs_skip = null; // used by hadoop driver to not unpack and load any hdfs jar file at runtime.
+    public String aws_credentials; // properties file for aws credentials
   }
 
   public static int H2O_PORT; // Both TCP & UDP cluster ports
@@ -271,6 +277,17 @@ public final class H2O {
 
 
   // --------------------------------------------------------------------------
+  static void initializePersistence() {
+    // Need to figure out the multi-jar HDFS story here
+    //water.persist.HdfsLoader.loadJars();
+    if( ARGS.aws_credentials != null ) {
+      try { water.persist.PersistS3.getClient(); } 
+      catch( IllegalArgumentException e ) { Log.err(e); }
+    }
+    water.persist.Persist.initialize();
+  }
+
+  // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
   static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<Key, Value>();
 
@@ -376,6 +393,8 @@ public final class H2O {
     String logDir = Log.getLogDir();
     Log.info("Log dir: '"+(logDir==null ? "(unknown)" : Log.getLogDir())+"'");
 
+    // Load up from disk and initialize the persistence layer
+    initializePersistence();
     
 
   }

@@ -12,6 +12,7 @@ public class Value {
   public boolean isArray() { return false; }
   public boolean isLockable() { return false; }
   public void freeMem() { }
+  public byte[] memOrLoad() { return null; }
 
   public long _lastAccessedTime;
   

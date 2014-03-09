@@ -24,23 +24,17 @@ public abstract class Persist {
   public static void initialize() {}
 
   static {
-    //Persist ice = null;
-    //URI uri = H2O.ICE_ROOT;
-    //if( uri != null ) { // Otherwise class loaded for reflection
-    //  if( uri.getScheme() == null || Schemes.FILE.equals(uri.getScheme()) ) {
-    //    ice = new PersistFS(new File(uri.getPath()));
-    //  } else if( Schemes.HDFS.equals(uri.getScheme()) ) {
-    //    ice = new PersistHdfs(uri);
-    //  }
-    //  I[Value.ICE ] = ice;
-    //  I[Value.HDFS] = new PersistHdfs();
-    //  I[Value.S3  ] = new PersistS3();
-    //  I[Value.NFS ] = new PersistNFS();
-    //
-    //  // By popular demand, clear out ICE on startup instead of trying to preserve it
-    //  if( H2O.OPT_ARGS.keepice == null ) ice.clear();
-    //  else ice.loadExisting();
-    //}
+    URI uri = H2O.ICE_ROOT;
+    if( uri != null ) { // Otherwise class loaded for reflection
+      String sch = uri.getScheme();
+      Persist ice = (sch == null || Schemes.FILE.equals(sch)) 
+        ? new PersistFS(new File(uri.getPath()))
+        : (Schemes.HDFS.equals(sch) ? new PersistHdfs(uri) : null);
+      I[Value.ICE ] = ice;
+      I[Value.HDFS] = new PersistHdfs();
+      I[Value.S3  ] = new PersistS3();
+      I[Value.NFS ] = new PersistNFS();
+    }
   }
 
   public static Persist getIce() {
@@ -49,12 +43,8 @@ public abstract class Persist {
 
   public abstract String getPath();
 
+  // Clear any prior leftover ICE 
   public abstract void clear();
-
-  /**
-   * Load all Key/Value pairs that can be found on the backend.
-   */
-  public abstract void loadExisting();
 
   /**
    * Value should already be persisted to disk. A racing delete can trigger a failure where we get a
@@ -66,11 +56,6 @@ public abstract class Persist {
   public abstract void store(Value v);
 
   public abstract void delete(Value v);
-
-  /**
-   * Lazily manifest data chunks on demand.
-   */
-  public abstract Value lazyArrayChunk(Key key);
 
   public long getUsableSpace() {
     return UNKNOWN;

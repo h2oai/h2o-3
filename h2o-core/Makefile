@@ -29,7 +29,7 @@ endif
 default: build/h2o-core.jar
 
 check: build/h2o-core.jar
-	java -ea -cp "$(jars)" -jar build/h2o-core.jar
+	java -ea:water... -jar build/h2o-core.jar
 
 # Compile just the out-of-date files, then make a jar
 # All included jars are unpacked into a flat structure, then repacked into One Jar
