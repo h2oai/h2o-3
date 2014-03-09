@@ -225,6 +225,48 @@ public final class H2O {
     assert SELF._heartbeat._cloud_hash != 0;
   }
 
+  /** Starts the worker threads, receiver threads, heartbeats and all other
+   *  network related services.  */
+  private static void startNetworkServices() {
+    // We've rebooted the JVM recently. Tell other Nodes they can ignore task
+    // prior tasks by us. Do this before we receive any packets
+    UDPRebooted.T.reboot.broadcast();
+
+    throw H2O.unimpl();
+    // Start the UDPReceiverThread, to listen for requests from other Cloud
+    // Nodes. There should be only 1 of these, and it never shuts down.
+    // Started first, so we can start parsing UDP packets
+    //new UDPReceiverThread().start();
+
+    // Start the MultiReceiverThread, to listen for multi-cast requests from
+    // other Cloud Nodes. There should be only 1 of these, and it never shuts
+    // down. Started soon, so we can start parsing multicast UDP packets
+    //new MultiReceiverThread().start();
+
+    // Start the Persistent meta-data cleaner thread, which updates the K/V
+    // mappings periodically to disk. There should be only 1 of these, and it
+    // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
+    // an initial histogram state.
+    //new Cleaner().start();
+
+    // Start the heartbeat thread, to publish the Clouds' existence to other
+    // Clouds. This will typically trigger a round of Paxos voting so we can
+    // join an existing Cloud.
+    //new HeartBeatThread().start();
+
+    // Start a UDP timeout worker thread. This guy only handles requests for
+    // which we have not recieved a timely response and probably need to
+    // arrange for a re-send to cover a dropped UDP packet.
+    //new UDPTimeOutThread().start();
+    //new H2ONode.AckAckTimeOutThread().start();
+
+    // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
+    // Nodes. There should be only 1 of these, and it never shuts down.
+    //new TCPReceiverThread().start();
+    // Start the Nano HTTP server thread
+    //water.api.RequestServer.start();
+  }
+
   // --------------------------------------------------------------------------
   // The Current Cloud. A list of all the Nodes in the Cloud. Changes if we
   // decide to change Clouds via atomic Cloud update.
@@ -312,32 +354,32 @@ public final class H2O {
   // the Key will be set in the wrong Key copy... leading to extra rounds of
   // replication.
 
-  //public static final Value putIfMatch( Key key, Value val, Value old ) {
-  //  if( old != null ) // Have an old value?
-  //    key = old._key; // Use prior key
-  //  if( val != null )
-  //    val._key = key;
-  //
-  //  // Insert into the K/V store
-  //  Value res = STORE.putIfMatchUnlocked(key,val,old);
-  //  if( res != old ) return res; // Return the failure cause
-  //  // Persistence-tickle.
-  //  // If the K/V mapping is going away, remove the old guy.
-  //  // If the K/V mapping is changing, let the store cleaner just overwrite.
-  //  // If the K/V mapping is new, let the store cleaner just create
-  //  if( old != null && val == null ) old.removeIce(); // Remove the old guy
-  //  if( val != null ) dirty_store(); // Start storing the new guy
-  //  return old; // Return success
-  //}
-  //
-  //// Raw put; no marking the memory as out-of-sync with disk. Used to import
-  //// initial keys from local storage, or to intern keys.
-  //public static final Value putIfAbsent_raw( Key key, Value val ) {
-  //  Value res = STORE.putIfMatchUnlocked(key,val,null);
-  //  assert res == null;
-  //  return res;
-  //}
-  //
+  public static final Value putIfMatch( Key key, Value val, Value old ) {
+    if( old != null ) // Have an old value?
+      key = old._key; // Use prior key
+    if( val != null )
+      val._key = key;
+  
+    // Insert into the K/V store
+    Value res = STORE.putIfMatchUnlocked(key,val,old);
+    if( res != old ) return res; // Return the failure cause
+    // Persistence-tickle.
+    // If the K/V mapping is going away, remove the old guy.
+    // If the K/V mapping is changing, let the store cleaner just overwrite.
+    // If the K/V mapping is new, let the store cleaner just create
+    if( old != null && val == null ) old.removePersist(); // Remove the old guy
+    if( val != null ) Cleaner.dirty_store(); // Start storing the new guy
+    return old; // Return success
+  }
+  
+  // Raw put; no marking the memory as out-of-sync with disk. Used to import
+  // initial keys from local storage, or to intern keys.
+  public static final Value putIfAbsent_raw( Key key, Value val ) {
+    Value res = STORE.putIfMatchUnlocked(key,val,null);
+    assert res == null;
+    return res;
+  }
+  
   //// Get the value from the store
   //public static Value get( Key key ) {
   //  Value v = STORE.get(key);
@@ -396,6 +438,8 @@ public final class H2O {
     // Load up from disk and initialize the persistence layer
     initializePersistence();
     
+    // Start network services, including heartbeats & Paxos
+    startNetworkServices();   // start server services
 
   }
 

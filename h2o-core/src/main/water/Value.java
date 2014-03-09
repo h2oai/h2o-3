@@ -4,7 +4,7 @@ import java.io.IOException;
 import water.persist.Persist;
 
 public class Value {
-  public final Key _key=null;
+  public Key _key=null;
   public final int _max=0;
   public byte[] rawMem() { return null; }
   public byte[] rawPOJO() { return null; }
@@ -70,4 +70,12 @@ public class Value {
     Persist.I[backend()].store(this);
   }
 
+  /** Remove dead Values from disk */
+  void removePersist() {
+    // do not yank memory, as we could have a racing get hold on to this
+    //  free_mem();
+    if( !isPersisted() || !onICE() ) return; // Never hit disk?
+    clrdsk();  // Not persisted now
+    Persist.I[backend()].delete(this);
+  }
 }
