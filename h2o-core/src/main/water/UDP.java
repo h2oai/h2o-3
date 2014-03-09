@@ -15,23 +15,23 @@ public abstract class UDP {
   // Types of UDP packets I grok
   public static enum udp {
     bad(false,null), // Do not use the zero packet, too easy to make mistakes
-//      // Some health-related packet types.  These packets are all stateless, in
-//      // that we do not need to send any replies back.
-//      heartbeat     ( true, new UDPHeartbeat()),
+      // Some health-related packet types.  These packets are all stateless, in
+      // that we do not need to send any replies back.
+      heartbeat     ( true, new UDPHeartbeat()),
       rebooted      ( true, new UDPRebooted()),  // This node has rebooted recently
       timeline      (false, new TimeLine()),     // Get timeline dumps from across the Cloud
-//
-//      // All my *reliable* tasks (below), are sent to remote nodes who then ACK
-//      // back an answer.  To be reliable, I might send the TASK multiple times.
-//      // To get a reliable answer, the remote might send me multiple ACKs with
-//      // the same answer every time.  When does the remote know it can quit
-//      // tracking reply ACKs?  When it recieves an ACKACK.
-//      ackack(false,new UDPAckAck()),  // a generic ACKACK for a UDP async task
-//      ack   (false,new UDPAck   ()),  // a generic ACK    for a UDP async task
-//
-//      // These packets all imply some sort of request/response handshake.
-//      // We'll hang on to these packets; filter out dup sends and auto-reply
-//      // identical result ACK packets.
+
+      // All my *reliable* tasks (below), are sent to remote nodes who then ACK
+      // back an answer.  To be reliable, I might send the TASK multiple times.
+      // To get a reliable answer, the remote might send me multiple ACKs with
+      // the same answer every time.  When does the remote know it can quit
+      // tracking reply ACKs?  When it recieves an ACKACK.
+      ackack(false,new UDPAckAck()),  // a generic ACKACK for a UDP async task
+      ack   (false,new UDPAck   ()),  // a generic ACK    for a UDP async task
+
+      // These packets all imply some sort of request/response handshake.
+      // We'll hang on to these packets; filter out dup sends and auto-reply
+      // identical result ACK packets.
       exec(false,null/*new RPC.RemoteHandler()*/),   // Remote hi-q execution request
       i_o (false,new UDP.IO_record());       // Only used to profile I/O
 
@@ -40,7 +40,7 @@ public abstract class UDP {
     udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
     static public udp[] UDPS = values();
     // Default: most tasks go to the hi-priority queue
-//    //ForkJoinPool pool() { return this==execlo ? H2O.FJP_NORM : H2O.FJP_HI; }
+    //ForkJoinPool pool() { return this==execlo ? H2O.FJP_NORM : H2O.FJP_HI; }
   };
 
   // Handle an incoming I/O transaction, probably from a UDP packet.  The

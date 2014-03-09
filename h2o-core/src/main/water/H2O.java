@@ -4,6 +4,7 @@ import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import jsr166y.*;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
@@ -39,6 +40,171 @@ public final class H2O {
   public static final RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static final RuntimeException fail() { return new RuntimeException("do not call"); }
 
+  // --------------------------------------------------------------------------
+  // The worker pools - F/J pools with different priorities.
+
+  // These priorities are carefully ordered and asserted for... modify with
+  // care.  The real problem here is that we can get into cyclic deadlock
+  // unless we spawn a thread of priority "X+1" in order to allow progress
+  // on a queue which might be flooded with a large number of "<=X" tasks.
+  //
+  // Example of deadlock: suppose TaskPutKey and the Invalidate ran at the same
+  // priority on a 2-node cluster.  Both nodes flood their own queues with
+  // writes to unique keys, which require invalidates to run on the other node.
+  // Suppose the flooding depth exceeds the thread-limit (e.g. 99); then each
+  // node might have all 99 worker threads blocked in TaskPutKey, awaiting
+  // remote invalidates - but the other nodes' threads are also all blocked
+  // awaiting invalidates!
+  //
+  // We fix this by being willing to always spawn a thread working on jobs at
+  // priority X+1, and guaranteeing there are no jobs above MAX_PRIORITY -
+  // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
+  // done, the next lower level jobs get unblocked, etc.
+  public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
+  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
+  public static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
+  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
+  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
+  public static final byte    ARY_KEY_PRIORITY = MAX_PRIORITY-2;
+  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
+  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
+  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
+  public static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
+  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
+  public static final byte        MIN_PRIORITY = 0;
+
+  // F/J threads that remember the priority of the last task they started
+  // working on.
+  static class FJWThr extends ForkJoinWorkerThread {
+    public int _priority;
+    FJWThr(ForkJoinPool pool) {
+      super(pool);
+      setPriority( ((ForkJoinPool2)pool)._priority == Thread.MIN_PRIORITY
+                   ? Thread.NORM_PRIORITY-1
+                   : Thread. MAX_PRIORITY-1 );
+    }
+  }
+  // Factory for F/J threads, with cap's that vary with priority.
+  static class FJWThrFact implements ForkJoinPool.ForkJoinWorkerThreadFactory {
+    private final int _cap;
+    FJWThrFact( int cap ) { _cap = cap; }
+    @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+      int cap = _cap==-1 ? ARGS.nthreads : _cap;
+      return pool.getPoolSize() <= cap ? new FJWThr(pool) : null;
+    }
+  }
+
+  // A standard FJ Pool, with an expected priority level.
+  private static class ForkJoinPool2 extends ForkJoinPool {
+    public final int _priority;
+    ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p!=MIN_PRIORITY); _priority = p; }
+    public H2OCountedCompleter poll() { return (H2OCountedCompleter)pollSubmission(); }
+  }
+
+  // Normal-priority work is generally directly-requested user ops.
+  private static final ForkJoinPool2 FJP_NORM = new ForkJoinPool2(MIN_PRIORITY,-1);
+  // Hi-priority work, sorted into individual queues per-priority.
+  // Capped at a small number of threads per pool.
+  private static final ForkJoinPool2 FJPS[] = new ForkJoinPool2[MAX_PRIORITY+1];
+  static {
+    // Only need 1 thread for the AckAck work, as it cannot block
+    FJPS[ACK_ACK_PRIORITY] = new ForkJoinPool2(ACK_ACK_PRIORITY,1);
+    for( int i=MIN_HI_PRIORITY+1; i<MAX_PRIORITY; i++ )
+      FJPS[i] = new ForkJoinPool2(i,NUMCPUS); // All CPUs, but no more for blocking purposes
+    FJPS[GUI_PRIORITY] = new ForkJoinPool2(GUI_PRIORITY,2);
+    FJPS[0] = FJP_NORM;
+  }
+
+  // Easy peeks at the low FJ queue
+  public static int getLoQueue (     ) { return FJP_NORM.getQueuedSubmissionCount();}
+  public static int loQPoolSize(     ) { return FJP_NORM.getPoolSize();             }
+  public static int getHiQueue (int i) { return FJPS[i+MIN_HI_PRIORITY].getQueuedSubmissionCount();}
+  public static int hiQPoolSize(int i) { return FJPS[i+MIN_HI_PRIORITY].getPoolSize();             }
+
+  // Submit to the correct priority queue
+  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+    int priority = task.priority();
+    assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY;
+    FJPS[priority].submit(task);
+    return task;
+  }
+
+  // Simple wrapper over F/J CountedCompleter to support priority queues.  F/J
+  // queues are simple unordered (and extremely light weight) queues.  However,
+  // we frequently need priorities to avoid deadlock and to promote efficient
+  // throughput (e.g. failure to respond quickly to TaskGetKey can block an
+  // entire node for lack of some small piece of data).  So each attempt to do
+  // lower-priority F/J work starts with an attempt to work & drain the
+  // higher-priority queues.
+  public static abstract class H2OCountedCompleter extends CountedCompleter implements Cloneable {
+    public H2OCountedCompleter(){}
+    public H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+
+    // Once per F/J task, drain the high priority queue before doing any low
+    // priority work.
+    @Override public final void compute() {
+      FJWThr t = (FJWThr)Thread.currentThread();
+      int pp = ((ForkJoinPool2)t.getPool())._priority;
+      assert  priority() == pp; // Job went to the correct queue?
+      assert t._priority <= pp; // Thread attempting the job is only a low-priority?
+      // Drain the high priority queues before the normal F/J queue
+      try {
+        for( int p = MAX_PRIORITY; p > pp; p-- ) {
+          if( FJPS[p] == null ) break;
+          H2OCountedCompleter h2o = FJPS[p].poll();
+          if( h2o != null ) {     // Got a hi-priority job?
+            t._priority = p;      // Set & do it now!
+            Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
+            h2o.compute2();       // Do it ahead of normal F/J work
+            p++;                  // Check again the same queue
+          }
+        }
+      } finally {
+        t._priority = pp;
+        if( pp == MIN_PRIORITY ) Thread.currentThread().setPriority(Thread.NORM_PRIORITY-1);
+      }
+      // Now run the task as planned
+      compute2();
+    }
+    // Do the actually intended work
+    public abstract void compute2();
+    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
+      if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
+        ex.printStackTrace();
+      return true;
+    }
+    // In order to prevent deadlock, threads that block waiting for a reply
+    // from a remote node, need the remote task to run at a higher priority
+    // than themselves.  This field tracks the required priority.
+    public byte priority() { return MIN_PRIORITY; }
+    public H2OCountedCompleter clone(){
+      try { return (H2OCountedCompleter)super.clone(); }
+      catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
+    }
+  }
+
+
+  public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
+    public H2OCallback(){this(null);}
+    public H2OCallback(H2OCountedCompleter cc){super(cc);}
+    @Override public void compute2(){throw new UnsupportedOperationException();}
+    @Override public void onCompletion(CountedCompleter caller){
+      try {
+        callback((T)caller);
+      } catch(Throwable ex){
+        ex.printStackTrace();
+        completeExceptionally(ex);
+      }
+    }
+    public abstract void callback(T t);
+  }
+
+  public static class H2OEmptyCompleter extends H2OCountedCompleter{
+    @Override public void compute2(){throw new UnsupportedOperationException();}
+  }
+
+
+  // --------------------------------------------------------------------------
   // List of arguments.
   public static OptArgs ARGS = new OptArgs();
   public static class OptArgs extends Arguments.Opt {
@@ -232,37 +398,36 @@ public final class H2O {
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
 
-    throw H2O.unimpl();
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    //new UDPReceiverThread().start();
+    new UDPReceiverThread().start();
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
     // down. Started soon, so we can start parsing multicast UDP packets
-    //new MultiReceiverThread().start();
+    new MultiReceiverThread().start();
 
     // Start the Persistent meta-data cleaner thread, which updates the K/V
     // mappings periodically to disk. There should be only 1 of these, and it
     // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
     // an initial histogram state.
-    //new Cleaner().start();
+    new Cleaner().start();
 
     // Start the heartbeat thread, to publish the Clouds' existence to other
     // Clouds. This will typically trigger a round of Paxos voting so we can
     // join an existing Cloud.
-    //new HeartBeatThread().start();
+    new HeartBeatThread().start();
 
     // Start a UDP timeout worker thread. This guy only handles requests for
     // which we have not recieved a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
-    //new UDPTimeOutThread().start();
-    //new H2ONode.AckAckTimeOutThread().start();
+    new UDPTimeOutThread().start();
+    new H2ONode.AckAckTimeOutThread().start();
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    //new TCPReceiverThread().start();
+    new TCPReceiverThread().start();
     // Start the Nano HTTP server thread
     //water.api.RequestServer.start();
   }
@@ -303,7 +468,6 @@ public final class H2O {
       CLOUDS[idx] = CLOUD = new H2O(h2os,hash,idx);
     }
     SELF._heartbeat._cloud_size=(char)CLOUD.size();
-    //Paxos.print("Announcing new Cloud Membership: ",_memary);
   }
 
   public final int size() { return _memary.length; }
@@ -441,6 +605,10 @@ public final class H2O {
     // Start network services, including heartbeats & Paxos
     startNetworkServices();   // start server services
 
+    //System.out.println("Sleep 2 sec");
+    //try { Thread.sleep(2000); } catch( InterruptedException _ ) { }
+    //System.out.println("Slept, killing self");
+    //exit(0);
   }
 
   /** Notify embedding software instance H2O wants to exit.

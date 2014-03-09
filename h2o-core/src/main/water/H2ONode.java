@@ -1,13 +1,14 @@
 package water;
 
-import java.util.*;
-import java.net.*;
 import java.io.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.net.*;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
+import java.util.*;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import water.nbhm.*;
 import water.util.Log;
-import java.nio.channels.DatagramChannel;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -222,11 +223,139 @@ public class H2ONode extends Iced implements Comparable {
 
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
+  private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong();
+  public void taskPut(int tnum, RPC rpc ) { _tasks.put(tnum,rpc); }
+  public RPC taskGet(int tnum) { return _tasks.get(tnum); }
+  public void taskRemove(int tnum) { _tasks.remove(tnum); }
+  public Collection<RPC> tasks() { return _tasks.values(); }
+  public int taskSize() { return _tasks.size(); }
+
+  // The next unique task# sent *TO* the 'this' Node.
+  private final AtomicInteger _created_task_ids = new AtomicInteger(1);
+  public int nextTaskNum() { return _created_task_ids.getAndIncrement(); }
 
 
+  // ---------------
+  // The Work-In-Progress list.  Each item is a UDP packet's worth of work.
+  // When the RPCCall to _computed, then it's Completed work instead
+  // work-in-progress.  Completed work can be short-circuit replied-to by
+  // resending the RPC._dt back.  Work that we're sure the this Node has seen
+  // the reply to can be removed - but we must remember task-completion for all
+  // time (because UDP packets can be dup'd and arrive very very late and
+  // should not be confused with new work).
+  private final NonBlockingHashMapLong<RPC.RPCCall> _work = new NonBlockingHashMapLong();
+
+  // We must track even dead/completed tasks for All Time (lest a very very
+  // delayed UDP packet look like New Work).  The easy way to do this is leave
+  // all work packets/RPCs in the _work HashMap for All Time - but this amounts
+  // to a leak.  Instead we "roll up" the eldest completed work items, just
+  // remembering their completion status.  Task id's older (smaller) than the
+  // _removed_task_ids are both completed, and rolled-up to a single integer.
+  private final AtomicInteger _removed_task_ids = new AtomicInteger(0);
+  // A Golden Completed Task: it's a shared completed task used to represent
+  // all instances of tasks that have been completed and are no longer being
+  // tracked separately.
+  private final RPC.RPCCall _removed_task = new RPC.RPCCall(null,this,0);
+
+  RPC.RPCCall has_task( int tnum ) {
+    if( tnum <= _removed_task_ids.get() ) return _removed_task;
+    return _work.get(tnum);
+  }
+
+  // Record a task-in-progress, or return the prior RPC if one already exists.
+  // The RPC will flip to "_completed" once the work is done.  The RPC._dtask
+  // can be repeatedly ACKd back to the caller, and the _dtask is removed once
+  // an ACKACK appears - and the RPC itself is removed once all prior RPCs are
+  // also ACKACK'd.
+  RPC.RPCCall record_task( RPC.RPCCall rpc ) {
+    // Task removal (and roll-up) suffers from classic race-condition, which we
+    // fix by a classic Dekker's algo; a task# is always in either the _work
+    // HashMap, or rolled-up in the _removed_task_ids counter, or both (for
+    // short intervals during the handoff).  We can never has a cycle where
+    // it's in neither or else a late UDP may attempt to "resurrect" the
+    // already completed task.  Hence we must always check the "removed ids"
+    // AFTER we insert in the HashMap (we can check before also, but that's a
+    // simple optimization and not sufficient for correctness).
+    final RPC.RPCCall x = _work.putIfAbsent(rpc._tsknum,rpc);
+    if( x != null ) return x;   // Return pre-existing work
+    // If this RPC task# is very old, we just return a Golden Completed task.
+    // The task is not just completed, but also we have already received
+    // verification that the client got the answer.  So this is just a really
+    // old attempt to restart a long-completed task.
+    if( rpc._tsknum > _removed_task_ids.get() ) return null; // Task is new
+    _work.remove(rpc._tsknum); // Bogus insert, need to remove it
+    return _removed_task;      // And return a generic Golden Completed object
+  }
+  // Record the final return value for a DTask.  Should happen only once.
+  // Recorded here, so if the client misses our ACK response we can resend the
+  // same answer back.
+  void record_task_answer( RPC.RPCCall rpcall ) {
+    assert rpcall._started == 0;
+    rpcall._started = System.currentTimeMillis();
+    rpcall._retry = RPC.RETRY_MS; // Start the timer on when to resend
+    AckAckTimeOutThread.PENDING.add(rpcall);
+  }
+  // Stop tracking a remote task, because we got an ACKACK.
+  void remove_task_tracking( int task ) {
+    RPC.RPCCall rpc = _work.get(task);
+    if( rpc == null ) return;   // Already stopped tracking
+
+    // Atomically attempt to remove the 'dt'.  If we win, we are the sole
+    // thread running the dt.onAckAck.  Also helps GC: the 'dt' is done (sent
+    // to client and we received the ACKACK), but the rpc might need to stick
+    // around a long time - and the dt might be big.
+    DTask dt = rpc._dt;         // The existing DTask, if any
+    if( dt != null && RPC.RPCCall.CAS_DT.compareAndSet(rpc,dt,null) ) {
+      assert rpc._computed : "Still not done #"+task+" "+dt.getClass()+" from "+rpc._client;
+      AckAckTimeOutThread.PENDING.remove(rpc);
+      dt.onAckAck();            // One-time call on stop-tracking
+    }
+
+    // Roll-up as many done RPCs as we can, into the _removed_task_ids list
+    while( true ) {
+      int t = _removed_task_ids.get();   // Last already-removed ID
+      RPC.RPCCall rpc2 = _work.get(t+1); // RPC of 1st not-removed ID
+      if( rpc2 == null || rpc2._dt != null || !_removed_task_ids.compareAndSet(t,t+1) )
+        break;                  // Stop when we hit in-progress tasks
+      _work.remove(t+1);        // Else we can remove the tracking now
+    }
+  }
+
+  // Resend ACK's, in case the UDP ACKACK got dropped.  Note that even if the
+  // ACK was sent via TCP, the ACKACK might be dropped.  Further: even if we
+  // *know* the client got our TCP response, we do not know *when* he'll
+  // process it... so we cannot e.g. eagerly do an ACKACK on this side.  We
+  // must wait for the real ACKACK - which can drop.  So we *must* resend ACK's
+  // occasionally to force a resend of ACKACKs.
+
+  static public class AckAckTimeOutThread extends Thread {
+    public AckAckTimeOutThread() { super("ACKTimeout"); }
+    // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
+    static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<RPC.RPCCall>();
+    // Started by main() on a single thread, handle timing-out UDP packets
+    public void run() {
+      Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
+      while( true ) {
+        RPC.RPCCall r;
+        try { r = PENDING.take(); }
+        // Interrupted while waiting for a packet?
+        // Blow it off and go wait again...
+        catch( InterruptedException e ) { continue; }
+        assert r._computed : "Found RPCCall not computed "+r._tsknum;
+        if( !H2O.CLOUD.contains(r._client) ) { // RPC from somebody who dropped out of cloud?
+          r._client.remove_task_tracking(r._tsknum);
+          continue;
+        }
+        if( r._dt != null ) {   // Not yet run the ACKACK?
+          r.resend_ack();       // Resend ACK, hoping for ACKACK
+          PENDING.add(r);       // And queue up to send again
+        }
+      }
+    }
+  }
 
   // This Node rebooted recently; we can quit tracking prior work history
   void rebooted() {
-    //_work.clear();
+    _work.clear();
   }
 }

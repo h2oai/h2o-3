@@ -28,12 +28,12 @@ public class UDPRebooted extends UDP {
     public void broadcast() { send(H2O.SELF); }
   }
 
-//  public static void checkForSuicide(int first_byte, AutoBuffer ab) {
-//    if( first_byte != UDP.udp.rebooted.ordinal() ) return;
-//    int type = ab.get1();
-//    suicide( T.values()[type], ab._h2o);
-//  }
-//
+  public static void checkForSuicide(int first_byte, AutoBuffer ab) {
+    if( first_byte != UDP.udp.rebooted.ordinal() ) return;
+    int type = ab.get1();
+    suicide( T.values()[type], ab._h2o);
+  }
+
   public static void suicide( T cause, H2ONode killer ) {
     String m;
     switch( cause ) {
@@ -64,7 +64,7 @@ public class UDPRebooted extends UDP {
   public static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException e ) { }
     try { NetworkInit._apiSocket.close(); } catch( IOException e ) { }
-    H2O.fail();
+    throw H2O.unimpl();
     //try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
   }
 

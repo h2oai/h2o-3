@@ -2,10 +2,6 @@ package water;
 
 /** Auto-serializer base-class */
 public abstract class Iced implements Cloneable {
-  // The abstract methods to be filled in by subclasses.  These are automatically
-  // filled in by any subclass of Iced during class-load-time, unless one
-  // is already defined.  These methods are NOT DECLARED ABSTRACT, because javac
-  // thinks they will be called by subclasses relying on the auto-gen.
   private RuntimeException barf() {
     return new RuntimeException(getClass().toString()+" should be automatically overridden in the subclass by the auto-serialization code");
   }
