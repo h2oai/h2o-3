@@ -13,6 +13,7 @@ public class TypeMap {
   static final public String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",
+    "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
     "water.fvec.C1NChunk",// used as constant in parser
