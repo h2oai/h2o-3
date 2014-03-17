@@ -3,7 +3,10 @@ package water;
 /** Auto-serializer base-class */
 public abstract class Iced implements Cloneable {
  
-  // Coding style for new classes: class needs "private static int FROZEN_TYPE;"
+  // The serialization flavor.  0 means "not set".  Lazily set on first write.
+  private short _frozen_type;
+
+  private static IcedImpl SERIAL[] = new IcedImpl[] { new IcedImplUnset() };
 
   // Delegator pattern: 
   //  - FROZEN_TYPE is set to zero for new classes
@@ -19,9 +22,7 @@ public abstract class Iced implements Cloneable {
   //  - write subtype.fields to AutoBuffer
 
 
-  public AutoBuffer write(AutoBuffer bb) { 
-    return bb; 
-  }
+  public final AutoBuffer write(AutoBuffer bb) { return SERIAL[_frozen_type].write(bb,this); }
 
   public <T extends Iced> T read(AutoBuffer bb) { return (T)this; }
   public <T extends Iced> T newInstance() { throw barf(); }
@@ -38,5 +39,14 @@ public abstract class Iced implements Cloneable {
 
   private RuntimeException barf() {
     return new RuntimeException(getClass().toString()+" should be automatically overridden in the subclass by the auto-serialization code");
+  }
+}
+
+abstract class IcedImpl { public abstract AutoBuffer write(AutoBuffer bb, Iced ice); }
+
+// Class for first-time writers.
+class IcedImplUnset extends IcedImpl { 
+  public AutoBuffer write(AutoBuffer bb, Iced ice) {
+    throw H2O.unimpl();
   }
 }
