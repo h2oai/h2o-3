@@ -36,7 +36,7 @@ check: $(classes)
 	@java -ea -cp "build/classes;$(jars)" water.H2O
 
 # Compile just the out-of-date files
-$(classes): $(javacs)
+$(classes): build/classes/%class: src/main/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?
