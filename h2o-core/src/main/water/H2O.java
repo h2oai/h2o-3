@@ -518,7 +518,7 @@ public final class H2O {
   // the Key will be set in the wrong Key copy... leading to extra rounds of
   // replication.
 
-  public static final Value putIfMatch( Key key, Value val, Value old ) {
+  public static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
     if( val != null )
@@ -538,7 +538,7 @@ public final class H2O {
   
   // Raw put; no marking the memory as out-of-sync with disk. Used to import
   // initial keys from local storage, or to intern keys.
-  public static final Value putIfAbsent_raw( Key key, Value val ) {
+  public static Value putIfAbsent_raw( Key key, Value val ) {
     Value res = STORE.putIfMatchUnlocked(key,val,null);
     assert res == null;
     return res;

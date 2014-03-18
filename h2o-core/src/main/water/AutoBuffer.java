@@ -23,7 +23,6 @@ import water.init.NetworkInit;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  */
 public final class AutoBuffer {
-  public static final int TCP_WRITE_ATTEMPTS = 2;
   // The direct ByteBuffer for schlorping data about
   public ByteBuffer _bb;
 
@@ -216,11 +215,11 @@ public final class AutoBuffer {
     }
   }
 
-  private static final ByteBuffer bbMake() {
+  private static ByteBuffer bbMake() {
     while( true ) {             // Repeat loop for DBB OutOfMemory errors
-      ByteBuffer bb = null;
+      ByteBuffer bb;
       try { bb = BBS.pollFirst(0,TimeUnit.SECONDS); }
-      catch( InterruptedException e ) { Log.throwErr(e); }
+      catch( InterruptedException e ) { throw Log.throwErr(e); }
       if( bb != null ) {
         bbstats(BBCACHE);
         return bb;
@@ -233,17 +232,17 @@ public final class AutoBuffer {
         // java.lang.OutOfMemoryError: Direct buffer memory
         if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
         System.out.println("Sleeping & retrying");
-        try { Thread.sleep(100); } catch( InterruptedException ie ) { }
+        try { Thread.sleep(100); } catch( InterruptedException _ ) { }
       }
     }
   }
-  private static final void bbFree(ByteBuffer bb) {
+  private static void bbFree(ByteBuffer bb) {
     bbstats(BBFREE);
     bb.clear();
     BBS.offerFirst(bb);
   }
 
-  private final int bbFree() {
+  private int bbFree() {
     if( _bb.isDirect() ) bbFree(_bb);
     _bb = null;
     return 0;                   // Flow-coding
@@ -344,7 +343,7 @@ public final class AutoBuffer {
       restorePriority();        // And if we raised priority, lower it back
       bbFree();
     } catch( IOException e ) {  // Dunno how to handle so crash-n-burn
-      Log.throwErr(e);
+      throw Log.throwErr(e);
     }
   }
 
@@ -363,14 +362,9 @@ public final class AutoBuffer {
   public void position(int pos) { _bb.position(pos); }
   public int limit() { return _bb.limit(); }
 
-  public void positionWithResize(int value) {
-    putSp(value - position());
-    position(value);
-  }
-
   // Return byte[] from a writable AutoBuffer
   public final byte[] buf() {
-    assert _h2o==null && _chan==null && _read==false && !_bb.isDirect();
+    assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
   public final byte[] bufClose() {
@@ -418,7 +412,7 @@ public final class AutoBuffer {
 
   // Flip to write-mode
   public AutoBuffer clearForWriting() {
-    assert _read == true;
+    assert _read;
     _read = false;
     _bb.clear();
     _firstPage = true;
@@ -426,7 +420,7 @@ public final class AutoBuffer {
   }
   // Flip to read-mode
   public AutoBuffer flipForReading() {
-    assert _read == false;
+    assert !_read;
     _read = true;
     _bb.flip();
     _firstPage = true;

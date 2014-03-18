@@ -85,7 +85,7 @@ public abstract class Log {
   }
 
   private static void write0( StringBuilder sb, String hdr, String s ) {
-    if( s.indexOf("\n") != -1 ) {
+    if( s.contains("\n") ) {
       for( String s2 : s.split("\n") ) { write0(sb,hdr,s2); sb.append("\n"); }
       sb.setLength(sb.length()-1);
     } else {
@@ -97,11 +97,11 @@ public abstract class Log {
   private static String header( int lvl ) {
     return Timer.nowAsString()+" "+_preHeader+" "+
       fixedLength(Thread.currentThread().getName() + " ", 10)+
-      LVLS[lvl].toString()+": ";
+      LVLS[lvl]+": ";
   }
 
   // A little bit of startup buffering
-  private static ArrayList<String> INIT_MSGS = new ArrayList();
+  private static ArrayList<String> INIT_MSGS = new ArrayList<String>();
 
 
   private static synchronized org.apache.log4j.Logger createLog4j() {

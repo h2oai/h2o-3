@@ -1,14 +1,16 @@
 package water;
 
 import java.util.Arrays;
-import water.nbhm.NonBlockingHashMap;
 import water.H2O;
+import water.init.Weaver;
+import water.nbhm.NonBlockingHashMap;
 
 public class TypeMap {
-  static public final short NULL, PRIM_B, C1NCHUNK, FRAME;
+  static public final short NULL, PRIM_B, ICED, C1NCHUNK, FRAME;
   static final public String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",
+    "water.Iced",         // Based serialization class
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
@@ -25,31 +27,49 @@ public class TypeMap {
   // ID -> Class name mapping
   static private String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of IcedImpl
-  static private IcedImpl[] GOLD;
+  static private Iced.Icer[] GOLD;
   // Unique ides
   static private int IDS;
   static {
     CLAZZES = BOOTSTRAP_CLASSES;
-    GOLD = new IcedImpl[BOOTSTRAP_CLASSES.length];
+    GOLD = new Iced.Icer[BOOTSTRAP_CLASSES.length];
     int id=0;                   // The initial set of Type IDs to boot with
     for( String s : CLAZZES ) MAP.put(s,id++);
     IDS = id;
     // Some statically known names, to make life easier during e.g. parse
     NULL        = (short) -1;
     PRIM_B      = (short)onIce("[B");
+    ICED        = (short)onIce("water.Iced");
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
     FRAME       = (short)onIce("water.fvec.Frame");
+
+    // Fill in some pre-cooked delegates so seralization has a base-case
+    GOLD[ICED] = Iced.ICER;
   }
 
-  // PATHS
-  // (1) <clinit>; no remote, just map(clazz->id) & set static globals
-  // (2) new code; fetch remote clazz->id; set CLAZZES & GOLD; no IcedImpl gen
-  // (3) new code; leader sets  clazz->id; set CLAZZES & GOLD; no IcedImpl gen
-  // (4) print; map id->clazz; fetch remote id->clazz
-  // (5) many; leader returns known id->clazz 
+  // The major complexity of this code is that the are FOUR major data forms
+  // which get converted to one another.  At various times the code is
+  // presented with one of the forms, and asked for another form, sometimes
+  // forcing first to the other form.
+  //
+  // (1) Type ID - 2 byte shortcut for an Iced type
+  // (2) String clazz name - the class name for an Iced type
+  // (3) Iced POJO - an instance of Iced, the distributable workhorse object
+  // (4) IcedImpl POJO - an instance of IcedImpl, the serializing delegate for Iced
+  //
+  // Some sample code paths:
+  // <clinit>: convert string -> ID (then set static globals)
+  // new code: fetch remote string->ID mapping
+  // new code: leader sets  string->ID mapping
+  // printing: id -> string
+  // deserial: id -> string -> IcedImpl -> Iced (slow path)
+  // deserial: id           -> IcedImpl -> Iced (fath path)
+  // lookup  : id -> string (on leader)
+  //
 
 
   // During first Icing, get a globally unique class ID for a className
+  static public int onIce(Iced ice) { return onIce(ice.getClass().toString()); }
   static public int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
@@ -77,24 +97,29 @@ public class TypeMap {
     return id;
   }
 
-  // Get Icer from a Ice class name.  Used during 1st-time serialization
-  static IcedImpl getIcer( String clazz ) { return getIcer(onIce(clazz),clazz); }
-
   // Figure out the mapping from a type ID to a Class.  Happens many places,
   // including during deserialization when a Node will be presented with a
   // fresh new ID with no idea what it stands for.
-  static IcedImpl getIcer( int id ) {
-    IcedImpl f = id < GOLD.length ? GOLD[id] : null;
+  static Iced.Icer getIcer( int id, Iced ice ) {
+    Iced.Icer gold[] = GOLD;     // Read once, in case resizing
+    // Racily read the GOLD array
+    Iced.Icer f = id < gold.length ? gold[id] : null;
     if( f != null ) return f;
 
-    String clazz = className(id);
-
-    // lock on Iced class during auto-gen
-    sync( Iced something ) {
-    return GOLD[id]=autogen(clazz,id);
+    // Lock on the Iced class during auto-gen - so we only gen the IcedImpl for
+    // a particular Iced class once.
+    synchronized( ice.getClass() ) {
+      gold = GOLD;              // Read again, in case resizing
+      f = id < gold.length ? gold[id] : null;
+      if( f != null ) return f; // Recheck under lock
+      // Hard work: make a new delegate class
+      f = Weaver.genDelegate(id,ice.getClass());
+      // Now install until the TypeMap class lock, so the GOLD array is not
+      // resized out from under the installation.
+      synchronized( TypeMap.class ) {
+        return GOLD[id]=f;
+      }
     }
-
-    throw H2O.unimpl();
   }
 
   static public String className(int id) {
@@ -106,7 +131,8 @@ public class TypeMap {
     //install( FetchClazz.fetchClazz(id), id );
   }
 
-  //static public Iced newInstance(int id) {
+  static public Iced newInstance(int id) {
+    throw H2O.unimpl();
   //  if( id >= CLAZZES.length || CLAZZES[id] == null ) loadId(id);
   //  IcedImpl f = GOLD[id];
   //  if( f == null ) {
@@ -114,6 +140,5 @@ public class TypeMap {
   //    catch( Exception e ) { System.err.println(e); throw new RuntimeException(e); }
   //  }
   //  return f.newInstance();
-  //}
-
+  }
 }

@@ -7,7 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="h2o-core" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
   </component>
 </module>
 

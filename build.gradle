@@ -20,17 +20,18 @@ dependencies {
     exclude module: "jmxtools" 
     exclude module: "mail" 
   }
-  // 'org.apache.hadoop:hadoop-hdfs:2.0.0-alpha' 
-  //jets3t: net.java.dev.jets3t, jets3t, 0.6.1
-  // "org.apache.hadoop:hadoop-client:2.0.0-mr1-cdh4.0.1"
   // WARNING: turning back on transitive dependencies brings in 19M in 37 jars... 
+  // All unneeded to read from HDFS.
   compile("org.apache.hadoop:hadoop-common:2.3.0") { transitive = false }
   compile "commons-logging:commons-logging:1.1.1"
   compile("com.google.guava:guava:16.0.1") { }
   compile "commons-collections:commons-collections:3.0"
+  compile "org.javassist:javassist:3.15.0-GA"
+
   testCompile "junit:junit:4.+"
 }
 
+// Copy the libs local, so "make" can find them.
 task cpLibs(type: Copy) {
   println "=== COPY LIBS LOCAL === "
   configurations.compile.each { println it } 
