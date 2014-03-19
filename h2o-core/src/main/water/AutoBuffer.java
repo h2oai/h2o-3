@@ -669,7 +669,7 @@ public final class AutoBuffer {
     short id = (short)get2();
     if( id == TypeMap.NULL ) return null;
     assert id > 0 : "Bad type id "+id;
-    return TypeMap.newInstance(id).read(this);
+    return (T)TypeMap.newInstance(id).read(this);
   }
   public <T extends Iced> T[] getA(Class<T> tc) {
     _arys++;

@@ -19,7 +19,7 @@ import water.util.Log;
  * @version 1.0
  */
 
-public class H2ONode extends Iced implements Comparable {
+public class H2ONode extends Iced<H2ONode> implements Comparable {
   public int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   public long _last_heard_from; // Time in msec since we last heard from this Node
   public boolean _announcedLostContact;  // True if heartbeat published a no-contact msg

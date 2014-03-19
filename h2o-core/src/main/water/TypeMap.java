@@ -69,7 +69,7 @@ public class TypeMap {
 
 
   // During first Icing, get a globally unique class ID for a className
-  static public int onIce(Iced ice) { return onIce(ice.getClass().toString()); }
+  static public int onIce(Iced ice) { return onIce(ice.getClass().getName()); }
   static public int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;

@@ -107,13 +107,13 @@ public class HeartBeatThread extends Thread {
         hb._system_idle_ticks = lpfr.getSystemIdleTicks();
         hb._system_total_ticks = lpfr.getSystemTotalTicks();
         hb._process_total_ticks = lpfr.getProcessTotalTicks();
-	hb._process_num_open_fds = lpfr.getProcessNumOpenFds();
+        hb._process_num_open_fds = lpfr.getProcessNumOpenFds();
       }
       else {
         hb._system_idle_ticks = -1;
         hb._system_total_ticks = -1;
         hb._process_total_ticks = -1;
-	hb._process_num_open_fds = -1;
+        hb._process_num_open_fds = -1;
       }
 
       // Announce what Cloud we think we are in.

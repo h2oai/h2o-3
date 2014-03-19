@@ -4,7 +4,7 @@ package water;
  *  (the faster option is to byte-code gen directly in all Iced classes, but
  *  this requires all Iced classes go through a ClassLoader).
  */
-public abstract class Iced implements Cloneable {
+public abstract class Iced<D extends Iced> implements Cloneable {
 
   public static final Icer<Iced> ICER = new Icer<Iced>();
 
@@ -12,19 +12,19 @@ public abstract class Iced implements Cloneable {
   private short _ice_id;
 
   // Return the icer for this instance+class.  Will set on 1st use.
-  private final Icer icer() { 
+  private final Icer<D> icer() { 
     int id = _ice_id;
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
   // Standard public "write thyself into the AutoBuffer" call.
-  public final AutoBuffer write(AutoBuffer ab) { return icer().write(ab,this); }
-  public final Iced read(AutoBuffer ab) { return icer().read(ab,this); }
+  public final AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
+  public final D read(AutoBuffer ab) { return icer().read(ab,(D)this); }
   public int frozenType() { return icer().frozenType(); }
-  public AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,this); }
+  public AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
   public AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
   //@Override public water.api.DocGen.FieldDoc[] toDocField() { return null; }
-  @Override public Iced clone() {
-    try { return (Iced)super.clone(); }
+  @Override public D clone() {
+    try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
 
@@ -39,5 +39,8 @@ public abstract class Iced implements Cloneable {
     private RuntimeException fail() {
       return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");
     }
+    // The generated delegate call-chain will bottom out with methods
+    // that end in the TypeMap ID for "Iced" class - which is "2".
+    protected AutoBuffer write2(AutoBuffer ab, Iced ice) { return ab; } 
   }
 }

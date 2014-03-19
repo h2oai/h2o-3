@@ -7,7 +7,7 @@ import water.init.JarHash;
  * Struct holding H2ONode health info.
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  */
-public class HeartBeat extends Iced {
+public class HeartBeat extends Iced<HeartBeat> {
   public int _hb_version;
   public int _cloud_hash;       // Cloud-membership hash?
   public boolean _common_knowledge; // Cloud shares common knowledge
