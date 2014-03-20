@@ -2,8 +2,11 @@
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
-javas = $(wildcard src/main/water/*java src/main/water/*/*java src/test/water/*java)
-classes = $(patsubst src/main/%java,build/classes/%class,$(javas))
+main_javas = $(wildcard src/main/water/*java src/main/water/*/*java)
+test_javas = $(wildcard src/test/water/*java)
+main_classes = $(patsubst src/main/%java,build/classes/%class,$(main_javas))
+test_classes = $(patsubst src/test/%java,build/classes/%class,$(test_javas))
+classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
 libs = $(wildcard ../lib/*jar)
@@ -36,7 +39,12 @@ check: $(classes)
 	@java -ea -cp "build/classes;$(jars)" water.H2O
 
 # Compile just the out-of-date files
-$(classes): build/classes/%class: src/main/%java
+$(main_classes): build/classes/%class: src/main/%java
+	@echo "compiling " $?
+	@[ -d build/classes ] || mkdir -p build/classes
+	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?
+
+$(test_classes): build/classes/%class: src/test/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?

@@ -2,7 +2,7 @@
 (jde-set-variables
  '(jde-javadoc-gen-destination-directory "./doc")
  '(jde-run-working-directory "$DESK/h2o2/h2o-core")
- '(jde-run-option-classpath (quote ("./build/classes" "../lib/javassist-3.15.0-GA.jar" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar" "../lib/hadoop-common-2.3.0.jar" "../lib/guava-16.0.1.jar" "../lib/commons-logging-1.1.1.jar" "../lib/commons-collections-3.0.jar")))
+ '(jde-run-option-classpath (quote ("./build/classes" "../lib/javassist-3.15.0-GA.jar" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar" "../lib/hadoop-common-2.3.0.jar" "../lib/guava-16.0.1.jar" "../lib/commons-logging-1.1.1.jar" "../lib/commons-collections-3.0.jar" "../lib/junit-4.11.jar" "../lib/hamcrest-core-1.3.jar")))
  '(jde-run-executable-args nil)
  '(jde-run-option-debug nil)
  '(jde-run-option-vm-args (quote ("-XX:+PrintGC")))
@@ -10,7 +10,7 @@
  '(jde-run-option-application-args nil)
  '(jde-debugger (quote ("JDEbug")))
  '(jde-compile-option-source (quote ("1.6")))
- '(jde-compile-option-classpath (quote ("./build/classes" "../lib/javassist-3.15.0-GA.jar" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar" "../lib/hadoop-common-2.3.0.jar" "../lib/guava-16.0.1.jar" "../lib/commons-logging-1.1.1.jar" "../lib/commons-collections-3.0.jar")))
+ '(jde-compile-option-classpath (quote ("./build/classes" "../lib/javassist-3.15.0-GA.jar" "../lib/log4j-1.2.15.jar" "../lib/joda-time-2.3.jar" "../lib/hadoop-common-2.3.0.jar" "../lib/guava-16.0.1.jar" "../lib/commons-logging-1.1.1.jar" "../lib/commons-collections-3.0.jar" "../lib/junit-4.11.jar" "../lib/hamcrest-core-1.3.jar")))
  '(jde-db-option-classpath (quote ("$DESK/Dropbox/Sris and Cliff/H2O/classes")))
  '(jde-run-option-enable-assertions "Everywhere")
  '(jde-compile-option-sourcepath (quote ("./src/main")))

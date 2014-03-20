@@ -1,7 +1,6 @@
 package water;
 
 import java.util.Arrays;
-import water.H2O;
 import water.init.Weaver;
 import water.nbhm.NonBlockingHashMap;
 
@@ -23,7 +22,7 @@ public class TypeMap {
     "water.Job$List",     // First Key which locks the cloud for all JUnit tests
   };
   // Class name -> ID mapping
-  static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap();
+  static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<String,Integer>();
   // ID -> Class name mapping
   static private String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of IcedImpl

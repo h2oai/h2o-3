@@ -15,7 +15,7 @@ public abstract class Iced<D extends Iced> implements Cloneable {
   private short _ice_id;
 
   // Return the icer for this instance+class.  Will set on 1st use.
-  private final Icer<D> icer() { 
+  private Icer<D> icer() {
     int id = _ice_id;
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
@@ -39,11 +39,11 @@ public abstract class Iced<D extends Iced> implements Cloneable {
     public AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
     public Iced read(AutoBuffer ab, Iced ice) { return read2(ab,ice); }
     public T newInstance() { throw fail(); }
-    public int frozenType() { throw fail(); }
+    public int frozenType() { throw fail(); } // TypeMap.ICED.... but always overridden, since no one makes a bare Iced object
     private RuntimeException fail() {
       return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");
     }
-    // The generated delegate call-chain will bottom out with methods
+    // The generated delegate call-chain will bottom out with final methods
     // that end in the TypeMap ID for "Iced" class - which is "2".
     protected final AutoBuffer write2(AutoBuffer ab, Iced ice) { return ab; } 
     protected final Iced read2(AutoBuffer ab, Iced ice) { return ice; }
