@@ -5,19 +5,19 @@ import water.init.Weaver;
 import water.nbhm.NonBlockingHashMap;
 
 public class TypeMap {
-  static final short NULL, PRIM_B, ICED, C1NCHUNK, FRAME;
+  static final short NULL, PRIM_B, ICED, KEY, C1NCHUNK, FRAME;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
-    "[B",
-    "water.Iced",         // Based serialization class
+    "[B",                 // 1 - 
+    "water.Iced",         // 2 - Based serialization class
+    "water.Key",          // 3 - Needed to write that first Key
+    "water.Value",        // Needed to write that first Key
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
     "water.fvec.C1NChunk",// used as constant in parser
     "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
     "water.TaskPutKey",   // Needed to write that first Key
-    "water.Key",          // Needed to write that first Key
-    "water.Value",        // Needed to write that first Key
     "water.TaskGetKey",   // Read that first Key
     "water.Job$List",     // First Key which locks the cloud for all JUnit tests
   };
@@ -38,7 +38,8 @@ public class TypeMap {
     // Some statically known names, to make life easier during e.g. parse
     NULL        = (short) -1;
     PRIM_B      = (short)onIce("[B");
-    ICED        = (short)onIce("water.Iced");
+    ICED        = (short)onIce("water.Iced");  assert ICED==2; // Matches Iced customer serializer
+    KEY         = (short)onIce("water.Key");   assert KEY ==3; // Matches Key  customer serializer
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
     FRAME       = (short)onIce("water.fvec.Frame");
 

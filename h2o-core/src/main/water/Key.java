@@ -279,11 +279,6 @@ final public class Key extends Iced<Key> implements Comparable {
     return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
   }
 
-  // Custom Serialization Reader: Keys must be interned on construction.
-  //@Override final Key read(AutoBuffer bb) { return make(bb.getA1()); }
-  //@Override final AutoBuffer write(AutoBuffer bb) { return bb.putA1(_kb); }
-  //@Override final AutoBuffer writeJSON(AutoBuffer bb) { return bb.putJSONStr(toString()); }
-
   // User keys must be all ASCII, but we only check the 1st byte
   boolean user_allowed() { return type()==USER_KEY; }
 
@@ -362,4 +357,22 @@ final public class Key extends Iced<Key> implements Comparable {
     assert (o instanceof Key);
     return this.toString().compareTo(o.toString());
   }
+
+
+  // Custom Serialization Class: Keys need to be interned
+  // Class must be "public static class Icer extends super.Icer".
+  public static final class Icer extends Iced.Icer<Key> {
+    AutoBuffer write(AutoBuffer ab, Key key) { return write3(ab,key); } 
+    AutoBuffer writeJSONFields(AutoBuffer ab, Key key) { return ab.putJSONStr(key.toString()); }
+    Key read(AutoBuffer ab, Key key) { return read3(ab,key); }
+    Key newInstance() { throw H2O.unimpl(); }
+    int frozenType() { return TypeMap.KEY; } 
+    protected final AutoBuffer write3(AutoBuffer ab, Key key) { 
+      super.write2(ab,key);
+      return ab.putA1(key._kb);
+    }
+    // Custom deserializer: Keys need to be interned
+    protected final Key read3(AutoBuffer ab, Key key) { return make(ab.getA1()); }
+  }
+
 }

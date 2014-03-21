@@ -6,7 +6,7 @@ import org.junit.*;
 
 public class KVTest extends TestUtil {
 
-  //@BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a

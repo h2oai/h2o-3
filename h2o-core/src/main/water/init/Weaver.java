@@ -31,7 +31,7 @@ public class Weaver {
     throw new RuntimeException(e2);
   }
 
-  // The name conversion from a Iced subclass to an Iced.Impl subclass.
+  // The name conversion from a Iced subclass to an Iced.Icer subclass.
   private static String implClazzName( String name ) {
     return name + "$Icer";
   }
@@ -45,8 +45,8 @@ public class Weaver {
 
     // Now look for a pre-cooked Icer.  No locking, 'cause we're just looking
     String icer_name = implClazzName(iced_name);
-    CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Iced.Impl
-    if( icer_cc != null ) return icer_cc; // Found a pre-cooked Iced impl
+    CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Iced.Icer
+    if( icer_cc != null ) return icer_cc; // Found a pre-cooked Icer implementation
 
     // Serialize parent.  No locking; occasionally we'll "onIce" from the
     // remote leader more than once.
