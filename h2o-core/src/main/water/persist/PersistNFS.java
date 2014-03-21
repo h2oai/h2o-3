@@ -10,13 +10,13 @@ import water.util.Log;
 // Just for loading or storing files.
 //
 // @author cliffc
-public final class PersistNFS extends Persist {
+final class PersistNFS extends Persist {
 
   static final String KEY_PREFIX = "nfs:";
-  public static final int KEY_PREFIX_LENGTH = KEY_PREFIX.length();
+  static final int KEY_PREFIX_LENGTH = KEY_PREFIX.length();
 
   // file implementation -------------------------------------------------------
-  public static Key decodeFile(File f) {
+  static Key decodeFile(File f) {
     String kname = KEY_PREFIX + File.separator + f.toString();
     assert (kname.length() <= 512);
     // all NFS keys are NFS-kind keys
@@ -32,7 +32,7 @@ public final class PersistNFS extends Persist {
     //return new File(s);
   }
 
-  public static InputStream openStream(Key k) throws IOException {
+  static InputStream openStream(Key k) throws IOException {
     return new FileInputStream(getFileForKey(k));
   }
 
@@ -71,8 +71,6 @@ public final class PersistNFS extends Persist {
     if( !v._key.home() ) return;
     // A perhaps useless cutout: the upper layers should test this first.
     if( v.isPersisted() ) return;
-    // Never store arraylets on NFS, instead we'll store the entire array.
-    assert !v.isArray();
     try {
       File f = getFileForKey(v._key);
       f.mkdirs();

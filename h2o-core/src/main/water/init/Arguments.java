@@ -41,8 +41,8 @@ import water.util.Log;
  */
 public class Arguments {
 
-  static public abstract class Arg {
-    abstract public String usage();
+  static abstract class Arg {
+    abstract String usage();
     @Override public String toString() {
       Field[] fields = getFields(this);
       String r="";
@@ -67,10 +67,10 @@ public class Arguments {
     }
   }
 
-  static public class MissingArgumentError extends Error {
+  static class MissingArgumentError extends Error {
     final String m;
     MissingArgumentError(String s) {  m = s; }
-    public String toString() {  return ( m != null ) ? m : super.toString();  }
+    @Override public String toString() {  return ( m != null ) ? m : super.toString();  }
   }
 
   /**
@@ -80,8 +80,8 @@ public class Arguments {
    * If not found the field is left untouched (the orginal value is not
    * modified).
    */
-  static public class Opt extends Arg {
-    public String usage() {  return ""; }
+  public static class Opt extends Arg {
+    String usage() {  return ""; }
   }
 
   /**
@@ -91,8 +91,8 @@ public class Arguments {
    * If they all do they will extracted and the corresponding field will be set
    * to the extracted value. If any one of the fields is missing
    */
-  static public class Req extends Arg {
-    public String usage() { return ""; }
+  static class Req extends Arg {
+    String usage() { return ""; }
   }
 
   /** Current argument list. The list may grow and shrink as arguments are processed.
@@ -108,9 +108,9 @@ public class Arguments {
   /**
    * Returns the number of remaining command line arguments.
    */
-  public int size() { return commandLineArgs.length;  }
+  int size() { return commandLineArgs.length;  }
 
-  public String get(int i) {  return commandLineArgs[i].val;  }
+  String get(int i) {  return commandLineArgs[i].val;  }
 
   /**
    * Add a new argument to this command line. The argument will be parsed and
@@ -121,7 +121,7 @@ public class Arguments {
    * @param str
    *          a string
    */
-  public int addArgument(String str, String next) {
+  int addArgument(String str, String next) {
     int i = commandLineArgs.length;
     int consumed = 1;
     commandLineArgs = Arrays.copyOf(commandLineArgs, i + 1);
@@ -213,7 +213,7 @@ public class Arguments {
    *
    * @param name string name of the option or binding
    */
-  public String getValue(String name) {
+  String getValue(String name) {
     for( Entry e : commandLineArgs )
       if( name.equals(e.name) ) return e.val;
     return System.getProperty("h2o.arg."+name);
@@ -234,14 +234,14 @@ public class Arguments {
     }
   }
 
-  public String toString() {
+  @Override public String toString() {
     String[] ss = toStringArray();
     String result = "";
     for( String s : ss )  result += s+" ";
     return result;
   }
 
-  public String[] toStringArray() {
+  String[] toStringArray() {
     String[] result = new String[commandLineArgs.length];
     for( int i = 0; i < commandLineArgs.length; i++ )
       result[i] = commandLineArgs[i].toString();

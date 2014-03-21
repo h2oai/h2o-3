@@ -7,9 +7,9 @@ import java.util.Arrays;
 import water.*;
 import water.util.Log;
 
-public abstract class Persist {
+abstract public class Persist {
   // All available back-ends, C.f. Value for indexes
-  public static final Persist[] I = new Persist[8];
+  static final Persist[] I = new Persist[8];
   public static final long UNKNOWN = 0;
 
   // Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file"
@@ -37,33 +37,29 @@ public abstract class Persist {
     }
   }
 
-  public static Persist getIce() {
-    return I[Value.ICE];
-  }
+  public static Persist getIce() { return I[Value.ICE]; }
 
-  public abstract String getPath();
+  public static Persist get( byte p ) { return I[p]; }
+
+  abstract public String getPath();
 
   // Clear any prior leftover ICE 
-  public abstract void clear();
+  abstract public void clear();
 
   /**
    * Value should already be persisted to disk. A racing delete can trigger a failure where we get a
    * null return, but no crash (although one could argue that a racing load&delete is a bug no
    * matter what).
    */
-  public abstract byte[] load(Value v);
+  abstract public byte[] load(Value v);
 
-  public abstract void store(Value v);
+  abstract public void store(Value v);
 
-  public abstract void delete(Value v);
+  abstract public void delete(Value v);
 
-  public long getUsableSpace() {
-    return UNKNOWN;
-  }
+  public long getUsableSpace() { return UNKNOWN; }
 
-  public long getTotalSpace() {
-    return UNKNOWN;
-  }
+  public long getTotalSpace() { return UNKNOWN; }
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
@@ -72,11 +68,11 @@ public abstract class Persist {
   // ice are likely to be arraylet chunks
 
   static String getIceName(Value v) {
-    return getIceName(v._key, (byte) (v.isArray() ? 'A' : 'V'));
+    return getIceName(v._key);
   }
 
-  static String getIceName(Key k, byte type) {
-    return getIceDirectory(k) + File.separator + key2Str(k, type);
+  static String getIceName(Key k) {
+    return getIceDirectory(k) + File.separator + key2Str(k);
   }
 
   static String getIceDirectory(Key key) {
@@ -87,27 +83,22 @@ public abstract class Persist {
   }
 
   // Verify bijection of key/file-name mappings.
-  private static String key2Str(Key k, byte type) {
-    String s = key2Str_impl(k, type);
+  private static String key2Str(Key k) {
+    String s = key2Str_impl(k);
     Key x;
-    assert (x = str2Key_impl(s)).equals(k) : "bijection fail " + k + "." + (char) type + " <-> " + s + " <-> " + x;
+    assert (x = str2Key_impl(s)).equals(k) : "bijection fail " + k + " <-> " + s + " <-> " + x;
     return s;
   }
 
   // Verify bijection of key/file-name mappings.
   static Key str2Key(String s) {
     Key k = str2Key_impl(s);
-    assert key2Str_impl(k, decodeType(s)).equals(s) : "bijection fail " + s + " <-> " + k;
+    assert key2Str_impl(k).equals(s) : "bijection fail " + s + " <-> " + k;
     return k;
   }
 
-  private static byte decodeType(String s) {
-    String ext = s.substring(s.lastIndexOf('.') + 1);
-    return (byte) ext.charAt(0);
-  }
-
   // Convert a Key to a suitable filename string
-  private static String key2Str_impl(Key k, byte type) {
+  private static String key2Str_impl(Key k) {
     // check if we are system key
     StringBuilder sb = new StringBuilder(k._kb.length / 2 + 4);
     int i = 0;
@@ -128,7 +119,7 @@ public abstract class Persist {
       sb.append('%');
     }
     // Escape the special bytes from 'i' to the end
-    return escapeBytes(k._kb, i, sb).append('.').append((char) type).toString();
+    return escapeBytes(k._kb, i, sb).toString();
   }
 
   private static StringBuilder escapeBytes(byte[] bytes, int i, StringBuilder sb) {

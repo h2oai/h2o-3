@@ -40,10 +40,10 @@ import water.util.PrettyPrint;
  * @author tomas
  * @author cliffc
  */
-public abstract class MemoryManager {
+abstract public class MemoryManager {
 
   // max heap memory
-  static public final long MEM_MAX = Runtime.getRuntime().maxMemory();
+  static final long MEM_MAX = Runtime.getRuntime().maxMemory();
 
   // Callbacks from GC
   static final HeapUsageMonitor HEAP_USAGE_MONITOR = new HeapUsageMonitor();
@@ -65,23 +65,23 @@ public abstract class MemoryManager {
   // A monitonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
   // before & after amounts and diff them.
-  public static final AtomicLong MEM_ALLOC = new AtomicLong();
+  static final AtomicLong MEM_ALLOC = new AtomicLong();
 
-  public static void setMemGood() {
+  static void setMemGood() {
     if( CAN_ALLOC ) return;
     synchronized(_lock) { CAN_ALLOC = true; _lock.notifyAll(); }
     // NO LOGGING UNDER LOCK!
     Log.warn("Continuing after swapping");
   }
-  public static void setMemLow() {
+  static void setMemLow() {
     if( !CAN_ALLOC ) return;
     synchronized(_lock) { CAN_ALLOC = false; }
     // NO LOGGING UNDER LOCK!
     Log.warn("Pausing to swap to disk; more memory may help");
   }
-  public static boolean canAlloc() { return CAN_ALLOC; }
+  static boolean canAlloc() { return CAN_ALLOC; }
 
-  public static void set_goals( String msg, boolean oom){
+  static void set_goals( String msg, boolean oom){
     set_goals(msg, oom, 0);
   }
   // Set K/V cache goals.
@@ -89,7 +89,7 @@ public abstract class MemoryManager {
   // Called from the Cleaner, when "cacheUsed" has changed significantly.
   // Called from any FullGC notification, and HEAP/POJO_USED changed.
   // Called on any OOM allocation
-  public static void set_goals( String msg, boolean oom , long bytes) {
+  static void set_goals( String msg, boolean oom , long bytes) {
     // Our best guess of free memory, as of the last GC cycle
     final long heapUsed = Cleaner.HEAP_USED_AT_LAST_GC;
     final long timeGC = Cleaner.TIME_AT_LAST_GC;
@@ -151,7 +151,7 @@ public abstract class MemoryManager {
   private static class HeapUsageMonitor implements javax.management.NotificationListener {
     MemoryMXBean _allMemBean = ManagementFactory.getMemoryMXBean(); // general
     MemoryPoolMXBean _oldGenBean;
-    public long _gc_callback;
+    long _gc_callback;
 
     HeapUsageMonitor() {
       int c = 0;
@@ -194,7 +194,7 @@ public abstract class MemoryManager {
      * loader and you end up with new classes with uninitialized global vars.
      * Limit to touching global vars in the Boot class.
      */
-    public void handleNotification(Notification notification, Object handback) {
+    @Override public void handleNotification(Notification notification, Object handback) {
       String notifType = notification.getType();
       if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
         // Memory used after this FullGC
@@ -209,7 +209,7 @@ public abstract class MemoryManager {
   // Allocates memory with cache management
   // Will block until there is enough available memory.
   // Catches OutOfMemory, clears cache & retries.
-  public static Object malloc(int elems, long bytes, int type, Object orig, int from ) {
+  static Object malloc(int elems, long bytes, int type, Object orig, int from ) {
     // Do not assert on large-size here.  RF's temp internal datastructures are
     // single very large arrays.
     //assert bytes < Value.MAX : "malloc size=0x"+Long.toHexString(bytes);
@@ -284,7 +284,7 @@ public abstract class MemoryManager {
    * @param m - requested number of bytes
    * @return true if there is enough free memory
    */
-  public static boolean tryReserveTaskMem(long m){
+  static boolean tryReserveTaskMem(long m){
     if(!CAN_ALLOC)return false;
     if( m == 0 ) return true;
     assert m >= 0:"m < 0: " + m;
@@ -296,15 +296,13 @@ public abstract class MemoryManager {
     return true;
   }
   private static Object _taskMemLock = new Object();
-  public static void reserveTaskMem(long m){
+  static void reserveTaskMem(long m){
     final long bytes = m;
     while(!tryReserveTaskMem(bytes)){
       try {
         ForkJoinPool.managedBlock(new ManagedBlocker() {
-          @Override
-          public boolean isReleasable() {return _taskMem.get() >= bytes;}
-          @Override
-          public boolean block() throws InterruptedException {
+          @Override public boolean isReleasable() {return _taskMem.get() >= bytes;}
+          @Override public boolean block() throws InterruptedException {
             synchronized(_taskMemLock){
               try {_taskMemLock.wait();} catch( InterruptedException e ) {}
             }
@@ -319,7 +317,7 @@ public abstract class MemoryManager {
    * Free the memory successfully reserved by task.
    * @param m
    */
-  public static void freeTaskMem(long m){
+  static void freeTaskMem(long m){
     if(m == 0)return;
     _taskMem.addAndGet(m);
     synchronized(_taskMemLock){

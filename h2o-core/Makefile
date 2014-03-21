@@ -42,12 +42,12 @@ check: $(classes)
 $(main_classes): build/classes/%class: src/main/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?
+	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $(main_javas)
 
 $(test_classes): build/classes/%class: src/test/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $?
+	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $(test_javas)
 
 build/classes/water/init/BuildVersion.class: ../build/BuildVersion.java
 	@echo "compiling " $?

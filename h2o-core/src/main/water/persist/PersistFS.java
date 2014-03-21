@@ -8,8 +8,8 @@ import water.util.Log;
 /**
  * Persistence backend using local file system.
  */
-public final class PersistFS extends Persist {
-  public final File _dir;
+final class PersistFS extends Persist {
+  final File _dir;
 
   PersistFS(File root) {
     _dir = new File(root, "ice" + H2O.API_PORT);
@@ -82,7 +82,7 @@ public final class PersistFS extends Persist {
     assert !v.isPersisted();   // Upper layers already cleared out
     File f = getFile(v);
     f.delete();
-    if( v.isArray() ) { // Also nuke directory if the top-level ValueArray dies
+    if( v.isVec() ) { // Also nuke directory if the top-level Vec dies
       f = new File(_dir.toString(), getIceDirectory(v._key));
       f.delete();
     }

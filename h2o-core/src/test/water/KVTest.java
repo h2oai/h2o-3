@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.*;
 
-public class KVTest /*extends TestUtil*/ {
+public class KVTest extends TestUtil {
 
   //@BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
@@ -13,7 +13,7 @@ public class KVTest /*extends TestUtil*/ {
   // value for it, get the value for it, delete it.
   @Test public void testBasicCRUD() {
     System.out.println("Hello test!!!");
-    //Key k1 = Key.make("key1");
+    Key k1 = Key.make("key1");
     //Value v0 = DKV.get(k1);
     //assertNull(v0);
     //Value v1 = new Value(k1,"test0 bits for Value");

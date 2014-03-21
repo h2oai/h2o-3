@@ -9,7 +9,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import water.H2O;
 import water.H2ONode;
-import water.Paxos;
 import water.util.Log;
 
 /**
@@ -30,7 +29,7 @@ public class NetworkInit {
    * @param o4 Fourth octet
    * @param bits Bits on the left to compare
    */
-  public NetworkInit(int o1, int o2, int o3, int o4, int bits) {
+  NetworkInit(int o1, int o2, int o3, int o4, int bits) {
     _o1 = o1;
     _o2 = o2;
     _o3 = o3;
@@ -52,7 +51,7 @@ public class NetworkInit {
    * @param ia Address to test.
    * @return true if the address is on the network; false otherwise.
    */
-  public boolean inetAddressOnNetwork(InetAddress ia) {
+  boolean inetAddressOnNetwork(InetAddress ia) {
     int i = (_o1 << 24) |
             (_o2 << 16) |
             (_o3 << 8) |
@@ -202,7 +201,7 @@ public class NetworkInit {
       ArrayList<NetworkInterface> tmpList = Collections.list(nis);
 
       Comparator<NetworkInterface> c = new Comparator<NetworkInterface>() {
-        public int compare(NetworkInterface lhs, NetworkInterface rhs) {
+        @Override public int compare(NetworkInterface lhs, NetworkInterface rhs) {
           // Handle null inputs.
           if ((lhs == null) && (rhs == null)) { return 0; }
           if (lhs == null) { return 1; }
@@ -245,7 +244,7 @@ public class NetworkInit {
    * Return a list of internet addresses sorted by importance (most important first).
    * This is the order we want to test for matches when selecting an internet address.
    */
-  public static ArrayList<java.net.InetAddress> calcPrioritizedInetAddressList() {
+  static ArrayList<java.net.InetAddress> calcPrioritizedInetAddressList() {
     ArrayList<java.net.InetAddress> ips = new ArrayList<java.net.InetAddress>();
     {
       ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
@@ -265,7 +264,7 @@ public class NetworkInit {
     return ips;
   }
 
-  public static ArrayList<NetworkInit> calcArrayList(String networkOpt) {
+  static ArrayList<NetworkInit> calcArrayList(String networkOpt) {
     ArrayList<NetworkInit> networkList = new ArrayList<NetworkInit>();
 
     if (networkOpt == null) return networkList;
@@ -445,7 +444,7 @@ public class NetworkInit {
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
       HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
-      nodes.addAll(Paxos.PROPOSED.values());
+      nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
         bb.reset();
@@ -491,7 +490,7 @@ public class NetworkInit {
     return h2os;
   }
 
-  public static HashSet<H2ONode> parseFlatFileFromString( String s ) {
+  static HashSet<H2ONode> parseFlatFileFromString( String s ) {
     HashSet<H2ONode> h2os = new HashSet<H2ONode>();
     InputStream is = new ByteArrayInputStream(s.getBytes());
     List<FlatFileEntry> list = parseFlatFile(is);
@@ -500,12 +499,12 @@ public class NetworkInit {
     return h2os;
   }
 
-  public static class FlatFileEntry {
-    public InetAddress inet;
-    public int port;
+  static class FlatFileEntry {
+    InetAddress inet;
+    int port;
   }
 
-  public static List<FlatFileEntry> parseFlatFile( File f ) {
+  static List<FlatFileEntry> parseFlatFile( File f ) {
     InputStream is = null;
     try {
       is = new FileInputStream(f);
@@ -514,7 +513,7 @@ public class NetworkInit {
     return parseFlatFile(is);
   }
 
-  public static List<FlatFileEntry> parseFlatFile( InputStream is ) {
+  static List<FlatFileEntry> parseFlatFile( InputStream is ) {
     List<FlatFileEntry> list = new ArrayList<FlatFileEntry>();
     BufferedReader br = null;
     int port = H2O.ARGS.port;

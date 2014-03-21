@@ -15,14 +15,14 @@ import water.util.Log;
  * @version 1.0
  */
 
-public class MultiReceiverThread extends Thread {
-  public MultiReceiverThread() { super("Multi-UDP-R"); }
+class MultiReceiverThread extends Thread {
+  MultiReceiverThread() { super("Multi-UDP-R"); }
 
   // The Run Method.
   // ---
   // Started by main() on a single thread, this code manages reading UDP packets
   @SuppressWarnings("resource")
-  public void run() {
+  @Override public void run() {
     // No multicast?  Then do not bother with listening for them
     if( H2O.STATIC_H2OS != null ) return;
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);

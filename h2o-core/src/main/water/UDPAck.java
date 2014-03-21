@@ -7,7 +7,7 @@ package water;
  * @version 1.0
  */
 
-public class UDPAck extends UDP {
+class UDPAck extends UDP {
   // Received an ACK for a remote Task.  Ping the task.
   AutoBuffer call(AutoBuffer ab) {
     int tnum = ab.getTask();
@@ -20,6 +20,6 @@ public class UDPAck extends UDP {
   }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum
-  public String print16( AutoBuffer b ) { return "task# "+b.getTask(); }
+  String print16( AutoBuffer b ) { return "task# "+b.getTask(); }
 }
 

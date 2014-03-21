@@ -15,9 +15,9 @@ import water.util.*;
 * @author <a href="mailto:cliffc@0xdata.com"></a>
 * @version 1.0
 */
-public final class H2O {
+final public class H2O {
 
-  public static final AbstractBuildVersion ABV;
+  static final AbstractBuildVersion ABV;
   static {
     AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
     try {
@@ -29,10 +29,10 @@ public final class H2O {
   }
 
   // Atomically set once during startup.  Guards against repeated startups.
-  public static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
+  static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
-  public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
+  static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
   // Best-guess process ID
   public static long PID = -1L;
 
@@ -60,23 +60,23 @@ public final class H2O {
   // priority X+1, and guaranteeing there are no jobs above MAX_PRIORITY -
   // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
   // done, the next lower level jobs get unblocked, etc.
-  public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
-  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
-  public static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
-  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
-  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
-  public static final byte    ARY_KEY_PRIORITY = MAX_PRIORITY-2;
-  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
-  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
-  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
-  public static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
-  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
-  public static final byte        MIN_PRIORITY = 0;
+  static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
+  static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
+  static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
+  static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
+  static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
+  static final byte    ARY_KEY_PRIORITY = MAX_PRIORITY-2;
+  static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
+  static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
+  static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
+  static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
+  static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
+  static final byte        MIN_PRIORITY = 0;
 
   // F/J threads that remember the priority of the last task they started
   // working on.
   static class FJWThr extends ForkJoinWorkerThread {
-    public int _priority;
+    int _priority;
     FJWThr(ForkJoinPool pool) {
       super(pool);
       setPriority( ((ForkJoinPool2)pool)._priority == Thread.MIN_PRIORITY
@@ -96,9 +96,9 @@ public final class H2O {
 
   // A standard FJ Pool, with an expected priority level.
   private static class ForkJoinPool2 extends ForkJoinPool {
-    public final int _priority;
+    final int _priority;
     ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p!=MIN_PRIORITY); _priority = p; }
-    public H2OCountedCompleter poll() { return (H2OCountedCompleter)pollSubmission(); }
+    H2OCountedCompleter poll() { return (H2OCountedCompleter)pollSubmission(); }
   }
 
   // Normal-priority work is generally directly-requested user ops.
@@ -116,13 +116,13 @@ public final class H2O {
   }
 
   // Easy peeks at the low FJ queue
-  public static int getLoQueue (     ) { return FJP_NORM.getQueuedSubmissionCount();}
-  public static int loQPoolSize(     ) { return FJP_NORM.getPoolSize();             }
-  public static int getHiQueue (int i) { return FJPS[i+MIN_HI_PRIORITY].getQueuedSubmissionCount();}
-  public static int hiQPoolSize(int i) { return FJPS[i+MIN_HI_PRIORITY].getPoolSize();             }
+  static int getLoQueue (     ) { return FJP_NORM.getQueuedSubmissionCount();}
+  static int loQPoolSize(     ) { return FJP_NORM.getPoolSize();             }
+  static int getHiQueue (int i) { return FJPS[i+MIN_HI_PRIORITY].getQueuedSubmissionCount();}
+  static int hiQPoolSize(int i) { return FJPS[i+MIN_HI_PRIORITY].getPoolSize();             }
 
   // Submit to the correct priority queue
-  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY;
     FJPS[priority].submit(task);
@@ -136,13 +136,13 @@ public final class H2O {
   // entire node for lack of some small piece of data).  So each attempt to do
   // lower-priority F/J work starts with an attempt to work & drain the
   // higher-priority queues.
-  public static abstract class H2OCountedCompleter extends CountedCompleter implements Cloneable {
-    public H2OCountedCompleter(){}
-    public H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+  static abstract class H2OCountedCompleter extends CountedCompleter implements Cloneable {
+    H2OCountedCompleter(){}
+    H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
     // Once per F/J task, drain the high priority queue before doing any low
     // priority work.
-    @Override public final void compute() {
+    @Override final public void compute() {
       FJWThr t = (FJWThr)Thread.currentThread();
       int pp = ((ForkJoinPool2)t.getPool())._priority;
       assert  priority() == pp; // Job went to the correct queue?
@@ -167,7 +167,7 @@ public final class H2O {
       compute2();
     }
     // Do the actually intended work
-    public abstract void compute2();
+    abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
         ex.printStackTrace();
@@ -176,18 +176,18 @@ public final class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    public byte priority() { return MIN_PRIORITY; }
-    public H2OCountedCompleter clone(){
+    byte priority() { return MIN_PRIORITY; }
+    @Override public H2OCountedCompleter clone(){
       try { return (H2OCountedCompleter)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
   }
 
 
-  public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
-    public H2OCallback(){this(null);}
-    public H2OCallback(H2OCountedCompleter cc){super(cc);}
-    @Override public void compute2(){throw new UnsupportedOperationException();}
+  static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
+    H2OCallback(){this(null);}
+    H2OCallback(H2OCountedCompleter cc){super(cc);}
+    @Override void compute2(){throw new UnsupportedOperationException();}
     @Override public void onCompletion(CountedCompleter caller){
       try {
         callback((T)caller);
@@ -196,11 +196,11 @@ public final class H2O {
         completeExceptionally(ex);
       }
     }
-    public abstract void callback(T t);
+    abstract void callback(T t);
   }
 
-  public static class H2OEmptyCompleter extends H2OCountedCompleter{
-    @Override public void compute2(){throw new UnsupportedOperationException();}
+  static class H2OEmptyCompleter extends H2OCountedCompleter{
+    @Override void compute2(){throw new UnsupportedOperationException();}
   }
 
 
@@ -208,9 +208,9 @@ public final class H2O {
   // List of arguments.
   public static OptArgs ARGS = new OptArgs();
   public static class OptArgs extends Arguments.Opt {
-    public boolean h = false;
-    public boolean help = false;
-    public boolean version = false;
+    boolean h = false;
+    boolean help = false;
+    boolean version = false;
 
     // Common config options
     public String name = System.getProperty("user.name"); // Cloud name
@@ -219,20 +219,20 @@ public final class H2O {
     public int    h2o_port;     // port+1
     public String ip;           // Named IP4/IP6 address instead of the default
     public String network;      // Network specification for acceptable interfaces to bind to.
-    public String ice_root;     // ice root directory; where temp files go
-    public String log_level;    // One of DEBUG, INFO, WARN, ERRR.  Null is INFO.
+    String ice_root;     // ice root directory; where temp files go
+    String log_level;    // One of DEBUG, INFO, WARN, ERRR.  Null is INFO.
 
     // Less common config options
-    public int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
-    public boolean random_udp_drop; // test only, randomly drop udp incoming
-    public boolean requests_log = true; // logging of Web requests
-    public boolean check_rest_params = true; // enable checking unused/unknown REST params
+    int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
+    boolean random_udp_drop; // test only, randomly drop udp incoming
+    boolean requests_log = true; // logging of Web requests
+    boolean check_rest_params = true; // enable checking unused/unknown REST params
 
     // HDFS & AWS
     public String hdfs; // HDFS backend
-    public String hdfs_version; // version of the filesystem
+    String hdfs_version; // version of the filesystem
     public String hdfs_config; // configuration file of the HDFS
-    public String hdfs_skip = null; // used by hadoop driver to not unpack and load any hdfs jar file at runtime.
+    String hdfs_skip = null; // used by hadoop driver to not unpack and load any hdfs jar file at runtime.
     public String aws_credentials; // properties file for aws credentials
   }
 
@@ -240,10 +240,10 @@ public final class H2O {
   public static int API_PORT; // RequestServer and the API HTTP port
 
   // The multicast discovery port
-  static public MulticastSocket  CLOUD_MULTICAST_SOCKET;
-  static public NetworkInterface CLOUD_MULTICAST_IF;
-  static public InetAddress      CLOUD_MULTICAST_GROUP;
-  static public int              CLOUD_MULTICAST_PORT ;
+  public static MulticastSocket  CLOUD_MULTICAST_SOCKET;
+  public static NetworkInterface CLOUD_MULTICAST_IF;
+  public static InetAddress      CLOUD_MULTICAST_GROUP;
+  public static int              CLOUD_MULTICAST_PORT ;
 
   // Myself, as a Node in the Cloud
   public static H2ONode SELF = null;
@@ -266,10 +266,10 @@ public final class H2O {
   static private final H2O[] CLOUDS = new H2O[256];
 
   // Enables debug features like more logging and multiple instances per JVM
-  public static final String DEBUG_ARG = "h2o.debug";
-  public static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
+  static final String DEBUG_ARG = "h2o.debug";
+  static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
 
-  public static void printHelp() {
+  static void printHelp() {
     String s =
     "Start an H2O node.\n" +
     "\n" +
@@ -338,7 +338,7 @@ public final class H2O {
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
-  public static void printAndLogVersion() {
+  static void printAndLogVersion() {
     Log.init(ARGS.log_level);
     Log.info("----- H2O started -----");
     Log.info("Build git branch: " + ABV.branchName());
@@ -435,23 +435,23 @@ public final class H2O {
   // --------------------------------------------------------------------------
   // The Current Cloud. A list of all the Nodes in the Cloud. Changes if we
   // decide to change Clouds via atomic Cloud update.
-  static public volatile H2O CLOUD = new H2O(new H2ONode[0],0,0);
+  static volatile H2O CLOUD = new H2O(new H2ONode[0],0,0);
 
   // ---
   // A dense array indexing all Cloud members. Fast reversal from "member#" to
   // Node.  No holes.  Cloud size is _members.length.
-  public final H2ONode[] _memary;
-  public final int _hash;
+  final H2ONode[] _memary;
+  final int _hash;
 
   // A dense integer identifier that rolls over rarely. Rollover limits the
   // number of simultaneous nested Clouds we are operating on in-parallel.
   // Really capped to 1 byte, under the assumption we won't have 256 nested
   // Clouds. Capped at 1 byte so it can be part of an atomically-assigned
   // 'long' holding info specific to this Cloud.
-  public final char _idx; // no unsigned byte, so unsigned char instead
+  final char _idx; // no unsigned byte, so unsigned char instead
 
   // Construct a new H2O Cloud from the member list
-  public H2O( H2ONode[] h2os, int hash, int idx ) {
+  H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
     Arrays.sort(_memary);       // ... sorted!
     _hash = hash;               // And record hash for cloud rollover
@@ -470,17 +470,37 @@ public final class H2O {
     SELF._heartbeat._cloud_size=(char)CLOUD.size();
   }
 
-  public final int size() { return _memary.length; }
-  public final H2ONode leader() { return _memary[0]; }
+  // Is nnn larger than old (counting for wrap around)? Gets confused if we
+  // start seeing a mix of more than 128 unique clouds at the same time. Used
+  // to tell the order of Clouds appearing.
+  static boolean larger( int nnn, int old ) {
+    assert (0 <= nnn && nnn <= 255);
+    assert (0 <= old && old <= 255);
+    return ((nnn-old)&0xFF) < 64;
+  }
+
+  final int size() { return _memary.length; }
+  final H2ONode leader() { return _memary[0]; }
 
   // Find the node index for this H2ONode, or a negative number on a miss
-  public int nidx( H2ONode h2o ) { return Arrays.binarySearch(_memary,h2o); }
-  public boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
+  int nidx( H2ONode h2o ) { return Arrays.binarySearch(_memary,h2o); }
+  boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
   @Override public String toString() {
     return Arrays.toString(_memary);
   }
-  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }
 
+  static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }
+
+  static void waitForCloudSize(int x, long ms) {
+    long start = System.currentTimeMillis();
+    while( System.currentTimeMillis() - start < ms ) {
+      if( CLOUD.size() >= x && Paxos._commonKnowledge )
+        break;
+      try { Thread.sleep(100); } catch( InterruptedException ie ) { }
+    }
+    if( H2O.CLOUD.size() < x )
+      throw new RuntimeException("Cloud size under " + x);
+  }
 
   // --------------------------------------------------------------------------
   static void initializePersistence() {
@@ -518,7 +538,7 @@ public final class H2O {
   // the Key will be set in the wrong Key copy... leading to extra rounds of
   // replication.
 
-  public static Value putIfMatch( Key key, Value val, Value old ) {
+  static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
     if( val != null )
@@ -538,14 +558,14 @@ public final class H2O {
   
   // Raw put; no marking the memory as out-of-sync with disk. Used to import
   // initial keys from local storage, or to intern keys.
-  public static Value putIfAbsent_raw( Key key, Value val ) {
+  static Value putIfAbsent_raw( Key key, Value val ) {
     Value res = STORE.putIfMatchUnlocked(key,val,null);
     assert res == null;
     return res;
   }
   
   //// Get the value from the store
-  //public static Value get( Key key ) {
+  //static Value get( Key key ) {
   //  Value v = STORE.get(key);
   //  // Lazily manifest array chunks, if the backing file exists.
   //  if( v == null ) {
@@ -559,15 +579,16 @@ public final class H2O {
   //  return v;
   //}
 
-  public static Value raw_get( Key key ) { return STORE.get(key); }
-  public static Key getk( Key key ) { return STORE.getk(key); }
-  public static Set<Key> localKeySet( ) { return STORE.keySet(); }
-  public static Collection<Value> values( ) { return STORE.values(); }
-  public static int store_size() { return STORE.size(); }
+  static Value raw_get( Key key ) { return STORE.get(key); }
+  static Key getk( Key key ) { return STORE.getk(key); }
+  static Set<Key> localKeySet( ) { return STORE.keySet(); }
+  static Collection<Value> values( ) { return STORE.values(); }
+  static int store_size() { return STORE.size(); }
 
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
+
     // Record system start-time.
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started

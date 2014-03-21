@@ -5,8 +5,8 @@ import water.init.Weaver;
 import water.nbhm.NonBlockingHashMap;
 
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, C1NCHUNK, FRAME;
-  static final public String BOOTSTRAP_CLASSES[] = {
+  static final short NULL, PRIM_B, ICED, C1NCHUNK, FRAME;
+  static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",
     "water.Iced",         // Based serialization class
@@ -68,8 +68,8 @@ public class TypeMap {
 
 
   // During first Icing, get a globally unique class ID for a className
-  static public int onIce(Iced ice) { return onIce(ice.getClass().getName()); }
-  static public int onIce(String className) {
+  static int onIce(Iced ice) { return onIce(ice.getClass().getName()); }
+  public static int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
     // Need to install a new cloud-wide type ID for className.
@@ -121,7 +121,7 @@ public class TypeMap {
     }
   }
 
-  static public String className(int id) {
+  static String className(int id) {
     throw H2O.unimpl();
     //if( id >= CLAZZES.length || CLAZZES[id] == null ) loadId(id);
     //assert CLAZZES[id] != null : "No class matching id "+id;
@@ -130,7 +130,7 @@ public class TypeMap {
     //install( FetchClazz.fetchClazz(id), id );
   }
 
-  static public Iced newInstance(int id) {
+  static Iced newInstance(int id) {
     throw H2O.unimpl();
   //  if( id >= CLAZZES.length || CLAZZES[id] == null ) loadId(id);
   //  IcedImpl f = GOLD[id];

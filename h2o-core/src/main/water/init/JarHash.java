@@ -10,8 +10,8 @@ import water.util.Log;
 
 /** Self-jar file MD5 hash, to help make sure clusters are made from the same jar. */
 public abstract class JarHash {
-  public static final String JARPATH; // Path to self-jar, or NULL if we cannot find it
-  public static final byte[] JARHASH; // MD5 hash of self-jar, or 0xFF's if we cannot figure it out
+  static final String JARPATH; // Path to self-jar, or NULL if we cannot find it
+  static public final byte[] JARHASH; // MD5 hash of self-jar, or 0xFF's if we cannot figure it out
 
   static { 
     JARPATH = cl_init_jarpath(); 

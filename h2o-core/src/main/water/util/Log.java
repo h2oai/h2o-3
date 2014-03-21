@@ -17,19 +17,19 @@ import water.persist.Persist;
  *  a best effort and lossy manner. Basically when an OOME occurs during
  *  logging, no guarantees are made about the messages.
  **/
-public abstract class Log {
+abstract public class Log {
 
   private static org.apache.log4j.Logger _logger = null;
 
   static String LOG_DIR = null;
   public static String getLogDir() { return LOG_DIR == null ? "unknown-log-dir" : LOG_DIR; }
 
-  public static final int ERRR = 0;
-  public static final int WARN = 1;
-  public static final int INFO = 2;
-  public static final int DEBUG= 3;
-  public static final String[] LVLS = { "ERRR", "WARN", "INFO", "DEBUG" };
-  public static int _level=INFO;
+  static final int ERRR = 0;
+  static final int WARN = 1;
+  static final int INFO = 2;
+  static final int DEBUG= 3;
+  static final String[] LVLS = { "ERRR", "WARN", "INFO", "DEBUG" };
+  static int _level=INFO;
 
   // Common pre-header
   private static String _preHeader;
@@ -43,7 +43,7 @@ public abstract class Log {
       if( slvl.startsWith("debug") ) _level = DEBUG;
     }
   }
-
+  
   public static void debug( Object... objs ) { write(DEBUG,objs); }
   public static void info ( Object... objs ) { write(INFO ,objs); }
   public static void warn ( Object... objs ) { write(WARN ,objs); }
@@ -154,7 +154,7 @@ public abstract class Log {
     return (_logger = LogManager.getLogger(Log.class.getName()));
   }
 
-  public static String fixedLength(String s, int length) {
+  static String fixedLength(String s, int length) {
     String r = padRight(s, length);
     if( r.length() > length ) {
       int a = Math.max(r.length() - length + 1, 0);
@@ -164,7 +164,7 @@ public abstract class Log {
     return r;
   }
   
-  public static String padRight(String stringToPad, int size) {
+  static String padRight(String stringToPad, int size) {
     StringBuilder strb = new StringBuilder(stringToPad);
     while( strb.length() < size )
       if( strb.length() < size ) strb.append(' ');

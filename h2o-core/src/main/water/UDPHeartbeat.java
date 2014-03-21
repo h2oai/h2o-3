@@ -6,7 +6,7 @@ package water;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
-public class UDPHeartbeat extends UDP {
+class UDPHeartbeat extends UDP {
   @Override AutoBuffer call(AutoBuffer ab) {
     if( ab._h2o != H2O.SELF ) { // Do not update self-heartbeat object
       // The self-heartbeat is the sole holder of racey cloud-concensus hashes

@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.Random;
 
 import water.util.Log;
-import water.init.NetworkInit;
 
 /**
  * The Thread that looks for UDP Cloud requests.
@@ -30,7 +29,7 @@ public class UDPReceiverThread extends Thread {
   @SuppressWarnings("resource")
   public void run() {
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-    DatagramChannel sock = NetworkInit._udpSocket, errsock = null;
+    DatagramChannel sock = water.init.NetworkInit._udpSocket, errsock = null;
     boolean saw_error = false;
 
     while( true ) {

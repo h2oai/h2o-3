@@ -20,25 +20,25 @@ import water.util.Log;
  */
 
 public class H2ONode extends Iced<H2ONode> implements Comparable {
-  public int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
-  public long _last_heard_from; // Time in msec since we last heard from this Node
-  public boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
-  public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
-  public int _tcp_readers;               // Count of started TCP reader threads
-  public boolean _node_healthy;
+  int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
+  long _last_heard_from; // Time in msec since we last heard from this Node
+  boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
+  volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
+  int _tcp_readers;               // Count of started TCP reader threads
+  boolean _node_healthy;
 
   // A JVM is uniquely named by machine IP address and port#
-  public H2Okey _key;
-  public static final class H2Okey extends InetSocketAddress implements Comparable {
+  public final H2Okey _key;
+  static final class H2Okey extends InetSocketAddress implements Comparable {
     final int _ipv4;     // cheapo ipv4 address
-    public H2Okey(InetAddress inet, int port) {
+    H2Okey(InetAddress inet, int port) {
       super(inet,port);
       byte[] b = inet.getAddress();
       _ipv4 = ((b[0]&0xFF)<<0)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
     }
-    public int htm_port() { return getPort()-1; }
-    public int udp_port() { return getPort()  ; }
-    public String toString() { return getAddress()+":"+htm_port(); }
+    int htm_port() { return getPort()-1; }
+    int udp_port() { return getPort()  ; }
+    @Override public String toString() { return getAddress()+":"+htm_port(); }
     //AutoBuffer write( AutoBuffer ab ) {
     //  return ab.put4(_ipv4).put2((char)udp_port());
     //}
@@ -61,7 +61,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
   }
 
-  public final int ip4() { return _key._ipv4; }
+  final int ip4() { return _key._ipv4; }
 
   // These are INTERN'd upon construction, and are uniquely numbered within the
   // same run of a JVM.  If a remote Node goes down, then back up... it will
@@ -85,11 +85,11 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // an array-of-H2ONodes, and a limit of 255 unique H2ONodes
   static private final NonBlockingHashMap<H2Okey,H2ONode> INTERN = new NonBlockingHashMap<H2Okey,H2ONode>();
   static private final AtomicInteger UNIQUE = new AtomicInteger(1);
-  static public H2ONode IDX[] = new H2ONode[1];
+  static H2ONode IDX[] = new H2ONode[1];
 
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
-  public static final H2ONode intern( H2Okey key ) {
+  static final H2ONode intern( H2Okey key ) {
     H2ONode h2o = INTERN.get(key);
     if( h2o != null ) return h2o;
     final int idx = UNIQUE.getAndIncrement();
@@ -105,7 +105,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   }
   public static final H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
 
-  public static final H2ONode intern( int ip, int port ) {
+  static final H2ONode intern( int ip, int port ) {
     byte[] b = new byte[4];
     b[0] = (byte)(ip>> 0);
     b[1] = (byte)(ip>> 8);
@@ -120,9 +120,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // Read & return interned from wire
-  //@Override public AutoBuffer write( AutoBuffer ab ) { return _key.write(ab); }
-  //@Override public H2ONode read( AutoBuffer ab ) { return intern(H2Okey.read(ab));  }
-  public H2ONode( ) { }
+  //@Override AutoBuffer write( AutoBuffer ab ) { return _key.write(ab); }
+  //@Override H2ONode read( AutoBuffer ab ) { return intern(H2Okey.read(ab));  }
 
   // Get a nice Node Name for this Node in the Cloud.  Basically it's the
   // InetAddress we use to communicate to this Node.
@@ -174,21 +173,21 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public int compareTo( Object o) { return _key.compareTo(o); }
 
   // index of this node in the current cloud... can change at the next cloud.
-  public int index() { return H2O.CLOUD.nidx(this); }
+  int index() { return H2O.CLOUD.nidx(this); }
 
   // max memory for this node.
   // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.
-  public long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
+  long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
 
   // ---------------
   // A queue of available TCP sockets
-  // Public re-usable TCP socket opened to this node, or null.
+  // re-usable TCP socket opened to this node, or null.
   // This is essentially a BlockingQueue/Stack that allows null.
   private SocketChannel _socks[] = new SocketChannel[2];
   private int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
-  public static final AtomicInteger TCPS = new AtomicInteger(0);
-  public SocketChannel getTCPSocket() throws IOException {
+  static final AtomicInteger TCPS = new AtomicInteger(0);
+  SocketChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
     synchronized(this) {
       // Limit myself to the number of open sockets from node-to-node
@@ -212,7 +211,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     //TCPS.incrementAndGet();     // Cluster-wide counting
     //return sock2;
   }
-  public synchronized void freeTCPSocket( SocketChannel sock ) {
+  synchronized void freeTCPSocket( SocketChannel sock ) {
     assert 0 <= _socksAvail && _socksAvail < _socks.length;
     if( sock != null && !sock.isOpen() ) sock = null;
     _socks[_socksAvail++] = sock;
@@ -224,15 +223,15 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
   private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong();
-  public void taskPut(int tnum, RPC rpc ) { _tasks.put(tnum,rpc); }
-  public RPC taskGet(int tnum) { return _tasks.get(tnum); }
-  public void taskRemove(int tnum) { _tasks.remove(tnum); }
-  public Collection<RPC> tasks() { return _tasks.values(); }
-  public int taskSize() { return _tasks.size(); }
+  void taskPut(int tnum, RPC rpc ) { _tasks.put(tnum,rpc); }
+  RPC taskGet(int tnum) { return _tasks.get(tnum); }
+  void taskRemove(int tnum) { _tasks.remove(tnum); }
+  Collection<RPC> tasks() { return _tasks.values(); }
+  int taskSize() { return _tasks.size(); }
 
   // The next unique task# sent *TO* the 'this' Node.
   private final AtomicInteger _created_task_ids = new AtomicInteger(1);
-  public int nextTaskNum() { return _created_task_ids.getAndIncrement(); }
+  int nextTaskNum() { return _created_task_ids.getAndIncrement(); }
 
 
   // ---------------
@@ -328,12 +327,12 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // must wait for the real ACKACK - which can drop.  So we *must* resend ACK's
   // occasionally to force a resend of ACKACKs.
 
-  static public class AckAckTimeOutThread extends Thread {
-    public AckAckTimeOutThread() { super("ACKTimeout"); }
+  static class AckAckTimeOutThread extends Thread {
+    AckAckTimeOutThread() { super("ACKTimeout"); }
     // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
     static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<RPC.RPCCall>();
     // Started by main() on a single thread, handle timing-out UDP packets
-    public void run() {
+    @Override public void run() {
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
       while( true ) {
         RPC.RPCCall r;

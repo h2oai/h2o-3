@@ -7,7 +7,7 @@ import water.util.Log;
 
 /** Store Cleaner: User-Mode Swap-To-Disk */
 
-public class Cleaner extends Thread {
+class Cleaner extends Thread {
   // msec time at which the STORE was dirtied.
   // Long.MAX_VALUE if clean.
   static private volatile long _dirty; // When was store dirtied
@@ -18,26 +18,26 @@ public class Cleaner extends Thread {
     if( x < _dirty ) _dirty = x;
   }
 
-  static public volatile long HEAP_USED_AT_LAST_GC;
-  static public volatile long TIME_AT_LAST_GC=System.currentTimeMillis();
+  static volatile long HEAP_USED_AT_LAST_GC;
+  static volatile long TIME_AT_LAST_GC=System.currentTimeMillis();
   static private final Object _store_cleaner_lock = new Object();
-  static public void kick_store_cleaner() {
+  static void kick_store_cleaner() {
     synchronized(_store_cleaner_lock) { _store_cleaner_lock.notifyAll(); }
   }
-  static public void block_store_cleaner() {
+  static void block_store_cleaner() {
     synchronized( _store_cleaner_lock ) {
       try { _store_cleaner_lock.wait(5000); } catch (InterruptedException ie) { }
     }
   }
 
   // Desired cache level. Set by the MemoryManager asynchronously.
-  static public volatile long DESIRED;
+  static volatile long DESIRED;
   // Histogram used by the Cleaner
   private final Histo _myHisto;
 
   boolean _diskFull = false;
 
-  public Cleaner() {
+  Cleaner() {
     super("MemCleaner");
     setDaemon(true);
     setPriority(MAX_PRIORITY-2);
@@ -57,7 +57,7 @@ public class Cleaner extends Thread {
     return space != Persist.UNKNOWN && space < (5 << 10);
   }
 
-  public void run() {
+  @Override public void run() {
     boolean diskFull = false;
     while (true) {
       // Sweep the K/V store, writing out Values (cleaning) and free'ing
@@ -119,13 +119,10 @@ public class Cleaner extends Thread {
         Object p = val.rawPOJO();
         if( m == null && p == null ) continue; // Nothing to throw out
 
-        if(val.isLockable())continue; // we do not want to throw out Lockables.
-        // ValueArrays covering large files in global filesystems such as NFS
-        // or HDFS are only made on import (right now), and not reconstructed
-        // by inspection of the Key or filesystem.... so we cannot toss them
-        // out because they will not be reconstructed merely by loading the Value.
-        if( val.isArray() &&
-            (val._persist & Value.BACKEND_MASK)!=Value.ICE ) {
+        if( val.isLockable() ) continue; // we do not want to throw out Lockables.
+
+        // If not Iced, we can only toss out 1 of 2 forms, since we cannot simply reload from disk.
+        if( !val.onICE() ) {
           // But can toss out a byte-array if already deserialized
           // (no need for both forms).
           if( m != null && p != null ) { val.freeMem(); freed += val._max; }
@@ -186,7 +183,7 @@ public class Cleaner extends Thread {
   // Rules on when to write & free a Key, when not under memory pressure.
   boolean lazy_clean( Key key ) {
     // Only data chunks are worth tossing out even lazily.
-    if( key.isChunkKey() ) // Not arraylet?
+    if( !key.isChunkKey() ) // Not arraylet?
       return false; // Not enough savings to write it with mem-pressure to force us
     // If this is a chunk of a system-defined array, then assume it has
     // short lifetime, and we do not want to spin the disk writing it
@@ -199,7 +196,7 @@ public class Cleaner extends Thread {
   static private volatile Histo H;
 
   // Histogram class
-  public static class Histo {
+  static class Histo {
     final long[] _hs = new long[128];
     long _oldest; // Time of the oldest K/V discovered this pass
     long _eldest; // Time of the eldest K/V found in some prior pass
@@ -226,7 +223,7 @@ public class Cleaner extends Thread {
     }
 
     // Compute a histogram
-    public void compute( long eldest ) {
+    void compute( long eldest ) {
       Arrays.fill(_hs, 0);
       _when = System.currentTimeMillis();
       _eldest = eldest; // Eldest seen in some prior pass
@@ -250,9 +247,8 @@ public class Cleaner extends Thread {
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
 
-        if( val.isArray() &&
-            (val._persist & Value.BACKEND_MASK)!=Value.ICE )
-          continue; // Cannot throw out (so not in histogram buckets)
+        if( !val.onICE() )
+          continue;           // Cannot throw out (so not in histogram buckets)
 
         if( val._lastAccessedTime < oldest ) { // Found an older Value?
           vold = val; // Record oldest Value seen
@@ -285,7 +281,7 @@ public class Cleaner extends Thread {
     }
 
     // Pretty print
-    public String toString() {
+    @Override public String toString() {
       long x = _eldest;
       long now = System.currentTimeMillis();
       return "H("+(_cached>>20)+"M, "+x+"ms < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*128)+"ms < +"+(now-x)+")";

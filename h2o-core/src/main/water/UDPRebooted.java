@@ -11,8 +11,8 @@ import water.util.Log;
  * @version 1.0
  */
 
-public class UDPRebooted extends UDP {
-  public static enum T {
+class UDPRebooted extends UDP {
+  static enum T {
     none,
     reboot,
     shutdown,
@@ -21,20 +21,20 @@ public class UDPRebooted extends UDP {
     locked,
     mismatch;
 
-    public void send(H2ONode target) {
+    void send(H2ONode target) {
       assert this != none;
       new AutoBuffer(target).putUdp(udp.rebooted).put1(ordinal()).close(false,false);
     }
-    public void broadcast() { send(H2O.SELF); }
+    void broadcast() { send(H2O.SELF); }
   }
 
-  public static void checkForSuicide(int first_byte, AutoBuffer ab) {
+  static void checkForSuicide(int first_byte, AutoBuffer ab) {
     if( first_byte != UDP.udp.rebooted.ordinal() ) return;
     int type = ab.get1();
     suicide( T.values()[type], ab._h2o);
   }
 
-  public static void suicide( T cause, H2ONode killer ) {
+  static void suicide( T cause, H2ONode killer ) {
     String m;
     switch( cause ) {
     case none:   return;
@@ -61,7 +61,7 @@ public class UDPRebooted extends UDP {
   }
 
   // Try to gracefully close/shutdown all i/o channels.
-  public static void closeAll() {
+  static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException e ) { }
     try { NetworkInit._apiSocket.close(); } catch( IOException e ) { }
     throw H2O.unimpl();
@@ -69,7 +69,7 @@ public class UDPRebooted extends UDP {
   }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum
-  @Override public String print16( AutoBuffer ab ) {
+  @Override String print16( AutoBuffer ab ) {
     ab.getPort();
     return T.values()[ab.get1()].toString();
   }

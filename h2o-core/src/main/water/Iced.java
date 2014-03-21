@@ -7,9 +7,9 @@ import water.nbhm.UtilUnsafe;
  *  (the faster option is to byte-code gen directly in all Iced classes, but
  *  this requires all Iced classes go through a ClassLoader).
  */
-public abstract class Iced<D extends Iced> implements Cloneable {
+abstract public class Iced<D extends Iced> implements Cloneable {
 
-  public static final Icer<Iced> ICER = new Icer<Iced>();
+  static final Icer<Iced> ICER = new Icer<Iced>();
 
   // The serialization flavor / delegate.  Lazily set on first use.
   private short _ice_id;
@@ -19,13 +19,13 @@ public abstract class Iced<D extends Iced> implements Cloneable {
     int id = _ice_id;
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
-  // Standard public "write thyself into the AutoBuffer" call.
-  public final AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
-  public final D read(AutoBuffer ab) { return (D)icer().read(ab,this); }
-  public int frozenType() { return icer().frozenType(); }
-  public AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
-  public AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
-  //@Override public water.api.DocGen.FieldDoc[] toDocField() { return null; }
+  // Standard "write thyself into the AutoBuffer" call.
+  final AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
+  final D read(AutoBuffer ab) { return (D)icer().read(ab,this); }
+  int frozenType() { return icer().frozenType(); }
+  AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
+  AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
+  //@Override water.api.DocGen.FieldDoc[] toDocField() { return null; }
   @Override public D clone() {
     try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
@@ -35,11 +35,11 @@ public abstract class Iced<D extends Iced> implements Cloneable {
   // auto-gen'd.  Since this is the base, it has no fields to read or write.
   public static class Icer<T extends Iced> { 
     protected static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    public AutoBuffer write(AutoBuffer ab, T ice) { return write2(ab,ice); } 
-    public AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
-    public Iced read(AutoBuffer ab, Iced ice) { return read2(ab,ice); }
-    public T newInstance() { throw fail(); }
-    public int frozenType() { throw fail(); } // TypeMap.ICED.... but always overridden, since no one makes a bare Iced object
+    AutoBuffer write(AutoBuffer ab, T ice) { return write2(ab,ice); } 
+    AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
+    Iced read(AutoBuffer ab, Iced ice) { return read2(ab,ice); }
+    T newInstance() { throw fail(); }
+    int frozenType() { throw fail(); } // TypeMap.ICED.... but always overridden, since no one makes a bare Iced object
     private RuntimeException fail() {
       return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");
     }

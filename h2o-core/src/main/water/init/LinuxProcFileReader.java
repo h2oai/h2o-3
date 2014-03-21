@@ -200,7 +200,7 @@ public class LinuxProcFileReader {
   /**
    * Main is purely for command-line testing.
    */
-  public static void main(String[] args) {
+  static void main(String[] args) {
     final String sysTestData =
             "cpu  43559117 24094 1632164 1033740407 245624 29 200080 0 0 0\n"+
                     "cpu0 1630761 1762 62861 31960072 40486 15 10614 0 0 0\n"+

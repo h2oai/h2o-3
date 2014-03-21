@@ -4,7 +4,6 @@ import java.util.*;
 import javassist.*;
 import java.lang.reflect.Field;
 import sun.misc.Unsafe;
-import water.H2O;
 import water.Iced;
 import water.TypeMap;
 import water.nbhm.UtilUnsafe;
@@ -83,7 +82,7 @@ public class Weaver {
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String wbody = "public water.AutoBuffer write(water.AutoBuffer ab, water.Iced ice) {\n"+
+    String wbody = "water.AutoBuffer write(water.AutoBuffer ab, water.Iced ice) {\n"+
       "  return write"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
     addMethod(wbody,icer_cc);
@@ -102,7 +101,7 @@ public class Weaver {
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String rbody = "public water.Iced read(water.AutoBuffer ab, water.Iced ice) {\n"+
+    String rbody = "water.Iced read(water.AutoBuffer ab, water.Iced ice) {\n"+
       "  return read"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
     addMethod(rbody,icer_cc);
@@ -230,8 +229,8 @@ public class Weaver {
     case 'I': return "Int";
     case 'F': return "Float";
     case 'J': return "Long";
-    case 'D': throw H2O.unimpl();
-    case 'L': throw H2O.unimpl();
+    case 'D': throw water.H2O.unimpl();
+    case 'L': throw water.H2O.unimpl();
     case '[': return "Object";
     }
     throw new RuntimeException("unsafe access to type "+sig);
