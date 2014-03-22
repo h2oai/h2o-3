@@ -564,21 +564,8 @@ final public class H2O {
     return res;
   }
   
-  //// Get the value from the store
-  //static Value get( Key key ) {
-  //  Value v = STORE.get(key);
-  //  // Lazily manifest array chunks, if the backing file exists.
-  //  if( v == null ) {
-  //    v = Value.lazyArrayChunk(key);
-  //    if( v == null ) return null;
-  //    // Insert the manifested value, as-if it existed all along
-  //    Value res = putIfMatch(key,v,null);
-  //    if( res != null ) v = res; // This happens racily, so take any prior result
-  //  }
-  //  if( v != null ) v.touch();
-  //  return v;
-  //}
-
+  // Get the value from the store
+  static Value get( Key key ) { return STORE.get(key); }
   static Value raw_get( Key key ) { return STORE.get(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
   static Set<Key> localKeySet( ) { return STORE.keySet(); }

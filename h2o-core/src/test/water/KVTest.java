@@ -14,9 +14,9 @@ public class KVTest extends TestUtil {
   @Test public void testBasicCRUD() {
     System.out.println("Hello test!!!");
     Key k1 = Key.make("key1");
-    //Value v0 = DKV.get(k1);
-    //assertNull(v0);
-    //Value v1 = new Value(k1,"test0 bits for Value");
+    Value v0 = DKV.get(k1);
+    assertNull(v0);
+    Value v1 = new Value(k1,"test0 bits for Value");
     //DKV.put(k1,v1);
     //assertEquals(v1._key,k1);
     //Value v2 = DKV.get(k1);
@@ -28,7 +28,7 @@ public class KVTest extends TestUtil {
 
   // ---
   // Make 100 keys, verify them all, delete them all.
-//  @Test public void test100Keys() {
+  @Test public void test100Keys() {
 //    Key   keys[] = new Key  [100];
 //    Value vals[] = new Value[keys.length];
 //    for( int i=0; i<keys.length; i++ ) {
@@ -50,7 +50,7 @@ public class KVTest extends TestUtil {
 //      Value v3 = DKV.get(keys[i]);
 //      assertNull(v3);
 //    }
-//  }
+  }
 //
 //  // ---
 //  // Issue a slew of remote puts, then issue a DFJ job on the array of keys.

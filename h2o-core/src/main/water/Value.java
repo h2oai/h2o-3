@@ -15,6 +15,9 @@ public class Value {
   int type() { throw H2O.unimpl(); }
   public boolean isVec() { throw H2O.unimpl(); }
 
+  Value( Key key, Iced ice ) { _key=key; }
+  Value( Key key, String payload ) { _key=key; }
+
   long _lastAccessedTime;
   
   // ---
@@ -79,4 +82,8 @@ public class Value {
     clrdsk();  // Not persisted now
     Persist.get(backend()).delete(this);
   }
+
+  final void startRemotePut() { throw H2O.unimpl(); }
+  final void lockAndInvalidate(H2ONode target, Futures fs) {throw H2O.unimpl(); }
+  final void touch() { throw H2O.unimpl(); }
 }

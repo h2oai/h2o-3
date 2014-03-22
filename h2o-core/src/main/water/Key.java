@@ -38,7 +38,6 @@ final public class Key extends Iced<Key> implements Comparable {
   static final byte VEC = 4;
   static final byte DVEC = 5;
   static final byte VGROUP = 6; // vector group
-  static final byte DFJ_INTERNAL_USER = 7;
 
   static final byte USER_KEY = 32;
 

@@ -10,9 +10,11 @@ class RPC<T> implements Delayed {
   static final int RETRY_MS = 200;
   int _tasknum;
   H2ONode _target;
+  DTask _dt;
   void response( AutoBuffer ab ) { throw H2O.unimpl(); }
   static void tcp_ack( AutoBuffer ab ) { throw H2O.unimpl(); }
   static void remote_exec( AutoBuffer ab ) { throw H2O.unimpl(); }
+  void get() { throw H2O.unimpl(); }
   boolean isDone() { throw H2O.unimpl(); }
   void call() { throw H2O.unimpl(); }
   void cancel(boolean b) { throw H2O.unimpl(); }
