@@ -10,7 +10,7 @@ import water.util.Log;
 // Just for loading or storing files.
 //
 // @author cliffc
-final class PersistNFS extends Persist {
+public final class PersistNFS extends Persist {
 
   static final String KEY_PREFIX = "nfs:";
   static final int KEY_PREFIX_LENGTH = KEY_PREFIX.length();
@@ -32,7 +32,7 @@ final class PersistNFS extends Persist {
     //return new File(s);
   }
 
-  static InputStream openStream(Key k) throws IOException {
+  public static InputStream openStream(Key k) throws IOException {
     return new FileInputStream(getFileForKey(k));
   }
 

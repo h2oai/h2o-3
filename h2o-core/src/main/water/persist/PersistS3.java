@@ -1,14 +1,14 @@
 package water.persist;
 
-//import java.io.*;
+import java.io.*;
 //import java.net.SocketTimeoutException;
 //import java.util.Arrays;
 //import java.util.Properties;
 
+import water.Key;
 import water.Value;
 import water.H2O;
-//import water.Job.ProgressMonitor;
-//import water.api.Constants.Extensions;
+import water.Job.ProgressMonitor;
 //import water.fvec.Vec;
 import water.util.Log;
 //import water.util.RIStream;
@@ -71,9 +71,10 @@ public final class PersistS3 extends Persist {
   //  }
   //}
   //
-  //public static InputStream openStream(Key k, ProgressMonitor pmon) throws IOException {
+  public static InputStream openStream(Key k, ProgressMonitor pmon) throws IOException {
+    throw H2O.unimpl();
   //  return new H2SO3InputStream(k, pmon);
-  //}
+  }
   //
   //public static Key loadKey(S3ObjectSummary obj) throws IOException {
   //  Key k = encodeKey(obj.getBucketName(), obj.getKey());

@@ -365,7 +365,7 @@ final public class Key extends Iced<Key> implements Comparable {
     AutoBuffer writeJSONFields(AutoBuffer ab, Key key) { return ab.putJSONStr(key.toString()); }
     Key read(AutoBuffer ab, Key key) { return read3(ab,key); }
     Key newInstance() { throw H2O.unimpl(); }
-    int frozenType() { return TypeMap.KEY; } 
+    int frozenType() { return /*3*/TypeMap.KEY; } 
     protected final AutoBuffer write3(AutoBuffer ab, Key key) { 
       super.write2(ab,key);
       return ab.putA1(key._kb);

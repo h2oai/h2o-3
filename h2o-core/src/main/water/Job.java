@@ -2,6 +2,8 @@ package water;
 
 
 public class Job extends Iced {
-  public static class JobCancelledException extends RuntimeException {
+  static class JobCancelledException extends RuntimeException {
+  }
+  public static class ProgressMonitor {
   }
 }

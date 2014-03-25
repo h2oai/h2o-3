@@ -17,39 +17,39 @@ public class KVTest extends TestUtil {
     Value v0 = DKV.get(k1);
     assertNull(v0);
     Value v1 = new Value(k1,"test0 bits for Value");
-    //DKV.put(k1,v1);
-    //assertEquals(v1._key,k1);
-    //Value v2 = DKV.get(k1);
-    //assertEquals(v1,v2);
-    //DKV.remove(k1);
-    //Value v3 = DKV.get(k1);
-    //assertNull(v3);
+    DKV.put(k1,v1);
+    assertEquals(v1._key,k1);
+    Value v2 = DKV.get(k1);
+    assertEquals(v1,v2);
+    DKV.remove(k1);
+    Value v3 = DKV.get(k1);
+    assertNull(v3);
   }
 
   // ---
   // Make 100 keys, verify them all, delete them all.
   @Test public void test100Keys() {
-//    Key   keys[] = new Key  [100];
-//    Value vals[] = new Value[keys.length];
-//    for( int i=0; i<keys.length; i++ ) {
-//      Key k = keys[i] = Key.make("key"+i);
-//      Value v0 = DKV.get(k);
-//      assertNull(v0);
-//      Value v1 = vals[i] = new Value(k,"test2 bits for Value"+i);
-//      DKV.put(k,v1);
-//      assertEquals(v1._key,k);
-//    }
-//    for( int i=0; i<keys.length; i++ ) {
-//      Value v = DKV.get(keys[i]);
-//      assertEquals(vals[i],v);
-//    }
-//    for( int i=0; i<keys.length; i++ ) {
-//      DKV.remove(keys[i]);
-//    }
-//    for( int i=0; i<keys.length; i++ ) {
-//      Value v3 = DKV.get(keys[i]);
-//      assertNull(v3);
-//    }
+    Key   keys[] = new Key  [100];
+    Value vals[] = new Value[keys.length];
+    for( int i=0; i<keys.length; i++ ) {
+      Key k = keys[i] = Key.make("key"+i);
+      Value v0 = DKV.get(k);
+      assertNull(v0);
+      Value v1 = vals[i] = new Value(k,"test2 bits for Value"+i);
+      DKV.put(k,v1);
+      assertEquals(v1._key,k);
+    }
+    for( int i=0; i<keys.length; i++ ) {
+      Value v = DKV.get(keys[i]);
+      assertEquals(vals[i],v);
+    }
+    for( int i=0; i<keys.length; i++ ) {
+      DKV.remove(keys[i]);
+    }
+    for( int i=0; i<keys.length; i++ ) {
+      Value v3 = DKV.get(keys[i]);
+      assertNull(v3);
+    }
   }
 //
 //  // ---

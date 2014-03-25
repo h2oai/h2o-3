@@ -106,6 +106,9 @@ public class Weaver {
       "}";
     addMethod(rbody,icer_cc);
 
+    String cnbody = "java.lang.String className() { return \""+iced_name+"\"; }";
+    addMethod(cnbody,icer_cc);
+
     return icer_cc;
   }
 

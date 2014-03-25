@@ -9,7 +9,7 @@ import water.util.Log;
 
 abstract public class Persist {
   // All available back-ends, C.f. Value for indexes
-  static final Persist[] I = new Persist[8];
+  public static final Persist[] I = new Persist[8];
   public static final long UNKNOWN = 0;
 
   // Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file"

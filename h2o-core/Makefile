@@ -36,7 +36,7 @@ default: build/h2o-core.jar
 classes: $(classes)
 
 check: $(classes)
-	@java -ea -cp "build/classes;$(jars)" water.H2O
+	java -ea -cp "build/classes;$(jars)" org.junit.runner.JUnitCore water.KVTest
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/%java

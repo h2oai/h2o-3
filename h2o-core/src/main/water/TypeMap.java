@@ -5,13 +5,13 @@ import water.init.Weaver;
 import water.nbhm.NonBlockingHashMap;
 
 public class TypeMap {
-  static final short NULL, PRIM_B, ICED, KEY, C1NCHUNK, FRAME;
+  static final short NULL, PRIM_B, ICED, KEY, VALUE, C1NCHUNK, FRAME;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
     "water.Iced",         // 2 - Based serialization class
     "water.Key",          // 3 - Needed to write that first Key
-    "water.Value",        // Needed to write that first Key
+    "water.Value",        // 4 - Needed to write that first Key
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
@@ -35,11 +35,12 @@ public class TypeMap {
     int id=0;                   // The initial set of Type IDs to boot with
     for( String s : CLAZZES ) MAP.put(s,id++);
     IDS = id;
-    // Some statically known names, to make life easier during e.g. parse
+    // Some statically known names, to make life easier during e.g. bootup & parse
     NULL        = (short) -1;
     PRIM_B      = (short)onIce("[B");
-    ICED        = (short)onIce("water.Iced");  assert ICED==2; // Matches Iced customer serializer
-    KEY         = (short)onIce("water.Key");   assert KEY ==3; // Matches Key  customer serializer
+    ICED        = (short)onIce("water.Iced");  assert ICED ==2; // Matches Iced customer serializer
+    KEY         = (short)onIce("water.Key");   assert KEY  ==3; // Matches Key  customer serializer
+    VALUE       = (short)onIce("water.Value"); assert VALUE==4; // Matches Key  customer serializer
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
     FRAME       = (short)onIce("water.fvec.Frame");
 
@@ -82,6 +83,23 @@ public class TypeMap {
     return install(className,id);
   }
 
+  // Quick check to see if cached
+  private static Iced.Icer goForGold( int id ) {
+    Iced.Icer gold[] = GOLD;     // Read once, in case resizing
+    // Racily read the GOLD array
+    return id < gold.length ? gold[id] : null;
+  }
+
+  // Reverse: convert an ID to a className possibly fetching it from leader.
+  static String className(int id) {
+    if( id == PRIM_B ) return "[B";
+    Iced.Icer f = goForGold(id);
+    if( f != null ) return f.className();
+    assert H2O.CLOUD.leader() != H2O.SELF; // Leaders always have the latest mapping already
+    //install( FetchClazz.fetchClazz(id), id );
+    throw H2O.unimpl();
+  }
+
   // Install the type mapping under lock, and grow all the arrays as needed.
   // The grow-step is not obviously race-safe: readers of all the arrays will
   // get either the old or new arrays.  However readers are all reader with
@@ -99,19 +117,17 @@ public class TypeMap {
 
   // Figure out the mapping from a type ID to a Class.  Happens many places,
   // including during deserialization when a Node will be presented with a
-  // fresh new ID with no idea what it stands for.
+  // fresh new ID with no idea what it stands for.  Does NOT resize the GOLD
+  // array, since the id->className mapping has already happened.
   static Iced.Icer getIcer( int id, Iced ice ) {
-    Iced.Icer gold[] = GOLD;     // Read once, in case resizing
-    // Racily read the GOLD array
-    Iced.Icer f = id < gold.length ? gold[id] : null;
+    Iced.Icer f = goForGold(id);
     if( f != null ) return f;
 
     // Lock on the Iced class during auto-gen - so we only gen the IcedImpl for
     // a particular Iced class once.
     synchronized( ice.getClass() ) {
-      gold = GOLD;              // Read again, in case resizing
-      f = id < gold.length ? gold[id] : null;
-      if( f != null ) return f; // Recheck under lock
+      f = goForGold(id);        // Recheck under lock
+      if( f != null ) return f; 
       // Hard work: make a new delegate class
       f = Weaver.genDelegate(id,ice.getClass());
       // Now install until the TypeMap class lock, so the GOLD array is not
@@ -120,15 +136,6 @@ public class TypeMap {
         return GOLD[id]=f;
       }
     }
-  }
-
-  static String className(int id) {
-    throw H2O.unimpl();
-    //if( id >= CLAZZES.length || CLAZZES[id] == null ) loadId(id);
-    //assert CLAZZES[id] != null : "No class matching id "+id;
-    //return CLAZZES[id];
-    //assert H2O.CLOUD.leader() != H2O.SELF; // Leaders always have the latest mapping already
-    //install( FetchClazz.fetchClazz(id), id );
   }
 
   static Iced newInstance(int id) {

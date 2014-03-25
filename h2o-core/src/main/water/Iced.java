@@ -38,8 +38,9 @@ abstract public class Iced<D extends Iced> implements Cloneable {
     AutoBuffer write(AutoBuffer ab, T ice) { return write2(ab,ice); } 
     AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
     Iced read(AutoBuffer ab, Iced ice) { return read2(ab,ice); }
+    int frozenType() { /*2*/throw fail(); } // TypeMap.ICED.... but always overridden, since no one makes a bare Iced object
     T newInstance() { throw fail(); }
-    int frozenType() { throw fail(); } // TypeMap.ICED.... but always overridden, since no one makes a bare Iced object
+    String className() { throw fail(); }
     private RuntimeException fail() {
       return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");
     }

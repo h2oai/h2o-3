@@ -14,7 +14,7 @@ import org.apache.hadoop.fs.Path;
 //import org.jets3t.service.S3ServiceException;
 
 import water.*;
-//import water.Job.ProgressMonitor;
+import water.Job.ProgressMonitor;
 //import water.api.Constants;
 //import water.api.Constants.Extensions;
 //import water.fvec.HdfsFileVec;
@@ -104,7 +104,8 @@ public final class PersistHdfs extends Persist {
   //  }
   //}
   //
-  //public static InputStream openStream(Key k, ProgressMonitor pmon) throws IOException {
+  public static InputStream openStream(Key k, ProgressMonitor pmon) throws IOException {
+    throw H2O.unimpl();
   //  H2OHdfsInputStream res = null;
   //  Path p = new Path(k.toString());
   //  try {
@@ -117,7 +118,7 @@ public final class PersistHdfs extends Persist {
   //    res = new H2OHdfsInputStream(p, 0, pmon);
   //  }
   //  return res;
-  //}
+  }
   //
   //
   @Override public byte[] load(final Value v) {
@@ -125,10 +126,7 @@ public final class PersistHdfs extends Persist {
     long skip = 0;
     Key k = v._key;
     throw H2O.unimpl();
-  //  if( k._kb[0] == Key.ARRAYLET_CHUNK ) {
-  //    skip = ValueArray.getChunkOffset(k); // The offset
-  //    k = ValueArray.getArrayKey(k);       // From the base file key
-  //  } else if(k._kb[0] == Key.DVEC){
+  //  if(k._kb[0] == Key.DVEC){
   //    skip = water.fvec.NFSFileVec.chunkOffset(k); // The offset
   //  }
   //  final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));
