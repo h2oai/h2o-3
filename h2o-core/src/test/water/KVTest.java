@@ -51,9 +51,9 @@ public class KVTest extends TestUtil {
       assertNull(v3);
     }
   }
-//
-//  // ---
-//  // Issue a slew of remote puts, then issue a DFJ job on the array of keys.
+
+  // ---
+  // Issue a slew of remote puts, then issue a DFJ job on the array of keys.
 //  @Test public void testRemoteBitSet() throws Exception {
 //    // Issue a slew of remote key puts
 //    Key[] keys = new Key[32];
