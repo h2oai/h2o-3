@@ -39,16 +39,16 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     int htm_port() { return getPort()-1; }
     int udp_port() { return getPort()  ; }
     @Override public String toString() { return getAddress()+":"+htm_port(); }
-    //AutoBuffer write( AutoBuffer ab ) {
-    //  return ab.put4(_ipv4).put2((char)udp_port());
-    //}
-    //static H2Okey read( AutoBuffer ab ) {
-    //  InetAddress inet;
-    //  try { inet = InetAddress.getByAddress(ab.getA1(4)); }
-    //  catch( UnknownHostException e ) { throw  Log.errRTExcept(e); }
-    //  int port = ab.get2();
-    //  return new H2Okey(inet,port);
-    //}
+    AutoBuffer write( AutoBuffer ab ) {
+      return ab.put4(_ipv4).put2((char)udp_port());
+    }
+    static H2Okey read( AutoBuffer ab ) {
+      try { 
+        InetAddress inet = InetAddress.getByAddress(ab.getA1(4));
+        int port = ab.get2();
+        return new H2Okey(inet,port);
+      } catch( UnknownHostException e ) { throw Log.throwErr(e); }
+    }
     // Canonical ordering based on inet & port
     @Override public int compareTo( Object x ) {
       if( x == null ) return -1;   // Always before null
@@ -118,10 +118,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       return null;
     }
   }
-
-  // Read & return interned from wire
-  //@Override AutoBuffer write( AutoBuffer ab ) { return _key.write(ab); }
-  //@Override H2ONode read( AutoBuffer ab ) { return intern(H2Okey.read(ab));  }
 
   // Get a nice Node Name for this Node in the Cloud.  Basically it's the
   // InetAddress we use to communicate to this Node.
@@ -356,5 +352,15 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // This Node rebooted recently; we can quit tracking prior work history
   void rebooted() {
     _work.clear();
+  }
+
+  // Custom Serialization Class: H2OKey need to be built.
+  // Class must be "public static class Icer extends super.Icer".
+  public static final class Icer extends water.Icer<H2ONode> {
+    public Icer(H2ONode H2ONode) { super(H2ONode); }
+    @Override public AutoBuffer write(AutoBuffer ab, H2ONode h2o) { return h2o._key.write(ab); }
+    @Override AutoBuffer writeJSONFields(AutoBuffer ab, H2ONode h2o) { return ab.putJSONStr(h2o.toString()); }
+    @Override H2ONode read(AutoBuffer ab, H2ONode h2o) { return intern(H2Okey.read(ab)); }
+    int frozenType() { return /*6*/TypeMap.H2ONODE; } 
   }
 }

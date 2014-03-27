@@ -6,7 +6,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
 public class TypeMap {
-  static final short NULL, PRIM_B, ICED, H2OCC, KEY, VALUE, C1NCHUNK, FRAME;
+  static final short NULL, PRIM_B, ICED, H2OCC, KEY, VALUE, H2ONODE, C1NCHUNK, FRAME;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
@@ -14,6 +14,7 @@ public class TypeMap {
     "water.H2O$H2OCountedCompleter",  // 3 - Base serialization class
     "water.Key",          // 4 - Needed to write that first Key; custom serializer
     "water.Value",        // 5 - Needed to write that first Key; custom serializer
+    "water.H2ONode",      // 6 - Needed to write H2ONode target/sources
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.DTask",        // Needed for those first Tasks
     "water.DException",   // Needed for those first Tasks
@@ -46,6 +47,7 @@ public class TypeMap {
     H2OCC       = (short)onIce("water.H2O$H2OCountedCompleter"); assert H2OCC==3; // Matches customer serializer
     KEY         = (short)onIce("water.Key");   assert KEY  ==4; // Matches Key   customer serializer
     VALUE       = (short)onIce("water.Value"); assert VALUE==5; // Matches Value customer serializer
+    H2ONODE     = (short)onIce("water.H2ONode"); assert H2ONODE==6; // Matches H2ONode customer serializer
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
     FRAME       = (short)onIce("water.fvec.Frame");
 
@@ -80,7 +82,6 @@ public class TypeMap {
   public static int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
-    System.out.println("no id mapping for "+className);
     // Need to install a new cloud-wide type ID for className.
     assert H2O.CLOUD.size() > 0 : "No cloud when getting type id for "+className;
     int id = -1;
@@ -120,7 +121,6 @@ public class TypeMap {
     if( id >= CLAZZES.length ) CLAZZES = Arrays.copyOf(CLAZZES,Math.max(CLAZZES.length<<1,id+1));
     if( id >= GOLD   .length ) GOLD    = Arrays.copyOf(GOLD   ,Math.max(CLAZZES.length<<1,id+1));
     CLAZZES[id] = className;
-    System.out.println("map "+id+" to "+className);
     return id;
   }
 
@@ -149,16 +149,7 @@ public class TypeMap {
     }
   }
 
-  static Iced newInstance(int id) {
-    throw H2O.unimpl();
-  //  if( id >= CLAZZES.length || CLAZZES[id] == null ) loadId(id);
-  //  IcedImpl f = GOLD[id];
-  //  if( f == null ) {
-  //    try { GOLD[id] = f = (IcedImpl) Class.forName(CLAZZES[id]).newInstance(); }
-  //    catch( Exception e ) { System.err.println(e); throw new RuntimeException(e); }
-  //  }
-  //  return f.newInstance();
-  }
+  static Iced newInstance(int id) { return (Iced)newFreezable(id); }
   static Freezable newFreezable(int id) { 
     Icer f = goForGold(id);
     if( f == null ) {           // No cached Icer?

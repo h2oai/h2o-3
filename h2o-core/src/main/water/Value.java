@@ -14,7 +14,7 @@ import water.persist.*;
  * underlying byte[] which may be spilled to disk and freed by the
  * {@link MemoryManager}.
  */
-public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
+public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   // ---
   // The Key part of a Key/Value store.  Transient, because the Value is
@@ -268,12 +268,6 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
-
-  // Nullary constructor for serialization
-  private Value() {
-    _rwlock = new AtomicInteger(0);
-    _replicas = new NonBlockingSetInt();
-  }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
   private Value read_serial(AutoBuffer bb) {
     assert _key == null;        // Not set yet
@@ -287,7 +281,8 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // On remote nodes _rwlock is initialized to 0 (signaling a remote PUT is
     // in progress) flips to -1 when the remote PUT is done, or +1 if a notify
     // needs to happen.
-    _rwlock.set(-1);            // Set as 'remote put is done'
+    _rwlock = new AtomicInteger(-1); // Set as 'remote put is done'
+    _replicas = new NonBlockingSetInt();
     touch();
     return this;
   }
@@ -295,19 +290,15 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  private static final class Icer extends water.Icer<Value> {
-    private Icer(Value val) { super(val); }
-    public AutoBuffer write(AutoBuffer ab, Value value) { return write5(ab,value); }
-    AutoBuffer writeJSONFields(AutoBuffer ab, Value value) { return ab.putJSONStr(value.toString()); }
-    Value read(AutoBuffer ab, Value value) { return read5(ab,value); }
-    Value newInstance() { throw H2O.unimpl(); }
-    int frozenType() { return /*5*/TypeMap.VALUE; } 
-    protected final AutoBuffer write5(AutoBuffer ab, Value value) { 
+  public static final class Icer extends water.Icer<Value> {
+    public Icer(Value val) { super(val); }
+    public AutoBuffer write(AutoBuffer ab, Value value) { 
       value.touch();
       return ab.put1(value._persist).put2(value._type).putA1(value.memOrLoad());
     }
-    // Custom deserializer: Values need to be interned
-    protected final Value read5(AutoBuffer ab, Value value) { return value.read_serial(ab); }
+    AutoBuffer writeJSONFields(AutoBuffer ab, Value value) { return ab.putJSONStr(value.toString()); }
+    Value read(AutoBuffer ab, Value value) { return value.read_serial(ab); }
+    int frozenType() { return /*5*/TypeMap.VALUE; } 
   }
 
   // ---------------------
@@ -369,14 +360,14 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   //
   // Note that this sequence involves a lot of blocking on repeated writes with
   // cached readers, but not the readers - i.e., writes are slow to complete.
-  private transient final AtomicInteger _rwlock;
+  private transient AtomicInteger _rwlock;
   private boolean RW_CAS( int old, int nnn, String msg ) {
     if( !_rwlock.compareAndSet(old,nnn) ) return false;
     //System.out.println(_key+", "+old+" -> "+nnn+", "+msg);
     return true;
   }
   // List of who is replicated where
-  private transient final NonBlockingSetInt _replicas;
+  private transient NonBlockingSetInt _replicas;
   private int numReplicas() { return _replicas.size(); }
   /** True if h2o has a copy of this Value */
   boolean isReplicatedTo( H2ONode h2o ) { return _replicas.contains(h2o._unique_idx); }
@@ -460,7 +451,6 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // rest clear.  
     _replicas.add(h2o._unique_idx);
     _rwlock.set(0);             // No GETs are in-flight at this time. 
-    //System.out.println(key+", init "+_rwlock.get());
   }
 
   /** Block this thread until all prior remote PUTs complete - to force

@@ -323,7 +323,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         Log.debug("Done  remote task#"+_tsknum+" "+dt.getClass()+" to "+_client);
       _client.record_task_answer(this); // Setup for retrying Ack & AckAck
     }
-    // exception occured when processing this task locally, set exception and send it back to the caller
+    // exception occurred when processing this task locally, set exception and send it back to the caller
     @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
       if(!_firstException.getAndSet(true)){
         _dt.setException(ex);
