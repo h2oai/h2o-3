@@ -537,12 +537,12 @@ public final class AutoBuffer {
   // -----------------------------------------------
   // Utility functions to get various Java primitives
   boolean getZ() { return get1()!=0; }
-  int    get1 () { return getSp(1).get      ()&0xFF; }
-  char   get2 () { return getSp(2).getChar  ();      }
-  int    get4 () { return getSp(4).getInt   ();      }
-  float  get4f() { return getSp(4).getFloat ();      }
-  long   get8 () { return getSp(8).getLong  ();      }
-  double get8d() { return getSp(8).getDouble();      }
+  byte   get1 () { return getSp(1).get      (); }
+  char   get2 () { return getSp(2).getChar  (); }
+  int    get4 () { return getSp(4).getInt   (); }
+  float  get4f() { return getSp(4).getFloat (); }
+  long   get8 () { return getSp(8).getLong  (); }
+  double get8d() { return getSp(8).getDouble(); }
 
 
   int get3() {

@@ -277,7 +277,7 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
   private Value read_serial(AutoBuffer bb) {
     assert _key == null;        // Not set yet
-    _persist = (byte) bb.get1();// Set persistence backend but...
+    _persist = bb.get1();       // Set persistence backend but...
     if( onICE() ) clrdsk();     // ... the on-disk flag is local, just deserialized thus not on MY disk
     _type = (short) bb.get2();
     _mem = bb.getA1();
@@ -297,7 +297,7 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
   private static final class Icer extends water.Icer<Value> {
     private Icer(Value val) { super(val); }
-    AutoBuffer write(AutoBuffer ab, Value value) { return write5(ab,value); } 
+    public AutoBuffer write(AutoBuffer ab, Value value) { return write5(ab,value); }
     AutoBuffer writeJSONFields(AutoBuffer ab, Value value) { return ab.putJSONStr(value.toString()); }
     Value read(AutoBuffer ab, Value value) { return read5(ab,value); }
     Value newInstance() { throw H2O.unimpl(); }

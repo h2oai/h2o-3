@@ -361,8 +361,8 @@ final public class Key extends Iced<Key> implements Comparable {
   // Custom Serialization Class: Keys need to be interned
   // Class must be "public static class Icer extends super.Icer".
   public static final class Icer extends water.Icer<Key> {
-    private Icer(Key key) { super(key); }
-    AutoBuffer write(AutoBuffer ab, Key key) { return write4(ab,key); } 
+    public Icer(Key key) { super(key); }
+    public AutoBuffer write(AutoBuffer ab, Key key) { return write4(ab,key); }
     AutoBuffer writeJSONFields(AutoBuffer ab, Key key) { return ab.putJSONStr(key.toString()); }
     Key read(AutoBuffer ab, Key key) { return read4(ab,key); }
     Key newInstance() { throw H2O.unimpl(); }

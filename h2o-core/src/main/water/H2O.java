@@ -136,7 +136,7 @@ final public class H2O {
   // entire node for lack of some small piece of data).  So each attempt to do
   // lower-priority F/J work starts with an attempt to work & drain the
   // higher-priority queues.
-  static abstract class H2OCountedCompleter extends CountedCompleter implements Cloneable {
+  static public abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
     H2OCountedCompleter(){}
     H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
@@ -177,10 +177,22 @@ final public class H2O {
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
     byte priority() { return MIN_PRIORITY; }
-    @Override public H2OCountedCompleter clone(){
-      try { return (H2OCountedCompleter)super.clone(); }
+    @Override public T clone(){
+      try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
+
+    // The serialization flavor / delegate.  Lazily set on first use.
+    private transient short _ice_id;
+
+    // Return the icer for this instance+class.  Will set on 1st use.
+    protected Icer<T> icer() {
+      int id = _ice_id;
+      return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
+    }
+    @Override public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
+    @Override public T read (AutoBuffer ab) { return icer().read (ab,(T)this); }
+    @Override public int frozenType() { return icer().frozenType();   }
   }
 
 

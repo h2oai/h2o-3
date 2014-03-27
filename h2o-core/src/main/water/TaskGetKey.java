@@ -11,7 +11,6 @@ import water.nbhm.NonBlockingHashMap;
  */
 
 public class TaskGetKey extends DTask<TaskGetKey> {
-  static int DEBUG_WEAVER;
   Key _key;                  // Set by client/sender JVM, cleared by server JVM
   Value _val;                // Set by server JVM, read by client JVM
   transient Key _xkey;       // Set by client, read by client

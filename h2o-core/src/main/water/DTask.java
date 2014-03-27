@@ -24,53 +24,14 @@ import water.nbhm.UtilUnsafe;
  *
  */
 public abstract class DTask<T extends DTask> extends H2OCountedCompleter implements Freezable {
-  static int DEBUG_WEAVER;
   protected DTask(){}
   public DTask(H2OCountedCompleter completer){super(completer);}
-  // NOTE: DTask CAN NOT have any ICED members (FetchId is DTask, causes DEADLOCK in multinode environment)
-  // exception info, it must be unrolled here
-  protected String _exception;
-  protected String _msg;
-  protected String _eFromNode; // Node where the exception originated
-  // stackTrace info
-  protected int [] _lineNum;
-  protected String [] _cls, _mth, _fname;
 
-  public void setException(Throwable ex){
-    _exception = ex.getClass().getName();
-    _msg = ex.getMessage();
-    _eFromNode = H2O.SELF.toString();
-    StackTraceElement[]  stk = ex.getStackTrace();
-    _lineNum = new int[stk.length];
-    _cls = new String[stk.length];
-    _mth = new String[stk.length];
-    _fname = new String[stk.length];
-    for(int i = 0; i < stk.length; ++i){
-      _lineNum[i] = stk[i].getLineNumber();
-      _cls[i] = stk[i].getClassName();
-      _mth[i] = stk[i].getMethodName();
-      _fname[i] = stk[i].getFileName();
-    }
-  }
-
-  public boolean hasException(){
-    return _exception != null;
-  }
-
-  public DistributedException getDException() {
-    if( !hasException() ) return null;
-    String msg = _msg;
-    if( !_exception.equals(DistributedException.class.getName()) ) {
-      msg = " from " + _eFromNode + "; " + _exception;
-      if( _msg != null ) msg = msg+": "+_msg;
-    }
-    DistributedException dex = new DistributedException(msg,null);
-    StackTraceElement [] stk = new StackTraceElement[_cls.length];
-    for(int i = 0; i < _cls.length; ++i)
-      stk[i] = new StackTraceElement(_cls[i],_mth[i], _fname[i], _lineNum[i]);
-    dex.setStackTrace(stk);
-    return dex;
-  }
+  // Return a distributed-exception
+  private DException _ex;
+  public final boolean hasException() { return _ex != null; }
+  public void setException(Throwable ex) { _ex = new DException(ex); }
+  public DistributedException getDException() { return _ex==null ? null : _ex.toEx(); }
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP
   // result does NOT need to get the entire result again, just that the client
@@ -102,31 +63,4 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
     return true;
   }
-
-  // The serialization flavor / delegate.  Lazily set on first use.
-  private transient short _ice_id;
-
-  // Return the icer for this instance+class.  Will set on 1st use.
-  protected Icer<T> icer() {
-    int id = _ice_id;
-    return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
-  }
-  @Override public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
-  @Override public DTask      read (AutoBuffer ab) { return icer().read (ab,(T)this); }
-  @Override public int        frozenType()         { return icer().frozenType();   }
-  //@Override public AutoBuffer writeJSONFields(AutoBuffer bb) { return bb; }
-  //@Override public water.api.DocGen.FieldDoc[] toDocField() { return null; }
-  //public void copyOver(T that) {
-  //  this._exception = that._exception;
-  //  this._eFromNode = that._eFromNode;
-  //  this._lineNum   = that._lineNum;
-  //  this._fname     = that._fname;
-  //  this._msg       = that._msg;
-  //  this._cls       = that._cls;
-  //  this._mth       = that._mth;
-  //}
-  private RuntimeException barf(String method) {
-    return new RuntimeException(H2O.SELF + ":" + getClass().toString()+ " " + method +  " should be automatically overridden in the subclass by the auto-serialization code");
-  }
-  @Override public T clone() { return (T)super.clone(); }
 }

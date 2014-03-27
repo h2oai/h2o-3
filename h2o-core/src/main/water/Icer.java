@@ -23,7 +23,7 @@ public class Icer<T extends Freezable> {
   // that end in the TypeMap ID for "Iced" class - which is "2".
   protected final AutoBuffer write2(AutoBuffer ab, T ice) { return ab; } 
   protected final T read2(AutoBuffer ab, T ice) { return ice; }
-  // That end in the TypeMap ID for "DTask" class - which is "3".
+  // That end in the TypeMap ID for "H2OCountedCompleter" class - which is "3".
   protected final AutoBuffer write3(AutoBuffer ab, T ice) { return ab; } 
   protected final T read3(AutoBuffer ab, T ice) { return ice; }
 }

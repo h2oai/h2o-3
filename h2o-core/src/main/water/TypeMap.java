@@ -12,16 +12,17 @@ public class TypeMap {
     "[B",                 // 1 - 
     "water.Iced",         // 2 - Base serialization class
     "water.H2O$H2OCountedCompleter",  // 3 - Base serialization class
-    "water.Key",          // 4 - Needed to write that first Key
-    "water.Value",        // 5 - Needed to write that first Key
-    "water.DTask",        // 6 - Base serialization class
+    "water.Key",          // 4 - Needed to write that first Key; custom serializer
+    "water.Value",        // 5 - Needed to write that first Key; custom serializer
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
+    "water.DTask",        // Needed for those first Tasks
+    "water.DException",   // Needed for those first Tasks
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
-    "water.fvec.C1NChunk",// used as constant in parser
-    "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
     "water.TaskPutKey",   // Needed to write that first Key
     "water.TaskGetKey",   // Read that first Key
+    "water.fvec.C1NChunk",// used as constant in parser
+    "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
     "water.Job$List",     // First Key which locks the cloud for all JUnit tests
   };
   // Class name -> ID mapping
