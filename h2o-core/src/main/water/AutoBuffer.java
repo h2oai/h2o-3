@@ -582,6 +582,12 @@ public final class AutoBuffer {
   AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
   AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
+  public AutoBuffer put(Freezable f) {
+    if( f == null ) return put2(TypeMap.NULL);
+    assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
+    put2((short)f.frozenType());
+    return f.write(this);
+  }
   AutoBuffer put(Iced f) {
     if( f == null ) return put2(TypeMap.NULL);
     assert f.frozenType() > 0;
@@ -664,6 +670,12 @@ public final class AutoBuffer {
     return this;
   }
 
+  <T extends Freezable> T get(Class<T> t) {
+    short id = (short)get2();
+    if( id == TypeMap.NULL ) return null;
+    assert id > 0 : "Bad type id "+id;
+    return TypeMap.newFreezable(id).read(this);
+  }
   <T extends Iced> T get() {
     short id = (short)get2();
     if( id == TypeMap.NULL ) return null;

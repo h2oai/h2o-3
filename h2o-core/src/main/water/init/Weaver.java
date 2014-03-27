@@ -2,9 +2,10 @@ package water.init;
 
 import java.util.*;
 import javassist.*;
-import java.lang.reflect.Field;
+import java.lang.reflect.*;
 import sun.misc.Unsafe;
-import water.Iced;
+import water.Icer;
+import water.Freezable;
 import water.TypeMap;
 import water.nbhm.UtilUnsafe;
 
@@ -14,15 +15,21 @@ public class Weaver {
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
-    try { _icer = _pool.get("water.Iced$Icer"); }
+    try { _icer = _pool.get("water.Icer"); }
     catch( NotFoundException nfe ) {
       throw new RuntimeException(nfe);
     }
   }
 
-  public static <T extends Iced> Iced.Icer<T> genDelegate( int id, Class<T> clazz ) {
+  public static <T extends Freezable> Icer<T> genDelegate( int id, Class<T> clazz ) {
     Exception e2;
-    try { return (Iced.Icer<T>)javassistLoadClass(id,clazz).toClass().newInstance(); }
+    try { 
+      T ice = (T)_unsafe.allocateInstance(clazz);
+      Class<Icer<T>> icer_clz = javassistLoadClass(id,clazz).toClass();
+      Constructor<Icer<T>> cstr = (Constructor<Icer<T>>)icer_clz.getDeclaredConstructors()[0];
+      return cstr.newInstance(ice);
+    }
+    catch( InvocationTargetException e ) { e2 = e; }
     catch( InstantiationException e ) { e2 = e; }
     catch( IllegalAccessException e ) { e2 = e; }
     catch( NotFoundException      e ) { e2 = e; }
@@ -31,7 +38,7 @@ public class Weaver {
     throw new RuntimeException(e2);
   }
 
-  // The name conversion from a Iced subclass to an Iced.Icer subclass.
+  // The name conversion from a Iced subclass to an Icer subclass.
   private static String implClazzName( String name ) {
     return name + "$Icer";
   }
@@ -39,13 +46,14 @@ public class Weaver {
   // See if javaassist can find this class, already generated
   private static CtClass javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException {
     // End the super class lookup chain at "water.Iced",
-    // returning the known delegate class "water.Iced.Icer".
+    // returning the known delegate class "water.Icer".
     String iced_name = iced_clazz.getName();
     if( iced_name.equals("water.Iced") ) return _icer;
+    if( iced_name.equals("water.H2O$H2OCountedCompleter") ) return _icer;
 
     // Now look for a pre-cooked Icer.  No locking, 'cause we're just looking
     String icer_name = implClazzName(iced_name);
-    CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Iced.Icer
+    CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Icer
     if( icer_cc != null ) return icer_cc; // Found a pre-cooked Icer implementation
 
     // Serialize parent.  No locking; occasionally we'll "onIce" from the
@@ -67,9 +75,11 @@ public class Weaver {
     // Generate the Icer class
     String iced_name = iced_cc.getName();
     CtClass icer_cc = _pool.makeClass(icer_name);
+    System.out.println("class "+icer_cc.getName()+" extends "+super_icer.getName()+" {");
     icer_cc.setSuperclass(super_icer);
 
     // The write call
+    boolean debug_print = 
     make_body(icer_cc, iced_cc, iced_clazz,
               "protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "  write"+super_id+"(ab,ice);\n",
@@ -82,9 +92,10 @@ public class Weaver {
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String wbody = "water.AutoBuffer write(water.AutoBuffer ab, water.Iced ice) {\n"+
+    String wbody = "water.AutoBuffer write(water.AutoBuffer ab, water.Freezable ice) {\n"+
       "  return write"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
+    if( debug_print ) System.out.println(wbody);
     addMethod(wbody,icer_cc);
 
 
@@ -94,26 +105,41 @@ public class Weaver {
               "  read"+super_id+"(ab,ice);\n",
               "  ice.%s = ab.get%z();\n",            "  _unsafe.put%u(ice,%d,ab.get%z());  //%s\n",
               "  ice.%s = %c.raw_enum(ab.get1());\n","  _unsafe.putObject(ice,%d,%c.raw_enum(ab.get1()));  //%s\n",
-              "  ice.%s = (%C)s.get%z(%c.class);\n", "  _unsafe.putObject(ice,%d,(%C)s.get%z(%c.class));  //%s\n",
+              "  ice.%s = (%C)ab.get%z(%c.class);\n","  _unsafe.putObject(ice,%d,(%C)ab.get%z(%c.class));  //%s\n",
               "",
               "  return ice;\n" +
               "}", null);
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String rbody = "water.Iced read(water.AutoBuffer ab, water.Iced ice) {\n"+
+    String rbody = "water.Freezable read(water.AutoBuffer ab, water.Freezable ice) {\n"+
       "  return read"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
+    if( debug_print ) System.out.println(rbody);
     addMethod(rbody,icer_cc);
 
     String cnbody = "java.lang.String className() { return \""+iced_name+"\"; }";
+    if( debug_print ) System.out.println(cnbody);
     addMethod(cnbody,icer_cc);
+
+    String ftbody = "int frozenType() { return "+id+"; }";
+    if( debug_print ) System.out.println(ftbody);
+    addMethod(ftbody,icer_cc);
+
+    String cstrbody = "public "+icer_cc.getSimpleName()+"( "+iced_name+" iced) { super(iced); }";
+    if( debug_print ) System.out.println(cstrbody);
+    try {
+      icer_cc.addConstructor(CtNewConstructor.make(cstrbody,icer_cc));
+    } catch( CannotCompileException ce ) {
+      System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+cstrbody+"\n------");
+      throw ce;
+    }
 
     return icer_cc;
   }
 
   // Generate a method body string
-  private static void make_body(CtClass icer, CtClass iced_cc, Class iced_clazz,
+  private static boolean make_body(CtClass icer, CtClass iced_cc, Class iced_clazz,
                                 String header,
                                 String supers,
                                 String prims,  String prims_unsafe,
@@ -171,6 +197,7 @@ public class Weaver {
     if( debug_print )
       System.err.println(icer.getName()+" "+body);
     addMethod(body,icer);
+    return debug_print;
   }
 
   // Add a gen'd method.  Politely print if there's an error during generation.
@@ -232,8 +259,8 @@ public class Weaver {
     case 'I': return "Int";
     case 'F': return "Float";
     case 'J': return "Long";
-    case 'D': throw water.H2O.unimpl();
-    case 'L': throw water.H2O.unimpl();
+    case 'D': return "Double";
+    case 'L': return "Object";
     case '[': return "Object";
     }
     throw new RuntimeException("unsafe access to type "+sig);

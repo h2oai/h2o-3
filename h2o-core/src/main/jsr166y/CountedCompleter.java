@@ -381,7 +381,7 @@ public abstract class CountedCompleter<T> extends ForkJoinTask<T> {
     private static final long serialVersionUID = 5232453752276485070L;
 
     /** This task's completer, or null if none */
-    final CountedCompleter<?> completer;
+    /*final*/ CountedCompleter<?> completer;
     /** The number of pending tasks until completion */
     volatile int pending;
 
@@ -466,6 +466,13 @@ public abstract class CountedCompleter<T> extends ForkJoinTask<T> {
     public final CountedCompleter<?> getCompleter() {
         return completer;
     }
+    // Cliff Click's Horrible Hack
+    // I must 'clone' or 'newInstance' these things...  so to avoid a
+    // reflective Constructor call to set the parent I made the 'completer'
+    // field non-final.  This happens immediately after clone/newInstance and a
+    // following volatile set of the pending() field while make the change
+    // visible to other threads.  Example: old.clone().setCompleter(completer)
+    public final void setCompleter( CountedCompleter x ) { completer = x; }
 
     /**
      * Returns the current pending count.

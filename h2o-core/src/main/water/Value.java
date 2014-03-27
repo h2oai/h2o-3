@@ -96,7 +96,7 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
   // Just an empty shell of a Value, no local data but the Value is "real".
   // Any attempt to look at the Value will require a remote fetch.
-  private final boolean isEmpty() { return _max > 0 && _mem==null && _pojo == null && !isPersisted(); }
+  final boolean isEmpty() { return _max > 0 && _mem==null && _pojo == null && !isPersisted(); }
   private final byte[] getBytes() {
     assert _type==TypeMap.PRIM_B && _pojo == null;
     byte[] mem = _mem;          // Read once!
@@ -295,19 +295,19 @@ public class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  private static final class Icer extends Iced.Icer<Value> {
-    AutoBuffer write(AutoBuffer ab, Value value) { return write4(ab,value); } 
+  private static final class Icer extends water.Icer<Value> {
+    private Icer(Value val) { super(val); }
+    AutoBuffer write(AutoBuffer ab, Value value) { return write5(ab,value); } 
     AutoBuffer writeJSONFields(AutoBuffer ab, Value value) { return ab.putJSONStr(value.toString()); }
-    Value read(AutoBuffer ab, Value value) { return read4(ab,value); }
+    Value read(AutoBuffer ab, Value value) { return read5(ab,value); }
     Value newInstance() { throw H2O.unimpl(); }
-    int frozenType() { return /*4*/TypeMap.VALUE; } 
-    protected final AutoBuffer write4(AutoBuffer ab, Value value) { 
-      super.write2(ab,value);   // Iced superclass write
+    int frozenType() { return /*5*/TypeMap.VALUE; } 
+    protected final AutoBuffer write5(AutoBuffer ab, Value value) { 
       value.touch();
       return ab.put1(value._persist).put2(value._type).putA1(value.memOrLoad());
     }
     // Custom deserializer: Values need to be interned
-    protected final Value read4(AutoBuffer ab, Value value) { return value.read_serial(ab); }
+    protected final Value read5(AutoBuffer ab, Value value) { return value.read_serial(ab); }
   }
 
   // ---------------------
