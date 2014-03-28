@@ -2,7 +2,6 @@ package water;
 
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
@@ -29,7 +28,6 @@ import water.fvec.Vec.VectorGroup;
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJoinPool.ManagedBlocker {
   public MRTask() { _priority = getPriority(); }
-  public MRTask(H2OCountedCompleter completer){super(completer); _priority = getPriority(); }
 
   /** The Vectors (or Keys) to work on. */
   public Frame _fr;
@@ -97,10 +95,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
    *  of <strong>local</strong> input Chunks, for Frames with arbitrary column
    *  numbers.  All map variants are called, but only one is expected to be
    *  overridden. */
-  public void map(    Chunk cs[] ) { }
-  public void map(    Chunk cs[], NewChunk nc ) { }
-  public void map(    Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
-  public void map(    Chunk cs[], NewChunk [] ncs ) { }
+  public void map( Chunk cs[] ) { }
+  public void map( Chunk cs[], NewChunk nc ) { }
+  public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
+  public void map( Chunk cs[], NewChunk [] ncs ) { }
 
   /** Override with your map implementation.  Used when doAll is called with 
    *  an array of Keys, and called once-per-Key on the Key's Home node */
@@ -165,8 +163,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
       if( _last == null ) _last=p;
       else {
         MRProfile first = _last._onCdone <= p._onCdone ? _last : p;
-        MRProfile  last = _last._onCdone >  p._onCdone ? _last : p;
-        _last = last;
+        _last           = _last._onCdone >  p._onCdone ? _last : p;
         if( first._onCdone > _done1st ) { _time1st = first.sumTime(); _done1st = first._onCdone; }
       }
       if( size_rez !=0 )        // Record i/o result size
@@ -175,15 +172,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
       assert _last._onCdone >= _done1st;
     }
 
-    @Override public String toString() { return toString(new StringBuilder(),0).toString(); }
-    private StringBuilder toString(StringBuilder sb, int d) {
+    @Override public String toString() { return print(new StringBuilder(),0).toString(); }
+    private StringBuilder print(StringBuilder sb, int d) {
       if( d==0 ) sb.append(_clz).append("\n");
       for( int i=0; i<d; i++ ) sb.append("  ");
       if( _localstart != 0 ) sb.append("Node local ").append(_localdone - _localstart).append("ms, ");
       if( _userstart == 0 ) {   // Forked job?
         sb.append("Slow wait ").append(_mapstart-_localdone).append("ms + work ").append(_last.sumTime()).append("ms, ");
         sb.append("Fast work ").append(_time1st).append("ms + wait ").append(_onCstart-_done1st).append("ms\n");
-        _last.toString(sb,d+1); // Nested slow-path print
+        _last.print(sb,d+1); // Nested slow-path print
         for( int i=0; i<d; i++ ) sb.append("  ");
         sb.append("join-i/o ").append(_onCstart-_last._onCdone).append("ms, ");
       } else {                  // Leaf map call?
@@ -208,9 +205,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
 
   // Support for fluid-programming with strong types
   private final T self() { return (T)this; }
-
-  /** Returns a Vec from the Frame.  */
-  public final Vec vecs(int i) { return _fr.vecs()[i]; }
 
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */
@@ -250,7 +244,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
   /** Block for & get any final results from a dfork'd MRTask.
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException e ) { }
+    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
     // Do any post-writing work (zap rollup fields, etc)
     _fr.reloadVecs();
     for( int i=0; i<_fr.numCols(); i++ )
@@ -283,13 +277,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
     // Block For All
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException e ) { }
+    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
     return self();
   }
 
   // Setup for local work: fire off any global work to cloud neighbors; do all
   // chunks; call user's init.
-  private final void setupLocal0() {
+  private void setupLocal0() {
     assert _profile==null;
     _fs = new Futures();
     _profile = new MRProfile(this);
@@ -322,7 +316,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
 
   // Make an RPC call to some node in the middle of the given range.  Add a
   // pending completion to self, so that we complete when the RPC completes.
-  private final RPC<T> remote_compute( int nlo, int nhi ) {
+  private RPC<T> remote_compute( int nlo, int nhi ) {
     // No remote work?
     if( !(nlo < nhi) ) return null;
     int node = addShift(nlo);
@@ -447,7 +441,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
   // Gather/reduce remote work.
   // Block for other queued pending tasks.
   // Copy any final results into 'this', such that a return of 'this' has the results.
-  private final void postLocal() {
+  private void postLocal() {
     reduce3(_nleft);            // Reduce global results from neighbors.
     reduce3(_nrite);
     _profile._remoteBlkDone = System.currentTimeMillis();

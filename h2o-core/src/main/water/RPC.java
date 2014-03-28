@@ -91,7 +91,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   static final private String[] COOKIES = new String[] {
     "SERVER_UDP","SERVER_TCP","CLIENT_UDP","CLIENT_TCP" };
 
-  static <DT extends DTask> RPC<DT> call(H2ONode target, DT dtask) {
+  static <V extends DTask> RPC<V> call(H2ONode target, V dtask) {
     return new RPC(target,dtask).call();
   }
 
