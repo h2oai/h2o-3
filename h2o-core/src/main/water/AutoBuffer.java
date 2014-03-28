@@ -293,7 +293,7 @@ public final class AutoBuffer {
           if( !_read ) _h2o.freeTCPSocket(null); // Tell H2ONode socket is no longer available
         } else {                // Closing good TCP?
           if( _read ) {         // Reader?
-            int x = get1();     // Read 1 more byte
+            int x = get1U();    // Read 1 more byte
             assert x == 0xab : "AB.close instead of 0xab sentinel got "+x+", "+this;
             // Write the reader-handshake-byte.
             ((SocketChannel)_chan).socket().getOutputStream().write(0xcd);
@@ -528,7 +528,7 @@ public final class AutoBuffer {
     if (eof())
       return 0;
     getSp(1);
-    return get1(position());
+    return get1U(position());
   }
   String getStr(int off, int len) {
     return new String(_bb.array(), _bb.arrayOffset()+off, len);
@@ -538,6 +538,7 @@ public final class AutoBuffer {
   // Utility functions to get various Java primitives
   boolean getZ() { return get1()!=0; }
   byte   get1 () { return getSp(1).get      (); }
+  int    get1U() { return get1() & 0xFF;        }
   char   get2 () { return getSp(2).getChar  (); }
   int    get4 () { return getSp(4).getInt   (); }
   float  get4f() { return getSp(4).getFloat (); }
@@ -546,9 +547,9 @@ public final class AutoBuffer {
 
 
   int get3() {
-    return (0xff & get1()) << 0 |
-           (0xff & get1()) << 8 |
-           (0xff & get1()) << 16;
+    return get1U() << 0 |
+           get1U() << 8 |
+           get1U() << 16;
   }
 
   AutoBuffer put3( int x ) {
@@ -557,7 +558,7 @@ public final class AutoBuffer {
   }
 
 
-  int    get1 (int off) { return _bb.get (off)&0xFF; }
+  int    get1U(int off) { return _bb.get (off)&0xFF; }
   char   get2 (int off) { return _bb.getChar  (off); }
   int    get4 (int off) { return _bb.getInt   (off); }
   float  get4f(int off) { return _bb.getFloat (off); }
@@ -607,7 +608,7 @@ public final class AutoBuffer {
   }
   // Get a (compressed) integer.  See above for the compression strategy and reasoning.
   int getInt( ) {
-    int x = get1();
+    int x = get1U();
     if( x <= 253 ) return x-1;
     if( x==255 ) return (short)get2();
     assert x==254;
@@ -874,7 +875,7 @@ public final class AutoBuffer {
     int y = getInt();           // Non-zero in the middle
     int z = y==0 ? 0 : getInt();// Trailing zeros
     long[] buf = MemoryManager.malloc8(x+y+z);
-    switch( get1() ) {       // 1,2,4 or 8 for how the middle section is passed
+    switch( get1U() ) {      // 1,2,4 or 8 for how the middle section is passed
     case 1: for( int i=x; i<x+y; i++ ) buf[i] =        get1(); return buf;
     case 2: for( int i=x; i<x+y; i++ ) buf[i] = (short)get2(); return buf;
     case 4: for( int i=x; i<x+y; i++ ) buf[i] =        get4(); return buf;

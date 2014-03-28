@@ -248,7 +248,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
-  private Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
   private Value(Key k, int max ) { this(k, max, new byte[max], TypeMap.PRIM_B, ICE); }
   private Value(Key k, int max, byte be ) { this(k, max, null, TypeMap.PRIM_B,  be); }
   Value(Key k, String s ) { this(k, s.getBytes()); }

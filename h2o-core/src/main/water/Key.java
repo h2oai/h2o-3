@@ -64,14 +64,10 @@ final public class Key extends Iced<Key> implements Comparable {
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
       assert _kb[0] != Key.DVEC;
-      throw H2O.unimpl();
-      //H2ONode h2o=null, h2otmp = new H2ONode(); // Fill in the fields from the Key
-      //AutoBuffer ab = new AutoBuffer(_kb,2);
-      //for( int i=0; i<=repl; i++ )
-      //  h2o = h2otmp.read(ab);  // Read util we get the specified H2O
-      //// Reverse the home to the index
-      //int idx = h2o.index();
-      //if( idx >= 0 ) return idx;
+      H2ONode h2o = H2ONode.intern(_kb,2+repl*(4+2/*serialized bytesize of H2OKey*/));
+      // Reverse the home to the index
+      int idx = h2o.index();
+      if( idx >= 0 ) return idx;
       // Else homed to a node which is no longer in the cloud!
       // Fall back to the normal home mode
     }

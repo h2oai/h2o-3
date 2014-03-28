@@ -86,9 +86,9 @@ abstract class UDP {
   private static class IO_record extends UDP {
     AutoBuffer call(AutoBuffer ab) { throw H2O.unimpl(); }
     String print16( AutoBuffer ab ) {
-      int flavor = ab.get1(3);
-      int iotime = ab.get4(4);
-      int size   = ab.get4(8);
+      int flavor = ab.get1U(3);
+      int iotime = ab.get4 (4);
+      int size   = ab.get4 (8);
       return "I/O "+Value.nameOfPersist(flavor)+" "+iotime+"ms "+size+"b";
     }
   }

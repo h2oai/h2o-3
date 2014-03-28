@@ -54,58 +54,58 @@ public class KVTest extends TestUtil {
 
   // ---
   // Issue a slew of remote puts, then issue a DFJ job on the array of keys.
-//  @Test public void testRemoteBitSet() throws Exception {
-//    // Issue a slew of remote key puts
-//    Key[] keys = new Key[32];
-//    for( int i = 0; i < keys.length; ++i ) {
-//      Key k = keys[i] = Key.make("key"+i);
-//      byte[] bits = new byte[4];
-//      bits[0] = (byte)i;        // Each value holds a shift-count
-//      Value val = new Value(k,bits);
-//      DKV.put(k,val);
-//    }
-//    DKV.write_barrier();
-//
+  @Test public void testRemoteBitSet() throws Exception {
+    // Issue a slew of remote key puts
+    Key[] keys = new Key[32];
+    for( int i = 0; i < keys.length; ++i ) {
+      Key k = keys[i] = Key.make("key"+i);
+      byte[] bits = new byte[4];
+      bits[0] = (byte)i;        // Each value holds a shift-count
+      Value val = new Value(k,bits);
+      DKV.put(k,val);
+    }
+    DKV.write_barrier();
+
 //    RemoteBitSet r = new RemoteBitSet();
 //    r.invoke(keys);
 //    assertEquals((int)((1L<<keys.length)-1), r._x);
-//    for( Key k : keys ) DKV.remove(k);
-//  }
-//
-//  // Remote Bit Set: OR together the result of a single bit-mask where the
-//  // shift-amount is passed in in the Key.
+    for( Key k : keys ) DKV.remove(k);
+  }
+
+  // Remote Bit Set: OR together the result of a single bit-mask where the
+  // shift-amount is passed in in the Key.
 //  public static class RemoteBitSet extends MRTask {
 //    private int _x;
 //    public void map( Key key ) { _x = 1<<(DKV.get(key).memOrLoad()[0]); }
 //    public void reduce( DRemoteTask rbs ) { _x |= ((RemoteBitSet)rbs)._x; }
 //  }
-//
-//  // ---
-//  // Issue a large Key/Value put/get - testing the TCP path
-//  @Test public void testTcpCRUD() {
-//    // Make an execution key homed to the remote node
-//    H2O cloud = H2O.CLOUD;
-//    H2ONode target = cloud._memary[0];
-//    if( target == H2O.SELF ) target = cloud._memary[1];
-//    Key remote_key = Key.make("test4_remote",(byte)1,Key.DFJ_INTERNAL_USER,target); // A key homed to a specific target
-//    Value v0 = DKV.get(remote_key);
-//    assertNull(v0);
-//    // It's a Big Value
-//    byte[] bits = new byte[100000];
-//    for( int i=0; i<bits.length; i++ )
-//      bits[i] = (byte)i;
-//    Value v1 = new Value(remote_key,bits);
-//    // Start the remote-put operation
-//    DKV.put(remote_key,v1);
-//    assertEquals(v1._key,remote_key);
-//    Value v2 = DKV.get(remote_key);
-//    assertEquals(v1,v2);
-//    DKV.remove(remote_key);
-//    Value v3 = DKV.get(remote_key);
-//    assertNull(v3);
-//  }
-//
-//
+
+  // ---
+  // Issue a large Key/Value put/get - testing the TCP path
+  @Test public void testTcpCRUD() {
+    // Make an execution key homed to the remote node
+    H2O cloud = H2O.CLOUD;
+    H2ONode target = cloud._memary[0];
+    if( target == H2O.SELF ) target = cloud._memary[1];
+    Key remote_key = Key.make("test4_remote",(byte)1,Key.BUILT_IN_KEY,target); // A key homed to a specific target
+    Value v0 = DKV.get(remote_key);
+    assertNull(v0);
+    // It's a Big Value
+    byte[] bits = new byte[100000];
+    for( int i=0; i<bits.length; i++ )
+      bits[i] = (byte)i;
+    Value v1 = new Value(remote_key,bits);
+    // Start the remote-put operation
+    DKV.put(remote_key,v1);
+    assertEquals(v1._key,remote_key);
+    Value v2 = DKV.get(remote_key);
+    assertEquals(v1,v2);
+    DKV.remove(remote_key);
+    Value v3 = DKV.get(remote_key);
+    assertNull(v3);
+  }
+
+
 //  // ---
 //  // Map in h2o.jar - a multi-megabyte file - into Arraylets.
 //  // Run a distributed byte histogram.

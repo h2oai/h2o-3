@@ -103,7 +103,15 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     return h2o;
   }
-  public static final H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
+  public static H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
+
+  public static H2ONode intern( byte[] bs, int off ) {
+    byte[] b = new byte[4];
+    UDP.set4(b,0,UDP.get4(bs,off));
+    int port = UDP.get2(bs,off+4)&0xFFFF;
+    try { return intern(InetAddress.getByAddress(b),port); } 
+    catch( UnknownHostException e ) { throw Log.throwErr(e); }
+  }
 
   static final H2ONode intern( int ip, int port ) {
     byte[] b = new byte[4];
@@ -111,12 +119,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     b[1] = (byte)(ip>> 8);
     b[2] = (byte)(ip>>16);
     b[3] = (byte)(ip>>24);
-    try {
-      return intern(InetAddress.getByAddress(b),port);
-    } catch( UnknownHostException e ) {
-      H2O.die(e);
-      return null;
-    }
+    try { return intern(InetAddress.getByAddress(b),port); } 
+    catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
 
   // Get a nice Node Name for this Node in the Cloud.  Basically it's the
@@ -200,12 +204,11 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     // Must make a fresh socket
     SocketChannel sock2 = SocketChannel.open();
-    throw H2O.unimpl();
-    //sock2.socket().setSendBufferSize(AutoBuffer.BBSIZE);
-    //boolean res = sock2.connect( _key );
-    //assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
-    //TCPS.incrementAndGet();     // Cluster-wide counting
-    //return sock2;
+    sock2.socket().setSendBufferSize(AutoBuffer.BBSIZE);
+    boolean res = sock2.connect( _key );
+    assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
+    TCPS.incrementAndGet();     // Cluster-wide counting
+    return sock2;
   }
   synchronized void freeTCPSocket( SocketChannel sock ) {
     assert 0 <= _socksAvail && _socksAvail < _socks.length;
