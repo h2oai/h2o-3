@@ -66,19 +66,19 @@ public class KVTest extends TestUtil {
     }
     DKV.write_barrier();
 
-//    RemoteBitSet r = new RemoteBitSet();
-//    r.invoke(keys);
-//    assertEquals((int)((1L<<keys.length)-1), r._x);
+    RemoteBitSet r = new RemoteBitSet();
+    r.doAll(keys);
     for( Key k : keys ) DKV.remove(k);
+    assertEquals((int)((1L<<keys.length)-1), r._x);
   }
 
   // Remote Bit Set: OR together the result of a single bit-mask where the
   // shift-amount is passed in in the Key.
-//  public static class RemoteBitSet extends MRTask {
-//    private int _x;
-//    public void map( Key key ) { _x = 1<<(DKV.get(key).memOrLoad()[0]); }
-//    public void reduce( DRemoteTask rbs ) { _x |= ((RemoteBitSet)rbs)._x; }
-//  }
+  public static class RemoteBitSet extends MRTask<RemoteBitSet> {
+    private int _x;
+    @Override public void map( Key key ) { _x = 1<<(DKV.get(key).memOrLoad()[0]); }
+    @Override public void reduce( RemoteBitSet rbs ) { _x |= rbs._x; }
+  }
 
   // ---
   // Issue a large Key/Value put/get - testing the TCP path

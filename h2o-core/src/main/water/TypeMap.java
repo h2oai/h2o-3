@@ -102,7 +102,10 @@ public class TypeMap {
     if( id == PRIM_B ) return "[B";
     Icer f = goForGold(id);
     if( f != null ) return f.className();
-    if( id < BOOTSTRAP_CLASSES.length ) return BOOTSTRAP_CLASSES[id];
+    if( id < CLAZZES.length ) { // Might be installed as a className mapping no Icer (yet)
+      String s = CLAZZES[id];
+      if( s != null ) return s; // Has the className already
+    }
     assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
     String s = FetchClazz.fetchClazz(id);  // Fetch class name string from leader
     install( s, id );                      // Install name<->id mapping

@@ -1,7 +1,6 @@
 package water.fvec;
 
-import water.Iced;
-import water.Key;
+import water.*;
 
 public class Chunk extends Iced {
   public long _start;         // Start element; filled after AutoBuffer.read
@@ -10,4 +9,5 @@ public class Chunk extends Iced {
   byte[] _mem; // Short-cut to the embedded memory; WARNING: holds onto a large array
 
   public final byte[] getBytes() { return _mem; }
+  public final void close( int cidx, Futures fs ) { throw H2O.unimpl(); }
 }

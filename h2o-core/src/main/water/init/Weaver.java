@@ -12,14 +12,14 @@ import water.nbhm.UtilUnsafe;
 
 public class Weaver {
   private static final ClassPool _pool = ClassPool.getDefault();
-  private static final CtClass _icer;
+  private static final CtClass _icer, _dtask;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
-    try { _icer = _pool.get("water.Icer"); }
-    catch( NotFoundException nfe ) {
-      throw new RuntimeException(nfe);
-    }
+    try { 
+      _icer = _pool.get("water.Icer"); 
+      _dtask= _pool.get("water.DTask"); // these also need copyOver
+    } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
   public static <T extends Freezable> Icer<T> genDelegate( int id, Class<T> clazz ) {
@@ -137,6 +137,23 @@ public class Weaver {
     String ftbody = "int frozenType() { return "+id+"; }";
     if( debug != null ) System.out.println(ftbody);
     addMethod(ftbody,icer_cc);
+
+    // DTasks need to be able to copy all their (non transient) fields from one
+    // DTask instance over another, to match the MRTask API.
+    if( iced_cc.subclassOf(_dtask) ) {
+      String cpbody_impl =
+        make_body(icer_cc, iced_cc, iced_clazz,
+                  "void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
+                  "  super.copyOver(fdst,fsrc);\n"+
+                  "  "+iced_name+" dst = ("+iced_name+")fdst;\n"+
+                  "  "+iced_name+" src = ("+iced_name+")fsrc;\n",
+                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "",
+                  "}", null);
+      if( debug != null ) System.out.println(cpbody_impl);
+    }
 
     String cstrbody = "public "+icer_cc.getSimpleName()+"( "+iced_name+" iced) { super(iced); }";
     if( debug != null ) System.out.println(cstrbody);
@@ -266,7 +283,7 @@ public class Weaver {
     case 'Z': return "Boolean";
     case 'B': return "Byte";
     case 'C': return "Char";
-    case 'S': return "Short";
+    case 'S': return "Char";
     case 'I': return "Int";
     case 'F': return "Float";
     case 'J': return "Long";

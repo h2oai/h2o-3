@@ -63,4 +63,6 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
     return true;
   }
+  // For MRTasks, we need to copyOver
+  public void copyOver( T src ) { icer().copyOver(this,src); }
 }

@@ -97,7 +97,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // Make a remotely executed FutureTask.  Must name the remote target as well
   // as the remote function.  This function is expected to be subclassed.
-  private RPC( H2ONode target, V dtask ) {
+  RPC( H2ONode target, V dtask ) {
     this(target,dtask,1.0f);
     setTaskNum();
   }
@@ -196,7 +196,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // check priorities - FJ task can only block on a task with higher priority!
     Thread cThr = Thread.currentThread();
     int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
-    assert _dt.priority() > priority || (_dt.priority() == priority && (_dt instanceof DRemoteTask || _dt instanceof MRTask2))
+    assert _dt.priority() > priority || (_dt.priority() == priority && (_dt instanceof DRemoteTask || _dt instanceof MRTask))
       : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
     if( _done ) return result(); // Fast-path shortcut
     // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
@@ -319,7 +319,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       } while((dt = _dt) != null); // end of while(true)
       if( dt == null )
         Log.info("Cancelled remote task#"+_tsknum+" "+origDt.getClass()+" to "+_client + " has been cancelled by remote");
-      else if( (dt instanceof DRemoteTask || dt instanceof MRTask2) && dt.logVerbose() )
+      else if( (dt instanceof DRemoteTask || dt instanceof MRTask) && dt.logVerbose() )
         Log.debug("Done  remote task#"+_tsknum+" "+dt.getClass()+" to "+_client);
       _client.record_task_answer(this); // Setup for retrying Ack & AckAck
     }
@@ -407,7 +407,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       }
       RPCCall rpc2 = ab._h2o.record_task(rpc);
       if( rpc2==null ) {        // Atomically insert (to avoid double-work)
-        if( (rpc._dt instanceof DRemoteTask || rpc._dt instanceof MRTask2) && rpc._dt.logVerbose() )
+        if( (rpc._dt instanceof DRemoteTask || rpc._dt instanceof MRTask) && rpc._dt.logVerbose() )
           Log.debug("Start remote task#"+task+" "+rpc._dt.getClass()+" from "+ab._h2o);
         H2O.submitTask(rpc);    // And execute!
       } else {                  // Else lost the task-insertion race
@@ -518,7 +518,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   }
 
   // ---
-  private synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
+  synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
     if( _fjtasks == null ) _fjtasks = new ArrayList();
     _fjtasks.add(task);
     return this;
@@ -532,7 +532,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return _size==absize;
   }
   // Size of received results
-  private int size_rez() { return _size_rez; }
+  int size_rez() { return _size_rez; }
 
   // ---
   static final long RETRY_MS = 200; // Initial UDP packet retry in msec

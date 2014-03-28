@@ -14,6 +14,7 @@ public class Icer<T extends Freezable> {
   AutoBuffer write(AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
   AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
   T read(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
+  void copyOver( T dst, T src ) { /*base of the call chain; no fields to copy*/ }
   int frozenType() { throw fail(); }
   String className() { throw fail(); }
   private RuntimeException fail() {
