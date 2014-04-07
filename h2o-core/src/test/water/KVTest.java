@@ -106,42 +106,39 @@ public class KVTest extends TestUtil {
   }
 
 
-//  // ---
-//  // Map in h2o.jar - a multi-megabyte file - into Arraylets.
-//  // Run a distributed byte histogram.
-//  @Test public void testMultiMbFile() throws Exception {
-//    File file = find_test_file("target/h2o.jar");
-//    Key h2okey = load_test_file(file);
-//    ByteHisto bh = new ByteHisto();
-//    bh.invoke(h2okey);
-//    int sum=0;
-//    for( int i=0; i<bh._x.length; i++ )
-//      sum += bh._x[i];
-//    assertEquals(file.length(),sum);
-//  
-//    Lockable.delete(h2okey);
-//  }
-//  
-//  // Byte-wise histogram
-//  public static class ByteHisto extends MRTask {
-//    int[] _x;
-//    // Count occurrences of bytes
-//    public void map( Key key ) {
-//      _x = new int[256];        // One-time set histogram array
-//      Value val = DKV.get(key); // Get the Value for the Key
-//      byte[] bits = val.memOrLoad();  // Compute local histogram
-//      for( int i=0; i<bits.length; i++ )
-//        _x[bits[i]&0xFF]++;
-//    }
-//    // ADD together all results
-//    public void reduce( DRemoteTask rbs ) {
-//      ByteHisto bh = (ByteHisto)rbs;
-//      if( _x == null ) { _x = bh._x; return; }
-//      for( int i=0; i<_x.length; i++ )
-//        _x[i] += bh._x[i];
-//    }
-//  }
-//
+  // ---
+  // Map in h2o.jar - a multi-megabyte file - into a NFSFileVec
+  // Run a distributed byte histogram.
+  @Test public void testMultiMbFile() throws Exception {
+    File file = find_test_file("target/h2o.jar");
+    Key h2okey = load_test_file(file);
+    ByteHisto bh = new ByteHisto();
+    bh.invoke(h2okey);
+    int sum=0;
+    for( int i=0; i<bh._x.length; i++ )
+      sum += bh._x[i];
+    assertEquals(file.length(),sum);
+    Lockable.delete(h2okey);
+  }
+  
+  // Byte-wise histogram
+  public static class ByteHisto extends MRTask<ByteHisto> {
+    int[] _x;
+    // Count occurrences of bytes
+    public void map( Key key ) {
+      _x = new int[256];        // One-time set histogram array
+      Value val = DKV.get(key); // Get the Value for the Key
+      byte[] bits = val.memOrLoad();  // Compute local histogram
+      for( int i=0; i<bits.length; i++ )
+        _x[bits[i]&0xFF]++;
+    }
+    // ADD together all results
+    public void reduce( ByteHisto bh ) {
+      for( int i=0; i<_x.length; i++ )
+        _x[i] += bh._x[i];
+    }
+  }
+
 //  // ---
 //  // Run an atomic function remotely, one time only
 //  @Test public void testRemoteAtomic() {
