@@ -106,7 +106,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // The FAST path get-POJO - final method for speed.
   // Will (re)build the POJO from the _mem array.
   // Never returns NULL.
-  private <T extends Iced> T get() {
+  public <T extends Iced> T get() {
     Iced pojo = _pojo;          // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
@@ -147,7 +147,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   final private void clrdsk() { _persist &= ~ON_dsk; } // note: not atomic
   public final void setdsk() { _persist |=  ON_dsk; } // note: not atomic
   public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
-  final private byte backend() { return (byte)(_persist&BACKEND_MASK); }
+  final byte backend() { return (byte)(_persist&BACKEND_MASK); }
 
   // ---
   // Interface for using the persistence layer(s).
@@ -232,7 +232,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   // --------------------------------------------------------------------------
   // Set just the initial fields
-  private Value(Key k, int max, byte[] mem, short type, byte be ) {
+  public Value(Key k, int max, byte[] mem, short type, byte be ) {
     assert mem==null || mem.length==max;
     assert max < MAX : "Value size=0x"+Integer.toHexString(max);
     _key = k;
@@ -253,7 +253,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private Value(Key k, int max, byte be ) { this(k, max, null, TypeMap.PRIM_B,  be); }
   Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
-  private Value(Key k, Iced pojo, byte be ) {
+  Value(Key k, Iced pojo, byte be ) {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();

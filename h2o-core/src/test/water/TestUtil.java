@@ -1,7 +1,8 @@
 package water;
 
-import static org.junit.Assert.*;
+import java.io.File;
 import org.junit.*;
+import static org.junit.Assert.*;
 
 
 public class TestUtil {
@@ -30,5 +31,20 @@ public class TestUtil {
     _initial_keycnt = H2O.store_size();
   }
 
+  // Hunt for test files in likely places.  Null if cannot find.
+  protected File find_test_file( String fname ) {
+    // When run from eclipse, the working directory is different.
+    // Try pointing at another likely place
+    File file = new File(fname);
+    if( !file.exists() )
+      file = new File("target/" + fname);
+    if( !file.exists() )
+      file = new File("../" + fname);
+    if( !file.exists() )
+      file = new File("../target/" + fname);
+    if( !file.exists() )
+      file = null;
+    return file;
+  }
 }
 

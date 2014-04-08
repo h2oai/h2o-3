@@ -11,7 +11,7 @@ import water.nbhm.UtilUnsafe;
  * @version 1.0
  */
 
-abstract class UDP {
+public abstract class UDP {
   // Types of UDP packets I grok
   static enum udp {
     bad(false,null), // Do not use the zero packet, too easy to make mistakes
@@ -72,15 +72,15 @@ abstract class UDP {
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   private static final long _Bbase  = _unsafe.arrayBaseOffset(byte[].class);
   static int    get2 ( byte[] buf, int off ) { return _unsafe.getShort (buf, _Bbase+off); }
-  static int    get4 ( byte[] buf, int off ) { return _unsafe.getInt   (buf, _Bbase+off); }
+  public static int    get4 ( byte[] buf, int off ) { return _unsafe.getInt   (buf, _Bbase+off); }
   static long   get8 ( byte[] buf, int off ) { return _unsafe.getLong  (buf, _Bbase+off); }
   static float  get4f( byte[] buf, int off ) { return _unsafe.getFloat (buf, _Bbase+off); }
   static double get8d( byte[] buf, int off ) { return _unsafe.getDouble(buf, _Bbase+off); }
 
   static int set2 (byte[] buf, int off, short x ) {_unsafe.putShort (buf, _Bbase+off, x); return 2;}
-  static int set4 (byte[] buf, int off, int x   ) {_unsafe.putInt   (buf, _Bbase+off, x); return 4;}
+  public static int set4 (byte[] buf, int off, int x   ) {_unsafe.putInt   (buf, _Bbase+off, x); return 4;}
   static int set4f(byte[] buf, int off, float f ) {_unsafe.putFloat (buf, _Bbase+off, f); return 4;}
-  static int set8 (byte[] buf, int off, long x  ) {_unsafe.putLong  (buf, _Bbase+off, x); return 8;}
+  public static int set8 (byte[] buf, int off, long x  ) {_unsafe.putLong  (buf, _Bbase+off, x); return 8;}
   static int set8d(byte[] buf, int off, double x) {_unsafe.putDouble(buf, _Bbase+off, x); return 8;}
 
   private static class IO_record extends UDP {

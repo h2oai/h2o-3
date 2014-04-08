@@ -1049,7 +1049,7 @@ public final class AutoBuffer {
     }
     return this;
   }
-  AutoBuffer putA8( long[] ary ) {
+  public AutoBuffer putA8( long[] ary ) {
     _arys++;
     if( ary == null ) return putInt(-1);
 
@@ -1303,7 +1303,7 @@ public final class AutoBuffer {
   }
 
   AutoBuffer putJSON1( byte b ) { return putJSON4(b); }
-  AutoBuffer putJSONA1( byte ary[] ) {
+  public AutoBuffer putJSONA1( byte ary[] ) {
     if( ary == null ) return putNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {

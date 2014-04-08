@@ -16,7 +16,7 @@ public final class PersistNFS extends Persist {
   static final int KEY_PREFIX_LENGTH = KEY_PREFIX.length();
 
   // file implementation -------------------------------------------------------
-  static Key decodeFile(File f) {
+  public static Key decodeFile(File f) {
     String kname = KEY_PREFIX + File.separator + f.toString();
     assert (kname.length() <= 512);
     // all NFS keys are NFS-kind keys

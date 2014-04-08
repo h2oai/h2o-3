@@ -6,7 +6,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
 public class TypeMap {
-  static final short NULL, PRIM_B, ICED, H2OCC, KEY, VALUE, H2ONODE, C1NCHUNK, FRAME;
+  static public final short NULL, PRIM_B, ICED, H2OCC, KEY, VALUE, H2ONODE, CHUNK, C1NCHUNK, FRAME;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
@@ -15,6 +15,7 @@ public class TypeMap {
     "water.Key",          // 4 - Needed to write that first Key; custom serializer
     "water.Value",        // 5 - Needed to write that first Key; custom serializer
     "water.H2ONode",      // 6 - Needed to write H2ONode target/sources
+    "water.fvec.Chunk",   // 7 - Custom (empty) serializer
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
     "water.DTask",        // Needed for those first Tasks
     "water.DException",   // Needed for those first Tasks
@@ -48,6 +49,7 @@ public class TypeMap {
     KEY         = (short)onIce("water.Key");   assert KEY  ==4; // Matches Key   customer serializer
     VALUE       = (short)onIce("water.Value"); assert VALUE==5; // Matches Value customer serializer
     H2ONODE     = (short)onIce("water.H2ONode"); assert H2ONODE==6; // Matches H2ONode customer serializer
+    CHUNK       = (short)onIce("water.fvec.Chunk"); assert CHUNK==7;
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
     FRAME       = (short)onIce("water.fvec.Frame");
 

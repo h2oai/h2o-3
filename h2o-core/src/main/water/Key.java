@@ -34,10 +34,10 @@ final public class Key extends Iced<Key> implements Comparable {
   // The user keys must be ASCII, so the values 0..31 are reserved for system
   // keys. When you create a system key, please do add its number to this list
   static final byte BUILT_IN_KEY = 2;
-  static final byte JOB = 3;
-  static final byte VEC = 4;
-  static final byte DVEC = 5;
-  static final byte VGROUP = 6; // vector group
+  public static final byte JOB = 3;
+  public static final byte VEC = 4;
+  public static final byte DVEC = 5;
+  public static final byte VGROUP = 6; // vector group
 
   static final byte USER_KEY = 32;
 
@@ -149,7 +149,7 @@ final public class Key extends Iced<Key> implements Comparable {
   int replica( H2O cloud ) { return replica(cloud_info(cloud)); }
   int desired( ) { return desired(_cache); }
   public boolean home() { return home_node()==H2O.SELF; }
-  H2ONode home_node( ) {
+  public H2ONode home_node( ) {
     H2O cloud = H2O.CLOUD;
     return cloud._memary[home(cloud)];
   }
@@ -241,7 +241,7 @@ final public class Key extends Iced<Key> implements Comparable {
   public static Key make(byte[] kb) { return make(kb,DEFAULT_DESIRED_REPLICA_FACTOR); }
   static Key make(String s) { return make(decodeKeyName(s));}
   static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
-  static Key make() { return make(rand()); }
+  public static Key make() { return make(rand()); }
 
   // Make a particular system key that is homed to given node and possibly
   // specifies also other 2 replicas. Works for both IPv4 and IPv6 addresses.

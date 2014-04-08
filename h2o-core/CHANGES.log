@@ -16,17 +16,19 @@ Major style & code changes from "h2o":
   silently ignored (Jar Hell), with the last to unpack winning.  H2O classes
   always win, but e.g. conflicting emebedded versions of log4j will end with
   the last log4j class unpacked.
+- Make "mostly" works - sometimes over-compiles, if there are errors.
 - Move much init code into "water/init", including all network init from H2O.java
 - Trim the API.  Make All Things Private by default
 - Switch to 1.7 javac by default
 - Do not hook stdout & stderr
+- Complete Log class overhaul  
 - Remove all the Embedded support; emeddable-by-default now
 - Weaver uses Delegation instead of a Class Loader.  Serialization bases need
   boilerplate, and there's several more v-calls to the start of any
   serialization.  Theory says: only static calls to recursively serialize any
-  object.
-  
-
+  object; should be fast enough.
+- Overhaul Vec rollups - try to compute them only from the home node so we do
+  not get racing Vec rollups for the same Vec from many nodes.
 
 DETAIL CHANGES
 
