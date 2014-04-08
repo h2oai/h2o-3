@@ -14,7 +14,7 @@ jars = $(subst $(space),$(SEP),$(libs))
 
 # Fun Args to javac.  Mostly limit to java6 source definitions, and fairly
 # agressive lint warnings.
-JAVAC_ARGS = -g -source 1.6 -target 1.6 -XDignore.symbol.file -Xlint:all -Xlint:-deprecation -Xlint:-serial -Xlint:-rawtypes -Xlint:-unchecked
+JAVAC_ARGS = -g -source 1.7 -target 1.7 -XDignore.symbol.file -Xlint:all -Xlint:-deprecation -Xlint:-serial -Xlint:-rawtypes -Xlint:-unchecked
 
 # literal space
 space :=
