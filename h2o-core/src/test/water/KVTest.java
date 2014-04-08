@@ -112,17 +112,21 @@ public class KVTest extends TestUtil {
   // Map in h2o.jar - a multi-megabyte file - into a NFSFileVec
   // Run a distributed byte histogram.
   @Test public void testMultiMbFile() throws Exception {
-    File file = find_test_file("build/h2o-core.jar");
-    if( file == null ) return;  // Nothing to test
-    // Return a Key mapping to a NFSFileVec over the file
-    Key h2okey = NFSFileVec.make(file);
-    ByteHisto bh = new ByteHisto();
-    bh.doAll(h2okey);
-    int sum=0;
-    for( int i=0; i<bh._x.length; i++ )
-      sum += bh._x[i];
-    assertEquals(file.length(),sum);
-    Lockable.delete(h2okey);
+    NFSFileVec nfs = null;
+    try {
+      File file = find_test_file("build/h2o-core.jar");
+      if( file == null ) return;  // Nothing to test
+      // Return a Key mapping to a NFSFileVec over the file
+      nfs = NFSFileVec.make(file);
+      ByteHisto bh = new ByteHisto().doAll(nfs);
+      int sum=0;
+      for( int i=0; i<bh._x.length; i++ )
+        sum += bh._x[i];
+      assertEquals(file.length(),sum);
+    } finally {
+      // UKV.remove()
+      throw H2O.unimpl();
+    }
   }
   
   // Byte-wise histogram

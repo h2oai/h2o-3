@@ -11,12 +11,12 @@ public class Icer<T extends Freezable> {
   private final T _new;
   protected Icer(T iced) { _new=iced; }
   final T newFreezable() { return _new.clone(); }
-  AutoBuffer write(AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
-  AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
-  T read(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
-  void copyOver( T dst, T src ) { /*base of the call chain; no fields to copy*/ }
-  int frozenType() { throw fail(); }
-  String className() { throw fail(); }
+  protected AutoBuffer write(AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
+  protected AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
+  protected T read(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
+  protected void copyOver( T dst, T src ) { /*base of the call chain; no fields to copy*/ }
+  protected int frozenType() { throw fail(); }
+  protected String className() { throw fail(); }
   private RuntimeException fail() {
     return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");
   }

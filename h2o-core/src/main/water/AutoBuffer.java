@@ -574,13 +574,13 @@ public final class AutoBuffer {
   AutoBuffer put8d(int off, double v) { _bb.putDouble(off, v);              return this; }
 
   AutoBuffer putZ (boolean b){ return put1(b?1:0); }
-  AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
+  public AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
                                       putSp(1).put((byte)b); return this; }
   AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
   AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
   AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }
   AutoBuffer put4f( float f) { putSp(4).putFloat (f); return this; }
-  AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
+  public AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
   AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
   public AutoBuffer put(Freezable f) {
@@ -720,7 +720,7 @@ public final class AutoBuffer {
     return ts;
   }
 
-  AutoBuffer putAStr(String[] fs)    {
+  public AutoBuffer putAStr(String[] fs)    {
     _arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;

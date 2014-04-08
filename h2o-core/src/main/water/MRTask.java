@@ -326,7 +326,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
     addToPendingCount(1);       // Not complete until the RPC returns
     // Set self up as needing completion by this RPC: when the ACK comes back
     // we'll get a wakeup.
-    return new RPC(H2O.CLOUD._memary[node], rpc).addCompleter(this).call();
+    return new RPC<T>(H2O.CLOUD._memary[node], rpc).addCompleter(this).call();
   }
 
   /** Called from FJ threads to do local work.  The first called Task (which is
@@ -387,12 +387,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
         if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2]);
         if( true                  )  map(bvs );
         if(_noutputs == 1){ // convenience versions for cases with single output.
+          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0]);
           if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0]);
           if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
           if( true                  )  map(bvs,    appendableChunks[0]);
         }
         if(_noutputs == 2){ // convenience versions for cases with 2 outputs (e.g split).
+          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0],appendableChunks[1]);
           if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
           if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
