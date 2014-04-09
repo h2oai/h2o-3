@@ -86,7 +86,7 @@ public class Weaver {
 
     // The write call
     String debug = 
-    make_body(icer_cc, iced_cc, iced_clazz,
+    make_body(icer_cc, iced_cc, iced_clazz, "write",
               "protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "  write"+super_id+"(ab,ice);\n",
               "  ab.put%z(ice.%s);\n"  ,  "  ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
@@ -94,7 +94,7 @@ public class Weaver {
               "  ab.put%z(ice.%s);\n"  ,  "  ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "",
               "  return ab;\n" +
-              "}", null);
+              "}");
     if( debug != null ) {
       System.out.println("class "+icer_cc.getName()+" extends "+super_icer.getName()+" {");
       System.out.println(debug);
@@ -111,7 +111,7 @@ public class Weaver {
 
     // The read call
     String rbody_impl =
-    make_body(icer_cc, iced_cc, iced_clazz,
+    make_body(icer_cc, iced_cc, iced_clazz, "read",
               "protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "  read"+super_id+"(ab,ice);\n",
               "  ice.%s = ab.get%z();\n",            "  _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
@@ -119,7 +119,7 @@ public class Weaver {
               "  ice.%s = (%C)ab.get%z(%c.class);\n","  _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "",
               "  return ice;\n" +
-              "}", null);
+              "}");
     if( debug != null ) System.out.println(rbody_impl);
 
     // The generic override method.  Called virtually at the start of a
@@ -142,7 +142,7 @@ public class Weaver {
     // DTask instance over another, to match the MRTask API.
     if( iced_cc.subclassOf(_dtask) ) {
       String cpbody_impl =
-        make_body(icer_cc, iced_cc, iced_clazz,
+        make_body(icer_cc, iced_cc, iced_clazz, "copyOver",
                   "void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
                   "  super.copyOver(fdst,fsrc);\n"+
                   "  "+iced_name+" dst = ("+iced_name+")fdst;\n"+
@@ -151,7 +151,7 @@ public class Weaver {
                   "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
                   "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
                   "",
-                  "}", null);
+                  "}");
       if( debug != null ) System.out.println(cpbody_impl);
     }
 
@@ -169,21 +169,28 @@ public class Weaver {
   }
 
   // Generate a method body string
-  private static String make_body(CtClass icer, CtClass iced_cc, Class iced_clazz,
+  private static String make_body(CtClass icer, CtClass iced_cc, Class iced_clazz, String impl,
                                   String header,
                                   String supers,
                                   String prims,  String prims_unsafe,
                                   String enums,  String enums_unsafe,
                                   String  iced,  String  iced_unsafe,
                                   String field_sep,
-                                  String trailer,
-                                  FieldFilter ff
+                                  String trailer
                                   ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
     StringBuilder sb = new StringBuilder();
     sb.append(header);
     boolean debug_print = false;
     boolean first = supers==null;
     if( !first ) sb.append(supers);
+    // Customer serializer?
+    String mimpl = impl+"_impl";
+    for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
+      if( mth.getName().equals(mimpl) ) {
+        sb.append("  return ice."+mimpl+"(ab);\n}");
+        mimpl = null;           // flag it
+        break;
+      }
     // For all fields...
     CtField ctfs[] = iced_cc.getDeclaredFields();
     for( CtField ctf : ctfs ) {
@@ -192,7 +199,7 @@ public class Weaver {
         debug_print |= ctf.getName().equals("DEBUG_WEAVER");
         continue;  // Only serialize not-transient instance fields (not static)
       }
-      if( ff != null && !ff.filter(ctf) ) continue; // Fails the filter
+      if( mimpl == null ) continue; // Custom serializer, do not dump fields
       if( first ) first = false; // Separator between field lists
       else sb.append(field_sep);
 
@@ -222,7 +229,8 @@ public class Weaver {
       subsub(sb, "%u", utype(ctf.getSignature()));        // %u ==> unsafe type name
 
     }
-    sb.append(trailer);
+    if( mimpl != null )         // default auto-gen serializer?
+      sb.append(trailer);
     String body = sb.toString();
     addMethod(body,icer);
     return debug_print ? body : null;
@@ -236,11 +244,6 @@ public class Weaver {
       System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+body+"\n------");
       throw ce;
     }
-  }
-
-  // Arbitrary filter fields.
-  private static abstract class FieldFilter {
-    abstract boolean filter( CtField ctf ) throws NotFoundException;
   }
 
   static private final String[] FLDSZ1 = {

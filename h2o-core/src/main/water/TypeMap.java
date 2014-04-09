@@ -6,26 +6,22 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, KEY, VALUE, H2ONODE, CHUNK, C1NCHUNK, FRAME;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
     "water.Iced",         // 2 - Base serialization class
     "water.H2O$H2OCountedCompleter",  // 3 - Base serialization class
-    "water.Key",          // 4 - Needed to write that first Key; custom serializer
-    "water.Value",        // 5 - Needed to write that first Key; custom serializer
-    "water.H2ONode",      // 6 - Needed to write H2ONode target/sources
-    "water.fvec.Chunk",   // 7 - Custom (empty) serializer
     "water.HeartBeat",    // Used to Paxos up a cloud & leader
-    "water.DTask",        // Needed for those first Tasks
-    "water.DException",   // Needed for those first Tasks
+    "water.H2ONode",      // Needed to write H2ONode target/sources
     "water.FetchClazz",   // used to fetch IDs from leader
     "water.FetchId",      // used to fetch IDs from leader
-    "water.TaskPutKey",   // Needed to write that first Key
-    "water.TaskGetKey",   // Read that first Key
+    "water.DTask",        // Needed for those first Tasks
+    "water.DException",   // Needed for those first Tasks: can pass exceptions
+
+    "water.fvec.Chunk",   // parent of Chunk
     "water.fvec.C1NChunk",// used as constant in parser
     "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
-    "water.Job$List",     // First Key which locks the cloud for all JUnit tests
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<String,Integer>();
@@ -46,12 +42,8 @@ public class TypeMap {
     PRIM_B      = (short)onIce("[B");
     ICED        = (short)onIce("water.Iced");  assert ICED ==2; // Matches Iced  customer serializer
     H2OCC       = (short)onIce("water.H2O$H2OCountedCompleter"); assert H2OCC==3; // Matches customer serializer
-    KEY         = (short)onIce("water.Key");   assert KEY  ==4; // Matches Key   customer serializer
-    VALUE       = (short)onIce("water.Value"); assert VALUE==5; // Matches Value customer serializer
-    H2ONODE     = (short)onIce("water.H2ONode"); assert H2ONODE==6; // Matches H2ONode customer serializer
-    CHUNK       = (short)onIce("water.fvec.Chunk"); assert CHUNK==7;
-    C1NCHUNK    = (short)onIce("water.fvec.C1NChunk");
-    FRAME       = (short)onIce("water.fvec.Frame");
+    C1NCHUNK    = (short)onIce("water.fvec.C1NChunk"); // Used in water.fvec.FileVec
+    FRAME       = (short)onIce("water.fvec.Frame");    // Used in water.Value
 
     // Fill in some pre-cooked delegates so seralization has a base-case
     GOLD[ICED ] = Icer.ICER;

@@ -358,12 +358,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // Custom Serialization Class: H2OKey need to be built.
-  // Class must be "public static class Icer extends super.Icer".
-  public static final class Icer extends water.Icer<H2ONode> {
-    public Icer(H2ONode H2ONode) { super(H2ONode); }
-    @Override public AutoBuffer write(AutoBuffer ab, H2ONode h2o) { return h2o._key.write(ab); }
-    @Override AutoBuffer writeJSONFields(AutoBuffer ab, H2ONode h2o) { return ab.putJSONStr(h2o.toString()); }
-    @Override H2ONode read(AutoBuffer ab, H2ONode h2o) { return intern(H2Okey.read(ab)); }
-    int frozenType() { return /*6*/TypeMap.H2ONODE; } 
-  }
+  @Override protected final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
+  @Override protected final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
 }

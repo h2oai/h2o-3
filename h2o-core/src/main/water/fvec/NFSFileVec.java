@@ -8,8 +8,6 @@ import water.persist.PersistNFS;
 // A distributed file-backed Vector
 //
 public class NFSFileVec extends FileVec {
-  static int DEBUG_WEAVER;
-
   // Make a new NFSFileVec key which holds the filename implicitly.
   // This name is used by the DVecs to load data on-demand.
   public static NFSFileVec make(File f) {

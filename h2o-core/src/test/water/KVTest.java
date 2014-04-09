@@ -7,7 +7,7 @@ import water.fvec.NFSFileVec;
 
 public class KVTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a
@@ -51,6 +51,7 @@ public class KVTest extends TestUtil {
       Value v3 = DKV.get(keys[i]);
       assertNull(v3);
     }
+    DKV.write_barrier();
   }
 
   // ---
@@ -83,7 +84,7 @@ public class KVTest extends TestUtil {
 
   // ---
   // Issue a large Key/Value put/get - testing the TCP path
-  //@Test 
+  @Test 
   public void testTcpCRUD() {
     // Make an execution key homed to the remote node
     H2O cloud = H2O.CLOUD;
@@ -124,8 +125,7 @@ public class KVTest extends TestUtil {
         sum += bh._x[i];
       assertEquals(file.length(),sum);
     } finally {
-      // UKV.remove()
-      throw H2O.unimpl();
+      if( nfs != null ) nfs.remove(); // remove from DKV
     }
   }
   
@@ -133,7 +133,7 @@ public class KVTest extends TestUtil {
   public static class ByteHisto extends MRTask<ByteHisto> {
     int[] _x;
     // Count occurrences of bytes
-    public void map( Key key ) {
+    @Override public void map( Key key ) {
       _x = new int[256];        // One-time set histogram array
       Value val = DKV.get(key); // Get the Value for the Key
       byte[] bits = val.memOrLoad();  // Compute local histogram
@@ -141,7 +141,7 @@ public class KVTest extends TestUtil {
         _x[bits[i]&0xFF]++;
     }
     // ADD together all results
-    public void reduce( ByteHisto bh ) {
+    @Override public void reduce( ByteHisto bh ) {
       for( int i=0; i<_x.length; i++ )
         _x[i] += bh._x[i];
     }

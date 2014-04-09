@@ -26,9 +26,6 @@ public class C1NChunk extends Chunk {
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
-  private static final class Icer extends Chunk.Icer {
-    public Icer(C1NChunk chk) { super(chk); }
-    C1NChunk read77(AutoBuffer ab, C1NChunk chk) { super.read6(ab,chk); chk._len = chk._mem.length; return chk; }
-    int frozenType() { throw H2O.unimpl(); } 
-  }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) { return ab.putA1(_mem,_mem.length); }
+  @Override public C1NChunk read_impl(AutoBuffer ab) { _len = _mem.length; return this; }
 }

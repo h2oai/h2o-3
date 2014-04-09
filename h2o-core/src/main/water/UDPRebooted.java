@@ -64,8 +64,7 @@ class UDPRebooted extends UDP {
   static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException e ) { }
     try { NetworkInit._apiSocket.close(); } catch( IOException e ) { }
-    throw H2O.unimpl();
-    //try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
+    try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
   }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum

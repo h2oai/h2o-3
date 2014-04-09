@@ -40,15 +40,13 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public class Vec extends Iced {
+public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
   static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
    * increases fine-grained parallelism. */
   static final int CHUNK_SZ = 1 << LOG_CHK;
 
-  /** Key mapping a Value which holds this Vec.  */
-  final private Key _key;        // Top-level key
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
@@ -533,10 +531,12 @@ public class Vec extends Iced {
     return s+"}]";
   }
 
-  private void remove( Futures fs ) {
-    throw H2O.unimpl();
-    //for( int i=0; i<nChunks(); i++ )
-    //  UKV.remove(chunkKey(i),fs);
+  // Remove associated Keys when this guy removes
+  @Override protected Futures remove( Futures fs ) {
+    super.remove(fs);
+    for( int i=0; i<nChunks(); i++ )
+      DKV.remove(chunkKey(i),fs);
+    return fs;
   }
 
   @Override public boolean equals( Object o ) {

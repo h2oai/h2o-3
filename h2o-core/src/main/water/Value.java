@@ -268,8 +268,16 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
+
+  // Custom serializers: the _mem field is racily cleared by the MemoryManager
+  // and the normal serializer then might ship over a null instead of the
+  // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
+  @Override protected AutoBuffer write_impl( AutoBuffer ab ) {
+    touch();
+    return ab.put1(_persist).put2(_type).putA1(memOrLoad());
+  }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
-  private Value read_serial(AutoBuffer bb) {
+  @Override protected Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
     _persist = bb.get1();       // Set persistence backend but...
     if( onICE() ) clrdsk();     // ... the on-disk flag is local, just deserialized thus not on MY disk
@@ -285,20 +293,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _replicas = new NonBlockingSetInt();
     touch();
     return this;
-  }
-
-  // Custom serializers: the _mem field is racily cleared by the MemoryManager
-  // and the normal serializer then might ship over a null instead of the
-  // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  public static final class Icer extends water.Icer<Value> {
-    public Icer(Value val) { super(val); }
-    public AutoBuffer write(AutoBuffer ab, Value value) { 
-      value.touch();
-      return ab.put1(value._persist).put2(value._type).putA1(value.memOrLoad());
-    }
-    AutoBuffer writeJSONFields(AutoBuffer ab, Value value) { return ab.putJSONStr(value.toString()); }
-    Value read(AutoBuffer ab, Value value) { return value.read_serial(ab); }
-    int frozenType() { return /*5*/TypeMap.VALUE; } 
   }
 
   // ---------------------

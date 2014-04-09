@@ -28,7 +28,8 @@ abstract public class Iced<D extends Iced> implements Freezable {
     try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
-  // Remove any K/V store parts
-  public D remove( ) { return remove(fs); }
-  public D remove( Futures fs ) { return (D)this; }
+  // Override for a custom serializer.  Else the auto-gen one will read & write
+  // all non-transient fields.
+  protected AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+  protected D read_impl( AutoBuffer ab ) { return (D)this; }
 }

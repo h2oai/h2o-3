@@ -174,12 +174,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
-  protected static class Icer extends water.Icer<Chunk> {
-    public Icer(Chunk chk) { super(chk); }
-    public final AutoBuffer write6(AutoBuffer ab, Chunk chk) { write2(ab,chk); return ab.putA1(chk._mem); }
-    Chunk read6(AutoBuffer ab, Chunk chk) { read2(ab,chk); chk._mem = ab.getA1(); chk._start = -1; return chk; }
-    int frozenType() { return TypeMap.CHUNK; } 
-  }
+  @Override protected AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_mem); }
+  @Override protected Chunk read_impl( AutoBuffer ab ) { _mem = ab.getA1(); _start = -1; return this; }
 
   // -----------------
   // Support for fixed-width format printing

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @version 1.0
  */
 final public class Key extends Iced<Key> implements Comparable {
-
+  static int DEBUG_WEAVER;
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
@@ -355,13 +355,6 @@ final public class Key extends Iced<Key> implements Comparable {
 
 
   // Custom Serialization Class: Keys need to be interned
-  // Class must be "public static class Icer extends super.Icer".
-  public static final class Icer extends water.Icer<Key> {
-    public Icer(Key key) { super(key); }
-    @Override public AutoBuffer write(AutoBuffer ab, Key key) { return ab.putA1(key._kb); }
-    @Override AutoBuffer writeJSONFields(AutoBuffer ab, Key key) { return ab.putJSONStr(key.toString()); }
-    @Override Key read(AutoBuffer ab, Key key) { return make(ab.getA1()); }
-    int frozenType() { return /*4*/TypeMap.KEY; } 
-  }
-
+  @Override protected final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
+  @Override protected final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
 }
