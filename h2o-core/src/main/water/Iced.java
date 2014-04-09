@@ -14,9 +14,12 @@ abstract public class Iced<D extends Iced> implements Freezable {
     int id = _ice_id;
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
+  // Real work is the delegate "Icer" classes.
   // Standard "write thyself into the AutoBuffer" call.
   final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
+  // Standard "read thyself from the AutoBuffer" call.
   final public D read(AutoBuffer ab) { return icer().read(ab,(D)this); }
+  // Return a unique small dense integer for the type, picking the integer if needed.
   final public int frozenType() { return icer().frozenType(); }
   final AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
   final AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
@@ -25,4 +28,7 @@ abstract public class Iced<D extends Iced> implements Freezable {
     try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
+  // Remove any K/V store parts
+  public D remove( ) { return remove(fs); }
+  public D remove( Futures fs ) { return (D)this; }
 }

@@ -32,7 +32,7 @@ Major style & code changes from "h2o":
 
 DETAIL CHANGES
 
-- public ==> private 
+- public ==> private or protected (lots of these!)
 - throw Log.err("msg",ex)  ==>  Log.throwErr(ex)
 - MRTask2 ==> MRTask
 - H2O.D() moved to Key.D()
