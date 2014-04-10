@@ -16,7 +16,7 @@ public abstract class DKV {
   static public Value put( Key key, Value val, Futures fs ) { return put(key,val,fs,false);}
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
-    assert val==null || val._key == key:"non-matching keys " + ((Object)key).toString() + " != " + ((Object)val._key).toString();
+    assert val==null || val._key == key:"non-matching keys " + key.toString() + " != " + val._key.toString();
     while( true ) {
       Value old = H2O.raw_get(key); // Raw-get: do not lazy-manifest if overwriting
       Value res = DputIfMatch(key,val,old,fs,dontCache);
@@ -34,7 +34,7 @@ public abstract class DKV {
 
   // Remove this Key
   static public Value remove( Key key ) { return remove(key,null); }
-  static public Value remove( Key key, Futures fs ) { return put(key,(Value)null,fs); }
+  static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 
   // Do a PUT, and on success trigger replication.  Some callers need the old
   // value, and some callers need the Futures so we can block later to ensure
@@ -92,70 +92,43 @@ public abstract class DKV {
 
   // User-Weak-Get a Key from the distributed cloud.
   static public Value get( Key key, int len, int priority ) {
-    while( true ) {
-      // Read the Cloud once per put-attempt, to keep a consistent snapshot.
-      H2O cloud = H2O.CLOUD;
-      Value val = H2O.get(key);
-      // Hit in local cache?
-      if( val != null ) {
-        if( len > val._max ) len = val._max; // See if we have enough data cached locally
-        if( len == 0 || val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) return val;
-        assert !key.home(); // Master must have *something*; we got nothing & need to fetch
-      }
-
-      // While in theory we could read from any replica, we always need to
-      // inform the home-node that his copy has been Shared... in case it
-      // changes and he needs to issue an invalidate.  For now, always and only
-      // fetch from the Home node.
-      H2ONode home = cloud._memary[key.home(cloud)];
-
-      // If we missed in the cache AND we are the home node, then there is
-      // no V for this K (or we have a disk failure).
-      if( home == H2O.SELF ) return null;
-
-      // Pending write to same key from this node?  Take that write instead.
-      // Moral equivalent of "peeking into the cpu store buffer".  Can happen,
-      // e.g., because a prior 'put' of a null (i.e. a remove) is still mid-
-      // send to the remote, so the local get has missed above, but a remote
-      // get still might 'win' because the remote 'remove' is still in-progress.
-      for( RPC<?> rpc : home.tasks() )
-        if( rpc._dt instanceof TaskPutKey ) {
-          assert rpc._target == home;
-          TaskPutKey tpk = (TaskPutKey)rpc._dt;
-          Key k = tpk._key;
-          if( k != null && key.equals(k) )
-            return tpk._xval;
-        }
-
-      return TaskGetKey.get(home,key,priority);
+    // Read the Cloud once per put-attempt, to keep a consistent snapshot.
+    H2O cloud = H2O.CLOUD;
+    Value val = H2O.get(key);
+    // Hit in local cache?
+    if( val != null ) {
+      if( len > val._max ) len = val._max; // See if we have enough data cached locally
+      if( len == 0 || val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) return val;
+      assert !key.home(); // Master must have *something*; we got nothing & need to fetch
     }
+
+    // While in theory we could read from any replica, we always need to
+    // inform the home-node that his copy has been Shared... in case it
+    // changes and he needs to issue an invalidate.  For now, always and only
+    // fetch from the Home node.
+    H2ONode home = cloud._memary[key.home(cloud)];
+
+    // If we missed in the cache AND we are the home node, then there is
+    // no V for this K (or we have a disk failure).
+    if( home == H2O.SELF ) return null;
+
+    // Pending write to same key from this node?  Take that write instead.
+    // Moral equivalent of "peeking into the cpu store buffer".  Can happen,
+    // e.g., because a prior 'put' of a null (i.e. a remove) is still mid-
+    // send to the remote, so the local get has missed above, but a remote
+    // get still might 'win' because the remote 'remove' is still in-progress.
+    for( RPC<?> rpc : home.tasks() ) {
+      DTask dt = rpc._dt;       // Read once; racily changing
+      if( dt instanceof TaskPutKey ) {
+        assert rpc._target == home;
+        TaskPutKey tpk = (TaskPutKey)dt;
+        Key k = tpk._key;
+        if( k != null && key.equals(k) )
+          return tpk._xval;
+      }
+    }
+    // Get data "the hard way"
+    return TaskGetKey.get(home,key,priority);
   }
   static public Value get( Key key ) { return get(key,Integer.MAX_VALUE,H2O.GET_KEY_PRIORITY); }
-
-
-  /** Return the calculated name of a Frame Key given a ValueArray Key. */
-  static public String calcConvertedFrameKeyString(String valueArrayKeyString) {
-    return valueArrayKeyString + ".autoframe";
-  }
-  static public String unconvertFrameKeyString(String s) {
-    return s.substring(0,s.length()-".autoframe".length());
-  }
-
-  /** Return true if a string is a calculated Frame Key string; false otherwise. */
-  static public boolean isConvertedFrameKeyString(String s) {
-    return s.endsWith(".autoframe");
-  }
-
-  /** Return the calculated name of a ValueArray Key given a Frame Key. */
-  static public String calcConvertedVAKeyString(String valueArrayKeyString) {
-    return valueArrayKeyString + ".autoVA";
-  }
-  static public String unconvertVAKeyString(String s) {
-    return s.substring(0,s.length()-".autoVA".length());
-  }
-
-  /** Return true if a string is a calculated ValueArray Key string; false otherwise. */
-  static public boolean isConvertedVAKeyString(String s) {
-    return s.endsWith(".autoVA");
-  }
 }

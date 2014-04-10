@@ -465,7 +465,7 @@ final public class H2O {
   // Construct a new H2O Cloud from the member list
   H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
-    Arrays.sort(_memary);       // ... sorted!
+    java.util.Arrays.sort(_memary);       // ... sorted!
     _hash = hash;               // And record hash for cloud rollover
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
@@ -495,10 +495,10 @@ final public class H2O {
   final H2ONode leader() { return _memary[0]; }
 
   // Find the node index for this H2ONode, or a negative number on a miss
-  int nidx( H2ONode h2o ) { return Arrays.binarySearch(_memary,h2o); }
+  int nidx( H2ONode h2o ) { return java.util.Arrays.binarySearch(_memary,h2o); }
   boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
   @Override public String toString() {
-    return Arrays.toString(_memary);
+    return java.util.Arrays.toString(_memary);
   }
 
   static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }

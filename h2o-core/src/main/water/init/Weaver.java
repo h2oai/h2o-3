@@ -4,6 +4,7 @@ import java.util.*;
 import javassist.*;
 import java.lang.reflect.*;
 import sun.misc.Unsafe;
+import water.Iced;
 import water.Icer;
 import water.Freezable;
 import water.TypeMap;
@@ -46,7 +47,7 @@ public class Weaver {
   }
 
   // See if javaassist can find this class, already generated
-  private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+  private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException, InvocationTargetException {
     // End the super class lookup chain at "water.Iced",
     // returning the known delegate class "water.Icer".
     String iced_name = iced_clazz.getName();
@@ -63,6 +64,10 @@ public class Weaver {
     Class super_clazz = iced_clazz.getSuperclass();
     int super_id = TypeMap.onIce(super_clazz.getName());
     Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
+    // After making parent Icer, force its full initialization by making an instance.
+    Constructor<Icer> cstr = (Constructor<Icer>)super_icer_clazz.getDeclaredConstructors()[0];
+    cstr.newInstance((Iced)null);
+
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
 

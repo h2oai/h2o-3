@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @version 1.0
  */
 final public class Key extends Iced<Key> implements Comparable {
-  static int DEBUG_WEAVER;
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;

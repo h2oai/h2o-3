@@ -37,3 +37,4 @@ DETAIL CHANGES
 - MRTask2 ==> MRTask
 - H2O.D() moved to Key.D()
 - H2O.Cleaner moved to Cleaner.java
+- Array utils from util.Utils to util.Arrays

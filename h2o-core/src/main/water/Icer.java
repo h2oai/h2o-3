@@ -9,7 +9,7 @@ public class Icer<T extends Freezable> {
   protected static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   static final Icer<Iced> ICER = new Icer<Iced>(null);
   private final T _new;
-  protected Icer(T iced) { _new=iced; }
+  public Icer(T iced) { _new=iced; }
   final T newFreezable() { return _new.clone(); }
   protected AutoBuffer write(AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
   protected AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
