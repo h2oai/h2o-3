@@ -41,10 +41,10 @@ public final class PersistNFS extends Persist {
   // but no crash (although one could argue that a racing load&delete is a bug
   // no matter what).
   @Override public byte[] load(Value v) {
-    throw H2O.unimpl();
     // Convert a file chunk into a long-offset from the base file.
-    //Key k = v._key;
-    //long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
+    Key k = v._key;
+    long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
+    throw H2O.unimpl();
     //try {
     //  FileInputStream s = null;
     //  try {

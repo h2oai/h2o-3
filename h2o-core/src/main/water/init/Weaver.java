@@ -1,6 +1,5 @@
 package water.init;
 
-import java.util.*;
 import javassist.*;
 import java.lang.reflect.*;
 import sun.misc.Unsafe;
@@ -8,17 +7,15 @@ import water.Iced;
 import water.Icer;
 import water.Freezable;
 import water.TypeMap;
-import water.H2O.H2OCountedCompleter;
 import water.nbhm.UtilUnsafe;
 
 public class Weaver {
   private static final ClassPool _pool = ClassPool.getDefault();
-  private static final CtClass _icer, _dtask;
+  private static final CtClass _dtask;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
     try { 
-      _icer = _pool.get("water.Icer"); 
       _dtask= _pool.get("water.DTask"); // these also need copyOver
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
@@ -27,9 +24,8 @@ public class Weaver {
     Exception e2;
     try { 
       T ice = (T)_unsafe.allocateInstance(clazz);
-      Class<Icer<T>> icer_clz = javassistLoadClass(id,clazz);
-      Constructor<Icer<T>> cstr = (Constructor<Icer<T>>)icer_clz.getDeclaredConstructors()[0];
-      return cstr.newInstance(ice);
+      Class icer_clz = javassistLoadClass(id,clazz);
+      return (Icer<T>)icer_clz.getDeclaredConstructors()[0].newInstance(ice);
     }
     catch( InvocationTargetException e ) { e2 = e; }
     catch( InstantiationException    e ) { e2 = e; }
@@ -65,14 +61,14 @@ public class Weaver {
     int super_id = TypeMap.onIce(super_clazz.getName());
     Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
     // After making parent Icer, force its full initialization by making an instance.
-    Constructor<Icer> cstr = (Constructor<Icer>)super_icer_clazz.getDeclaredConstructors()[0];
-    cstr.newInstance((Iced)null);
+    super_icer_clazz.getDeclaredConstructors()[0].newInstance((Iced<Iced>)null);
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
 
     // Lock on the Iced class (prevent multiple class-gens of the SAME Iced
     // class, but also to allow parallel class-gens of unrelated Iced).
+    //noinspection SynchronizationOnLocalVariableOrMethodParameter
     synchronized( iced_clazz ) {
       icer_cc = _pool.getOrNull(icer_name); // Retry under lock
       if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
@@ -192,7 +188,7 @@ public class Weaver {
     String mimpl = impl+"_impl";
     for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
       if( mth.getName().equals(mimpl) ) {
-        sb.append("  return ice."+mimpl+"(ab);\n}");
+        sb.append("  return ice.").append(mimpl).append("(ab);\n}");
         mimpl = null;           // flag it
         break;
       }

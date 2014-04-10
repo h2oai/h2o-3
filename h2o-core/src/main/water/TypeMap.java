@@ -24,7 +24,7 @@ public class TypeMap {
     "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
   };
   // Class name -> ID mapping
-  static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<String,Integer>();
+  static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
   static private String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of IcedImpl
@@ -133,6 +133,7 @@ public class TypeMap {
 
     // Lock on the Iced class during auto-gen - so we only gen the Icer for
     // a particular Iced class once.
+    //noinspection SynchronizationOnLocalVariableOrMethodParameter
     synchronized( ice_clz ) {
       f = goForGold(id);        // Recheck under lock
       if( f != null ) return f; 
@@ -147,14 +148,10 @@ public class TypeMap {
   }
 
   static Iced newInstance(int id) { return (Iced)newFreezable(id); }
-  static Freezable newFreezable(int id) { 
-    Icer f = goForGold(id);
-    if( f == null ) {           // No cached Icer?
-      Class clz=null;           // ClassForName one
-      try { clz=Class.forName(className(id)); }
-      catch( Exception e ) { Log.throwErr(e); }
-      f = getIcer(id,clz);      // Install the icer
-    }
-    return f.newFreezable();  
+  static Freezable newFreezable(int id) {
+    try {
+      Icer f = goForGold(id);
+      return (f==null ? getIcer(id, Class.forName(className(id))) : f).newFreezable();
+    } catch( ClassNotFoundException e ) { throw Log.throwErr(e); }
   }
 }

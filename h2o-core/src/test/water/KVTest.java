@@ -44,11 +44,10 @@ public class KVTest extends TestUtil {
       Value v = DKV.get(keys[i]);
       assertEquals(vals[i],v);
     }
-    for( int i=0; i<keys.length; i++ ) {
-      DKV.remove(keys[i]);
-    }
-    for( int i=0; i<keys.length; i++ ) {
-      Value v3 = DKV.get(keys[i]);
+    for( Key key : keys )
+      DKV.remove(key);
+    for( Key key : keys ) {
+      Value v3 = DKV.get(key);
       assertNull(v3);
     }
     DKV.write_barrier();
@@ -133,8 +132,8 @@ public class KVTest extends TestUtil {
     @Override public void map( Key key ) {
       _x = new int[256];        // One-time set histogram array
       byte[] bits = DKV.get(key).memOrLoad(); // Raw file bytes
-      for( int i=0; i<bits.length; i++ ) // Compute local histogram
-        _x[bits[i]&0xFF]++;
+      for( byte b : bits ) // Compute local histogram
+        _x[b&0xFF]++;
     }
     // ADD together all results
     @Override public void reduce( ByteHisto bh ) { water.util.Arrays.add(_x,bh._x); }

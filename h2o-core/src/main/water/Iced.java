@@ -24,12 +24,14 @@ abstract public class Iced<D extends Iced> implements Freezable {
   final AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
   final AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
   //@Override water.api.DocGen.FieldDoc[] toDocField() { return null; }
-  @Override public D clone() {
+  @Override public final D clone() {
     try { return (D)super.clone(); }
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
   // Override for a custom serializer.  Else the auto-gen one will read & write
   // all non-transient fields.
+  //noninspection UnusedDeclaration
   protected AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+  //noninspection UnusedDeclaration
   protected D read_impl( AutoBuffer ab ) { return (D)this; }
 }

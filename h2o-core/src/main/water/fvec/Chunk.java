@@ -61,14 +61,6 @@ public abstract class Chunk extends Iced implements Cloneable {
   final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
 
 
-  /** Slightly slower than 'at0' inside a chunk; goes (very) slow outside the
-   *  chunk instead of throwing.  First outside-chunk fetches & caches whole
-   *  chunk; maybe takes multiple msecs.  2nd & later touches in the same
-   *  outside-chunk probably run 100x slower than inside-chunk accesses.  */ 
-  private final double    at_slow( long i ) { long x = i-_start; return (0 <= x && x < _len) ?   at0((int)x) :  _vec. at(i); }
-  private final long     at8_slow( long i ) { long x = i-_start; return (0 <= x && x < _len) ?  at80((int)x) :  _vec.at8(i); }
-  private final boolean isNA_slow( long i ) { long x = i-_start; return (0 <= x && x < _len) ? isNA0((int)x) : _vec.isNA(i); }
-
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
    *  if the long does not fit in a double (value is larger magnitude than
@@ -88,7 +80,7 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
     _vec.preWriting();          // One-shot writing-init
-    _chk2 = clone();            // Flag this chunk as having been written into
+    _chk2 = (Chunk)clone();     // Flag this chunk as having been written into
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }
 
@@ -142,7 +134,7 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _vec._cache == this ) _vec._cache = null;
   }
 
-  private int cidx() { return _vec.elem2ChunkIdx(_start); }
+  int cidx() { return _vec.elem2ChunkIdx(_start); }
 
   /** Chunk-specific readers.  */ 
   abstract protected double   atd_impl(int idx);
@@ -156,12 +148,11 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
 
-  /** Chunk-specific bulk inflator back to NewChunk.  Used when writing into a
+  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
   abstract NewChunk inflate_impl(NewChunk nc);
 
-  @Override public Chunk clone() { return (Chunk)super.clone(); }
   @Override public String toString() { return getClass().getSimpleName(); }
 
   long byteSize() {
