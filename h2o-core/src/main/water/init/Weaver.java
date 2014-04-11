@@ -103,7 +103,7 @@ public class Weaver {
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String wbody = "water.AutoBuffer write(water.AutoBuffer ab, water.Freezable ice) {\n"+
+    String wbody = "protected water.AutoBuffer write(water.AutoBuffer ab, water.Freezable ice) {\n"+
       "  return write"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
     if( debug != null ) System.out.println(wbody);
@@ -125,13 +125,13 @@ public class Weaver {
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String rbody = "water.Freezable read(water.AutoBuffer ab, water.Freezable ice) {\n"+
+    String rbody = "protected water.Freezable read(water.AutoBuffer ab, water.Freezable ice) {\n"+
       "  return read"+id+"(ab,("+iced_name+")ice);\n"+
       "}";
     if( debug != null ) System.out.println(rbody);
     addMethod(rbody,icer_cc);
 
-    String cnbody = "java.lang.String className() { return \""+iced_name+"\"; }";
+    String cnbody = "protected java.lang.String className() { return \""+iced_name+"\"; }";
     if( debug != null ) System.out.println(cnbody);
     addMethod(cnbody,icer_cc);
 
@@ -144,7 +144,7 @@ public class Weaver {
     if( iced_cc.subclassOf(_dtask) ) {
       String cpbody_impl =
         make_body(icer_cc, iced_cc, iced_clazz, "copyOver",
-                  "void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
+                  "protected void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
                   "  super.copyOver(fdst,fsrc);\n"+
                   "  "+iced_name+" dst = ("+iced_name+")fdst;\n"+
                   "  "+iced_name+" src = ("+iced_name+")fsrc;\n",

@@ -105,7 +105,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // never sent over the wire.  Split out task# generation from RPC <init> -
   // every task# MUST be sent over the wires, because the far end tracks the
   // task#'s in a dense list (no holes).
-  RPC( H2ONode target, V dtask, float f ) {
+  RPC( H2ONode target, V dtask, float ignore ) {
     _target = target;
     _dt = dtask;
     _started = System.currentTimeMillis();
@@ -158,7 +158,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           } catch( AutoBuffer.TCPIsUnreliableException e ) {
             Log.info("Network congestion: TCPcall "+e._ioe.getMessage()+",  AB="+ab+", for task#"+_tasknum+", waiting and retrying...");
             ab.close(true,true);
-            try { Thread.sleep(500); } catch (InterruptedException ie) {}
+            try { Thread.sleep(500); } catch (InterruptedException ignore) {}
           }
         } // end of while(true)
       } else {
@@ -201,7 +201,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     if( _done ) return result(); // Fast-path shortcut
     // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
     // another thread if needed.
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException e ) { }
+    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
     if( _done ) return result(); // Fast-path shortcut
     assert isCancelled();
     return null;
@@ -218,7 +218,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         if( _target==H2O.SELF ) { _dt.get(); _done=true; }
         else wait();            // Wait for remote to complete
       } 
-      catch( InterruptedException e ) { }
+      catch( InterruptedException ignore ) { }
       catch(   ExecutionException e ) { // Only fails for local get()
         _dt.setException(e.getCause());
         _done = true;
@@ -314,7 +314,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         } catch( AutoBuffer.TCPIsUnreliableException e ) {
           Log.info("Task cancelled or network congestion: TCPACK "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
           if( ab != null ) ab.close(true,true);
-          try { Thread.sleep(500); } catch (InterruptedException ie) {}
+          try { Thread.sleep(500); } catch (InterruptedException ignore) {}
         }
       } while((dt = _dt) != null); // end of while(true)
       if( dt == null )
@@ -368,7 +368,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       if( _size == 0 ) { _size = absize; return true; }
       return _size==absize;
     }
-    private int size() { return _size; }
   }
 
   // Handle traffic, from a client to this server asking for work to be done.
@@ -468,7 +467,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         // & retry logic, and wait for the server to re-send our result.
         // Meanwhile the _dt object is crushed with half-read crap, and cannot
         // be trusted except in the base fields.
-        Log.throwErr(e._ioe);
+        throw Log.throwErr(e._ioe);
       }
     }
     // ACKACK the remote, telling him "we got the answer"

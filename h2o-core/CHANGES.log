@@ -29,6 +29,7 @@ Major style & code changes from "h2o":
   object; should be fast enough.
 - Overhaul Vec rollups - try to compute them only from the home node so we do
   not get racing Vec rollups for the same Vec from many nodes.
+- DKV key prefetch instead of F/J background task gets
 
 DETAIL CHANGES
 

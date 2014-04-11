@@ -131,4 +131,7 @@ public abstract class DKV {
     return TaskGetKey.get(home,key,priority);
   }
   static public Value get( Key key ) { return get(key,Integer.MAX_VALUE,H2O.GET_KEY_PRIORITY); }
+  // Prefetch a key
+  static public void prefetch( Key key ) { throw H2O.unimpl(); }
+
 }

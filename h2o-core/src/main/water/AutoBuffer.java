@@ -643,7 +643,7 @@ public final class AutoBuffer {
   }
 
 
-  AutoBuffer putA(Iced[] fs) {
+  public AutoBuffer putA(Iced[] fs) {
     _arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -683,7 +683,7 @@ public final class AutoBuffer {
     assert id > 0 : "Bad type id "+id;
     return (T)TypeMap.newInstance(id).read(this);
   }
-  <T extends Iced> T[] getA(Class<T> tc) {
+  public <T extends Iced> T[] getA(Class<T> tc) {
     _arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -729,7 +729,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putStr(fs[i]);
     return this;
   }
-  String[] getAStr() {
+  public String[] getAStr() {
     _arys++;
     long xy = getZA();
     if( xy == -1 ) return null;

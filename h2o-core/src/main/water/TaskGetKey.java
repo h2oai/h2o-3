@@ -23,24 +23,28 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   private static final NonBlockingHashMap<Key,RPC<TaskGetKey>> TGKS = new NonBlockingHashMap();
 
   // Get a value from a named remote node
-  static Value get( H2ONode target, Key key, int priority ) {
-    RPC<TaskGetKey> rpc, old;
+  static Value get( H2ONode target, Key key, int priority ) { return get(start(target,key,priority)); }
+
+  static Value get(RPC<TaskGetKey> rpc) {
+    TaskGetKey tgk = rpc.get();                  // Block for it
+    TGKS.putIfMatchUnlocked(tgk._xkey,null,rpc); // Clear from dup cache
+    return tgk._val;
+  }
+  // Start an RPC to fetch a Value, handling short-cutting dup-fetches
+  static RPC<TaskGetKey> start( H2ONode target, Key key, int priority ) {
+    RPC<TaskGetKey> rpc;
     while( true ) {       // Repeat until we get a unique TGK installed per key
       // Do we have an old TaskGetKey in-progress?
       rpc = TGKS.get(key);
-      if( rpc != null && rpc._dt._priority >= priority )
-        break;
-      old = rpc;
+      if( rpc != null && rpc._dt._priority >= priority ) return rpc;
+      final RPC<TaskGetKey> old = rpc;
       // Make a new TGK.
       rpc = new RPC(target,new TaskGetKey(key,priority),1.0f);
       if( TGKS.putIfMatchUnlocked(key,rpc,old) == old ) {
         rpc.setTaskNum().call(); // Start the op
-        break;                  // Successful install of a fresh RPC
+        return rpc;              // Successful install of a fresh RPC
       }
     }
-    Value val = rpc.get()._val; // Block for, then fetch out the result
-    TGKS.putIfMatchUnlocked(key,null,rpc); // Clear from cache
-    return val;
   }
 
   private TaskGetKey( Key key, int priority ) { _key = _xkey = key; _priority = (byte)priority; }
