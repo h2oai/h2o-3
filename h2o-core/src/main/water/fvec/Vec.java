@@ -65,8 +65,8 @@ public class Vec extends Keyed {
    *  already, along with count of missing elements.  */
   protected Vec( Key key, long espc[]) { this(key, espc, null); }
   protected Vec( Key key, long espc[], String[] domain) {
+    super(key);
     assert key._kb[0]==Key.VEC;
-    _key = key;
     _espc = espc;
     _time = -1;                 // not-a-time
     _domain = domain;

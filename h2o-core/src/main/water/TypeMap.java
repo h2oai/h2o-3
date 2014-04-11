@@ -113,7 +113,7 @@ public class TypeMap {
   synchronized static private int install( String className, int id ) {
     Paxos.lockCloud();
     if( id == -1 ) id = IDS++;  // Leader will get an ID under lock
-    MAP.put(className,id);       // No race on insert, since under lock
+    MAP.put(className,id);      // No race on insert, since under lock
     // Expand lists to handle new ID, as needed
     if( id >= CLAZZES.length ) CLAZZES = Arrays.copyOf(CLAZZES,Math.max(CLAZZES.length<<1,id+1));
     if( id >= GOLD   .length ) GOLD    = Arrays.copyOf(GOLD   ,Math.max(CLAZZES.length<<1,id+1));
@@ -148,10 +148,16 @@ public class TypeMap {
   }
 
   static Iced newInstance(int id) { return (Iced)newFreezable(id); }
-  static Freezable newFreezable(int id) {
+  static Freezable newFreezable(int id) { 
+    Freezable iced = theFreezable(id);
+    assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
+    return iced.clone();
+  }
+  // The single golden instance of an Iced, used for cloning and instanceof tests
+  static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
-      return (f==null ? getIcer(id, Class.forName(className(id))) : f).newFreezable();
+      return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) { throw Log.throwErr(e); }
   }
 }

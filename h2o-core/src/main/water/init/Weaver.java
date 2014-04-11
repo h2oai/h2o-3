@@ -2,6 +2,8 @@ package water.init;
 
 import javassist.*;
 import java.lang.reflect.*;
+import java.lang.reflect.Modifier;
+
 import sun.misc.Unsafe;
 import water.Iced;
 import water.Icer;
@@ -22,8 +24,8 @@ public class Weaver {
 
   public static <T extends Freezable> Icer<T> genDelegate( int id, Class<T> clazz ) {
     Exception e2;
-    try { 
-      T ice = (T)_unsafe.allocateInstance(clazz);
+    try {
+      T ice = Modifier.isAbstract(clazz.getModifiers()) ? null : (T)_unsafe.allocateInstance(clazz);
       Class icer_clz = javassistLoadClass(id,clazz);
       return (Icer<T>)icer_clz.getDeclaredConstructors()[0].newInstance(ice);
     }
@@ -60,8 +62,6 @@ public class Weaver {
     Class super_clazz = iced_clazz.getSuperclass();
     int super_id = TypeMap.onIce(super_clazz.getName());
     Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
-    // After making parent Icer, force its full initialization by making an instance.
-    super_icer_clazz.getDeclaredConstructors()[0].newInstance((Iced<Iced>)null);
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
@@ -73,7 +73,8 @@ public class Weaver {
       icer_cc = _pool.getOrNull(icer_name); // Retry under lock
       if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
       icer_cc = genIcerClass(id,iced_cc,iced_clazz,icer_name,super_id,super_icer_cc);
-      return icer_cc.toClass();
+      Class icer_clazz = icer_cc.toClass(); // Load class
+      return Class.forName(icer_name); // Initialize class now, before subclasses
     }
   }
 
@@ -135,7 +136,7 @@ public class Weaver {
     if( debug != null ) System.out.println(cnbody);
     addMethod(cnbody,icer_cc);
 
-    String ftbody = "int frozenType() { return "+id+"; }";
+    String ftbody = "protected int frozenType() { return "+id+"; }";
     if( debug != null ) System.out.println(ftbody);
     addMethod(ftbody,icer_cc);
 
@@ -208,7 +209,7 @@ public class Weaver {
       CtClass base = ctft;
       while( base.isArray() ) base = base.getComponentType();
 
-      long off = !javassist.Modifier.isPublic(mods)
+      long off = (!javassist.Modifier.isPublic(mods) || javassist.Modifier.isFinal(mods))
         ? _unsafe.objectFieldOffset(iced_clazz.getDeclaredField(ctf.getName()))
         : -1;
       int ftype = ftype(iced_cc, ctf.getSignature() );   // Field type encoding

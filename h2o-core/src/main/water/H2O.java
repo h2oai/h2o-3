@@ -190,9 +190,9 @@ final public class H2O {
       int id = _ice_id;
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
     }
-    @Override public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
-    @Override public T read (AutoBuffer ab) { return icer().read (ab,(T)this); }
-    @Override public int frozenType() { return icer().frozenType();   }
+    @Override final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
+    @Override final public T read (AutoBuffer ab) { return icer().read (ab,(T)this); }
+    @Override final public int frozenType() { return icer().frozenType();   }
   }
 
 

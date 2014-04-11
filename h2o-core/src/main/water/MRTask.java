@@ -231,7 +231,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
   }
   public final T dfork( int outputs, Frame fr, boolean run_local) {
     // Use first readable vector to gate home/not-home
-    fr.checkCompatible();       // Check for compatible vectors
     if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
     _fr = fr;                   // Record vectors to work on
     _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
@@ -245,10 +244,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
     try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
-    // Do any post-writing work (zap rollup fields, etc)
-    _fr.reloadVecs();
-    for( int i=0; i<_fr.numCols(); i++ )
-      _fr.vecs()[i].postWrite();
+    _fr.postWrite();       // Do any post-writing work (zap rollup fields, etc)
     return self();
   }
 

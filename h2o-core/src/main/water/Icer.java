@@ -10,7 +10,7 @@ public class Icer<T extends Freezable> {
   static final Icer<Iced> ICER = new Icer<Iced>(null);
   private final T _new;
   public Icer(T iced) { _new=iced; }
-  final T newFreezable() { return _new.clone(); }
+  final T theFreezable() { return _new; }
   protected AutoBuffer write(AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
   protected AutoBuffer writeJSONFields(AutoBuffer ab, T ice) { return ab; }
   protected T read(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }

@@ -200,10 +200,10 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
 
-  boolean isLockable(){ return _type != TypeMap.PRIM_B && (TypeMap.newInstance(_type) instanceof Lockable); }
+  boolean isLockable() { return TypeMap.theFreezable(_type) instanceof Lockable; }
   public boolean isFrame()    { return _type == TypeMap.FRAME; }
-  public boolean isVec()      { return _type != TypeMap.PRIM_B && (TypeMap.newInstance(_type) instanceof Vec); }
-  private boolean isByteVec() { return _type != TypeMap.PRIM_B && (TypeMap.newInstance(_type) instanceof ByteVec); }
+  public boolean isVec()      { return TypeMap.theFreezable(_type) instanceof Vec; }
+  private boolean isByteVec() { return TypeMap.theFreezable(_type) instanceof ByteVec; }
   private boolean isRawData() {
     if( isFrame() ) {
       Frame fr = get();

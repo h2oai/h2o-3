@@ -50,7 +50,6 @@ public class KVTest extends TestUtil {
       Value v3 = DKV.get(key);
       assertNull(v3);
     }
-    DKV.write_barrier();
   }
 
   // ---

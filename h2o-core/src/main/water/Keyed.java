@@ -3,7 +3,8 @@ package water;
 /* Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Lockable<T>> extends Iced {
   /** Key mapping a Value which holds this Vec.  */
-  protected Key _key;        // Top-level key
+  public final Key _key;        // Top-level key
+  public Keyed( Key key ) { _key = key; }
 
   // Remove any K/V store parts associated with this Key
   protected void remove( ) { remove(new Futures()).blockForPending(); }
