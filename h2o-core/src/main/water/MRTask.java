@@ -322,7 +322,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
     addToPendingCount(1);       // Not complete until the RPC returns
     // Set self up as needing completion by this RPC: when the ACK comes back
     // we'll get a wakeup.
-    return new RPC<T>(H2O.CLOUD._memary[node], rpc).addCompleter(this).call();
+    return new RPC<>(H2O.CLOUD._memary[node], rpc).addCompleter(this).call();
   }
 
   /** Called from FJ threads to do local work.  The first called Task (which is

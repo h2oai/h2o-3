@@ -5,7 +5,6 @@ import java.lang.reflect.*;
 import java.lang.reflect.Modifier;
 
 import sun.misc.Unsafe;
-import water.Iced;
 import water.Icer;
 import water.Freezable;
 import water.TypeMap;
@@ -73,7 +72,7 @@ public class Weaver {
       icer_cc = _pool.getOrNull(icer_name); // Retry under lock
       if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
       icer_cc = genIcerClass(id,iced_cc,iced_clazz,icer_name,super_id,super_icer_cc);
-      Class icer_clazz = icer_cc.toClass(); // Load class
+      icer_cc.toClass();               // Load class (but does not link & init)
       return Class.forName(icer_name); // Initialize class now, before subclasses
     }
   }

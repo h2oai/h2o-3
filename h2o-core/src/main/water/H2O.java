@@ -24,7 +24,7 @@ final public class H2O {
       Class klass = Class.forName("water.BuildVersion");
       java.lang.reflect.Constructor constructor = klass.getConstructor();
       abv = (AbstractBuildVersion) constructor.newInstance();
-    } catch (Exception _) { }
+    } catch (Exception ignore) { }
     ABV = abv;
   }
 
@@ -37,8 +37,8 @@ final public class H2O {
   public static long PID = -1L;
 
   // Convenience error
-  public static final RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
-  public static final RuntimeException fail() { return new RuntimeException("do not call"); }
+  public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
+  public static RuntimeException fail() { return new RuntimeException("do not call"); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.
@@ -65,7 +65,6 @@ final public class H2O {
   static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
   static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
   static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
-  static final byte    ARY_KEY_PRIORITY = MAX_PRIORITY-2;
   static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
   static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
   static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
@@ -177,7 +176,7 @@ final public class H2O {
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
     byte priority() { return MIN_PRIORITY; }
-    @Override public T clone(){
+    @Override final public T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
@@ -193,26 +192,6 @@ final public class H2O {
     @Override final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
     @Override final public T read (AutoBuffer ab) { return icer().read (ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-  }
-
-
-  static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
-    H2OCallback(){this(null);}
-    H2OCallback(H2OCountedCompleter cc){super(cc);}
-    @Override void compute2(){throw new UnsupportedOperationException();}
-    @Override public void onCompletion(CountedCompleter caller){
-      try {
-        callback((T)caller);
-      } catch(Throwable ex){
-        ex.printStackTrace();
-        completeExceptionally(ex);
-      }
-    }
-    abstract void callback(T t);
-  }
-
-  static class H2OEmptyCompleter extends H2OCountedCompleter{
-    @Override void compute2(){throw new UnsupportedOperationException();}
   }
 
 
@@ -375,7 +354,7 @@ final public class H2O {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
       if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable _ ) { }
+    } catch( Throwable ignore ) { }
   
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
@@ -508,7 +487,7 @@ final public class H2O {
     while( System.currentTimeMillis() - start < ms ) {
       if( CLOUD.size() >= x && Paxos._commonKnowledge )
         break;
-      try { Thread.sleep(100); } catch( InterruptedException ie ) { }
+      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
     }
     if( H2O.CLOUD.size() < x )
       throw new RuntimeException("Cloud size under " + x);
@@ -527,7 +506,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
-  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<Key, Value>();
+  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
 
   // PutIfMatch
   // - Atomically update the STORE, returning the old Value on success
@@ -566,14 +545,6 @@ final public class H2O {
     if( old != null && val == null ) old.removePersist(); // Remove the old guy
     if( val != null ) Cleaner.dirty_store(); // Start storing the new guy
     return old; // Return success
-  }
-  
-  // Raw put; no marking the memory as out-of-sync with disk. Used to import
-  // initial keys from local storage, or to intern keys.
-  static Value putIfAbsent_raw( Key key, Value val ) {
-    Value res = STORE.putIfMatchUnlocked(key,val,null);
-    assert res == null;
-    return res;
   }
   
   // Get the value from the store
@@ -639,10 +610,6 @@ final public class H2O {
   // Die horribly
   public static void die(String s) {
     Log.err(s);
-    exit(-1);
-  }
-  public static void die(Throwable t) {
-    Log.err(t);
     exit(-1);
   }
 }

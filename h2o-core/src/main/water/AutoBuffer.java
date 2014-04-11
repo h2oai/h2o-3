@@ -205,7 +205,7 @@ public final class AutoBuffer {
   private static final AtomicInteger BBMAKE = new AtomicInteger(0);
   private static final AtomicInteger BBFREE = new AtomicInteger(0);
   private static final AtomicInteger BBCACHE= new AtomicInteger(0);
-  private static final LinkedBlockingDeque<ByteBuffer> BBS = new LinkedBlockingDeque<ByteBuffer>();
+  private static final LinkedBlockingDeque<ByteBuffer> BBS = new LinkedBlockingDeque<>();
   static final int BBSIZE = 64*1024; // Bytebuffer "common big size"
   private static void bbstats( AtomicInteger ai ) {
     if( !DEBUG ) return;
@@ -231,7 +231,7 @@ public final class AutoBuffer {
         // java.lang.OutOfMemoryError: Direct buffer memory
         if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
         System.out.println("Sleeping & retrying");
-        try { Thread.sleep(100); } catch( InterruptedException _ ) { }
+        try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
       }
     }
   }
@@ -307,7 +307,7 @@ public final class AutoBuffer {
             // either TCP con was dropped or other side closed connection without reading/confirming (e.g. task was cancelled).
             if(x == -1)throw new TCPIsUnreliableException(new IOException("Other side closed connection unexpectedly."));
             assert x == 0xcd : "Handshake; writer expected a 0xcd from reader but got "+x;
-            _h2o.freeTCPSocket(sock); // Recycle writeable TCP channel
+            _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
           }
         }
         restorePriority();      // And if we raised priority, lower it back
@@ -463,7 +463,7 @@ public final class AutoBuffer {
         // Windows message for a reset-channel
         if( e.getMessage().equals("An established connection was aborted by the software in your host machine") )
           throw new TCPIsUnreliableException(e);
-        Log.throwErr(e);
+        throw Log.throwErr(e);
       }
     }
     _time_io_ns += (System.nanoTime()-ns);
@@ -880,7 +880,7 @@ public final class AutoBuffer {
     case 2: for( int i=x; i<x+y; i++ ) buf[i] = (short)get2(); return buf;
     case 4: for( int i=x; i<x+y; i++ ) buf[i] =        get4(); return buf;
     case 8: break;
-    default: H2O.fail();
+    default: throw H2O.fail();
     }
 
     int sofar = x;
