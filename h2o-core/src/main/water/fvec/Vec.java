@@ -429,7 +429,7 @@ public class Vec extends Keyed {
   /** Make a new random Key that fits the requirements for a Vec key. */
   static private Key newKey(){return newKey(Key.make());}
 
-  private static final int KEY_PREFIX_LEN = 4+4+1+1;
+  public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
   static Key newKey(Key k) {

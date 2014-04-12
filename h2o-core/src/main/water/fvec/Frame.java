@@ -95,29 +95,13 @@ public class Frame extends Lockable {
     for( int i=0; i<_keys.length; i++ ) {
       DKV.prefetch(_keys[i]);
       throw H2O.unimpl();
-    //  final int ii = i;
-    //  final Key k = _keys[i];
-    //  H2OCountedCompleter t = new H2OCountedCompleter() {
-    //      // We need higher priority here as there is a danger of deadlock in
-    //      // case of many calls from MRTask2 at once (e.g. frame with many
-    //      // vectors invokes rollup tasks for all vectors in parallel).  Should
-    //      // probably be done in CPS style in the future
-    //      @Override public byte priority(){return H2O.MIN_HI_PRIORITY;}
-    //      @Override public void compute2() {
-    //        Value v = DKV.get(k);
-    //        if( v==null ) System.err.println("Missing vector during Frame fetch: "+k);
-    //        vecs[ii] = v.get();
-    //        tryComplete();
-    //      }
-    //    };
-    //  H2O.submitTask(t);
-    //  fs.add(t);
     }
     return vecs;
   }
 
   public void postWrite() {
     // postwrite all vecs; reload in vec array
+    // should call postwrite all vecs (allowing overlap)
     throw H2O.unimpl();
   }
 

@@ -165,8 +165,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
-  @Override protected AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_mem); }
-  @Override protected Chunk read_impl( AutoBuffer ab ) { _mem = ab.getA1(); _start = -1; return this; }
+  abstract protected AutoBuffer write_impl( AutoBuffer ab );
+  abstract protected Chunk read_impl( AutoBuffer ab );
 
   // -----------------
   // Support for fixed-width format printing

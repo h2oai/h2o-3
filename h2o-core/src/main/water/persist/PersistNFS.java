@@ -12,24 +12,22 @@ import water.util.Log;
 // @author cliffc
 public final class PersistNFS extends Persist {
 
-  static final String KEY_PREFIX = "nfs:";
+  static final String KEY_PREFIX = "nfs:"+File.separator;
   static final int KEY_PREFIX_LENGTH = KEY_PREFIX.length();
 
   // file implementation -------------------------------------------------------
+
+  // Key from file
   public static Key decodeFile(File f) {
-    String kname = KEY_PREFIX + File.separator + f.toString();
-    assert (kname.length() <= 512);
-    // all NFS keys are NFS-kind keys
-    return Key.make(kname.getBytes());
+    return Key.make(KEY_PREFIX + f.toString());
   }
 
   // Returns the file for given key.
   private static File getFileForKey(Key k) {
-    final int len = KEY_PREFIX_LENGTH+1; // Strip key prefix & leading slash
-    throw H2O.unimpl();
-    //final int off = k._kb[0]==Key.DVEC ? water.fvec.Vec.KEY_PREFIX_LEN : 0;
-    //String s = new String(k._kb,len+off,k._kb.length-(len+off));
-    //return new File(s);
+    final int off = k._kb[0]==Key.DVEC ? water.fvec.Vec.KEY_PREFIX_LEN : 0;
+    assert new String(k._kb,off,KEY_PREFIX_LENGTH).equals(KEY_PREFIX) : "Not an NFS key: "+k;
+    String s = new String(k._kb,KEY_PREFIX_LENGTH+off,k._kb.length-(KEY_PREFIX_LENGTH+off));
+    return new File(s);
   }
 
   public static InputStream openStream(Key k) throws IOException {
@@ -41,28 +39,26 @@ public final class PersistNFS extends Persist {
   // but no crash (although one could argue that a racing load&delete is a bug
   // no matter what).
   @Override public byte[] load(Value v) {
+    assert v.isPersisted();
     // Convert a file chunk into a long-offset from the base file.
     Key k = v._key;
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
-    throw H2O.unimpl();
-    //try {
-    //  FileInputStream s = null;
-    //  try {
-    //    s = new FileInputStream(getFileForKey(k));
-    //    FileChannel fc = s.getChannel();
-    //    fc.position(skip);
-    //    AutoBuffer ab = new AutoBuffer(fc, true, Value.NFS);
-    //    byte[] b = ab.getA1(v._max);
-    //    ab.close();
-    //    assert v.isPersisted();
-    //    return b;
-    //  } finally {
-    //    if( s != null ) s.close();
-    //  }
-    //} catch( IOException e ) { // Broken disk / short-file???
-    //  H2O.ignore(e);
-    //  return null;
-    //}
+    try {
+      FileInputStream s = null;
+      try {
+        s = new FileInputStream(getFileForKey(k));
+        FileChannel fc = s.getChannel();
+        fc.position(skip);
+        AutoBuffer ab = new AutoBuffer(fc, true, Value.NFS);
+        byte[] b = ab.getA1(v._max);
+        ab.close();
+        return b;
+      } finally {
+        if( s != null ) s.close();
+      }
+    } catch( IOException ignore ) {
+      return null;
+    }
   }
 
   // Store Value v to disk.

@@ -188,7 +188,12 @@ public class Weaver {
     String mimpl = impl+"_impl";
     for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
       if( mth.getName().equals(mimpl) ) {
-        sb.append("  return ice.").append(mimpl).append("(ab);\n}");
+        // If the custom serializer is actually abstract, then do nothing - it
+        // must be (re)implemented in all child classes which will Do The Right Thing.
+        if( javassist.Modifier.isAbstract(mth.getModifiers()) || javassist.Modifier.isVolatile(mth.getModifiers()) )
+          sb.append(impl.equals("write") ? "  return ab;\n}" : "  return ice;\n}");
+        else 
+          sb.append("  return ice.").append(mimpl).append("(ab);\n}");
         mimpl = null;           // flag it
         break;
       }

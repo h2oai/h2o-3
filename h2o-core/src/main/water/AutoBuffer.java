@@ -366,7 +366,7 @@ public final class AutoBuffer {
     assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
-  final byte[] bufClose() {
+  public final byte[] bufClose() {
     byte[] res = _bb.array();
     bbFree();
     return res;
