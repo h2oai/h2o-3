@@ -355,18 +355,16 @@ public class Vec extends Keyed {
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
-  public void postWrite() {
-    throw H2O.unimpl();
-    //Vec vthis = DKV.get(_key).get();
-    //if( vthis._naCnt==-2 ) {
-    //  _naCnt = vthis._naCnt=-1;
-    //  new TAtomic<Vec>() {
-    //    @Override private Vec atomic(Vec v) { if( v!=null && v._naCnt==-2 ) v._naCnt=-1; return v; }
-    //  }.invoke(_key);
-    //}
+  public void postWrite( Futures fs ) {
+    // Get a copy of self from the KV store
+    Vec vthis = DKV.get(_key).get();
+    RollupStats rs = vthis._rollups;
+    if( rs == null || rs._naCnt != -2 ) return; // Rollups already allowed
+    _rollups = vthis._rollups = null;// Unlock; allow rollups locally
+    fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
+        @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
+      }.fork(_key));
   }
-
-
 
 
   /** Convert a row# to a chunk#.  For constant-sized chunks this is a little

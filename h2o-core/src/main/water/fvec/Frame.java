@@ -100,9 +100,11 @@ public class Frame extends Lockable {
   }
 
   public void postWrite() {
-    // postwrite all vecs; reload in vec array
-    // should call postwrite all vecs (allowing overlap)
-    throw H2O.unimpl();
+    Futures fs = new Futures();
+    for( Vec v : _vecs ) v.postWrite(fs);
+    fs.blockForPending();       // Block for all pending Vec unlocks
+    for( int i=0; i<_vecs.length; i++ )
+      _vecs[i] = DKV.get(_keys[i]).get(); // Refresh with latest Vec headers
   }
 
   public int numCols() { throw H2O.unimpl(); }

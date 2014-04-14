@@ -11,7 +11,7 @@ public class Arrays {
   }
   public static int sum(final int[] from) {
     int result = 0;
-    for (int d: from) result += d;
+    for( int d : from ) result += d;
     return result;
   }
   public static float sum(final float[] from) {

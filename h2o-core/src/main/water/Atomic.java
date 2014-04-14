@@ -34,7 +34,7 @@ abstract class Atomic<T extends Atomic> extends DTask {
   }
 
   // Fork off
-  private final RPC<Atomic<T>> fork(Key key) {
+  public final RPC<Atomic<T>> fork(Key key) {
     _key = key;
     if( key.home() ) {          // Key is home?
       compute2();               // Also, run it blocking/now

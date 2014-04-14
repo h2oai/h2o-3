@@ -244,7 +244,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
     try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
-    _fr.postWrite();       // Do any post-writing work (zap rollup fields, etc)
     return self();
   }
 
@@ -454,9 +453,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
       _res._profile = _profile; // Use my profile (not childs)
       copyOver(_res);           // So copy into self
     }
-    closeLocal();
+    closeLocal();          // User's node-local cleanup
+    if( _fr != null )
+      _fr.postWrite();     // Do any post-writing work (zap rollup fields, etc)
     if( nlo==0 && nhi == H2O.CLOUD.size() )
-      postGlobal();
+      postGlobal();             // User's continuation work
   }
 
   // Block for RPCs to complete, then reduce global results into self results
