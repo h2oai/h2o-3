@@ -20,10 +20,10 @@ public class ByteVec extends Vec {
       final long [] sz = new long[1];
       private int _cidx, _sz;
       private C1NChunk _c0;
-      @Override public int available() throws IOException {
+      @Override public int available() {
         if( _c0 == null || _sz >= _c0._len ) {
           sz[0] += _c0 != null?_c0._len:0;
-          if(_cidx >= nChunks() )return 0;
+          if( _cidx >= nChunks() ) return 0;
           _c0 = chunkForChunkIdx(_cidx++);
           _sz = C1NChunk.OFF;
           if( pmon != null ) pmon.update(_c0._len);
@@ -34,7 +34,7 @@ public class ByteVec extends Vec {
       @Override public int read() throws IOException {
         return available() == 0 ? -1 : 0xFF&_c0._mem[_sz++];
       }
-      @Override public int read(byte[] b, int off, int len) throws IOException {
+      @Override public int read(byte[] b, int off, int len) {
         int sz = available();
         if( sz == 0 )
           return -1;

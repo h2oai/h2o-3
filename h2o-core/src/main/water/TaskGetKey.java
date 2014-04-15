@@ -15,7 +15,6 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   Value _val;                // Set by server JVM, read by client JVM
   transient Key _xkey;       // Set by client, read by client
   transient H2ONode _h2o;    // Set by server JVM, read by server JVM on ACKACK
-  final byte _priority;
 
   // Unify multiple Key/Value fetches for the same Key from the same Node at
   // the "same time".  Large key fetches are slow, and we'll get multiple
@@ -23,7 +22,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   private static final NonBlockingHashMap<Key,RPC<TaskGetKey>> TGKS = new NonBlockingHashMap();
 
   // Get a value from a named remote node
-  static Value get( H2ONode target, Key key, int priority ) { return get(start(target,key,priority)); }
+  static Value get( H2ONode target, Key key ) { return get(start(target,key)); }
 
   static Value get(RPC<TaskGetKey> rpc) {
     TaskGetKey tgk = rpc.get();                  // Block for it
@@ -31,23 +30,19 @@ public class TaskGetKey extends DTask<TaskGetKey> {
     return tgk._val;
   }
   // Start an RPC to fetch a Value, handling short-cutting dup-fetches
-  static RPC<TaskGetKey> start( H2ONode target, Key key, int priority ) {
-    RPC<TaskGetKey> rpc;
-    while( true ) {       // Repeat until we get a unique TGK installed per key
-      // Do we have an old TaskGetKey in-progress?
-      rpc = TGKS.get(key);
-      if( rpc != null && rpc._dt._priority >= priority ) return rpc;
-      final RPC<TaskGetKey> old = rpc;
-      // Make a new TGK.
-      rpc = new RPC(target,new TaskGetKey(key,priority),1.0f);
-      if( TGKS.putIfMatchUnlocked(key,rpc,old) == old ) {
-        rpc.setTaskNum().call(); // Start the op
-        return rpc;              // Successful install of a fresh RPC
-      }
-    }
+  static RPC<TaskGetKey> start( H2ONode target, Key key ) {
+    // Do we have an old TaskGetKey in-progress?
+    RPC<TaskGetKey> old = TGKS.get(key);
+    if( old != null ) return old;
+    // Make a new TGK.
+    RPC<TaskGetKey> rpc = new RPC(target,new TaskGetKey(key),1.0f);
+    if( (old=TGKS.putIfMatchUnlocked(key,rpc,null)) != null )
+      return old;               // Failed because an old exists
+    rpc.setTaskNum().call();    // Start the op
+    return rpc;                 // Successful install of a fresh RPC
   }
 
-  private TaskGetKey( Key key, int priority ) { _key = _xkey = key; _priority = (byte)priority; }
+  private TaskGetKey( Key key ) { _key = _xkey = key; }
 
   // Top-level non-recursive invoke
   @Override public void dinvoke( H2ONode sender ) {
@@ -91,5 +86,5 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   @Override public void onAckAck() {
     if( _val != null ) _val.lowerActiveGetCount(_h2o);
   }
-  @Override byte priority() { return _priority; }
+  @Override byte priority() { return H2O.GET_KEY_PRIORITY; }
 }

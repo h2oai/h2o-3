@@ -3,11 +3,12 @@ package water;
 import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.*;
+import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
 
 public class KVTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a
@@ -129,9 +130,9 @@ public class KVTest extends TestUtil {
   public static class ByteHisto extends MRTask<ByteHisto> {
     int[] _x;
     // Count occurrences of bytes
-    @Override public void map( Key key ) {
+    @Override public void map( Chunk chk ) {
       _x = new int[256];        // One-time set histogram array
-      byte[] bits = DKV.get(key).memOrLoad(); // Raw file bytes
+      byte[] bits = chk.getBytes(); // Raw file bytes
       for( byte b : bits ) // Compute local histogram
         _x[b&0xFF]++;
     }

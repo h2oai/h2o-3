@@ -536,14 +536,14 @@ public final class AutoBuffer {
 
   // -----------------------------------------------
   // Utility functions to get various Java primitives
-  boolean getZ() { return get1()!=0; }
-  byte   get1 () { return getSp(1).get      (); }
-  int    get1U() { return get1() & 0xFF;        }
-  char   get2 () { return getSp(2).getChar  (); }
-  int    get4 () { return getSp(4).getInt   (); }
-  float  get4f() { return getSp(4).getFloat (); }
-  long   get8 () { return getSp(8).getLong  (); }
-  double get8d() { return getSp(8).getDouble(); }
+  public boolean getZ() { return get1()!=0; }
+  public byte   get1 () { return getSp(1).get      (); }
+  public int    get1U() { return get1() & 0xFF;        }
+  public char   get2 () { return getSp(2).getChar  (); }
+  public int    get4 () { return getSp(4).getInt   (); }
+  public float  get4f() { return getSp(4).getFloat (); }
+  public long   get8 () { return getSp(8).getLong  (); }
+  public double get8d() { return getSp(8).getDouble(); }
 
 
   int get3() {
@@ -671,7 +671,7 @@ public final class AutoBuffer {
     return this;
   }
 
-  <T extends Freezable> T get(Class<T> t) {
+  public <T extends Freezable> T get(Class<T> t) {
     short id = (short)get2();
     if( id == TypeMap.NULL ) return null;
     assert id > 0 : "Bad type id "+id;

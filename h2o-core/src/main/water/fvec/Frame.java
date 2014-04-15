@@ -88,14 +88,10 @@ public class Frame extends Lockable {
   }
   // Compute vectors for caching
   private Vec[] vecs_impl() {
-    // Load all Vec headers; load them all in parallel by spawning F/J tasks.
-    if( _keys == null )
-      System.out.println("crunk");
-    final Vec [] vecs = new Vec[_keys.length];
-    for( int i=0; i<_keys.length; i++ ) {
-      DKV.prefetch(_keys[i]);
-      throw H2O.unimpl();
-    }
+    // Load all Vec headers; load them all in parallel by starting prefetches
+    for( Key key : _keys ) DKV.prefetch(key);
+    Vec [] vecs = new Vec[_keys.length];
+    for( int i=0; i<_keys.length; i++ ) vecs[i] = DKV.get(_keys[i]).get();
     return vecs;
   }
 

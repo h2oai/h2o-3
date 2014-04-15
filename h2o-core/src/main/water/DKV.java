@@ -91,14 +91,16 @@ public abstract class DKV {
   }
 
   // User-Weak-Get a Key from the distributed cloud.
-  static public Value get( Key key, int len, int priority ) {
+  static public Value get    ( Key key ) { return get(key,true ); }
+  static public void prefetch( Key key ) {        get(key,false); }
+  
+  static private Value get( Key key, boolean blocking ) {
     // Read the Cloud once per put-attempt, to keep a consistent snapshot.
     H2O cloud = H2O.CLOUD;
     Value val = H2O.get(key);
     // Hit in local cache?
     if( val != null ) {
-      if( len > val._max ) len = val._max; // See if we have enough data cached locally
-      if( len == 0 || val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) return val;
+      if( val.rawMem() != null || val.rawPOJO() != null || val.isPersisted() ) return val;
       assert !key.home(); // Master must have *something*; we got nothing & need to fetch
     }
 
@@ -128,10 +130,7 @@ public abstract class DKV {
       }
     }
     // Get data "the hard way"
-    return TaskGetKey.get(home,key,priority);
+    RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
+    return blocking ? TaskGetKey.get(tgk) : null;
   }
-  static public Value get( Key key ) { return get(key,Integer.MAX_VALUE,H2O.GET_KEY_PRIORITY); }
-  // Prefetch a key
-  static public void prefetch( Key key ) { throw H2O.unimpl(); }
-
 }
