@@ -52,8 +52,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     // Canonical ordering based on inet & port
     @Override public int compareTo( Object x ) {
       if( x == null ) return -1;   // Always before null
-      H2Okey key = ((H2ONode)x)._key;
-      if( key == this ) return 0;
+      if( x == this ) return 0;
+      H2Okey key = (H2Okey)x;
       // Must be unsigned long-math, or overflow will make a broken sort
       long res = (_ipv4&0xFFFFFFFFL) - (key._ipv4&0xFFFFFFFFL);
       if( res != 0 ) return res < 0 ? -1 : 1;
@@ -169,8 +169,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // Happy printable string
   @Override public String toString() { return _key.toString (); }
   @Override public int hashCode() { return _key.hashCode(); }
-  @Override public boolean equals(Object o) { return _key.equals(o); }
-  @Override public int compareTo( Object o) { return _key.compareTo(o); }
+  @Override public boolean equals(Object o) { return _key.equals   (((H2ONode)o)._key); }
+  @Override public int compareTo( Object o) { return _key.compareTo(((H2ONode)o)._key); }
 
   // index of this node in the current cloud... can change at the next cloud.
   int index() { return H2O.CLOUD.nidx(this); }

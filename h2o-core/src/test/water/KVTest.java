@@ -117,7 +117,6 @@ public class KVTest extends TestUtil {
       // Return a Key mapping to a NFSFileVec over the file
       nfs = NFSFileVec.make(file);
       ByteHisto bh = new ByteHisto().doAll(nfs);
-      assert bh._x != null;
       int sum = water.util.Arrays.sum(bh._x);
       assertEquals(file.length(),sum);
     } finally {
