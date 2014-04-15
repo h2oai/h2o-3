@@ -24,7 +24,8 @@ public class AtomicTest extends TestUtil {
 
   private static class Append {
     static private void append(Key keys, final Key k) {
-      (Atomic) (val) -> {       // Wheeeee... fun new Java7 lambda syntax
+      new Atomic() {
+        @Override public Value atomic(Value val) {
           Ary ks = val == null ? new Ary(new Key[0]) : (Ary)val.get();
           Key[] keys = Arrays.copyOf(ks._keys,ks._keys.length+1);
           keys[keys.length-1]=k;
