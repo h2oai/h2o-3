@@ -14,7 +14,6 @@ public class KVTest extends TestUtil {
   // Run some basic tests.  Create a key, test that it does not exist, insert a
   // value for it, get the value for it, delete it.
   @Test public void testBasicCRUD() {
-    System.out.println("Hello test!!!");
     Key k1 = Key.make("key1");
     Value v0 = DKV.get(k1);
     assertNull(v0);
@@ -140,47 +139,47 @@ public class KVTest extends TestUtil {
     @Override public void reduce( ByteHisto bh ) { water.util.Arrays.add(_x,bh._x); }
   }
 
-//  // ---
-//  // Run an atomic function remotely, one time only
-//  @Test public void testRemoteAtomic() {
-//    // Make an execution key homed to the remote node
-//    H2O cloud = H2O.CLOUD;
-//    H2ONode target = cloud._memary[0];
-//    if( target == H2O.SELF ) target = cloud._memary[1];
-//    Key key = Key.make("test6_remote",(byte)1,Key.DFJ_INTERNAL_USER,target);
-//    // It's a plain empty byte array - but too big for atomic update on purpose
-//    Value v1 = new Value(key,16);
-//    // Remote-put operation
-//    DKV.put(key,v1);
-//    DKV.write_barrier();
-//  
-//    // Atomically run this function on a clone of the bits from the existing
-//    // Key and install the result as the new Value.  This function may run
-//    // multiple times if there are collisions.
-//    Atomic q = new Atomic2();
-//    q.invoke(key);              // Run remotely; block till done
-//    Value val3 = DKV.get(key);
-//    assertNotSame(v1,val3);
-//    AutoBuffer ab = new AutoBuffer(val3.memOrLoad());
-//    assertEquals(2,ab.get8(0));
-//    assertEquals(2,ab.get8(8));
-//    DKV.remove(key);            // Cleanup after test
-//  }
-//  
-//  public static class Atomic2 extends Atomic {
-//    @Override public Value atomic( Value val ) {
-//      byte[] bits1 = val.memOrLoad();
-//      long l1 = UDP.get8(bits1,0);
-//      long l2 = UDP.get8(bits1,8);
-//      l1 += 2;
-//      l2 += 2;
-//      byte[] bits2 = new byte[16];
-//      UDP.set8(bits2,0,l1);
-//      UDP.set8(bits2,8,l2);
-//      return new Value(_key,bits2);
-//    }
-//  }
-//  
+  // ---
+  // Run an atomic function remotely, one time only
+  @Test public void testRemoteAtomic() {
+    // Make an execution key homed to the remote node
+    H2O cloud = H2O.CLOUD;
+    H2ONode target = cloud._memary[0];
+    if( target == H2O.SELF ) target = cloud._memary[1];
+    Key key = Key.make("test6_remote",(byte)1,Key.BUILT_IN_KEY,target);
+    // It's a plain empty byte array - but too big for atomic update on purpose
+    Value v1 = new Value(key,new byte[16]);
+    // Remote-put operation
+    DKV.put(key,v1);
+    DKV.write_barrier();
+  
+    // Atomically run this function on a clone of the bits from the existing
+    // Key and install the result as the new Value.  This function may run
+    // multiple times if there are collisions.
+    Atomic q = new Atomic2();
+    q.invoke(key);              // Run remotely; block till done
+    Value val3 = DKV.get(key);
+    assertNotSame(v1,val3);
+    AutoBuffer ab = new AutoBuffer(val3.memOrLoad());
+    assertEquals(2,ab.get8(0));
+    assertEquals(2,ab.get8(8));
+    DKV.remove(key);            // Cleanup after test
+  }
+  
+  public static class Atomic2 extends Atomic {
+    @Override public Value atomic( Value val ) {
+      byte[] bits1 = val.memOrLoad();
+      long l1 = UDP.get8(bits1,0);
+      long l2 = UDP.get8(bits1,8);
+      l1 += 2;
+      l2 += 2;
+      byte[] bits2 = new byte[16];
+      UDP.set8(bits2,0,l1);
+      UDP.set8(bits2,8,l2);
+      return new Value(_key,bits2);
+    }
+  }
+  
 //  // ---
 //  // Test parsing "cars.csv" and running LinearRegression
 //  @Test public void testLinearRegression() {
