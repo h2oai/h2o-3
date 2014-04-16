@@ -7,8 +7,8 @@ public abstract class Keyed<T extends Lockable<T>> extends Iced {
   public Keyed( Key key ) { _key = key; }
 
   // Remove any K/V store parts associated with this Key
-  protected void remove( ) { remove(new Futures()).blockForPending(); }
-  protected Futures remove( Futures fs ) {
+  public void remove( ) { remove(new Futures()).blockForPending(); }
+  public Futures remove( Futures fs ) {
     DKV.remove(_key,fs);
     return fs; 
   }

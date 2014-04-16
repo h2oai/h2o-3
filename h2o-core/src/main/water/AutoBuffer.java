@@ -573,15 +573,15 @@ public final class AutoBuffer {
   AutoBuffer put8 (int off, long   v) { _bb.putLong  (off, v);              return this; }
   AutoBuffer put8d(int off, double v) { _bb.putDouble(off, v);              return this; }
 
-  AutoBuffer putZ (boolean b){ return put1(b?1:0); }
+  public AutoBuffer putZ (boolean b){ return put1(b?1:0); }
   public AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
                                       putSp(1).put((byte)b); return this; }
-  AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
-  AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
-  AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }
-  AutoBuffer put4f( float f) { putSp(4).putFloat (f); return this; }
+  public AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
+  public AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
+  public AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }
+  public AutoBuffer put4f( float f) { putSp(4).putFloat (f); return this; }
   public AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
-  AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
+  public AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
   public AutoBuffer put(Freezable f) {
     if( f == null ) return put2(TypeMap.NULL);

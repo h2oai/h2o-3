@@ -117,7 +117,7 @@ public class KVTest extends TestUtil {
       // Return a Key mapping to a NFSFileVec over the file
       nfs = NFSFileVec.make(file);
       ByteHisto bh = new ByteHisto().doAll(nfs);
-      int sum = water.util.Arrays.sum(bh._x);
+      int sum = water.util.ArrayUtils.sum(bh._x);
       assertEquals(file.length(),sum);
     } finally {
       if( nfs != null ) nfs.remove(); // remove from DKV
@@ -135,7 +135,7 @@ public class KVTest extends TestUtil {
         _x[b&0xFF]++;
     }
     // ADD together all results
-    @Override public void reduce( ByteHisto bh ) { water.util.Arrays.add(_x,bh._x); }
+    @Override public void reduce( ByteHisto bh ) { water.util.ArrayUtils.add(_x,bh._x); }
   }
 
   // ---

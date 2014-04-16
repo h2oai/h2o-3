@@ -1,7 +1,7 @@
 package water.util;
 
 /* Bulk Array Utilities */
-public class Arrays {
+public class ArrayUtils {
 
   // Sum elements of an array
   public static long sum(final long[] from) {

@@ -4,10 +4,10 @@ import java.util.concurrent.TimeUnit;
 
 public class PrettyPrint {
   static String msecs(long msecs, boolean truncate) {
-    final long hr = TimeUnit.MILLISECONDS.toHours (msecs); msecs -= TimeUnit.HOURS .toMillis(hr);
+    final long hr  = TimeUnit.MILLISECONDS.toHours  (msecs); msecs -= TimeUnit.HOURS  .toMillis(hr);
     final long min = TimeUnit.MILLISECONDS.toMinutes(msecs); msecs -= TimeUnit.MINUTES.toMillis(min);
     final long sec = TimeUnit.MILLISECONDS.toSeconds(msecs); msecs -= TimeUnit.SECONDS.toMillis(sec);
-    final long ms = TimeUnit.MILLISECONDS.toMillis (msecs);
+    final long ms  = TimeUnit.MILLISECONDS.toMillis (msecs);
     if( !truncate ) return String.format("%02d:%02d:%02d.%03d", hr, min, sec, ms);
     if( hr != 0 ) return String.format("%2d:%02d:%02d.%03d", hr, min, sec, ms);
     if( min != 0 ) return String.format("%2d min %2d.%03d sec", min, sec, ms);
@@ -32,4 +32,53 @@ public class PrettyPrint {
     if( bytes < 0 ) return "N/A";
     return bytes(bytes)+"/S";
   }
+
+  static double [] powers10 = new double[]{
+    0.0000000001,
+    0.000000001,
+    0.00000001,
+    0.0000001,
+    0.000001,
+    0.00001,
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0,
+    10000.0,
+    100000.0,
+    1000000.0,
+    10000000.0,
+    100000000.0,
+    1000000000.0,
+    10000000000.0,
+  };
+
+  static public long [] powers10i = new long[]{
+    1l,
+    10l,
+    100l,
+    1000l,
+    10000l,
+    100000l,
+    1000000l,
+    10000000l,
+    100000000l,
+    1000000000l,
+    10000000000l,
+    100000000000l,
+    1000000000000l,
+    10000000000000l,
+    100000000000000l,
+    1000000000000000l,
+    10000000000000000l,
+    100000000000000000l,
+    1000000000000000000l,
+  };
+
+  public static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
+  public static long pow10i(int exp){ return powers10i[exp]; }
 }

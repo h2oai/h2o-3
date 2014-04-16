@@ -63,7 +63,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
       if( _appendables==null )  // Zero rows?
         vecs[i] = _fr.anyVec().makeZero();
       else {
-        _appendables[i]._domain = domains==null ? null : domains[i];
+        _appendables[i].setDomain(domains==null ? null : domains[i]);
         vecs[i] = _appendables[i].close(fs);
       }
     }

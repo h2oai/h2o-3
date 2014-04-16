@@ -83,13 +83,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // A dense integer index for every unique IP ever seen, since the JVM booted.
   // Used to track "known replicas" per-key across Cloud change-ups.  Just use
   // an array-of-H2ONodes, and a limit of 255 unique H2ONodes
-  static private final NonBlockingHashMap<H2Okey,H2ONode> INTERN = new NonBlockingHashMap<H2Okey,H2ONode>();
+  static private final NonBlockingHashMap<H2Okey,H2ONode> INTERN = new NonBlockingHashMap<>();
   static private final AtomicInteger UNIQUE = new AtomicInteger(1);
   static H2ONode IDX[] = new H2ONode[1];
 
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
-  static final H2ONode intern( H2Okey key ) {
+  static private H2ONode intern( H2Okey key ) {
     H2ONode h2o = INTERN.get(key);
     if( h2o != null ) return h2o;
     final int idx = UNIQUE.getAndIncrement();
@@ -155,13 +155,13 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         H2O.CLOUD_MULTICAST_IF = matchingIfs.get(0);
       }
     } catch( SocketException e ) {
-      Log.throwErr(e);
+      throw Log.throwErr(e);
     }
     try {
       assert water.init.NetworkInit.CLOUD_DGRAM == null;
       water.init.NetworkInit.CLOUD_DGRAM = DatagramChannel.open();
     } catch( Exception e ) {
-      Log.throwErr(e);
+      throw Log.throwErr(e);
     }
     return intern(new H2Okey(local,H2O.H2O_PORT));
   }
@@ -192,7 +192,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     synchronized(this) {
       // Limit myself to the number of open sockets from node-to-node
       while( _socksAvail == 0 )
-        try { wait(); } catch( InterruptedException ie ) { }
+        try { wait(); } catch( InterruptedException ignored ) { }
       // Claim an open socket
       SocketChannel sock = _socks[--_socksAvail];
       if( sock != null ) {
@@ -329,7 +329,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   static class AckAckTimeOutThread extends Thread {
     AckAckTimeOutThread() { super("ACKTimeout"); }
     // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
-    static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<RPC.RPCCall>();
+    static DelayQueue<RPC.RPCCall> PENDING = new DelayQueue<>();
     // Started by main() on a single thread, handle timing-out UDP packets
     @Override public void run() {
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);

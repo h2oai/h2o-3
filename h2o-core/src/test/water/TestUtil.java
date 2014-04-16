@@ -1,9 +1,9 @@
 package water;
 
+import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.*;
-import static org.junit.Assert.*;
-
+import water.fvec.*;
 
 public class TestUtil {
   private static int _initial_keycnt = 0;
@@ -46,5 +46,29 @@ public class TestUtil {
       file = null;
     return file;
   }
+
+
+  public static Vec vec(int...rows) { return vec(null, rows); }
+  public static Vec vec(String[] domain, int ...rows) { 
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( int r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  public static String[]   ar (String ...a)   { return a; }
+  public static long  []   ar (long   ...a)   { return a; }
+  public static long[][]   ar (long[] ...a)   { return a; }
+  public static int   []   ari(int    ...a)   { return a; }
+  public static int [][]   ar (int[]  ...a)   { return a; }
+  public static float []   arf(float  ...a)   { return a; }
+  public static double[]   ard(double ...a)   { return a; }
+  public static double[][] ard(double[] ...a) { return a; }
 }
 

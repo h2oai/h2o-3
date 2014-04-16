@@ -6,7 +6,6 @@ import java.io.File;
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
 import org.junit.*;
-import water.DException.DistributedException;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
 
@@ -28,7 +27,7 @@ public class MRThrow extends TestUtil {
           bh.doAll(nfs); // invoke should throw DistributedException wrapped up in RunTimeException
           fail("should've thrown");
         } catch( RuntimeException e ) {
-          assertTrue(e.getMessage().indexOf("test") != -1);
+          assertTrue(e.getMessage().contains("test"));
         } catch( Throwable ex ) {
           ex.printStackTrace();
           fail("Expected RuntimeException, got " + ex.toString());
@@ -49,7 +48,7 @@ public class MRThrow extends TestUtil {
           bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
           fail("should've thrown");
         } catch(ExecutionException e) {
-          assertTrue(e.getMessage().indexOf("test") != -1);
+          assertTrue(e.getMessage().contains("test"));
         } catch(Throwable ex) {
           ex.printStackTrace();
           fail("Expected ExecutionException, got " + ex.toString());
@@ -71,14 +70,14 @@ public class MRThrow extends TestUtil {
           bh.setCompleter(new CountedCompleter() {
             @Override public void compute() {}
             @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
-              ok[0] = ex.getMessage().indexOf("test") != -1;
+              ok[0] = ex.getMessage().contains("test");
               return true;
             }
           });
           bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
           assertTrue(ok[0]);
         } catch(ExecutionException eex) {
-          assertTrue(eex.getCause().getMessage().indexOf("test") != -1);
+          assertTrue(eex.getCause().getMessage().contains("test"));
         } catch(Throwable ex){
           ex.printStackTrace();
           fail("Unexpected exception" + ex.toString());
@@ -121,6 +120,6 @@ public class MRThrow extends TestUtil {
         throw new RuntimeException("test");
     }
     // ADD together all results
-    @Override public void reduce( ByteHistoThrow bh ) { water.util.Arrays.add(_x,bh._x); }
+    @Override public void reduce( ByteHistoThrow bh ) { water.util.ArrayUtils.add(_x,bh._x); }
   }
 }

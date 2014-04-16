@@ -51,9 +51,9 @@ public class Vec extends Keyed {
   final private long _espc[];
 
   /** Enum/factor/categorical names. */
-  private String [] _domain;
+  protected String [] _domain;
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
-  private byte _time;
+  protected byte _time;
 
   /** Maximal size of enum domain */
   private static final int MAX_ENUM_SIZE = 10000;
@@ -195,28 +195,10 @@ public class Vec extends Keyed {
 
   /** Return an array of domains.  This is eagerly manifested for enum or
    *  categorical columns.  Returns null for non-Enum/factor columns. */
-  private String[] domain() { return _domain; }
+  public String[] domain() { return _domain; }
 
   /** Returns cardinality for enum domain or -1 for other types. */
   private int cardinality() { return isEnum() ? _domain.length : -1; }
-
-  /** Transform this vector to enum.
-   *  If the vector is integer vector then its domain is collected and transformed to
-   *  corresponding strings.
-   *  If the vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping between values.
-   *
-   *  @return always returns a new vector and the caller is responsible for vector deletion!
-   */
-  private Vec toEnum() {
-    throw H2O.unimpl();
-    //if( isEnum() ) return this.makeIdentityTransf(); // Make an identity transformation of this vector
-    //if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    //long[] domain;
-    //String[] sdomain = Utils.toString(domain = new CollectDomain(this).doAll(this).domain());
-    //if( domain.length > MAX_ENUM_SIZE ) throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + MAX_ENUM_SIZE);
-    //return this.makeSimpleTransf(domain, sdomain);
-  }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -224,7 +206,6 @@ public class Vec extends Keyed {
   protected boolean writable() { return true; }
 
   /** RollupStats: min/max/mean of this Vec lazily computed.  */
-  private volatile RollupStats _rollups;
   /** Return column min - lazily computed as needed. */
   double min()  { return rollupStats()._min; }
   /** Return column max - lazily computed as needed. */
@@ -239,100 +220,8 @@ public class Vec extends Keyed {
   boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
-  /** Compute the roll-up stats as-needed, and copy into the Vec object */
-  private RollupStats rollupStats() { return rollupStats(null); }
-
-  // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
-  // the rollup in the background.  *Always* returns "this".
-  private RollupStats rollupStats(Futures fs) {
-    RollupStats rs = _rollups;
-    if( rs == null ) {                 // Got nothing
-      Vec vthis = DKV.get(_key).get(); // Fetch fresh from K/V
-      if( vthis != this ) 
-        _rollups = rs = vthis._rollups; // Get updated RS
-    }
-    if( rs != null ) {               // Got something?
-      if( rs._naCnt!=-2 ) return rs; // Fast path cached
-      throw new IllegalArgumentException("Cannot ask for roll-up stats while the vector is being actively written.");
-    }
-    throw H2O.unimpl();
-    //  RollupStats rs = new RollupStats().dfork(this);
-    //  if(fs != null) fs.add(rs); else setRollupStats(rs.getResult());
-    //}
-    //return this;
-  }
-
-  //Vec setRollupStats( RollupStats rs ) {
-  //  _min  = rs._min; _max = rs._max; _mean = rs._mean;
-  //  _sigma = Math.sqrt(rs._sigma / (rs._rows - 1));
-  //  _size =rs._size;
-  //  _isInt= rs._isInt;
-  //  if( rs._rows == 0 )         // All rows missing?  Then no rollups
-  //    _min = _max = _mean = _sigma = Double.NaN;
-  //  _naCnt= rs._naCnt;          // Volatile write last to announce all stats ready
-  //  return this;
-  //}
-
-  /** A private class to compute the rollup stats */
-  private static class RollupStats extends MRTask<RollupStats> {
-    /** The count of missing elements.... or -2 if we have active writers and no
-     *  rollup info can be computed (because the vector is being rapidly
-     *  modified!), or -1 if rollups have not been computed since the last
-     *  modification.   */
-    double _min=Double.MAX_VALUE, _max=-Double.MAX_VALUE, _mean, _sigma;
-    long _rows, _naCnt, _size;
-    boolean _isInt=true;
-
-    @Override protected void postGlobal(){
-      throw H2O.unimpl();
-      //final RollupStats rs = this;
-      //_fr.vecs()[0].setRollupStats(rs);
-      //// Now do this remotely also
-      //new TAtomic<Vec>() {
-      //  @Override private Vec atomic(Vec v) {
-      //    if( v!=null && v._naCnt == -1 ) v.setRollupStats(rs);  return v;
-      //  }
-      //}.fork(_fr.vecs()[0]._key);
-    }
-
-    @Override public void map( Chunk c ) {
-      _size = c.byteSize();
-      for( int i=0; i<c._len; i++ ) {
-        double d = c.at0(i);
-        if( Double.isNaN(d) ) _naCnt++;
-        else {
-          if( d < _min ) _min = d;
-          if( d > _max ) _max = d;
-          _mean += d;
-          _rows++;
-          if( _isInt && ((long)d) != d ) _isInt = false;
-        }
-      }
-      _mean = _mean / _rows;
-      for( int i=0; i<c._len; i++ ) {
-        if( !c.isNA0(i) ) {
-          double d = c.at0(i);
-          _sigma += (d - _mean) * (d - _mean);
-        }
-      }
-    }
-    @Override public void reduce( RollupStats rs ) {
-      _min = Math.min(_min,rs._min);
-      _max = Math.max(_max,rs._max);
-      _naCnt += rs._naCnt;
-      double delta = _mean - rs._mean;
-      if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
-      else if (rs._rows > 0) {
-        _mean = (_mean*_rows + rs._mean*rs._rows)/(_rows + rs._rows);
-        _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
-      }
-      _rows += rs._rows;
-      _size += rs._size;
-      _isInt &= rs._isInt;
-    }
-    // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
-    @Override public boolean logVerbose() { return false; }
-  }
+  /** Compute the roll-up stats as-needed */
+  private RollupStats rollupStats() { return RollupStats.get(this, null); }
 
   /** Writing into this Vector from *some* chunk.  Immediately clear all caches
    *  (_min, _max, _mean, etc).  Can be called repeatedly from one or all
@@ -353,14 +242,15 @@ public class Vec extends Keyed {
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
   public void postWrite( Futures fs ) {
+    throw H2O.unimpl();
     // Get a copy of self from the KV store
-    Vec vthis = DKV.get(_key).get();
-    RollupStats rs = vthis._rollups;
-    if( rs == null || rs._naCnt != -2 ) return; // Rollups already allowed
-    _rollups = vthis._rollups = null;// Unlock; allow rollups locally
-    fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
-        @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
-      }.fork(_key));
+    //Vec vthis = DKV.get(_key).get();
+    //RollupStats rs = vthis._rollups;
+    //if( rs == null || rs._naCnt != -2 ) return; // Rollups already allowed
+    //_rollups = vthis._rollups = null;// Unlock; allow rollups locally
+    //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
+    //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
+    //  }.fork(_key));
   }
 
 
@@ -404,6 +294,8 @@ public class Vec extends Keyed {
     UDP.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
+  public Key rollupStatsKey() { return chunkKey(-2); }
+
   /** Get a Chunk's Value by index.  Basically the index-to-key map,
    *  plus the {@code DKV.get()}.  Warning: this pulls the data locally;
    *  using this call on every Chunk index on the same node will
@@ -527,7 +419,7 @@ public class Vec extends Keyed {
   }
 
   // Remove associated Keys when this guy removes
-  @Override protected Futures remove( Futures fs ) {
+  @Override public Futures remove( Futures fs ) {
     super.remove(fs);
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
@@ -564,6 +456,30 @@ public class Vec extends Keyed {
     return avec;
   }
 
+  /** Transform this vector to enum.
+   *  If the vector is integer vector then its domain is collected and transformed to
+   *  corresponding strings.
+   *  If the vector is enum an identity transformation vector is returned.
+   *  Transformation is done by a {@link TransfVec} which provides a mapping between values.
+   *
+   *  @return always returns a new vector and the caller is responsible for vector deletion!
+   */
+  public Vec toEnum() {
+    if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
+    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    long[] domain;
+    throw H2O.unimpl();
+    //String[] sdomain = Utils.toString(domain = new CollectDomain(this).doAll(this).domain());
+    //if( domain.length > MAX_ENUM_SIZE ) throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + MAX_ENUM_SIZE);
+    //return this.makeSimpleTransf(domain, sdomain);
+  }
+
+  private Vec makeIdentityTransf() {
+    assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
+    throw H2O.unimpl();
+    //return makeTransf(seq(0, _domain.length), null, _domain);
+  }
+
   /**
    * Class representing the group of vectors.
    *
@@ -594,7 +510,7 @@ public class Vec extends Keyed {
    */
   public static class VectorGroup extends Iced {
     // The common shared vector group for length==1 vectors
-    private static VectorGroup VG_LEN1 = new VectorGroup();
+    public static VectorGroup VG_LEN1 = new VectorGroup();
     final int _len;
     final Key _key;
     private VectorGroup(Key key, int len){_key = key;_len = len;}
@@ -659,9 +575,7 @@ public class Vec extends Keyed {
      * Shortcut for addVecs(1).
      * @see #addVecs(int)
      */
-    private Key addVec() {
-      return addVecs(1)[0];
-    }
+    public Key addVec() { return addVecs(1)[0]; }
 
     @Override public String toString() {
       return "VecGrp "+_key.toString()+", next free="+_len;

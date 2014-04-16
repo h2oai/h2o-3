@@ -148,6 +148,9 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
 
+  protected boolean isSparse() {return false;}
+  protected int sparseLen(){return _len;}
+
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 

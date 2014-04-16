@@ -10,7 +10,7 @@ import water.H2O.H2OCountedCompleter;
  * @version 1.0
  */
 
-abstract class Atomic<T extends Atomic> extends DTask {
+abstract public class Atomic<T extends Atomic> extends DTask {
   protected Key _key;           // Transaction key
 
   // User's function to be run atomically.  The Key's Value is fetched from the
@@ -19,7 +19,7 @@ abstract class Atomic<T extends Atomic> extends DTask {
   // original Value is supposed to be read-only.  If the original Key misses
   // (no Value), one is created with 0 length and wrong Value._type to allow
   // the Key to passed in (as part of the Value)
-  abstract Value atomic( Value val );
+  abstract protected Value atomic( Value val );
 
   /** Executed on the transaction key's <em>home</em> node after any successful
    *  atomic update.  Override this if you need to perform some action after
