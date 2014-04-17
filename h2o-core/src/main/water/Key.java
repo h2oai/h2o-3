@@ -354,6 +354,6 @@ final public class Key extends Iced<Key> implements Comparable {
 
 
   // Custom Serialization Class: Keys need to be interned
-  @Override protected final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
-  @Override protected final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
+  @Override public final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
+  @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
 }

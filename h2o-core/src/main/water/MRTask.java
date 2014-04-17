@@ -26,7 +26,7 @@ import water.fvec.Vec.VectorGroup;
  * NewChunks.  MRTask will automatically close the new Appendable vecs and
  * produce an output frame with newly created Vecs.
  */
-public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJoinPool.ManagedBlocker {
+public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
   public MRTask() { _priority = getPriority(); }
 
   /** The Vectors (or Keys) to work on. */
@@ -454,8 +454,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask implements ForkJ
       copyOver(_res);           // So copy into self
     }
     closeLocal();          // User's node-local cleanup
-    if( _fr != null )
-      _fr.postWrite();     // Do any post-writing work (zap rollup fields, etc)
+    if( _fr != null )      // Do any post-writing work (zap rollup fields, etc)
+      _fr.postWrite(_fs).blockForPending();
     if( nlo==0 && nhi == H2O.CLOUD.size() )
       postGlobal();             // User's continuation work
   }

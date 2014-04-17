@@ -121,7 +121,7 @@ final public class H2O {
   static int hiQPoolSize(int i) { return FJPS[i+MIN_HI_PRIORITY].getPoolSize();             }
 
   // Submit to the correct priority queue
-  static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  static public H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY;
     FJPS[priority].submit(task);
@@ -166,7 +166,7 @@ final public class H2O {
       compute2();
     }
     // Do the actually intended work
-    abstract void compute2();
+    protected abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
         ex.printStackTrace();
@@ -192,6 +192,8 @@ final public class H2O {
     @Override final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(T)this); }
     @Override final public T read (AutoBuffer ab) { return icer().read (ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
+    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+    @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
   }
 
 

@@ -66,8 +66,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // - but not to other nodes, and
   // - the POJO might be dropped by the MemoryManager and reconstituted from
   //   disk and/or the byte array back to it's original form, losing your changes.
-  private volatile Iced _pojo;
-  Iced rawPOJO() { return _pojo; }
+  private volatile Freezable _pojo;
+  Freezable rawPOJO() { return _pojo; }
 
   // Free array (but always be able to rebuild the array)
   final void freeMem() {
@@ -86,7 +86,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public final byte[] memOrLoad() {
     byte[] mem = _mem;          // Read once!
     if( mem != null ) return mem;
-    Iced pojo = _pojo;          // Read once!
+    Freezable pojo = _pojo;     // Read once!
     if( pojo != null )          // Has the POJO, make raw bytes
       // Chunks have custom serializer here that skips all steps; just the chunk itself
       if( pojo instanceof Chunk ) return (_mem = ((Chunk)pojo).getBytes());
@@ -107,10 +107,18 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Will (re)build the POJO from the _mem array.
   // Never returns NULL.
   public <T extends Iced> T get() {
-    Iced pojo = _pojo;          // Read once!
+    Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
     pojo.read(new AutoBuffer(memOrLoad()));
+    return (T)(_pojo = pojo);
+  }
+  public <T extends Freezable> T get(Class<T> fc) {
+    Freezable pojo = _pojo;     // Read once!
+    if( pojo != null ) return (T)pojo;
+    pojo = TypeMap.newInstance(_type);
+    pojo.read(new AutoBuffer(memOrLoad()));
+    assert fc.isAssignableFrom(pojo.getClass());
     return (T)(_pojo = pojo);
   }
 
@@ -268,16 +276,26 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
+  public Value(Key k, Freezable pojo) {
+    _key = k;
+    _pojo = pojo;
+    _type = (short)pojo.frozenType();
+    _mem = pojo.write(new AutoBuffer()).buf();
+    _max = _mem.length;
+    _persist = ICE;
+    _rwlock = new AtomicInteger(0);
+    _replicas = k.home() ? new NonBlockingSetInt() : null;
+  }
 
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  @Override protected AutoBuffer write_impl( AutoBuffer ab ) {
+  @Override public AutoBuffer write_impl( AutoBuffer ab ) {
     touch();
     return ab.put1(_persist).put2(_type).putA1(memOrLoad());
   }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
-  @Override protected Value read_impl(AutoBuffer bb) {
+  @Override public Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
     _persist = bb.get1();       // Set persistence backend but...
     if( onICE() ) clrdsk();     // ... the on-disk flag is local, just deserialized thus not on MY disk

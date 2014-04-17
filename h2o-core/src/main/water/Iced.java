@@ -31,7 +31,7 @@ abstract public class Iced<D extends Iced> implements Freezable {
   // Override for a custom serializer.  Else the auto-gen one will read & write
   // all non-transient fields.
   //noninspection UnusedDeclaration
-  protected AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+  public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
   //noninspection UnusedDeclaration
-  protected D read_impl( AutoBuffer ab ) { return (D)this; }
+  public D read_impl( AutoBuffer ab ) { return (D)this; }
 }

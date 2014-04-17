@@ -42,15 +42,13 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   public void dinvoke( H2ONode sender ) { compute2(); }
 
   /** 2nd top-level execution hook.  After the primary task has received a
-   * result (ACK) and before we have sent an ACKACK, this method is executed
-   * on the <em>local vm</em>.  Transients from the local vm are available here.
-   */
+   * result (ACK) and before we have sent an ACKACK, this method is executed on
+   * the <em>local vm</em>.  Transients from the local vm are available here. */
   public void onAck() {}
 
-  /** 3rd top-level execution hook.  After the original vm sent an ACKACK,
-   * this method is executed on the <em>remote</em>.  Transients from the remote
-   * vm are available here.
-   */
+  /** 3rd top-level execution hook.  After the original vm sent an ACKACK, this
+   * method is executed on the <em>remote</em>.  Transients from the remote vm
+   * are available here.  */
   public void onAckAck() {}
 
   /** Override to remove 2 lines of logging per RPC.  0.5M RPC's will lead to
@@ -64,5 +62,5 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
     return true;
   }
   // For MRTasks, we need to copyOver
-  public void copyOver( T src ) { icer().copyOver(this,src); }
+  protected void copyOver( T src ) { icer().copyOver(this,src); }
 }

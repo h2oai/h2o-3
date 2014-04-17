@@ -95,12 +95,9 @@ public class Frame extends Lockable {
     return vecs;
   }
 
-  public void postWrite() {
-    Futures fs = new Futures();
+  public Futures postWrite(Futures fs) {
     for( Vec v : _vecs ) v.postWrite(fs);
-    fs.blockForPending();       // Block for all pending Vec unlocks
-    for( int i=0; i<_vecs.length; i++ )
-      _vecs[i] = DKV.get(_keys[i]).get(); // Refresh with latest Vec headers
+    return fs;
   }
 
   public int numCols() { throw H2O.unimpl(); }

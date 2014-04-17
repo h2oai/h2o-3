@@ -1,8 +1,11 @@
 package water.fvec;
 
-import water.*;
-import water.util.PrettyPrint;
+import java.util.Arrays;
 import java.util.UUID;
+import water.*;
+import water.nbhm.NonBlockingHashMapLong;
+import water.util.ArrayUtils;
+import water.util.PrettyPrint;
 
 /**
  * A single distributed vector column.
@@ -242,15 +245,14 @@ public class Vec extends Keyed {
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
   public void postWrite( Futures fs ) {
-    throw H2O.unimpl();
-    // Get a copy of self from the KV store
-    //Vec vthis = DKV.get(_key).get();
-    //RollupStats rs = vthis._rollups;
-    //if( rs == null || rs._naCnt != -2 ) return; // Rollups already allowed
-    //_rollups = vthis._rollups = null;// Unlock; allow rollups locally
-    //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
-    //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
-    //  }.fork(_key));
+    // Get the latest rollups *directly* (do not compute them!).
+    RollupStats rs = DKV.get(rollupStatsKey()).get(RollupStats.class);
+    if( rs.isMutating() ) {
+      //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
+      //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
+      //  }.fork(_key));
+      throw H2O.unimpl();
+    }
   }
 
 
@@ -279,7 +281,7 @@ public class Vec extends Keyed {
   private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Get a Vec Key from Chunk Key, without loading the Chunk */
-  static private Key getVecKey( Key key ) {
+  static Key getVecKey( Key key ) {
     assert key._kb[0]==Key.DVEC;
     byte [] bits = key._kb.clone();
     bits[0] = Key.VEC;
@@ -460,18 +462,17 @@ public class Vec extends Keyed {
    *  If the vector is integer vector then its domain is collected and transformed to
    *  corresponding strings.
    *  If the vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping between values.
+   *  Transformation is done by a TransfVec which provides a mapping between values.
    *
    *  @return always returns a new vector and the caller is responsible for vector deletion!
    */
   public Vec toEnum() {
     if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    long[] domain;
-    throw H2O.unimpl();
-    //String[] sdomain = Utils.toString(domain = new CollectDomain(this).doAll(this).domain());
-    //if( domain.length > MAX_ENUM_SIZE ) throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + MAX_ENUM_SIZE);
-    //return this.makeSimpleTransf(domain, sdomain);
+    long[] domain= new CollectDomain().doAll(this).domain();
+    if( domain.length > MAX_ENUM_SIZE ) 
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + MAX_ENUM_SIZE);
+    return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
   }
 
   private Vec makeIdentityTransf() {
@@ -479,6 +480,26 @@ public class Vec extends Keyed {
     throw H2O.unimpl();
     //return makeTransf(seq(0, _domain.length), null, _domain);
   }
+
+  /**
+   * Makes a new transformation vector from given values to
+   * values 0..domain size
+   * @param values values which are mapped from
+   * @param domain target domain which is mapped to
+   * @return a new transformation vector providing mapping between given values and target domain.
+   * @see Vec#makeTransf(int[], int[], String[])
+   */
+  Vec makeSimpleTransf(long[] values, String[] domain) {
+    int is[] = new int[values.length];
+    for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
+    throw H2O.unimpl();
+    //return makeTransf(is, null, domain);
+  }
+  /** This Vec does not have dependent hidden Vec it uses.
+   *
+   * @return dependent hidden vector or <code>null</code>
+   */
+  protected Vec masterVec() { return null; }
 
   /**
    * Class representing the group of vectors.
@@ -590,49 +611,45 @@ public class Vec extends Keyed {
   }
 
   /** Collect numeric domain of given vector */
-//private static class CollectDomain extends MRTask<CollectDomain> {
-//  transient NonBlockingHashMapLong<Object> _uniques;
-//  @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong(); }
-//  private CollectDomain(Vec v) { }
-//  @Override private void map(Chunk ys) {
-//    for( int row=0; row<ys._len; row++ )
-//      if( !ys.isNA0(row) )
-//        _uniques.put(ys.at80(row),"");
-//  }
-//
-//  @Override private void reduce(CollectDomain mrt) {
-//    if( _uniques == mrt._uniques ) return;
-//    _uniques.putAll(mrt._uniques);
-//  }
-//
-//  @Override private AutoBuffer write( AutoBuffer ab ) {
-//    super.write(ab);
-//    return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
-//  }
-//
-//  @Override private Freezable read( AutoBuffer ab ) {
-//    super.read(ab);
-//    assert _uniques == null || _uniques.size()==0;
-//    long ls[] = ab.getA8();
-//    _uniques = new NonBlockingHashMapLong();
-//    if( ls != null ) for( long l : ls ) _uniques.put(l,"");
-//    return this;
-//  }
-//  @Override private void copyOver(Freezable that) {
-//    super.copyOver(that);
-//    _uniques = ((CollectDomain)that)._uniques;
-//  }
-//
-//  /** Returns exact numeric domain of given vector computed by this task.
-//   * The domain is always sorted. Hence:
-//   *    domain()[0] - minimal domain value
-//   *    domain()[domain().length-1] - maximal domain value
-//   */
-//  private long[] domain() {
-//    long[] dom = _uniques.keySetLong();
-//    Arrays.sort(dom);
-//    return dom;
-//  }
-//}
+  private static class CollectDomain extends MRTask<CollectDomain> {
+    transient NonBlockingHashMapLong<Object> _uniques;
+    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong(); }
+    @Override public void map(Chunk ys) {
+      for( int row=0; row<ys._len; row++ )
+        if( !ys.isNA0(row) )
+          _uniques.put(ys.at80(row),"");
+    }
+  
+    @Override public void reduce(CollectDomain mrt) {
+      if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
+    }
+  
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      throw H2O.unimpl();         // Do i need to call super.write_impl() here?
+      //return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
+    }
+  
+    @Override public CollectDomain read_impl( AutoBuffer ab ) {
+      throw H2O.unimpl();         // Do i need to call super.write_impl() here?
+      //assert _uniques == null || _uniques.size()==0;
+      //long ls[] = ab.getA8();
+      //_uniques = new NonBlockingHashMapLong();
+      //if( ls != null ) for( long l : ls ) _uniques.put(l,"");
+      //return this;
+    }
+    @Override public void copyOver(CollectDomain that) {
+      _uniques = that._uniques;
+    }
+  
+    /** Returns exact numeric domain of given vector computed by this task.
+     * The domain is always sorted. Hence:
+     *    domain()[0] - minimal domain value
+     *    domain()[domain().length-1] - maximal domain value
+     */
+    private long[] domain() {
+      long[] dom = _uniques.keySetLong();
+      Arrays.sort(dom);
+      return dom;
+    }
+  }
 }
-

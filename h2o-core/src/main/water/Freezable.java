@@ -9,4 +9,8 @@ public interface Freezable extends Cloneable {
   <T extends Freezable> T read(AutoBuffer ab);
   int frozenType();
   public <T extends Freezable> T clone();
+  // Override for a custom serializer.  Else the auto-gen one will read & write
+  // all non-transient fields.
+  AutoBuffer write_impl( AutoBuffer ab );
+  <D extends Freezable> D read_impl( AutoBuffer ab );
 }

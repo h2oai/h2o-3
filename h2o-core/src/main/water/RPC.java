@@ -91,7 +91,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   static final private String[] COOKIES = new String[] {
     "SERVER_UDP","SERVER_TCP","CLIENT_UDP","CLIENT_TCP" };
 
-  static <V extends DTask> RPC<V> call(H2ONode target, V dtask) {
+  public static <V extends DTask> RPC<V> call(H2ONode target, V dtask) {
     return new RPC(target,dtask).call();
   }
 
@@ -289,7 +289,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       if( _dt == null ) _computed = true; // Only for Golden Completed Tasks (see H2ONode.java)
     }
 
-    @Override void compute2() {
+    @Override protected void compute2() {
       // First set self to be completed when this subtask completer
       assert _dt.getCompleter() == null;
       _dt.setCompleter(this);
@@ -498,7 +498,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         if( _fjtasks != null )
           for( final H2OCountedCompleter task : _fjtasks )
             H2O.submitTask(new H2OCountedCompleter() {
-                @Override void compute2() {
+                @Override protected void compute2() {
                   if(e != null) // re-throw exception on this side as if it happened locally
                     task.completeExceptionally(e);
                   else try {

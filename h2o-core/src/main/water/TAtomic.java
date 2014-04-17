@@ -12,7 +12,7 @@ public abstract class TAtomic<T extends Iced> extends Atomic<TAtomic<T>> {
    */
   protected abstract T atomic(T old);
 
-  @Override Value atomic(Value val) {
+  @Override protected Value atomic(Value val) {
     T old = val == null ? null : (T)(val.get().clone());
     T nnn = atomic(old);
     // Atomic operation changes the data, so it can not be performed over

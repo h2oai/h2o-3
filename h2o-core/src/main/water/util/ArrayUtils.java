@@ -66,4 +66,10 @@ public class ArrayUtils {
     return a;
   }
 
+  // Convert array of primitives to an array of Strings.
+  public static String[] toString(long[] dom) {
+    String[] result = new String[dom.length];
+    for (int i=0; i<dom.length; i++) result[i] = String.valueOf(dom[i]);
+    return result;
+  }
 }

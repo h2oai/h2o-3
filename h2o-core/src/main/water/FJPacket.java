@@ -15,7 +15,7 @@ class FJPacket extends H2OCountedCompleter {
   final int _ctrl;              // 1st byte of packet
   FJPacket( AutoBuffer ab, int ctrl ) { _ab = ab; _ctrl = ctrl; }
 
-  @Override void compute2() {
+  @Override protected void compute2() {
     _ab.getPort(); // skip past the port
     if( _ctrl <= UDP.udp.ack.ordinal() )
       UDP.udp.UDPS[_ctrl]._udp.call(_ab).close();

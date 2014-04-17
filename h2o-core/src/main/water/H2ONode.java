@@ -358,6 +358,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // Custom Serialization Class: H2OKey need to be built.
-  @Override protected final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
-  @Override protected final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
+  @Override public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
+  @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
 }
