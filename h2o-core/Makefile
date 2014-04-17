@@ -20,13 +20,22 @@ JAVAC_ARGS = -g -source 1.7 -target 1.7 -XDignore.symbol.file -Xlint:all -Xlint:
 space :=
 space +=
 
+# Decide OS-specific questions
 # jar-file seperator
-ifeq (,$findstring cygwin,$(MAKE_HOST))  
-# linux
-SEP = :
-else   
-# windows
-SEP = ;
+ifeq ($(OS),Windows_NT)
+	SEP = ;
+else
+	# linux
+	UNAME = $(shell uname)
+	ifeq ($(UNAME),Darwin)
+		SEP = :
+	endif
+	ifeq ($(UNAME),Linux)
+		SEP = :
+	endif
+	ifneq (,$findstring cygwin,$(UNAME))
+		SEP = ;
+	endif
 endif
 
 # Default build: the h2o-core jar file
@@ -58,6 +67,7 @@ build/classes/water/init/BuildVersion.class: ../build/BuildVersion.java
 # Name collisions amongst packages are quietly ignored.
 # H2O names win over all other names.
 build/h2o-core.jar: $(classes) build/classes/water/init/BuildVersion.class
+	@echo "aaa+$(OS)"
 	@mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes . -C build/tmp .
