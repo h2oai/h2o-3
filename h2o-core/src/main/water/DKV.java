@@ -36,14 +36,9 @@ public abstract class DKV {
   static public Value remove( Key key ) { return remove(key,null); }
   static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 
-  // Do a PUT, and on success trigger replication.  Some callers need the old
-  // value, and some callers need the Futures so we can block later to ensure
-  // the result is there.  Many callers don't need either value.  So rather
-  // than making a special object to return the pair of values, I've settled
-  // for a "callers pay" model with a more complex return setup.  The return
-  // value is a Futures if one is needed, or the old Value if not.  If a
-  // Futures is returned the old Value is stashed inside of it for the caller
-  // to consume.
+  // Do a PUT, and on success trigger replication.  Returns the prior Value on
+  // either success or fail.  If a Futures is passed in, it can be used to
+  // block until the PUT completes cluster-wide.
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) {
     return DputIfMatch(key, val, old, fs, false);
   }

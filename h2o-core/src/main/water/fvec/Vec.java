@@ -425,6 +425,7 @@ public class Vec extends Keyed {
     super.remove(fs);
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
+    DKV.remove(rollupStatsKey(),fs);
     return fs;
   }
 
@@ -475,25 +476,39 @@ public class Vec extends Keyed {
     return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
   }
 
+  /** Creates a new transformation from given values to given indexes of given domain.
+   *  @param values values being mapped from
+   *  @param indexes values being mapped to
+   *  @param domain domain of new vector
+   *  @return always return a new vector which maps given values into a new domain
+   */
+  Vec makeTransf(final int[] values, final int[] indexes, final String[] domain) {
+    if( _espc == null ) throw H2O.unimpl();
+    Vec v0 = new TransfVec(values, indexes, domain, this._key, group().addVec(),_espc);
+    DKV.put(v0._key,v0);
+    return v0;
+  }
+
+  /** Makes a new transformation vector with identity mapping.
+   *  @return a new transformation vector
+   *  @see Vec#makeTransf(int[], int[], String[])   
+   */
   private Vec makeIdentityTransf() {
     assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
     throw H2O.unimpl();
     //return makeTransf(seq(0, _domain.length), null, _domain);
   }
 
-  /**
-   * Makes a new transformation vector from given values to
-   * values 0..domain size
-   * @param values values which are mapped from
-   * @param domain target domain which is mapped to
-   * @return a new transformation vector providing mapping between given values and target domain.
-   * @see Vec#makeTransf(int[], int[], String[])
+  /** Makes a new transformation vector from given values to values 0..domain size
+   *  @param values values which are mapped from
+   *  @param domain target domain which is mapped to
+   *  @return a new transformation vector providing mapping between given values and target domain.
+   *  @see Vec#makeTransf(int[], int[], String[])
    */
   Vec makeSimpleTransf(long[] values, String[] domain) {
     int is[] = new int[values.length];
     for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
-    throw H2O.unimpl();
-    //return makeTransf(is, null, domain);
+    return makeTransf(is, null, domain);
   }
   /** This Vec does not have dependent hidden Vec it uses.
    *

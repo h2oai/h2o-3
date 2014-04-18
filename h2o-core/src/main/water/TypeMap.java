@@ -6,7 +6,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
@@ -44,6 +44,7 @@ public class TypeMap {
     H2OCC       = (short)onIce("water.H2O$H2OCountedCompleter"); assert H2OCC==3; // Matches customer serializer
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk"); // Used in water.fvec.FileVec
     FRAME       = (short)onIce("water.fvec.Frame");    // Used in water.Value
+    VECGROUP    = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
 
     // Fill in some pre-cooked delegates so seralization has a base-case
     GOLD[ICED ] = Icer.ICER;

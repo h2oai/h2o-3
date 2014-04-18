@@ -1034,7 +1034,7 @@ public final class AutoBuffer {
     }
     return this;
   }
-  AutoBuffer putA4( int[] ary ) {
+  public AutoBuffer putA4( int[] ary ) {
     _arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);

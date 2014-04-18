@@ -505,49 +505,51 @@ public class NewChunk extends Chunk {
     //  else if(Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE)sz = 4;
     //  return new CXIChunk(_len2,_len,sz,bufS(sz));
     }
-    //// Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
-    //// byte and we scale the column by 0.1.  A set of numbers like
-    //// {1.2,23,0.34} then is normalized to always be represented with 2 digits
-    //// to the right: {1.20,23.00,0.34} and we scale by 100: {120,2300,34}.
-    //// This set fits in a 2-byte short.
-    //
-    //// We use exponent-scaling for bytes & shorts only; it's uncommon (and not
-    //// worth it) for larger numbers.  We need to get the exponents to be
-    //// uniform, so we scale up the largest lmax by the largest scale we need
-    //// and if that fits in a byte/short - then it's worth compressing.  Other
-    //// wise we just flip to a float or double representation.
-    //if( overflow || (fpoint && floatOverflow) || -35 > xmin || xmin > 35 )
-    //  return chunkD();
-    //if( fpoint ) {
-    //  if((int)lemin == lemin && (int)lemax == lemax){
-    //    if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
-    //      return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
-    //    if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
-    //      long bias = 32767 + lemin;
-    //      return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),(int)bias,PrettyPrint.pow10(xmin));
-    //    }
-    //    if(lemax - lemin < Integer.MAX_VALUE)
-    //      return new C4SChunk(bufX(lemin, xmin,C4SChunk.OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
-    //  }
-    //  return chunkD();
-    //} // else an integer column
-    //// Compress column into a byte
-    //if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
-    //  return new C1NChunk( bufX(0,0,C1NChunk.OFF,0));
-    //if(lemin < Integer.MIN_VALUE)return new C8Chunk( bufX(0,0,0,3));
-    //if( lemax-lemin < 255 ) {         // Span fits in a byte?
-    //  if(0 <= min && max < 255 )      // Span fits in an unbiased byte?
-    //    return new C1Chunk( bufX(0,0,C1Chunk.OFF,0));
-    //  return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
-    //}
-    //
-    //// Compress column into a short
-    //if( lemax-lemin < 65535 ) {               // Span fits in a biased short?
+    // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
+    // byte and we scale the column by 0.1.  A set of numbers like
+    // {1.2,23,0.34} then is normalized to always be represented with 2 digits
+    // to the right: {1.20,23.00,0.34} and we scale by 100: {120,2300,34}.
+    // This set fits in a 2-byte short.
+    
+    // We use exponent-scaling for bytes & shorts only; it's uncommon (and not
+    // worth it) for larger numbers.  We need to get the exponents to be
+    // uniform, so we scale up the largest lmax by the largest scale we need
+    // and if that fits in a byte/short - then it's worth compressing.  Other
+    // wise we just flip to a float or double representation.
+    if( overflow || (fpoint && floatOverflow) || -35 > xmin || xmin > 35 )
+      return chunkD();
+    if( fpoint ) {
+      if( (int)lemin == lemin && (int)lemax == lemax ) {
+        throw H2O.unimpl();
+        //if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
+        //  return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
+        //if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
+        //  long bias = 32767 + lemin;
+        //  return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),(int)bias,PrettyPrint.pow10(xmin));
+        //}
+        //if(lemax - lemin < Integer.MAX_VALUE)
+        //  return new C4SChunk(bufX(lemin, xmin,C4SChunk.OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
+      }
+      return chunkD();
+    } // else an integer column
+    // Compress column into a byte
+    if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
+      return new C1NChunk( bufX(0,0,C1NChunk.OFF,0));
+    if( lemin < Integer.MIN_VALUE ) throw H2O.unimpl(); // return new C8Chunk( bufX(0,0,0,3));
+    if( lemax-lemin < 255 ) {         // Span fits in a byte?
+      if(0 <= min && max < 255 )      // Span fits in an unbiased byte?
+        return new C1Chunk( bufX(0,0,C1Chunk.OFF,0));
+      return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
+    }
+    
+    // Compress column into a short
+    if( lemax-lemin < 65535 ) {               // Span fits in a biased short?
+      throw H2O.unimpl();
     //  if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
     //    return new C2Chunk( bufX(0,0,C2Chunk.OFF,1));
     //  int bias = (int)(lemin-(Short.MIN_VALUE+1));
     //  return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
-    //}
+    }
     //// Compress column into ints
     //if( Integer.MIN_VALUE < min && max <= Integer.MAX_VALUE )
     //  return new C4Chunk( bufX(0,0,0,2));

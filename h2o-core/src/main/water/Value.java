@@ -220,6 +220,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // either simple value with bytearray, un-parsed value array or byte vec
     return _type == TypeMap.PRIM_B || isByteVec();
   }
+  public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
 
   // For plain Values, just the length in bytes.
   // For Frames, the compressed size of all vecs within the frame.
