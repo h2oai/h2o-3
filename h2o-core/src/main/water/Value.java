@@ -116,7 +116,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public <T extends Freezable> T get(Class<T> fc) {
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null ) return (T)pojo;
-    pojo = TypeMap.newInstance(_type);
+    pojo = TypeMap.newFreezable(_type);
     pojo.read(new AutoBuffer(memOrLoad()));
     assert fc.isAssignableFrom(pojo.getClass());
     return (T)(_pojo = pojo);
@@ -208,10 +208,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
 
-  boolean isLockable() { return TypeMap.theFreezable(_type) instanceof Lockable; }
   public boolean isFrame()    { return _type == TypeMap.FRAME; }
-  public boolean isVec()      { return TypeMap.theFreezable(_type) instanceof Vec; }
-  private boolean isByteVec() { return TypeMap.theFreezable(_type) instanceof ByteVec; }
+  public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
+  public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
+  public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
+  private boolean isByteVec() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof ByteVec; }
   private boolean isRawData() {
     if( isFrame() ) {
       Frame fr = get();
@@ -220,7 +221,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // either simple value with bytearray, un-parsed value array or byte vec
     return _type == TypeMap.PRIM_B || isByteVec();
   }
-  public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
 
   // For plain Values, just the length in bytes.
   // For Frames, the compressed size of all vecs within the frame.

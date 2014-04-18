@@ -80,7 +80,7 @@ public class CBSChunk extends Chunk {
     return values*bpv % 8 == 0 ? len : len + 1;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
-  @Override public Chunk read_impl(AutoBuffer bb) {
+  @Override public CBSChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
     _start = -1;
     _gap   = _mem[0];

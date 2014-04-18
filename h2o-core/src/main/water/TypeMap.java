@@ -22,6 +22,7 @@ public class TypeMap {
     "water.fvec.Chunk",   // parent of Chunk
     "water.fvec.C1NChunk",// used as constant in parser
     "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
+    "water.fvec.Vec$VectorGroup", // Used in TestUtil
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();

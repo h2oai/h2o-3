@@ -97,7 +97,7 @@ public class Frame extends Lockable {
 
   // For MRTask: allow rollups for all written-into vecs
   public Futures postWrite(Futures fs) {
-    for( Vec v : _vecs ) v.postWrite(fs);
+    for( Vec v : vecs() ) v.postWrite(fs);
     return fs;
   }
 

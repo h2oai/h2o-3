@@ -42,7 +42,7 @@ import water.util.PrettyPrint;
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
+  static final int LOG_CHK = 20/*1Meg*/+0/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
    * increases fine-grained parallelism. */
   static final int CHUNK_SZ = 1 << LOG_CHK;
@@ -246,12 +246,15 @@ public class Vec extends Keyed {
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
   public void postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
-    RollupStats rs = DKV.get(rollupStatsKey()).get(RollupStats.class);
-    if( rs.isMutating() ) {
-      //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
-      //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
-      //  }.fork(_key));
-      throw H2O.unimpl();
+    Value val = DKV.get(rollupStatsKey());
+    if( val != null ) {
+      RollupStats rs = val.get(RollupStats.class);
+      if( rs.isMutating() ) {
+        //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
+        //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
+        //  }.fork(_key));
+        throw H2O.unimpl();
+      }
     }
   }
 
@@ -640,17 +643,15 @@ public class Vec extends Keyed {
     }
   
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      throw H2O.unimpl();         // Do i need to call super.write_impl() here?
-      //return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
+      return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
   
     @Override public CollectDomain read_impl( AutoBuffer ab ) {
-      throw H2O.unimpl();         // Do i need to call super.write_impl() here?
-      //assert _uniques == null || _uniques.size()==0;
-      //long ls[] = ab.getA8();
-      //_uniques = new NonBlockingHashMapLong();
-      //if( ls != null ) for( long l : ls ) _uniques.put(l,"");
-      //return this;
+      assert _uniques == null || _uniques.size()==0;
+      long ls[] = ab.getA8();
+      _uniques = new NonBlockingHashMapLong();
+      if( ls != null ) for( long l : ls ) _uniques.put(l,"");
+      return this;
     }
     @Override public void copyOver(CollectDomain that) {
       _uniques = that._uniques;
