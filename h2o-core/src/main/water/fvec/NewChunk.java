@@ -544,11 +544,10 @@ public class NewChunk extends Chunk {
     
     // Compress column into a short
     if( lemax-lemin < 65535 ) {               // Span fits in a biased short?
-      throw H2O.unimpl();
-    //  if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
-    //    return new C2Chunk( bufX(0,0,C2Chunk.OFF,1));
-    //  int bias = (int)(lemin-(Short.MIN_VALUE+1));
-    //  return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
+      if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
+        return new C2Chunk( bufX(0,0,C2Chunk.OFF,1));
+      int bias = (int)(lemin-(Short.MIN_VALUE+1));
+      throw H2O.unimpl();//return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
     }
     //// Compress column into ints
     //if( Integer.MIN_VALUE < min && max <= Integer.MAX_VALUE )

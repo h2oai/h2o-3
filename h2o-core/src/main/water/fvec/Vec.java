@@ -316,7 +316,7 @@ public class Vec extends Keyed {
 
 
   /** Make a new random Key that fits the requirements for a Vec key. */
-  static private Key newKey(){return newKey(Key.make());}
+  static Key newKey(){return newKey(Key.make());}
 
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the

@@ -67,7 +67,6 @@ build/classes/water/init/BuildVersion.class: ../build/BuildVersion.java
 # Name collisions amongst packages are quietly ignored.
 # H2O names win over all other names.
 build/h2o-core.jar: $(classes) build/classes/water/init/BuildVersion.class
-	@echo "aaa+$(OS)"
 	@mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes . -C build/tmp .

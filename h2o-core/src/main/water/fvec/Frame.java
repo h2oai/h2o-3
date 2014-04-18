@@ -95,11 +95,23 @@ public class Frame extends Lockable {
     return vecs;
   }
 
+  // For MRTask: allow rollups for all written-into vecs
   public Futures postWrite(Futures fs) {
     for( Vec v : _vecs ) v.postWrite(fs);
     return fs;
   }
 
-  public int numCols() { throw H2O.unimpl(); }
+  /** Actually remove/delete all Vecs from memory, not just from the Frame. */
+  @Override public Futures remove(Futures fs) {
+    for( Vec v : vecs() ) v.remove(fs);
+    _names = new String[0];
+    _vecs = new Vec[0];
+    _keys = new Key[0];
+    return fs;
+  }
+  @Override public String errStr() { return "Dataset"; }
+
+  public int  numCols() { throw H2O.unimpl(); }
+  public long numRows() { return anyVec().length(); }
   public final long byteSize() { throw H2O.unimpl(); }
 }

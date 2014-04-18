@@ -77,6 +77,7 @@ class RollupStats extends DTask<RollupStats> {
     Roll( Key rskey ) { _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(_rskey,0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
+    @Override public void postGlobal() { _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
