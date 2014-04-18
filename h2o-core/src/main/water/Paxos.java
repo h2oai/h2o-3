@@ -69,12 +69,12 @@ public abstract class Paxos {
     } else if( _commonKnowledge ) {
       return 0;                 // Already know about you, nothing more to do
     }
-    int chash = H2O.SELF._heartbeat._cloud_hash, dummy = 0;
-    assert chash == (dummy=doHash()) : "mismatched hash4, HB="+chash+" full="+dummy;
-    assert _commonKnowledge==false;
+    int chash = H2O.SELF._heartbeat._cloud_hash;
+    assert chash == doHash() : "mismatched hash4, HB="+chash+" full="+doHash();
+    assert !_commonKnowledge;
 
     // Do we have consensus now?
-    H2ONode h2os[] = PROPOSED.values().toArray(new H2ONode[0]);
+    H2ONode h2os[] = PROPOSED.values().toArray(new H2ONode[PROPOSED.size()]);
     for( H2ONode h2o2 : h2os )
       if( chash != h2o2._heartbeat._cloud_hash )
         return print("Heartbeat hashes differ, self=0x"+Integer.toHexString(chash)+" "+h2o2+"=0x"+Integer.toHexString(h2o2._heartbeat._cloud_hash)+" ",PROPOSED);
@@ -116,14 +116,14 @@ public abstract class Paxos {
     if( _cloudLocked ) return; // Fast-path cutout
     synchronized(Paxos.class) {
       while( !_commonKnowledge )
-        try { Paxos.class.wait(); } catch( InterruptedException ie ) { }
+        try { Paxos.class.wait(); } catch( InterruptedException ignore ) { }
       _cloudLocked = true;
     }
   }
 
 
   static int print( String msg, NonBlockingHashMap<H2Okey,H2ONode> p ) {
-    return print(msg,p.values().toArray(new H2ONode[0]));
+    return print(msg,p.values().toArray(new H2ONode[p.size()]));
   }
   static int print( String msg, H2ONode h2os[] ) { return print(msg,h2os,""); }
   static int print( String msg, H2ONode h2os[], String msg2 ) {

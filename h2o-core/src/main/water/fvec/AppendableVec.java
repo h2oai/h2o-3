@@ -52,7 +52,7 @@ public class AppendableVec extends Vec {
   }
 
   // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?
-  private boolean shouldBeEnum() {
+  boolean shouldBeEnum() {
     // TODO: we declare column to be string/enum only if it does not have ANY numbers in it.
     if( _strCnt > 0 && (_strCnt + _naCnt) == _totalCnt ) return true;
     return false;
@@ -123,8 +123,6 @@ public class AppendableVec extends Vec {
 
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
-    // TODO: Complete fail: loads all data locally - will force OOM.  Needs to be
-    // an RPC to test Key existence, and return length & other metadata
     long espc[] = new long[nchunk+1]; // Shorter array
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {

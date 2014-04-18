@@ -231,16 +231,19 @@ public class Vec extends Keyed {
    *  chunks.  Per-chunk row-counts will not be changing, just row contents and
    *  caches of row contents. */
   public void preWriting( ) {
-    throw H2O.unimpl();
-    //if( _naCnt == -2 ) return; // Already set
-    //_naCnt = -2;
-    //if( !writable() ) throw new IllegalArgumentException("Vector not writable");
-    //// Set remotely lazily.  This will trigger a cloud-wide invalidate of the
-    //// existing Vec, and eventually we'll have to load a fresh copy of the Vec
-    //// with active writing turned on, and caching disabled.
-    //new TAtomic<Vec>() {
-    //  @Override private Vec atomic(Vec v) { if( v!=null ) v._naCnt=-2; return v; }
-    //}.invoke(_key);
+    if( !writable() ) throw new IllegalArgumentException("Vector not writable");
+    final Key rskey = rollupStatsKey();
+    Value val = DKV.get(rskey);
+    if( val != null ) {
+      RollupStats rs = val.get(RollupStats.class);
+      if( rs.isMutating() ) return; // Vector already locked against rollups
+    }
+    // Set rollups to "vector isMutating" atomically.
+    new TAtomic<RollupStats>() {
+      @Override protected RollupStats atomic(RollupStats rs) {
+        return rs != null && rs.isMutating() ? null : RollupStats.makeMutating(rskey);
+      }
+    }.invoke(rskey);
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
@@ -249,7 +252,7 @@ public class Vec extends Keyed {
     Value val = DKV.get(rollupStatsKey());
     if( val != null ) {
       RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() ) {
+      if( rs.isMutating() ) { // Vector was mutating, is now allowed for rollups
         //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
         //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
         //  }.fork(_key));

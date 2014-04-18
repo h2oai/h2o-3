@@ -475,10 +475,9 @@ public class NewChunk extends Chunk {
 
     // Constant column?
     if( _naCnt==0 && min==max ) {
-      throw H2O.unimpl();
-      //return ((long)min  == min)
-      //    ? new C0LChunk((long)min,_len2)
-      //    : new C0DChunk(      min,_len2);
+      return ((long)min  == min)
+          ? new C0LChunk((long)min,_len2)
+          : new C0DChunk(      min,_len2);
     }
 
     // Boolean column?
@@ -520,15 +519,14 @@ public class NewChunk extends Chunk {
       return chunkD();
     if( fpoint ) {
       if( (int)lemin == lemin && (int)lemax == lemax ) {
-        throw H2O.unimpl();
-        //if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
-        //  return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
-        //if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
-        //  long bias = 32767 + lemin;
-        //  return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),(int)bias,PrettyPrint.pow10(xmin));
-        //}
-        //if(lemax - lemin < Integer.MAX_VALUE)
-        //  return new C4SChunk(bufX(lemin, xmin,C4SChunk.OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
+        if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
+          return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
+        if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
+          long bias = 32767 + lemin;
+          return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),(int)bias,PrettyPrint.pow10(xmin));
+        }
+        if(lemax - lemin < Integer.MAX_VALUE)
+          return new C4SChunk(bufX(lemin, xmin,C4SChunk.OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
       }
       return chunkD();
     } // else an integer column
@@ -547,13 +545,12 @@ public class NewChunk extends Chunk {
       if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
         return new C2Chunk( bufX(0,0,C2Chunk.OFF,1));
       int bias = (int)(lemin-(Short.MIN_VALUE+1));
-      throw H2O.unimpl();//return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
+      return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
     }
-    //// Compress column into ints
-    //if( Integer.MIN_VALUE < min && max <= Integer.MAX_VALUE )
-    //  return new C4Chunk( bufX(0,0,0,2));
-    //return new C8Chunk( bufX(0,0,0,3));
-    throw H2O.unimpl();
+    // Compress column into ints
+    if( Integer.MIN_VALUE < min && max <= Integer.MAX_VALUE )
+      return new C4Chunk( bufX(0,0,0,2));
+    return new C8Chunk( bufX(0,0,0,3));
   }
 
   //private static long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
@@ -675,8 +672,7 @@ public class NewChunk extends Chunk {
       UDP.set8d(bs, 8*i, d);
     }
     assert j == _len:"j = " + j + ", _len = " + _len;
-    throw H2O.unimpl();
-    //return new C8DChunk(bs);
+    return new C8DChunk(bs);
   }
 
   // Compute compressed boolean buffer

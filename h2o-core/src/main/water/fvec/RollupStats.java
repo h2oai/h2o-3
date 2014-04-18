@@ -32,6 +32,7 @@ class RollupStats extends DTask<RollupStats> {
 
   private RollupStats( Key rskey, int mode ) { _rskey = rskey; _naCnt = mode; }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(rskey,-1); }
+  static RollupStats makeMutating (Key rskey) { return new RollupStats(rskey,-2); }
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();

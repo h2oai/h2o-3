@@ -277,13 +277,15 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
-  public Value(Key k, Freezable pojo) {
+  public Value(Key k, Freezable pojo) { this(k,pojo,ICE); }
+  public Value(Key k, Freezable pojo, byte be) {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
     _mem = pojo.write(new AutoBuffer()).buf();
     _max = _mem.length;
-    _persist = ICE;
+    byte p = (byte)(be&BACKEND_MASK);
+    _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
