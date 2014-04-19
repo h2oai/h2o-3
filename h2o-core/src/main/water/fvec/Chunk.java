@@ -148,10 +148,32 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
 
+  int nextNZ(int rid){return rid+1;}
   protected boolean isSparse() {return false;}
   protected int sparseLen(){return _len;}
 
-  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
+  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
+   *  For dense chunks, this will contain indices of all the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk.
+   */
+  public int nonzeros(int [] res) {
+    for( int i = 0; i < _len; ++i) res[i] = i;
+    return _len;
+  }
+
+  /**
+   * Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
+   * For dense chunks, this will contain indices of all the rows in this chunk.
+   *
+   * @return array of chunk-relative indices of values stored in this chunk.
+   */
+  public final int [] nonzeros () {
+    int [] res = MemoryManager.malloc4(sparseLen());
+    nonzeros(res);
+    return res;
+  }
+
+/** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
   abstract NewChunk inflate_impl(NewChunk nc);

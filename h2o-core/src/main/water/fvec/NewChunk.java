@@ -401,8 +401,7 @@ public class NewChunk extends Chunk {
       for( ; i<_len; i++ ) // Attempt to inject all doubles into longs
         if( !Double.isNaN(_ds[i]) && (double)(long)_ds[i] != _ds[i] ) break;
       if(i < _len)
-        throw H2O.unimpl();
-        //return sparse?new CXDChunk(_len2,_len,8,bufD(8)):chunkD();
+        return sparse ? new CXDChunk(_len2,_len,8,bufD(8)) : chunkD();
       _ls = new long[_ds.length]; // Else flip to longs
       _xs = new int [_ds.length];
       double [] ds = _ds;
@@ -483,10 +482,9 @@ public class NewChunk extends Chunk {
     // Boolean column?
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
       if(sparse) { // Very sparse?
-        throw H2O.unimpl();
-      //  return  _naCnt==0
-      //    ?new CX0Chunk(_len2,_len,bufS(0))// No NAs, can store as sparse bitvector
-      //    :new CXIChunk(_len2,_len,1,bufS(1)); // have NAs, store as sparse 1byte values
+        return  _naCnt==0
+          ? new CX0Chunk(_len2,_len,bufS(0))// No NAs, can store as sparse bitvector
+          : new CXIChunk(_len2,_len,1,bufS(1)); // have NAs, store as sparse 1byte values
       }
 
       int bpv = _strCnt+_naCnt > 0 ? 2 : 1;   // Bit-vector
@@ -496,13 +494,12 @@ public class NewChunk extends Chunk {
     
     final boolean fpoint = xmin < 0 || min < Long.MIN_VALUE || max > Long.MAX_VALUE;
     
-    if(sparse){
-      throw H2O.unimpl();
-    //  if(fpoint) return new CXDChunk(_len2,_len,8,bufD(8));
-    //  int sz = 8;
-    //  if(Short.MIN_VALUE <= min && max <= Short.MAX_VALUE)sz = 2;
-    //  else if(Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE)sz = 4;
-    //  return new CXIChunk(_len2,_len,sz,bufS(sz));
+    if( sparse ) {
+      if(fpoint) return new CXDChunk(_len2,_len,8,bufD(8));
+      int sz = 8;
+      if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
+      else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
+      return new CXIChunk(_len2,_len,sz,bufS(sz));
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -553,7 +550,7 @@ public class NewChunk extends Chunk {
     return new C8Chunk( bufX(0,0,0,3));
   }
 
-  //private static long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
+  private static long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
   // Compute a sparse integer buffer
   private byte[] bufS(final int valsz){
@@ -562,41 +559,40 @@ public class NewChunk extends Chunk {
     assert valsz == 0 || (1 << log) == valsz;
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
-    throw H2O.unimpl();
-    //int off = CXIChunk.OFF;
-    //byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
-    //for( int i=0; i<_len; i++, off += elmsz ) {
-    //  if(ridsz == 2)
-    //    UDP.set2(buf,off,(short)_id[i]);
-    //  else
-    //    UDP.set4(buf,off,_id[i]);
-    //  if(valsz == 0){
-    //    assert _xs[i] == 0 && _ls[i] == 1;
-    //    continue;
-    //  }
-    //  assert _xs[i] == Integer.MIN_VALUE || _xs[i] >= 0:"unexpected exponent " + _xs[i]; // assert we have int or NA
-    //  final long lval = _xs[i] == Integer.MIN_VALUE?NAS[log]:_ls[i]*PrettyPrint.pow10i(_xs[i]);
-    //  switch(valsz){
-    //    case 1:
-    //      buf[off+ridsz] = (byte)lval;
-    //      break;
-    //    case 2:
-    //      short sval = (short)lval;
-    //      UDP.set2(buf,off+ridsz,sval);
-    //      break;
-    //    case 4:
-    //      int ival = (int)lval;
-    //      UDP.set4(buf, off+ridsz, ival);
-    //      break;
-    //    case 8:
-    //      UDP.set8(buf, off+ridsz, lval);
-    //      break;
-    //    default:
-    //      throw H2O.unimpl();
-    //  }
-    //}
-    //assert off==buf.length;
-    //return buf;
+    int off = CXIChunk.OFF;
+    byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
+    for( int i=0; i<_len; i++, off += elmsz ) {
+      if(ridsz == 2)
+        UDP.set2(buf,off,(short)_id[i]);
+      else
+        UDP.set4(buf,off,_id[i]);
+      if(valsz == 0){
+        assert _xs[i] == 0 && _ls[i] == 1;
+        continue;
+      }
+      assert _xs[i] == Integer.MIN_VALUE || _xs[i] >= 0:"unexpected exponent " + _xs[i]; // assert we have int or NA
+      final long lval = _xs[i] == Integer.MIN_VALUE ? NAS[log] : _ls[i]*PrettyPrint.pow10i(_xs[i]);
+      switch(valsz){
+        case 1:
+          buf[off+ridsz] = (byte)lval;
+          break;
+        case 2:
+          short sval = (short)lval;
+          UDP.set2(buf,off+ridsz,sval);
+          break;
+        case 4:
+          int ival = (int)lval;
+          UDP.set4(buf, off+ridsz, ival);
+          break;
+        case 8:
+          UDP.set8(buf, off+ridsz, lval);
+          break;
+        default:
+          throw H2O.unimpl();
+      }
+    }
+    assert off==buf.length;
+    return buf;
   }
 
   // Compute a sparse float buffer
@@ -606,28 +602,27 @@ public class NewChunk extends Chunk {
     assert (1 << log) == valsz;
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
-    throw H2O.unimpl();
-    //int off = CXDChunk.OFF;
-    //byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
-    //for( int i=0; i<_len; i++, off += elmsz ) {
-    //  if(ridsz == 2)
-    //    UDP.set2(buf,off,(short)_id[i]);
-    //  else
-    //    UDP.set4(buf,off,_id[i]);
-    //  final double dval = _ds == null?isNA2(i)?Double.NaN:_ls[i]*PrettyPrint.pow10(_xs[i]):_ds[i];
-    //  switch(valsz){
-    //    case 4:
-    //      UDP.set4f(buf, off + ridsz, (float) dval);
-    //      break;
-    //    case 8:
-    //      UDP.set8d(buf, off + ridsz, dval);
-    //      break;
-    //    default:
-    //      throw H2O.unimpl();
-    //  }
-    //}
-    //assert off==buf.length;
-    //return buf;
+    int off = CXDChunk.OFF;
+    byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
+    for( int i=0; i<_len; i++, off += elmsz ) {
+      if(ridsz == 2)
+        UDP.set2(buf,off,(short)_id[i]);
+      else
+        UDP.set4(buf,off,_id[i]);
+      final double dval = _ds == null?isNA2(i)?Double.NaN:_ls[i]*PrettyPrint.pow10(_xs[i]):_ds[i];
+      switch(valsz){
+        case 4:
+          UDP.set4f(buf, off + ridsz, (float) dval);
+          break;
+        case 8:
+          UDP.set8d(buf, off + ridsz, dval);
+          break;
+        default:
+          throw H2O.unimpl();
+      }
+    }
+    assert off==buf.length;
+    return buf;
   }
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {
@@ -637,8 +632,7 @@ public class NewChunk extends Chunk {
       long le = -bias;
       if(_id == null || (j < _id.length && _id[j] == i)){
         if( isNA2(j) ) {
-          throw H2O.unimpl();
-          //le = NAS[log];
+          le = NAS[log];
         } else {
           int x = (_xs[j]==Integer.MIN_VALUE+1 ? 0 : _xs[j])-scale;
           le += x >= 0
