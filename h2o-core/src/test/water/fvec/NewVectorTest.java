@@ -122,8 +122,8 @@ public class NewVectorTest extends TestUtil {
 
     // Now write a two into slot 2; chunk should inflate into byte vector
     c2.set(2,2);
-    assertEquals(2,vec.at8(2)); // Immediate visibility in current thread
     c2.close(0,null);           // Done writing into chunk
+    assertEquals(2,vec.at8(2)); // Immediate visibility in current thread
     Chunk c3 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
     assertTrue( "Found chunk class "+c3.getClass()+" but expected C1NChunk", c3 instanceof C1NChunk );
 

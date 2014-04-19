@@ -53,9 +53,7 @@ class HeartBeat extends Iced<HeartBeat> {
   char _rpcs;            // Outstanding DFutureTasks
 
   // Number of elements & threads in high FJ work queues
-  short _fjthrds_hi[];
-  short _fjqueue_hi[];
-  char _fjthrds_lo;      // Number of threads (not all are runnable)
-  char _fjqueue_lo;      // Number of elements in FJ work queue
+  short _fjthrds[];      // Number of threads (not all are runnable)
+  short _fjqueue[];      // Number of elements in FJ work queue
   char _tcps_active;     // Threads trying do a TCP send
 }

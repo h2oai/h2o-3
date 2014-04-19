@@ -85,14 +85,13 @@ public class HeartBeatThread extends Thread {
       for( H2ONode h2o : cloud._memary )
         rpcs += h2o.taskSize();
       hb._rpcs       = (char)rpcs;
-      hb._fjthrds_hi = new short[H2O.MAX_PRIORITY+1-H2O.MIN_HI_PRIORITY];
-      hb._fjqueue_hi = new short[H2O.MAX_PRIORITY+1-H2O.MIN_HI_PRIORITY];
-      for( int i=0; i<hb._fjthrds_hi.length; i++ ) {
-        hb._fjthrds_hi[i] = (short)H2O.hiQPoolSize(i);
-        hb._fjqueue_hi[i] = (short)H2O.getHiQueue(i);
+      // Scrape F/J pool counts
+      hb._fjthrds = new short[H2O.MAX_PRIORITY+1];
+      hb._fjqueue = new short[H2O.MAX_PRIORITY+1];
+      for( int i=0; i<hb._fjthrds.length; i++ ) {
+        hb._fjthrds[i] = (short)H2O.getWrkThrPoolSize(i);
+        hb._fjqueue[i] = (short)H2O.getWrkQueueSize(i);
       }
-      hb._fjthrds_lo = (char)H2O.loQPoolSize();
-      hb._fjqueue_lo = (char)H2O.getLoQueue();
       hb._tcps_active= (char)H2ONode.TCPS.get();
 
       // get the usable and total disk storage for the partition where the

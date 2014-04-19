@@ -54,7 +54,12 @@ public class Weaver {
     // Now look for a pre-cooked Icer.  No locking, 'cause we're just looking
     String icer_name = implClazzName(iced_name);
     CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Icer
-    if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
+    if( icer_cc != null ) {
+      synchronized( iced_clazz ) {
+        if( !icer_cc.isFrozen() ) icer_cc.toClass(); // Load class (but does not link & init)
+        return Class.forName(icer_name); // Found a pre-cooked Icer implementation
+      }
+    }
 
     // Serialize parent.  No locking; occasionally we'll "onIce" from the
     // remote leader more than once.

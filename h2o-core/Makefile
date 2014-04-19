@@ -3,7 +3,7 @@
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
 main_javas = $(wildcard src/main/water/*java src/main/water/*/*java)
-test_javas = $(wildcard src/test/water/*java)
+test_javas = $(wildcard src/test/water/*java src/test/water/*/*java)
 main_classes = $(patsubst src/main/%java,build/classes/%class,$(main_javas))
 test_classes = $(patsubst src/test/%java,build/classes/%class,$(test_javas))
 classes = $(main_classes) $(test_classes)
@@ -25,7 +25,7 @@ space +=
 ifeq ($(OS),Windows_NT)
 	SEP = ;
 else
-	# linux
+# linux
 	UNAME = $(shell uname)
 	ifeq ($(UNAME),Darwin)
 		SEP = :
@@ -44,8 +44,14 @@ default: build/h2o-core.jar
 # Just the classes, no jarring step
 classes: $(classes)
 
+
+JVM = java -ea -cp "build/classes;$(jars)" 
+JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest
+
 check: $(classes)
-	java -ea -cp "build/classes;$(jars)" org.junit.runner.JUnitCore water.KVTest
+# Run 3 JVMs and check the basic tests work
+	-$(JVM) water.H2O & $(JVM) water.H2O & $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) || pkill java
+	pkill java
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/%java

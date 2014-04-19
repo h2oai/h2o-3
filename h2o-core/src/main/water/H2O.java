@@ -96,12 +96,10 @@ final public class H2O {
   // A standard FJ Pool, with an expected priority level.
   private static class ForkJoinPool2 extends ForkJoinPool {
     final int _priority;
-    ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p!=MIN_PRIORITY); _priority = p; }
+    ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p<MIN_HI_PRIORITY); _priority = p; }
     H2OCountedCompleter poll() { return (H2OCountedCompleter)pollSubmission(); }
   }
 
-  // Normal-priority work is generally directly-requested user ops.
-  private static final ForkJoinPool2 FJP_NORM = new ForkJoinPool2(MIN_PRIORITY,-1);
   // Hi-priority work, sorted into individual queues per-priority.
   // Capped at a small number of threads per pool.
   private static final ForkJoinPool2 FJPS[] = new ForkJoinPool2[MAX_PRIORITY+1];
@@ -111,19 +109,18 @@ final public class H2O {
     for( int i=MIN_HI_PRIORITY+1; i<MAX_PRIORITY; i++ )
       FJPS[i] = new ForkJoinPool2(i,NUMCPUS); // All CPUs, but no more for blocking purposes
     FJPS[GUI_PRIORITY] = new ForkJoinPool2(GUI_PRIORITY,2);
-    FJPS[0] = FJP_NORM;
   }
 
-  // Easy peeks at the low FJ queue
-  static int getLoQueue (     ) { return FJP_NORM.getQueuedSubmissionCount();}
-  static int loQPoolSize(     ) { return FJP_NORM.getPoolSize();             }
-  static int getHiQueue (int i) { return FJPS[i+MIN_HI_PRIORITY].getQueuedSubmissionCount();}
-  static int hiQPoolSize(int i) { return FJPS[i+MIN_HI_PRIORITY].getPoolSize();             }
+  // Easy peeks at the FJ queues
+  static int getWrkQueueSize  (int i) { return FJPS[i]==null ? -1 : FJPS[i].getQueuedSubmissionCount();}
+  static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
   // Submit to the correct priority queue
-  static public H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
+  public static H2OCountedCompleter submitTask( H2OCountedCompleter task ) {
     int priority = task.priority();
-    assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY;
+    assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
+    if( FJPS[priority]==null )
+      synchronized( H2O.class ) { FJPS[priority] = new ForkJoinPool2(priority,-1); }
     FJPS[priority].submit(task);
     return task;
   }
@@ -135,7 +132,7 @@ final public class H2O {
   // entire node for lack of some small piece of data).  So each attempt to do
   // lower-priority F/J work starts with an attempt to work & drain the
   // higher-priority queues.
-  static public abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
     H2OCountedCompleter(){}
     H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
