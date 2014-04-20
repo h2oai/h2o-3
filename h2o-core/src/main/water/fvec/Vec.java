@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.parser.ParseTime;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 
@@ -182,7 +183,7 @@ public class Vec extends Keyed {
   /** Whether or not this column parsed as a time, and if so what pattern was used. */
   private final boolean isTime(){ return _time>=0; }
   private final int timeMode(){ return _time; }
-  private final String timeParse(){ return ParseTime.TIME_PARSE[_time]; }
+  public final String timeParse(){ return ParseTime.TIME_PARSE[_time]; }
 
   /** Is the column constant.
    * <p>Returns true if the column contains only constant values and it is not full of NAs.</p> */

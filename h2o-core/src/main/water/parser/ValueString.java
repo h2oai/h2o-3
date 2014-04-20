@@ -1,4 +1,4 @@
-package water.fvec;
+package water.parser;
 
 import java.util.ArrayList;
 import water.Iced;

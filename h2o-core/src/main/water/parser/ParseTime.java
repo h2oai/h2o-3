@@ -1,9 +1,8 @@
-package water.fvec;
+package water.parser;
 
 import org.joda.time.DateTime;
-//import water.parser.ValueString;
 
-abstract class ParseTime {
+public abstract class ParseTime {
   // Deduce if we are looking at a Date/Time value, or not.
   // If so, return time as msec since Jan 1, 1970 or Long.MIN_VALUE.
 
@@ -34,7 +33,7 @@ abstract class ParseTime {
   };
   
   // Time parse patterns
-  static final String TIME_PARSE[] = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.SSS", "dd-MMM-yy" };
+  public static final String TIME_PARSE[] = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.SSS", "dd-MMM-yy" };
 
   // Returns:
   //  - not a time parse: Long.MIN_VALUE 

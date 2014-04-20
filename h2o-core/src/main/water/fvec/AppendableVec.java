@@ -1,7 +1,8 @@
 package water.fvec;
 
-import water.*;
 import java.util.Arrays;
+import water.*;
+import water.parser.ParseTime;
 
 /**
  * A NEW single distributed vector column.

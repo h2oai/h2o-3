@@ -111,7 +111,7 @@ public class Frame extends Lockable {
   }
   @Override public String errStr() { return "Dataset"; }
 
-  //public int  numCols() { throw H2O.unimpl(); }
+  public int  numCols() { return _keys.length; }
   public long numRows() { return anyVec().length(); }
   public final long byteSize() { throw H2O.unimpl(); }
 }

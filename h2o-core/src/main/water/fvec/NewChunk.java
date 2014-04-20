@@ -2,6 +2,7 @@ package water.fvec;
 
 import java.util.*;
 import water.*;
+import water.parser.ParseTime;
 import water.util.PrettyPrint;
 
 // An uncompressed chunk of data, supporting an append operation
