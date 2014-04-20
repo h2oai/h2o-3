@@ -18,6 +18,7 @@ public class MRThrow extends TestUtil {
   // and make sure it's forwarded to the invoke.
   @Test public void testInvokeThrow() {
     File file = find_test_file("build/h2o-core.jar");
+    assertTrue( "Missing test file; do a 'make' and retest", file != null);
     // Return a Key mapping to a NFSFileVec over the file
     NFSFileVec nfs = NFSFileVec.make(file);
     try {
@@ -40,6 +41,7 @@ public class MRThrow extends TestUtil {
 
   @Test public void testGetThrow() {
     File file = find_test_file("build/h2o-core.jar");
+    assertTrue( "Missing test file; do a 'make' and retest", file != null);
     NFSFileVec nfs = NFSFileVec.make(file);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
@@ -61,6 +63,7 @@ public class MRThrow extends TestUtil {
 
   @Test public void testContinuationThrow() throws InterruptedException, ExecutionException {
     File file = find_test_file("build/h2o-core.jar");
+    assertTrue( "Missing test file; do a 'make' and retest", file != null);
     NFSFileVec nfs = NFSFileVec.make(file);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
