@@ -46,7 +46,7 @@ public class Vec extends Keyed {
   static final int LOG_CHK = 20/*1Meg*/+0/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
    * increases fine-grained parallelism. */
-  static final int CHUNK_SZ = 1 << LOG_CHK;
+  public static final int CHUNK_SZ = 1 << LOG_CHK;
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is

@@ -1,14 +1,11 @@
 package water.parser;
 
-import java.util.ArrayList;
 import water.Iced;
 
 public final class ValueString extends Iced implements Comparable<ValueString> {
    private byte [] _buf;
    private int _off;
    private int _len;
-
-   public ValueString() {}
 
    public ValueString(byte [] buf, int off, int len){
      _buf = buf;

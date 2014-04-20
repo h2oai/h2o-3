@@ -213,20 +213,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
   private boolean isByteVec() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof ByteVec; }
-  private boolean isRawData() {
-    if( isFrame() ) {
-      Frame fr = get();
-      return fr.vecs().length == 1 && (fr.vecs()[0] instanceof ByteVec);
-    }
-    // either simple value with bytearray, un-parsed value array or byte vec
-    return _type == TypeMap.PRIM_B || isByteVec();
-  }
-
-  // For plain Values, just the length in bytes.
-  // For Frames, the compressed size of all vecs within the frame.
-  private long length() {
-    return isFrame() ? ((Frame)get()).byteSize() : _max;
-  }
 
   private InputStream openStream() throws IOException {  return openStream(null); }
   /** Creates a Stream for reading bytes */

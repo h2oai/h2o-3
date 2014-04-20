@@ -14,6 +14,10 @@ public class ByteVec extends Vec {
 
   @Override public C1NChunk chunkForChunkIdx(int cidx) { return (C1NChunk)super.chunkForChunkIdx(cidx); }
 
+  // Get an unspecified amount of initial bytes; typically a whole C1NChunk of
+  // length Vec.CHUNK_SZ but no guarantees.
+  public byte[] getFirstBytes() { return chunkForChunkIdx(0).getBytes(); }
+
   /** Open a stream view over the underlying data  */
   public InputStream openStream(final ProgressMonitor pmon) {
     return new InputStream() {

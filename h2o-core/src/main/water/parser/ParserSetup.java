@@ -1,7 +1,6 @@
 package water.parser;
 
 import java.util.HashSet;
-import java.util.Set;
 import water.H2O;
 import water.Iced;
 
@@ -20,16 +19,8 @@ class ParserSetup extends Iced {
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
   private final boolean _singleQuotes;
   private final String [] _columnNames;
-  private final int _ncols;
+          final int _ncols;
 
-  private ParserSetup() {
-    _pType = ParserType.AUTO;
-    _separator = AUTO_SEP;
-    _header = false;
-    _ncols = 0;
-    _columnNames = null;
-    _singleQuotes = false;
-  }
   protected ParserSetup(ParserType t) {
     this(t,AUTO_SEP,0,false,null,false);
   }
@@ -56,9 +47,9 @@ class ParserSetup extends Iced {
     return _pType != ParserType.AUTO && _separator != AUTO_SEP && (_header || _ncols > 0);
   }
 
-  Set<String> checkDupColumnNames() {
-    HashSet<String> uniqueNames = new HashSet<String>();
-    HashSet<String> conflictingNames = new HashSet<String>();
+  HashSet<String> checkDupColumnNames() {
+    HashSet<String> uniqueNames = new HashSet<>();
+    HashSet<String> conflictingNames = new HashSet<>();
     if(_header){
       for(String n:_columnNames){
         if(!uniqueNames.contains(n)){
@@ -70,11 +61,9 @@ class ParserSetup extends Iced {
     }
     return conflictingNames;
   }
-  boolean isCompatible(ParserSetup other){
-    if(other == null || _pType != other._pType)return false;
-    if(_pType == ParserType.CSV && (_separator != other._separator || _ncols != other._ncols))
-      return false;
-    return true;
+  boolean isCompatible( ParserSetup other ) {
+    if( other == null || _pType != other._pType ) return false;
+    return _pType != ParserType.CSV || (_separator == other._separator && _ncols == other._ncols);
   }
 
   private CustomParser makeParser() {
@@ -87,4 +76,9 @@ class ParserSetup extends Iced {
     }
   }
   @Override public String toString(){ return _pType.toString( _ncols, _separator ); }
+
+  // Guess a setup from a single file of bits.
+  static ParserSetup guessSetup( byte[] bits, boolean checkHeader ) {
+    throw H2O.unimpl();
+  }
 }

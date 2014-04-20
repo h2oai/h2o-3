@@ -41,7 +41,7 @@ public class FVecTest extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(file); // Will be deleted as a side-effect of parsing
     Frame fr = null;
     try {
-      fr = ParseDataset2.parse(Key.make("air.hex"), new Key[]{nfs._key});
+      fr = ParseDataset2.parse(Key.make("air.hex"), nfs._key);
       // Scribble into a freshly parsed frame
       new SetDoubleInt().doAll(fr);
     } finally {
@@ -96,7 +96,7 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = ParseDataset2.parse(Key.make("syn.hex"),new Key[]{nfs._key});
+      fr = ParseDataset2.parse(Key.make("syn.hex"),nfs._key);
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 
@@ -153,7 +153,7 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = ParseDataset2.parse(Key.make("cat.hex"),new Key[]{nfs._key});
+      fr = ParseDataset2.parse(Key.make("cat.hex"),nfs._key);
       assertEquals(fr.numRows(),40000); // Count of rows
       assertEquals(fr.vecs()[0].domain().length,40000);
 
