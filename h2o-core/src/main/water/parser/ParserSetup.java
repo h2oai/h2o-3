@@ -79,11 +79,6 @@ class ParserSetup extends Iced {
 
 
   // ==========================================================================
-  // Guess a setup from a single file of bits.
-  static ParserSetup guessSetup( byte[] bits, boolean checkHeader ) {
-    throw H2O.unimpl();
-  }
-
   /** Separators recognized by the parser.  You can add new separators to this
    *  list and the parser will automatically attempt to recognize them.  In
    *  case of doubt the separators are listed in descending order of
@@ -93,9 +88,7 @@ class ParserSetup extends Iced {
    */
   private static byte[] separators = new byte[] { HIVE_SEP/* '^A',  Hive table column separator */, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
-  /** Dermines the number of separators in given line. Correctly handles quoted
-   * tokens.
-   */
+  /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
   private static int[] determineSeparatorCounts(String from, int single_quote) {
     int[] result = new int[separators.length];
     byte[] bits = from.getBytes();
