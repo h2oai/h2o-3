@@ -21,55 +21,40 @@ import water.*;
  *                parsing & previewing the first few lines & columns of a file.
  */
 abstract class Parser extends Iced {
-  private final ParserSetup _setup;
+  protected final ParserSetup _setup;
   Parser( ParserSetup setup ) { _setup = setup; }
-
-  protected final boolean isCompatible(Parser p) { return _setup == p._setup || (_setup != null && _setup.isCompatible(p._setup)); }
 
   // Does this parser flavor support parallel parsing?
   abstract boolean parallelParseSupported();
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
-  private DataOut streamParse( final InputStream is, final DataOut dout) throws Exception {
-    if(_setup._pType._parallelParseSupported){
-      StreamData din = new StreamData(is);
-      int cidx=0;
-      while( is.available() > 0 )
-        parallelParse(cidx++,din,dout);
-      parallelParse(cidx++,din,dout);     // Parse the remaining partial 32K buffer
-    } else {
-      throw H2O.unimpl();
-    }
+  DataOut streamParse( final InputStream is, final DataOut dout) throws IOException {
+    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    StreamData din = new StreamData(is);
+    int cidx=0;
+    while( is.available() > 0 )
+      parallelParse(cidx++,din,dout);
+    parallelParse(cidx++,din,dout);     // Parse the remaining partial 32K buffer
     return dout;
   }
 
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
-  private DataOut streamParse( final InputStream is, final StreamDataOut dout, ParseDataset2.ParseProgressMonitor pmon) throws IOException {
+  DataOut streamParse( final InputStream is, final StreamDataOut dout, ParseDataset2.ParseProgressMonitor pmon) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
-    if(_setup._pType._parallelParseSupported){
-      StreamData din = new StreamData(is);
-      int cidx=0;
-      StreamDataOut nextChunk = dout;
-      long lastProgress = pmon.progress();
-      while( is.available() > 0 ){
-        if(pmon.progress() > lastProgress){
-          lastProgress = pmon.progress();
-          nextChunk.close();
-          if(dout != nextChunk)dout.reduce(nextChunk);
-          nextChunk = nextChunk.nextChunk();
-        }
-        parallelParse(cidx++,din,nextChunk);
-      }
-      parallelParse(cidx++,din,nextChunk);     // Parse the remaining partial 32K buffer
+    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    StreamData din = new StreamData(is);
+    int cidx=0;
+    StreamDataOut nextChunk = dout;
+    while( true ) {
+      parallelParse(cidx++,din,nextChunk);
       nextChunk.close();
-      if(dout != nextChunk)dout.reduce(nextChunk);
-    } else {
-      throw H2O.unimpl();
+      if( dout != nextChunk ) dout.reduce(nextChunk);
+      if( is.available() == 0 ) return dout;
+      nextChunk = nextChunk.nextChunk();
     }
-    return dout;
   }
 
   /** Manage bulk streaming input data to the parser.  Sometimes the data comes

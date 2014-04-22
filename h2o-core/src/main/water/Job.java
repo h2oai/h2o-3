@@ -97,7 +97,7 @@ public class Job<T extends Keyed> extends Keyed {
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
    * the job was cancelled by a user. */
   public void cancel() {
-    cancel((String)null, JobState.CANCELLED);
+    cancel(null, JobState.CANCELLED);
   }
   /** Signal exceptional cancellation of this job.
    * @param ex exception causing the termination of job.

@@ -19,7 +19,7 @@ abstract class ZipUtil {
     } catch(Exception e) { return null; }
   }
 
-  private static Compression guessCompressionMethod(byte [] bits) {
+  static Compression guessCompressionMethod(byte [] bits) {
     // Look for ZIP magic
     if( bits.length > ZipFile.LOCHDR && UDP.get4(bits,0) == ZipFile.LOCSIG )
       return Compression.ZIP;
@@ -28,7 +28,7 @@ abstract class ZipUtil {
     return Compression.NONE;
   }
 
-  private static byte[] unzipBytes( byte[] bs, Compression cmp ) {
+  static byte[] unzipBytes( byte[] bs, Compression cmp ) {
     if( cmp == Compression.NONE ) return bs; // No compression
     // Wrap the bytes in a stream
     ByteArrayInputStream bais = new ByteArrayInputStream(bs);

@@ -16,19 +16,19 @@ class ParserSetup extends Iced {
   // Parse Flavor
           final ParserType _pType; // CSV, XLS, XSLX, SVMLight, Auto
   private static byte AUTO_SEP = -1;
-  private final byte _sep; // Field separator, usually comma ',' or TAB or space ' '
+          final byte _sep; // Field separator, usually comma ',' or TAB or space ' '
           final int _ncols;     // Columns to parse
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
   // raw data:  123,'Mally,456,O'Mally
   // singleQuotes==True  ==> 2 columns: 123  and  Mally,456,OMally
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
-  private final boolean _singleQuotes;
+          final boolean _singleQuotes;
   private final String[] _columnNames;
   private       String[][] _data;   // Preview data; a few lines and columns of varying length
 
   // The unspecified ParserSetup
   protected ParserSetup(ParserType t) {
-    this(false,0,null,t,AUTO_SEP,0,false,null);
+    this(true,0,null,t,AUTO_SEP,0,false,null);
   }
 
   private ParserSetup( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
@@ -42,12 +42,22 @@ class ParserSetup extends Iced {
     _columnNames = columnNames;
   }
 
-  // Got parse errors?
-  private final boolean hasErrors() { return _errors != null && _errors.length > 0; }
+  // Invalid setup based on a prior valid one
+  private ParserSetup(ParserSetup ps, String err) {
+    this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames);
+  }
 
-  // Parse setup is locked down
-  private boolean isSpecified(){
-    return _pType != ParserType.AUTO && _sep != AUTO_SEP && (_columnNames != null || _ncols > 0);
+  // Got parse errors?
+  final boolean hasErrors() { return _errors != null && _errors.length > 0; }
+  final boolean hasHeaders() { return _columnNames != null; }
+
+  Parser parser() {
+    switch( _pType ) {
+    case CSV:      return new      CsvParser(this);
+    case XLS:      return new      XlsParser(this);
+    case SVMLight: return new SVMLightParser(this);
+    }
+    throw H2O.fail();
   }
 
   // Set of duplicated column names
@@ -58,12 +68,6 @@ class ParserSetup extends Iced {
     for( String n : _columnNames )
       (uniqueNames.contains(n) ? conflictingNames : uniqueNames).add(n);
     return conflictingNames;
-  }
-
-  // Setups from different files can be merged?
-  boolean isCompatible( ParserSetup other ) {
-    if( other == null || _pType != other._pType ) return false;
-    return _pType != ParserType.CSV || (_sep == other._sep && _ncols == other._ncols);
   }
 
   @Override public String toString() { return _pType.toString( _ncols, _sep ); }
@@ -81,7 +85,7 @@ class ParserSetup extends Iced {
    *  last one as it is used if all other fails because multiple spaces can be
    *  used as a single separator.
    */
-  private static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
+  static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
   /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
@@ -310,7 +314,7 @@ class ParserSetup extends Iced {
       
       // See if compatible headers
       if( columnNames != null && labels != null ) {
-        if( labels.length == columnNames.length ) 
+        if( labels.length != columnNames.length )
           errors.add("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
         else {
           for( int i = 0; i < labels.length; ++i )
@@ -337,5 +341,16 @@ class ParserSetup extends Iced {
 
     // Return the final setup
     return new ParserSetup( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels );
+  }
+
+  // Guess a local setup that is compatible to the given global (this) setup.
+  // If they are not compatible, there will be _errors set.
+  public ParserSetup guessSetup( byte[] bits ) {
+    ParserSetup ps = guessSetup(bits, _sep, _ncols, _singleQuotes, 0/*guess header*/, _columnNames);
+    if( ps._errors != null ) return ps; // Already dead
+    if( _pType != ps._pType ||
+        (_pType == ParserType.CSV && (_sep != ps._sep && _ncols != ps._ncols)) )
+      return new ParserSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
+    return ps;
   }
 }

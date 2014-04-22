@@ -173,7 +173,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public int compareTo( Object o) { return _key.compareTo(((H2ONode)o)._key); }
 
   // index of this node in the current cloud... can change at the next cloud.
-  int index() { return H2O.CLOUD.nidx(this); }
+  public int index() { return H2O.CLOUD.nidx(this); }
 
   // max memory for this node.
   // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.

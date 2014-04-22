@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.zip.*;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
@@ -72,9 +73,21 @@ public class ParseDataset2 extends Job<Frame> {
     final long _total;
     private long _value;
     DException _ex;
-    ParseProgressMonitor( long totalLen ) { super(Key.make((byte) 0, Key.JOB)); _total = totalLen; }
-    @Override public void update( long len ) { throw H2O.unimpl(); }
-    long progress() { return _value; }
+    ParseProgressMonitor( long totalLen ) { 
+      super(Key.make((byte) 0, Key.JOB)); 
+      _total = totalLen; 
+      DKV.put(_key,this); 
+    }
+    @Override public void update( final long len ) {
+      // Background (lazy) atomic update the remote value
+      new TAtomic<ParseProgressMonitor>() {
+        @Override public ParseProgressMonitor atomic(ParseProgressMonitor old) {
+          if( old == null ) return null;
+          old._value += len;
+          return old;
+        }
+      }.fork(_key);
+    }
   }
 
   // -------------------------------
@@ -295,7 +308,8 @@ public class ParseDataset2 extends Job<Frame> {
     private static NonBlockingHashMap<Key, Enum[]> _enums = new NonBlockingHashMap<Key, Enum[]>();
     // The Key used to sort out *this* parse's Enum[]
     private final Key _eKey = Key.make();
-    // Mapping from Chunk# to cluster-node-number
+    // Mapping from Chunk# to cluster-node-number holding the enum mapping.
+    // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
     private final int[] _chunk2Enum;
     // ParseProgressMonitor key
     private final Key _progress;
@@ -335,75 +349,67 @@ public class ParseDataset2 extends Job<Frame> {
       return _enums.get(_eKey); // Re-get incase lost insertion race
     }
 
+    // Flag all chunk enums as being on local (self)
+    private void chunksAreLocal( Vec vec, int chunkStartIdx ) {
+      for(int i = 0; i < vec.nChunks(); ++i)  
+        _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
+    }
+
     // Called once per file
     @Override public void map( Key key ) {
       // Get parser setup info for this chunk
       ByteVec vec = getByteVec(key);
-      byte[] bits = vec.chunkForChunkIdx(0).getBytes();
+      byte[] zips = vec.getFirstBytes();
+      ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr);
+      ParserSetup localSetup = _setup.guessSetup(bits);
+      if( localSetup.hasErrors() ) return;
+
+      // Parse the file
       final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];
-      //Compression cpr = Utils.guessCompressionMethod(bits);
-      //CustomParser.ParserSetup localSetup = ParseDataset.guessSetup(Utils.unzipBytes(bits,cpr), _setup,false)._setup;
-      //// Local setup: nearly the same as the global all-files setup, but maybe
-      //// has the header-flag changed.
-      //if(!_setup.isCompatible(localSetup)) {
-      //  _parserr = "Conflicting file layouts, expecting: "+_setup+" but found "+localSetup;
-      //  return;
-      //}
-      //// Allow dup headers, if they are equals-ignoring-case
-      //boolean has_hdr = _setup._header && localSetup._header;
-      //if( has_hdr ) {           // Both have headers?
-      //  for( int i = 0; i < localSetup._columnNames.length; ++i )
-      //    has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_setup._columnNames[i]);
-      //  if( !has_hdr )          // Headers not compatible?
-      //    // Then treat as no-headers, i.e., parse it as a normal row
-      //    localSetup = new CustomParser.ParserSetup(ParserType.CSV,localSetup._separator, false);
-      //}
-      //final int ncols = _setup._ncols;
-      //
-      //// Parse the file
-      //try {
-      //  switch( cpr ) {
-      //  case NONE:
-      //    if(localSetup._pType.parallelParseSupported){
-      //      DParse dp = new DParse(_vg,localSetup, _vecIdStart, chunkStartIdx,this);
+      try {
+        if( false ) throw new IOException();
+        switch( cpr ) {
+        case NONE:
+          if( localSetup._pType._parallelParseSupported ) {
+      //      DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx,this);
       //      addToPendingCount(1);
       //      dp.setCompleter(this);
       //      dp.asyncExec(new Frame(vec));
       //      for(int i = 0; i < vec.nChunks(); ++i)
       //        _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
-      //    }else {
+            throw H2O.unimpl();
+          } else {
       //      ParseProgressMonitor pmon = new ParseProgressMonitor(_progress);
       //      _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
-      //      for(int i = 0; i < vec.nChunks(); ++i)
-      //        _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
-      //    }
-      //    break;
-      //  case ZIP: {
-      //    // Zipped file; no parallel decompression;
-      //    ParseProgressMonitor pmon = new ParseProgressMonitor(_progress);
-      //    ZipInputStream zis = new ZipInputStream(vec.openStream(pmon));
-      //    ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
-      //    // There is at least one entry in zip file and it is not a directory.
-      //    if( ze != null && !ze.isDirectory() ) _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx,pmon);
-      //    else zis.close();       // Confused: which zipped file to decompress
-      //    // set this node as the one which processed all the chunks
-      //    for(int i = 0; i < vec.nChunks(); ++i)
-      //      _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
-      //    break;
-      //  }
-      //  case GZIP:
-      //    // Zipped file; no parallel decompression;
+      //      chunksAreLocal(vec,chunkStartIdx);
+            throw H2O.unimpl();
+          }
+          //break;
+        case ZIP: {
+          // Zipped file; no parallel decompression;
+          ParseProgressMonitor pmon = DKV.get(_progress).get();
+          ZipInputStream zis = new ZipInputStream(vec.openStream(pmon));
+          ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
+          // There is at least one entry in zip file and it is not a directory.
+          if( ze != null && !ze.isDirectory() ) 
+            _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx,pmon);
+          else zis.close();       // Confused: which zipped file to decompress
+          chunksAreLocal(vec,chunkStartIdx);
+          break;
+        }
+        case GZIP:
+          // Zipped file; no parallel decompression;
       //    ParseProgressMonitor pmon = new ParseProgressMonitor(_progress);
       //    _dout = streamParse(new GZIPInputStream(vec.openStream(pmon)),localSetup,_vecIdStart, chunkStartIdx,pmon);
       //    // set this node as the one which processed all the chunks
-      //    for(int i = 0; i < vec.nChunks(); ++i)
-      //      _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
+      //    chunksAreLocal(vec,chunkStartIdx);
       //    break;
-      //  }
-      //} catch( IOException ioe ) {
-      //  throw new RuntimeException(ioe);
-      //}
-      throw H2O.unimpl();
+          throw H2O.unimpl();
+        }
+      } catch( IOException ioe ) {
+        throw new RuntimeException(ioe);
+      }
     }
 
     // Reduce: combine errors from across files.
@@ -429,20 +435,17 @@ public class ParseDataset2 extends Job<Frame> {
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
     private FVecDataOut streamParse( final InputStream is, final ParserSetup localSetup, int vecIdStart, int chunkStartIdx, ParseProgressMonitor pmon) throws IOException {
-      //// All output into a fresh pile of NewChunks, one per column
-      //FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums());
-      //Parser p = localSetup.parser();
-      //// assume 2x inflation rate
-      //if(localSetup._pType.parallelParseSupported)
-      //  try{p.streamParse(is, dout,pmon);}catch(IOException e){throw new RuntimeException(e);}
-      //else
-      //  try{p.streamParse(is, dout);}catch(Exception e){throw new RuntimeException(e);}
-      //// Parse all internal "chunks", until we drain the zip-stream dry.  Not
-      //// real chunks, just flipping between 32K buffers.  Fills up the single
-      //// very large NewChunk.
-      //dout.close(_fs);
-      //return dout;
-      throw H2O.unimpl();
+      // All output into a fresh pile of NewChunks, one per column
+      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums());
+      Parser p = localSetup.parser();
+      // assume 2x inflation rate
+      if( localSetup._pType._parallelParseSupported ) p.streamParse(is, dout, pmon);
+      else                                            p.streamParse(is, dout);
+      // Parse all internal "chunks", until we drain the zip-stream dry.  Not
+      // real chunks, just flipping between 32K buffers.  Fills up the single
+      // very large NewChunk.
+      dout.close(_fs);
+      return dout;
     }
 
     // ------------------------------------------------------------------------
