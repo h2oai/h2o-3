@@ -248,7 +248,7 @@ final public class Key extends Iced<Key> implements Comparable {
   static Key make(String s, byte rf, byte systemType, H2ONode... replicas) {
     return make(decodeKeyName(s),rf,systemType,replicas);
   }
-  static Key make(byte rf, byte systemType, H2ONode... replicas) {
+  public static Key make(byte rf, byte systemType, H2ONode... replicas) {
     return make(rand(),rf,systemType,replicas);
   }
 

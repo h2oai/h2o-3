@@ -28,6 +28,35 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
 
   public Lockable( Key key ) { super(key); }
 
+  // -----------
+  // Atomic create+overwrite of prior key.
+  // If prior key exists, block until acquire a write-lock.
+  // Then call remove, removing all of a prior key.
+  // The replace this object as the new Lockable, still write-locked.
+  // "locker" can be null, meaning the special no-Job locker; for use by expected-fast operations
+  //
+  // Example: write-lock & remove an old Frame, and replace with a new locked Frame
+  //     Local-Node                              Master-Node
+  // (1)  new,old    -->write_lock(job)-->          old
+  // (2)  new,old.waiting...                     new,old+job-locked atomic xtn loop
+  // (3)                                            old.remove onSuccess
+  // (4)  new        <--update success <--       new+job-locked
+
+  // Write-lock 'this', returns OLD guy
+  public Lockable write_lock( Key job_key ) {
+    Log.debug("write-lock "+_key+" by job "+job_key);
+    return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
+  }
+  // Write-lock 'this', delete any old thing, returns NEW guy
+  public T delete_and_lock( Key job_key ) {
+    Lockable old =  write_lock(job_key);
+    if( old != null ) {
+      Log.debug("lock-then-clear "+_key+" by job "+job_key);
+      old.remove(new Futures()).blockForPending();
+    }
+    return (T)this;
+  }
+
   // Will fail if locked by anybody.
   public void delete( ) { delete(null,0.0f); }
   // Will fail if locked by anybody other than 'job_key'
@@ -56,6 +85,71 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
       }
       // Update & set the new value
       set_write_lock(_job_key);
+      return Lockable.this;
+    }
+  }
+
+  // -----------
+  // Atomically get a read-lock, preventing future deletes or updates
+  public static void read_lock( Key k, Key job_key ) {
+    Value val = DKV.get(k);
+    if( val.isLockable() )
+      ((Lockable)val.get()).read_lock(job_key); // Lockable being locked
+  }
+  public void read_lock( Key job_key ) { 
+    if( _key != null ) {
+      Log.debug("shared-read-lock "+_key+" by job "+job_key);
+      new ReadLock(job_key).invoke(_key); 
+    }
+  }
+
+  // Obtain read-lock
+  static private class ReadLock extends TAtomic<Lockable> {
+    final Key _job_key;         // Job doing the unlocking
+    ReadLock( Key job_key ) { _job_key = job_key; }
+    @Override public Lockable atomic(Lockable old) {
+      if( old == null ) throw new IllegalArgumentException("Nothing to lock!");
+      if( old.is_wlocked() )
+        throw new IllegalArgumentException( old.errStr()+" "+_key+" is being created;  Unable to read it now.");
+      old.set_read_lock(_job_key);
+      return old;
+    }
+  }
+
+  // -----------
+  // Atomically set a new version of self
+  public void update( Key job_key ) { 
+    Log.debug("update write-locked "+_key+" by job "+job_key);
+    new Update(job_key).invoke(_key); 
+  }
+
+  // Freshen 'this' and leave locked
+  private class Update extends TAtomic<Lockable> {
+    final Key _job_key;         // Job doing the unlocking
+    Update( Key job_key ) { _job_key = job_key; }
+    @Override public Lockable atomic(Lockable old) {
+      assert old != null && old.is_wlocked();
+      _lockers = old._lockers;  // Keep lock state
+      return Lockable.this;     // Freshen this
+    }
+  }
+
+  // -----------
+  // Atomically set a new version of self & unlock.
+  public void unlock( Key job_key ) { 
+    if( _key != null ) {
+      Log.debug("unlock "+_key+" by job "+job_key);
+      new Unlock(job_key).invoke(_key); 
+    }
+  }
+
+  // Freshen 'this' and unlock
+  private class Unlock extends TAtomic<Lockable> {
+    final Key _job_key;         // Job doing the unlocking
+    Unlock( Key job_key ) { _job_key = job_key; }
+    @Override public Lockable atomic(Lockable old) {
+      assert old.is_locked(_job_key);
+      set_unlocked(old._lockers,_job_key);
       return Lockable.this;
     }
   }

@@ -16,67 +16,20 @@ import water.*;
  *           strings (enums) or handling invalid lines & parse errors.
  *
  *  static classes:
- *  PSetupGuess - A class for managing the initial CSV layout guess, and for
- *                presenting the layout guess to the GUI.
  *  StreamData  - Class implementing DataIn from a Stream (probably a GZIP stream)
- *  CustomInspectDataOut - Class implementing DataOut, on behalf of the GUI, for
+ *  InspectDataOut - Class implementing DataOut, on behalf of the GUI, for
  *                parsing & previewing the first few lines & columns of a file.
  */
-abstract class CustomParser extends Iced {
-  private static final byte CHAR_TAB = '\t';
-  private static final byte CHAR_LF = 10;
-  private static final byte CHAR_SPACE = ' ';
-  private static final byte CHAR_CR = 13;
-  private static final byte CHAR_VT = 11;
-  private static final byte CHAR_FF = 12;
-  private static final byte CHAR_DOUBLE_QUOTE = '"';
-  private static final byte CHAR_SINGLE_QUOTE = '\'';
-  private static final byte CHAR_NULL = 0;
-  private static final byte CHAR_COMMA = ',';
-
+abstract class Parser extends Iced {
   private final ParserSetup _setup;
+  Parser( ParserSetup setup ) { _setup = setup; }
 
-  CustomParser( ParserSetup setup ) { _setup = setup; }
+  protected final boolean isCompatible(Parser p) { return _setup == p._setup || (_setup != null && _setup.isCompatible(p._setup)); }
 
-  private String [] headers(){return null;}
-
-  /** A class for managing the initial CSV layout guess, and for presenting the
-   *  layout guess to the gui.
-   */
-  private static class PSetupGuess extends Iced {
-    private final ParserSetup _setup;
-    private final int _invalidLines;
-    private final int _validLines;
-    private final String []   _errors;
-    private Key _setupFromFile;
-    private Key _hdrFromFile;
-    private String [][] _data;
-    private final boolean _isValid;
-    private PSetupGuess(ParserSetup ps, int vlines, int ilines, String [][] data, boolean isValid, String [] errors) {
-      _setup = ps;
-      _invalidLines = ilines;
-      _validLines = vlines;
-      _errors = errors;
-      _data = data;
-      _isValid = isValid;
-    }
-
-    private Set<String> checkDupColumnNames(){
-      return _setup.checkDupColumnNames();
-    }
-
-    private final boolean hasErrors() { return _errors != null && _errors.length > 0; }
-
-    @Override public String toString(){
-      if( !_isValid )      return "Parser setup appears to be broken, got " + _setup.toString();
-      else if(hasErrors()) return "Parser setup appears to work with some errors, got " + _setup.toString();
-      else                 return "Parser setup working fine, got " + _setup.toString();
-    }
-  }
-
-  private boolean isCompatible(CustomParser p){return _setup == p._setup || (_setup != null && _setup.isCompatible(p._setup));}
-  private DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) {throw new UnsupportedOperationException();}
-  private boolean parallelParseSupported(){return false;}
+  // Does this parser flavor support parallel parsing?
+  abstract boolean parallelParseSupported();
+  // Parse this one Chunk (in parallel with other Chunks)
+  abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
   private DataOut streamParse( final InputStream is, final DataOut dout) throws Exception {
     if(_setup._pType._parallelParseSupported){
@@ -118,18 +71,11 @@ abstract class CustomParser extends Iced {
     }
     return dout;
   }
-  protected static final boolean isWhitespace(byte c) {
-    return (c == CHAR_SPACE) || (c == CHAR_TAB);
-  }
-
-  protected static final boolean isEOL(byte c) {
-    return ((c == CHAR_LF) || (c == CHAR_CR));
-  }
 
   /** Manage bulk streaming input data to the parser.  Sometimes the data comes
    *  from parallel raw byte file reads, with speculative line starts.
    *  Sometimes the data comes from an InputStream - probably a GZIP stream.  */
-  private interface DataIn {
+  interface DataIn {
     // Get another chunk of byte data
     abstract byte[] getChunkData( int cidx );
     abstract int  getChunkDataStart( int cidx );
@@ -138,7 +84,7 @@ abstract class CustomParser extends Iced {
 
   /** Interface for writing results of parsing, accumulating numbers and
    *  strings (enums) or handling invalid lines & parse errors.  */
-  private interface DataOut extends Freezable {
+  interface DataOut extends Freezable {
     void setColumnNames(String [] names);
     // Register a newLine from the parser
     void newLine();
@@ -167,7 +113,7 @@ abstract class CustomParser extends Iced {
 
   /** Class implementing DataIn from a Stream (probably a GZIP stream)
    */
-  private static class StreamData implements CustomParser.DataIn {
+  private static class StreamData implements Parser.DataIn {
     final transient InputStream _is;
     private byte[] _bits0 = new byte[64*1024];
     private byte[] _bits1 = new byte[64*1024];
@@ -214,7 +160,7 @@ abstract class CustomParser extends Iced {
   /** Class implementing DataOut, on behalf of the GUI, for parsing &
    *  previewing the first few lines & columns of a file.
    */
-  protected static class CustomInspectDataOut extends Iced implements DataOut {
+  protected static class InspectDataOut extends Iced implements DataOut {
     private int _nlines;
     private int _ncols;
     private int _invalidLines;
@@ -224,7 +170,7 @@ abstract class CustomParser extends Iced {
     private final static int MAX_PREVIEW_COLS  = 100;
     private final static int MAX_PREVIEW_LINES = 50;
     transient ArrayList<String> _errors;
-    private CustomInspectDataOut() {
+    private InspectDataOut() {
      for(int i = 0; i < MAX_PREVIEW_LINES;++i)
        Arrays.fill(_data[i],"NA");
     }

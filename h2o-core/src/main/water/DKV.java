@@ -11,8 +11,21 @@ package water;
 public abstract class DKV {
   // This put is a top-level user-update, and not a reflected or retried
   // update.  i.e., The User has initiated a change against the K/V store.
-  // This is a WEAK update: it is not strongly ordered with other updates
-  static public Value put( Key key, Value val ) { return put(key,val,null); }
+
+  // Put an Iced, by wrapping it in a Value
+  static public Value put( Key key, Iced v ) { return put(key,new Value(key,v)); }
+  static public Value put( Key key, Iced v, Futures fs ) { return put(key,new Value(key,v),fs); }
+  static public Value put( Key key, Iced v, Futures fs,boolean donCache ) {
+    return put(key,new Value(key,v),fs,donCache);
+  }
+
+  // Put a Value, blocking by default.
+  static public Value put( Key key, Value val ) { 
+    Futures fs = new Futures(); 
+    Value old = put(key,val,fs);
+    fs.blockForPending();
+    return old;
+  }
   static public Value put( Key key, Value val, Futures fs ) { return put(key,val,fs,false);}
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
@@ -24,24 +37,16 @@ public abstract class DKV {
       if( val != null && val._key != key ) key = val._key;
     }
   }
-  static public Value put( Key key, Iced v ) { return put(key,v,null); }
-  static public Value put( Key key, Iced v, Futures fs ) {
-    return put(key,new Value(key,v),fs);
-  }
-  static public Value put( Key key, Iced v, Futures fs,boolean donCache ) {
-    return put(key,new Value(key,v),fs,donCache);
-  }
 
-  // Remove this Key
-  static public Value remove( Key key ) { return remove(key,null); }
+  // Remove this Key, blocking by default
+  static public Value remove( Key key ) { return put(key,(Value)null); }
   static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
+
+  static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) { return DputIfMatch(key, val, old, fs, false);  }
 
   // Do a PUT, and on success trigger replication.  Returns the prior Value on
   // either success or fail.  If a Futures is passed in, it can be used to
   // block until the PUT completes cluster-wide.
-  static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) {
-    return DputIfMatch(key, val, old, fs, false);
-  }
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs, boolean dontCache ) {
     // First: I must block repeated remote PUTs to the same Key until all prior
     // ones complete - the home node needs to see these PUTs in order.

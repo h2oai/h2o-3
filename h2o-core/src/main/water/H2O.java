@@ -133,7 +133,7 @@ final public class H2O {
   // lower-priority F/J work starts with an attempt to work & drain the
   // higher-priority queues.
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
-    H2OCountedCompleter(){}
+    public H2OCountedCompleter(){}
     H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
     // Once per F/J task, drain the high priority queue before doing any low
@@ -425,7 +425,7 @@ final public class H2O {
   // --------------------------------------------------------------------------
   // The Current Cloud. A list of all the Nodes in the Cloud. Changes if we
   // decide to change Clouds via atomic Cloud update.
-  static volatile H2O CLOUD = new H2O(new H2ONode[0],0,0);
+  public static volatile H2O CLOUD = new H2O(new H2ONode[0],0,0);
 
   // ---
   // A dense array indexing all Cloud members. Fast reversal from "member#" to
@@ -477,6 +477,14 @@ final public class H2O {
   boolean contains( H2ONode h2o ) { return nidx(h2o) >= 0; }
   @Override public String toString() {
     return java.util.Arrays.toString(_memary);
+  }
+
+  // Cluster memory
+  public long memsz() {
+    long memsz = 0;
+    for( H2ONode h2o : CLOUD._memary )
+      memsz += h2o.get_max_mem();
+    return memsz;
   }
 
   static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }

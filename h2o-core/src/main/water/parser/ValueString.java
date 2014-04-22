@@ -7,21 +7,11 @@ public final class ValueString extends Iced implements Comparable<ValueString> {
    private int _off;
    private int _len;
 
-   public ValueString(byte [] buf, int off, int len){
-     _buf = buf;
-     _off = off;
-     _len = len;
-   }
-
-   public ValueString(String from) {
-     _buf = from.getBytes();
-     _off = 0;
-     _len = get_buf().length;
-   }
-
-   public ValueString(byte [] buf){
-     this(buf,0,buf.length);
-   }
+   ValueString( byte [] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
+   ValueString( byte [] buf ) { this(buf,0,buf.length); }
+   ValueString( String from ) { this(from.getBytes()); }
+   // Used to make a temp recycling ValueString in hot loops
+   ValueString() { }
 
    @Override public int compareTo( ValueString o ) {
      int len = Math.min(_len,o._len);
