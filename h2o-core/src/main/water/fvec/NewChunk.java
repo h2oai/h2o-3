@@ -22,11 +22,11 @@ public class NewChunk extends Chunk {
   transient int    _xs[];       // Exponent, or if _ls==0, NA or Enum or Rows
   transient int    _id[];       // Indices (row numbers) of stored values, used for sparse
   transient double _ds[];       // Doubles, for inflating via doubles
-  int _len2;                    // Actual rows, if the data is sparse
+  public int _len2;             // Actual rows, if the data is sparse
   int _naCnt=-1;                // Count of NA's   appended
   int _strCnt;                  // Count of Enum's appended
   int _nzCnt;                   // Count of non-zero's appended
-  final int _timCnt[] = new int[ParseTime.TIME_PARSE.length]; // Count of successful time parses
+  public final int _timCnt[] = new int[ParseTime.TIME_PARSE.length]; // Count of successful time parses
   public static final int MIN_SPARSE_RATIO = 32;
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }

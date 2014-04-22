@@ -536,7 +536,7 @@ final public class H2O {
   // the Key will be set in the wrong Key copy... leading to extra rounds of
   // replication.
 
-  static Value putIfMatch( Key key, Value val, Value old ) {
+  public static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
     if( val != null )
@@ -555,7 +555,7 @@ final public class H2O {
   }
   
   // Get the value from the store
-  static Value get( Key key ) { return STORE.get(key); }
+  public static Value get( Key key ) { return STORE.get(key); }
   static Value raw_get( Key key ) { return STORE.get(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
   static Set<Key> localKeySet( ) { return STORE.keySet(); }

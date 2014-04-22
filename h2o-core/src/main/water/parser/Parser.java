@@ -104,7 +104,7 @@ abstract class Parser extends Iced {
     void invalidValue(int line, int col);
   }
 
-  private interface StreamDataOut extends DataOut {
+  interface StreamDataOut extends DataOut {
     StreamDataOut nextChunk();
     StreamDataOut reduce(StreamDataOut dout);
     StreamDataOut close();

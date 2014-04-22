@@ -16,7 +16,7 @@ import water.parser.ParseTime;
  * Vec type.  NEW Vectors do NOT support reads!
  */
 public class AppendableVec extends Vec {
-  long _espc[];
+  public long _espc[];
   public static final byte NA     = 1;
   public static final byte ENUM   = 2;
   public static final byte NUMBER = 4;

@@ -266,7 +266,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
   // Special mode doing 1 map per key.  No frame
-  T doAll( Key... keys ) {
+  public T doAll( Key... keys ) {
     _keys = keys;
     _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     setupLocal0();              // Local setup

@@ -72,4 +72,12 @@ public class ArrayUtils {
     for (int i=0; i<dom.length; i++) result[i] = String.valueOf(dom[i]);
     return result;
   }
+
+  // Find an element with linear search & return it's index, or -1
+  public static <T> int find(T[] ts, T elem) {
+    for( int i=0; i<ts.length; i++ )
+      if( elem==ts[i] || elem.equals(ts[i]) )
+        return i;
+    return -1;
+  }
 }

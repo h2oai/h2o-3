@@ -38,9 +38,9 @@ public abstract class ParseTime {
   // Returns:
   //  - not a time parse: Long.MIN_VALUE 
   //  - time parse via pattern X: time in msecs since Jan 1, 1970, shifted left by 1 byte, OR'd with X
-  private static long encodeTimePat(long tcode, int tpat ) { return (tcode<<8)|tpat; }
-  private static long decodeTime(long tcode ) { return tcode>>8; }
-  private static int  decodePat (long tcode ) { return ((int)tcode&0xFF); }
+  static long encodeTimePat(long tcode, int tpat ) { return (tcode<<8)|tpat; }
+  static long decodeTime(long tcode ) { return tcode>>8; }
+  static int  decodePat (long tcode ) { return ((int)tcode&0xFF); }
   public static long attemptTimeParse( ValueString str ) {
     try {
       long t0 = attemptTimeParse_01(str); // "yyyy-MM-dd" and that plus " HH:mm:ss.SSS"
