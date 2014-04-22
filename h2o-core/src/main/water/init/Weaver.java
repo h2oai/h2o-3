@@ -12,12 +12,13 @@ import water.nbhm.UtilUnsafe;
 
 public class Weaver {
   private static final ClassPool _pool = ClassPool.getDefault();
-  private static final CtClass _dtask;
+  private static final CtClass _dtask, _enum;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
     try { 
       _dtask= _pool.get("water.DTask"); // these also need copyOver
+      _enum = _pool.get("java.lang.Enum"); // Special serialization
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
@@ -90,58 +91,85 @@ public class Weaver {
     icer_cc.setSuperclass(super_icer);
     icer_cc.setModifiers(javassist.Modifier.PUBLIC);
 
+    // Debug printing?
+    boolean debug_print=false;
+    CtField ctfs[] = iced_cc.getDeclaredFields();
+    for( CtField ctf : ctfs ) debug_print |= ctf.getName().equals("DEBUG_WEAVER");
+    if( debug_print )
+      System.out.println("class "+icer_cc.getName()+" extends "+super_icer.getName()+" {");
+
+    // Make a copy of the enum array, for later deser
+    for( CtField ctf : ctfs ) {
+      CtClass ctft = ctf.getType();
+      String name = ctf.getName();
+      int mods = ctf.getModifiers();
+      if( javassist.Modifier.isTransient(mods) || javassist.Modifier.isStatic(mods) )
+        continue;  // Only serialize not-transient instance fields (not static)
+      // Check for enum
+      String sig = ctf.getSignature();
+      if( sig.charAt(0) != 'L' ) continue; // Not an enum
+      String clz = sig.substring(1,sig.length()-1).replace('/', '.');
+      if( _pool.get(clz).subtypeOf(_enum) ) {
+        CtClass base = ctft;
+        while( base.isArray() ) base = base.getComponentType();
+        // Insert in the Icer, a copy of the enum values() array from Iced
+        // e.g. private final myEnum[] _fld = myEnum.values();
+        String src = "  private final "+ctft.getName().replace('$', '.')+"[] "+name+" = "+base.getName().replace('$', '.')+".values();\n";
+        if( debug_print ) System.out.println(src);
+        CtField ctfr = CtField.make(src,icer_cc);
+        icer_cc.addField(ctfr);
+      }
+    }
+
     // The write call
     String debug = 
     make_body(icer_cc, iced_cc, iced_clazz, "write",
-              "protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "  write"+super_id+"(ab,ice);\n",
-              "  ab.put%z(ice.%s);\n"  ,  "  ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "  ab.putEnum(ice.%s);\n",  "  ab.putEnum((%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "  ab.put%z(ice.%s);\n"  ,  "  ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
+              "  protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
+              "    write"+super_id+"(ab,ice);\n",
+              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.putEnum(ice.%s);\n",  "    ab.putEnum((%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "",
-              "  return ab;\n" +
-              "}");
-    if( debug != null ) {
-      System.out.println("class "+icer_cc.getName()+" extends "+super_icer.getName()+" {");
-      System.out.println(debug);
-    }
+              "    return ab;\n" +
+              "  }");
+    if( debug_print ) System.out.println(debug);
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String wbody = "protected water.AutoBuffer write(water.AutoBuffer ab, water.Freezable ice) {\n"+
-      "  return write"+id+"(ab,("+iced_name+")ice);\n"+
-      "}";
-    if( debug != null ) System.out.println(wbody);
+    String wbody = "  protected water.AutoBuffer write(water.AutoBuffer ab, water.Freezable ice) {\n"+
+      "    return write"+id+"(ab,("+iced_name+")ice);\n"+
+      "  }";
+    if( debug_print ) System.out.println(wbody);
     addMethod(wbody,icer_cc);
 
 
     // The read call
     String rbody_impl =
     make_body(icer_cc, iced_cc, iced_clazz, "read",
-              "protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "  read"+super_id+"(ab,ice);\n",
-              "  ice.%s = ab.get%z();\n",            "  _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "  ice.%s = %c.raw_enum(ab.get1());\n","  _unsafe.putObject(ice,%dL,%c.raw_enum(ab.get1()));  //%s\n",
-              "  ice.%s = (%C)ab.get%z(%c.class);\n","  _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
+              "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
+              "    read"+super_id+"(ab,ice);\n",
+              "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
+              "    ice.%s = $s[ab.get1()];\n",         "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "",
-              "  return ice;\n" +
-              "}");
-    if( debug != null ) System.out.println(rbody_impl);
+              "    return ice;\n" +
+              "  }");
+    if( debug_print ) System.out.println(rbody_impl);
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
-    String rbody = "protected water.Freezable read(water.AutoBuffer ab, water.Freezable ice) {\n"+
-      "  return read"+id+"(ab,("+iced_name+")ice);\n"+
-      "}";
-    if( debug != null ) System.out.println(rbody);
+    String rbody = "  protected water.Freezable read(water.AutoBuffer ab, water.Freezable ice) {\n"+
+      "    return read"+id+"(ab,("+iced_name+")ice);\n"+
+      "  }";
+    if( debug_print ) System.out.println(rbody);
     addMethod(rbody,icer_cc);
 
-    String cnbody = "protected java.lang.String className() { return \""+iced_name+"\"; }";
-    if( debug != null ) System.out.println(cnbody);
+    String cnbody = "  protected java.lang.String className() { return \""+iced_name+"\"; }";
+    if( debug_print ) System.out.println(cnbody);
     addMethod(cnbody,icer_cc);
 
-    String ftbody = "protected int frozenType() { return "+id+"; }";
-    if( debug != null ) System.out.println(ftbody);
+    String ftbody = "  protected int frozenType() { return "+id+"; }";
+    if( debug_print ) System.out.println(ftbody);
     addMethod(ftbody,icer_cc);
 
     // DTasks need to be able to copy all their (non transient) fields from one
@@ -149,27 +177,27 @@ public class Weaver {
     if( iced_cc.subclassOf(_dtask) ) {
       String cpbody_impl =
         make_body(icer_cc, iced_cc, iced_clazz, "copyOver",
-                  "protected void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
-                  "  super.copyOver(fdst,fsrc);\n"+
-                  "  "+iced_name+" dst = ("+iced_name+")fdst;\n"+
-                  "  "+iced_name+" src = ("+iced_name+")fsrc;\n",
-                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
-                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
-                  "  dst.%s = src.%s;\n","  _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "  protected void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
+                  "    super.copyOver(fdst,fsrc);\n"+
+                  "    "+iced_name+" dst = ("+iced_name+")fdst;\n"+
+                  "    "+iced_name+" src = ("+iced_name+")fsrc;\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
                   "",
-                  "}");
-      if( debug != null ) System.out.println(cpbody_impl);
+                  "  }");
+      if( debug_print ) System.out.println(cpbody_impl);
     }
 
-    String cstrbody = "public "+icer_cc.getSimpleName()+"( "+iced_name+" iced) { super(iced); }";
-    if( debug != null ) System.out.println(cstrbody);
+    String cstrbody = "  public "+icer_cc.getSimpleName()+"( "+iced_name+" iced) { super(iced); }";
+    if( debug_print ) System.out.println(cstrbody);
     try {
       icer_cc.addConstructor(CtNewConstructor.make(cstrbody,icer_cc));
     } catch( CannotCompileException ce ) {
       System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+cstrbody+"\n------");
       throw ce;
     }
-    if( debug != null ) System.out.println("}");
+    if( debug_print ) System.out.println("}");
 
     return icer_cc;
   }
@@ -283,7 +311,7 @@ public class Weaver {
       String clz = sig.substring(1,sig.length()-1).replace('/', '.');
       CtClass argClass = _pool.get(clz);
       if( argClass.subtypeOf(_pool.get("water.Freezable")) ) return 9;
-      if( argClass.subtypeOf(_pool.get("java.lang.Enum")) ) return 10;
+      if( argClass.subtypeOf(_enum) ) return 10;
       break;
     case '[':                   // Arrays
       return ftype(ct, sig.substring(1))+20; // Same as prims, plus 20
