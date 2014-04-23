@@ -127,19 +127,20 @@ public class ParseDataset2 extends Job<Frame> {
     EnumUpdateTask eut = null;
     // Calculate enum domain
     int n = 0;
-    //int [] ecols = new int[uzpt._dout._nCols];
-    //for(int i = 0; i < ecols.length; ++i)
-    //  if(uzpt._dout._vecs[i].shouldBeEnum())
-    //    ecols[n++] = i;
-    //ecols =  Arrays.copyOf(ecols, n);
-    //if( ecols != null && ecols.length > 0 ) {
-    //  EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), uzpt._eKey, ecols).invokeOnAllNodes();
-    //  Enum [] enums = eft._gEnums;
-    //  ValueString [][] ds = new ValueString[ecols.length][];
-    //  int j = 0;
-    //  for(int i:ecols)uzpt._dout._vecs[i]._domain = ValueString.toString(ds[j++] = enums[i].computeColumnDomain());
+    int [] ecols = new int[uzpt._dout._nCols];
+    for( int i = 0; i < ecols.length; ++i )
+      if(uzpt._dout._vecs[i].shouldBeEnum())
+        ecols[n++] = i;
+    ecols =  Arrays.copyOf(ecols, n);
+    if( ecols != null && ecols.length > 0 ) {
+      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), uzpt._eKey, ecols).doAll(fkeys[0]/*dummy*/);
+      Enum [] enums = eft._gEnums;
+      ValueString [][] ds = new ValueString[ecols.length][];
+      int j = 0;
+      for( int i : ecols ) uzpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
     //  eut = new EnumUpdateTask(ds, eft._lEnums, uzpt._chunk2Enum, uzpt._eKey, ecols);
-    //}
+      throw H2O.unimpl();
+    }
     //Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(uzpt._dout._nCols),uzpt._dout.closeVecs());
     //// SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     //SVFTask t = new SVFTask(fr);
@@ -233,33 +234,31 @@ public class ParseDataset2 extends Job<Frame> {
     private Enum [] _gEnums; // global enums per column
     private Enum [][] _lEnums; // local enums per node per column
     private EnumFetchTask(int homeNode, Key k, int [] ecols){_homeNode = homeNode; _k = k;_ecols = ecols;}
-    @Override public void map(Key key) {
-      //_lEnums = new Enum[H2O.CLOUD.size()][];
-      //if(MultiFileParseTask._enums.containsKey(_k)){
-      //  _lEnums[H2O.SELF.index()] = _gEnums = MultiFileParseTask._enums.get(_k);
-      //  // if we are the original node (i.e. there will be no sending over wire),
-      //  // we have to clone the enums not to share the same object (causes problems when computing column domain and renumbering maps).
-      //  if(H2O.SELF.index() == _homeNode){
-      //    _gEnums = _gEnums.clone();
-      //    for(int i = 0; i < _gEnums.length; ++i)
-      //      _gEnums[i] = _gEnums[i].clone();
-      //  }
-      //  MultiFileParseTask._enums.remove(_k);
-      //}
-      throw H2O.unimpl();
+    @Override public void setupLocal() {
+      _lEnums = new Enum[H2O.CLOUD.size()][];
+      if( !MultiFileParseTask._enums.containsKey(_k) ) return;
+      _lEnums[H2O.SELF.index()] = _gEnums = MultiFileParseTask._enums.get(_k);
+      // if we are the original node (i.e. there will be no sending over wire),
+      // we have to clone the enums not to share the same object (causes
+      // problems when computing column domain and renumbering maps).
+      if( H2O.SELF.index() == _homeNode ) {
+        _gEnums = _gEnums.clone();
+        for(int i = 0; i < _gEnums.length; ++i)
+          _gEnums[i] = (Enum)_gEnums[i].clone();
+      }
+      MultiFileParseTask._enums.remove(_k);
     }
 
     @Override public void reduce(EnumFetchTask etk) {
-      //if(_gEnums == null){
-      //  _gEnums = etk._gEnums;
-      //  _lEnums = etk._lEnums;
-      //} else if (etk._gEnums != null) {
-      //  for(int i:_ecols) _gEnums[i].merge(etk._gEnums[i]);
-      //  for(int i = 0; i < _lEnums.length; ++i)
-      //    if(_lEnums[i] == null) _lEnums[i] = etk._lEnums[i];
-      //    else assert etk._lEnums[i] == null;
-      //}
-      throw H2O.unimpl();
+      if(_gEnums == null) {
+        _gEnums = etk._gEnums;
+        _lEnums = etk._lEnums;
+      } else if (etk._gEnums != null) {
+        for( int i : _ecols ) _gEnums[i].merge(etk._gEnums[i]);
+        for( int i = 0; i < _lEnums.length; ++i )
+          if( _lEnums[i] == null ) _lEnums[i] = etk._lEnums[i];
+          else assert etk._lEnums[i] == null;
+      }
     }
   }
 

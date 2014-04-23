@@ -112,7 +112,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** Override to do any remote initialization on the 1st remote instance of
    *  this object, for initializing node-local shared data structures.  */
-  protected void setupLocal() {} // load the vecs in non-racy way (we will definitely need them and in case we don;t have cached version there will be unnecessary racy update from multiple maps at the same time)!
+  protected void setupLocal() {}
   /** Override to do any remote cleaning on the last remote instance of
    *  this object, for disposing of node-local shared data structures.  */
   protected void closeLocal() { }

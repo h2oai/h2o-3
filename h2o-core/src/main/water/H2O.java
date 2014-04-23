@@ -469,7 +469,7 @@ final public class H2O {
     return ((nnn-old)&0xFF) < 64;
   }
 
-  final int size() { return _memary.length; }
+  public final int size() { return _memary.length; }
   final H2ONode leader() { return _memary[0]; }
 
   // Find the node index for this H2ONode, or a negative number on a miss

@@ -21,8 +21,8 @@ import water.nbhm.NonBlockingHashMap;
  * @author tomasnykodym
  *
  */
-public final class Enum extends Iced implements Cloneable {
-  public static final int MAX_ENUM_SIZE = 1000000;
+final class Enum extends Iced implements Cloneable {
+  static final int MAX_ENUM_SIZE = 1000000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   long _nElems;
@@ -42,7 +42,7 @@ public final class Enum extends Iced implements Cloneable {
    *  All keys are added with value = 1.
    *  @param str
    */
-  public int addKey(ValueString str) {
+  int addKey(ValueString str) {
     // _map is shared and be cast to null (if enum is killed) -> grab local copy
   //  NonBlockingHashMap<ValueString, Integer> m = _map;
   //  if( m == null ) return Integer.MAX_VALUE;     // Nuked already
@@ -81,9 +81,9 @@ public final class Enum extends Iced implements Cloneable {
   //  return I;
   //}
   //
-  //public void merge(Enum other){
-  //  if( this == other ) return;
-  //  if( isKilled() ) return;
+  void merge(Enum other){
+    if( this == other ) return;
+    if( isKilled() ) return;
   //  if( !other.isKilled() ) {   // do the merge
   //    Map<ValueString, Integer> myMap = _map;
   //    Map<ValueString, Integer> otMap = other._map;
@@ -93,22 +93,24 @@ public final class Enum extends Iced implements Cloneable {
   //    if( myMap.size() <= MAX_ENUM_SIZE ) return;
   //  }
   //  kill(); // too many values, enum should be killed!
-  //}
+    throw water.H2O.unimpl();
+  }
   //public int maxId(){return _maxId == -1?_id.get():_maxId;}
   //public int size() { return _map.size(); }
   boolean isKilled() { return _map == null; }
   //public void kill() { _map = null; }
-  //
-  //// assuming single threaded
-  //public ValueString [] computeColumnDomain(){
-  //  if( isKilled() ) return null;
+
+  // assuming single threaded
+  ValueString [] computeColumnDomain() {
+    if( isKilled() ) return null;
   //  ValueString vs[] = _map.keySet().toArray(new ValueString[_map.size()]);
   //  Arrays.sort(vs);            // Alpha sort to be nice
   //  for( int j = 0; j < vs.length; ++j )
   //    _map.put(vs[j], j);       // Renumber in the map
   //  return vs;
-  //}
-  //
+    throw water.H2O.unimpl();
+  }
+
   //// Since this is a *concurrent* hashtable, writing it whilst its being
   //// updated is tricky.  If the table is NOT being updated, then all is written
   //// as expected.  If the table IS being updated we only promise to write the
