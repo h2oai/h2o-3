@@ -23,7 +23,7 @@ class ParserSetup extends Iced {
   // singleQuotes==True  ==> 2 columns: 123  and  Mally,456,OMally
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
           final boolean _singleQuotes;
-  private final String[] _columnNames;
+          final String[] _columnNames;
   private       String[][] _data;   // Preview data; a few lines and columns of varying length
 
   // The unspecified ParserSetup

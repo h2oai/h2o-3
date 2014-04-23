@@ -35,6 +35,11 @@ public class ParseDataset2 extends Job<Frame> {
     Iced ice = DKV.get(key).get();
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
+  private static String [] genericColumnNames(int ncols){
+    String [] res = new String[ncols];
+    for(int i = 0; i < res.length; ++i) res[i] = "C" + String.valueOf(i+1);
+    return res;
+  }
 
   // Same parse, as a backgroundable Job
   public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParserSetup setup, boolean delete_on_done) {
@@ -138,11 +143,10 @@ public class ParseDataset2 extends Job<Frame> {
       ValueString [][] ds = new ValueString[ecols.length][];
       int j = 0;
       for( int i : ecols ) uzpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
-    //  eut = new EnumUpdateTask(ds, eft._lEnums, uzpt._chunk2Enum, uzpt._eKey, ecols);
-      throw H2O.unimpl();
+      eut = new EnumUpdateTask(ds, eft._lEnums, uzpt._chunk2Enum, uzpt._eKey, ecols);
     }
-    //Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(uzpt._dout._nCols),uzpt._dout.closeVecs());
-    //// SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
+    Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(uzpt._dout._nCols),uzpt._dout.closeVecs());
+    // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     //SVFTask t = new SVFTask(fr);
     //t.invokeOnAllNodes();
     //if(eut != null){
