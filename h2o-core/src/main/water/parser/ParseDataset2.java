@@ -107,7 +107,7 @@ public class ParseDataset2 extends Job<Frame> {
     private final ParseMonitor _pmon;
     long _parsedBytes;
     FileMonitor( ParseMonitor pmon ) { _pmon = pmon; }
-    @Override public void update( long len ) { _parsedBytes += len; _pmon.onProgress(len); }
+    @Override public void update( long len ) { synchronized(this) {_parsedBytes += len;} _pmon.onProgress(len); }
   }
 
   // -------------------------------
@@ -389,13 +389,12 @@ public class ParseDataset2 extends Job<Frame> {
         switch( cpr ) {
         case NONE:
           if( localSetup._pType._parallelParseSupported ) {
-      //      DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx,this);
-      //      addToPendingCount(1);
-      //      dp.setCompleter(this);
-      //      dp.asyncExec(new Frame(vec));
-      //      for(int i = 0; i < vec.nChunks(); ++i)
-      //        _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
-            throw H2O.unimpl();
+            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx,this);
+            addToPendingCount(1);
+            dp.setCompleter(this);
+            dp.asyncExec(vec);
+            for( int i = 0; i < vec.nChunks(); ++i )
+              _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
       //      FileMonitor pmon = new FileMonitor(_progress);
       //      _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
@@ -478,28 +477,27 @@ public class ParseDataset2 extends Job<Frame> {
         _outerMFPT = mfpt;
       }
       @Override public void map( Chunk in ) {
-        //Enum [] enums = enums();
-        //// Break out the input & output vectors before the parse loop
-        //// The Parser
-        //FVecDataIn din = new FVecDataIn(in);
-        //FVecDataOut dout;
-        //Parser p;
-        //switch(_setup._pType){
-        //  case CSV:
-        //    p = new CsvParser(_setup);
-        //    dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums);
-        //    break;
+        Enum [] enums = enums();
+        // Break out the input & output vectors before the parse loop
+        FVecDataIn din = new FVecDataIn(in);
+        FVecDataOut dout;
+        Parser p;
+        switch(_setup._pType) {
+        case CSV:
+          p = new CsvParser(_setup);
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums);
+          break;
         //  case SVMLight:
         //    p = new SVMLightParser(_setup);
         //    dout = new SVMLightFVecDataOut(_vg, _startChunkIdx + in.cidx(), _setup._ncols, _vecIdStart, enums);
         //    break;
-        //  default:
-        //    throw H2O.unimpl();
-        //}
-        //p.parallelParse(in.cidx(),din,dout);
-        //(_dout = dout).close(_fs);
-        //onProgress(in._len, _progress); // Record bytes parsed
-        throw H2O.unimpl();
+        default:
+          throw H2O.unimpl();
+        }
+        p.parallelParse(in.cidx(),din,dout);
+        (_dout = dout).close(_fs);
+        FileMonitor fmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
+        fmon.update(in._len);   // Record bytes parsed
       }
       @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {

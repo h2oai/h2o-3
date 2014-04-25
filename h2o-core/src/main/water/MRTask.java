@@ -27,7 +27,6 @@ import water.fvec.Vec.VectorGroup;
  * produce an output frame with newly created Vecs.
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
-  public MRTask() { _priority = nextThrPriority(); }
 
   /** The Vectors (or Keys) to work on. */
   public Frame _fr;
@@ -39,7 +38,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // If TRUE, run entirely local - which will pull all the data locally.
   private boolean _run_local;
 
-  final private byte _priority;
+  private byte _priority;
   @Override public byte priority() { return _priority; }
 
   public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
@@ -214,7 +213,25 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return getResult();
   }
 
-  /** Invokes the map/reduce computation over the given Frame. This call is
+  public final void asyncExec(Vec... vecs){asyncExec(0,new Frame(vecs),false);}
+  public final void asyncExec(Frame fr){asyncExec(0,fr,false);}
+
+  /** Fork the task in strictly non-blocking fashion.
+   *  Same functionality as dfork, but does not raise priority, so user is should
+   *  *never* block on it.
+   *  Because it does not raise priority, these can be tail-call chained together
+   *  for any length.
+   */
+  public final void asyncExec( int outputs, Frame fr, boolean run_local){
+    // Use first readable vector to gate home/not-home
+    if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
+    _fr = fr;                   // Record vectors to work on
+    _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    _run_local = run_local;     // Run locally by copying data, or run globally?
+    setupLocal0();              // Local setup
+    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+  }
+  /** Invokes the map/reduce computation over the given Frame.  This call is
    *  asynchronous.  It returns 'this', on which getResult() can be invoked
    *  later to wait on the computation.  */
   public final T dfork( Vec...vecs ) {return dfork(0,vecs);}
@@ -223,13 +240,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return dfork(outputs,new Frame(vecs),false);
   }
   public final T dfork( int outputs, Frame fr, boolean run_local) {
-    // Use first readable vector to gate home/not-home
-    if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
-    _fr = fr;                   // Record vectors to work on
-    _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
-    _run_local = run_local;     // Run locally by copying data, or run globally?
-    setupLocal0();              // Local setup
-    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    _priority = nextThrPriority();
+    asyncExec(outputs,fr,run_local);
     return self();
   }
 
