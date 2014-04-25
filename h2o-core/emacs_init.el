@@ -72,6 +72,20 @@
   (let ((inhibit-read-only t))
     (erase-buffer)))
 
+;; Follow stack java stack traces
+(defvar java-stack-trace-dir "src/")
+(defun java-stack-trace-regexp-to-filename ()
+  "Generates a relative filename from java-stack-trace regexp match data."
+  (concat java-stack-trace-dir
+          (replace-regexp-in-string "\\." "/" (match-string 1))
+          (match-string 2)))
+
+(add-to-list 'compilation-error-regexp-alist 'java-stack-trace)
+(add-to-list 'compilation-error-regexp-alist-alist
+  '(java-stack-trace .
+    ("^[[:space:]]*at \\(\\(?:[[:lower:]]+\\.\\)+\\)[^(]+(\\([[:alnum:]]+\\.java\\):\\([[:digit:]]+\\))"
+     java-stack-trace-regexp-to-filename 3)))
+
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
@@ -85,9 +99,6 @@
  '(jde-javadoc-gen-destination-directory "./doc" t)
  '(jde-jdk-doc-url "c:/Program Files (x86)/Java/jdk1.7.0_03/jdk-6-doc/docs")
  '(jde-jdk-registry (quote (("1.6" . "$JAVA_HOME"))))
- '(jde-run-working-directory "$DESK/Dropbox/lock_state")
- '(jdibug-connect-hosts (quote ("localhost:4444")))
- '(semanticdb-project-roots (quote ("~/Dropbox/lock_state")))
  '(show-paren-mode t)
  '(text-mode-hook (quote (text-mode-hook-identify)))
  '(transient-mark-mode t))

@@ -83,6 +83,7 @@ final public class H2O {
                    : Thread. MAX_PRIORITY-1 );
     }
   }
+
   // Factory for F/J threads, with cap's that vary with priority.
   static class FJWThrFact implements ForkJoinPool.ForkJoinWorkerThreadFactory {
     private final int _cap;
@@ -172,10 +173,18 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    byte priority() { return MIN_PRIORITY; }
+    protected byte priority() { return MIN_PRIORITY; }
     @Override final public T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
+    }
+
+    // If this is a F/J thread, return it's priority+1 - used to lift the
+    // priority of a blocking remote call, so the remote node runs it at a
+    // higher priority - so we don't deadlock when we burn the local thread.
+    protected final byte nextThrPriority() { 
+      Thread cThr = Thread.currentThread();
+      return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority+1 : priority());
     }
 
     // The serialization flavor / delegate.  Lazily set on first use.

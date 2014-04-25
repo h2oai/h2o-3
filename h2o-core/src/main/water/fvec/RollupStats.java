@@ -15,6 +15,7 @@ import water.*;
  */
 class RollupStats extends DTask<RollupStats> {
   final Key _rskey;
+  final private byte _priority;
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
@@ -30,7 +31,8 @@ class RollupStats extends DTask<RollupStats> {
   // Check for: Rollups available
   private boolean isReady() { return _naCnt>=0; }
 
-  private RollupStats( Key rskey, int mode ) { _rskey = rskey; _naCnt = mode; }
+  private RollupStats( Key rskey, int mode ) { _rskey = rskey; _naCnt = mode; _priority = nextThrPriority(); }
+  @Override public byte priority() { return _priority; }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(rskey,-1); }
   static RollupStats makeMutating (Key rskey) { return new RollupStats(rskey,-2); }
 

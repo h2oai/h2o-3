@@ -27,7 +27,7 @@ import water.fvec.Vec.VectorGroup;
  * produce an output frame with newly created Vecs.
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
-  public MRTask() { _priority = getPriority(); }
+  public MRTask() { _priority = nextThrPriority(); }
 
   /** The Vectors (or Keys) to work on. */
   public Frame _fr;
@@ -41,13 +41,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   final private byte _priority;
   @Override public byte priority() { return _priority; }
-  private byte getPriority() {
-    // Always 1 higher priority than calling thread... because the caller will
-    // block & burn a thread waiting for this MRTask to complete.
-    Thread cThr = Thread.currentThread();
-    return (byte)((cThr instanceof H2O.FJWThr) ? ((H2O.FJWThr)cThr)._priority+1 : super.priority());
-  }
-
 
   public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
   public Frame outputFrame(Key key, String [] names, String [][] domains){

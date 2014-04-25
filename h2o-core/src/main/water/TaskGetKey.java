@@ -86,5 +86,5 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   @Override public void onAckAck() {
     if( _val != null ) _val.lowerActiveGetCount(_h2o);
   }
-  @Override byte priority() { return H2O.GET_KEY_PRIORITY; }
+  @Override protected byte priority() { return H2O.GET_KEY_PRIORITY; }
 }

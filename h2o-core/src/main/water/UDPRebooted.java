@@ -62,9 +62,9 @@ class UDPRebooted extends UDP {
 
   // Try to gracefully close/shutdown all i/o channels.
   static void closeAll() {
-    try { NetworkInit._udpSocket.close(); } catch( IOException e ) { }
-    try { NetworkInit._apiSocket.close(); } catch( IOException e ) { }
-    try { TCPReceiverThread.SOCK.close(); } catch( IOException e ) { }
+    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._apiSocket.close(); } catch( IOException ignore ) { }
+    try { TCPReceiverThread.SOCK.close(); } catch( IOException ignore ) { }
   }
 
   // Pretty-print bytes 1-15; byte 0 is the udp_type enum

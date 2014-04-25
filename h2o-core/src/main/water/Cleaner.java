@@ -26,7 +26,7 @@ class Cleaner extends Thread {
   }
   static void block_store_cleaner() {
     synchronized( _store_cleaner_lock ) {
-      try { _store_cleaner_lock.wait(5000); } catch (InterruptedException ie) { }
+      try { _store_cleaner_lock.wait(5000); } catch (InterruptedException ignore) { }
     }
   }
 
@@ -34,8 +34,6 @@ class Cleaner extends Thread {
   static volatile long DESIRED;
   // Histogram used by the Cleaner
   private final Histo _myHisto;
-
-  boolean _diskFull = false;
 
   Cleaner() {
     super("MemCleaner");
@@ -110,7 +108,7 @@ class Cleaner extends Thread {
       // Start the walk at slot 2, because slots 0,1 hold meta-data
       for( int i=2; i<kvs.length; i += 2 ) {
         // In the raw backing array, Keys and Values alternate in slots
-        Object ok = kvs[i+0], ov = kvs[i+1];
+        Object ok = kvs[i], ov = kvs[i+1];
         if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
         Key key = (Key )ok;
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
@@ -206,9 +204,6 @@ class Cleaner extends Thread {
     Value _vold; // For assertions: record the oldest Value
     boolean _clean; // Was "clean" K/V when built?
 
-    // Return the current best histogram
-    static Histo best_histo() { return H; }
-
     // Return the current best histogram, recomputing in-place if it is
     // getting stale. Synchronized so the same histogram can be called into
     // here and will be only computed into one-at-a-time.
@@ -237,7 +232,7 @@ class Cleaner extends Thread {
       // Start the walk at slot 2, because slots 0,1 hold meta-data
       for( int i=2; i<kvs.length; i += 2 ) {
         // In the raw backing array, Keys and Values alternate in slots
-        Object ok = kvs[i+0], ov = kvs[i+1];
+        Object ok = kvs[i], ov = kvs[i+1];
         if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
         Value val = (Value)ov;

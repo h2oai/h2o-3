@@ -1,8 +1,7 @@
 package water.fvec;
 
+import static org.junit.Assert.assertEquals;
 import java.util.Random;
-import java.util.UUID;
-import junit.framework.Assert;
 import org.junit.Test;
 import water.TestUtil;
 import water.Key;
@@ -21,12 +20,13 @@ public class VecStatsTest extends TestUtil {
       chunk.close(i, null);
     }
     vecs[0] = vec.close(null);
-    frame = new Frame(null, vecs);
+    frame = new Frame(Key.make(), null, vecs);
 
     // Make sure we test the multi-chunk case
-    assert frame.vecs()[0].nChunks() > 1;
+    vecs = frame.vecs();
+    assert vecs[0].nChunks() > 1;
     long rows = frame.numRows();
-    Vec v = frame.vecs()[0];
+    Vec v = vecs[0];
     double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY, mean = 0, sigma = 0;
     for( int r = 0; r < rows; r++ ) {
       double d = v.at(r);
@@ -44,10 +44,10 @@ public class VecStatsTest extends TestUtil {
     sigma = Math.sqrt(sigma / (rows - 1));
 
     double epsilon = 1e-9;
-    Assert.assertEquals(max, v.max(), epsilon);
-    Assert.assertEquals(min, v.min(), epsilon);
-    Assert.assertEquals(mean, v.mean(), epsilon);
-    Assert.assertEquals(sigma, v.sigma(), epsilon);
+    assertEquals(max, v.max(), epsilon);
+    assertEquals(min, v.min(), epsilon);
+    assertEquals(mean, v.mean(), epsilon);
+    assertEquals(sigma, v.sigma(), epsilon);
     } finally {
       if( frame != null ) frame.delete();
     }

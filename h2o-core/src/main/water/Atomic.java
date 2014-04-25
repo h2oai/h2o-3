@@ -69,5 +69,5 @@ abstract public class Atomic<T extends Atomic> extends DTask {
     tryComplete();              // Tell F/J this task is done
   }
 
-  @Override byte priority() { return H2O.ATOMIC_PRIORITY; }
+  @Override protected byte priority() { return H2O.ATOMIC_PRIORITY; }
 }

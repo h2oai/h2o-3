@@ -216,7 +216,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       try {
         // Wait for local to complete
         if( _target==H2O.SELF ) { _dt.get(); _done=true; }
-        else wait();            // Wait for remote to complete
+        else { wait(); }
       } 
       catch( InterruptedException ignore ) { }
       catch(   ExecutionException e ) { // Only fails for local get()
@@ -252,16 +252,12 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return did;
   }
 
+
   // ---
   // Handle the remote-side incoming UDP packet.  This is called on the REMOTE
   // Node, not local.  Wrong thread, wrong JVM.
-  private static class RemoteHandler extends UDP {
-
-    AutoBuffer call(AutoBuffer ab) {
-      assert false:"task requests should be processed in RPC class now";
-      throw H2O.unimpl();
-    }
-
+  static class RemoteHandler extends UDP {
+    @Override AutoBuffer call(AutoBuffer ab) { throw H2O.fail(); }
     // Pretty-print bytes 1-15; byte 0 is the udp_type enum
     @Override String print16( AutoBuffer ab ) {
       int flag = ab.getFlag();
@@ -269,7 +265,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       return "task# "+ab.getTask()+" "+ clazz+" "+COOKIES[flag-SERVER_UDP_SEND];
     }
   }
-
 
   static class RPCCall extends H2OCountedCompleter implements Delayed {
     volatile DTask _dt; // Set on construction, atomically set to null onAckAck
@@ -347,7 +342,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // note the generous 5sec cap: ping at least every 5 sec.
       _retry += (_retry < 5000 ) ? _retry : 5000;
     }
-    @Override byte priority() { return _dt.priority(); }
+    @Override protected byte priority() { return _dt.priority(); }
     // How long until we should do the "timeout" action?
     @Override public final long getDelay( TimeUnit unit ) {
       long delay = (_started+_retry)-System.currentTimeMillis();
@@ -507,7 +502,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
                     task.completeExceptionally(e);
                   }
                 }
-                @Override byte priority() { return task.priority(); }
+                @Override protected byte priority() { return task.priority(); }
               });
       }
     }catch(Throwable t){
