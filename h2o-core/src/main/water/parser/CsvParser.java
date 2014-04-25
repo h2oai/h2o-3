@@ -1,6 +1,5 @@
 package water.parser;
 
-import water.H2O;
 import java.util.Arrays;
 
 class CsvParser extends Parser {
@@ -25,7 +24,6 @@ class CsvParser extends Parser {
   private static final byte NUMBER_SKIP_NO_DOT = 7;
   private static final byte NUMBER_FRACTION = 8;
   private static final byte NUMBER_EXP = 9;
-  private static final byte NUMBER_EXP_NEGATIVE = 10;
   private static final byte NUMBER_EXP_START = 11;
   private static final byte NUMBER_END = 12;
   private static final byte STRING = 13;
@@ -44,8 +42,7 @@ class CsvParser extends Parser {
     CHAR_SEPARATOR = ps._sep;
   }
 
-  protected static final boolean isWhitespace(byte c) { return (c == CHAR_SPACE) || (c == CHAR_TAB); }
-  protected static final boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
+  protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   @Override boolean parallelParseSupported() { return true; }
 
@@ -71,7 +68,6 @@ class CsvParser extends Parser {
     int sgn_exp = 1;
     boolean decimal = false;
     int fractionDigits = 0;
-    int numStart = 0;
     int tokenStart = 0; // used for numeric token to backtrace if not successful
     int colIdx = 0;
     byte c = bits[offset];
@@ -90,37 +86,36 @@ class CsvParser extends Parser {
 
 MAIN_LOOP:
     while (true) {
-NEXT_CHAR:
       switch (state) {
         // ---------------------------------------------------------------------
         case SKIP_LINE:
           if (isEOL(c)) {
             state = EOL;
           } else {
-            break NEXT_CHAR;
+            break;
           }
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
         case EXPECT_COND_LF:
           state = POSSIBLE_EMPTY_LINE;
           if (c == CHAR_LF)
-            break NEXT_CHAR;
+            break;
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
         case STRING:
           if (c == quotes) {
             state = COND_QUOTE;
-            break NEXT_CHAR;
+            break;
           }
           if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
             _str.addChar();
-            break NEXT_CHAR;
+            break;
           }
           // fallthrough to STRING_END
         // ---------------------------------------------------------------------
         case STRING_END:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
-            break NEXT_CHAR;
+            break;
           // we have parsed the string enum correctly
           if((_str.get_off() + _str.get_length()) > _str.get_buf().length){ // crossing chunk boundary
             assert _str.get_buf() != bits;
@@ -135,10 +130,10 @@ NEXT_CHAR:
         case SEPARATOR_OR_EOL:
           if (c == CHAR_SEPARATOR) {
             state = WHITESPACE_BEFORE_TOKEN;
-            break NEXT_CHAR;
+            break;
           }
           if (c==CHAR_SPACE)
-            break NEXT_CHAR;
+            break;
           // fallthrough to EOL
         // ---------------------------------------------------------------------
         case EOL:
@@ -154,7 +149,7 @@ NEXT_CHAR:
           state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
           if( !firstChunk )
             break MAIN_LOOP; // second chunk only does the first row
-          break NEXT_CHAR;
+          break;
         // ---------------------------------------------------------------------
         case POSSIBLE_CURRENCY:
           if (((c >= '0') && (c <= '9')) || (c == '-') || (c == CHAR_DECIMAL_SEPARATOR) || (c == '+')) {
@@ -164,7 +159,7 @@ NEXT_CHAR:
             _str.addChar();
             if (c == quotes) {
               state = COND_QUOTE;
-              break NEXT_CHAR;
+              break;
             }
             if ((quotes != 0) || ((!isEOL(c) && (c != CHAR_SEPARATOR)))) {
               state = STRING;
@@ -178,18 +173,18 @@ NEXT_CHAR:
           if (isEOL(c)) {
             if (c == CHAR_CR)
               state = EXPECT_COND_LF;
-            break NEXT_CHAR;
+            break;
           }
           state = WHITESPACE_BEFORE_TOKEN;
           // fallthrough to WHITESPACE_BEFORE_TOKEN
         // ---------------------------------------------------------------------
         case WHITESPACE_BEFORE_TOKEN:
           if (c == CHAR_SPACE || (c == CHAR_TAB && CHAR_TAB!=CHAR_SEPARATOR)) {
-              break NEXT_CHAR;
+              break;
           } else if (c == CHAR_SEPARATOR) {
             // we have empty token, store as NaN
             dout.addInvalidCol(colIdx++);
-            break NEXT_CHAR;
+            break;
           } else if (isEOL(c)) {
             dout.addInvalidCol(colIdx++);
             state = EOL;
@@ -203,7 +198,7 @@ NEXT_CHAR:
               ((_setup._singleQuotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
             assert (quotes == 0);
             quotes = c;
-            break NEXT_CHAR;
+            break;
           }
           // fallthrough to TOKEN
         // ---------------------------------------------------------------------
@@ -217,23 +212,20 @@ NEXT_CHAR:
             number = 0;
             fractionDigits = 0;
             decimal = false;
-            numStart = offset;
             tokenStart = offset;
             if (c == '-') {
               exp = -1;
-              ++numStart;
-              break NEXT_CHAR;
+              break;
             } else if(c == '+'){
               exp = 1;
-              ++numStart;
-              break NEXT_CHAR;
+              break;
             } else {
               exp = 1;
             }
             // fallthrough
           } else if (c == '$') {
             state = POSSIBLE_CURRENCY;
-            break NEXT_CHAR;
+            break;
           } else {
             state = STRING;
             _str.set(bits, offset, 0);
@@ -246,18 +238,16 @@ NEXT_CHAR:
             number = (number*10)+(c-'0');
             if (number >= LARGEST_DIGIT_NUMBER)
               state = NUMBER_SKIP;
-            break NEXT_CHAR;
+            break;
           } else if (c == CHAR_DECIMAL_SEPARATOR) {
-            ++numStart;
             state = NUMBER_FRACTION;
             fractionDigits = offset;
             decimal = true;
-            break NEXT_CHAR;
+            break;
           } else if ((c == 'e') || (c == 'E')) {
-            ++numStart;
             state = NUMBER_EXP_START;
             sgn_exp = 1;
-            break NEXT_CHAR;
+            break;
           }
           if (exp == -1) {
             number = -number;
@@ -269,7 +259,7 @@ NEXT_CHAR:
           if ( c == quotes) {
             state = NUMBER_END;
             quotes = 0;
-            break NEXT_CHAR;
+            break;
           }
           // fallthrough NUMBER_END
         case NUMBER_END:
@@ -279,7 +269,7 @@ NEXT_CHAR:
             ++colIdx;
             // do separator state here too
             state = WHITESPACE_BEFORE_TOKEN;
-            break NEXT_CHAR;
+            break;
           } else if (isEOL(c)) {
             exp = exp - fractionDigits;
             dout.addNumCol(colIdx,number,exp);
@@ -289,44 +279,42 @@ NEXT_CHAR:
             state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
             if( !firstChunk )
               break MAIN_LOOP; // second chunk only does the first row
-            break NEXT_CHAR;
+            break;
           } else if ((c == '%')) {
             state = NUMBER_END;
             exp -= 2;
-            break NEXT_CHAR;
+            break;
           } else if ((c != CHAR_SEPARATOR) && ((c == CHAR_SPACE) || (c == CHAR_TAB))) {
             state = NUMBER_END;
-            break NEXT_CHAR;
+            break;
           } else {
             state = STRING;
             offset = tokenStart-1;
             _str.set(bits,tokenStart,0);
-            break NEXT_CHAR; // parse as String token now
+            break; // parse as String token now
           }
         // ---------------------------------------------------------------------
         case NUMBER_SKIP:
-          ++numStart;
           if ((c >= '0') && (c <= '9')) {
-            break NEXT_CHAR;
+            break;
           } else if (c == CHAR_DECIMAL_SEPARATOR) {
             state = NUMBER_SKIP_NO_DOT;
-            break NEXT_CHAR;
+            break;
           } else if ((c == 'e') || (c == 'E')) {
             state = NUMBER_EXP_START;
             sgn_exp = 1;
-            break NEXT_CHAR;
+            break;
           }
           state = COND_QUOTED_NUMBER_END;
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
         case NUMBER_SKIP_NO_DOT:
-          ++numStart;
           if ((c >= '0') && (c <= '9')) {
-            break NEXT_CHAR;
+            break;
           } else if ((c == 'e') || (c == 'E')) {
             state = NUMBER_EXP_START;
             sgn_exp = 1;
-            break NEXT_CHAR;
+            break;
           }
           state = COND_QUOTED_NUMBER_END;
           continue MAIN_LOOP;
@@ -340,14 +328,13 @@ NEXT_CHAR:
             } else {
               number = (number*10)+(c-'0');
             }
-            break NEXT_CHAR;
+            break;
           } else if ((c == 'e') || (c == 'E')) {
-            ++numStart;
             if (decimal)
               fractionDigits = offset - 1 - fractionDigits;
             state = NUMBER_EXP_START;
             sgn_exp = 1;
-            break NEXT_CHAR;
+            break;
           }
           state = COND_QUOTED_NUMBER_END;
           if (decimal)
@@ -364,26 +351,23 @@ NEXT_CHAR:
           }
           exp = 0;
           if (c == '-') {
-            ++numStart;
             sgn_exp *= -1;
-            break NEXT_CHAR;
+            break;
           } else if (c == '+'){
-            ++numStart;
-            break NEXT_CHAR;
+            break;
           }
           if ((c < '0') || (c > '9')){
             state = STRING;
             offset = tokenStart-1;
             _str.set(bits,tokenStart,0);
-            break NEXT_CHAR; // parse as String token now
+            break; // parse as String token now
           }
           state = NUMBER_EXP;  // fall through to NUMBER_EXP
         // ---------------------------------------------------------------------
         case NUMBER_EXP:
           if ((c >= '0') && (c <= '9')) {
-            ++numStart;
             exp = (exp*10)+(c-'0');
-            break NEXT_CHAR;
+            break;
           }
           exp *= sgn_exp;
           state = COND_QUOTED_NUMBER_END;
@@ -393,9 +377,8 @@ NEXT_CHAR:
         case COND_QUOTE:
           if (c == quotes) {
             _str.addChar();
-//            _str.skipChar();
             state = STRING;
-            break NEXT_CHAR;
+            break;
           } else {
             quotes = 0;
             state = STRING_END;
@@ -422,21 +405,20 @@ NEXT_CHAR:
           // If we are mid-parse of something, act like we saw a LF to end the
           // current token.
           if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
-            c = CHAR_LF;  continue MAIN_LOOP;
+            c = CHAR_LF;  continue; // MAIN_LOOP;
           }
-          break MAIN_LOOP;      // Else we are just done
+          break; // MAIN_LOOP;      // Else we are just done
         }
 
         // Now parsing in the 2nd chunk.  All offsets relative to the 2nd chunk start.
         firstChunk = false;
-        numStart -= bits.length;
         if (state == NUMBER_FRACTION)
           fractionDigits -= bits.length;
         offset -= bits.length;
         tokenStart -= bits.length;
         bits = bits1;           // Set main parsing loop bits
         if( bits[0] == CHAR_LF && state == EXPECT_COND_LF )
-          break MAIN_LOOP; // when the first character we see is a line end
+          break; // MAIN_LOOP; // when the first character we see is a line end
       }
       c = bits[offset];
       if(isEOL(c) && state != COND_QUOTE && quotes != 0) // quoted string having newline character => fail the line!

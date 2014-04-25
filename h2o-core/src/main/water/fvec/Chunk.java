@@ -9,7 +9,7 @@ import water.*;
  *  implement (possibly empty) compression schemes.  */
 public abstract class Chunk extends Iced implements Cloneable {
   public long _start = -1;    // Start element; filled after AutoBuffer.read
-  int _len;                   // Number of elements in this chunk
+  public int _len;            // Number of elements in this chunk
   protected Chunk _chk2;      // Normally==null, changed if chunk is written to
   public Vec _vec;            // Owning Vec; filled after AutoBuffer.read
   byte[] _mem; // Short-cut to the embedded memory; WARNING: holds onto a large array
@@ -57,9 +57,9 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  over the data than the generic at() API.  Probably no gain on larger
    *  loops.  The row reference is zero-based on the chunk, and should
    *  range-check by the JIT as expected.  */
-  final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
-  final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
-  final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
+  public final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
+  public final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
+  public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
 
 
   /** Write element the slow way, as a long.  There is no way to write a
@@ -95,7 +95,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    * Note that the idx is an int (instead of a long), which tells you
    * that index 0 is the first row in the chunk, not the whole Vec.
    */
-  final long set0(int idx, long l) {
+  public final long set0(int idx, long l) {
     setWrite();
     if( _chk2.set_impl(idx,l) ) return l;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,l);
@@ -103,7 +103,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** Set a double element in a chunk given a 0-based chunk local index. */
-  final double set0(int idx, double d) {
+  public final double set0(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,d);
@@ -111,7 +111,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** Set a floating element in a chunk given a 0-based chunk local index. */
-  final float set0(int idx, float f) {
+  public final float set0(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,f);
@@ -119,7 +119,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** Set the element in a chunk as missing given a 0-based chunk local index. */
-  final boolean setNA0(int idx) {
+  public final boolean setNA0(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
     (_chk2 = inflate_impl(new NewChunk(this))).setNA_impl(idx);

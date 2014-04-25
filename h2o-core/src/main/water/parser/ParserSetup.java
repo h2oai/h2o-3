@@ -215,7 +215,7 @@ class ParserSetup extends Iced {
       return longest; // 1st line is longer than all the rest; take it
 
     // we don't have lines of same length, pick the most common length
-    int lengths[] = new int[longest];
+    int lengths[] = new int[longest+1];
     for( String[] s : data ) lengths[s.length]++;
     int maxCnt = 0;             // Most common line length
     for( int i=0; i<longest; i++ ) if( lengths[i] > lengths[maxCnt] ) maxCnt = i;
@@ -297,7 +297,7 @@ class ParserSetup extends Iced {
         if( sep == AUTO_SEP ) sep = (byte)' '; // Bail out, go for space
       }
 
-      // Tokeninze the first few lines using the separator
+      // Tokenize the first few lines using the separator
       for( int i = 0; i < nlines; ++i )
         data[i] = determineTokens(lines[i], sep, single_quote );
       // guess columns from tokenization

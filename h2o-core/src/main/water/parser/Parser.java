@@ -42,19 +42,26 @@ abstract class Parser extends Iced {
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
-  DataOut streamParse( final InputStream is, final StreamDataOut dout, ParseDataset2.ParseProgressMonitor pmon) throws IOException {
+  DataOut streamParse( final InputStream is, final StreamDataOut dout, ParseDataset2.FileMonitor pmon) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
     if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamDataOut nextChunk = dout;
-    while( true ) {
+    long lastProgress = pmon._parsedBytes; // File progress changes on a new Chunk of Zipfile being inflated
+    while( is.available() > 0 ) {
+      if( pmon._parsedBytes != lastProgress ) {
+        lastProgress = pmon._parsedBytes;
+        nextChunk.close();      // Match output chunks to input zipfile chunks
+        if( dout != nextChunk ) dout.reduce(nextChunk);
+        nextChunk = nextChunk.nextChunk();
+      }
       parallelParse(cidx++,din,nextChunk);
-      nextChunk.close();
-      if( dout != nextChunk ) dout.reduce(nextChunk);
-      if( is.available() == 0 ) return dout;
-      nextChunk = nextChunk.nextChunk();
     }
+    parallelParse(cidx++,din,nextChunk);     // Parse the remaining partial 32K buffer
+    nextChunk.close();
+    if( dout != nextChunk ) dout.reduce(nextChunk);
+    return dout;
   }
 
   /** Manage bulk streaming input data to the parser.  Sometimes the data comes

@@ -60,7 +60,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   // Will fail if locked by anybody.
   public void delete( ) { delete(null,0.0f); }
   // Will fail if locked by anybody other than 'job_key'
-  public void delete( Key job_key, float dummy ) { 
+  public void delete( Key job_key, float dummy ) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
@@ -81,7 +81,6 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
           old.set_unlocked(old._lockers,_job_key); // Remove read-lock; will atomically upgrade to write-lock
         if( !old.is_unlocked() ) // Blocking for some other Job to finish???
           throw new IllegalArgumentException(old.errStr()+" "+_key+" is already in use.  Unable to use it now.  Consider using a different destination name.");
-        assert old.is_unlocked() : "Not unlocked when locking "+Arrays.toString(old._lockers)+" for "+_job_key;
       }
       // Update & set the new value
       set_write_lock(_job_key);

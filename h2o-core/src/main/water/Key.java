@@ -49,7 +49,7 @@ final public class Key extends Iced<Key> implements Comparable {
 
   public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
   public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == DVEC; }
-  public final Key getVecKey() { assert isChunkKey(); throw H2O.unimpl(); }
+  public final Key getVecKey() { assert isChunkKey(); return water.fvec.Vec.getVecKey(this); }
  
   // *Desired* distribution function on keys & replication factor. Replica #0
   // is the master, replica #1, 2, 3, etc represent additional desired

@@ -23,7 +23,7 @@ public class FVecTest extends TestUtil {
     nfs.remove();
   }
 
-  public static class ByteHisto extends MRTask<ByteHisto> {
+  private static class ByteHisto extends MRTask<ByteHisto> {
     public int[] _x;
     // Count occurrences of bytes
     @Override public void map( Chunk bv ) {
@@ -82,7 +82,7 @@ public class FVecTest extends TestUtil {
     res.remove();
   }
 
-  public static class TestNewVec extends MRTask<TestNewVec> {
+  private static class TestNewVec extends MRTask<TestNewVec> {
     @Override public void map( Chunk in, NewChunk out ) {
       for( int i=0; i<in._len; i++ )
         out.append2( in.at8(i)+(in.at8(i) >= ' ' ? 1 : 0),0);
@@ -114,7 +114,7 @@ public class FVecTest extends TestUtil {
       // Add the temp to frame
       // Now total the temp col
       fr.delete();              // Remove all other columns
-      fr = new Frame(new String[]{"tmp"},new Vec[]{vz}); // Add just this one
+      fr = new Frame(Key.make(),new String[]{"tmp"},new Vec[]{vz}); // Add just this one
       sums = new Sum().doAll(fr)._sums;
       assertEquals(3949+3986,sums[0],EPSILON);
 
@@ -151,7 +151,6 @@ public class FVecTest extends TestUtil {
     File file = find_test_file("./smalldata/junit/40k_categoricals.csv.gz");
     NFSFileVec nfs = NFSFileVec.make(file);
     Frame fr = null;
-    Vec vz = null;
     try {
       fr = ParseDataset2.parse(Key.make("cat.hex"),nfs._key);
       assertEquals(fr.numRows(),40000); // Count of rows
@@ -159,7 +158,6 @@ public class FVecTest extends TestUtil {
 
     } finally {
       nfs.remove();
-      if( vz != null ) vz.remove();
       if( fr != null ) fr.delete();
     }
   }

@@ -107,6 +107,7 @@ public class Frame extends Lockable {
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
+    super.remove(fs);
     return fs;
   }
   @Override public String errStr() { return "Dataset"; }

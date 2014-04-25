@@ -87,10 +87,9 @@ public class Job<T extends Keyed> extends Keyed {
    */
   protected T get() {
     _fjtask.join();             // Block until top-level job is done
-    //T ans = (T) DKV.get(destination_key).get();
-    //remove();                   // Remove self-job
-    //return ans;
-    throw H2O.unimpl();
+    T ans = (T) DKV.get(_dest).get();
+    remove();                   // Remove self-job
+    return ans;
   }
 
   /** Signal cancellation of this job.

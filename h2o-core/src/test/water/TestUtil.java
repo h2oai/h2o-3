@@ -25,7 +25,7 @@ public class TestUtil {
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups
-        if( value.isVecGroup() ) leaked_keys--;
+        if( value.isVecGroup() || k == Job.LIST ) leaked_keys--;
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }

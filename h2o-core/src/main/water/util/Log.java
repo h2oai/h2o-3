@@ -49,6 +49,8 @@ abstract public class Log {
   public static void warn ( Object... objs ) { write(WARN ,objs); }
   public static void err  ( Object... objs ) { write(ERRR ,objs); }
 
+  public static void info_no_stdout( String s ) { write0(INFO,s,false); }
+
   public static RuntimeException throwErr( Throwable e ) {
     err(e);                     // Log it
     throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e); // Throw it
@@ -68,12 +70,12 @@ abstract public class Log {
       String host = H2O.SELF_ADDRESS.getHostAddress();
       _preHeader = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
       ArrayList<String> bufmsgs = INIT_MSGS;  INIT_MSGS = null;
-      for( String s : bufmsgs ) write0(INFO,s);
+      for( String s : bufmsgs ) write0(INFO,s,true);
     }
-    write0(lvl,res);
+    write0(lvl,res, true);
   }
 
-  private static void write0( int lvl, String s ) {
+  private static void write0( int lvl, String s, boolean stdout ) {
     StringBuilder sb = new StringBuilder();
     String hdr = header(lvl);   // Common header for all lines
     write0(sb,hdr,s);
@@ -81,7 +83,7 @@ abstract public class Log {
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
 
-    System.out.println(sb);
+    if( stdout ) System.out.println(sb);
   }
 
   private static void write0( StringBuilder sb, String hdr, String s ) {

@@ -43,7 +43,7 @@ import water.util.PrettyPrint;
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+0/*4Meg*/;
+  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
    * increases fine-grained parallelism. */
   public static final int CHUNK_SZ = 1 << LOG_CHK;
@@ -83,28 +83,24 @@ public class Vec extends Keyed {
    *  initialized to a constant. */
   private Vec makeCon( final long l ) { return makeCon(l, null); }
   private Vec makeCon( final long l, String[] domain ) {
-    Futures fs = new Futures();
     if( _espc == null ) throw H2O.unimpl(); // need to make espc for e.g. NFSFileVecs!
     final int nchunks = nChunks();
-    throw H2O.unimpl();
-    //final Vec v0 = new Vec(group().addVecs(1)[0],_espc, domain);
-    //new DRemoteTask(){
-    //  @Override private void lcompute(){
-    //    long row=0;                 // Start row
-    //    Key k;
-    //    for( int i=0; i<nchunks; i++ ) {
-    //      long nrow = chunk2StartElem(i+1); // Next row
-    //      if((k = v0.chunkKey(i)).home())
-    //        DKV.put(k,new C0LChunk(l,(int)(nrow-row)),_fs);
-    //      row = nrow;
-    //    }
-    //    tryComplete();
-    //  }
-    //  @Override private void reduce(DRemoteTask drt){}
-    //}.invokeOnAllNodes();
-    //DKV.put(v0._key,v0,fs);
-    //fs.blockForPending();
-    //return v0;
+    final Vec v0 = new Vec(group().addVec(), _espc, domain);
+    new MRTask() {
+      @Override protected void setupLocal() {
+        long row=0;             // Start row
+        Key k;
+        for( int i=0; i<nchunks; i++ ) {
+          long nrow = chunk2StartElem(i+1); // Next row
+          if( (k = v0.chunkKey(i)).home() )
+            DKV.put(k,new C0LChunk(l,(int)(nrow-row)),_fs);
+          row = nrow;
+        }
+        tryComplete();
+      }
+    }.doAll(v0._key);
+    DKV.put(v0._key,v0);
+    return v0;
   }
   private Vec makeCon( final double d ) {
     Futures fs = new Futures();
@@ -187,7 +183,7 @@ public class Vec extends Keyed {
 
   /** Is the column constant.
    * <p>Returns true if the column contains only constant values and it is not full of NAs.</p> */
-  private final boolean isConst() { return min() == max(); }
+  public final boolean isConst() { return min() == max(); }
   /** Is the column bad.
    * <p>Returns true if the column is full of NAs.</p>
    */
@@ -211,15 +207,15 @@ public class Vec extends Keyed {
 
   /** RollupStats: min/max/mean of this Vec lazily computed.  */
   /** Return column min - lazily computed as needed. */
-  double min()  { return rollupStats()._min; }
+  public double min()  { return rollupStats()._min; }
   /** Return column max - lazily computed as needed. */
-  double max()  { return rollupStats()._max; }
+  public double max()  { return rollupStats()._max; }
   /** Return column mean - lazily computed as needed. */
   double mean() { return rollupStats()._mean; }
   /** Return column standard deviation - lazily computed as needed. */
   double sigma(){ return rollupStats()._sigma; }
   /** Return column missing-element-count - lazily computed as needed. */
-  long  naCnt() { return rollupStats()._naCnt; }
+  public long  naCnt() { return rollupStats()._naCnt; }
   /** Is all integers? */
   boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
@@ -250,15 +246,12 @@ public class Vec extends Keyed {
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
   public void postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
+    final Key rskey = rollupStatsKey();
     Value val = DKV.get(rollupStatsKey());
     if( val != null ) {
       RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() ) { // Vector was mutating, is now allowed for rollups
-        //fs.add(new TAtomic<Vec>() {      // Start an atomic remote unlock
-        //    @Override protected Vec atomic(Vec v) { if( v!=null && v._rollups._naCnt==-2 ) v._rollups=null; return v; }
-        //  }.fork(_key));
-        throw H2O.unimpl();
-      }
+      if( rs.isMutating() )  // Vector was mutating, is now allowed for rollups
+        DKV.remove(rskey,fs);// Removing will cause them to be rebuilt, on demand
     }
   }
 
@@ -288,7 +281,7 @@ public class Vec extends Keyed {
   private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Get a Vec Key from Chunk Key, without loading the Chunk */
-  static Key getVecKey( Key key ) {
+  public static Key getVecKey( Key key ) {
     assert key._kb[0]==Key.DVEC;
     byte [] bits = key._kb.clone();
     bits[0] = Key.VEC;
@@ -415,8 +408,8 @@ public class Vec extends Keyed {
 
   /** Pretty print the Vec: [#elems, min/mean/max]{chunks,...} */
   @Override public String toString() {
-    RollupStats rs = rollupStats();
-    String s = "["+length()+(rs._naCnt<0 ? ", {" : ","+rs._min+"/"+rs._mean+"/"+rs._max+", "+PrettyPrint.bytes(rs._size)+", {");
+    RollupStats rs = RollupStats.getOrNull(this);
+    String s = "["+length()+(rs == null ? ", {" : ","+rs._min+"/"+rs._mean+"/"+rs._max+", "+PrettyPrint.bytes(rs._size)+", {");
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {
       s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
@@ -429,10 +422,10 @@ public class Vec extends Keyed {
 
   // Remove associated Keys when this guy removes
   @Override public Futures remove( Futures fs ) {
-    super.remove(fs);
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
     DKV.remove(rollupStatsKey(),fs);
+    super.remove(fs);
     return fs;
   }
 

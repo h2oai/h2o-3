@@ -39,7 +39,7 @@ public abstract class DKV {
   }
 
   // Remove this Key, blocking by default
-  static public Value remove( Key key ) { return put(key,(Value)null); }
+  static public Value remove( Key key ) { return put(key,null); }
   static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) { return DputIfMatch(key, val, old, fs, false);  }

@@ -116,6 +116,15 @@ class RollupStats extends DTask<RollupStats> {
     }
   }
 
+  // Fetch if present, but do not compute
+  static RollupStats getOrNull(Vec vec) {
+    final Key rskey = vec.rollupStatsKey();
+    Value val = DKV.get(rskey);
+    if( val == null ) return null;
+    RollupStats rs = val.get(RollupStats.class);
+    return rs.isReady() ? rs : null;
+  }
+
   @Override protected void compute2() {
     assert _rskey.home();  // Only runs on Home node
     assert isComputing();

@@ -652,7 +652,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) put(fs[i]);
     return this;
   }
-  AutoBuffer putAA(Iced[][] fs) {
+  public AutoBuffer putAA(Iced[][] fs) {
     _arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -694,7 +694,7 @@ public final class AutoBuffer {
     for( int i = x; i < x+y; ++i ) ts[i] = get();
     return ts;
   }
-  <T extends Iced> T[][] getAA(Class<T> tc) {
+  public <T extends Iced> T[][] getAA(Class<T> tc) {
     _arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -741,7 +741,7 @@ public final class AutoBuffer {
     return ts;
   }
 
-  AutoBuffer putAAStr(String[][] fs)    {
+  public AutoBuffer putAAStr(String[][] fs)    {
     _arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -750,7 +750,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putAStr(fs[i]);
     return this;
   }
-  String[][] getAAStr() {
+  public String[][] getAAStr() {
     _arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -998,7 +998,7 @@ public final class AutoBuffer {
     return ary;
   }
 
-  String getStr( ) {
+  public String getStr( ) {
     int len = getInt();
     return len == -1 ? null : new String(getA1(len));
   }
@@ -1106,7 +1106,7 @@ public final class AutoBuffer {
     }
     return this;
   }
-  AutoBuffer putA8d( double[] ary ) {
+  public AutoBuffer putA8d( double[] ary ) {
     _arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
@@ -1195,7 +1195,7 @@ public final class AutoBuffer {
     return this;
   }
   // Put a String as bytes (not chars!)
-  AutoBuffer putStr( String s ) {
+  public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
     // Use the explicit getBytes instead of the default no-arg one, to avoid
     // the overhead of going in an out of a charset decoder.
@@ -1204,7 +1204,7 @@ public final class AutoBuffer {
     return putA1(buf);
   }
 
-  AutoBuffer putEnum( Enum x ) {
+  public AutoBuffer putEnum( Enum x ) {
     return put1(x==null ? -1 : x.ordinal());
   }
 
