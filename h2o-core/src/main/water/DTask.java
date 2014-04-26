@@ -14,7 +14,7 @@ import water.nbhm.UtilUnsafe;
  * <ol>
  * <li>On the local vm, this task will be serialized and sent to a remote.</li>
  * <li>On the remote, the task will be deserialized.</li>
- * <li>On the remote, the {@link #invoke(H2ONode)} method will be executed.</li>
+ * <li>On the remote, the {@link #dinvoke(H2ONode)} method will be executed.</li>
  * <li>On the remote, the task will be serialized and sent to the local vm</li>
  * <li>On the local vm, the task will be deserialized
  * <em>into the original instance</em></li>
@@ -28,7 +28,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   public DTask(H2OCountedCompleter completer){super(completer);}
 
   // Return a distributed-exception
-  private DException _ex;
+  protected DException _ex;
   public final boolean hasException() { return _ex != null; }
   public void setException(Throwable ex) { _ex = new DException(ex); }
   public DistributedException getDException() { return _ex==null ? null : _ex.toEx(); }

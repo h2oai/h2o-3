@@ -47,9 +47,9 @@ public class MRThrow extends TestUtil {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
         ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
         try {
-          bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
+          bh.doAll(nfs); // invoke should throw DistributedException wrapped up in RunTimeException
           fail("should've thrown");
-        } catch(ExecutionException e) {
+        } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));
         } catch(Throwable ex) {
           ex.printStackTrace();
@@ -79,9 +79,9 @@ public class MRThrow extends TestUtil {
           });
           bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
           assertTrue(ok[0]);
-        } catch(ExecutionException eex) {
-          assertTrue(eex.getCause().getMessage().contains("test"));
-        } catch(Throwable ex){
+        } catch( DException.DistributedException e ) {
+          assertTrue(e.getMessage().contains("test"));
+        } catch(Throwable ex) {
           ex.printStackTrace();
           fail("Unexpected exception" + ex.toString());
         }

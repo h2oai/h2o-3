@@ -6,7 +6,7 @@ import org.junit.*;
 
 public class AtomicTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   public Key makeKey(String n, boolean remote) {
     if(!remote) return Key.make(n);

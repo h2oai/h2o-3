@@ -46,11 +46,12 @@ classes: $(classes)
 
 
 JVM = java -ea -cp "build/classes;$(jars)" 
-JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest
+#JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest
+JUNIT_TESTS = water.fvec.FVecTest
 
 check: $(classes)
 # Run 3 JVMs and check the basic tests work
-	-$(JVM) water.H2O & $(JVM) water.H2O & $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) water.Shutdown
+	-$(JVM) water.H2O & $(JVM) water.H2O & $(JVM) water.H2O & $(JVM) water.H2O & $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS)
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/%java

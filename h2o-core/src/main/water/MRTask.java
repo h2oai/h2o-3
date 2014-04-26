@@ -251,7 +251,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Block for & get any final results from a dfork'd MRTask.
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
+    try { ForkJoinPool.managedBlock(this); }
+    catch( InterruptedException ignore ) { }
+    catch( RuntimeException re ) { if( !hasException() ) setException(re);  }
+    DException.DistributedException de = getDException();
+    if( de != null ) throw de;
     return self();
   }
 
@@ -269,7 +273,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Called internal by D/F/J.  Not expected to be user-called.  */
   @Override public final void dinvoke(H2ONode sender) {
     setupLocal0();              // Local setup
-    compute2();                 // Do The Main Work
+    try {
+      compute2();               // Do The Main Work
+    } catch( Throwable ex ) { setException(ex); throw ex; }
     // nothing here... must do any post-work-cleanup in onCompletion
   }
 
@@ -279,9 +285,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
-    // Block For All
-    try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
-    return self();
+    return getResult();         // Block For All
   }
 
   // Setup for local work: fire off any global work to cloud neighbors; do all
@@ -491,6 +495,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( _noutputs > 0 )
       for( int i=0; i<_appendables.length; i++ )
         _appendables[i].reduce(mrt._appendables[i]);
+    if( _ex == null ) _ex = mrt._ex;
     // User's reduction
     reduce(mrt);
   }
@@ -498,7 +503,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Cancel/kill all work as we can, then rethrow... do not invisibly swallow
    *  exceptions (which is the F/J default).  Called internal by F/J.  Not
    *  expected to be user-called.  */
-  @Override public final boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller ) {
+  @Override public final boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
+    if( !hasException() ) setException(ex);
     if( _nleft != null ) _nleft.cancel(true); _nleft = null;
     if( _nrite != null ) _nrite.cancel(true); _nrite = null;
     _left = null;

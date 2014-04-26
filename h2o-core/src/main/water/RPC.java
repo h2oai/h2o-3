@@ -127,11 +127,11 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     }
 
     // Keep a global record, for awhile
-    _target.taskPut(_tasknum,this);
+    if( _target != null ) _target.taskPut(_tasknum,this);
     try {
       // We could be racing timeouts-vs-replies.  Blow off timeout if we have an answer.
       if( isDone() ) {
-        _target.taskRemove(_tasknum);
+        if( _target != null ) _target.taskRemove(_tasknum);
         return this;
       }
       // Default strategy: (re)fire the packet and (re)start the timeout.  We
