@@ -96,7 +96,6 @@ public class Vec extends Keyed {
             DKV.put(k,new C0LChunk(l,(int)(nrow-row)),_fs);
           row = nrow;
         }
-        tryComplete();
       }
     }.doAll(v0._key);
     DKV.put(v0._key,v0);

@@ -145,10 +145,11 @@ final public class H2O {
       assert  priority() == pp; // Job went to the correct queue?
       assert t._priority <= pp; // Thread attempting the job is only a low-priority?
       // Drain the high priority queues before the normal F/J queue
+      H2OCountedCompleter h2o = null;
       try {
         for( int p = MAX_PRIORITY; p > pp; p-- ) {
           if( FJPS[p] == null ) break;
-          H2OCountedCompleter h2o = FJPS[p].poll();
+          h2o = FJPS[p].poll();
           if( h2o != null ) {     // Got a hi-priority job?
             t._priority = p;      // Set & do it now!
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
@@ -156,6 +157,12 @@ final public class H2O {
             p++;                  // Check again the same queue
           }
         }
+      } catch( Throwable ex ) {
+        // If the higher priority job popped an exception, complete it
+        // exceptionally...  but then carry on and do the lower priority job.
+        System.out.println("NESTed ex throw -1");
+        h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        System.out.println("NESTed ex throw -2"+ex);
       } finally {
         t._priority = pp;
         if( pp == MIN_PRIORITY ) Thread.currentThread().setPriority(Thread.NORM_PRIORITY-1);
@@ -165,7 +172,7 @@ final public class H2O {
     }
     // Do the actually intended work
     protected abstract void compute2();
-    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
+    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
         ex.printStackTrace();
       return true;

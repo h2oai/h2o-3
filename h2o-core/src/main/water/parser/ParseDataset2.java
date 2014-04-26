@@ -401,7 +401,7 @@ public class ParseDataset2 extends Job<Frame> {
       //      chunksAreLocal(vec,chunkStartIdx);
             throw H2O.unimpl();
           }
-          //break;
+          break;
         case ZIP: {
           // Zipped file; no parallel decompression;
           FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
