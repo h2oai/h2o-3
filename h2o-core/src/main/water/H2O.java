@@ -168,7 +168,9 @@ final public class H2O {
         if( pp == MIN_PRIORITY ) Thread.currentThread().setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
+      try {
       compute2();
+      } catch( Throwable ex ) { System.out.println("SILENT? "+ex); throw ex; }
     }
     // Do the actually intended work
     protected abstract void compute2();
