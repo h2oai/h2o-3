@@ -8,7 +8,7 @@ import water.*;
  */
 public class C1NChunk extends Chunk {
   static final int OFF=0;
-  C1NChunk(byte[] bs) { _mem=bs; _start = -1; _len = _mem.length; }
+  public C1NChunk(byte[] bs) { _mem=bs; _start = -1; _len = _mem.length; }
   @Override protected final long   at8_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final double atd_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final boolean isNA_impl( int i ) { return false; }

@@ -27,7 +27,7 @@ public class ParseDataset2 extends Job<Frame> {
     Key k = keys[0];
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParserSetup globalSetup = ParserSetup.guessSetup(bits, checkHeader);
-    if( globalSetup._ncols == 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
+    if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
     return forkParseDataset(okey, keys, globalSetup, delete_on_done).get();
   }
 
@@ -381,7 +381,7 @@ public class ParseDataset2 extends Job<Frame> {
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
       ParserSetup localSetup = _setup.guessSetup(bits);
-      if( localSetup.hasErrors() ) return;
+      if( !_setup.isCompatible(localSetup) ) return;
 
       // Parse the file
       final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];

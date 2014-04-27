@@ -315,7 +315,7 @@ public class Vec extends Keyed {
 
 
   /** Make a new random Key that fits the requirements for a Vec key. */
-  static Key newKey(){return newKey(Key.make());}
+  public static Key newKey(){return newKey(Key.make());}
 
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
@@ -377,12 +377,12 @@ public class Vec extends Keyed {
   }
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. */
-  final long  at8( long i ) { return chunkForRow(i).at8(i); }
+  public final long  at8( long i ) { return chunkForRow(i).at8(i); }
   /** Fetch element the slow way, as a double.  Missing values are
    *  returned as Double.NaN instead of throwing. */
-  final double at( long i ) { return chunkForRow(i).at(i); }
+  public final double at( long i ) { return chunkForRow(i).at(i); }
   /** Fetch the missing-status the slow way. */
-  final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
+  public final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
 
 
   /** Write element the slow way, as a long.  There is no way to write a

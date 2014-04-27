@@ -45,6 +45,10 @@ class ParserSetup extends Iced {
   // Got parse errors?
   final boolean hasErrors() { return _errors != null && _errors.length > 0; }
   final boolean hasHeaders() { return _columnNames != null; }
+  boolean isCompatible( ParserSetup p ) {
+    if( _pType != p._pType ) return false;
+    return _pType != ParserType.CSV || (p._sep == _sep && p._ncols == _ncols);
+  }
 
   Parser parser() {
     switch( _pType ) {
@@ -264,21 +268,17 @@ class ParserSetup extends Iced {
     final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
     final String[][] data = new String[nlines][];
     if( nlines == 1 ) {       // Ummm??? Only 1 line?
-    //  if( sep == AUTO_SEP ) {
-    //    if(lines.get(0).split(",").length > 2)
-    //      sep = (byte)',';
-    //    else if(lines.get(0).split(" ").length > 2)
-    //      sep = ' ';
-    //    else {
-    //      data[0] = new String[]{lines.get(0)};
-    //      return new PSetupGuess(new ParserSetup(ParserType.CSV,CsvParser.AUTO_SEP,1,false,null,setup._singleQuotes),lines.size(),0,data,false,new String[]{"Failed to guess separator."});
-    //    }
-    //  }
-    //  if(lines.size() == 1)
-    //    data[0] = determineTokens(lines.get(0), sep, single_quote);
-    //  ncols = (setup._ncols > 0)?setup._ncols:data[0].length;
-    //  hasHeader = (checkHeader && allStrings(data[0])) || setup._columnNames!=null; 
-      throw H2O.unimpl();
+      if( sep == AUTO_SEP ) {
+        if( lines[0].split(",").length > 2 ) sep = (byte)',';
+        else if( lines[0].split(" ").length > 2 ) sep = ' ';
+        else 
+          return new ParserSetup(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null);
+      }
+      data[0] = determineTokens(lines[0], sep, single_quote);
+      ncols = (ncols > 0) ? ncols : data[0].length;
+      if( checkHeader == 0 ) labels =  allStrings(data[0]) ? data[0] : null;
+      else if( checkHeader == 1 ) labels = data[0];
+      else labels = null;
     } else {                    // 2 or more lines
 
       // First guess the field separator by counting occurrences in first few lines
