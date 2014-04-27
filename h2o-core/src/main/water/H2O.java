@@ -78,12 +78,13 @@ final public class H2O {
     int _priority;
     FJWThr(ForkJoinPool pool) {
       super(pool);
-      setPriority( ((ForkJoinPool2)pool)._priority == Thread.MIN_PRIORITY
+      _priority = ((ForkJoinPool2)pool)._priority;
+      setPriority( _priority == Thread.MIN_PRIORITY
                    ? Thread.NORM_PRIORITY-1
                    : Thread. MAX_PRIORITY-1 );
+      setName("FJ-"+_priority+"-"+getPoolIndex());
     }
   }
-
   // Factory for F/J threads, with cap's that vary with priority.
   static class FJWThrFact implements ForkJoinPool.ForkJoinWorkerThreadFactory {
     private final int _cap;
@@ -97,8 +98,8 @@ final public class H2O {
   // A standard FJ Pool, with an expected priority level.
   private static class ForkJoinPool2 extends ForkJoinPool {
     final int _priority;
-    ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p<MIN_HI_PRIORITY); _priority = p; }
-    H2OCountedCompleter poll() { return (H2OCountedCompleter)pollSubmission(); }
+    private ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p<MIN_HI_PRIORITY); _priority = p; }
+    private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
   }
 
   // Hi-priority work, sorted into individual queues per-priority.
@@ -121,7 +122,7 @@ final public class H2O {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
-      synchronized( H2O.class ) { FJPS[priority] = new ForkJoinPool2(priority,-1); }
+      synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new ForkJoinPool2(priority,-1); }
     FJPS[priority].submit(task);
     return task;
   }
@@ -139,17 +140,17 @@ final public class H2O {
 
     // Once per F/J task, drain the high priority queue before doing any low
     // priority work.
-    @Override final public void compute() {
+    @Override public final void compute() {
       FJWThr t = (FJWThr)Thread.currentThread();
       int pp = ((ForkJoinPool2)t.getPool())._priority;
-      assert  priority() == pp; // Job went to the correct queue?
-      assert t._priority <= pp; // Thread attempting the job is only a low-priority?
       // Drain the high priority queues before the normal F/J queue
       H2OCountedCompleter h2o = null;
       try {
+        assert  priority() == pp; // Job went to the correct queue?
+        assert t._priority <= pp; // Thread attempting the job is only a low-priority?
         for( int p = MAX_PRIORITY; p > pp; p-- ) {
-          if( FJPS[p] == null ) break;
-          h2o = FJPS[p].poll();
+          if( FJPS[p] == null ) continue;
+          h2o = FJPS[p].poll2();
           if( h2o != null ) {     // Got a hi-priority job?
             t._priority = p;      // Set & do it now!
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
@@ -160,17 +161,13 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        System.out.println("NESTed ex throw -1");
         h2o.onExceptionalCompletion(ex, h2o.getCompleter());
-        System.out.println("NESTed ex throw -2"+ex);
       } finally {
         t._priority = pp;
         if( pp == MIN_PRIORITY ) Thread.currentThread().setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
-      try {
       compute2();
-      } catch( Throwable ex ) { System.out.println("SILENT? "+ex); throw ex; }
     }
     // Do the actually intended work
     protected abstract void compute2();
@@ -183,7 +180,7 @@ final public class H2O {
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
     protected byte priority() { return MIN_PRIORITY; }
-    @Override final public T clone(){
+    @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }

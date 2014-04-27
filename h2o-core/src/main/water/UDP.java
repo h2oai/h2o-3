@@ -39,8 +39,6 @@ public abstract class UDP {
     final boolean _paxos;     // Ignore (or not) packets from outside the Cloud
     udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
     static udp[] UDPS = values();
-    // Default: most tasks go to the hi-priority queue
-    //ForkJoinPool pool() { return this==execlo ? H2O.FJP_NORM : H2O.FJP_HI; }
   };
 
   // Handle an incoming I/O transaction, probably from a UDP packet.  The

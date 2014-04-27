@@ -46,8 +46,7 @@ classes: $(classes)
 
 
 JVM = java -ea -cp "build/classes;$(jars)" 
-#JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest
-JUNIT_TESTS = water.fvec.FVecTest
+JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest water.parser.DatasetCornerCasesTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)

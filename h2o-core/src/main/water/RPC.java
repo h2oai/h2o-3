@@ -178,10 +178,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       _retry += (_retry < 5000 ) ? _retry : 5000;
       // Put self on the "TBD" list of tasks awaiting Timeout.
       // So: dont really 'forget' but remember me in a little bit.
-//      assert !UDPTimeOutThread.PENDING.contains(this);
       UDPTimeOutThread.PENDING.add(this);
       return this;
-    } catch(Error t) {
+    } catch( Throwable t ) {
       throw Log.throwErr(t);
     }
   }
@@ -404,7 +403,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           Log.debug("Start remote task#"+task+" "+rpc._dt.getClass()+" from "+ab._h2o);
         H2O.submitTask(rpc);    // And execute!
       } else {                  // Else lost the task-insertion race
-        assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi);      // All the resends should be UDP only
+        assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
         // DROP PACKET
       }
 
@@ -412,7 +411,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // This packet has not been fully computed.  Hence it's still a work-in-
       // progress locally.  We have no answer to reply but we do not want to
       // re-offer the packet for repeated work.  Just ignore the packet.
-      assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi);      // All the resends should be UDP only
+      assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
       // DROP PACKET
     } else {
       // This is an old re-send of the same thing we've answered to before.

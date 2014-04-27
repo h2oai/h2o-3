@@ -27,7 +27,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Might be a primitive array type, or a Iced POJO
   private short _type;
   int type() { return _type; }
-  private String className() { return TypeMap.className(_type); }
+  String className() { return TypeMap.className(_type); }
 
   // Max size of Values before we start asserting.
   // Sizes around this big, or larger are probably true errors.

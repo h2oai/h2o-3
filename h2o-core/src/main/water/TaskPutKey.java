@@ -17,7 +17,7 @@ public class TaskPutKey extends DTask<TaskPutKey> {
   transient Key _xkey;
 
   static void put( H2ONode h2o, Key key, Value val, Futures fs, boolean dontCache) {
-    Future f = RPC.call(h2o,new TaskPutKey(key,val,dontCache));
+    RPC f = RPC.call(h2o,new TaskPutKey(key,val,dontCache));
     if( fs != null ) fs.add(f);
   }
 
@@ -42,7 +42,7 @@ public class TaskPutKey extends DTask<TaskPutKey> {
     _val = null;
     tryComplete();
   }
-  @Override public void compute2() { throw H2O.unimpl(); }
+  @Override public void compute2() { throw H2O.fail(); }
 
   // Received an ACK
   @Override public void onAck() {
