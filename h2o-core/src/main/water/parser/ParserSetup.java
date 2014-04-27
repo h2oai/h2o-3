@@ -26,11 +26,6 @@ class ParserSetup extends Iced {
           final String[] _columnNames;
   private       String[][] _data;   // Preview data; a few lines and columns of varying length
 
-  // The unspecified ParserSetup
-  protected ParserSetup(ParserType t) {
-    this(true,0,null,t,AUTO_SEP,0,false,null);
-  }
-
   private ParserSetup( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
     _isValid = isValid;
     _invalidLines = invalidLines;
@@ -93,8 +88,7 @@ class ParserSetup extends Iced {
     int[] result = new int[separators.length];
     byte[] bits = from.getBytes();
     boolean in_quote = false;
-    for( int j=0; j< bits.length; j++ ) {
-      byte c = bits[j];
+    for( byte c : bits ) {
       if( (c == single_quote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
         in_quote ^= true;
       if( !in_quote || c == HIVE_SEP )
@@ -109,7 +103,7 @@ class ParserSetup extends Iced {
    *  in an array.  Assumes the given separator.
    */
   private static String[] determineTokens(String from, byte separator, int single_quote) {
-    ArrayList<String> tokens = new ArrayList();
+    ArrayList<String> tokens = new ArrayList<>();
     byte[] bits = from.getBytes();
     int offset = 0;
     int quotes = 0;

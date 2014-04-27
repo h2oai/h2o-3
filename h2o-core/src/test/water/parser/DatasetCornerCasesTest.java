@@ -15,19 +15,6 @@ public class DatasetCornerCasesTest extends TestUtil {
    */
   @Test public void testTwoLineDataset() throws Exception {
     testOneLineDataset("./smalldata/junit/two-lines-dataset.csv");
-    //File file = find_test_file("./smalldata/junit/two-lines-dataset.csv");
-    //NFSFileVec nfs = NFSFileVec.make(file); // Will be deleted as a side-effect of parsing
-    //Frame fr = null;
-    //try {
-    //  fr = ParseDataset2.parse(Key.make("air.hex"), nfs._key);
-    //  // Check parsed dataset
-    //  assertEquals("Number of chunks == 1", 1, fr.anyVec().nChunks());
-    //  assertEquals("Number of rows   == 2", 2, fr.numRows());
-    //  assertEquals("Number of cols   == 9", 9, fr.numCols());
-    //} finally {
-    //  nfs.remove();
-    //  if( fr != null ) fr.delete();
-    //}
   }
 
   /* The following tests deal with one line dataset ended by different number of newlines. */
@@ -49,8 +36,8 @@ public class DatasetCornerCasesTest extends TestUtil {
     final String test_dir    = "smalldata/junit/";
     final String test_prefix = "one-line-dataset-";
 
-    for (int i = 0; i < tests.length; i++) {
-      String datasetFilename = test_dir + test_prefix + tests[i] + ".csv";
+    for( String test : tests ) {
+      String datasetFilename = test_dir + test_prefix + test + ".csv";
       testOneLineDataset(datasetFilename);
     }
   }

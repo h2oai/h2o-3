@@ -274,7 +274,7 @@ public class Vec extends Keyed {
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
    *  table lookup. */
-  protected long chunk2StartElem( int cidx ) { return _espc[cidx]; }
+  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
   private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }

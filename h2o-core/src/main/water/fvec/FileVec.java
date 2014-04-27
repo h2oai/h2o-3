@@ -55,16 +55,16 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk-index into a starting row #. Constant sized chunks
   // (except for the last, which might be a little larger), and size-1 rows so
   // this is a little shift-n-add math.
-  @Override public long chunk2StartElem( int cidx ) { return (long)cidx <<LOG_CHK; }
+  @Override long chunk2StartElem( int cidx ) { return (long)cidx <<LOG_CHK; }
   // Convert a chunk-key to a file offset. Size 1 rows, so this is a direct conversion.
   static public long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)<<LOG_CHK; }
   // Reverse: convert a chunk-key into a cidx
-  static public int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.DVEC; return UDP.get4(ckey._kb,1+1+4); }
+  static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.DVEC; return UDP.get4(ckey._kb,1+1+4); }
 
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
   // Touching the DVec will force the file load.
-  @Override public Value chunkIdx( int cidx ) {
+  @Override protected Value chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;
     Key dkey = chunkKey(cidx);
@@ -75,8 +75,14 @@ public abstract class FileVec extends ByteVec {
     // DVec is just the raw file data with a null-compression scheme
     Value val2 = new Value(dkey,len,null,TypeMap.C1NCHUNK,_be);
     val2.setdsk(); // It is already on disk.
+    // If not-home, then block till the Key is everywhere.  Most calls here are
+    // from the parser loading a text file, and the parser splits the work such
+    // that most puts here are on home - so this is a simple speed optimization: 
+    // do not make a Futures nor block on it on home.
+    Futures fs = dkey.home() ? null : new Futures();
     // Atomically insert: fails on a race, but then return the old version
-    Value val3 = DKV.DputIfMatch(dkey,val2,null,null);
+    Value val3 = DKV.DputIfMatch(dkey,val2,null,fs);
+    if( !dkey.home() ) fs.blockForPending();
     return val3 == null ? val2 : val3;
   }
 }

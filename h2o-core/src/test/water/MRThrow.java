@@ -77,7 +77,7 @@ public class MRThrow extends TestUtil {
               return true;
             }
           });
-          bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
+          bh.dfork(nfs).getResult(); // invoke should throw DistributedException wrapped up in RunTimeException
           assertTrue(ok[0]);
         } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));

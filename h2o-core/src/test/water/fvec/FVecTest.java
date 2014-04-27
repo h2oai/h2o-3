@@ -11,7 +11,7 @@ import water.util.ArrayUtils;
 
 public class FVecTest extends TestUtil {
   static final double EPSILON = 1e-6;
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   // ==========================================================================
   @Test public void testBasicCRUD() {

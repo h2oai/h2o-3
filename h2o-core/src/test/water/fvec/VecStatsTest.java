@@ -3,6 +3,7 @@ package water.fvec;
 import static org.junit.Assert.assertEquals;
 import java.util.Random;
 import org.junit.Test;
+import water.Futures;
 import water.TestUtil;
 import water.Key;
 
@@ -10,6 +11,7 @@ public class VecStatsTest extends TestUtil {
   @Test public void test() {
     Frame frame = null;
     try {
+    Futures fs = new Futures();
     Random random = new Random();
     Vec[] vecs = new Vec[1];
     AppendableVec vec = new AppendableVec(Vec.newKey());
@@ -17,9 +19,9 @@ public class VecStatsTest extends TestUtil {
       NewChunk chunk = new NewChunk(vec, i);
       for( int r = 0; r < 1000; r++ )
         chunk.addNum(random.nextInt(1000));
-      chunk.close(i, null);
+      chunk.close(i, fs);
     }
-    vecs[0] = vec.close(null);
+    vecs[0] = vec.close(fs);
     frame = new Frame(Key.make(), null, vecs);
 
     // Make sure we test the multi-chunk case
@@ -48,6 +50,7 @@ public class VecStatsTest extends TestUtil {
     assertEquals(min, v.min(), epsilon);
     assertEquals(mean, v.mean(), epsilon);
     assertEquals(sigma, v.sigma(), epsilon);
+    fs.blockForPending();
     } finally {
       if( frame != null ) frame.delete();
     }

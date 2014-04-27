@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
  * Created by tomasnykodym on 3/28/14.
  */
 public class SparseTest extends TestUtil {
-  protected Chunk makeChunk(double [] vals){
+  private Chunk makeChunk(double [] vals, Futures fs) {
     int nzs = 0;
     int [] nonzeros = new int[vals.length];
     int j = 0;
@@ -26,24 +26,23 @@ public class SparseTest extends TestUtil {
       else if((long)d == d) nv.addNum((long)d,0);
       else nv.addNum(d);
     }
-    nv.close(0,null);
-    Vec vec = av.close(new Futures());
+    nv.close(0,fs);
+    Vec vec = av.close(fs);
     return vec.chunkForChunkIdx(0);
   }
 
-  protected Chunk setAndClose(double val, int id, Chunk c){return setAndClose(new double[]{val},new int[]{id},c);}
-  protected Chunk setAndClose(double [] vals, int [] ids, Chunk c){
+  private Chunk setAndClose(double val, int id, Chunk c, Futures fs){return setAndClose(new double[]{val},new int[]{id},c,fs);}
+  private Chunk setAndClose(double [] vals, int [] ids, Chunk c, Futures fs) {
     final int cidx = c.cidx();
     final Vec vec = c._vec;
     for(int i = 0; i < vals.length; ++i)
       c.set0(ids[i],vals[i]);
-    Futures fs = new Futures();
     c.close(cidx,fs);
     return vec.chunkForChunkIdx(cidx);
   }
 
-  public void runTest(double [] vs, double v1, double v2, Class class0, Class class1, Class class2) {
-    int nzeros = 3;
+  private void runTest(double [] vs, double v1, double v2, Class class0, Class class1, Class class2) {
+    Futures fs = new Futures();
     int length = 4*NewChunk.MIN_SPARSE_RATIO + 1;
     double [] vals = new double[length];
     int [] nzs = new int[]{length/4,length/2,(3*length)/4};
@@ -51,7 +50,7 @@ public class SparseTest extends TestUtil {
     vals[nzs[0]] = vs[0];
     vals[nzs[1]] = vs[1];
     vals[nzs[2]] = vs[2];
-    Chunk c0 = makeChunk(vals);
+    Chunk c0 = makeChunk(vals,fs);
     assertTrue(class0.isAssignableFrom(c0.getClass()));
     try{
       assertTrue(class0.isAssignableFrom(c0.getClass()));
@@ -76,13 +75,13 @@ public class SparseTest extends TestUtil {
         assertEquals(Double.isNaN(vals[nz]), v.isNA());
         assertTrue(Double.isNaN(vals[nz]) || vals[nz] == v.asDouble());
       }
-      Chunk c1 = setAndClose(vals[length-1] = v1,length-1,c0);
+      Chunk c1 = setAndClose(vals[length-1] = v1,length-1,c0,fs);
       assertTrue(class1.isAssignableFrom(c1.getClass()));
       // test sparse set
       assertEquals(4,c1.sparseLen());
       assertEquals(Double.isNaN(v1),c1.isNA0(length-1));
       assertTrue(Double.isNaN(v1) || v1 == c1.at0(length-1));
-      Chunk c2 = setAndClose(vals[0] = v2,0,c1);
+      Chunk c2 = setAndClose(vals[0] = v2,0,c1,fs);
       assertTrue(class2.isAssignableFrom(c2.getClass()));
       assertTrue(c2.nextNZ(-1) == 0);
       assertEquals(vals.length,c2.sparseLen());
@@ -91,17 +90,16 @@ public class SparseTest extends TestUtil {
         assertTrue(Double.isNaN(vals[i]) || vals[i] == c2.at0(i));
         assertTrue(c2.nextNZ(i) == i+1);
       }
+      fs.blockForPending();
     } finally {
       c0._vec.remove();
     }
   }
 
 
-  @Test
-  public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,C8DChunk.class);}
+  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,C8DChunk.class);}
 
-  @Test
-  public void testBinary() {
+  @Test public void testBinary() {
     runTest(new double [] {1,1,1},1,1,CX0Chunk.class,CX0Chunk.class,CBSChunk.class);
     runTest(new double [] {1,1,1},Double.NaN,1,CX0Chunk.class,CXIChunk.class,CBSChunk.class);
   }

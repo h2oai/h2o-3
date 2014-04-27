@@ -2,13 +2,10 @@ package water;
 
 import java.util.concurrent.Future;
 
-/**
- * Push the given key to the remote node
- *
- * @author <a href="mailto:cliffc@0xdata.com"></a>
- * @version 1.0
+/** Push the given key to the remote node
+ *  @author <a href="mailto:cliffc@0xdata.com"></a>
+ *  @version 1.0
  */
-
 public class TaskPutKey extends DTask<TaskPutKey> {
   Key _key;
   Value _val;
@@ -17,8 +14,7 @@ public class TaskPutKey extends DTask<TaskPutKey> {
   transient Key _xkey;
 
   static void put( H2ONode h2o, Key key, Value val, Futures fs, boolean dontCache) {
-    RPC f = RPC.call(h2o,new TaskPutKey(key,val,dontCache));
-    if( fs != null ) fs.add(f);
+    fs.add(RPC.call(h2o,new TaskPutKey(key,val,dontCache)));
   }
 
   protected TaskPutKey( Key key, Value val ) { this(key,val,false);}
