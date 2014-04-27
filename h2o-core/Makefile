@@ -49,9 +49,13 @@ JVM = java -ea -cp "build/classes;$(jars)"
 #JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.MRThrow water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest
 JUNIT_TESTS = water.fvec.FVecTest
 
+# Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
-# Run 3 JVMs and check the basic tests work
-	-$(JVM) water.H2O & $(JVM) water.H2O & $(JVM) water.H2O & $(JVM) water.H2O & $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS)
+	@rm -rf sandbox ; mkdir sandbox
+	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & ($(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+	@pkill java
+	@exit `cat sandbox/status.0`
+
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/%java
