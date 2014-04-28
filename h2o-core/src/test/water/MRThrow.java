@@ -16,8 +16,7 @@ public class MRThrow extends TestUtil {
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
   // Run a distributed byte histogram.  Throw an exception in *some* map call,
   // and make sure it's forwarded to the invoke.
-  //  @Test 
-    public void testInvokeThrow() {
+  @Test public void testInvokeThrow() {
     File file = find_test_file("build/h2o-core.jar");
     assertTrue( "Missing test file; do a 'make' and retest", file != null);
     // Return a Key mapping to a NFSFileVec over the file
@@ -40,8 +39,7 @@ public class MRThrow extends TestUtil {
     }
   }
 
-  //@Test 
-    public void testGetThrow() {
+  @Test public void testGetThrow() {
     File file = find_test_file("build/h2o-core.jar");
     assertTrue( "Missing test file; do a 'make' and retest", file != null);
     NFSFileVec nfs = NFSFileVec.make(file);
@@ -69,21 +67,17 @@ public class MRThrow extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(file);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
-        ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
+        final ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
         final boolean [] ok = new boolean[]{false};
         try {
-          System.out.println("MRThrow: "+bh.getCompleter());
-          //bh.setCompleter(new CountedCompleter() {
-          //    @Override public void compute() { 
-          //      System.out.println("HEY!"); 
-          //      tryComplete(); 
-          //    }
-          //  @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
-          //    ok[0] = ex.getMessage().contains("test");
-          //    return true;
-          //  }
-          //});
-          bh.dfork(nfs).getResult(); // invoke should throw DistributedException wrapped up in RunTimeException
+          bh.setCompleter(new CountedCompleter() {
+              @Override public void compute() { tryComplete(); }
+              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
+                ok[0] = ex.getMessage().contains("test");
+                return super.onExceptionalCompletion(ex,cc);
+              }
+          });
+          bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
           assertTrue(ok[0]);
         } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));
@@ -127,8 +121,8 @@ public class MRThrow extends TestUtil {
       byte[] bits = chk.getBytes(); // Raw file bytes
       for( byte b : bits )          // Compute local histogram
         _x[b&0xFF]++;
-      //if( H2O.SELF.equals(_throwAt) )
-      //  throw new RuntimeException("test");
+      if( H2O.SELF.equals(_throwAt) )
+        throw new RuntimeException("test");
     }
     // ADD together all results
     @Override public void reduce( ByteHistoThrow bh ) { water.util.ArrayUtils.add(_x,bh._x); }

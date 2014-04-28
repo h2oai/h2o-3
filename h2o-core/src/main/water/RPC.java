@@ -285,7 +285,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
     @Override protected void compute2() {
       // First set self to be completed when this subtask completer
-      System.out.println("RPCCall.compute2: "+_dt.getCompleter());
       assert _dt.getCompleter() == null;
       _dt.setCompleter(this);
       // Run the remote task on this server...
@@ -294,9 +293,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // When the task completes, ship results back to client
     @Override public void onCompletion( CountedCompleter caller ) {
       // Send results back
-      DTask origDt = _dt;
-      DTask dt = origDt; // _dt can go null the instant its send over wire
-      do {           // Retry loop for broken TCP sends
+      DTask dt, origDt = _dt;
+      while((dt = _dt) != null ) {   // Retry loop for broken TCP sends
         AutoBuffer ab = null;
         try {
           ab = new AutoBuffer(_client).putTask(UDP.udp.ack,_tsknum).put1(SERVER_UDP_SEND);
@@ -311,9 +309,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           if( ab != null ) ab.close(true,true);
           try { Thread.sleep(500); } catch (InterruptedException ignore) {}
         }
-      } while((dt = _dt) != null); // end of while(true)
+      }
       if( dt == null )
-        Log.info("Cancelled remote task#"+_tsknum+" "+origDt.getClass()+" to "+_client + " has been cancelled by remote");
+        Log.info("Cancelled remote task#"+_tsknum+" "+(origDt != null ? origDt.getClass() : "null")+" to "+_client + " has been cancelled by remote");
       else if( (dt instanceof DRemoteTask || dt instanceof MRTask) && dt.logVerbose() )
         Log.debug("Done  remote task#"+_tsknum+" "+dt.getClass()+" to "+_client);
       _client.record_task_answer(this); // Setup for retrying Ack & AckAck

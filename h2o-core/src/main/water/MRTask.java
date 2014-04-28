@@ -328,12 +328,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( !(nlo < nhi) ) return null;
     int node = addShift(nlo);
     assert node != H2O.SELF.index();
-    T rpc = copyAndInit();
-    rpc._nhi = (short)nhi;
+    T mrt = copyAndInit();
+    mrt._nhi = (short)nhi;
     addToPendingCount(1);       // Not complete until the RPC returns
     // Set self up as needing completion by this RPC: when the ACK comes back
     // we'll get a wakeup.
-    return new RPC<>(H2O.CLOUD._memary[node], rpc).addCompleter(this).call();
+    return new RPC<>(H2O.CLOUD._memary[node], mrt).addCompleter(this).call();
   }
 
   /** Called from FJ threads to do local work.  The first called Task (which is
@@ -507,15 +507,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( !hasException() ) setException(ex);
     if( _nleft != null ) _nleft.cancel(true); _nleft = null;
     if( _nrite != null ) _nrite.cancel(true); _nrite = null;
-    _left = null;
-    _rite = null;
+    if(  _left != null )  _left.cancel(true);  _left = null;
+    if(  _rite != null )  _rite.cancel(true);  _rite = null;
     return super.onExceptionalCompletion(ex, caller);
   }
 
   // Make copy, setting final-field completer and clearing out a bunch of fields 
   private T copyAndInit() { 
     T x = (T)clone();
-    System.out.println("MRTask.copyAndInit: "+x.getCompleter());
     x.setCompleter(this); // Set completer, what used to be a final field
     x._topLocal = false;  // Not a top job
     x._nleft = x._nrite = null;
