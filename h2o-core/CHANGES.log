@@ -18,7 +18,7 @@ Major style & code changes from "h2o":
   the last log4j class unpacked.
 - Make "mostly" works - sometimes over-compiles, if there are errors.
 - Move much init code into "water/init", including all network init from H2O.java
-- Trim the API.  Make All Things Private by default
+- Trim the API.  Make All Things Private by default.  Aggressive IdeaJ warning removal.
 - Switch to 1.7 javac by default
 - Do not hook stdout & stderr
 - Complete Log class overhaul  
@@ -30,6 +30,7 @@ Major style & code changes from "h2o":
 - Overhaul Vec rollups - try to compute them only from the home node so we do
   not get racing Vec rollups for the same Vec from many nodes.
 - DKV key prefetch instead of F/J background task gets
+- TaskPutKey requires a Futures - no fire-and-forget remote puts - you gotta "remember" them later
 
 DETAIL CHANGES
 

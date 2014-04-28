@@ -381,7 +381,7 @@ public class ParseDataset2 extends Job<Frame> {
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
       ParserSetup localSetup = _setup.guessSetup(bits);
-      if( !_setup.isCompatible(localSetup) ) return;
+      if( !localSetup._isValid ) return;
 
       // Parse the file
       final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];

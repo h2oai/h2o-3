@@ -285,6 +285,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
     @Override protected void compute2() {
       // First set self to be completed when this subtask completer
+      System.out.println("RPCCall.compute2: "+_dt.getCompleter());
       assert _dt.getCompleter() == null;
       _dt.setCompleter(this);
       // Run the remote task on this server...

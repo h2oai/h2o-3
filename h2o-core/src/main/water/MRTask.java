@@ -515,6 +515,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Make copy, setting final-field completer and clearing out a bunch of fields 
   private T copyAndInit() { 
     T x = (T)clone();
+    System.out.println("MRTask.copyAndInit: "+x.getCompleter());
     x.setCompleter(this); // Set completer, what used to be a final field
     x._topLocal = false;  // Not a top job
     x._nleft = x._nrite = null;

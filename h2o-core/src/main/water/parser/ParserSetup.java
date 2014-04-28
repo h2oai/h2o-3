@@ -10,9 +10,9 @@ import water.Iced;
  *  columns discovered.
  */
 class ParserSetup extends Iced {
-  private       boolean _isValid;   // The initial parse is sane
+                boolean _isValid;   // The initial parse is sane
   private final long _invalidLines; // Number of broken/invalid lines found
-  private final String[] _errors;   // A collection of error messages
+  private final String[] _errors;   // A collection of error messages, but still could be a valid parse setup
   // Parse Flavor
           final ParserType _pType; // CSV, XLS, XSLX, SVMLight, Auto
   private static byte AUTO_SEP = -1;
@@ -45,10 +45,6 @@ class ParserSetup extends Iced {
   // Got parse errors?
   final boolean hasErrors() { return _errors != null && _errors.length > 0; }
   final boolean hasHeaders() { return _columnNames != null; }
-  boolean isCompatible( ParserSetup p ) {
-    if( _pType != p._pType ) return false;
-    return _pType != ParserType.CSV || (p._sep == _sep && p._ncols == _ncols);
-  }
 
   Parser parser() {
     switch( _pType ) {
@@ -225,6 +221,10 @@ class ParserSetup extends Iced {
   // or headers.
   public static ParserSetup guessSetup( byte[] bits, int checkHeader ) { return guessSetup(bits, AUTO_SEP, -1, false, checkHeader, null); }
 
+  private static ParserSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+    return CSVguessSetup(bits,sep,ncols,singleQuotes,checkHeader,columnNames);
+  }
+
   /** Determines the CSV parser setup from the first few lines.  Also parses
    *  the next few lines, tossing out comments and blank lines.
    *
@@ -233,13 +233,13 @@ class ParserSetup extends Iced {
    *
    *  If ncols is -1, then it is guessed similarly to the separator.
    *
-   *  singleQuotes is honored in all cases (but not guessed).
+   *  singleQuotes is honored in all cases (and not guessed).
    *
    *  checkHeader== -1 ==> 1st line is data, not header
    *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
    *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
-  public static ParserSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  private static ParserSetup CSVguessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
 
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
@@ -339,9 +339,10 @@ class ParserSetup extends Iced {
 
   // Guess a local setup that is compatible to the given global (this) setup.
   // If they are not compatible, there will be _errors set.
-  public ParserSetup guessSetup( byte[] bits ) {
+  ParserSetup guessSetup( byte[] bits ) {
+    assert _isValid;
     ParserSetup ps = guessSetup(bits, _sep, _ncols, _singleQuotes, 0/*guess header*/, _columnNames);
-    if( ps._errors != null ) return ps; // Already dead
+    if( !ps._isValid ) return ps; // Already invalid
     if( _pType != ps._pType ||
         (_pType == ParserType.CSV && (_sep != ps._sep && _ncols != ps._ncols)) )
       return new ParserSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
