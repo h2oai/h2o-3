@@ -73,7 +73,7 @@ final class Enum extends Iced {
     throw water.H2O.unimpl();
   }
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
-  //public int size() { return _map.size(); }
+  int size() { return _map.size(); }
   boolean isKilled() { return _map == null; }
   private void kill() { _map = null; }
 

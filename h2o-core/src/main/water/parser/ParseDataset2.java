@@ -258,13 +258,17 @@ public class ParseDataset2 extends Job<Frame> {
       _lEnums = new Enum[H2O.CLOUD.size()][];
       if( !MultiFileParseTask._enums.containsKey(_k) ) return;
       _lEnums[H2O.SELF.index()] = _gEnums = MultiFileParseTask._enums.get(_k);
+      // Null out any empty Enum structs; no need to ship these around.
+      for( int i=0; i<_gEnums.length; i++ )
+        if( _gEnums[i].size()==0 ) _gEnums[i] = null;
+
       // if we are the original node (i.e. there will be no sending over wire),
       // we have to clone the enums not to share the same object (causes
       // problems when computing column domain and renumbering maps).
       if( H2O.SELF.index() == _homeNode ) {
         _gEnums = _gEnums.clone();
         for(int i = 0; i < _gEnums.length; ++i)
-          _gEnums[i] = _gEnums[i].deepCopy();
+          if( _gEnums[i] != null ) _gEnums[i] = _gEnums[i].deepCopy();
       }
       MultiFileParseTask._enums.remove(_k);
     }

@@ -49,6 +49,11 @@ public class TestUtil {
     return file;
   }
 
+  // Find & parse; use random Key for result
+  protected Frame parse_test_file( String fname ) {
+    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
+    return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
+  }
 
   public static Vec vec(int...rows) { return vec(null, rows); }
   public static Vec vec(String[] domain, int ...rows) { 

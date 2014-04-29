@@ -337,10 +337,7 @@ public class ParserTest extends TestUtil {
   }
 
   @Test public void testTimeParse() {
-    NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/junit/bestbuy_train_10k.csv.gz"));
-    Key okey = Key.make("bestbuy.hex");
-    ParseDataset2.parse(okey,nfs._key);
-    Frame fr = DKV.get(okey).get();
+    Frame fr = parse_test_file("smalldata/junit/bestbuy_train_10k.csv.gz");
     fr.delete();
   }
 
@@ -354,10 +351,8 @@ public class ParserTest extends TestUtil {
       ard(NaN, NaN, NaN),
       ard(NaN, NaN,   6),
     };
-    NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/junit/is_NA.csv"));
-    Key okey = Key.make("NA.hex");
-    ParseDataset2.parse(okey,nfs._key);
-    testParsed(okey,exp, 25);
+    Frame fr = parse_test_file("smalldata/junit/is_NA.csv");
+    testParsed(fr._key,exp, 25);
   }
 
   @Test public void testSVMLight() {
@@ -382,10 +377,6 @@ public class ParserTest extends TestUtil {
 
   // Mix of NA's, very large & very small, ^A Hive-style seperator, comments, labels
   @Test public void testParseMix() {
-    NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/junit/test_parse_mix.csv"));
-    Key okey = Key.make("mix.hex");
-    ParseDataset2.parse(okey,nfs._key);
-
     double[][] exp = new double[][] {
       ard( 0      ,  0.5    ,  1      , 0),
       ard( 3      ,  NaN    ,  4      , 1),
@@ -422,6 +413,7 @@ public class ParserTest extends TestUtil {
       ard( +.6e102,  +.7e102,  +.8e102, 0),
       ard( -.6e102,  -.7e102,  -.8e102, 1)
     };
-    testParsed(okey, exp);
+    Frame fr = parse_test_file("smalldata/junit/test_parse_mix.csv");
+    testParsed(fr._key, exp);
   }
 }

@@ -43,16 +43,13 @@ public class DatasetCornerCasesTest extends TestUtil {
   }
 
   private void testOneLineDataset(String filename) {
-    File file = find_test_file(filename);
-    NFSFileVec nfs = NFSFileVec.make(file); // Will be deleted as a side-effect of parsing
     Frame fr = null;
     try {
-      fr = ParseDataset2.parse(Key.make(), nfs._key);
+      fr = parse_test_file(filename);
       assertEquals("Number of chunks == 1", 1, fr.anyVec().nChunks());
       assertEquals("Number of rows   == 2", 2, fr.numRows());
       assertEquals("Number of cols   == 9", 9, fr.numCols());
     } finally {
-      nfs.remove();
       if( fr != null ) fr.delete();
     }
   }

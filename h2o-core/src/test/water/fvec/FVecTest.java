@@ -6,7 +6,6 @@ import java.io.File;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.parser.ParseDataset2;
 import water.util.ArrayUtils;
 
 public class FVecTest extends TestUtil {
@@ -37,15 +36,12 @@ public class FVecTest extends TestUtil {
 
   // ==========================================================================
   @Test public void testSet() {
-    File file = find_test_file("./smalldata/airlines/allyears2k_headers.zip");
-    NFSFileVec nfs = NFSFileVec.make(file); // Will be deleted as a side-effect of parsing
     Frame fr = null;
     try {
-      fr = ParseDataset2.parse(Key.make("air.hex"), nfs._key);
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       // Scribble into a freshly parsed frame
       new SetDoubleInt().doAll(fr);
     } finally {
-      nfs.remove();
       if( fr != null ) fr.delete();
     }
   }
@@ -91,12 +87,10 @@ public class FVecTest extends TestUtil {
 
   // ==========================================================================
   @Test public void testParse2() {
-    File file = find_test_file("../smalldata/junit/syn_2659x1049.csv.gz");
-    NFSFileVec nfs = NFSFileVec.make(file);
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = ParseDataset2.parse(Key.make("syn.hex"),nfs._key);
+      fr = parse_test_file("../smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 
@@ -119,7 +113,6 @@ public class FVecTest extends TestUtil {
       assertEquals(3949+3986,sums[0],EPSILON);
 
     } finally {
-      nfs.remove();
       if( vz != null ) vz.remove();
       if( fr != null ) fr.delete();
     }
@@ -148,16 +141,13 @@ public class FVecTest extends TestUtil {
 
   // ==========================================================================
   @Test public void testLargeCats() {
-    File file = find_test_file("./smalldata/junit/40k_categoricals.csv.gz");
-    NFSFileVec nfs = NFSFileVec.make(file);
     Frame fr = null;
     try {
-      fr = ParseDataset2.parse(Key.make("cat.hex"),nfs._key);
+      fr = parse_test_file("./smalldata/junit/40k_categoricals.csv.gz");
       assertEquals(fr.numRows(),40000); // Count of rows
       assertEquals(fr.vecs()[0].domain().length,40000);
 
     } finally {
-      nfs.remove();
       if( fr != null ) fr.delete();
     }
   }
