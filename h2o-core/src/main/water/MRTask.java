@@ -279,6 +279,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // nothing here... must do any post-work-cleanup in onCompletion
   }
 
+  // Special mode to run once-per-node
+  public T doAllNodes() { return doAll((Key[])null); }
+
   // Special mode doing 1 map per key.  No frame
   public T doAll( Key... keys ) {
     _keys = keys;
@@ -314,7 +317,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       // block on.
       // get the Vecs from the K/V store, to avoid racing fetches from the map calls
       _fr.vecs();
-    } else {                        // Else doing a set of Keys
+    } else if( _keys != null ) {    // Else doing a set of Keys
       _lo = 0;  _hi = _keys.length; // Do All Keys
     }
     setupLocal();               // Setup any user's shared local structures
@@ -358,10 +361,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     }
     // Zero or 1 chunks, and further chunk might not be homed here
     if( _fr==null ) {           // No Frame, so doing Keys?
-      if( _hi > _lo && _keys[_lo].home() ) {
+      if( _keys == null ||     // Once-per-node mode
+          _hi > _lo && _keys[_lo].home() ) {
         _profile._userstart = System.currentTimeMillis();
-        map(_keys[_lo]);
-        _res = self();          // Save results since called map() at least once!
+        if( _keys != null ) map(_keys[_lo]);
+        _res = self();        // Save results since called map() at least once!
         _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?

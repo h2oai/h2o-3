@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
-import water.parser.ParseDataset2;
 
 public class ParserTest extends TestUtil {
   private final double NaN = Double.NaN;
@@ -30,13 +29,13 @@ public class ParserTest extends TestUtil {
     if( a==b ) return true;
     if( ( Double.isNaN(a) && !Double.isNaN(b)) ||
         (!Double.isNaN(a) &&  Double.isNaN(b)) ) return false;
-    if( Double.isInfinite(a) || Double.isInfinite(b) ) return false;
-    return Math.abs(a-b)/Math.max(Math.abs(a),Math.abs(b)) < threshold;
+    return !Double.isInfinite(a) && !Double.isInfinite(b) &&
+           Math.abs(a-b)/Math.max(Math.abs(a),Math.abs(b)) < threshold;
   }
-  private static void testParsed(Key k, double[][] expected, Key inputkey) {
-    testParsed(k,expected,inputkey,expected.length);
+  private static void testParsed(Key k, double[][] expected) {
+    testParsed(k,expected, expected.length);
   }
-  private static void testParsed(Key k, double[][] expected, Key inputkey, int len) {
+  private static void testParsed(Key k, double[][] expected, int len) {
     Frame fr = DKV.get(k).get();
     Assert.assertEquals(len,fr.numRows());
     Assert.assertEquals(expected[0].length,fr.numCols());
@@ -77,18 +76,18 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
 
       StringBuilder sb1 = new StringBuilder();
-      for( int i = 0; i < dataset.length; ++i ) sb1.append(dataset[i]).append("\n");
+      for( String ds : dataset ) sb1.append(ds).append("\n");
       Key k1 = k(sb1.toString());
       Key r1 = Key.make("r1");
-      ParseDataset2.parse(r1, new Key[]{k1});
-      testParsed(r1,exp,k1);
+      ParseDataset2.parse(r1, k1);
+      testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
-      for( int i = 0; i < dataset.length; ++i ) sb2.append(dataset[i]).append("\r\n");
+      for( String ds : dataset ) sb2.append(ds).append("\r\n");
       Key k2 = k(sb2.toString());
       Key r2 = Key.make("r2");
-      ParseDataset2.parse(r2, new Key[]{k2});
-      testParsed(r2,exp,k2);
+      ParseDataset2.parse(r2, k2);
+      testParsed(r2,exp);
     }
   }
 
@@ -122,8 +121,8 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key k = k(dataset);
       Key r3 = Key.make();
-      ParseDataset2.parse(r3,new Key[]{k});
-      testParsed(r3,exp,k);
+      ParseDataset2.parse(r3,k);
+      testParsed(r3,exp);
     }
   }
 
@@ -153,8 +152,8 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key k = k(dataset);
       Key r4 = Key.make();
-      ParseDataset2.parse(r4,new Key[]{k});
-      testParsed(r4,exp,k);
+      ParseDataset2.parse(r4,k);
+      testParsed(r4,exp);
     }
   }
 
@@ -185,33 +184,18 @@ public class ParserTest extends TestUtil {
       ard(19,20, 2),
     };
 
-    String[][] expString = new String[][] {
-      ar(null,null, "one"),
-      ar(null,null, "two"),
-      ar(null,null, "three"),
-      ar(null,null, "one"),
-      ar(null,null, "two"),
-      ar(null,null, "three"),
-      ar(null,null, "one"),
-      ar(null,null, "two"),
-      ar(null,null, " four"),
-      ar(null,null, "three"),
-    };
-
-    String expDomain[] = ar( "one", "two", "three", " four" );
-
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = k(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,new Key[]{key});
+      ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
       Assert.assertEquals(" four",cd[0]);
       Assert.assertEquals("one",cd[1]);
       Assert.assertEquals("three",cd[2]);
       Assert.assertEquals("two",cd[3]);
-      testParsed(r, expDouble,key);
+      testParsed(r, expDouble);
     }
   }
 
@@ -225,8 +209,8 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = k(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,new Key[]{key});
-      testParsed(r, expDouble,key);
+      ParseDataset2.parse(r,key);
+      testParsed(r, expDouble);
     }
   }
  @Test public void testMultipleNondecimalColumns() {
@@ -254,7 +238,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = k(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,new Key[]{key});
+      ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
       Assert.assertEquals("one",cd[0]);
@@ -264,7 +248,7 @@ public class ParserTest extends TestUtil {
       Assert.assertEquals("bar",cd[0]);
       Assert.assertEquals("foo",cd[1]);
       Assert.assertEquals("foobar",cd[2]);
-      testParsed(r, expDouble,key);
+      testParsed(r, expDouble);
     }
   }
 
@@ -302,12 +286,12 @@ public class ParserTest extends TestUtil {
     String[] dataset = getDataForSeparator(separator, data);
     Key key = k(dataset);
     Key r = Key.make();
-    ParseDataset2.parse(r,new Key[]{key});
+    ParseDataset2.parse(r,key);
     Frame fr = DKV.get(r).get();
     String[] cd = fr.vecs()[3].domain();
     Assert.assertEquals("bar",cd[0]);
     Assert.assertEquals("foo",cd[1]);
-    testParsed(r, expDouble,key);
+    testParsed(r, expDouble);
   }
 
 
@@ -332,13 +316,12 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      int i = 0;
       StringBuilder sb = new StringBuilder();
-      for( i = 0; i < dataset.length; ++i ) sb.append(dataset[i]).append("\n");
+      for( String ds : dataset ) sb.append(ds).append("\n");
       Key k = k(sb.toString());
       Key r5 = Key.make();
-      ParseDataset2.parse(r5, new Key[]{k});
-      testParsed(r5, exp,k);
+      ParseDataset2.parse(r5, k);
+      testParsed(r5, exp);
     }
   }
 
@@ -374,11 +357,11 @@ public class ParserTest extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/junit/is_NA.csv"));
     Key okey = Key.make("NA.hex");
     ParseDataset2.parse(okey,nfs._key);
-    testParsed(okey,exp,nfs._key,25);
+    testParsed(okey,exp, 25);
   }
 
   @Test public void testSVMLight() {
-    String[] data = new String[] {
+    String[] dataset = new String[] {
       " 1 2:.2 5:.5 9:.9\n",
       "-1 7:.7 8:.8 9:.9\n",
       "+1 1:.1 5:.5 6:.6\n"
@@ -389,13 +372,12 @@ public class ParserTest extends TestUtil {
       ard(-1., .0, .0, .0, .0, .0, .0, .7, .8, .9),
       ard( 1., .1, .0, .0, .0, .5, .6, .0, .0, .0),
     };
-    String[] dataset = data;
     StringBuilder sb = new StringBuilder();
-    for( int i = 0; i < dataset.length; ++i ) sb.append(dataset[i]).append("\n");
+    for( String ds : dataset ) sb.append(ds).append("\n");
     Key k = k(sb.toString());
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
-    testParsed(r1,exp,k);
+    testParsed(r1,exp);
   }
 
   // Mix of NA's, very large & very small, ^A Hive-style seperator, comments, labels
@@ -440,6 +422,6 @@ public class ParserTest extends TestUtil {
       ard( +.6e102,  +.7e102,  +.8e102, 0),
       ard( -.6e102,  -.7e102,  -.8e102, 1)
     };
-    testParsed(okey, exp, nfs._key);
+    testParsed(okey, exp);
   }
 }

@@ -153,16 +153,16 @@ public class ParseDataset2 extends Job<Frame> {
         ecols[n++] = i;
     ecols =  Arrays.copyOf(ecols, n);
     if( ecols.length > 0 ) {
-      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), uzpt._eKey, ecols).doAll(fkeys[0]/*dummy*/);
-      Enum [] enums = eft._gEnums;
-      ValueString [][] ds = new ValueString[ecols.length][];
+      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), uzpt._eKey, ecols).doAllNodes();
+      Enum[] enums = eft._gEnums;
+      ValueString[][] ds = new ValueString[ecols.length][];
       int j = 0;
       for( int i : ecols ) uzpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
       eut = new EnumUpdateTask(ds, eft._lEnums, uzpt._chunk2Enum, ecols);
     }
     Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(uzpt._dout._nCols),uzpt._dout.closeVecs());
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    new SVFTask(fr).doAll(fkeys[0]/*dummy*/);
+    new SVFTask(fr).doAllNodes();
     // Update enums to the globally agreed numbering
     if( eut != null ) {
       Vec[] evecs = new Vec[ecols.length];
@@ -249,11 +249,11 @@ public class ParseDataset2 extends Job<Frame> {
   // --------------------------------------------------------------------------
   private static class EnumFetchTask extends MRTask<EnumFetchTask> {
     private final Key _k;
-    private final int [] _ecols;
+    private final int[] _ecols;
     private final int _homeNode; // node where the computation started, enum from this node MUST be cloned!
-    private Enum [] _gEnums; // global enums per column
-    private Enum [][] _lEnums; // local enums per node per column
-    private EnumFetchTask(int homeNode, Key k, int [] ecols){_homeNode = homeNode; _k = k;_ecols = ecols;}
+    private Enum[] _gEnums;      // global enums per column
+    private Enum[][] _lEnums;    // local enums per node per column
+    private EnumFetchTask(int homeNode, Key k, int[] ecols){_homeNode = homeNode; _k = k;_ecols = ecols;}
     @Override public void setupLocal() {
       _lEnums = new Enum[H2O.CLOUD.size()][];
       if( !MultiFileParseTask._enums.containsKey(_k) ) return;
@@ -487,10 +487,10 @@ public class ParseDataset2 extends Job<Frame> {
           p = new CsvParser(_setup);
           dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums);
           break;
-        //  case SVMLight:
-        //    p = new SVMLightParser(_setup);
-        //    dout = new SVMLightFVecDataOut(_vg, _startChunkIdx + in.cidx(), _setup._ncols, _vecIdStart, enums);
-        //    break;
+        case SVMLight:
+          p = new SVMLightParser(_setup);
+          dout = new SVMLightFVecDataOut(_vg, _startChunkIdx + in.cidx(), _setup._ncols, _vecIdStart, enums);
+          break;
         default:
           throw H2O.unimpl();
         }
@@ -529,7 +529,7 @@ public class ParseDataset2 extends Job<Frame> {
     static final private byte ECOL = 2;
     static final private byte TCOL = 3;
 
-    public FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
       _enums = enums;
@@ -542,7 +542,7 @@ public class ParseDataset2 extends Job<Frame> {
         _nvs[i] = (NewChunk)(_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
 
     }
-    public FVecDataOut reduce(Parser.StreamDataOut sdout){
+    @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){
       FVecDataOut dout = (FVecDataOut)sdout;
       _nCols = Math.max(_nCols,dout._nCols);
       if(dout._vecs.length > _vecs.length){
@@ -559,10 +559,6 @@ public class ParseDataset2 extends Job<Frame> {
       close(fs);
       fs.blockForPending();
       return this;
-    }
-     public void check(){
-       if(_nvs != null) for(NewChunk nv:_nvs)
-        assert (nv._len2 == _nLines):"unexpected number of lines in NewChunk, got " + nv._len2 + ", but expected " + _nLines;
     }
     @Override public FVecDataOut close(Futures fs){
       if( _nvs == null ) return this; // Might call close twice
@@ -641,7 +637,7 @@ public class ParseDataset2 extends Job<Frame> {
     }
 
     /** Adds double value to the column. */
-    public void addNumCol(int colIdx, double value) {
+    @Override public void addNumCol(int colIdx, double value) {
       if (Double.isNaN(value)) {
         addInvalidCol(colIdx);
       } else {
@@ -656,10 +652,48 @@ public class ParseDataset2 extends Job<Frame> {
         addNumCol(colIdx, number, exp);
       }
     }
-    public void setColumnNames(String [] names){}
+    @Override public void setColumnNames(String [] names){}
     @Override public final void rollbackLine() {}
     @Override public void invalidLine(String err) { newLine(); }
     @Override public void invalidValue(int line, int col) {}
+  }
+
+  // --------------------------------------------------------
+  private static class SVMLightFVecDataOut extends FVecDataOut {
+    protected final VectorGroup _vg;
+    private SVMLightFVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
+      super(vg,cidx,0,vg.reserveKeys(10000000),enums);
+      _nvs = new NewChunk[0];
+      _vg = vg;
+      _col = 0;
+    }
+    
+    private void addColumns(int ncols){
+      if(ncols > _nCols){
+        _nvs = Arrays.copyOf(_nvs, ncols);
+        _vecs = Arrays.copyOf(_vecs, ncols);
+        for(int i = _nCols; i < ncols; ++i){
+          _vecs[i] = new AppendableVec(_vg.vecKey(i+1));
+          _nvs[i] = new NewChunk(_vecs[i], _cidx);
+          for(int j = 0; j < _nLines; ++j)
+            _nvs[i].addNum(0, 0);
+        }
+        _nCols = ncols;
+      }
+    }
+    @Override public void addNumCol(int colIdx, long number, int exp) {
+      assert colIdx >= _col;
+      addColumns(colIdx+1);
+      for(int i = _col; i < colIdx; ++i)
+        super.addNumCol(i, 0, 0);
+      super.addNumCol(colIdx, number, exp);
+      _col = colIdx+1;
+    }
+    @Override public void newLine() {
+      if(_col < _nCols)addNumCol(_nCols-1, 0,0);
+      super.newLine();
+      _col = 0;
+    }
   }
 
   // ------------------------------------------------------------------------

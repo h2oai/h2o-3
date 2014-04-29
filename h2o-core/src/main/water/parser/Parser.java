@@ -21,11 +21,47 @@ import water.*;
  *                parsing & previewing the first few lines & columns of a file.
  */
 abstract class Parser extends Iced {
+  static final byte CHAR_TAB = '\t';
+  static final byte CHAR_CR = 13;
+  static final byte CHAR_LF = 10;
+  static final byte CHAR_SPACE = ' ';
+  static final byte CHAR_DOUBLE_QUOTE = '"';
+  static final byte CHAR_SINGLE_QUOTE = '\'';
+
+  // State for the CSV & SVMLight Parser's FSAs
+  protected static final byte SKIP_LINE = 0;
+  protected static final byte EXPECT_COND_LF = 1;
+  protected static final byte EOL = 2;
+  protected static final byte TOKEN = 3;
+  protected static final byte COND_QUOTED_TOKEN = 4;
+  protected static final byte NUMBER = 5;
+  protected static final byte NUMBER_SKIP = 6;
+  protected static final byte NUMBER_SKIP_NO_DOT = 7;
+  protected static final byte NUMBER_FRACTION = 8;
+  protected static final byte NUMBER_EXP = 9;
+  protected static final byte NUMBER_EXP_START = 11;
+  protected static final byte NUMBER_END = 12;
+  protected static final byte STRING = 13;
+  protected static final byte COND_QUOTE = 14;
+  protected static final byte SEPARATOR_OR_EOL = 15;
+  protected static final byte WHITESPACE_BEFORE_TOKEN = 16;
+  protected static final byte STRING_END = 17;
+  protected static final byte COND_QUOTED_NUMBER_END = 18;
+  protected static final byte POSSIBLE_EMPTY_LINE = 19;
+  protected static final byte POSSIBLE_CURRENCY = 20;
+
+  protected final byte CHAR_DECIMAL_SEP = '.';
+  protected final byte CHAR_SEPARATOR;
+
+  protected static final long LARGEST_DIGIT_NUMBER = 1000000000000000000L;
+
+  protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
+
   protected final ParserSetup _setup;
-  Parser( ParserSetup setup ) { _setup = setup; }
+  Parser( ParserSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
 
   // Does this parser flavor support parallel parsing?
-  abstract boolean parallelParseSupported();
+  abstract protected boolean parallelParseSupported();
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
@@ -35,7 +71,7 @@ abstract class Parser extends Iced {
     int cidx=0;
     while( is.available() > 0 )
       parallelParse(cidx++,din,dout);
-    parallelParse(cidx++,din,dout);     // Parse the remaining partial 32K buffer
+    parallelParse(cidx,din,dout);     // Parse the remaining partial 32K buffer
     return dout;
   }
 
@@ -58,7 +94,7 @@ abstract class Parser extends Iced {
       }
       parallelParse(cidx++,din,nextChunk);
     }
-    parallelParse(cidx++,din,nextChunk);     // Parse the remaining partial 32K buffer
+    parallelParse(cidx,din,nextChunk);     // Parse the remaining partial 32K buffer
     nextChunk.close();
     if( dout != nextChunk ) dout.reduce(nextChunk);
     return dout;
@@ -153,16 +189,16 @@ abstract class Parser extends Iced {
    *  previewing the first few lines & columns of a file.
    */
   protected static class InspectDataOut extends Iced implements DataOut {
-    private int _nlines;
-    private int _ncols;
-    private int _invalidLines;
-    private boolean _header;
-    private String []   _colNames;
-    private String [][] _data = new String[MAX_PREVIEW_LINES][MAX_PREVIEW_COLS];
-    private final static int MAX_PREVIEW_COLS  = 100;
-    private final static int MAX_PREVIEW_LINES = 50;
+    protected int _nlines;
+    protected int _ncols;
+    protected int _invalidLines;
+    private   boolean _header;
+    private   String []   _colNames;
+    protected String [][] _data = new String[MAX_PREVIEW_LINES][MAX_PREVIEW_COLS];
+    protected final static int MAX_PREVIEW_COLS  = 100;
+    protected final static int MAX_PREVIEW_LINES = 50;
     transient ArrayList<String> _errors;
-    private InspectDataOut() {
+    protected InspectDataOut() {
      for(int i = 0; i < MAX_PREVIEW_LINES;++i)
        Arrays.fill(_data[i],"NA");
     }
@@ -201,12 +237,11 @@ abstract class Parser extends Iced {
     @Override public void rollbackLine() {--_nlines;}
     @Override public void invalidLine(String err) {
       ++_invalidLines;
-      _errors.add("Error at line: " + _nlines + ", reason: " + err);
+      if( _errors == null ) _errors = new ArrayList<>();
+      if( _errors.size() < 10 )
+        _errors.add("Error at line: " + _nlines + ", reason: " + err);
     }
     @Override public void invalidValue(int linenum, int colnum) {}
+    String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
   }
-
 }
-
-
-
