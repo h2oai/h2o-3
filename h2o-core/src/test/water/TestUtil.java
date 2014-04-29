@@ -55,6 +55,27 @@ public class TestUtil {
     return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
   }
 
+  // Compare 2 frames
+  protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
+    return new Cmp().doAll(new Frame(fr1).add(fr2))._ok;
+  }
+  private static class Cmp extends MRTask<Cmp> {
+    boolean _ok = true;
+    @Override public void map( Chunk chks[] ) {
+      for( int rows = 0; rows < chks[0]._len; rows++ )
+        for( int cols=0; cols<chks.length>>1; cols++ ) {
+          double d0 = chks[cols                 ].at0(rows);
+          double d1 = chks[cols+(chks.length>>1)].at0(rows);
+          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
+            _ok = false; return;
+          }
+        }
+    }
+    @Override public void reduce( Cmp cmp ) { _ok &= cmp._ok; }
+  }
+
+
+  // A Vec from an array
   public static Vec vec(int...rows) { return vec(null, rows); }
   public static Vec vec(String[] domain, int ...rows) { 
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
@@ -69,6 +90,7 @@ public class TestUtil {
     return vec;
   }
 
+  // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
   public static long  []   ar (long   ...a)   { return a; }
   public static long[][]   ar (long[] ...a)   { return a; }

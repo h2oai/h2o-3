@@ -19,8 +19,8 @@ class SVMLightParser extends Parser {
 
   SVMLightParser( ParserSetup ps ) { super(ps); }
 
-  /** Try to parse the bytes as svm light format, return SVMParser instance if the input is in svm light format, null otherwise.
-   *  @return SVMLightParser instance or null
+  /** Try to parse the bytes as svm light format, return a ParserSetup with type 
+   *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
   public static ParserSetup guessSetup(byte [] bytes) {
     // find the last eof

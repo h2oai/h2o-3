@@ -98,6 +98,7 @@ class ParserSetup extends Iced {
     switch( pType ) {
     case CSV:      return      CsvParser.CSVguessSetup(bits,sep,ncols,singleQuotes,checkHeader,columnNames);
     case SVMLight: return SVMLightParser.   guessSetup(bits);
+    case XLS:      return      XlsParser.   guessSetup(bits);
     case AUTO:
       for( ParserType pType2 : guessTypeOrder ) {
         try {

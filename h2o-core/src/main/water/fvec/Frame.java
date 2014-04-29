@@ -1,5 +1,6 @@
 package water.fvec;
 
+import java.util.Arrays;
 import water.*;
 
 /**
@@ -41,6 +42,48 @@ public class Frame extends Lockable {
     _keys = keys;
   }
 
+  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
+  // resulting Frame does not share with the original, so the set of Vecs can
+  // be freely hacked without disturbing the original Frame.
+  public Frame( Frame fr ) {
+    super( Key.make() );
+    _names = fr._names.clone();
+    _keys = fr._keys.clone();
+    _vecs = fr._vecs.clone();
+  }
+
+  // Append a Vec
+  public Vec add( Vec vec ) { return add("C"+(numCols()+1),vec); }
+  public Vec add( String name, Vec vec ) {
+    assert checkCompatible(vec);
+    int ncols = _keys.length;
+    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = uniquify(name);
+    _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
+    _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
+    return vec;
+  }
+
+  private String uniquify( String name ) {
+    String n = name;
+    int cnt=0, again;
+    do {
+      again = cnt;
+      for( String s : _names )
+        if( n.equals(s) )
+          n = name+(cnt++);
+    } while( again != cnt );
+    return n;
+  }
+
+  // Append a Frame
+  public Frame add( Frame fr ) {
+    Vec[] vecs = fr.vecs();
+    for( int i=0; i<vecs.length; i++ )
+      add(fr._names[i],vecs[i]);
+    return this;
+  }
+
+
   /** Check that the vectors are all compatible.  All Vecs have their content
    *  sharded using same number of rows per chunk.  */
   private static boolean checkCompatible( Vec vecs[] ) {
@@ -55,7 +98,7 @@ public class Frame extends Lockable {
         throw new IllegalArgumentException("Vectors different numbers of chunks, "+nchunks+" and "+vec.nChunks());
     }
     // Also check each chunk has same rows
-    for( int i=0; i<nchunks; i++ ) {
+    for( int i=0; i<nchunks+1; i++ ) {
       long es = v0.chunk2StartElem(i);
       for( Vec vec : vecs )
         if( !(vec instanceof AppendableVec) && vec.chunk2StartElem(i) != es )
@@ -69,6 +112,25 @@ public class Frame extends Lockable {
       for( Vec vec : vecs )
         assert grp.equals(vec.group()) : "Vector " + vec + " has different vector group!";
     }
+    return true;
+  }
+
+  private boolean checkCompatible( Vec vec ) {
+    if( vec instanceof AppendableVec ) return true; // New Vectors are endlessly compatible
+    Vec v0 = anyVec();
+    int nchunks = v0.nChunks();
+    if( vec.nChunks() != nchunks )
+      throw new IllegalArgumentException("Vectors different numbers of chunks, "+nchunks+" and "+vec.nChunks());
+    // Also check each chunk has same rows
+    for( int i=0; i<nchunks+1; i++ ) {
+      long es = v0.chunk2StartElem(i), xs = vec.chunk2StartElem(i);
+      if( xs != es ) throw new IllegalArgumentException("Vector chunks different numbers of rows, "+es+" and "+xs);
+    }
+    // For larger Frames, verify that the layout is compatible - else we'll be
+    // endlessly cache-missing the data around the cluster, pulling copies
+    // local everywhere.
+    if( v0.length() > 1e4 )
+      assert v0.group().equals(vec.group()) : "Vector " + vec + " has different vector group!";
     return true;
   }
 
