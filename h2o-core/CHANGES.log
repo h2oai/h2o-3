@@ -21,7 +21,8 @@ Major style & code changes from "h2o":
 - Trim the API.  Make All Things Private by default.  Aggressive IdeaJ warning removal.
 - Switch to 1.7 javac by default
 - Do not hook stdout & stderr
-- Complete Log class overhaul  
+- Complete Log class overhaul
+- Complete Excel file parsing overhaul; dropped poi.jar
 - Remove all the Embedded support; emeddable-by-default now
 - Weaver uses Delegation instead of a Class Loader.  Serialization bases need
   boilerplate, and there's several more v-calls to the start of any
