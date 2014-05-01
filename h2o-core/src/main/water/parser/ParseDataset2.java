@@ -400,10 +400,9 @@ public class ParseDataset2 extends Job<Frame> {
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
-      //      FileMonitor pmon = new FileMonitor(_progress);
-      //      _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
-      //      chunksAreLocal(vec,chunkStartIdx);
-            throw H2O.unimpl();
+            FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
+            _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
+            chunksAreLocal(vec,chunkStartIdx);
           }
           break;
         case ZIP: {

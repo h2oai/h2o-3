@@ -208,6 +208,7 @@ abstract class Parser extends Iced {
         res[i] = Arrays.copyOf(_data[i], Math.min(MAX_PREVIEW_COLS,_ncols));
       return (_data = res);
     }
+    String[] colNames() { return _colNames; }
     @Override public void setColumnNames(String[] names) {
       _colNames = names;
       _data[0] = names;

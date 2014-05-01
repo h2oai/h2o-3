@@ -196,7 +196,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public String profString() { return _profile.toString(); }
 
   // Support for fluid-programming with strong types
-  private final T self() { return (T)this; }
+  private T self() { return (T)this; }
 
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */

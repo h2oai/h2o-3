@@ -47,9 +47,9 @@ public class Frame extends Lockable {
   // be freely hacked without disturbing the original Frame.
   public Frame( Frame fr ) {
     super( Key.make() );
-    _names = fr._names.clone();
-    _keys = fr._keys.clone();
-    _vecs = fr._vecs.clone();
+    _names= fr._names.clone();
+    _keys = fr._keys .clone();
+    _vecs = fr.vecs().clone();
   }
 
   // Append a Vec

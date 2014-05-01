@@ -876,7 +876,7 @@ public final class AutoBuffer {
     int z = y==0 ? 0 : getInt();// Trailing zeros
     long[] buf = MemoryManager.malloc8(x+y+z);
     switch( get1U() ) {      // 1,2,4 or 8 for how the middle section is passed
-    case 1: for( int i=x; i<x+y; i++ ) buf[i] =        get1(); return buf;
+    case 1: for( int i=x; i<x+y; i++ ) buf[i] =       get1U(); return buf;
     case 2: for( int i=x; i<x+y; i++ ) buf[i] = (short)get2(); return buf;
     case 4: for( int i=x; i<x+y; i++ ) buf[i] =        get4(); return buf;
     case 8: break;
