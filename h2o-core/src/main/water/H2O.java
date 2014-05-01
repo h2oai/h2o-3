@@ -60,17 +60,17 @@ final public class H2O {
   // priority X+1, and guaranteeing there are no jobs above MAX_PRIORITY -
   // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
   // done, the next lower level jobs get unblocked, etc.
-  static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
-  static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
-  static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
-  static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
-  static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
-  static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
-  static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
-  static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
-  static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
-  static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
-  static final byte        MIN_PRIORITY = 0;
+  public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
+  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
+  public static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
+  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
+  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
+  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
+  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
+  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
+  public static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
+  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
+  public static final byte        MIN_PRIORITY = 0;
 
   // F/J threads that remember the priority of the last task they started
   // working on.
