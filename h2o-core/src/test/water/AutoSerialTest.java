@@ -105,7 +105,7 @@ public class AutoSerialTest extends Iced {
 
   @Test public void testString() throws Exception {
     H2O.main(new String[0]);
-    String[] tests = { new String(), "monkey", "ninja", null };
+    String[] tests = { "", "monkey", "ninja", null };
     for( String exp : tests) {
       _string = exp;
       this.write(abw());
