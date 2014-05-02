@@ -43,7 +43,7 @@ import water.util.PrettyPrint;
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+4/*4Meg*/;
+  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
    * increases fine-grained parallelism. */
   public static final int CHUNK_SZ = 1 << LOG_CHK;
