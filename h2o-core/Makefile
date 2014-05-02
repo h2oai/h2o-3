@@ -47,6 +47,8 @@ classes: $(classes)
 
 JVM = java -ea -cp "build/classes;$(jars)" 
 JUNIT_TESTS = water.AtomicTest water.KVTest water.KeyToString water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest 
+# Too slow for normal junit runs
+JUNIT_TESTS_SLOW = water.parser.ParseProgressTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
@@ -55,6 +57,12 @@ check: $(classes)
 	@pkill java
 	@exit `cat sandbox/status.0`
 
+# Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
+check_slow: $(classes)
+	@rm -rf sandbox ; mkdir sandbox
+	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) $(JUNIT_TESTS_SLOW) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+	@pkill java
+	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/%java

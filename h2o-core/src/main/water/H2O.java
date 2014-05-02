@@ -573,7 +573,7 @@ final public class H2O {
   public static Value get( Key key ) { return STORE.get(key); }
   static Value raw_get( Key key ) { return STORE.get(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
-  static Set<Key> localKeySet( ) { return STORE.keySet(); }
+  public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
   static int store_size() { return STORE.size(); }
 

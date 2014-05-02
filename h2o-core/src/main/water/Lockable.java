@@ -58,6 +58,11 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   }
 
   // Will fail if locked by anybody.
+  public static void delete( Key key ) { 
+    Value val = DKV.get(key);
+    if( val==null ) return;
+    ((Lockable)val.get()).delete();
+  }
   public void delete( ) { delete(null,0.0f); }
   // Will fail if locked by anybody other than 'job_key'
   public void delete( Key job_key, float dummy ) {
