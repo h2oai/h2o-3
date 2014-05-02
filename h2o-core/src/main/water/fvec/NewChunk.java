@@ -128,8 +128,7 @@ public class NewChunk extends Chunk {
   protected final boolean isEnum(int idx) {
     if(_id == null)return isEnum2(idx);
     int j = Arrays.binarySearch(_id,0,_len,idx);
-    if(j < 0)return false;
-    return isEnum2(j);
+    return j >= 0 && isEnum2(j);
   }
 
   public void addEnum(int e) {append2(e,Integer.MIN_VALUE+1);}
@@ -647,7 +646,7 @@ public class NewChunk extends Chunk {
         case 1: UDP.set2(bs,(i<<1)+off,  (short)le); break;
         case 2: UDP.set4(bs,(i<<2)+off,    (int)le); break;
         case 3: UDP.set8(bs,(i<<3)+off,         le); break;
-        default: H2O.fail();
+        default: throw H2O.fail();
       }
     }
     assert j == _len:"j = " + j + ", len = " + _len + ", len2 = " + _len2 + ", id[j] = " + _id[j];
