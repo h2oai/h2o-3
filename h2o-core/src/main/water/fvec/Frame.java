@@ -21,7 +21,7 @@ public class Frame extends Lockable {
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   public Frame( Key key, String names[], Vec vecs[] ) { 
     super(key);
-    assert checkCompatible(vecs);
+    assert checkCompatible(vecs) : "Vectors different numbers of chunks";
 
     // Require all Vecs already be installed in the K/V store
     Key keys[] = new Key[vecs.length];
@@ -96,6 +96,10 @@ public class Frame extends Lockable {
   }
 
 
+  public boolean checkCompatible( Frame fr ) {
+    return checkCompatible( new Vec[]{anyVec(),fr.anyVec()} );
+  }
+
   /** Check that the vectors are all compatible.  All Vecs have their content
    *  sharded using same number of rows per chunk.  */
   private static boolean checkCompatible( Vec vecs[] ) {
@@ -107,14 +111,14 @@ public class Frame extends Lockable {
     for( Vec vec : vecs ) {
       if( vec instanceof AppendableVec ) continue; // New Vectors are endlessly compatible
       if( vec.nChunks() != nchunks )
-        throw new IllegalArgumentException("Vectors different numbers of chunks, "+nchunks+" and "+vec.nChunks());
+        return false;
     }
     // Also check each chunk has same rows
     for( int i=0; i<nchunks+1; i++ ) {
       long es = v0.chunk2StartElem(i);
       for( Vec vec : vecs )
         if( !(vec instanceof AppendableVec) && vec.chunk2StartElem(i) != es )
-          throw new IllegalArgumentException("Vector chunks different numbers of rows, "+es+" and "+vec.chunk2StartElem(i));
+          return false;
     }
     // For larger Frames, verify that the layout is compatible - else we'll be
     // endlessly cache-missing the data around the cluster, pulling copies
@@ -122,7 +126,7 @@ public class Frame extends Lockable {
     if( v0.length() > 1e4 ) {
       Vec.VectorGroup grp = v0.group();
       for( Vec vec : vecs )
-        assert grp.equals(vec.group()) : "Vector " + vec + " has different vector group!";
+        if( !grp.equals(vec.group()) ) return false;
     }
     return true;
   }

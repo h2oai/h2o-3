@@ -340,7 +340,7 @@ public class ParseDataset2 extends Job<Frame> {
     private final Key _eKey = Key.make();
     // Mapping from Chunk# to cluster-node-number holding the enum mapping.
     // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
-    private final int[] _chunk2Enum;
+    private int[] _chunk2Enum;
     // ParseMonitor key
     private final Key _progress;
     // A mapping of Key+ByteVec to rolling total Chunk counts.
@@ -440,18 +440,17 @@ public class ParseDataset2 extends Job<Frame> {
     // Reduce: combine errors from across files.
     // Roll-up other meta data
     @Override public void reduce( MultiFileParseTask uzpt ) {
-      //assert this != uzpt;
-      //// Collect & combine columns across files
-      //if(_dout == null)_dout = uzpt._dout;
-      //else _dout.reduce(uzpt._dout);
-      //if(_chunk2Enum == null)_chunk2Enum = uzpt._chunk2Enum;
-      //else if(_chunk2Enum != uzpt._chunk2Enum) { // we're sharing global array!
-      //  for(int i = 0; i < _chunk2Enum.length; ++i){
-      //    if(_chunk2Enum[i] == -1)_chunk2Enum[i] = uzpt._chunk2Enum[i];
-      //    else assert uzpt._chunk2Enum[i] == -1:Arrays.toString(_chunk2Enum) + " :: " + Arrays.toString(uzpt._chunk2Enum);
-      //  }
-      //}
-      throw H2O.unimpl();
+      assert this != uzpt;
+      // Collect & combine columns across files
+      if( _dout == null ) _dout = uzpt._dout;
+      else _dout.reduce(uzpt._dout);
+      if( _chunk2Enum == null ) _chunk2Enum = uzpt._chunk2Enum;
+      else if(_chunk2Enum != uzpt._chunk2Enum) { // we're sharing global array!
+        for( int i = 0; i < _chunk2Enum.length; ++i ) {
+          if( _chunk2Enum[i] == -1 ) _chunk2Enum[i] = uzpt._chunk2Enum[i];
+          else assert uzpt._chunk2Enum[i] == -1 : Arrays.toString(_chunk2Enum) + " :: " + Arrays.toString(uzpt._chunk2Enum);
+        }
+      }
     }
 
     // Zipped file; no parallel decompression; decompress into local chunks,

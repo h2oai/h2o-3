@@ -2,6 +2,7 @@ package water;
 
 import static org.junit.Assert.*;
 import java.io.File;
+import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.*;
 
@@ -55,23 +56,63 @@ public class TestUtil {
     return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
   }
 
+  protected Frame parse_test_folder( String fname ) {
+    File folder = find_test_file(fname);
+    assert folder.isDirectory();
+    ArrayList<Key> keys = new ArrayList<>();
+    for( File f : folder.listFiles() )
+      if( f.isFile() )
+        keys.add(NFSFileVec.make(f)._key);
+    Key[] res = new Key[keys.size()];
+    keys.toArray(res);
+    return water.parser.ParseDataset2.parse(Key.make(),res);
+  }
+
   // Compare 2 frames
   protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
-    return new Cmp().doAll(new Frame(fr1).add(fr2))._ok;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
+    if( fr1.checkCompatible(fr2) )
+      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
+    // Else do it the slow hard way
+    return !(new Cmp2(fr2).doAll(fr1)._unequal);
   }
-  private static class Cmp extends MRTask<Cmp> {
-    boolean _ok = true;
+  // Fast compatible Frames
+  private static class Cmp1 extends MRTask<Cmp1> {
+    boolean _unequal;
     @Override public void map( Chunk chks[] ) {
-      for( int rows = 0; rows < chks[0]._len; rows++ )
-        for( int cols=0; cols<chks.length>>1; cols++ ) {
-          double d0 = chks[cols                 ].at0(rows);
-          double d1 = chks[cols+(chks.length>>1)].at0(rows);
+      for( int cols=0; cols<chks.length>>1; cols++ ) {
+        Chunk c0 = chks[cols                 ];
+        Chunk c1 = chks[cols+(chks.length>>1)];
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+          double d0 = c0.at0(rows), d1 = c1.at0(rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-            _ok = false; return;
+            _unequal = true; return;
           }
         }
+      }
     }
-    @Override public void reduce( Cmp cmp ) { _ok &= cmp._ok; }
+    @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
+  }
+  // Slow incompatible frames
+  private static class Cmp2 extends MRTask<Cmp2> {
+    final Frame _fr;
+    Cmp2( Frame fr ) { _fr = fr; }
+    boolean _unequal;
+    @Override public void map( Chunk chks[] ) {
+      for( int cols=0; cols<chks.length>>1; cols++ ) {
+        if( _unequal ) return;
+        Chunk c0 = chks[cols];
+        Vec v1 = _fr.vecs()[cols];
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+          double d0 = c0.at0(rows), d1 = v1.at(c0._start + rows);
+          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
+            _unequal = true; return;
+          }
+        }
+      }
+    }
+    @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
   }
 
 
