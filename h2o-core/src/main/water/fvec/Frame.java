@@ -2,6 +2,7 @@ package water.fvec;
 
 import java.util.Arrays;
 import water.*;
+import water.util.ArrayUtils;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
@@ -81,6 +82,17 @@ public class Frame extends Lockable {
     for( int i=0; i<vecs.length; i++ )
       add(fr._names[i],vecs[i]);
     return this;
+  }
+
+  // Pull out a subset frame, by column name
+  public Frame subframe( String[] names ) {
+    Vec[] vecs = new Vec[names.length];
+    for( int i=0; i<names.length; i++ ) {
+      int idx = ArrayUtils.find(_names,names[i]);
+      if( idx== -1 ) throw new IllegalArgumentException("Column "+names[i]+" not found");
+      vecs[i] = vecs()[idx];
+    }
+    return new Frame( names, vecs );
   }
 
 

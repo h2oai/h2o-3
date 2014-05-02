@@ -9,7 +9,7 @@ public abstract class Keyed extends Iced {
   // Remove any K/V store parts associated with this Key
   public void remove( ) { remove(new Futures()).blockForPending(); }
   public Futures remove( Futures fs ) {
-    DKV.remove(_key,fs);
+    if( _key != null ) DKV.remove(_key,fs);
     return fs; 
   }
   static void remove( Key k ) {
