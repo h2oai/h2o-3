@@ -28,6 +28,9 @@ public class ParseDataset2 extends Job<Frame> {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParserSetup globalSetup = ParserSetup.guessSetup(bits, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
+    return parse(okey,keys,delete_on_done,globalSetup);
+  }
+  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParserSetup globalSetup) {
     return forkParseDataset(okey, keys, globalSetup, delete_on_done).get();
   }
 
@@ -177,9 +180,10 @@ public class ParseDataset2 extends Job<Frame> {
     // Remove CSV files from H2O memory
     for( Key k : fkeys ) {
       Value val = DKV.get(k);
-      if( val.isVec() && delete_on_done ) {
-        ((Vec)val.get()).remove(); // Raw vecs, bytevecs & NFSFileVecs, often from test code
-      } else {                     // Frames (of NFSFileVecs) from e.g. Import
+      if( val.isVec() ) {
+        if( delete_on_done )
+          ((Vec)val.get()).remove(); // Raw vecs, bytevecs & NFSFileVecs, often from test code
+      } else {                       // Frames (of NFSFileVecs) from e.g. Import
         Lockable l = DKV.get(k).get();
         if( delete_on_done ) l.delete(job._key,0.0f);
         else                 l.unlock(job._key);
@@ -278,7 +282,10 @@ public class ParseDataset2 extends Job<Frame> {
         _gEnums = etk._gEnums;
         _lEnums = etk._lEnums;
       } else if (etk._gEnums != null) {
-        for( int i : _ecols ) _gEnums[i].merge(etk._gEnums[i]);
+        for( int i : _ecols ) {
+          if( _gEnums[i] == null ) _gEnums[i] = etk._gEnums[i];
+          else if( etk._gEnums[i] != null ) _gEnums[i].merge(etk._gEnums[i]);
+        }
         for( int i = 0; i < _lEnums.length; ++i )
           if( _lEnums[i] == null ) _lEnums[i] = etk._lEnums[i];
           else assert etk._lEnums[i] == null;
@@ -542,7 +549,7 @@ public class ParseDataset2 extends Job<Frame> {
       _vecIdStart = vecIdStart;
       _ctypes = MemoryManager.malloc1(ncols);
       for(int i = 0; i < ncols; ++i)
-        _nvs[i] = (NewChunk)(_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
+        _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
 
     }
     @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){

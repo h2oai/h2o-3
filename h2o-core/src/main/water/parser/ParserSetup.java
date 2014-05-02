@@ -94,7 +94,7 @@ class ParserSetup extends Iced {
   public static ParserSetup guessSetup( byte[] bits, int checkHeader ) { return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, false, checkHeader, null); }
 
   private static final ParserType guessTypeOrder[] = {ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
-  private static ParserSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  public static ParserSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
     switch( pType ) {
     case CSV:      return      CsvParser.CSVguessSetup(bits,sep,ncols,singleQuotes,checkHeader,columnNames);
     case SVMLight: return SVMLightParser.   guessSetup(bits);

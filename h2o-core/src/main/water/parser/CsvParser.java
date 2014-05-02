@@ -13,7 +13,7 @@ class CsvParser extends Parser {
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
-    ValueString _str = new ValueString();
+    ValueString str = new ValueString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
     int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
@@ -72,7 +72,7 @@ MAIN_LOOP:
             break;
           }
           if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
-            _str.addChar();
+            str.addChar();
             break;
           }
           // fallthrough to STRING_END
@@ -81,12 +81,12 @@ MAIN_LOOP:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
             break;
           // we have parsed the string enum correctly
-          if((_str.get_off() + _str.get_length()) > _str.get_buf().length){ // crossing chunk boundary
-            assert _str.get_buf() != bits;
-            _str.addBuff(bits);
+          if((str.get_off() + str.get_length()) > str.get_buf().length){ // crossing chunk boundary
+            assert str.get_buf() != bits;
+            str.addBuff(bits);
           }
-          dout.addStrCol(colIdx, _str);
-          _str.set(null, 0, 0);
+          dout.addStrCol(colIdx, str);
+          str.set(null, 0, 0);
           ++colIdx;
           state = SEPARATOR_OR_EOL;
           // fallthrough to SEPARATOR_OR_EOL
@@ -102,7 +102,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case EOL:
           if(quotes != 0){
-            System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((_str.get_length()+1) < offset && _str.get_off() > 0)?new String(Arrays.copyOfRange(bits,_str.get_off()-1,offset)):""));
+            System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
             dout.invalidLine("Unmatched quote char " + ((char)quotes));
             colIdx = 0;
             quotes = 0;
@@ -119,8 +119,8 @@ MAIN_LOOP:
           if (((c >= '0') && (c <= '9')) || (c == '-') || (c == CHAR_DECIMAL_SEP) || (c == '+')) {
             state = TOKEN;
           } else {
-            _str.set(bits,offset-1,0);
-            _str.addChar();
+            str.set(bits, offset - 1, 0);
+            str.addChar();
             if (c == quotes) {
               state = COND_QUOTE;
               break;
@@ -169,7 +169,7 @@ MAIN_LOOP:
         case TOKEN:
           if( dout.isString(colIdx) ) { // Forced already to a string col?
             state = STRING; // Do not attempt a number parse, just do a string parse
-            _str.set(bits, offset, 0);
+            str.set(bits, offset, 0);
             continue MAIN_LOOP;
           } else if (((c >= '0') && (c <= '9')) || (c == '-') || (c == CHAR_DECIMAL_SEP) || (c == '+')) {
             state = NUMBER;
@@ -192,7 +192,7 @@ MAIN_LOOP:
             break;
           } else {
             state = STRING;
-            _str.set(bits, offset, 0);
+            str.set(bits, offset, 0);
             continue MAIN_LOOP;
           }
           // fallthrough to NUMBER
@@ -254,7 +254,7 @@ MAIN_LOOP:
           } else {
             state = STRING;
             offset = tokenStart-1;
-            _str.set(bits,tokenStart,0);
+            str.set(bits, tokenStart, 0);
             break; // parse as String token now
           }
         // ---------------------------------------------------------------------
@@ -323,7 +323,7 @@ MAIN_LOOP:
           if ((c < '0') || (c > '9')){
             state = STRING;
             offset = tokenStart-1;
-            _str.set(bits,tokenStart,0);
+            str.set(bits, tokenStart, 0);
             break; // parse as String token now
           }
           state = NUMBER_EXP;  // fall through to NUMBER_EXP
@@ -340,7 +340,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case COND_QUOTE:
           if (c == quotes) {
-            _str.addChar();
+            str.addChar();
             state = STRING;
             break;
           } else {
@@ -358,7 +358,7 @@ MAIN_LOOP:
         firstChunk = true;
         bits = bits0;
         offset += bits.length;
-        _str.set(bits,offset,0);
+        str.set(bits, offset, 0);
       } else if (offset >= bits.length) { // Off end of 1st chunk?  Parse into 2nd chunk
         // Attempt to get more data.
         if( firstChunk && bits1 == null )

@@ -388,7 +388,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           appendableChunks = new NewChunk[_noutputs];
           for(int i = 0; i < _appendables.length; ++i){
             _appendables[i] = new AppendableVec(vg.vecKey(_vid+i));
-            appendableChunks[i] = (NewChunk)_appendables[i].chunkForChunkIdx(_lo);
+            appendableChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
           }
         }
         // Call all the various map() calls that apply

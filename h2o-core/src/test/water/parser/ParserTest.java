@@ -10,7 +10,7 @@ public class ParserTest extends TestUtil {
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   // Make a ByteVec with the specific Chunks
-  private Key k(String... data) {
+  static Key makeByteVec(String... data) {
     Futures fs = new Futures();
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
@@ -80,14 +80,14 @@ public class ParserTest extends TestUtil {
 
       StringBuilder sb1 = new StringBuilder();
       for( String ds : dataset ) sb1.append(ds).append("\n");
-      Key k1 = k(sb1.toString());
+      Key k1 = makeByteVec(sb1.toString());
       Key r1 = Key.make("r1");
       ParseDataset2.parse(r1, k1);
       testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
       for( String ds : dataset ) sb2.append(ds).append("\r\n");
-      Key k2 = k(sb2.toString());
+      Key k2 = makeByteVec(sb2.toString());
       Key r2 = Key.make("r2");
       ParseDataset2.parse(r2, k2);
       testParsed(r2,exp);
@@ -122,7 +122,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key k = k(dataset);
+      Key k = makeByteVec(dataset);
       Key r3 = Key.make();
       ParseDataset2.parse(r3,k);
       testParsed(r3,exp);
@@ -153,7 +153,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key k = k(dataset);
+      Key k = makeByteVec(dataset);
       Key r4 = Key.make();
       ParseDataset2.parse(r4,k);
       testParsed(r4,exp);
@@ -189,7 +189,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = k(dataset);
+      Key key = makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
@@ -210,7 +210,7 @@ public class ParserTest extends TestUtil {
     };
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = k(dataset);
+      Key key = makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset2.parse(r,key);
       testParsed(r, expDouble);
@@ -239,7 +239,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = k(dataset);
+      Key key = makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
@@ -287,7 +287,7 @@ public class ParserTest extends TestUtil {
     final char separator = ',';
 
     String[] dataset = getDataForSeparator(separator, data);
-    Key key = k(dataset);
+    Key key = makeByteVec(dataset);
     Key r = Key.make();
     ParseDataset2.parse(r,key);
     Frame fr = DKV.get(r).get();
@@ -321,7 +321,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       StringBuilder sb = new StringBuilder();
       for( String ds : dataset ) sb.append(ds).append("\n");
-      Key k = k(sb.toString());
+      Key k = makeByteVec(sb.toString());
       Key r5 = Key.make();
       ParseDataset2.parse(r5, k);
       testParsed(r5, exp);
@@ -408,7 +408,7 @@ public class ParserTest extends TestUtil {
     };
     StringBuilder sb = new StringBuilder();
     for( String ds : dataset ) sb.append(ds).append("\n");
-    Key k = k(sb.toString());
+    Key k = makeByteVec(sb.toString());
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,exp);

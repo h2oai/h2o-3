@@ -141,7 +141,7 @@ public class AppendableVec extends Vec {
   // Default read/write behavior for AppendableVecs
   @Override protected boolean readable() { return false; }
   @Override protected boolean writable() { return true ; }
-  @Override public Chunk chunkForChunkIdx(int cidx) { return new NewChunk(this,cidx); }
+  @Override public NewChunk chunkForChunkIdx(int cidx) { return new NewChunk(this,cidx); }
   // None of these are supposed to be called while building the new vector
   @Override protected Value chunkIdx( int cidx ) { throw H2O.fail(); }
   @Override public long length() { throw H2O.fail(); }

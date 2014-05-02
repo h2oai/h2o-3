@@ -61,16 +61,15 @@ final class Enum extends Iced {
   void merge(Enum other){
     if( this == other ) return;
     if( isKilled() ) return;
-  //  if( !other.isKilled() ) {   // do the merge
-  //    Map<ValueString, Integer> myMap = _map;
-  //    Map<ValueString, Integer> otMap = other._map;
-  //    if( myMap == otMap ) return;
-  //    for( ValueString str : otMap.keySet() )
-  //      myMap.put(str, 1);
-  //    if( myMap.size() <= MAX_ENUM_SIZE ) return;
-  //  }
-  //  kill(); // too many values, enum should be killed!
-    throw water.H2O.unimpl();
+    if( !other.isKilled() ) {   // do the merge
+      Map<ValueString, Integer> myMap = _map;
+      Map<ValueString, Integer> otMap = other._map;
+      if( myMap == otMap ) return;
+      for( ValueString str : otMap.keySet() )
+        myMap.put(str, 1);
+      if( myMap.size() <= MAX_ENUM_SIZE ) return;
+    }
+    kill(); // too many values, enum should be killed!
   }
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
