@@ -75,7 +75,7 @@ public class Vec extends Keyed {
 
   protected Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
 
-   /** Make a new vector with the same size and data layout as the old one, and
+  /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to zero. */
   public Vec makeZero()                { return makeCon(0); }
   private Vec makeZero(String[] domain) { return makeCon(0, domain); }
@@ -83,49 +83,46 @@ public class Vec extends Keyed {
    *  initialized to a constant. */
   private Vec makeCon( final long l ) { return makeCon(l, null); }
   private Vec makeCon( final long l, String[] domain ) {
-    if( _espc == null ) throw H2O.unimpl(); // need to make espc for e.g. NFSFileVecs!
     final int nchunks = nChunks();
     final Vec v0 = new Vec(group().addVec(), _espc, domain);
-    new MRTask() {
+    new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
-        long row=0;             // Start row
-        Key k;
         for( int i=0; i<nchunks; i++ ) {
-          long nrow = chunk2StartElem(i+1); // Next row
-          if( (k = v0.chunkKey(i)).home() )
-            DKV.put(k,new C0LChunk(l,(int)(nrow-row)),_fs);
-          row = nrow;
+          Key k = v0.chunkKey(i);
+          if( k.home() ) DKV.put(k,new C0LChunk(l,chunkLen(i)),_fs);
         }
       }
-    }.doAll(v0._key);
-    DKV.put(v0._key,v0);
+    }.doAllNodes();
+    DKV.put(v0._key,v0);        // Header last
     return v0;
   }
   private Vec makeCon( final double d ) {
-    Futures fs = new Futures();
-    if( _espc == null ) throw H2O.unimpl(); // need to make espc for e.g. NFSFileVecs!
     if( (long)d==d ) return makeCon((long)d);
     final int nchunks = nChunks();
-    final Vec v0 = new Vec(group().addVecs(1)[0],_espc);
+    final Vec v0 = new Vec(group().addVec(),_espc);
     throw H2O.unimpl();
-    //new DRemoteTask(){
-    //  @Override private void lcompute(){
-    //    long row=0;                 // Start row
-    //    Key k;
-    //    for( int i=0; i<nchunks; i++ ) {
-    //      long nrow = chunk2StartElem(i+1); // Next row
-    //      if((k = v0.chunkKey(i)).home())
-    //        DKV.put(k,new C0DChunk(d,(int)(nrow-row)),_fs);
-    //      row = nrow;
-    //    }
-    //    tryComplete();
-    //  }
-    //  @Override private void reduce(DRemoteTask drt){}
-    //}.invokeOnAllNodes();
-    //DKV.put(v0._key,v0,fs);
-    //fs.blockForPending();
-    //return v0;
   }
+
+  // Make a bunch of compatible zero Vectors
+  Vec[] makeZeros(int n, String[][] domains) {
+    final int nchunks = nChunks();
+    Key[] keys = group().addVecs(n);
+    final Vec[] vs = new Vec[keys.length];
+    for(int i = 0; i < vs.length; ++i) vs[i] = new Vec(keys[i],_espc, domains == null ? null : domains[i]);
+    new MRTask() {
+      @Override protected void setupLocal() {
+        for( int j = 0; j < vs.length; ++j ) {
+          for( int i=0; i<nchunks; i++ ) {
+            Key k = vs[j].chunkKey(i);
+            if( k.home() ) DKV.put(k,new C0LChunk(0L,chunkLen(i)),_fs);
+          }
+        }
+        for( Vec v : vs ) if( v._key.home() ) DKV.put(v._key,v,_fs);
+      }
+    }.doAllNodes();
+    return vs;
+  }
+
   private static Vec makeSeq( int len ) {
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(VectorGroup.VG_LEN1.addVec());
@@ -371,7 +368,7 @@ public class Vec extends Keyed {
   // Cache of last Chunk accessed via at/set api
   transient Chunk _cache;
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
-  private final Chunk chunkForRow(long i) {
+  final Chunk chunkForRow(long i) {
     Chunk c = _cache;
     return (c != null && c._chk2==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
   }

@@ -27,6 +27,8 @@ import water.fvec.Vec.VectorGroup;
  * produce an output frame with newly created Vecs.
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
+  protected MRTask() {}
+  protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
 
   /** The Vectors (or Keys) to work on. */
   public Frame _fr;

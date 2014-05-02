@@ -173,6 +173,16 @@ public class Frame extends Lockable {
     return vecs;
   }
 
+  /** All the domains for enum columns; null for non-enum columns.  */
+  public String[][] domains() {
+    String ds[][] = new String[vecs().length][];
+    for( int i=0; i<vecs().length; i++ )
+      ds[i] = vecs()[i].domain();
+    return ds;
+  }
+
+  public String[] names() { return _names; }
+
   // For MRTask: allow rollups for all written-into vecs
   public Futures postWrite(Futures fs) {
     for( Vec v : vecs() ) v.postWrite(fs);

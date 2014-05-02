@@ -136,7 +136,7 @@ final public class H2O {
   // higher-priority queues.
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
     public H2OCountedCompleter(){}
-    H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+    protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
     // Once per F/J task, drain the high priority queue before doing any low
     // priority work.
