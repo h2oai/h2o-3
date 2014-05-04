@@ -168,6 +168,24 @@ public class Vec extends Keyed {
    *  alternative way, such as file-backed Vecs. */
   public int nChunks() { return _espc.length-1; }
 
+  /** Convert a chunk-index into a starting row #.  For constant-sized chunks
+   *  this is a little shift-and-add math.  For variable-sized chunks this is a
+   *  table lookup. */
+  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
+
+  /** Number of rows in chunk. Does not fetch chunk content. */
+  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+
+  /** Check that row-layouts are compatible. */
+  boolean checkCompatible( Vec v ) {
+    // Groups are equal?  Then only check length
+    if( group().equals(v.group()) ) return length()==v.length();
+    // Otherwise actual layout has to be the same, and size "small enough"
+    // to not worry about data-replication when things are not homed the same.
+    // The layout test includes an exactly-equals-length check.
+    return Arrays.equals(_espc,v._espc) && length() < 1e5;
+  }
+
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
   public final boolean isEnum(){return _domain != null;}
@@ -267,14 +285,6 @@ public class Vec extends Keyed {
     while( _espc[lo+1] == i ) lo++;
     return lo;
   }
-
-  /** Convert a chunk-index into a starting row #.  For constant-sized chunks
-   *  this is a little shift-and-add math.  For variable-sized chunks this is a
-   *  table lookup. */
-  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
-
-  /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Get a Vec Key from Chunk Key, without loading the Chunk */
   public static Key getVecKey( Key key ) {

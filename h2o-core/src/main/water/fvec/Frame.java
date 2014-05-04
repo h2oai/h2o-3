@@ -21,14 +21,10 @@ public class Frame extends Lockable {
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   public Frame( Key key, String names[], Vec vecs[] ) { 
     super(key);
-    assert checkCompatible(vecs) : "Vectors different numbers of chunks";
 
     // Require all Vecs already be installed in the K/V store
-    Key keys[] = new Key[vecs.length];
-    for( int i=0; i<vecs.length; i++ ) {
-      Key k = keys[i] = vecs[i]._key;
-      assert DKV.get(k)!=null;
-    }
+    for( int i=0; i<vecs.length; i++ ) DKV.prefetch(vecs[i]._key);
+    for( int i=0; i<vecs.length; i++ ) assert DKV.get(vecs[i]._key) != null;
 
     // Always require names
     if( names==null ) {
@@ -37,31 +33,54 @@ public class Frame extends Lockable {
     } 
     assert names.length == vecs.length;
 
-    // Set final fields
-    _names= names;
-    _vecs = vecs;
-    _keys = keys;
+    _names = new String[0];
+    _keys  = new Key   [0];
+    _vecs  = new Vec   [0];
+    add(names,vecs);
   }
-
-  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
-  // resulting Frame does not share with the original, so the set of Vecs can
-  // be freely hacked without disturbing the original Frame.
-  public Frame( Frame fr ) {
-    super( Key.make() );
-    _names= fr._names.clone();
-    _keys = fr._keys .clone();
-    _vecs = fr.vecs().clone();
+  // Add a bunch of vecs
+  private void add( String[] names, Vec[] vecs ) {
+    for( int i=0; i<vecs.length; i++ )
+      add(names[i],vecs[i]);
   }
-
-  // Append a Vec
+  // Append a default-named Vec
   public Vec add( Vec vec ) { return add("C"+(numCols()+1),vec); }
+  // Append a named Vec
   public Vec add( String name, Vec vec ) {
-    assert checkCompatible(vec);
+    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = uniquify(name);
+    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
     _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
     _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
     return vec;
+  }
+  // Append a Frame
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+
+  /** Check that the vectors are all compatible.  All Vecs have their content
+   *  sharded using same number of rows per chunk, and all names are unique.
+   *  Throw an IAE if something does not match.  */
+  private void checkCompatible( String name, Vec vec ) {
+    if( ArrayUtils.find(_names,name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
+    if( vec instanceof AppendableVec ) return; // New Vectors are endlessly compatible
+    Vec v0 = anyVec();
+    if( v0 == null ) return; // No fixed-size Vecs in the Frame
+    // Vector group has to be the same, or else the layout has to be the same,
+    // or else the total length has to be small.
+    if( !v0.checkCompatible(vec) )
+      throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+    if( v0.length() != vec.length() )
+      throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+  }
+
+  // Used by tests to "go slow" when comparing mis-aligned Frames
+  public boolean checkCompatible( Frame fr ) {
+    if( numCols() != fr.numCols() ) return false;
+    if( numRows() != fr.numRows() ) return false;
+    for( int i=0; i<vecs().length; i++ )
+      if( !vecs()[i].checkCompatible(fr.vecs()[i]) )
+        return false;
+    return true;
   }
 
   private String uniquify( String name ) {
@@ -76,12 +95,14 @@ public class Frame extends Lockable {
     return n;
   }
 
-  // Append a Frame
-  public Frame add( Frame fr ) {
-    Vec[] vecs = fr.vecs();
-    for( int i=0; i<vecs.length; i++ )
-      add(fr._names[i],vecs[i]);
-    return this;
+  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
+  // resulting Frame does not share with the original, so the set of Vecs can
+  // be freely hacked without disturbing the original Frame.
+  public Frame( Frame fr ) {
+    super( Key.make() );
+    _names= fr._names.clone();
+    _keys = fr._keys .clone();
+    _vecs = fr.vecs().clone();
   }
 
   // Pull out a subset frame, by column name
@@ -93,61 +114,6 @@ public class Frame extends Lockable {
       vecs[i] = vecs()[idx];
     }
     return new Frame( names, vecs );
-  }
-
-
-  public boolean checkCompatible( Frame fr ) {
-    return checkCompatible( new Vec[]{anyVec(),fr.anyVec()} );
-  }
-
-  /** Check that the vectors are all compatible.  All Vecs have their content
-   *  sharded using same number of rows per chunk.  */
-  private static boolean checkCompatible( Vec vecs[] ) {
-    Vec v0 = null;
-    for( Vec v : vecs )
-      if( v.readable() ) {v0 = v; break; }
-    if( v0 == null ) return true;
-    int nchunks = v0.nChunks();
-    for( Vec vec : vecs ) {
-      if( vec instanceof AppendableVec ) continue; // New Vectors are endlessly compatible
-      if( vec.nChunks() != nchunks )
-        return false;
-    }
-    // Also check each chunk has same rows
-    for( int i=0; i<nchunks+1; i++ ) {
-      long es = v0.chunk2StartElem(i);
-      for( Vec vec : vecs )
-        if( !(vec instanceof AppendableVec) && vec.chunk2StartElem(i) != es )
-          return false;
-    }
-    // For larger Frames, verify that the layout is compatible - else we'll be
-    // endlessly cache-missing the data around the cluster, pulling copies
-    // local everywhere.
-    if( v0.length() > 1e4 ) {
-      Vec.VectorGroup grp = v0.group();
-      for( Vec vec : vecs )
-        if( !grp.equals(vec.group()) ) return false;
-    }
-    return true;
-  }
-
-  private boolean checkCompatible( Vec vec ) {
-    if( vec instanceof AppendableVec ) return true; // New Vectors are endlessly compatible
-    Vec v0 = anyVec();
-    int nchunks = v0.nChunks();
-    if( vec.nChunks() != nchunks )
-      throw new IllegalArgumentException("Vectors different numbers of chunks, "+nchunks+" and "+vec.nChunks());
-    // Also check each chunk has same rows
-    for( int i=0; i<nchunks+1; i++ ) {
-      long es = v0.chunk2StartElem(i), xs = vec.chunk2StartElem(i);
-      if( xs != es ) throw new IllegalArgumentException("Vector chunks different numbers of rows, "+es+" and "+xs);
-    }
-    // For larger Frames, verify that the layout is compatible - else we'll be
-    // endlessly cache-missing the data around the cluster, pulling copies
-    // local everywhere.
-    if( v0.length() > 1e4 )
-      assert v0.group().equals(vec.group()) : "Vector " + vec + " has different vector group!";
-    return true;
   }
 
   /** Returns the first readable vector. */
