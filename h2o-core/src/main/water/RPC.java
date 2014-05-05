@@ -386,7 +386,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       try {
         // Read the DTask Right Now.  If we are the TCPReceiver thread, then we
         // are reading in that thread... and thus TCP reads are single-threaded.
-        rpc = new RPCCall((water.DTask)ab.get(),ab._h2o,task);
+        rpc = new RPCCall(ab.get(water.DTask.class),ab._h2o,task);
       } catch( AutoBuffer.TCPIsUnreliableException e ) {
         // Here we assume it's a TCP fail on read - and ignore the remote_exec
         // request.  The caller will send it again.  NOTE: this case is

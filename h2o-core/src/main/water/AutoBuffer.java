@@ -559,6 +559,7 @@ public final class AutoBuffer {
   public AutoBuffer put(Freezable f) {
     if( f == null ) return put2(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
+    put2((short)f.frozenType());
     return f.write(this);
   }
 
@@ -638,6 +639,10 @@ public final class AutoBuffer {
   }
 
   public <T extends Freezable> T get() {
+    short id = (short)get2();
+    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
+  }
+  public <T extends Freezable> T get(Class<T> tc) {
     short id = (short)get2();
     return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
   }

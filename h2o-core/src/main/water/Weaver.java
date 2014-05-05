@@ -174,9 +174,9 @@ public class Weaver {
     make_body(icer_cc, iced_cc, iced_clazz, "read", null, null,
               "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    read"+super_id+"(ab,ice);\n",
-              "    ice.%s = ab.get%z();\n",    "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = $s[ab.get1()];\n", "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
-              "    ice.%s = (%C)ab.get%z();\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z());  //%s\n",
+              "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
+              "    ice.%s = $s[ab.get1()];\n",         "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
     if( debug_print ) System.out.println(rbody_impl);
@@ -184,9 +184,9 @@ public class Weaver {
     make_body(icer_cc, iced_cc, iced_clazz, "read", null, null,
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    readJSON"+super_id+"(ab,ice);\n",
-              "    ice.%s = ab.get%z();\n",    "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = $s[ab.get1()];\n", "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
-              "    ice.%s = (%C)ab.get%z();\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z());  //%s\n",
+              "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
+              "    ice.%s = $s[ab.get1()];\n",         "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
     if( debug_print ) System.out.println(rbodyJ_impl);
