@@ -129,8 +129,8 @@ public class NewVectorTest extends TestUtil {
     assertTrue( "Found chunk class "+c3.getClass()+" but expected C1NChunk", c3 instanceof C1NChunk );
 
     c3.set(3,3);
-    assertEquals(3,vec.at8(3)); // Immediate visibility in current thread
     c3.close(0,fs);           // Done writing into chunk
+    assertEquals(3,vec.at8(3)); // Immediate visibility in current thread
     Chunk c4 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
     assertTrue( "Found chunk class "+c4.getClass()+" but expected C1NChunk", c4 instanceof C1NChunk );
     fs.blockForPending();

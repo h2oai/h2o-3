@@ -1303,6 +1303,7 @@ public final class AutoBuffer {
   }
 
   AutoBuffer putJSON1( byte b ) { return putJSON4(b); }
+  public AutoBuffer putJSONA1( String name, byte ary[] ) { return putJSONStr(name).put1(':').putJSONA1(ary); }
   public AutoBuffer putJSONA1( byte ary[] ) {
     if( ary == null ) return putNULL();
     put1('[');
@@ -1323,6 +1324,20 @@ public final class AutoBuffer {
   }
   AutoBuffer putJSONAA1(String name,byte ary[][]) {
     return putJSONStr(name).put1(':').putJSONAA1(ary);
+  }
+
+  AutoBuffer putJSON2( char c ) { return putJSON4(c); }
+  AutoBuffer putJSON2( short c ) { return putJSON4(c); }
+  AutoBuffer putJSON2( String name, char c ) { return putJSONStr(name).put1(':').putJSON2(c); }
+  public AutoBuffer putJSONA2( String name, short ary[] ) { return putJSONStr(name).put1(':').putJSONA2(ary); }
+  public AutoBuffer putJSONA2( short ary[] ) {
+    if( ary == null ) return putNULL();
+    put1('[');
+    for( int i=0; i<ary.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSON2(ary[i]);
+    }
+    return put1(']');
   }
 
   AutoBuffer putJSON8 ( long l ) { return putStr2(Long.toString(l)); }

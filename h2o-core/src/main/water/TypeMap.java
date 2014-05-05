@@ -1,7 +1,7 @@
 package water;
 
 import java.util.Arrays;
-import water.init.Weaver;
+import water.Weaver;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 

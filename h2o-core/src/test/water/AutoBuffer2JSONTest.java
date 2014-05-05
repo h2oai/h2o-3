@@ -23,9 +23,9 @@ public class AutoBuffer2JSONTest extends TestUtil {
   }
 
   static class A2 extends Iced {
-    float f1 = Float.NaN;
-    float f2 = Float.POSITIVE_INFINITY;
-    float f3 = Float.NEGATIVE_INFINITY;
+    public  float f1 = Float.NaN;
+    private float f2 = Float.POSITIVE_INFINITY;
+    final float f3 = Float.NEGATIVE_INFINITY;
     float f4 = -3.141527f;
   }
 
@@ -41,6 +41,15 @@ public class AutoBuffer2JSONTest extends TestUtil {
   }
 
   @Test public void testMisc() {
-    assertEqual(new A3(), "{\"i\":\"3\",\"f2\":\"Infinity\",\"f3\":\"-Infinity\",\"f4\":-3.141527}");
+    assertEqual(new A3(), "{\"i\":3,\"is\":[1,2,2147483647,-1],\"s\":\"hello\",\"ss\":[\"there\",null,\"\\\"\",\":\"]}");
+  }
+
+  static class A4 extends Iced { int a=7; }
+  static class A5 extends Iced { float b=9f; }
+  static class A6 extends A4 { final A5 a5=new A5(); char c='Q'; }
+  @Test public void testNest() {
+    assertEqual(new A4(), "{\"a\":7}");
+    assertEqual(new A5(), "{\"b\":9.0}");
+    assertEqual(new A6(), "{\"a\":7,\"a5\":{\"b\":9.0},\"c\":81}");
   }
 }

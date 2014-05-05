@@ -24,12 +24,12 @@ public class Icer<T extends Freezable> {
   // The generated delegate call-chain will bottom out with final methods
   // that end in the TypeMap ID for "Iced" class - which is "2".
   protected final AutoBuffer write2    (AutoBuffer ab, T ice) { return ab; } 
-  protected final AutoBuffer writeJSON2(AutoBuffer ab, T ice) { return ab.put1('}'); }
+  protected final AutoBuffer writeJSON2(AutoBuffer ab, T ice) { return ab; }
   protected final T read2    (AutoBuffer ab, T ice) { return ice; }
   protected final T readJSON2(AutoBuffer ab, T ice) { return ice; }
   // That end in the TypeMap ID for "H2OCountedCompleter" class - which is "3".
   protected final AutoBuffer write3    (AutoBuffer ab, T ice) { return ab; } 
-  protected final AutoBuffer writeJSON3(AutoBuffer ab, T ice) { return ab.put1('}'); }
+  protected final AutoBuffer writeJSON3(AutoBuffer ab, T ice) { return ab; }
   protected final T read3    (AutoBuffer ab, T ice) { return ice; }
   protected final T readJSON3(AutoBuffer ab, T ice) { return ice; }
 }

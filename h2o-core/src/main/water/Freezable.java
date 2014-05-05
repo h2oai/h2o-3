@@ -17,7 +17,7 @@ public interface Freezable extends Cloneable {
    *  Totally suitable for an array index.  */
   int frozenType();
   /** Clone, without the annoying exception*/
-  public <T extends Freezable> T clone();
+  <T extends Freezable> T clone();
   // Override for a custom serializer.  Else the auto-gen one will read & write
   // all non-transient fields.
   AutoBuffer write_impl( AutoBuffer ab );

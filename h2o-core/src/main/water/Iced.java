@@ -16,12 +16,10 @@ abstract public class Iced<D extends Iced> implements Freezable {
   }
   // Real work is the delegate "Icer" classes.
   // Standard "write thyself into the AutoBuffer" call.
-  @Override final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
-  // Standard "read thyself from the AutoBuffer" call.
-  @Override final public D read(AutoBuffer ab) { return icer().read(ab,(D)this); }
-  // Standard "write thyself into the AutoBuffer" call - using JSON syntax.
+  @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(D)this); }
   @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
-  // Standard "read thyself from the AutoBuffer" call - using JSON syntax.
+  // Standard "read thyself from the AutoBuffer" call.
+  @Override final public D read    (AutoBuffer ab) { return icer().read    (ab,(D)this); }
   @Override final public D readJSON(AutoBuffer ab) { return icer().readJSON(ab,(D)this); }
 
   // Return a unique small dense integer for the type, picking the integer if needed.
@@ -34,7 +32,7 @@ abstract public class Iced<D extends Iced> implements Freezable {
   // Override for a custom serializer.  Else the auto-gen one will read & write
   // all non-transient fields.
   //noninspection UnusedDeclaration
-  public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+  @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
   //noninspection UnusedDeclaration
-  public D read_impl( AutoBuffer ab ) { return (D)this; }
+  @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
 }
