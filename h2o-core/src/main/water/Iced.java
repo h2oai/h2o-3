@@ -19,10 +19,13 @@ abstract public class Iced<D extends Iced> implements Freezable {
   @Override final public AutoBuffer write(AutoBuffer ab) { return icer().write(ab,(D)this); }
   // Standard "read thyself from the AutoBuffer" call.
   @Override final public D read(AutoBuffer ab) { return icer().read(ab,(D)this); }
+  // Standard "write thyself into the AutoBuffer" call - using JSON syntax.
+  @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
+  // Standard "read thyself from the AutoBuffer" call - using JSON syntax.
+  @Override final public D readJSON(AutoBuffer ab) { return icer().readJSON(ab,(D)this); }
+
   // Return a unique small dense integer for the type, picking the integer if needed.
   @Override final public int frozenType() { return icer().frozenType(); }
-  final AutoBuffer writeJSONFields(AutoBuffer ab) { return icer().writeJSONFields(ab,(D)this); }
-  final AutoBuffer writeJSON(AutoBuffer ab) { return writeJSONFields(ab.put1('{')).put1('}'); }
   //@Override water.api.DocGen.FieldDoc[] toDocField() { return null; }
   @Override public final D clone() {
     try { return (D)super.clone(); }
