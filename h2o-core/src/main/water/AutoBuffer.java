@@ -52,7 +52,8 @@ public final class AutoBuffer {
 
   // Total size written out from 'new' to 'close'.  Only updated when actually
   // reading or writing data, or after close().  For profiling only.
-  int _size, _zeros, _arys;
+  int _size;
+  //int _zeros, _arys;
   // More profiling: start->close msec, plus nano's spent in blocking I/O
   // calls.  The difference between (close-start) and i/o msec is the time the
   // i/o thread spends doing other stuff (e.g. allocating Java objects or
@@ -289,7 +290,7 @@ public final class AutoBuffer {
       // the reader will have to wait for.
       if( tcp ) {               // TCP connection?
         if( failed ) {          // Failed TCP?
-          try { _chan.close(); } catch( IOException ioe ) {} // Silently close
+          try { _chan.close(); } catch( IOException ignore ) {} // Silently close
           if( !_read ) _h2o.freeTCPSocket(null); // Tell H2ONode socket is no longer available
         } else {                // Closing good TCP?
           if( _read ) {         // Reader?
@@ -353,13 +354,11 @@ public final class AutoBuffer {
   boolean readMode() { return _read; }
   // Size in bytes sent, after a close()
   int size() { return _size; }
-  int zeros() { return _zeros; }
+  //int zeros() { return _zeros; }
 
   // Available bytes in this buffer to read
-  int remaining() { return _bb.remaining(); }
   int position () { return _bb.position (); }
   void position(int pos) { _bb.position(pos); }
-  int limit() { return _bb.limit(); }
 
   // Return byte[] from a writable AutoBuffer
   final byte[] buf() {
@@ -524,75 +523,42 @@ public final class AutoBuffer {
     return _bb;
   }
 
-  int peek1() {
-    if (eof())
-      return 0;
-    getSp(1);
-    return get1U(position());
-  }
   String getStr(int off, int len) {
     return new String(_bb.array(), _bb.arrayOffset()+off, len);
   }
 
   // -----------------------------------------------
   // Utility functions to get various Java primitives
-  public boolean getZ() { return get1()!=0; }
-  public byte   get1 () { return getSp(1).get      (); }
-  public int    get1U() { return get1() & 0xFF;        }
-  public char   get2 () { return getSp(2).getChar  (); }
-  public int    get4 () { return getSp(4).getInt   (); }
-  public float  get4f() { return getSp(4).getFloat (); }
-  public long   get8 () { return getSp(8).getLong  (); }
-  public double get8d() { return getSp(8).getDouble(); }
+  @SuppressWarnings("unused")  public boolean getZ() { return get1()!=0; }
+  @SuppressWarnings("unused")  public byte   get1 () { return getSp(1).get      (); }
+  @SuppressWarnings("unused")  public int    get1U() { return get1() & 0xFF;        }
+  @SuppressWarnings("unused")  public char   get2 () { return getSp(2).getChar  (); }
+  @SuppressWarnings("unused")  public int    get4 () { return getSp(4).getInt   (); }
+  @SuppressWarnings("unused")  public float  get4f() { return getSp(4).getFloat (); }
+  @SuppressWarnings("unused")  public long   get8 () { return getSp(8).getLong  (); }
+  @SuppressWarnings("unused")  public double get8d() { return getSp(8).getDouble(); }
 
 
-  int get3() {
-    return get1U() << 0 |
-           get1U() << 8 |
-           get1U() << 16;
-  }
+  int    get1U(int off) { return _bb.get    (off)&0xFF; }
+  int    get3 ()        { return get1U() | get1U() << 8 | get1U() << 16; }
+  int    get4 (int off) { return _bb.getInt (off); }
+  long   get8 (int off) { return _bb.getLong(off); }
 
-  AutoBuffer put3( int x ) {
-    assert (-1<<24) <= x && x < (1<<24);
-    return put1((x >> 0)&0xFF).put1((x >> 8)&0xFF).put1(x >> 16);
-  }
-
-
-  int    get1U(int off) { return _bb.get (off)&0xFF; }
-  char   get2 (int off) { return _bb.getChar  (off); }
-  int    get4 (int off) { return _bb.getInt   (off); }
-  float  get4f(int off) { return _bb.getFloat (off); }
-  long   get8 (int off) { return _bb.getLong  (off); }
-  double get8d(int off) { return _bb.getDouble(off); }
-
-  AutoBuffer put1 (int off, int    v) { _bb.put      (off, (byte)(v&0xFF)); return this; }
-  AutoBuffer put2 (int off, char   v) { _bb.putChar  (off, v);              return this; }
-  AutoBuffer put2 (int off, short  v) { _bb.putShort (off, v);              return this; }
-  AutoBuffer put4 (int off, int    v) { _bb.putInt   (off, v);              return this; }
-  AutoBuffer put4f(int off, float  v) { _bb.putFloat (off, v);              return this; }
-  AutoBuffer put8 (int off, long   v) { _bb.putLong  (off, v);              return this; }
-  AutoBuffer put8d(int off, double v) { _bb.putDouble(off, v);              return this; }
-
-  public AutoBuffer putZ (boolean b){ return put1(b?1:0); }
-  public AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
-                                      putSp(1).put((byte)b); return this; }
-  public AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
-  public AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
-  public AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }
-  public AutoBuffer put4f( float f) { putSp(4).putFloat (f); return this; }
-  public AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
-  public AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer putZ (boolean b){ return put1(b?1:0); }
+  @SuppressWarnings("unused")  public AutoBuffer put1 (   int b) { assert b >= -128 && b <= 255 : ""+b+" is not a byte";
+                                                            putSp(1).put((byte)b); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put3( int x ) {   assert (-1<<24) <= x && x < (1<<24);
+                                                            return put1((x)&0xFF).put1((x >> 8)&0xFF).put1(x >> 16); }
+  @SuppressWarnings("unused")  public AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put4f( float f) { putSp(4).putFloat (f); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put8 (  long l) { putSp(8).putLong  (l); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
   public AutoBuffer put(Freezable f) {
     if( f == null ) return put2(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
-    put2((short)f.frozenType());
-    return f.write(this);
-  }
-  AutoBuffer put(Iced f) {
-    if( f == null ) return put2(TypeMap.NULL);
-    assert f.frozenType() > 0;
-    put2((short)f.frozenType());
     return f.write(this);
   }
 
@@ -644,7 +610,7 @@ public final class AutoBuffer {
 
 
   public AutoBuffer putA(Iced[] fs) {
-    _arys++;
+    //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -653,7 +619,7 @@ public final class AutoBuffer {
     return this;
   }
   public AutoBuffer putAA(Iced[][] fs) {
-    _arys++;
+    //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -661,8 +627,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA(fs[i]);
     return this;
   }
-  AutoBuffer putAAA(Iced[][][] fs) {
-    _arys++;
+  @SuppressWarnings("unused") AutoBuffer putAAA(Iced[][][] fs) {
+    //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -671,20 +637,12 @@ public final class AutoBuffer {
     return this;
   }
 
-  public <T extends Freezable> T get(Class<T> t) {
+  public <T extends Freezable> T get() {
     short id = (short)get2();
-    if( id == TypeMap.NULL ) return null;
-    assert id > 0 : "Bad type id "+id;
-    return TypeMap.newFreezable(id).read(this);
-  }
-  <T extends Iced> T get() {
-    short id = (short)get2();
-    if( id == TypeMap.NULL ) return null;
-    assert id > 0 : "Bad type id "+id;
-    return (T)TypeMap.newInstance(id).read(this);
+    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
   }
   public <T extends Iced> T[] getA(Class<T> tc) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -695,7 +653,7 @@ public final class AutoBuffer {
     return ts;
   }
   public <T extends Iced> T[][] getAA(Class<T> tc) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -706,8 +664,8 @@ public final class AutoBuffer {
     for( int i = x; i < x+y; ++i ) ts[i] = getA(tc);
     return ts;
   }
-  <T extends Iced> T[][][] getAAA(Class<T> tc) {
-    _arys++;
+  @SuppressWarnings("unused")  <T extends Iced> T[][][] getAAA(Class<T> tc) {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -721,7 +679,7 @@ public final class AutoBuffer {
   }
 
   public AutoBuffer putAStr(String[] fs)    {
-    _arys++;
+    //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -730,7 +688,7 @@ public final class AutoBuffer {
     return this;
   }
   public String[] getAStr() {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -741,8 +699,8 @@ public final class AutoBuffer {
     return ts;
   }
 
-  public AutoBuffer putAAStr(String[][] fs)    {
-    _arys++;
+  @SuppressWarnings("unused")  public AutoBuffer putAAStr(String[][] fs)    {
+    //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -750,8 +708,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putAStr(fs[i]);
     return this;
   }
-  public String[][] getAAStr() {
-    _arys++;
+  @SuppressWarnings("unused")  public String[][] getAAStr() {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -805,7 +763,7 @@ public final class AutoBuffer {
   // -----------------------------------------------
   // Utility functions to read & write arrays
   public byte[] getA1( ) {
-    _arys++;
+    //_arys++;
     int len = getInt();
     return len == -1 ? null : getA1(len);
   }
@@ -822,7 +780,7 @@ public final class AutoBuffer {
   }
 
   public short[] getA2( ) {
-    _arys++;
+    //_arys++;
     int len = getInt(); if( len == -1 ) return null;
     short[] buf = MemoryManager.malloc2(len);
     int sofar = 0;
@@ -838,7 +796,7 @@ public final class AutoBuffer {
   }
 
   public int[] getA4( ) {
-    _arys++;
+    //_arys++;
     int len = getInt(); if( len == -1 ) return null;
     int[] buf = MemoryManager.malloc4(len);
     int sofar = 0;
@@ -853,7 +811,7 @@ public final class AutoBuffer {
     return buf;
   }
   public float[] getA4f( ) {
-    _arys++;
+    //_arys++;
     int len = getInt(); if( len == -1 ) return null;
     float[] buf = MemoryManager.malloc4f(len);
     int sofar = 0;
@@ -868,7 +826,7 @@ public final class AutoBuffer {
     return buf;
   }
   public long[] getA8( ) {
-    _arys++;
+    //_arys++;
     // Get the lengths of lead & trailing zero sections, and the non-zero
     // middle section.
     int x = getInt(); if( x == -1 ) return null;
@@ -895,7 +853,7 @@ public final class AutoBuffer {
     return buf;
   }
   public double[] getA8d( ) {
-    _arys++;
+    //_arys++;
     int len = getInt(); if( len == -1 ) return null;
     double[] buf = MemoryManager.malloc8d(len);
     int sofar = 0;
@@ -909,8 +867,9 @@ public final class AutoBuffer {
     }
     return buf;
   }
+  @SuppressWarnings("unused")
   public byte[][] getAA1( ) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -920,8 +879,9 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getA1();
     return ary;
   }
+  @SuppressWarnings("unused")
   public short[][] getAA2( ) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -932,7 +892,7 @@ public final class AutoBuffer {
     return ary;
   }
   public int[][] getAA4( ) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -942,8 +902,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getA4();
     return ary;
   }
-  public float[][] getAA4f( ) {
-    _arys++;
+  @SuppressWarnings("unused")  public float[][] getAA4f( ) {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -954,7 +914,7 @@ public final class AutoBuffer {
     return ary;
   }
   public long[][] getAA8( ) {
-    _arys++;
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -964,8 +924,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getA8();
     return ary;
   }
-  public double[][] getAA8d( ) {
-    _arys++;
+  @SuppressWarnings("unused")  public double[][] getAA8d( ) {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -975,8 +935,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getA8d();
     return ary;
   }
-  public int[][][] getAAA4( ) {
-    _arys++;
+  @SuppressWarnings("unused")  public int[][][] getAAA4( ) {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -986,8 +946,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getAA4();
     return ary;
   }
-  public long[][][] getAAA8( ) {
-    _arys++;
+  @SuppressWarnings("unused")  public long[][][] getAAA8( ) {
+    //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
     int x=(int)(xy>>32);         // Leading nulls
@@ -1004,7 +964,7 @@ public final class AutoBuffer {
   }
 
   public AutoBuffer putA1( byte[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
     return putA1(ary,ary.length);
@@ -1020,7 +980,7 @@ public final class AutoBuffer {
     return this;
   }
   AutoBuffer putA2( short[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
     int sofar = 0;
@@ -1035,7 +995,7 @@ public final class AutoBuffer {
     return this;
   }
   public AutoBuffer putA4( int[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
     int sofar = 0;
@@ -1050,7 +1010,7 @@ public final class AutoBuffer {
     return this;
   }
   public AutoBuffer putA8( long[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
 
     // Trim leading & trailing zeros.  Pass along the length of leading &
@@ -1092,7 +1052,7 @@ public final class AutoBuffer {
     return this;
   }
   AutoBuffer putA4f( float[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
     int sofar = 0;
@@ -1107,7 +1067,7 @@ public final class AutoBuffer {
     return this;
   }
   public AutoBuffer putA8d( double[] ary ) {
-    _arys++;
+    //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
     int sofar = 0;
@@ -1122,8 +1082,8 @@ public final class AutoBuffer {
     return this;
   }
 
-  AutoBuffer putAA1( byte[][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAA1( byte[][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1131,8 +1091,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA1(ary[i]);
     return this;
   }
-  AutoBuffer putAA2( short[][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAA2( short[][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1141,7 +1101,7 @@ public final class AutoBuffer {
     return this;
   }
   AutoBuffer putAA4( int[][] ary ) {
-    _arys++;
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1149,8 +1109,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA4(ary[i]);
     return this;
   }
-  AutoBuffer putAA4f( float[][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAA4f( float[][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1159,7 +1119,7 @@ public final class AutoBuffer {
     return this;
   }
   AutoBuffer putAA8( long[][] ary ) {
-    _arys++;
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1167,8 +1127,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA8(ary[i]);
     return this;
   }
-  AutoBuffer putAA8d( double[][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAA8d( double[][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1176,8 +1136,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA8d(ary[i]);
     return this;
   }
-  AutoBuffer putAAA4( int[][][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAAA4( int[][][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1185,8 +1145,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putAA4(ary[i]);
     return this;
   }
-  AutoBuffer putAAA8( long[][][] ary ) {
-    _arys++;
+  @SuppressWarnings("unused")  AutoBuffer putAAA8( long[][][] ary ) {
+    //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
     int x=(int)(xy>>32);
@@ -1204,29 +1164,17 @@ public final class AutoBuffer {
     return putA1(buf);
   }
 
-  public AutoBuffer putEnum( Enum x ) {
+  @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {
     return put1(x==null ? -1 : x.ordinal());
-  }
-
-  AutoBuffer copyArrayFrom(int offset, AutoBuffer ab, int abOff, int len) {
-    byte[] dst = _bb.array();
-    offset += _bb.arrayOffset();
-    byte[] src = ab._bb.array();
-    abOff += ab._bb.arrayOffset();
-    System.arraycopy(src, abOff, dst, offset, len);
-    _bb.position(_bb.position()+len); // Bump dest buffer offset
-    return this;
-  }
-
-  void shift(int source, int target, int length) {
-    System.arraycopy(_bb.array(), source, _bb.array(), target, length);
   }
 
 
   // ==========================================================================
   // JSON AutoBuffer printers
 
-  AutoBuffer putStr2( String s ) {
+  private AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
+  // Escaped JSON string
+  private AutoBuffer putJStr( String s ) {
     byte[] b = s.getBytes();
     int off=0;
     for( int i=0; i<b.length; i++ ) {
@@ -1241,44 +1189,35 @@ public final class AutoBuffer {
     }
     return putA1(b,off,b.length);
   }
-
-  AutoBuffer putNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
-  AutoBuffer putJSONStr( String s ) {
-    return s==null ? putNULL() : put1('"').putStr2(s).put1('"');
-  }
-  AutoBuffer putJSONStr( String name, String value ) {
-    return putJSONStr(name).put1(':').putJSONStr(value);
-  }
-
-  AutoBuffer putJSONAStr(String name, String[] fs) {
-    putJSONStr(name).put1(':');
-    return putJSONAStr(fs);
-  }
-  AutoBuffer putJSONAStr(String[] fs) {
-    if( fs == null ) return putNULL();
+  private AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
+  private AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
+  private AutoBuffer putJSONAStr( String[] ss) {
+    if( ss == null ) return putJNULL();
     put1('[');
-    for( int i=0; i<fs.length; i++ ) {
+    for( int i=0; i<ss.length; i++ ) {
       if( i>0 ) put1(',');
-      putJSONStr(fs[i]);
+      putJSONStr(ss[i]);
     }
     return put1(']');
   }
-  AutoBuffer putJSONAAStr( String name, String[][] a ) {
-    putJSONStr(name).put1(':');
-    if( a == null ) return putNULL();
+  private AutoBuffer putJSONAAStr( String[][] sss) {
+    if( sss == null ) return putJNULL();
     put1('[');
-    for( int i=0; i<a.length; i++ ) {
+    for( int i=0; i<sss.length; i++ ) {
       if( i>0 ) put1(',');
-      putJSONAStr(a[i]);
+      putJSONAStr(sss[i]);
     }
     return put1(']');
   }
 
-  AutoBuffer putJSON( Iced ice ) {
-    return ice == null ? putNULL() : ice.writeJSON(this);
-  }
-  AutoBuffer putJSONA( Iced fs[] ) {
-    if( fs == null ) return putNULL();
+  @SuppressWarnings("unused")  public AutoBuffer putJSONStr  (String name, String   s   ) { return putJSONStr(name).put1(':').putJSONStr(s); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAStr (String name, String[] ss  ) { return putJSONStr(name).put1(':').putJSONAStr(ss); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAAStr(String name, String[][]sss) { return putJSONStr(name).put1(':').putJSONAAStr(sss); }
+
+
+  private AutoBuffer putJSON ( Freezable ice   ) { return ice == null ? putJNULL() : ice.writeJSON(this); }
+  private AutoBuffer putJSONA( Freezable fs[]  ) {
+    if( fs == null ) return putJNULL();
     put1('[');
     for( int i=0; i<fs.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1286,8 +1225,8 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONAA( Iced fs[][] ) {
-    if( fs == null ) return putNULL();
+  private AutoBuffer putJSONAA( Freezable fs[][]) {
+    if( fs == null ) return putJNULL();
     put1('[');
     for( int i=0; i<fs.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1295,17 +1234,21 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
+  @SuppressWarnings("unused")  public AutoBuffer putJSON  ( String name, Freezable f   ) { return putJSONStr(name).put1(':').putJSON  (f); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONA ( String name, Freezable f[] ) { return putJSONStr(name).put1(':').putJSONA (f); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
+  
+  @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJSONStr("" + value); }
 
-  AutoBuffer putJSONZ( String name, boolean value ) {
-    putJSONStr(name).put1(':');
-    putJSONStr("" + value);
-    return this;
+  // Most simple integers
+  private AutoBuffer putJInt( int i ) { 
+    byte b[] = Integer.toString(i).getBytes();
+    return putA1(b,b.length);
   }
 
-  AutoBuffer putJSON1( byte b ) { return putJSON4(b); }
-  public AutoBuffer putJSONA1( String name, byte ary[] ) { return putJSONStr(name).put1(':').putJSONA1(ary); }
-  public AutoBuffer putJSONA1( byte ary[] ) {
-    if( ary == null ) return putNULL();
+  private AutoBuffer putJSON1( byte b ) { return putJInt(b); }
+  private AutoBuffer putJSONA1( byte ary[] ) {
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1313,8 +1256,8 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONAA1(byte ary[][]) {
-    if( ary == null ) return putNULL();
+  private AutoBuffer putJSONAA1(byte ary[][]) {
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1322,16 +1265,17 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONAA1(String name,byte ary[][]) {
-    return putJSONStr(name).put1(':').putJSONAA1(ary);
-  }
+  @SuppressWarnings("unused")  public AutoBuffer putJSON1  (String name, byte b    ) { return putJSONStr(name).put1(':').putJSON1(b); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONA1 (String name, byte b[]  ) { return putJSONStr(name).put1(':').putJSONA1(b); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAA1(String name, byte b[][]) { return putJSONStr(name).put1(':').putJSONAA1(b); }
 
   AutoBuffer putJSON2( char c ) { return putJSON4(c); }
-  AutoBuffer putJSON2( short c ) { return putJSON4(c); }
   AutoBuffer putJSON2( String name, char c ) { return putJSONStr(name).put1(':').putJSON2(c); }
-  public AutoBuffer putJSONA2( String name, short ary[] ) { return putJSONStr(name).put1(':').putJSONA2(ary); }
-  public AutoBuffer putJSONA2( short ary[] ) {
-    if( ary == null ) return putNULL();
+  AutoBuffer putJSON2( short c ) { return putJSON4(c); }
+  AutoBuffer putJSON2( String name, short c ) { return putJSONStr(name).put1(':').putJSON2(c); }
+  AutoBuffer putJSONA2( String name, short ary[] ) { return putJSONStr(name).put1(':').putJSONA2(ary); }
+  AutoBuffer putJSONA2( short ary[] ) {
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1340,9 +1284,9 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putJSON8 ( long l ) { return putStr2(Long.toString(l)); }
+  AutoBuffer putJSON8 ( long l ) { return putJStr(Long.toString(l)); }
   AutoBuffer putJSONA8( long ary[] ) {
-    if( ary == null ) return putNULL();
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1351,7 +1295,7 @@ public final class AutoBuffer {
     return put1(']');
   }
   AutoBuffer putJSONAA8( long ary[][] ) {
-    if( ary == null ) return putNULL();
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1360,7 +1304,7 @@ public final class AutoBuffer {
     return put1(']');
   }
   AutoBuffer putJSONAAA8( long ary[][][] ) {
-    if( ary == null ) return putNULL();
+    if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1370,22 +1314,19 @@ public final class AutoBuffer {
   }
 
   AutoBuffer putEnumJSON( Enum e ) {
-    return e==null ? putNULL() : put1('"').putStr2(e.toString()).put1('"');
+    return e==null ? putJNULL() : put1('"').putJStr(e.toString()).put1('"');
   }
 
-  AutoBuffer putJSON  ( String name, Iced f   ) { return putJSONStr(name).put1(':').putJSON (f); }
-  AutoBuffer putJSONA ( String name, Iced f[] ) { return putJSONStr(name).put1(':').putJSONA(f); }
-  AutoBuffer putJSONAA( String name, Iced f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
   AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
   AutoBuffer putEnumJSON( String name, Enum e ) { return putJSONStr(name).put1(':').putEnumJSON(e); }
 
   AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
   AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
-  AutoBuffer putJSON4 ( int i ) { return putStr2(Integer.toString(i)); }
+  AutoBuffer putJSON4 ( int i ) { return putJStr(Integer.toString(i)); }
   AutoBuffer putJSON4 ( String name, int i ) { return putJSONStr(name).put1(':').putJSON4(i); }
   AutoBuffer putJSONA4( int[] a) {
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1399,7 +1340,7 @@ public final class AutoBuffer {
   }
   AutoBuffer putJSONAA4(String name, int[][] a) {
     putJSONStr(name).put1(':');
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1408,10 +1349,10 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putJSON4f ( float f ) { return f==Float.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(f==Float.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Float.isNaN(f)?putJSONStr(JSON_NAN):putStr2(Float .toString(f)))); }
+  AutoBuffer putJSON4f ( float f ) { return f==Float.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(f==Float.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Float.isNaN(f)?putJSONStr(JSON_NAN):putJStr(Float .toString(f)))); }
   AutoBuffer putJSON4f ( String name, float f ) { return putJSONStr(name).put1(':').putJSON4f(f); }
   AutoBuffer putJSONA4f( float[] a ) {
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1425,7 +1366,7 @@ public final class AutoBuffer {
   }
   AutoBuffer putJSONAA4f(String name, float[][] a) {
     putJSONStr(name).put1(':');
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1434,10 +1375,10 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putJSON8d( double d ) { return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putStr2(Double.toString(d)))); }
+  AutoBuffer putJSON8d( double d ) { return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d)))); }
   AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
   AutoBuffer putJSONA8d( double[] a ) {
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
@@ -1451,7 +1392,7 @@ public final class AutoBuffer {
   }
   AutoBuffer putJSONAA8d( String name, double[][] a ) {
     putJSONStr(name).put1(':');
-    if( a == null ) return putNULL();
+    if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');

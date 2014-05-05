@@ -14,6 +14,7 @@ public class KVTest extends TestUtil {
   // Run some basic tests.  Create a key, test that it does not exist, insert a
   // value for it, get the value for it, delete it.
   @Test public void testBasicCRUD() {
+    long start = System.currentTimeMillis();
     Key k1 = Key.make("key1");
     Value v0 = DKV.get(k1);
     assertNull(v0);
@@ -25,11 +26,14 @@ public class KVTest extends TestUtil {
     DKV.remove(k1);
     Value v3 = DKV.get(k1);
     assertNull(v3);
+    System.out.println("BasicCrud "+(System.currentTimeMillis()-start));
   }
 
   // ---
   // Make 100 keys, verify them all, delete them all.
   @Test public void test100Keys() {
+    long start = System.currentTimeMillis();
+    Futures fs = new Futures();
     Key   keys[] = new Key  [100];
     Value vals[] = new Value[keys.length];
     for( int i=0; i<keys.length; i++ ) {
@@ -37,7 +41,7 @@ public class KVTest extends TestUtil {
       Value v0 = DKV.get(k);
       assertNull(v0);
       Value v1 = vals[i] = new Value(k,"test2 bits for Value"+i);
-      DKV.put(k,v1);
+      DKV.put(k,v1,fs);
       assertEquals(v1._key,k);
     }
     for( int i=0; i<keys.length; i++ ) {
@@ -45,16 +49,20 @@ public class KVTest extends TestUtil {
       assertEquals(vals[i],v);
     }
     for( Key key : keys )
-      DKV.remove(key);
+      DKV.remove(key,fs);
     for( Key key : keys ) {
       Value v3 = DKV.get(key);
       assertNull(v3);
     }
+    fs.blockForPending();
+    System.out.println("100Keys "+(System.currentTimeMillis()-start));
   }
 
   // ---
   // Issue a slew of remote puts, then issue a DFJ job on the array of keys.
   @Test public void testRemoteBitSet() throws Exception {
+    long start = System.currentTimeMillis(); 
+    Futures fs = new Futures();
     // Issue a slew of remote key puts
     Key[] keys = new Key[32];
     for( int i = 0; i < keys.length; ++i ) {
@@ -62,14 +70,15 @@ public class KVTest extends TestUtil {
       byte[] bits = new byte[4];
       bits[0] = (byte)i;        // Each value holds a shift-count
       Value val = new Value(k,bits);
-      DKV.put(k,val);
+      DKV.put(k,val,fs);
     }
-    DKV.write_barrier();
+    fs.blockForPending();
 
-    RemoteBitSet r = new RemoteBitSet();
-    r.doAll(keys);
-    for( Key k : keys ) DKV.remove(k);
-    assertEquals((int)((1L<<keys.length)-1), r._x);
+    int x = new RemoteBitSet().doAll(keys)._x;
+    assertEquals((int)((1L<<keys.length)-1), x);
+    for( Key k : keys ) DKV.remove(k,fs);
+    fs.blockForPending();
+    System.out.println("RemoteBitSet "+(System.currentTimeMillis()-start));
   }
 
   // Remote Bit Set: OR together the result of a single bit-mask where the
@@ -83,6 +92,7 @@ public class KVTest extends TestUtil {
   // ---
   // Issue a large Key/Value put/get - testing the TCP path
   @Test public void testTcpCRUD() {
+    long start = System.currentTimeMillis();
     // Make an execution key homed to the remote node
     H2O cloud = H2O.CLOUD;
     H2ONode target = cloud._memary[0];
@@ -103,13 +113,15 @@ public class KVTest extends TestUtil {
     DKV.remove(remote_key);
     Value v3 = DKV.get(remote_key);
     assertNull(v3);
+    System.out.println("TcpCRUD "+(System.currentTimeMillis()-start));
   }
 
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into a NFSFileVec
   // Run a distributed byte histogram.
-  @Test public void testMultiMbFile() throws Exception {
+  @Test public void testMultiMbFile() {
+    long start = System.currentTimeMillis();
     NFSFileVec nfs = null;
     try {
       File file = find_test_file("build/h2o-core.jar");
@@ -122,6 +134,7 @@ public class KVTest extends TestUtil {
     } finally {
       if( nfs != null ) nfs.remove(); // remove from DKV
     }
+    System.out.println("MultiMbFile "+(System.currentTimeMillis()-start));
   }
   
   // Byte-wise histogram
@@ -141,6 +154,7 @@ public class KVTest extends TestUtil {
   // ---
   // Run an atomic function remotely, one time only
   @Test public void testRemoteAtomic() {
+    long start = System.currentTimeMillis();
     // Make an execution key homed to the remote node
     H2O cloud = H2O.CLOUD;
     H2ONode target = cloud._memary[0];
@@ -163,6 +177,7 @@ public class KVTest extends TestUtil {
     assertEquals(2,ab.get8(0));
     assertEquals(2,ab.get8(8));
     DKV.remove(key);            // Cleanup after test
+    System.out.println("RemoteAtomic "+(System.currentTimeMillis()-start));
   }
   
   public static class Atomic2 extends Atomic {

@@ -12,13 +12,12 @@ import water.nbhm.UtilUnsafe;
 
 public class Weaver {
   private static final ClassPool _pool = ClassPool.getDefault();
-  private static final CtClass _dtask, _enum, _icer;
+  private static final CtClass _dtask, _enum;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
     try { 
       _dtask= _pool.get("water.DTask"); // these also need copyOver
-      _icer = _pool.get("water.Icer");  // Base of gen'd serializers
       _enum = _pool.get("java.lang.Enum"); // Special serialization
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
@@ -44,6 +43,17 @@ public class Weaver {
   private static String implClazzName( String name ) {
     return name + "$Icer";
   }
+  private static boolean hasWovenFields( CtClass cc ) throws NotFoundException {
+    String iced_name = cc.getName();
+    if( iced_name.equals("water.Iced") ) return false;
+    if( iced_name.equals("water.H2O$H2OCountedCompleter") ) return false;
+    if( hasWovenFields(cc.getSuperclass()) ) return true;
+    for( CtField ctf : cc.getDeclaredFields() ) {
+      int mods = ctf.getModifiers();
+      if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
+    }
+    return false;
+  }
 
   // See if javaassist can find this class, already generated
   private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException, InvocationTargetException {
@@ -68,10 +78,10 @@ public class Weaver {
     Class super_clazz = iced_clazz.getSuperclass();
     int super_id = TypeMap.onIce(super_clazz.getName());
     Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
-    boolean super_has_fields = false;//TypeMap.hasWovenFields(super_id);
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
+    boolean super_has_fields = hasWovenFields(iced_cc.getSuperclass());
 
     // Lock on the Iced class (prevent multiple class-gens of the SAME Iced
     // class, but also to allow parallel class-gens of unrelated Iced).
@@ -94,14 +104,9 @@ public class Weaver {
     icer_cc.setModifiers(javassist.Modifier.PUBLIC);
 
     // Debug printing?
-    boolean debug_print=true;
-    boolean has_fields=false;
+    boolean debug_print=false;
     CtField ctfs[] = iced_cc.getDeclaredFields();
-    for( CtField ctf : ctfs ) {
-      debug_print |= ctf.getName().equals("DEBUG_WEAVER");
-      int mods = ctf.getModifiers();
-      has_fields |= !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods);
-    }
+    for( CtField ctf : ctfs ) debug_print |= ctf.getName().equals("DEBUG_WEAVER");
     if( debug_print )
       System.out.println("class "+icer_cc.getName()+" extends "+super_icer.getName()+" {");
 
@@ -133,7 +138,7 @@ public class Weaver {
     make_body(icer_cc, iced_cc, iced_clazz, "write", null, null,
               "  protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    write"+super_id+"(ab,ice);\n",
-              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z(_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.putEnum(ice.%s);\n",  "    ab.putEnum((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "    return ab;\n" +
@@ -143,7 +148,7 @@ public class Weaver {
     make_body(icer_cc, iced_cc, iced_clazz, "write", super_has_fields ? null : "    ab.put1('{').", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    writeJSON"+super_id+"(ab,ice);\n",
-              "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",_unsafe.get%u(ice,%dL)); // %s\n",
+              "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "putEnumJSON(\"%s\",ice.%s);\n",  "putEnumJSON(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "    return ab;\n" +
@@ -223,7 +228,7 @@ public class Weaver {
       if( debug_print ) System.out.println(cpbody_impl);
     }
 
-    String cstrbody = "  public "+icer_cc.getSimpleName()+"( "+iced_name+" iced, boolean has_fields) { super(iced,"+(has_fields?"true":"has_fields")+"); }";
+    String cstrbody = "  public "+icer_cc.getSimpleName()+"( "+iced_name+" iced) { super(iced); }";
     if( debug_print ) System.out.println(cstrbody);
     try {
       icer_cc.addConstructor(CtNewConstructor.make(cstrbody,icer_cc));
@@ -280,7 +285,7 @@ public class Weaver {
       // package, so public,protected and package-private all have sufficient
       // access, only private is a problem.
       boolean can_access = !javassist.Modifier.isPrivate(mods);
-      if( impl.equals("read") && javassist.Modifier.isFinal(mods) ) can_access = false; 
+      if( (impl.equals("read") || impl.equals("copyOver")) && javassist.Modifier.isFinal(mods) ) can_access = false; 
       long off = _unsafe.objectFieldOffset(iced_clazz.getDeclaredField(ctf.getName()));
       int ftype = ftype(iced_cc, ctf.getSignature() );   // Field type encoding
       if( ftype%20 == 9 ) {         // Iced/Objects
