@@ -523,7 +523,7 @@ public final class AutoBuffer {
     return _bb;
   }
 
-  String getStr(int off, int len) {
+  @SuppressWarnings("unused")  public String getStr(int off, int len) {
     return new String(_bb.array(), _bb.arrayOffset()+off, len);
   }
 
