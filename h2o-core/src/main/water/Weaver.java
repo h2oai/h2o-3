@@ -68,7 +68,7 @@ public class Weaver {
     Class super_clazz = iced_clazz.getSuperclass();
     int super_id = TypeMap.onIce(super_clazz.getName());
     Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
-    boolean super_has_fields = TypeMap.hasWovenFields(super_id);
+    boolean super_has_fields = false;//TypeMap.hasWovenFields(super_id);
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
