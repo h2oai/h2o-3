@@ -46,7 +46,7 @@ classes: $(classes)
 
 
 JVM = java -ea -cp "build/classes;$(jars)" 
-JUNIT_TESTS = water.AtomicTest water.KeyToString water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.FVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest water.AutoBuffer2JSONTest
+JUNIT_TESTS = water.AtomicTest water.KeyToString water.AutoBuffer2JSONTest water.fvec.FVecTest water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.TransfVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest 
 # Too slow for normal junit runs
 JUNIT_TESTS_SLOW = water.KVTest water.parser.ParseProgressTest
 
