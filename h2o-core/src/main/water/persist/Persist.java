@@ -48,7 +48,7 @@ abstract public class Persist {
 
   /**
    * Value should already be persisted to disk. A racing delete can trigger a failure where we get a
-   * null return, but no crash (although one could argue that a racing load&delete is a bug no
+   * null return, but no crash (although one could argue that a racing load and delete is a bug no
    * matter what).
    */
   abstract public byte[] load(Value v);
@@ -124,40 +124,26 @@ abstract public class Persist {
 
   private static StringBuilder escapeBytes(byte[] bytes, int i, StringBuilder sb) {
     for( ; i < bytes.length; i++ ) {
-      byte b = bytes[i];
+      char b = (char)bytes[i], c=0;
       switch( b ) {
-        case '%':
-          sb.append("%%");
-          break;
-        case '.':
-          sb.append("%d");
-          break; // dot
-        case '/':
-          sb.append("%s");
-          break; // slash
-        case ':':
-          sb.append("%c");
-          break; // colon
-        case '\\':
-          sb.append("%b");
-          break; // backslash
-        case '"':
-          sb.append("%q");
-          break; // quote
-        case '\0':
-          sb.append("%z");
-          break; // nullbit
-        default:
-          sb.append((char) b);
-          break;
+      case '%': c='%'; break;
+      case '.': c='d'; break;
+      case '/': c='s'; break;
+      case ':': c='c'; break;
+      case '"': c='q'; break;
+      case '>': c='g'; break;
+      case '\\':c='b'; break;
+      case '\0':c='z'; break;
       }
+      if( c!=0 ) sb.append('%').append(c);
+      else sb.append(b);
     }
     return sb;
   }
 
   // Convert a filename string to a Key
   private static Key str2Key_impl(String s) {
-    String key = s.substring(0, s.lastIndexOf('.')); // Drop extension
+    String key = s;
     byte[] kb = new byte[(key.length() - 1) / 2];
     int i = 0, j = 0;
     if( (key.length() > 2) && (key.charAt(0) == '%') && (key.charAt(1) >= '0') && (key.charAt(1) <= '9') ) {
@@ -177,29 +163,16 @@ abstract public class Persist {
       byte b = (byte) key.charAt(i);
       if( b == '%' ) {
         switch( key.charAt(++i) ) {
-          case '%':
-            b = '%';
-            break;
-          case 'b':
-            b = '\\';
-            break;
-          case 'c':
-            b = ':';
-            break;
-          case 'd':
-            b = '.';
-            break;
-          case 'q':
-            b = '"';
-            break;
-          case 's':
-            b = '/';
-            break;
-          case 'z':
-            b = '\0';
-            break;
-          default:
-            Log.warn("Invalid format of filename " + s + " at index " + i);
+        case '%':  b = '%';  break;
+        case 'c':  b = ':';  break;
+        case 'd':  b = '.';  break;
+        case 'g':  b = '>';  break;
+        case 'q':  b = '"';  break;
+        case 's':  b = '/';  break;
+        case 'b':  b = '\\'; break;
+        case 'z':  b = '\0'; break;
+        default:
+          Log.warn("Invalid format of filename " + s + " at index " + i);
         }
       }
       if( j >= kb.length ) kb = Arrays.copyOf(kb, Math.max(2, j * 2));

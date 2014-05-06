@@ -2,6 +2,7 @@ package water;
 
 import java.io.IOException;
 import java.util.Arrays;
+import water.fvec.Chunk;
 import water.persist.Persist;
 import water.util.Log;
 
@@ -57,7 +58,7 @@ class Cleaner extends Thread {
 
   @Override public void run() {
     boolean diskFull = false;
-    while (true) {
+    while( true ) {
       // Sweep the K/V store, writing out Values (cleaning) and free'ing
       // - Clean all "old" values (lazily, optimistically)
       // - Clean and free old values if above the desired cache level
@@ -87,7 +88,7 @@ class Cleaner extends Thread {
       // If lazy, store-to-disk things down to 1/2 the desired cache level
       // and anything older than 5 secs.
       boolean force = (h._cached >= DESIRED); // Forced to clean
-      if(force && diskFull)
+      if( force && diskFull )
         diskFull = isDiskFull();
       long clean_to_age = h.clean_to(force ? DESIRED : (DESIRED>>1));
       // If not forced cleaning, expand the cleaning age to allows Values
@@ -118,30 +119,25 @@ class Cleaner extends Thread {
         if( m == null && p == null ) continue; // Nothing to throw out
 
         if( val.isLockable() ) continue; // we do not want to throw out Lockables.
-
-        // If not Iced, we can only toss out 1 of 2 forms, since we cannot simply reload from disk.
-        if( !val.onICE() ) {
-          // But can toss out a byte-array if already deserialized
-          // (no need for both forms).
-          if( m != null && p != null ) { val.freeMem(); freed += val._max; }
-          continue; // Cannot throw out
-        }
+        boolean isChunk = p instanceof Chunk;
 
         // Ignore things younger than the required age.  In particular, do
         // not spill-to-disk all dirty things we find.
         long touched = val._lastAccessedTime;
-        if( touched > clean_to_age ) {
+        if( touched > clean_to_age ) { // Too recently touched?
           // But can toss out a byte-array if already deserialized & on disk
-          // (no need for both forms).
-          if( val.isPersisted() &&
-              m != null && p != null ) { val.freeMem(); freed += val._max; }
+          // (no need for both forms).  Note no savings for Chunks, for which m==p._mem
+          if( val.isPersisted() && m != null && p != null && !isChunk ) { 
+            val.freeMem();      // Toss serialized form, since can rebuild from POJO
+            freed += val._max;
+          }
           dirty_store(touched); // But may write it out later
-          continue;
+          continue;             // Too young
         }
 
         // Should I write this value out to disk?
         // Should I further force it from memory?
-        if(!val.isPersisted() && !diskFull && (force || (lazyPersist() && lazy_clean(key)))) {
+        if( !val.isPersisted() && !diskFull && (force || (lazyPersist() && lazy_clean(key)))) {
           try {
             val.storePersist(); // Write to disk
             if( m == null ) m = val.rawMem();
@@ -160,10 +156,11 @@ class Cleaner extends Thread {
         if( force && val.isPersisted() ) {
           val.freeMem ();  if( m != null ) freed += val._max;  m = null;
           val.freePOJO();  if( p != null ) freed += val._max;  p = null;
+          if( isChunk ) freed -= val._max; // Double-counted freed mem for Chunks since val._pojo._mem & val._mem are the same.
         }
         // If we have both forms, toss the byte[] form - can be had by
         // serializing again.
-        if( m != null && p != null ) {
+        if( m != null && p != null && !isChunk ) {
           val.freeMem();
           freed += val._max;
         }
@@ -237,13 +234,13 @@ class Cleaner extends Thread {
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
         Value val = (Value)ov;
         int len = 0;
-        if( val.rawMem () != null ) len += val._max;
-        if( val.rawPOJO() != null ) len += val._max;
+        byte[] m = val.rawMem();
+        Object p = val.rawPOJO();
+        if( m != null ) len += val._max;
+        if( p != null ) len += val._max;
+        if( p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
-
-        if( !val.onICE() )
-          continue;           // Cannot throw out (so not in histogram buckets)
 
         if( val._lastAccessedTime < oldest ) { // Found an older Value?
           vold = val; // Record oldest Value seen
@@ -264,12 +261,12 @@ class Cleaner extends Thread {
     // Compute the time (in msec) for which we need to throw out things
     // to throw out enough things to hit the desired cached memory level.
     long clean_to( long desired ) {
-      if( _cached < desired ) return Long.MAX_VALUE; // Already there; nothing to remove
-      long age = _eldest; // Age of bucket zero
-      long s = 0; // Total amount toss out
-      for( long t : _hs ) { // For all buckets...
-        s += t; // Raise amount tossed out
-        age += _hStep; // Raise age beyond which you need to go
+      long age = _eldest;       // Age of bucket zero
+      if( _cached < desired ) return age; // Already there; nothing to remove
+      long s = 0;               // Total amount toss out
+      for( long t : _hs ) {     // For all buckets...
+        s += t;                 // Raise amount tossed out
+        age += _hStep;          // Raise age beyond which you need to go
         if( _cached - s < desired ) break;
       }
       return age;

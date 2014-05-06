@@ -107,6 +107,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Will (re)build the POJO from the _mem array.
   // Never returns NULL.
   public <T extends Iced> T get() {
+    touch();
     Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
@@ -119,6 +120,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return pojo;
   }
   public <T extends Freezable> T getFreezable() {
+    touch();
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newFreezable(_type);
@@ -284,7 +286,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
   @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-    touch();
     return ab.put1(_persist).put2(_type).putA1(memOrLoad());
   }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
