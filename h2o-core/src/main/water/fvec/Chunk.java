@@ -179,6 +179,11 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
   abstract NewChunk inflate_impl(NewChunk nc);
 
+  /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
+   *  optimized stencil calculations that want to "roll off the end" of a
+   *  Chunk, but in a highly optimized way. */
+  Chunk nextChunk( ) { return _vec.nextChunk(this); }
+
   @Override public String toString() { return getClass().getSimpleName(); }
 
   long byteSize() {

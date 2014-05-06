@@ -320,6 +320,13 @@ public class Vec extends Keyed {
     return false;
   }
 
+  /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
+   *  optimized stencil calculations that want to "roll off the end" of a
+   *  Chunk, but in a highly optimized way. */
+  Chunk nextChunk( Chunk prior ) {
+    int cidx = elem2ChunkIdx(prior._start)+1;
+    return cidx < nChunks() ? chunkForChunkIdx(cidx) : null;
+  }
 
   /** Make a new random Key that fits the requirements for a Vec key. */
   public static Key newKey(){return newKey(Key.make());}

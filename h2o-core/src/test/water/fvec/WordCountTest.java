@@ -3,6 +3,7 @@ package water.fvec;
 import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.*;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
@@ -18,11 +19,12 @@ public class WordCountTest extends TestUtil {
   protected void doWordCount(File file) throws IOException {
     NFSFileVec nfs=NFSFileVec.make(file);
   
+    System.out.printf("\nProgress: 00%%");
     final long start = System.currentTimeMillis();
     NonBlockingHashMap<VStr,VStr> words = new WordCount().doAll(nfs)._words;
     final long time_wc = System.currentTimeMillis();
     VStr[] vss = new VStr[words.size()];
-    System.out.println("WC takes "+(time_wc-start)+"msec for "+vss.length+" words");
+    System.out.println("\nWC takes "+(time_wc-start)+"msec for "+vss.length+" words");
   
     // Faster version of toArray - because calling toArray on a 16M entry array
     // is slow.
@@ -48,8 +50,10 @@ public class WordCountTest extends TestUtil {
   }
   
   private static class WordCount extends MRTask<WordCount> {
-    public static NonBlockingHashMap<VStr,VStr> WORDS;
-    public NonBlockingHashMap<VStr,VStr> _words;
+    static NonBlockingHashMap<VStr,VStr> WORDS;
+    NonBlockingHashMap<VStr,VStr> _words;
+    AtomicLong _progress = new AtomicLong(0);
+
     @Override public void setupLocal() { WORDS = new NonBlockingHashMap<>(); }
     private static int isChar( int b ) {
       if( 'A'<=b && b<='Z' ) return b-'A'+'a';
@@ -59,31 +63,45 @@ public class WordCountTest extends TestUtil {
   
     @Override public void map( Chunk bv ) {
       _words = WORDS;
-      final long start = bv._start;
       final int len = bv._len;
-      long i = start;           // Parse point
+      int i=0;                  // Parse point
       // Skip partial words at the start of chunks, assuming they belong to the
       // trailing end of the prior chunk.
-      if( start > 0 )           // Not on the 1st chunk...
-        while( isChar((int)bv.at(i)) >= 0 ) i++; // skip any partial word from prior
+      if( bv._start > 0 )       // Not on the 1st chunk...
+        while( i < len && isChar((int)bv.at0(i)) >= 0 ) i++; // skip any partial word from prior
       VStr vs = new VStr(new byte[512],(short)0);
       // Loop over the chunk, picking out words
-      while( i<start+len || vs._len > 0 ) { // Till we run dry & not in middle of word
-        int c = isChar((int)bv.at(i));      // Load a char, lowercase it
-        if( c >= 0 && vs._len < 32700/*break silly long words*/ ) { // In a word?
-          vs.append(c);               // Append char
-        } else if( vs._len > 0 ) {    // Have a word?
-          VStr vs2 = WORDS.putIfAbsent(vs,vs);
-          if( vs2 == null ) {   // If actually inserted, need new VStr
-            if( vs._len>256 ) System.out.println("Too long: "+vs+" at char "+i);
-            vs = new VStr(vs._cs,(short)(vs._off+vs._len));
-          } else {
-            vs2.inc(1);         // Inc count on added word,
-            vs._len = 0;        // and re-use VStr
-          }
-        }
-        i++;
+      while( i<len )                      // Till we run dry
+        vs = doChar(vs,(int)bv.at0(i++)); // Load a char & make words
+      // Finish up partial word at Chunk end by flowing into the next Chunk
+      i = 0;
+      Chunk nv = bv.nextChunk();
+      if( nv == null ) vs = doChar(vs,' '); // No next Chunk, end partial word
+      while( vs._len > 0 )                // Till word breaks
+        vs = doChar(vs,(int)nv.at0(i++)); // Load a char & make words
+      // Show some progress
+      long progress = _progress.addAndGet(len);
+      long pre = progress - len;
+      final long total = bv._vec.length();
+      int perc0 = (int)(100*pre     /total);
+      int perc1 = (int)(100*progress/total);
+      if( perc0 != perc1 ) System.out.printf("\b\b\b%2d%%",perc1);
+    }
+
+    private VStr doChar( VStr vs, int raw ) {
+      int c = isChar(raw);      // Check for letter & lowercase it
+      if( c >= 0 && vs._len < 32700/*break silly long words*/ ) // In a word?
+        return vs.append(c);     // Append char
+      if( vs._len == 0 ) return vs; // Not a letter and not in a word?
+      // None-letter ends word; count word
+      VStr vs2 = WORDS.putIfAbsent(vs,vs);
+      if( vs2 == null ) {     // If actually inserted, need new VStr
+        //if( vs._len>256 ) System.out.println("Too long: "+vs);
+        return new VStr(vs._cs,(short)(vs._off+vs._len)); // New VStr reuses extra space from old
       }
+      vs2.inc(1);               // Inc count on added word, and
+      vs._len = 0;              // re-use VStr (since not added to NBHM)
+      return vs;
     }
   
     @Override public void reduce( WordCount wc ) {
@@ -120,13 +138,14 @@ public class WordCountTest extends TestUtil {
   }
   
   
-  // A word, and a count of occurences
+  // A word, and a count of occurences.  Typically the '_cs' buf is shared
+  // amongst many VStr's, all using different off/len pairs.
   private static class VStr implements Comparable<VStr> {
     byte[] _cs;                 // shared array of chars holding words
     short _off,_len;            // offset & len of this word
     VStr(byte[]cs, short off) { assert off>=0:off; _cs=cs; _off=off; _len=0; _cnt=1; }
     // append a char; return wasted pad space
-    public void append( int c ) {
+    public VStr append( int c ) {
       if( _off+_len >= _cs.length ) { // no room for word?
         int newlen = Math.min(32767,_cs.length<<1);
         if( _off > 0 && _len < 512 ) newlen = Math.max(1024,newlen);
@@ -136,6 +155,7 @@ public class WordCountTest extends TestUtil {
         _cs = cs;
       }
       _cs[_off+_len++] = (byte)c;
+      return this;
     }
     volatile int _cnt;          // Atomically update
     private static final AtomicIntegerFieldUpdater<VStr> _cntUpdater =
