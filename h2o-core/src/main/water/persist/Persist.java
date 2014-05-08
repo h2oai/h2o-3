@@ -1,6 +1,6 @@
 package water.persist;
 
-import java.io.File;
+import java.io.*;
 import java.net.URI;
 import java.util.Arrays;
 
@@ -180,5 +180,16 @@ abstract public class Persist {
     }
     // now in kb we have the key name
     return Key.make(Arrays.copyOf(kb, j));
+  }
+
+
+  // Convenience utility
+  public static byte[] toByteArray(InputStream is) throws IOException {
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+        byte[] buffer = new byte[0x2000];
+        for( int len; (len = is.read(buffer)) != -1; )
+          os.write(buffer, 0, len);
+        return os.toByteArray();
+      }
   }
 }

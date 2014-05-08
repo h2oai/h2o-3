@@ -57,4 +57,26 @@ public abstract class JarHash {
     return ffHash;
   }
 
+  // Look for resources (JS files, PNG's, etc) from the self-jar first, then
+  // from a possible local dev build.
+  public static InputStream getResource2(String uri) {
+    ClassLoader systemLoader = ClassLoader.getSystemClassLoader();
+    if( JARPATH != null ) {
+      return systemLoader.getResourceAsStream("resources"+uri);
+    } else {
+      try {
+        File resources  = new File("lib/resources");
+        if( !resources.exists() ) {
+          // IDE mode assumes classes are in target/classes. Not using current path
+          // to allow running from other locations.
+          String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+          resources = new File(h2oClasses + "../../../lib/resources");
+        }
+        return new FileInputStream(new File(resources, uri));
+      } catch (FileNotFoundException e) {
+        Log.err("Trying system loader because : ", e);
+        return systemLoader.getResourceAsStream("resources"+uri);
+      }
+    }
+  }
 }

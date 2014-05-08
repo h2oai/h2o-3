@@ -223,7 +223,6 @@ final public class H2O {
     public String name = System.getProperty("user.name"); // Cloud name
     public String flatfile;     // List of cluster IP addresses
     public int    port;         // Browser/API/HTML port
-    public int    h2o_port;     // port+1
     public String ip;           // Named IP4/IP6 address instead of the default
     public String network;      // Network specification for acceptable interfaces to bind to.
     String ice_root;     // ice root directory; where temp files go
@@ -232,8 +231,6 @@ final public class H2O {
     // Less common config options
     int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
     boolean random_udp_drop; // test only, randomly drop udp incoming
-    boolean requests_log = true; // logging of Web requests
-    boolean check_rest_params = true; // enable checking unused/unknown REST params
 
     // HDFS & AWS
     public String hdfs; // HDFS backend
@@ -436,7 +433,7 @@ final public class H2O {
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread().start();
     // Start the Nano HTTP server thread
-    //water.api.RequestServer.start();
+    water.api.RequestServer.start();
   }
 
   // --------------------------------------------------------------------------
@@ -503,8 +500,6 @@ final public class H2O {
       memsz += h2o.get_max_mem();
     return memsz;
   }
-
-  static void notifyAboutCloudSize(InetAddress ip, int port, int size) { }
 
   static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();

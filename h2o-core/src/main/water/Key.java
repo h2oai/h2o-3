@@ -274,7 +274,7 @@ final public class Key extends Iced<Key> implements Comparable {
   }
 
   // User keys must be all ASCII, but we only check the 1st byte
-  boolean user_allowed() { return type()==USER_KEY; }
+  public boolean user_allowed() { return type()==USER_KEY; }
 
   // Returns the type of the key.
   int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }

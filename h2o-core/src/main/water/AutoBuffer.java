@@ -166,7 +166,7 @@ public final class AutoBuffer {
   /**  Write to an ever-expanding byte[].  Instead of calling {@link #close()},
    *  call {@link #buf()} to retrieve the final byte[].
    */
-  AutoBuffer( ) {
+  public AutoBuffer( ) {
     _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
     _chan = null;
     _h2o = null;
@@ -361,7 +361,7 @@ public final class AutoBuffer {
   void position(int pos) { _bb.position(pos); }
 
   // Return byte[] from a writable AutoBuffer
-  final byte[] buf() {
+  public final byte[] buf() {
     assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }

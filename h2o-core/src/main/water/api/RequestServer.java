@@ -28,8 +28,6 @@ package water.api;
 //import water.Boot;
 //import water.H2O;
 import water.NanoHTTPD;
-//import water.api.Upload.PostFile;
-//import water.deploy.LaunchJar;
 import water.util.Log;
 
 import java.io.*;
@@ -41,12 +39,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** This is a simple web server. */
-class RequestServer extends NanoHTTPD {
+public class RequestServer extends NanoHTTPD {
   protected enum API_VERSION {
     V_1(1, "/"),
     V_2(2, "/2/"); // FIXME: better should be /v2/
     final private int _version;
-    final private String _prefix;
+    final String _prefix;
     private API_VERSION(int version, String prefix) { _version = version; _prefix = prefix; }
   }
   static RequestServer SERVER;
@@ -190,12 +188,13 @@ class RequestServer extends NanoHTTPD {
     //registerRequest(new GLMModelView());
     //registerRequest(new GLMGridView());
     //registerRequest(new LaunchJar());
-    //Request.initializeNavBar();
     //
     //// Pure APIs, no HTML, to support The New World
     //registerRequest(new Models());
     //registerRequest(new Frames());
     //registerRequest(new ModelMetrics());
+
+    Request.initializeNavBar();
   }
 
   /**
@@ -214,7 +213,7 @@ class RequestServer extends NanoHTTPD {
   // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
   // seperate thread (I'm guessing here) so the startup process does not hang
   // if the various web-port accesses causes Nano to hang on startup.
-  private static void start() {
+  public static void start() {
     new Thread( new Runnable() {
         @Override public void run()  {
           while( true ) {
@@ -224,7 +223,7 @@ class RequestServer extends NanoHTTPD {
               break;
             } catch( Exception ioe ) {
               Log.err("Launching NanoHTTP server got ",ioe);
-              try { Thread.sleep(1000); } catch( InterruptedException e ) { } // prevent denial-of-service
+              try { Thread.sleep(1000); } catch( InterruptedException ignore ) { } // prevent denial-of-service
             }
           }
         }
@@ -248,10 +247,9 @@ class RequestServer extends NanoHTTPD {
       String versionOfRThatJenkinsUsed = "3.0";
 
       String platform = m.group(1);
-      String version = m.group(2);
+      //String version = m.group(2);
       String therest = m.group(3);
-      String s = "/R/bin/" + platform + "/contrib/" + versionOfRThatJenkinsUsed + therest;
-      return s;
+      return "/R/bin/" + platform + "/contrib/" + versionOfRThatJenkinsUsed + therest;
     }
 
     return uri;
@@ -285,50 +283,44 @@ class RequestServer extends NanoHTTPD {
     // update arguments and determine control variables
     uri = maybeTransformRequest(uri);
     // determine the request type
-    Request.RequestType type = Request.RequestType.requestType(uri);
+    RequestType type = RequestType.requestType(uri);
     String requestName = type.requestName(uri);
-
     maybeLogRequest(uri, method, parms);
+
     try {
       // determine if we have known resource
       Request request = _requests.get(requestName);
       // if the request is not know, treat as resource request, or 404 if not found
-      if( request == null ) return getResource(uri);
-
-      // Some requests create an instance per call
-      request = request.create(parms);
-      // call the request
-      return request.serve(this,parms,type);
+      return request == null ? getResource(uri) : request.serve(this,parms,type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      parms.setProperty(Request.ERROR,e.getClass().getSimpleName()+": "+e.getMessage());
+      parms.setProperty("error",e.getClass().getSimpleName()+": "+e.getMessage());
       return _http500.serve(this,parms,type);
     }
   }
 
   // Resource loading ----------------------------------------------------------
-
   // Returns the response containing the given uri with the appropriate mime type.
   private NanoHTTPD.Response getResource(String uri) {
     byte[] bytes = _cache.get(uri);
     if( bytes == null ) {
       // Try-with-resource
-      try (InputStream resource = Boot._init.getResource2(uri);) {
+      try (InputStream resource = water.init.JarHash.getResource2(uri)) {
           if( resource != null ) {
-            try { bytes = ByteStreams.toByteArray(resource); } 
+            try { bytes = water.persist.Persist.toByteArray(resource); } 
             catch( IOException e ) { Log.err(e); }
             if( bytes != null ) {
               byte[] res = _cache.putIfAbsent(uri,bytes);
               if( res != null ) bytes = res; // Racey update; take what is in the _cache
             }
           }
-        }
+        } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) {
       // make sure that no Exception is ever thrown out from the request
       Properties parms = new Properties();
-      parms.setProperty(Request.ERROR,uri);
-      return _http404.serve(this,parms,Request.RequestType.www);
+      parms.setProperty("error",uri);
+      return _http404.serve(this,parms,RequestType.html);
     }
     String mime = NanoHTTPD.MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
