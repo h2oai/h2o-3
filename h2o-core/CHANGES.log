@@ -1,4 +1,27 @@
+GOALS
+- More Dev Friendly, especially external devs
+- - jars downloaded via maven/gradle
+- - - Trim down final H2O.jar (8M down from 50M)
+- - - One Jar but no unzip one-jar into /tmp
+- - no class loader
+- - run JUnits direct from IDE
+- Slim & Trim Java API
+- - drop all directories; from scratch clean-slate
+- - drop all VA things
+- - add code back in AFTER scrub
+- - - Only what's needed; and made private/protected
+- - Restructure worst offenders (Log, H2O)
+- Existing tests should pass (minus VA)
+- Same-As performance & memory consumption
+- Replace 
+- - API, Model, Job, Auto-Gen: Documentation, R-bindings
+- NOT: Multi-tenency, Resource-Control
+- Resource management memory: ref-cnt
+- Resource management CPU: CPS-style
 
+Scala M/R functions???
+
+-----------------------------
 Major style & code changes from "h2o":
 
 - Drop the "java" directory layer.
@@ -32,6 +55,7 @@ Major style & code changes from "h2o":
   not get racing Vec rollups for the same Vec from many nodes.
 - DKV key prefetch instead of F/J background task gets
 - TaskPutKey requires a Futures - no fire-and-forget remote puts - you gotta "remember" them later
+- Removable into Lockable from UKV
 
 DETAIL CHANGES
 
