@@ -258,7 +258,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.write(new AutoBuffer()).buf();
+    _mem = (pojo instanceof Chunk)?((Chunk)pojo).getBytes():pojo.write(new AutoBuffer()).buf();
     _max = _mem.length;
     assert _max < MAX : "Value size=0x"+Integer.toHexString(_max);
     // For the ICE backend, assume new values are not-yet-written.
