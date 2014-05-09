@@ -433,7 +433,7 @@ final public class H2O {
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread().start();
     // Start the Nano HTTP server thread
-    water.api.RequestServer.start();
+//    water.api.RequestServer.start();
   }
 
   // --------------------------------------------------------------------------
