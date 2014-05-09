@@ -17,13 +17,18 @@ public enum RequestType {
   java , // java program
   xml  , // xml request
     ;
+  private static final RequestType[] _values = values();
 
   /** Returns the request type of a given URL. JSON request type is the default
    *  type when the extension from the URL cannot be determined.  */
   static RequestType requestType(String requestUrl) {
     int i = requestUrl.lastIndexOf('.');
     assert i != -1;
-    return valueOf(requestUrl.substring(i+1));
+    String s = requestUrl.substring(i+1);
+    // valueOf(s) throws IAE if there is no match.
+    for( RequestType t : _values )
+      if( s.equals(t.name()) ) return t;
+    return json;                // None of the above; use json
   }
 
   /** Returns the name of the request, that is the request url without the

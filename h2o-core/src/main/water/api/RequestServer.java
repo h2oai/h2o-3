@@ -62,8 +62,8 @@ public class RequestServer extends NanoHTTPD {
     _http404 = registerRequest(new HTTP404());
     _http500 = registerRequest(new HTTP500());
 
-    //// Data
-    //Request.addToNavbar(registerRequest(new ImportFiles2()),  "Import Files",           "Data");
+    // Data
+    Request.addToNavbar(registerRequest(new ImportFiles()),  "Import Files",           "Data");
     //Request.addToNavbar(registerRequest(new Upload2()),       "Upload",                 "Data");
     //Request.addToNavbar(registerRequest(new Parse2()),        "Parse",                  "Data");
     //Request.addToNavbar(registerRequest(new Inspector()),     "Inspect",                "Data");
@@ -104,7 +104,7 @@ public class RequestServer extends NanoHTTPD {
     //
     //// Help and Tutorials
     //Request.addToNavbar(registerRequest(new Documentation()),       "H2O Documentation",      "Help");
-    //Request.addToNavbar(registerRequest(new Tutorials()),           "Tutorials Home",         "Help");
+    Request.addToNavbar(registerRequest(new Tutorials()),           "Tutorials Home",         "Help");
     //Request.addToNavbar(registerRequest(new TutorialGBM()),         "GBM Tutorial",           "Help");
     //Request.addToNavbar(registerRequest(new TutorialDeepLearning()),"Deep Learning Tutorial", "Help");
     //Request.addToNavbar(registerRequest(new TutorialRFIris()),      "Random Forest Tutorial", "Help");
@@ -197,9 +197,7 @@ public class RequestServer extends NanoHTTPD {
     Request.initializeNavBar();
   }
 
-  /**
-   * Registers the request with the request server.
-   */
+  /** Registers the request with the request server.  */
   private static Request registerRequest(Request req) {
     assert req.supportedVersions().length > 0;
     for( API_VERSION ver : req.supportedVersions() ) {
@@ -231,9 +229,8 @@ public class RequestServer extends NanoHTTPD {
   }
 
   private static String maybeTransformRequest (String uri) {
-    if (uri.isEmpty() || uri.equals("/")) {
+    if (uri.isEmpty() || uri.equals("/"))
       return "/Tutorials.html";
-    }
 
     Pattern p = Pattern.compile("/R/bin/([^/]+)/contrib/([^/]+)(.*)");
     Matcher m = p.matcher(uri);
@@ -255,7 +252,7 @@ public class RequestServer extends NanoHTTPD {
     return uri;
   }
 
-  // uri serve -----------------------------------------------------------------
+  // Log all requests except the overly common ones
   void maybeLogRequest (String uri, String method, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
@@ -277,6 +274,9 @@ public class RequestServer extends NanoHTTPD {
     Log.info(log);
   }
 
+  // Top-level dispatch based the URI.  Break down URI into parts;
+  // e.g. /2/Tutorials.html breaks down into requestName "/2/Tutorials" and
+  // requestType ".html".
   @Override public NanoHTTPD.Response serve( String uri, String method, Properties header, Properties parms ) {
     // Jack priority for user-visible requests
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
@@ -291,7 +291,7 @@ public class RequestServer extends NanoHTTPD {
       // determine if we have known resource
       Request request = _requests.get(requestName);
       // if the request is not know, treat as resource request, or 404 if not found
-      return request == null ? getResource(uri) : request.serve(this,parms,type);
+      return request == null ? getResource(uri) : ((Request)request.clone()).serve(this,parms,type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
       parms.setProperty("error",e.getClass().getSimpleName()+": "+e.getMessage());

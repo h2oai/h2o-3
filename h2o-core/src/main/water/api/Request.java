@@ -10,91 +10,33 @@ import water.api.RequestServer.API_VERSION;
 import water.util.Log;
 import water.util.RString;
 
+/** Base ReST Request Handling
+ */
 abstract class Request extends Iced {
-//  private @interface API {
-//    String help();
-//    /** Must be specified. */
-//    boolean required() default false;
-//    /** For keys. If specified, the key must exist. */
-//    boolean mustExist() default false;
-//    int since() default 1;
-//    int until() default Integer.MAX_VALUE;
-//    Class<? extends Filter> filter() default Filter.class;
-//    Class<? extends Filter>[] filters() default {};
-//    /** Forces an input field to also appear in JSON. */
-//    boolean json() default false;
-//    long   lmin() default Long  .MIN_VALUE;
-//    long   lmax() default Long  .MAX_VALUE;
-//    double dmin() default Double.NEGATIVE_INFINITY;
-//    double dmax() default Double.POSITIVE_INFINITY;
-//    boolean hide() default false;
-//    String displayName() default "";
-//    boolean gridable() default true;
-//    Class<? extends Validator> validator() default NOPValidator.class;
-//    ParamImportance importance() default ParamImportance.UNIMPORTANT;
-//  }
-//
-//  private interface Validator<V> extends Freezable {
-//    void validateRaw(String value) throws IllegalArgumentException;
-//    void validateValue(V value) throws IllegalArgumentException;
-//    /** Dummy helper class for NOP validator. */
-//    private static class NOPValidator<V> extends Iced implements Validator<V> {
-//      @Override private void validateRaw(String value) { }
-//      @Override private void validateValue(V value) { }
-//    }
-//  }
-//
-//  private static interface Filter {
-//    boolean run(Object value);
-//  }
-//
-//  /** NOP filter, use to define a field as input.  */
-//  private class Default implements Filter {
-//    @Override private boolean run(Object value) { return true; }
-//  }
-//
-//  //
-//
-//  private String _requestHelp;
-//
-//  protected Request(String help) {
-//    _requestHelp = help;
-//  }
-//
-//  protected Request() {
-//  }
-//
-  private String href() { return href(supportedVersions()[0]); }
-  protected String href(API_VERSION v) { return v._prefix + getClass().getSimpleName(); }
 
-//  protected boolean log() {
-//    return true;
-//  }
-//
-//  protected void registered(API_VERSION version) {
-//  }
-//
-//  protected Request create(Properties parms) {
-//    return this;
-//  }
-//
-  /** Implements UI call.
-   *
-   * <p>This should be call only from
-   * UI layer - i.e., RequestServer.</p>
-   *
-   * @see RequestServer
-   */
+  /** Override this to check arguments and fill in fields.  Return a query
+   *  String response is some args are missing, or null if All Is Well. */
+
+  // MAPPING from URI ==> POJO
+  // 
+  // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
+  // (auto-gen moves parms into local fields & complains on errors) or 
+  // it needs to move into an explicit Schema somehow.
+  protected abstract Response checkArguments(Properties parms);
+  
+  /** Override this to provide the Response for this valid Request */
   protected abstract Response serve();
-//
-//  protected String serveJava() { throw new UnsupportedOperationException("This request does not provide Java code!"); }
 
+
+  // Top-level Request dispatch based first on Request Type (e.g. .html vs .xml
+  // vs .json).  (URIs that are not requests such as js & png resources already
+  // filtered out in RequestServer before coming here).
   NanoHTTPD.Response serve(NanoHTTPD server, Properties parms, RequestType type) {
     switch( type ) {
 //      case help:
 //        return wrap(server, HTMLHelp());
-//      case xml:
-//      case json:
+    case xml:
+    case json:
     case html:
       return serveGrid(server, parms, type);
 //      case query: {
@@ -113,31 +55,33 @@ abstract class Request extends Iced {
     throw H2O.unimpl();
   }
 
+  // 2nd-level dispatch based on the Request instance class.
   protected NanoHTTPD.Response serveGrid(NanoHTTPD server, Properties parms, RequestType type) {
-    //String query = checkArguments(parms, type);
-    //if( query != null )
-    //  return wrap(server, query, type);
-    long time = System.currentTimeMillis();
-    Response response = null;
-    try {
-      response = serve();
-    } catch (IllegalArgumentException iae) { // handle illegal arguments
-      response = Response.error(this,iae);
-    }
-    response._timeStart = time;
-    return serveResponse(server, parms, type, response);
-  }
+    // Check for a well-formed list of parameters.
+    // If all are present, the Response is null & we call serve();
+    // If things are not good, the Response is a Query for building more parameters.
+    Response res = checkArguments(parms);
 
-  private NanoHTTPD.Response serveResponse(NanoHTTPD server, Properties parms, RequestType type, Response response) {
+    if( res == null ) {         // No response, so all parms present & call serve()
+      // Start the 'serve' call
+      long time = System.currentTimeMillis();
+      try { res = serve(); } 
+      catch( Throwable t ) { res = new Response(t); }
+      res._timeStart = time;
+    }
+
+    // Handle Response from 'serve'
     switch( type ) {
-    case json:  return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, new String(response._req.writeJSON(new AutoBuffer()).buf()));
-    case xml :  return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_XML , new String(response._req.writeJSON(new AutoBuffer()).buf()));
-    case java:  //return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_PLAINTEXT, build(response));
-      throw H2O.unimpl();
-    default:    
+    case html: // Default webpage handling: jam Response toString inside the HTML template
       RString html = new RString(htmlTemplate());
-      html.replace("CONTENTS", response);
+      html.replace("CONTENTS", res.toString());
       return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_HTML, html.toString());
+    case json:  return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, new String(res.req().writeJSON(new AutoBuffer()).buf()));
+    case xml :  //return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_XML , new String(res.req().writeXML(new AutoBuffer()).buf()));
+    case java:  //return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_PLAINTEXT, buildJava(res));
+      throw H2O.unimpl();
+    default:
+      throw H2O.unimpl();
     }
   }
 
@@ -152,12 +96,12 @@ abstract class Request extends Iced {
     _htmlTemplate = "";
   }
 
-  static final String loadTemplate(String name) {
+  private static String loadTemplate(String name) {
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
         return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
       }
-    catch( IOException ignore ) { return null; }
+    catch( IOException ioe ) { Log.err(ioe); return null; }
   }
 
   private static class MenuItem {
@@ -170,12 +114,7 @@ abstract class Request extends Iced {
     }
 
     private void toHTML(StringBuilder sb) {
-      sb.append("<li><a href='");
-      sb.append(_request.href()+".html");
-      sb.append("'");
-      sb.append(">");
-      sb.append(_name);
-      sb.append("</a></li>");
+      sb.append("<li><a href='").append(_request.href()).append(".html'>").append(_name).append("</a></li>");
     }
   }
 
@@ -213,16 +152,7 @@ abstract class Request extends Iced {
     return str.toString();
   }
 
-  private static Request addToNavbar(Request r, String name) {
-    assert (!_navbar.containsKey(name));
-    ArrayList<MenuItem> arl = new ArrayList();
-    arl.add(new MenuItem(r, name));
-    _navbar.put(name, arl);
-    _navbarOrdering.add(name);
-    return r;
-  }
-
-  private static Request addToNavbar(Request r, String name, String category) {
+  static Request addToNavbar(Request r, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
       arl = new ArrayList();
@@ -232,64 +162,8 @@ abstract class Request extends Iced {
     arl.add(new MenuItem(r, name));
     return r;
   }
-//
-//
-//  // TODO clean this stuff, typeahead should take type name
-//  protected static Class mapTypeahead(Class c) {
-//    if(c != null) {
-//      if( PCAModel.class.isAssignableFrom(c) )
-//        return TypeaheadPCAModelKeyRequest.class;
-//      if( NBModel.class.isAssignableFrom(c) )
-//        return TypeaheadNBModelKeyRequest.class;
-//      if( GLMModel.class.isAssignableFrom(c))
-//        return TypeaheadGLMModelKeyRequest.class;
-//      if( RFModel.class.isAssignableFrom(c))
-//        return TypeaheadRFModelKeyRequest.class;
-//      if( KMeansModel.class.isAssignableFrom(c))
-//        return TypeaheadKMeansModelKeyRequest.class;
-//      if( Model.class.isAssignableFrom(c))
-//        return TypeaheadModelKeyRequest.class;
-//      if( Frame.class.isAssignableFrom(c) || ValueArray.class.isAssignableFrom(c) )
-//        return TypeaheadHexKeyRequest.class;
-//    }
-//    return TypeaheadKeysRequest.class;
-//  }
-//
-//  // ==========================================================================
-//
-//  private boolean toHTML(StringBuilder sb) {
-//    return false;
-//  }
-//  private void toJava(StringBuilder sb) {}
-//
-//  private String toDocGET() {
-//    return null;
-//  }
-//
-//  /**
-//   * Example of passing and failing request. Will be prepended with
-//   * "curl -s localhost:54321/Request.json". Return param/value pairs that will be used to build up
-//   * a URL, and the result from serving the URL will show up as an example.
-//   */
-//  private String[] DocExampleSucc() {
-//    return null;
-//  }
-//
-//  private String[] DocExampleFail() {
-//    return null;
-//  }
-//
-//  private String HTMLHelp() {
-//    return DocGen.HTML.genHelp(this);
-//  }
-//
-//  private String ReSTHelp() {
-//    return DocGen.ReST.genHelp(this);
-//  }
-//  // Dummy write of a leading field, so the auto-gen JSON can just add commas
-//  // before each succeeding field.
-//  @Override private AutoBuffer writeJSONFields(AutoBuffer bb) { return bb.putJSON4("Request2",0); }
-//
+
+  // -----------------------------------------------------
   /**
    * Request API versioning.
    * TODO: better solution would be to have an explicit annotation for each request
@@ -300,21 +174,24 @@ abstract class Request extends Iced {
   protected static final API_VERSION[] SUPPORTS_ONLY_V1 = new API_VERSION[] { API_VERSION.V_1 };
   protected static final API_VERSION[] SUPPORTS_ONLY_V2 = new API_VERSION[] { API_VERSION.V_2 };
   protected static final API_VERSION[] SUPPORTS_V1_V2   = new API_VERSION[] { API_VERSION.V_1, API_VERSION.V_2 };
-  API_VERSION[] supportedVersions() { return SUPPORTS_ONLY_V2; }
+  protected API_VERSION[] supportedVersions() { return SUPPORTS_ONLY_V2; }
 
-  static final class Response {
-    protected final Request _req;
-    protected final String _msg;
+  private String href() { return href(supportedVersions()[0]); }
+  protected String href(API_VERSION v) { return v._prefix + getClass().getSimpleName(); }
+
+  // -----------------------------------------------------
+  final class Response {
+    protected final String _msg; // Default good response
+    protected final Throwable _t; // Default bad response
     protected long _timeStart;
-    private Response( Request req, String msg ) { _req = req; _msg = msg; }
-
-    static Response error(Request req, Throwable e) {
-      if( !(e instanceof IllegalAccessException ))  Log.err(e);
-      String message = e.getMessage();
-      return error(req,message == null ? e.getClass().toString() : message);
+    protected boolean isError() { return _t != null; }
+    protected Request req() { return Request.this; }
+    protected Response( String msg ) { _t = null; _msg = msg; }
+    protected Response( Throwable t ) {
+      _t = t; 
+      _msg = t.toString(); 
+      Log.err(t);
     }
-    static Response error(Request req, String message) {
-      return new Response(req, message == null ? "no error message" : message);
-    }
+    @Override public String toString() { return _msg; }
   }
 }
