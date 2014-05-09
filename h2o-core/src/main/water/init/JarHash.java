@@ -47,9 +47,7 @@ public abstract class JarHash {
       int pos;
       while( (pos = is.read(buf)) > 0 ) md5.update(buf, 0, pos);
       return md5.digest();      // haz md5!
-    } catch( IOException e ) {
-      Log.err(e);               // No MD5 algo handy???
-    } catch( NoSuchAlgorithmException e ) {
+    } catch( IOException | NoSuchAlgorithmException e ) {
       Log.err(e);               // No MD5 algo handy???
     } finally {
       try { if( is != null ) is.close(); } catch( IOException _ ) { }

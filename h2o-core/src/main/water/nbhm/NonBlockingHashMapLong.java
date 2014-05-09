@@ -380,9 +380,9 @@ public class NonBlockingHashMapLong<TypeV>
   /** Auto-boxing version of {@link #remove(long)}. */
   public TypeV   remove ( Object key              ) { return (key instanceof Long) ? remove (((Long)key).longValue()) : null;  }
   /** Auto-boxing version of {@link #remove(long,Object)}. */
-  public boolean remove ( Object key, Object Val  ) { return (key instanceof Long) ? remove (((Long)key).longValue(), Val) : false;  }
+  public boolean remove ( Object key, Object Val  ) { return (key instanceof Long) && remove(((Long) key).longValue(), Val);  }
   /** Auto-boxing version of {@link #containsKey(long)}. */
-  public boolean containsKey( Object key          ) { return (key instanceof Long) ? containsKey(((Long)key).longValue()) : false; }
+  public boolean containsKey( Object key          ) { return (key instanceof Long) && containsKey(((Long) key).longValue()); }
   /** Auto-boxing version of {@link #putIfAbsent}. */
   public TypeV   putIfAbsent( Long key, TypeV val ) { return putIfAbsent( key.longValue(), val ); }
   /** Auto-boxing version of {@link #replace}. */

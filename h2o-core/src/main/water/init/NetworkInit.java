@@ -73,11 +73,8 @@ public class NetworkInit {
     long mask3 = ~mask2;
     int mask4 = (int) (mask3 & 0xffffffff);
 
-    if ((i & mask4) == (j & mask4)) {
-      return true;
-    }
+    return (i & mask4) == (j & mask4);
 
-    return false;
   }
 
   // Start up an H2O Node and join any local Cloud
@@ -245,14 +242,13 @@ public class NetworkInit {
    * This is the order we want to test for matches when selecting an internet address.
    */
   static ArrayList<java.net.InetAddress> calcPrioritizedInetAddressList() {
-    ArrayList<java.net.InetAddress> ips = new ArrayList<java.net.InetAddress>();
+    ArrayList<java.net.InetAddress> ips = new ArrayList<>();
     {
       ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
 
-      for (int i = 0; i < networkInterfaceList.size(); i++) {
-        NetworkInterface ni = networkInterfaceList.get(i);
+      for (NetworkInterface ni : networkInterfaceList) {
         Enumeration<InetAddress> ias = ni.getInetAddresses();
-        while( ias.hasMoreElements() ) {
+        while (ias.hasMoreElements()) {
           InetAddress ia;
           ia = ias.nextElement();
           ips.add(ia);
@@ -265,7 +261,7 @@ public class NetworkInit {
   }
 
   static ArrayList<NetworkInit> calcArrayList(String networkOpt) {
-    ArrayList<NetworkInit> networkList = new ArrayList<NetworkInit>();
+    ArrayList<NetworkInit> networkList = new ArrayList<>();
 
     if (networkOpt == null) return networkList;
 
@@ -278,12 +274,11 @@ public class NetworkInit {
       networks[0] = networkOpt;
     }
 
-    for (int j = 0; j < networks.length; j++) {
-      String n = networks[j];
+    for (String n : networks) {
       Pattern p = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)/(\\d+)");
       Matcher m = p.matcher(n);
       boolean b = m.matches();
-      if (! b) {
+      if (!b) {
         Log.err("network invalid: " + n);
         return null;
       }
@@ -295,7 +290,7 @@ public class NetworkInit {
       int bits = Integer.parseInt(m.group(5));
 
       NetworkInit usn = new NetworkInit(o1, o2, o3, o4, bits);
-      if (! usn.valid()) {
+      if (!usn.valid()) {
         Log.err("network invalid: " + n);
         return null;
       }
@@ -343,7 +338,7 @@ public class NetworkInit {
         _udpSocket = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
-              " some of the required ports " + (H2O.ARGS.port+0) +
+              " some of the required ports " + H2O.ARGS.port +
               ", " + (H2O.ARGS.port+1) +
               " are not available, change -port PORT and try again.");
       }
@@ -483,7 +478,7 @@ public class NetworkInit {
       Log.warn("-flatfile specified but not found: " + fname);
       return null; // No flat file
     }
-    HashSet<H2ONode> h2os = new HashSet<H2ONode>();
+    HashSet<H2ONode> h2os = new HashSet<>();
     List<FlatFileEntry> list = parseFlatFile(f);
     for(FlatFileEntry entry : list)
       h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
@@ -491,7 +486,7 @@ public class NetworkInit {
   }
 
   static HashSet<H2ONode> parseFlatFileFromString( String s ) {
-    HashSet<H2ONode> h2os = new HashSet<H2ONode>();
+    HashSet<H2ONode> h2os = new HashSet<>();
     InputStream is = new ByteArrayInputStream(s.getBytes());
     List<FlatFileEntry> list = parseFlatFile(is);
     for(FlatFileEntry entry : list)
@@ -514,7 +509,7 @@ public class NetworkInit {
   }
 
   static List<FlatFileEntry> parseFlatFile( InputStream is ) {
-    List<FlatFileEntry> list = new ArrayList<FlatFileEntry>();
+    List<FlatFileEntry> list = new ArrayList<>();
     BufferedReader br = null;
     int port = H2O.ARGS.port;
     try {

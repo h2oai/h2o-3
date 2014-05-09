@@ -70,14 +70,11 @@ public final class PersistNFS extends Persist {
     try {
       File f = getFileForKey(v._key);
       f.mkdirs();
-      FileOutputStream s = new FileOutputStream(f);
-      try {
+      try (FileOutputStream s = new FileOutputStream(f)) {
         byte[] m = v.memOrLoad();
         assert (m == null || m.length == v._max); // Assert not saving partial files
-        if( m != null ) new AutoBuffer(s.getChannel(), false, Value.NFS).putA1(m, m.length).close();
+        if (m != null) new AutoBuffer(s.getChannel(), false, Value.NFS).putA1(m, m.length).close();
         v.setdsk(); // Set as write-complete to disk
-      } finally {
-        s.close();
       }
     } catch( IOException e ) { Log.err(e); }
   }

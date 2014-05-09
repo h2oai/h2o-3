@@ -27,7 +27,7 @@ public class C2Chunk extends Chunk {
   @Override boolean set_impl(int idx, double d) {
     if( Double.isNaN(d) ) return setNA_impl(idx);
     long l = (long)d;
-    return l==d ? set_impl(idx,l) : false;
+    return l == d && set_impl(idx, l);
   }
   @Override boolean set_impl(int i, float f ) { return set_impl(i,(double)f); }
   @Override boolean setNA_impl(int idx) { UDP.set2(_mem,(idx<<1)+OFF,(short)_NA); return true; }

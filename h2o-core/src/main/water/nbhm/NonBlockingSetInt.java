@@ -84,7 +84,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
    * @return <tt>true</tt> if i was in the set.
    */
   public boolean contains( final Object  o ) { 
-    return o instanceof Integer ? contains(((Integer)o).intValue()) : false; 
+    return o instanceof Integer && contains(((Integer) o).intValue());
   }
   /** 
    * Remove {@code o} from the set.  This is the uppercase {@link Integer}
@@ -94,7 +94,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
    * @return <tt>true</tt> if i was removed to the set.
    */
   public boolean remove( final Object  o ) { 
-    return o instanceof Integer ? remove  (((Integer)o).intValue()) : false; 
+    return o instanceof Integer && remove(((Integer) o).intValue());
   }
 
   /** 
@@ -113,13 +113,13 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
    * version of {@link #contains} - no autoboxing.
    * @return <tt>true</tt> if i was int the set.
    */
-  public boolean contains( final int i ) { return i<0 ? false : _nbsi.contains(i); }
+  public boolean contains( final int i ) { return i >= 0 && _nbsi.contains(i); }
   /** 
    * Remove {@code i} from the set.  This is the fast lower-case '{@code int}'
    * version of {@link #remove} - no autoboxing.
    * @return <tt>true</tt> if i was added to the set.
    */
-  public boolean remove  ( final int i ) { return i<0 ? false : _nbsi.remove  (i); }
+  public boolean remove  ( final int i ) { return i >= 0 && _nbsi.remove(i); }
   
   /** 
    * Current count of elements in the set.  Due to concurrent racing updates,
@@ -299,7 +299,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
 
     public boolean remove( final int i ) {
       if( (i>>6) >= _bits.length ) // Out of bounds?  Not in this array!
-        return _new==null ? false : help_copy().remove(i);
+        return _new != null && help_copy().remove(i);
 
       // Handle every 64th bit via using a nested array
       NBSI nbsi = this;         // The bit array being added into
@@ -324,7 +324,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     
     public boolean contains( final int i ) { 
       if( (i>>6) >= _bits.length ) // Out of bounds?  Not in this array!
-        return _new==null ? false : help_copy().contains(i);
+        return _new != null && help_copy().contains(i);
 
       // Handle every 64th bit via using a nested array
       NBSI nbsi = this;         // The bit array being added into
@@ -454,7 +454,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     }
 
     private void print(int d) {
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       buf.append("NBSI - _bits.len=");
       NBSI x = this;
       while( x != null ) {

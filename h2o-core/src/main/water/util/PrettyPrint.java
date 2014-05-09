@@ -3,7 +3,7 @@ package water.util;
 import java.util.concurrent.TimeUnit;
 
 public class PrettyPrint {
-  static String msecs(long msecs, boolean truncate) {
+  public static String msecs(long msecs, boolean truncate) {
     final long hr  = TimeUnit.MILLISECONDS.toHours  (msecs); msecs -= TimeUnit.HOURS  .toMillis(hr);
     final long min = TimeUnit.MILLISECONDS.toMinutes(msecs); msecs -= TimeUnit.MINUTES.toMillis(min);
     final long sec = TimeUnit.MILLISECONDS.toSeconds(msecs); msecs -= TimeUnit.SECONDS.toMillis(sec);

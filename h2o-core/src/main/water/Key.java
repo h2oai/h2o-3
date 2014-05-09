@@ -38,6 +38,7 @@ final public class Key extends Iced<Key> implements Comparable {
   public static final byte DVEC = 5;
   public static final byte VGROUP = 6; // vector group
 
+  static final byte HIDDEN_USER_KEY = 31;
   static final byte USER_KEY = 32;
 
   // For Fluid Vectors, we have a special Key layout.
@@ -271,6 +272,14 @@ final public class Key extends Iced<Key> implements Comparable {
     ab.put4(-1);
     ab.putA1(kb,kb.length);
     return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
+  }
+
+  // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
+  final public static Key makeUserHidden(final Key orig) {
+    if (!orig.user_allowed()) return orig; //already hidden
+    byte[] kb = orig._kb.clone();
+    kb[0] = Key.HIDDEN_USER_KEY;
+    return Key.make(kb);
   }
 
   // User keys must be all ASCII, but we only check the 1st byte

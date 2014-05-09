@@ -252,14 +252,14 @@ abstract public class MemoryManager {
   }
 
   // Allocates memory with cache management
-  public static byte   [] malloc1 (int size) { return (byte   [])malloc(size,size*1, 1,null,0); }
+  public static byte   [] malloc1 (int size) { return (byte   [])malloc(size,size  , 1,null,0); }
   public static short  [] malloc2 (int size) { return (short  [])malloc(size,size*2, 2,null,0); }
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4, 4,null,0); }
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8, 8,null,0); }
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4, 5,null,0); }
   public static double [] malloc8d(int size) { return (double [])malloc(size,size*8, 9,null,0); }
-  public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size*1, 0,null,0); }
-  public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)*1,-1,orig,from); }
+  public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size  , 0,null,0); }
+  public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)  ,-1,orig,from); }
   public static int    [] arrayCopyOfRange(int   [] orig, int from, int sz) { return (int   []) malloc(sz,(sz-from)*4,-4,orig,from); }
   public static long   [] arrayCopyOfRange(long  [] orig, int from, int sz) { return (long  []) malloc(sz,(sz-from)*8,-8,orig,from); }
   public static double [] arrayCopyOfRange(double[] orig, int from, int sz) { return (double[]) malloc(sz,(sz-from)*8,-9,orig,from); }

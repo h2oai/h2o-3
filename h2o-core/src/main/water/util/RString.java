@@ -319,7 +319,7 @@ class LabelledStringList {
     StringBuilder s = new StringBuilder(_length);
     Item i = _begin;
     while( i != null ) {
-      s.append(i.value.toString());
+      s.append(i.value);
       i = i.next;
     }
     return s.toString();

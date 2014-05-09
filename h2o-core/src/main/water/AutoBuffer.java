@@ -417,7 +417,7 @@ public final class AutoBuffer {
     return this;
   }
   // Flip to read-mode
-  AutoBuffer flipForReading() {
+  public AutoBuffer flipForReading() {
     assert !_read;
     _read = true;
     _bb.flip();

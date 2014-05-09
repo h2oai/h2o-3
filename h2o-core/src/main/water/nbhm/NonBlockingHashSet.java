@@ -24,7 +24,7 @@ public class NonBlockingHashSet<E> extends AbstractSet<E> implements Serializabl
   private final NonBlockingHashMap<E,Object> _map;
 
   /** Make a new empty {@link NonBlockingHashSet}.  */
-  public NonBlockingHashSet() { super(); _map = new NonBlockingHashMap<E,Object>(); }
+  public NonBlockingHashSet() { super(); _map = new NonBlockingHashMap<>(); }
 
   /** Add {@code o} to the set.  
    * @return <tt>true</tt> if {@code o} was added to the set, <tt>false</tt>

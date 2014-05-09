@@ -215,8 +215,8 @@ public class NanoHTTPD
     try {
       myServerSocket.close();
       myThread.join();
-    } catch ( IOException e ) {
-    } catch ( InterruptedException e ) { }
+    } catch ( IOException | InterruptedException e ) {
+    }
   }
 
 
@@ -288,7 +288,7 @@ public class NanoHTTPD
           if( b == -1 ) return;
           buf[rlen++] = (byte)b;
           if( b == '\n' ) {
-            if( nl == true ) break; // 2nd nl in a row ==> done with header
+            if(nl) break; // 2nd nl in a row ==> done with header
             nl = true;
           } else if( b != '\r' ) nl = false;
           if (rlen == buf.length) buf = Arrays.copyOf(buf, 2*buf.length);
@@ -380,7 +380,7 @@ public class NanoHTTPD
               char pbuf[] = new char[4096];
               long bytesRead = 0;
               long bytesToRead = size;
-              StringBuffer sb = new StringBuffer();
+              StringBuilder sb = new StringBuilder();
               while (bytesRead < bytesToRead) {
                 int n = in.read(pbuf);
                 if (n < 0) {
@@ -583,7 +583,7 @@ public class NanoHTTPD
     {
       try
       {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for( int i=0; i<str.length(); i++ )
         {
           char c = str.charAt( i );
@@ -807,16 +807,20 @@ public class NanoHTTPD
     StringTokenizer st = new StringTokenizer( uri, "/ ", true );
     while ( st.hasMoreTokens()) {
       String tok = st.nextToken();
-      if ( tok.equals( "/" ))
-        newUri += "/";
-      else if ( tok.equals( " " ))
-        newUri += "%20";
-      else {
-        try {
-          newUri += URLEncoder.encode( tok, "UTF-8" );
-        } catch( UnsupportedEncodingException e ) {
-          throw Log.throwErr(e);
-        }
+      switch (tok) {
+        case "/":
+          newUri += "/";
+          break;
+        case " ":
+          newUri += "%20";
+          break;
+        default:
+          try {
+            newUri += URLEncoder.encode(tok, "UTF-8");
+          } catch (UnsupportedEncodingException e) {
+            throw Log.throwErr(e);
+          }
+          break;
       }
     }
     return newUri;
@@ -852,7 +856,7 @@ public class NanoHTTPD
         uri = uri.substring(0, uri.indexOf( '?' ));
 
       // Prohibit getting out of current directory
-      if ( uri.startsWith( ".." ) || uri.endsWith( ".." ) || uri.indexOf( "../" ) >= 0 )
+      if ( uri.startsWith( ".." ) || uri.endsWith( ".." ) || uri.contains("../"))
         res = new Response( HTTP_FORBIDDEN, MIME_PLAINTEXT,
             "FORBIDDEN: Won't serve ../ for security reasons." );
     }
@@ -995,17 +999,18 @@ public class NanoHTTPD
             if ( newLen < 0 ) newLen = 0;
 
             final long dataLen = newLen;
-            FileInputStream fis = new FileInputStream( f ) {
-              public int available() throws IOException { return (int)dataLen; }
-            };
-            try {
-              fis.skip( startFrom );
+            try (FileInputStream fis = new FileInputStream(f) {
+              public int available() throws IOException {
+                return (int) dataLen;
+              }
+            }) {
+              fis.skip(startFrom);
 
-              res = new Response( HTTP_PARTIALCONTENT, mime, fis );
-              res.addHeader( "Content-Length", "" + dataLen);
-              res.addHeader( "Content-Range", "bytes " + startFrom + "-" + endAt + "/" + fileLen);
-              res.addHeader( "ETag", etag);
-            } finally { fis.close(); }
+              res = new Response(HTTP_PARTIALCONTENT, mime, fis);
+              res.addHeader("Content-Length", "" + dataLen);
+              res.addHeader("Content-Range", "bytes " + startFrom + "-" + endAt + "/" + fileLen);
+              res.addHeader("ETag", etag);
+            }
           }
         }
         else

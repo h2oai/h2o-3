@@ -113,14 +113,15 @@ public abstract class ParseTime {
     byte[]mm=null;
     OUTER: for( ; MM<MMS.length; MM++ ) {
       byte[][] mms = MMS[MM];
-      INNER: for( int k=0; k<mms.length; k++ ) {
-        mm = mms[k];
-        if( mm == null ) continue;
-        if( i+mm.length >= end ) continue INNER;
-        for( int j=0; j<mm.length; j++ )
-          if( mm[j] != Character.toLowerCase(buf[i+j]) )
+      INNER:
+      for (byte[] mm1 : mms) {
+        mm = mm1;
+        if (mm == null) continue;
+        if (i + mm.length >= end) continue INNER;
+        for (int j = 0; j < mm.length; j++)
+          if (mm[j] != Character.toLowerCase(buf[i + j]))
             continue INNER;
-        if( buf[i+mm.length] == '-' ) break OUTER;
+        if (buf[i + mm.length] == '-') break OUTER;
       }
     }
     if( MM == MMS.length ) return Long.MIN_VALUE; // No matching month
