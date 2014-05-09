@@ -3,23 +3,7 @@ package water.api;
 //import com.amazonaws.services.s3.AmazonS3;
 //import com.amazonaws.services.s3.model.ObjectListing;
 //import com.amazonaws.services.s3.model.S3ObjectSummary;
-//import java.io.IOException;
-//import java.io.InputStream;
-//import java.net.URL;
-//import java.util.regex.Matcher;
-//import java.util.regex.Pattern;
 //import org.apache.hadoop.fs.Path;
-//import water.DKV;
-//import water.Futures;
-//import water.Key;
-//import water.Request2;
-//import water.api.RequestServer.API_VERSION;
-//import water.fvec.S3FileVec;
-//import water.fvec.UploadFileVec;
-//import water.persist.PersistHdfs;
-//import water.persist.PersistS3;
-//import water.util.FileIntegrityChecker;
-//import water.util.Log;
 import java.io.File;
 import java.util.*;
 import water.H2O;
@@ -52,31 +36,6 @@ public class ImportFiles extends Request {
     return _path == null ? new Response(new IllegalArgumentException("Missing 'path'")) : null;
   }
 
-//  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
-//  String parse() { return "Parse2.query"; }
-//
-//  @API(help="Path to file/folder on either local disk/hdfs/s3",required=true,filter=GeneralFile.class,gridable=false)
-//  String path;
-//
-//
-//  @API(help="successfully imported files")
-//  String [] files;
-//
-//  @API(help="keys of imported files")
-//  String [] keys;
-//
-//  @API(help="files that failed to load")
-//  String [] fails;
-//
-//  @API(help="Prior Keys that matched a prefix of the imported path, and were removed prior to (re)importing")
-//  String[] dels;
-//
-//  /**
-//   * Iterates over fields and their annotations, and creates argument handlers.
-//   */
-//  @Override protected void registered(API_VERSION version) {
-//    super.registered(version);
-//  }
   @Override protected Response serve() {
     assert _path != null;       // Do not get here unless checkArguments found a path
     String p2 = _path.toLowerCase();
@@ -205,4 +164,7 @@ public class ImportFiles extends Request {
 //    boolean b = m.matches();
 //    return b;
 //  }
+//  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
+//  String parse() { return "Parse2.query"; }
+//
 }

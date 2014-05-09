@@ -65,7 +65,7 @@ public class RequestServer extends NanoHTTPD {
     // Data
     Request.addToNavbar(registerRequest(new ImportFiles()),  "Import Files",           "Data");
     //Request.addToNavbar(registerRequest(new Upload2()),       "Upload",                 "Data");
-    //Request.addToNavbar(registerRequest(new Parse2()),        "Parse",                  "Data");
+    Request.addToNavbar(registerRequest(new Parse()),        "Parse",                  "Data");
     //Request.addToNavbar(registerRequest(new Inspector()),     "Inspect",                "Data");
     //Request.addToNavbar(registerRequest(new SummaryPage2()),  "Summary",                "Data");
     //Request.addToNavbar(registerRequest(new QuantilesPage()), "Quantiles",              "Data");
