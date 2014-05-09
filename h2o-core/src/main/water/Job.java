@@ -20,8 +20,8 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _fjtask; // Top-level task you can block on
 
   public final String _description;
-  private long _start_time;     // Job started
-  private long   _end_time;     // Job ended
+  public long _start_time;     // Job started
+  public long   _end_time;     // Job ended
   private String _exception;    // Unpacked exception & stack trace
 
   /** Possible job states. */
@@ -29,11 +29,11 @@ public class Job<T extends Keyed> extends Keyed {
     CREATED,   // Job was created
     RUNNING,   // Job is running
     CANCELLED, // Job was cancelled by user
-    CRASHED,   // Job crashed, error message/exception is available
+    FAILED,   // Job crashed, error message/exception is available
     DONE       // Job was successfully finished
   }
 
-  private JobState _state;
+  public JobState _state;
 
   protected Job( Key dest, String desc ) { 
     super(defaultJobKey()); 
@@ -88,7 +88,7 @@ public class Job<T extends Keyed> extends Keyed {
   protected T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _fjtask.join();             // Block until top-level job is done
-    T ans = (T) DKV.get(_dest).get();
+    T ans = DKV.get(_dest).get();
     remove();                   // Remove self-job
     return ans;
   }
@@ -108,13 +108,13 @@ public class Job<T extends Keyed> extends Keyed {
     PrintWriter pw = new PrintWriter(sw);
     ex.printStackTrace(pw);
     String stackTrace = sw.toString();
-    cancel("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.CRASHED);
+    cancel("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
   }
   /** Signal exceptional cancellation of this job.
    * @param msg cancellation message explaining reason for cancelation
    */
   public void cancel(final String msg) {
-    JobState js = msg == null ? JobState.CANCELLED : JobState.CRASHED;
+    JobState js = msg == null ? JobState.CANCELLED : JobState.FAILED;
     cancel(msg, js);
   }
   private void cancel(final String msg, final JobState resultingState ) {
@@ -149,13 +149,31 @@ public class Job<T extends Keyed> extends Keyed {
   }
 
   /** Returns true if the job was cancelled by the user or crashed.
-   * @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#CRASHED}
+   * @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#FAILED}
    */
   private boolean isCancelledOrCrashed() {
-    return _state == JobState.CANCELLED || _state == JobState.CRASHED;
+    return _state == JobState.CANCELLED || _state == JobState.FAILED;
   }
 
-  static class JobCancelledException extends RuntimeException {
+  /** Returns true if this job is running
+   * @return returns true only if this job is in running state.
+   */
+  public boolean isRunning() { return _state == JobState.RUNNING; }
+
+   /** Check if given job is running.
+   *
+   * @param job_key job key
+   * @return true if job is still running else returns false.
+   */
+  public static boolean isRunning(Key job_key) {
+    Job j = DKV.get(job_key).get();
+    assert j!=null : "Job should be always in DKV!";
+    return j.isRunning();
+  }
+
+  public static class JobCancelledException extends RuntimeException {
+    public JobCancelledException(){super("job was cancelled!");}
+    public JobCancelledException(String msg){super("job was cancelled! with msg '" + msg + "'");}
   }
 
   public interface ProgressMonitor { public void update( long len ); }
