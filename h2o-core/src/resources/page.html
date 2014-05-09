@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>%cloud_name - H2O</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="H2O Analytics Engine for Better Predictions" >
+    <meta name="author" content="0xdata" >
+ 
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="/bootstrap2.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/bootstrap2.3.1/css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" type="text/css" href="/jquery.fileupload/css/jquery.fileupload-ui.css">
+    <link rel="stylesheet" type="text/css" href="/h2o/css/main.css">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <script type="text/javascript" src='/jquery/jquery-1.8.3.min.js'></script>
+    <script type="text/javascript" src='/bootstrap2.3.1/js/bootstrap.min.js'></script>
+    <script type="text/javascript" src='/h2o/js/main.js'></script>
+    <script type="text/javascript" src='/h2o/js/ga.js'></script>
+    <link rel="stylesheet" href="/highlight.js/styles/xcode.css">
+    <script src="/highlight.js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </head>
+  <body>
+
+<!-- Navigation bar at the top -->
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>      
+      
+      <a class="brand" href="/">H<sub>2</sub>O</a>
+      
+      <form class="navbar-search pull-right" action="StoreView.html">
+        <input name="filter" type="text" class="search-query" placeholder="key">
+      </form>      
+      
+      <div class="nav-collapse collapse">
+	<ul class="nav">
+	  %NAVBAR
+	</ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- A simple page  -->
+%CONTENTS
+
+<footer class="footer">
+<div class="container">
+    <p>
+    Developed and tested by
+    <a target="_blank" href="http://0xdata.com/">0xdata</a>.
+    </p>
+    <p>
+    Code licensed under
+    <a target="_blank" href="http://www.apache.org/licenses/LICENSE-2.0">Apache License v2.0</a>.
+    </p>
+    <ul class="footer-links">
+        <li>
+        <a href="http://0xdata.com/blog/">Blog</a>
+        </li>
+        <li class="muted">&middot;</li>
+        <li>
+        <a href="https://github.com/0xdata/h2o">GitHub</a>
+        </li>
+        <li class="muted">&middot;</li>
+        <li>
+        <a href="http://docs.0xdata.com">Doc</a>
+        </li>
+        <li class="muted">&middot;</li>
+        <li>
+        <a href="http://test.0xdata.com/">Mr. Jenkins</a>
+        </li>
+        <li class="muted">&middot;</li>
+        <li>
+        <a href="https://groups.google.com/forum/#!forum/h2ostream">H2O Stream</a>
+        </li>
+
+    </ul>
+</div>
+</footer>
+  </body>
+</html>

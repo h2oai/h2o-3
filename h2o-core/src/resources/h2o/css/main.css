@@ -1,0 +1,69 @@
+body {
+    height: 100%;
+    padding-top: 60px;
+}
+.highlight {
+    background-color: #ADFF2F;
+}
+
+.footer {
+    background-color: #F5F5F5;
+    margin-top: 120px;
+    padding: 10px 0;
+    text-align: center;
+}
+
+.footer p {
+    color: #777777;
+    margin-bottom: 0;
+}
+
+.footer-links {
+    margin: 10px 0;
+}
+
+.footer-links li {
+    display: inline;
+    padding: 0 2px;
+}
+
+.footer-links li:first-child {
+    padding-left: 0;
+}
+
+.btn-custom {
+  border-radius: 5px;
+  padding: 0px 12px;
+  background-color: #D9EDF7 !important;
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#D9EDF7", endColorstr="#D9EDF7");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#D9EDF7), to(#D9EDF7));
+  background-image: -moz-linear-gradient(top, #D9EDF7, #D9EDF7);
+  background-image: -ms-linear-gradient(top, #D9EDF7, #D9EDF7);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #D9EDF7), color-stop(100%, #D9EDF7));
+  background-image: -webkit-linear-gradient(top, #D9EDF7, #D9EDF7);
+  background-image: -o-linear-gradient(top, #D9EDF7, #D9EDF7);
+  background-image: linear-gradient(#D9EDF7, #D9EDF7);
+  border-color: #D9EDF7 #D9EDF7 hsl(193, 25%, 82%);
+  color: #333 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.00);
+  -webkit-font-smoothing: antialiased;
+}
+
+td, th {
+  min-width: 115px;
+}
+
+
+span.btn_custom{
+    display: block;
+    width: 95px;
+    height: 100%;
+    margin: 0 auto;
+}
+
+.table-bordered {
+
+    border-collapse: collapse;
+
+}

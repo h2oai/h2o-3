@@ -1,0 +1,65 @@
+<div class='container' style='margin: 0px auto'>
+  <link rel="stylesheet" type="text/css" href="h2o/console.css">
+  <div id="console"></div>
+  
+  <script src="jquery/jqconsole.min.js" type="text/javascript" charset="utf-8"></script>
+  
+  <link rel="stylesheet" type="text/css" href="jquery/jquery.matrix.css" />
+  <script type="text/javascript" src="jquery/jquery.matrix.js"></script>
+  
+  <script type="text/javascript">
+    $(function () {
+      var jqconsole = $('#console').jqconsole('Welcome to the H\u2082O interactive data console.\n Type "help" or "?" for help.\n', 'H\u2082O> ');
+      
+      var startPrompt = function () {
+        // Start the prompt with history enabled.
+        jqconsole.Prompt(true, function (input) {
+          if( input == 'matrix' ) {
+            var c = $('#console')
+            c.matrix({'height':c.height(),'width':c.width()})
+            jqconsole.Write("There is no spoon\n", 'jqconsole-output');
+          }
+          if( input == '?' || input == 'help' ) {
+            %HELP
+            startPrompt();
+          } else if( input ) {
+            $.get('/2/Exec2',
+              // name 'str' matches the Java field name 'water/api/Exec2.str'
+              { str: input },
+              function (data) {
+                if( data.error ) {
+                  jqconsole.Write(data.error, 'jqconsole-error');
+                } else {
+                  if( data.key ) {
+                    var res = $('<a href="Inspect2.html?src_key='+data.key+'" target="_blank"/>');
+                    res.append(data.key);
+                    jqconsole.Append(res);
+                    jqconsole.Write(':\n');
+                  }
+                  jqconsole.Write(data.result, 'jqconsole-output');
+                }
+                jqconsole.Write('\n')
+                startPrompt();
+              }
+            );
+          } else {
+            startPrompt();
+          }
+        });
+      };
+      // Move to line start Ctrl+A.
+      jqconsole.RegisterShortcut('A', function() {
+        jqconsole.MoveToStart();
+      });
+      // Move to line start Ctrl+E.
+      jqconsole.RegisterShortcut('E', function() {
+        jqconsole.MoveToEnd();
+      });
+      // Delete to end of line
+      jqconsole.RegisterShortcut('K', function() {
+        jqconsole.SetPromptText(jqconsole.$prompt_left.text())
+      });
+      startPrompt();
+    });
+  </script>
+</div>

@@ -1,0 +1,48 @@
+.bar.positive {
+  fill: steelblue;
+}
+
+.bar.negative {
+  fill: brown;
+}
+.bar:hover {
+  fill: orange;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+#d3tip {
+  position: absolute;
+  width: 120px;
+  height: auto;
+  padding: 2px;
+  background: lightsteelblue;
+  border: 0px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+  -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+#d3tip.hidden {
+  display: none;
+}
+
+#d3tip p {
+  text-align: center;
+  margin: 0;
+  font-family: sans-serif;
+  font-size: 12px;
+}

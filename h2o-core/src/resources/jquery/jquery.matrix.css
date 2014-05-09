@@ -1,0 +1,30 @@
+.ui-matrix {
+  position: relative;
+  border: 1px solid #080;
+  background: black;
+  overflow: hidden;
+  font-family: "Courier New",Courier,monospace;
+  margin: 0;
+}
+
+.ui-matrix-string {
+  color: #080;
+  text-shadow: #0f0 0 0 6px,
+               #050 0 -6px 12px;
+  position: absolute;
+}
+
+.ui-matrix-string-size0 { font-size: 24px; line-height: 24px; z-index: 100; opacity: 1.0; }
+.ui-matrix-string-size1 { font-size: 21px; line-height: 21px; z-index:  90; opacity: .75; }
+.ui-matrix-string-size2 { font-size: 18px; line-height: 18px; z-index:  80; opacity: .50; }
+.ui-matrix-string-size3 { font-size: 15px; line-height: 15px; z-index:  70; opacity: .25; }
+
+.ui-matrix-string span {
+  display: block;
+}
+
+.ui-matrix-string .ui-matrix-string-first {
+  font-weight: bold;
+  color: #3f3;
+}
+
