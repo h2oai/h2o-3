@@ -150,7 +150,7 @@ abstract public class Persist {
       // Dehexalate until '%'
       for( i = 1; i < key.length(); i += 2 ) {
         if( key.charAt(i) == '%' ) break;
-        char b0 = (char) (key.charAt(i + 0) - '0');
+        char b0 = (char) (key.charAt(i    ) - '0');
         if( b0 > 9 ) b0 += '0' + 10 - 'A';
         char b1 = (char) (key.charAt(i + 1) - '0');
         if( b1 > 9 ) b1 += '0' + 10 - 'A';
@@ -185,7 +185,7 @@ abstract public class Persist {
 
   // Convenience utility
   public static byte[] toByteArray(InputStream is) throws IOException {
-    try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
         byte[] buffer = new byte[0x2000];
         for( int len; (len = is.read(buffer)) != -1; )
           os.write(buffer, 0, len);

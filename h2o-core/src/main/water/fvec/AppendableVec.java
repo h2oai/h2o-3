@@ -55,8 +55,7 @@ public class AppendableVec extends Vec {
   // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?
   public boolean shouldBeEnum() {
     // TODO: we declare column to be string/enum only if it does not have ANY numbers in it.
-    if( _strCnt > 0 && (_strCnt + _naCnt) == _totalCnt ) return true;
-    return false;
+    return _strCnt > 0 && (_strCnt + _naCnt) == _totalCnt;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.

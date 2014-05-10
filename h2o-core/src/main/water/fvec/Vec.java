@@ -52,10 +52,13 @@ public class Vec extends Keyed {
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
-  final private long _espc[];
+  final long[] _espc;
 
   /** Enum/factor/categorical names. */
   protected String [] _domain;
+  final public String [] factors() { return _domain; }
+  final public void set_factors(String[] factors) { _domain = factors; }
+
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
   protected byte _time;
 
@@ -78,7 +81,7 @@ public class Vec extends Keyed {
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to zero. */
   public Vec makeZero()                { return makeCon(0); }
-  private Vec makeZero(String[] domain) { return makeCon(0, domain); }
+  public Vec makeZero(String[] domain) { return makeCon(0, domain); }
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to a constant. */
   private Vec makeCon( final long l ) { return makeCon(l, null); }
@@ -96,7 +99,7 @@ public class Vec extends Keyed {
     DKV.put(v0._key,v0);        // Header last
     return v0;
   }
-  private Vec makeCon( final double d ) {
+  protected Vec makeCon( final double d ) {
     if( (long)d==d ) return makeCon((long)d);
     final int nchunks = nChunks();
     final Vec v0 = new Vec(group().addVec(),_espc);
@@ -111,10 +114,10 @@ public class Vec extends Keyed {
     for(int i = 0; i < vs.length; ++i) vs[i] = new Vec(keys[i],_espc, domains == null ? null : domains[i]);
     new MRTask() {
       @Override protected void setupLocal() {
-        for( int j = 0; j < vs.length; ++j ) {
-          for( int i=0; i<nchunks; i++ ) {
-            Key k = vs[j].chunkKey(i);
-            if( k.home() ) DKV.put(k,new C0LChunk(0L,chunkLen(i)),_fs);
+        for (Vec v1 : vs) {
+          for (int i = 0; i < nchunks; i++) {
+            Key k = v1.chunkKey(i);
+            if (k.home()) DKV.put(k, new C0LChunk(0L, chunkLen(i)), _fs);
           }
         }
         for( Vec v : vs ) if( v._key.home() ) DKV.put(v._key,v,_fs);
@@ -225,13 +228,13 @@ public class Vec extends Keyed {
   /** Return column max - lazily computed as needed. */
   public double max()  { return rollupStats()._max; }
   /** Return column mean - lazily computed as needed. */
-  double mean() { return rollupStats()._mean; }
+  public double mean() { return rollupStats()._mean; }
   /** Return column standard deviation - lazily computed as needed. */
-  double sigma(){ return rollupStats()._sigma; }
+  public double sigma(){ return rollupStats()._sigma; }
   /** Return column missing-element-count - lazily computed as needed. */
   public long  naCnt() { return rollupStats()._naCnt; }
   /** Is all integers? */
-  boolean isInt(){return rollupStats()._isInt; }
+  public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
   /** Compute the roll-up stats as-needed */
@@ -458,7 +461,7 @@ public class Vec extends Keyed {
    * @param vec vector which is intended to be copied
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
    */
-  private Vec align(final Vec vec) {
+  public Vec align(final Vec vec) {
     assert ! this.group().equals(vec.group()) : "Vector align expects a vector from different vector group";
     assert this.length() == vec.length() : "Trying to align vectors with different length!";
     Vec avec = makeZero(); // aligned vector
@@ -489,13 +492,18 @@ public class Vec extends Keyed {
     return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
   }
 
+  /** Create a vector transforming values according given domain map.
+   * @see Vec#makeTransf(int[], int[], String[])
+   */
+  public Vec makeTransf(final int[][] map, String[] finalDomain) { return makeTransf(map[0], map[1], finalDomain); }
+
   /** Creates a new transformation from given values to given indexes of given domain.
    *  @param values values being mapped from
    *  @param indexes values being mapped to
    *  @param domain domain of new vector
    *  @return always return a new vector which maps given values into a new domain
    */
-  Vec makeTransf(final int[] values, final int[] indexes, final String[] domain) {
+  public Vec makeTransf(final int[] values, final int[] indexes, final String[] domain) {
     if( _espc == null ) throw H2O.unimpl();
     Vec v0 = new TransfVec(values, indexes, domain, this._key, group().addVec(),_espc);
     DKV.put(v0._key,v0);
@@ -563,7 +571,7 @@ public class Vec extends Keyed {
     final int _len;
     final Key _key;
     private VectorGroup(Key key, int len){_key = key;_len = len;}
-    private VectorGroup() {
+    public VectorGroup() {
       byte[] bits = new byte[26];
       bits[0] = Key.VGROUP;
       bits[1] = -1;
@@ -612,7 +620,7 @@ public class Vec extends Keyed {
      * @param n number of keys to make
      * @return arrays of unique keys belonging to this group.
      */
-    private Key [] addVecs(final int n){
+    public Key [] addVecs(final int n){
       AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
       tsk.invoke(_key);
       Key [] res = new Key[n];

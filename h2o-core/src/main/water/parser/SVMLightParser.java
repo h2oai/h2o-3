@@ -338,7 +338,9 @@ class SVMLightParser extends Parser {
   // Used for previewing datasets.
   // Fill with zeros not NAs, and grow columns on-demand.
   private static class InspectDataOut2 extends InspectDataOut {
-    public InspectDataOut2() { for(int i = 0; i < _data.length;++i) Arrays.fill(_data[i],"0");  }
+    public InspectDataOut2() {
+      for (String[] a_data : _data) Arrays.fill(a_data, "0");
+    }
     // Expand columns on-demand
     @Override public void addNumCol(int colIdx, long number, int exp) {
       _ncols = Math.max(_ncols,colIdx);

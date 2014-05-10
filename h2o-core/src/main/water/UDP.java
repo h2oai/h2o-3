@@ -39,7 +39,7 @@ public abstract class UDP {
     final boolean _paxos;     // Ignore (or not) packets from outside the Cloud
     udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
     static udp[] UDPS = values();
-  };
+  }
 
   // Handle an incoming I/O transaction, probably from a UDP packet.  The
   // returned Autobuffer will be closed().  If the returned buffer is not the
@@ -52,7 +52,7 @@ public abstract class UDP {
   String print16( AutoBuffer ab ) {
     for( int i=0; i<16; i++ ) {
       int b = ab.get1();
-      cs[(i<<1)+0   ] = hex(b>>4);
+      cs[(i<<1)     ] = hex(b>>4);
       cs[(i<<1)+1   ] = hex(b   );
     }
     return new String(cs);

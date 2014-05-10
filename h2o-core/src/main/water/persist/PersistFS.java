@@ -43,14 +43,11 @@ final class PersistFS extends Persist {
       return null; // No value
     }
     try {
-      FileInputStream s = new FileInputStream(f);
-      try {
+      try (FileInputStream s = new FileInputStream(f)) {
         AutoBuffer ab = new AutoBuffer(s.getChannel(), true, Value.ICE);
         byte[] b = ab.getA1(v._max);
         ab.close();
         return b;
-      } finally {
-        s.close();
       }
     } catch( IOException e ) {  // Broken disk / short-file???
       throw Log.throwErr(e);

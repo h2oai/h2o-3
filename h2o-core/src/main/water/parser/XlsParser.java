@@ -315,7 +315,7 @@ class XlsParser extends Parser {
   private ArrayList<Sheet> _boundsheets = new ArrayList<>();
   private static class XF {
     final int _indexCode;
-    enum Type { Date, Number, Other };
+    enum Type { Date, Number, Other }
     final Type _type;
     XF( int code, Type type ) { _indexCode = code; _type = type; }
   }

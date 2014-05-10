@@ -170,7 +170,7 @@ public class TransfVec extends WrappedVec {
   public static int[][] pack(int[] values, boolean[] usemap) {
     assert values.length == usemap.length : "Cannot pack the map according given use map!";
     int cnt = 0;
-    for (int i=0; i<usemap.length; i++) cnt += usemap[i] ? 1 : 0;
+    for (boolean anUsemap : usemap) cnt += anUsemap ? 1 : 0;
     int[] pvals = new int[cnt]; // only used values
     int[] pindx = new int[cnt]; // indexes of used values
     int index = 0;

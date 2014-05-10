@@ -49,7 +49,7 @@ public class ParseDataset2 extends Job<Frame> {
   public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParserSetup setup, boolean delete_on_done) {
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
-    for( String x : conflictingNames ) 
+    for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
     long sum=0;
     for( Key k : keys ) {

@@ -32,7 +32,7 @@ final public class H2O {
   static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
-  static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
+  public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
   // Best-guess process ID
   public static long PID = -1L;
 
@@ -433,7 +433,7 @@ final public class H2O {
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread().start();
     // Start the Nano HTTP server thread
-    water.api.RequestServer.start();
+//    water.api.RequestServer.start();
   }
 
   // --------------------------------------------------------------------------

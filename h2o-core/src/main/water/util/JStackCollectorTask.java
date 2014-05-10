@@ -38,7 +38,6 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
   }
 
   private void append(final StringBuilder sb, final StackTraceElement[] trace) {
-    for (int i=0; i < trace.length; i++)
-      sb.append("\tat ").append(trace[i]).append('\n');
+    for (StackTraceElement aTrace : trace) sb.append("\tat ").append(aTrace).append('\n');
   }
 }

@@ -67,7 +67,6 @@ public class Futures {
         f.get();
       }
     } 
-    catch( InterruptedException e ) { Log.throwErr(e); } 
-    catch(   ExecutionException e ) { Log.throwErr(e); } 
+    catch( InterruptedException | ExecutionException e ) { Log.throwErr(e); }
   }
 }

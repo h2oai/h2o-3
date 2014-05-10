@@ -138,7 +138,7 @@ public class TimeLine extends UDP {
   // Internal array math so we can keep layout private
   private static int idx(long[] tl, int i ) { return (((int)tl[0]+i)&(MAX_EVENTS-1))*WORDS_PER_EVENT+1; }
   // That first long is complex: compressed CTM and IP4
-  private static long x0( long[] tl, int idx ) { return tl[idx(tl,idx)+0]; }
+  private static long x0( long[] tl, int idx ) { return tl[idx(tl,idx)]; }
   // ms since boot of JVM
   public static long ms( long[] tl, int idx ) { return x0(tl,idx)>>>32; }
   public static InetAddress inet( long[] tl, int idx ) {
@@ -162,7 +162,7 @@ public class TimeLine extends UDP {
   public static long l0( long[] tl, int idx ) { return tl[idx(tl,idx)+2]; }
   public static long l8( long[] tl, int idx ) { return tl[idx(tl,idx)+3]; }
 
-  public static boolean isEmpty( long[] tl, int idx ) { return tl[idx(tl,idx)+0]==0; }
+  public static boolean isEmpty( long[] tl, int idx ) { return tl[idx(tl,idx)]==0; }
 
   // Take a system-wide snapshot.  Return an array, indexed by H2ONode _idx,
   // containing that Node's snapshot.  Try to get all the snapshots as close as

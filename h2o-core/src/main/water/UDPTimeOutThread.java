@@ -13,7 +13,7 @@ public class UDPTimeOutThread extends Thread {
   // List of "in progress" tasks.  When they time-out we do the time-out action
   // which is possibly a re-send if we suspect a dropped UDP packet, or a
   // fail-out if the target has died.
-  static DelayQueue<RPC> PENDING = new DelayQueue<RPC>();
+  static DelayQueue<RPC> PENDING = new DelayQueue<>();
 
   // The Run Method.
 

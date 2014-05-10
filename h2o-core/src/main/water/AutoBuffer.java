@@ -417,7 +417,7 @@ public final class AutoBuffer {
     return this;
   }
   // Flip to read-mode
-  AutoBuffer flipForReading() {
+  public AutoBuffer flipForReading() {
     assert !_read;
     _read = true;
     _bb.flip();
@@ -1056,7 +1056,7 @@ public final class AutoBuffer {
     }
     return this;
   }
-  AutoBuffer putA4f( float[] ary ) {
+  public AutoBuffer putA4f( float[] ary ) {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
@@ -1105,7 +1105,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA2(ary[i]);
     return this;
   }
-  AutoBuffer putAA4( int[][] ary ) {
+  public AutoBuffer putAA4( int[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
@@ -1123,7 +1123,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA4f(ary[i]);
     return this;
   }
-  AutoBuffer putAA8( long[][] ary ) {
+  public AutoBuffer putAA8( long[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
