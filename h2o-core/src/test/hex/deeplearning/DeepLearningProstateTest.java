@@ -107,7 +107,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               p.validation = valid;
 
                               p.hidden = hidden;
-                              if (i == 0 && resp == 2) p.classification = false;
+                              p.classification = !(i == 0 && resp == 2);
                               p.best_model_key = best_model_key;
                               p.epochs = epochs;
                               p.seed = seed;
