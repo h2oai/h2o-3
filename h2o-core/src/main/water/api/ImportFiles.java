@@ -6,7 +6,6 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.util.*;
-import water.H2O;
 import water.util.FileIntegrityChecker;
 
 public class ImportFiles extends Request {
@@ -30,10 +29,10 @@ public class ImportFiles extends Request {
       if( prop.equals("path") ) {
         _path = parms.getProperty("path");
       } else {
-        return new Response(new IllegalArgumentException("unknown parameter: "+prop));
+        return throwIAE("unknown parameter: "+prop);
       }
     }
-    return _path == null ? new Response(new IllegalArgumentException("Missing 'path'")) : null;
+    return _path == null ? throwIAE("Missing 'path'") : null;
   }
 
   @Override protected Response serve() {
@@ -107,7 +106,7 @@ public class ImportFiles extends Request {
     _fails = afails.toArray(new String[0]);
     _dels  = adels .toArray(new String[0]);
     return new Response("Imported: "+Arrays.toString(_files)+
-                        " into "+Arrays.toString(_keys)+
+                        " into <a href=/2/Parse.html?hex="+_keys[0]+"&srcs="+Arrays.toString(_keys)+">"+Arrays.toString(_keys)+"</a>"+
                         ", missed "+Arrays.toString(_fails)+
                         ", deleted prior keys "+Arrays.toString(_dels));
   }
@@ -168,3 +167,4 @@ public class ImportFiles extends Request {
 //  String parse() { return "Parse2.query"; }
 //
 }
+

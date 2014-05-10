@@ -32,6 +32,7 @@ import water.util.Log;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -295,6 +296,7 @@ public class RequestServer extends NanoHTTPD {
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
       parms.setProperty("error",e.getClass().getSimpleName()+": "+e.getMessage());
+      parms.setProperty("stackTrace",Arrays.toString(e.getStackTrace()));
       return _http500.serve(this,parms,type);
     }
   }
@@ -320,7 +322,7 @@ public class RequestServer extends NanoHTTPD {
       // make sure that no Exception is ever thrown out from the request
       Properties parms = new Properties();
       parms.setProperty("error",uri);
-      return _http404.serve(this,parms,RequestType.html);
+      return _http500.serve(this,parms,RequestType.html);
     }
     String mime = NanoHTTPD.MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )

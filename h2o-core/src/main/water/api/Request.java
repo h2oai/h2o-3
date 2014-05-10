@@ -171,7 +171,7 @@ abstract class Request extends Iced {
    *  Annotation will be processed during start of RequestServer and default version will be registered
    *  under /, else /version/name_of_request.
    */
-  protected static final API_VERSION[] SUPPORTS_ONLY_V1 = new API_VERSION[] { API_VERSION.V_1 };
+  //protected static final API_VERSION[] SUPPORTS_ONLY_V1 = new API_VERSION[] { API_VERSION.V_1 };
   protected static final API_VERSION[] SUPPORTS_ONLY_V2 = new API_VERSION[] { API_VERSION.V_2 };
   protected static final API_VERSION[] SUPPORTS_V1_V2   = new API_VERSION[] { API_VERSION.V_1, API_VERSION.V_2 };
   protected API_VERSION[] supportedVersions() { return SUPPORTS_ONLY_V2; }
@@ -194,4 +194,5 @@ abstract class Request extends Iced {
     }
     @Override public String toString() { return _msg; }
   }
+  Response throwIAE( String msg ) { return new Response( new IllegalArgumentException(msg)); }
 }
