@@ -828,19 +828,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
     if (!classification && loss == Loss.CrossEntropy) throw new IllegalArgumentException("Cannot use CrossEntropy loss function for regression.");
 
     // make default job_key and destination_key in case they are missing
-//    if (_dest == null) {
-//      _dest = Key.make();
-//    }
-    DKV.put(self(), this);
-//    if (self() == null) {
-//      job_key = Key.make();
-//    }
-//    if (UKV.get(self()) == null) {
-//      start_time = System.currentTimeMillis();
-//      state      = JobState.RUNNING;
-//      UKV.put(self(), this);
-//      _fakejob = true;
-//    }
+    start(null);
     if (!sparse && col_major) {
       if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
     }
