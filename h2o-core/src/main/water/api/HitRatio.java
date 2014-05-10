@@ -1,4 +1,7 @@
-package water;
+package water.api;
+import water.DKV;
+import water.Iced;
+import water.MRTask;
 import water.util.ArrayUtils;
 import water.util.DocGen;
 import water.fvec.Chunk;
@@ -9,7 +12,7 @@ import static water.util.ModelUtils.getPredictions;
 import java.util.Arrays;
 import java.util.Random;
 
-public class HitRatio {
+public class HitRatio extends Iced {
 //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
 //  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
 //  public static final String DOC_GET = "Hit Ratio";

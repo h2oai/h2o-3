@@ -4,6 +4,7 @@ import hex.FrameTask;
 import static junit.framework.Assert.failNotEquals;
 import static org.junit.Assert.assertTrue;
 import water.*;
+import water.api.ConfusionMatrix;
 import water.fvec.*;
 import static water.util.ArrayUtils.subarray;
 import static water.util.ModelUtils.getPrediction;

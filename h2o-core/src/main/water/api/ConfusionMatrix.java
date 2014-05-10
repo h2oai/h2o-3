@@ -1,5 +1,9 @@
-package water;
+package water.api;
 
+import water.DKV;
+import water.Iced;
+import water.MRTask;
+import water.Model;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TransfVec;
@@ -29,7 +33,7 @@ import java.util.Arrays;
  *
  *  @author cliffc
  */
-public class ConfusionMatrix {
+public class ConfusionMatrix extends Iced {
 //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
 //  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
 

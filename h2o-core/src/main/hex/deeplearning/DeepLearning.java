@@ -1,11 +1,8 @@
 package hex.deeplearning;
 
-import water.DKV;
+import water.*;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
-import water.H2O;
-import water.Job;
-import water.Key;
 import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
@@ -834,6 +831,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
 //    if (_dest == null) {
 //      _dest = Key.make();
 //    }
+    DKV.put(self(), this);
 //    if (self() == null) {
 //      job_key = Key.make();
 //    }
@@ -908,7 +906,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       if (model == null) {
         model = DKV.get(dest()).get();
       }
-      model.write_lock(self());
+      model.delete_and_lock(self());
       final DeepLearning mp = model.model_info().get_params(); //use the model's parameters for everything below - NOT the job's parameters (can be different after checkpoint restart)
 
       ValidationAdapter validAdapter = new ValidationAdapter(validation, classification);
@@ -982,6 +980,10 @@ public class DeepLearning extends Job<DeepLearningModel> {
       model.get_params()._state = _state; //for parameter JSON on the HTML page
       Log.info("Deep Learning model building was cancelled.");
       return model;
+    }
+    catch(Throwable t) {
+      t.printStackTrace();
+      throw t;
     }
     finally {
       if (model != null) model.unlock(self());

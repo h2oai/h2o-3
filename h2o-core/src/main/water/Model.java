@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import hex.deeplearning.DeepLearningModel;
+import water.api.AUC;
+import water.api.ConfusionMatrix;
+import water.api.HitRatio;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TransfVec;
