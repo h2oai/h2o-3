@@ -161,7 +161,8 @@ public class DeepLearningIrisTest extends TestUtil {
                             DeepLearningMLPReference ref = new DeepLearningMLPReference();
                             ref.init(activation, RandomUtils.getDeterRNG(seed), holdout_ratio, hidden);
 
-                            p.best_model_key = Key.make("best_DLIris.hex");
+                            p.best_model_key = null;
+//                            p.best_model_key = Key.make("best_DLIris.hex");
                             p.seed = seed;
                             p.hidden = new int[]{hidden};
                             p.adaptive_rate = false;
