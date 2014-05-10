@@ -516,8 +516,7 @@ public class Vec extends Keyed {
    */
   private Vec makeIdentityTransf() {
     assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
-    throw H2O.unimpl();
-    //return makeTransf(seq(0, _domain.length), null, _domain);
+    return makeTransf(ArrayUtils.seq(0, _domain.length), null, _domain);
   }
 
   /** Makes a new transformation vector from given values to values 0..domain size

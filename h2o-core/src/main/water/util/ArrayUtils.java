@@ -351,4 +351,13 @@ public class ArrayUtils {
     return res;
   }
 
+  /** Generates sequence (start, stop) of integers: (start, start+1, ...., stop-1) */
+  static public int[] seq(int start, int stop) {
+    assert start<stop;
+    int len = stop-start;
+    int[] res = new int[len];
+    for(int i=start; i<stop;i++) res[i-start] = i;
+    return res;
+  }
+
 }
