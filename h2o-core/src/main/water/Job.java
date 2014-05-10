@@ -57,7 +57,7 @@ public class Job<T extends Keyed> extends Keyed {
    */
   protected Job start(final H2OCountedCompleter fjtask) {
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
-    assert fjtask != null : "Starting a job with null working task is not permitted!";
+//    assert fjtask != null : "Starting a job with null working task is not permitted!";
     _fjtask = fjtask;
     _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
@@ -86,6 +86,7 @@ public class Job<T extends Keyed> extends Keyed {
    * @see DKV
    */
   protected T get() {
+    assert _fjtask != null : "Cannot block on missing F/J task";
     _fjtask.join();             // Block until top-level job is done
     T ans = (T) DKV.get(_dest).get();
     remove();                   // Remove self-job
