@@ -166,9 +166,9 @@ public class Job<T extends Keyed> extends Keyed {
    * @return true if job is still running else returns false.
    */
   public static boolean isRunning(Key job_key) {
-    Job j = DKV.get(job_key).get();
-    assert j!=null : "Job should be always in DKV!";
-    return j.isRunning();
+    Value j = DKV.get(job_key);
+    assert j!=null : "Job should always be in DKV!";
+    return ((Job)j.get()).isRunning();
   }
 
   public static class JobCancelledException extends RuntimeException {
