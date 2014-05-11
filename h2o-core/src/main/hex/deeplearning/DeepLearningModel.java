@@ -815,9 +815,8 @@ public class DeepLearningModel extends Model implements Comparable<DeepLearningM
           final Key job = null;
           final DeepLearningModel cp = this;
           DeepLearningModel bestModel = new DeepLearningModel(cp, bestModelKey, job, model_info().data_info());
-          bestModel.delete_and_lock(job);
-          bestModel.unlock(job);
-          assert(DKV.get(bestModelKey) != null);
+          assert(Arrays.equals(bestModel._key._kb, bestModelKey._kb));
+          DKV.put(bestModelKey, bestModel);
           assert(bestModel.compareTo(this) <= 0);
 //          assert(((DeepLearningModel)DKV.get(bestModelKey).get()).error() == _bestError);
 
