@@ -1,7 +1,5 @@
 package water;
 
-import water.H2O.H2OCountedCompleter;
-
 /**
  *  A typed atomic update.
  */

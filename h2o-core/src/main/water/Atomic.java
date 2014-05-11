@@ -1,8 +1,5 @@
 package water;
 
-import water.DTask;
-import water.H2O.H2OCountedCompleter;
-
 /**
  * Atomic update of a Key
  *
