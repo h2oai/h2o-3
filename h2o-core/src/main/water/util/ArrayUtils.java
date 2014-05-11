@@ -122,6 +122,11 @@ public class ArrayUtils {
     return false;
   }
 
+  static public boolean contains(int[] a, int d) {
+    for (int anA : a) if (anA == d) return true;
+    return false;
+  }
+
   public static <T> T[] subarray(T[] a, int off, int len) {
     return Arrays.copyOfRange(a,off,off+len);
   }
@@ -358,6 +363,18 @@ public class ArrayUtils {
     int[] res = new int[len];
     for(int i=start; i<stop;i++) res[i-start] = i;
     return res;
+  }
+
+  // warning: Non-Symmetric! Returns all elements in a that are not in b (but NOT the other way around)
+  static public int[] difference(int a[], int b[]) {
+    if (a == null) return new int[]{};
+    if (b == null) return a.clone();
+    int[] r = new int[a.length];
+    int cnt = 0;
+    for (int i=0; i<a.length; i++) {
+      if (!contains(b, a[i])) r[cnt++] = a[i];
+    }
+    return Arrays.copyOf(r, cnt);
   }
 
 }
