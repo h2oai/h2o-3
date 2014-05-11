@@ -827,7 +827,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
     }
     if (!classification && loss == Loss.CrossEntropy) throw new IllegalArgumentException("Cannot use CrossEntropy loss function for regression.");
 
-    // make default job_key and destination_key in case they are missing
     start(null);
     if (!sparse && col_major) {
       if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
