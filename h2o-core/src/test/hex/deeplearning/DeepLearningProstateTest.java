@@ -81,8 +81,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                 500, //>1 epoch per iteration
                         })
                         {
-                          for (Key best_model_key : new Key[]{null}) {
-//                            for (Key best_model_key : new Key[]{null, Key.make()}) {
+                          for (Key best_model_key : new Key[]{null, Key.make()}) {
                             count++;
                             if (fraction < rng.nextFloat()) continue;
                             final double epochs = 7 + rng.nextDouble() + rng.nextInt(4);
