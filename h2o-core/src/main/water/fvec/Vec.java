@@ -388,7 +388,7 @@ public class Vec extends Keyed {
   // Cache of last Chunk accessed via at/set api
   transient Chunk _cache;
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
-  public final Chunk chunkForRow(long i) {
+  final Chunk chunkForRow(long i) {
     Chunk c = _cache;
     return (c != null && c._chk2==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
   }
@@ -445,12 +445,6 @@ public class Vec extends Keyed {
     super.remove(fs);
     return fs;
   }
-  @Override public void remove() {
-    Futures fs = new Futures();
-    remove(fs);
-    fs.blockForPending();
-  }
-
   @Override public boolean equals( Object o ) {
     return o instanceof Vec && ((Vec)o)._key.equals(_key);
   }

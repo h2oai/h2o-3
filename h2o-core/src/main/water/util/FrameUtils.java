@@ -1,10 +1,9 @@
 package water.util;
 
-import java.io.File;
-
+import java.io.*;
 import water.Key;
-import water.fvec.*;
-import water.parser.*;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 
 public class FrameUtils {
   /** Parse given file into the form of frame represented by the given key.
@@ -13,12 +12,11 @@ public class FrameUtils {
    * @param file  file to parse
    * @return a new frame
    */
-  public static Frame parseFrame(Key okey, File file) {
+  public static Frame parseFrame(Key okey, File file) throws IOException {
     if( !file.exists() )
-      throw new RuntimeException("File not found " + file);
-    if(okey == null)
-      okey = Key.make(file.getName());
-    Key fkey = NFSFileVec.make(file)._key;
-    return ParseDataset2.parse(okey, fkey);
+      throw new FileNotFoundException("File not found " + file);
+    if(okey == null) okey = Key.make(file.getName());
+    NFSFileVec nfs = NFSFileVec.make(file);
+    return water.parser.ParseDataset2.parse(okey, nfs._key);
   }
 }
