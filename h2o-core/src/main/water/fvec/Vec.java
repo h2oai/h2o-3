@@ -136,7 +136,7 @@ public class Vec extends Keyed {
     fs.blockForPending();
     return v;
   }
-  private static Vec makeConSeq(double x, int len) {
+  public static Vec makeConSeq(double x, int len) {
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(VectorGroup.VG_LEN1.addVec());
     NewChunk nc = new NewChunk(av,0);
@@ -388,7 +388,7 @@ public class Vec extends Keyed {
   // Cache of last Chunk accessed via at/set api
   transient Chunk _cache;
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
-  final Chunk chunkForRow(long i) {
+  public final Chunk chunkForRow(long i) {
     Chunk c = _cache;
     return (c != null && c._chk2==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
   }
@@ -409,16 +409,17 @@ public class Vec extends Keyed {
    *  common compatible data representation.
    *
    *  */
-  final long   set( long i, long   l) {return chunkForRow(i).set(i,l);}
+  public final long   set( long i, long   l) {return chunkForRow(i).set(i,l);}
 
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element.
    *  */
-  final double set( long i, double d) {return chunkForRow(i).set(i,d);}
+  public final double set( long i, double d) {return chunkForRow(i).set(i,d);}
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element.
    *  */
-  final float  set( long i, float  f) {return chunkForRow(i).set(i,f);}
+  public final float  set( long i, float  f) {return chunkForRow(i).set(i,f);}
+
   /** Set the element as missing the slow way.  */
   final boolean setNA( long i ) { return chunkForRow(i).setNA(i);}
 
@@ -443,6 +444,11 @@ public class Vec extends Keyed {
     DKV.remove(rollupStatsKey(),fs);
     super.remove(fs);
     return fs;
+  }
+  @Override public void remove() {
+    Futures fs = new Futures();
+    remove(fs);
+    fs.blockForPending();
   }
 
   @Override public boolean equals( Object o ) {
