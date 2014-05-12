@@ -645,10 +645,8 @@ public class DeepLearningModel extends Model implements Comparable<DeepLearningM
       get_params().checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
       get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent
     }
-    /* TODO: FIXME
     get_params()._key = jobKey;
     get_params()._dest = destKey;
-    */
     get_params()._start_time = System.currentTimeMillis(); //for displaying the model progress
     _actual_best_model_key = cp.get_params().best_model_key;
     start_time = cp.start_time;

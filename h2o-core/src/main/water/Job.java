@@ -14,7 +14,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
   public static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY);
 
-  public final Key _dest;       // Key for result
+  public Key _dest;       // Key for result
   public T _result;
 
   transient H2OCountedCompleter _fjtask; // Top-level task you can block on

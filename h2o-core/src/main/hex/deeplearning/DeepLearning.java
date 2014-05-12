@@ -7,11 +7,13 @@ import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -50,14 +52,14 @@ public class DeepLearning extends Job<DeepLearningModel> {
 //  @API(help = "Key to store the always-best model under", filter= Default.class, json = true)
   public Key best_model_key = null;
 
-//  /**
-//   * Unlock expert mode parameters than can affect model building speed,
-//   * predictive accuracy and scoring. Leaving expert mode parameters at default
-//   * values is fine for many problems, but best results on complex datasets are often
-//   * only attainable via expert mode options.
-//   */
-////  @API(help = "Enable expert mode (to access all options from GUI)", filter = Default.class, json = true)
-//  public boolean expert_mode = false;
+  /**
+   * Unlock expert mode parameters than can affect model building speed,
+   * predictive accuracy and scoring. Leaving expert mode parameters at default
+   * values is fine for many problems, but best results on complex datasets are often
+   * only attainable via expert mode options.
+   */
+//  @API(help = "Enable expert mode (to access all options from GUI)", filter = Default.class, json = true)
+  public boolean expert_mode = false;
 
   /*Neural Net Topology*/
   /**
@@ -488,62 +490,62 @@ public class DeepLearning extends Job<DeepLearningModel> {
     Automatic, MeanSquare, CrossEntropy
   }
 
-//  // the following parameters can only be specified in expert mode
-//  transient final String [] expert_options = new String[] {
-//          "loss",
-//          "max_w2",
-//          "score_training_samples",
-//          "score_validation_samples",
-//          "initial_weight_distribution",
-//          "initial_weight_scale",
-//          "diagnostics",
-//          "rate_decay",
-//          "score_duty_cycle",
-//          "variable_importances",
-//          "fast_mode",
-//          "score_validation_sampling",
-//          "balance_classes",
-//          "max_after_balance_size",
-//          "max_after_balance_size",
-//          "ignore_const_cols",
-//          "force_load_balance",
-//          "replicate_training_data",
-//          "shuffle_training_data",
-//          "nesterov_accelerated_gradient",
-//          "classification_stop",
-//          "regression_stop",
-//          "quiet_mode",
-//          "max_confusion_matrix_size",
-//          "max_hit_ratio_k",
-//          "hidden_dropout_ratios",
-//          "single_node_mode",
-//          "sparse",
-//          "col_major",
-//  };
+  // the following parameters can only be specified in expert mode
+  transient final String [] expert_options = new String[] {
+          "loss",
+          "max_w2",
+          "score_training_samples",
+          "score_validation_samples",
+          "initial_weight_distribution",
+          "initial_weight_scale",
+          "diagnostics",
+          "rate_decay",
+          "score_duty_cycle",
+          "variable_importances",
+          "fast_mode",
+          "score_validation_sampling",
+          "balance_classes",
+          "max_after_balance_size",
+          "max_after_balance_size",
+          "ignore_const_cols",
+          "force_load_balance",
+          "replicate_training_data",
+          "shuffle_training_data",
+          "nesterov_accelerated_gradient",
+          "classification_stop",
+          "regression_stop",
+          "quiet_mode",
+          "max_confusion_matrix_size",
+          "max_hit_ratio_k",
+          "hidden_dropout_ratios",
+          "single_node_mode",
+          "sparse",
+          "col_major",
+  };
 
-//  // the following parameters can be modified when restarting from a checkpoint
-//  transient final String [] cp_modifiable = new String[] {
-//          "best_model_key",
-//          "expert_mode",
-//          "seed",
-//          "epochs",
-//          "score_interval",
-//          "train_samples_per_iteration",
-//          "score_duty_cycle",
-//          "classification_stop",
-//          "regression_stop",
-//          "quiet_mode",
-//          "max_confusion_matrix_size",
-//          "max_hit_ratio_k",
-//          "diagnostics",
-//          "variable_importances",
-//          "force_load_balance",
-//          "replicate_training_data",
-//          "shuffle_training_data",
-//          "single_node_mode",
-//          "sparse",
-//          "col_major",
-//  };
+  // the following parameters can be modified when restarting from a checkpoint
+  transient final String [] cp_modifiable = new String[] {
+          "best_model_key",
+          "expert_mode",
+          "seed",
+          "epochs",
+          "score_interval",
+          "train_samples_per_iteration",
+          "score_duty_cycle",
+          "classification_stop",
+          "regression_stop",
+          "quiet_mode",
+          "max_confusion_matrix_size",
+          "max_hit_ratio_k",
+          "diagnostics",
+          "variable_importances",
+          "force_load_balance",
+          "replicate_training_data",
+          "shuffle_training_data",
+          "single_node_mode",
+          "sparse",
+          "col_major",
+  };
 
 //  /**
 //   * Helper to specify which arguments trigger a refresh on change
@@ -704,65 +706,68 @@ public class DeepLearning extends Job<DeepLearningModel> {
    */
 //  @Override
   public final void execImpl() {
+    checkJob();
     DeepLearningModel cp = null;
     if (checkpoint == null) cp = initModel();
-//    else {
-//      final DeepLearningModel previous = UKV.get(checkpoint);
-//      if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
-//      Log.info("Resuming from checkpoint.");
-//      if (source == null || !Arrays.equals(source._key._kb, previous.model_info().get_params().source._key._kb)) {
-//        throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
-//      }
-//      if (response == null || !Arrays.equals(response._key._kb, previous.model_info().get_params().response._key._kb)) {
-//        throw new IllegalArgumentException("response must be the same as for the checkpointed model.");
-//      }
-//      if (Utils.difference(ignored_cols, previous.model_info().get_params().ignored_cols).length != 0
-//              || Utils.difference(previous.model_info().get_params().ignored_cols, ignored_cols).length != 0) {
-//        ignored_cols = previous.model_info().get_params().ignored_cols;
-//        Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
-//      }
-//      if ((validation!=null) != (previous.model_info().get_params().validation != null)
-//              || (validation != null && validation._key != null && previous.model_info().get_params().validation._key != null
-//              && !Arrays.equals(validation._key._kb, previous.model_info().get_params().validation._key._kb))) {
-//        throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
-//      }
-//      if (classification != previous.model_info().get_params().classification) {
-//        Log.warn("Automatically switching to " + ((classification=!classification) ? "classification" : "regression") + " (same as the checkpointed model).");
-//      }
-//      epochs += previous.epoch_counter; //add new epochs to existing model
-//      Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
-//      try {
-//        final DataInfo dataInfo = prepareDataInfo();
-//        cp = new DeepLearningModel(previous, destination_key, job_key, dataInfo);
-//        cp.write_lock(self());
-//        assert(state==JobState.RUNNING);
-//        final DeepLearning mp = cp.model_info().get_params();
-//        Object A = mp, B = this;
-//        for (Field fA : A.getClass().getDeclaredFields()) {
-//          if (Utils.contains(cp_modifiable, fA.getName())) {
-//            if (!expert_mode && Utils.contains(expert_options, fA.getName())) continue;
-//            for (Field fB : B.getClass().getDeclaredFields()) {
-//              if (fA.equals(fB)) {
-//                try {
-//                  if (fB.get(B) == null || fA.get(A) == null || !fA.get(A).toString().equals(fB.get(B).toString())) { // if either of the two parameters is null, skip the toString()
-//                    if (fA.get(A) == null && fB.get(B) == null) continue; //if both parameters are null, we don't need to do anything
-//                    Log.info("Applying user-requested modification of '" + fA.getName() + "': " + fA.get(A) + " -> " + fB.get(B));
-//                    fA.set(A, fB.get(B));
-//                  }
-//                } catch (IllegalAccessException e) {
-//                  e.printStackTrace();
-//                }
-//              }
-//            }
-//          }
-//        }
-//        cp.update(self());
-//      } finally {
-//        if (cp != null) cp.unlock(self());
-//      }
-//    }
+    else {
+      final DeepLearningModel previous = DKV.get(checkpoint).get();
+      if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
+      Log.info("Resuming from checkpoint.");
+      if (source == null || !Arrays.equals(source._key._kb, previous.model_info().get_params().source._key._kb)) {
+        throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
+      }
+      if (response == null || !Arrays.equals(response._key._kb, previous.model_info().get_params().response._key._kb)) {
+        throw new IllegalArgumentException("response must be the same as for the checkpointed model.");
+      }
+      if (ArrayUtils.difference(ignored_cols, previous.model_info().get_params().ignored_cols).length != 0
+              || ArrayUtils.difference(previous.model_info().get_params().ignored_cols, ignored_cols).length != 0) {
+        ignored_cols = previous.model_info().get_params().ignored_cols;
+        Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
+      }
+      if ((validation!=null) != (previous.model_info().get_params().validation != null)
+              || (validation != null && validation._key != null && previous.model_info().get_params().validation._key != null
+              && !Arrays.equals(validation._key._kb, previous.model_info().get_params().validation._key._kb))) {
+        throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
+      }
+      if (classification != previous.model_info().get_params().classification) {
+        Log.warn("Automatically switching to " + ((classification=!classification) ? "classification" : "regression") + " (same as the checkpointed model).");
+      }
+      epochs += previous.epoch_counter; //add new epochs to existing model
+      Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+      try {
+        final DataInfo dataInfo = prepareDataInfo();
+        cp = new DeepLearningModel(previous, dest(), self(), dataInfo);
+        cp.write_lock(self());
+        assert(DKV.get(cp._key) != null);
+        assert(_state==JobState.RUNNING);
+        final DeepLearning mp = cp.model_info().get_params();
+        Object A = mp, B = this;
+        for (Field fA : A.getClass().getDeclaredFields()) {
+          if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
+            if (!expert_mode && ArrayUtils.contains(expert_options, fA.getName())) continue;
+            for (Field fB : B.getClass().getDeclaredFields()) {
+              if (fA.equals(fB)) {
+                try {
+                  if (fB.get(B) == null || fA.get(A) == null || !fA.get(A).toString().equals(fB.get(B).toString())) { // if either of the two parameters is null, skip the toString()
+                    if (fA.get(A) == null && fB.get(B) == null) continue; //if both parameters are null, we don't need to do anything
+                    Log.info("Applying user-requested modification of '" + fA.getName() + "': " + fA.get(A) + " -> " + fB.get(B));
+                    fA.set(A, fB.get(B));
+                  }
+                } catch (IllegalAccessException e) {
+                  e.printStackTrace();
+                }
+              }
+            }
+          }
+        }
+        cp.update(self());
+      }
+      finally {
+        if (cp != null) cp.unlock(self());
+      }
+    }
     trainModel(cp);
-    delete();
+    remove();
   }
 
 //  /**
@@ -772,8 +777,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
 //  @Override protected Response redirect() {
 //    return DeepLearningProgressPage.redirect(this, self(), dest());
 //  }
-
-  private boolean _fakejob;
 
   //Sanity check for Deep Learning job parameters
   private void checkParams() {
@@ -826,8 +829,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
       }
     }
     if (!classification && loss == Loss.CrossEntropy) throw new IllegalArgumentException("Cannot use CrossEntropy loss function for regression.");
-
-    start(null);
     if (!sparse && col_major) {
       if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
     }
@@ -854,6 +855,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
   public final DeepLearningModel initModel() {
     try {
       lock_data();
+      checkJob();
       checkParams();
       final DataInfo dinfo = prepareDataInfo();
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
@@ -867,6 +869,13 @@ public class DeepLearning extends Job<DeepLearningModel> {
     }
   }
 
+  /**
+   * Create a proper Job in DKV, if necessary
+   */
+  void checkJob() {
+    if (DKV.get(self()) == null)
+      start(null);
+  }
 
   /**
    * Helper to update a Frame and adding it to the local trash at the same time
@@ -893,7 +902,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       if (model == null) {
         model = DKV.get(dest()).get();
       }
-      model.delete_and_lock(self());
+      model.write_lock(self());
       final DeepLearning mp = model.model_info().get_params(); //use the model's parameters for everything below - NOT the job's parameters (can be different after checkpoint restart)
 
       ValidationAdapter validAdapter = new ValidationAdapter(validation, classification);
@@ -994,15 +1003,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
     source.unlock(self());
     if( validation != null && source._key != null && validation._key != null && !source._key.equals(validation._key) )
       validation.unlock(self());
-  }
-
-  /**
-   * Delete job related keys
-   */
-  public void delete() {
-//    cleanup();
-    if (_fakejob) DKV.remove(_key);
-    remove();
   }
 
   /**
