@@ -108,6 +108,19 @@ public class Frame extends Lockable {
     _vecs = fr.vecs().clone();
   }
 
+  public Frame deepcopy() {
+    return new MRTask() {
+      @Override public void map(Chunk []cs, NewChunk []ncs) {
+        for (int col = 0; col < cs.length; col++) {
+          Chunk c = cs[col];
+          NewChunk nc = ncs[col];
+          for (int row = 0; row < c._len; row++) {
+            nc.addNum(c.at0(row));
+          }
+        }
+      }
+    }.doAll(this.numCols(),this).outputFrame(this.names(),this.domains());
+  }
   /** Returns a subframe of this frame containing only vectors with desired names.
    *
    * @param names list of vector names
