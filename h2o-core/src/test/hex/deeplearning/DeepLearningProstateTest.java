@@ -124,29 +124,27 @@ public class DeepLearningProstateTest extends TestUtil {
                             }
 
                             // Do some more training via checkpoint restart
-//                            Key dest = Key.make();
-//                            {
-//                              DeepLearning p = new DeepLearning(dest);
-//                              final DeepLearningModel tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
-//                              assert(tmp_model != null);
-////                              assert(!Arrays.equals(p.job_key._kb, tmp_model.get_params().job_key._kb));
-//                              p.checkpoint = dest_tmp;
-//
-//                              p.source = frame;
-//                              p.validation = valid;
-//                              p.response = frame.vecs()[resp];
-//
-//                              if (i == 0 && resp == 2) p.classification = false;
-//                              p.best_model_key = best_model_key;
-//                              p.epochs = epochs;
-//                              p.seed = seed;
-//                              p.train_samples_per_iteration = train_samples_per_iteration;
-//                              p.execImpl();
-//                            }
-//                            // score and check result (on full data)
-//                            final DeepLearningModel mymodel = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                            Key dest = Key.make();
+                            {
+                              DeepLearning p = new DeepLearning(dest);
+                              final DeepLearningModel tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                              assert(tmp_model != null);
+//                              assert(!Arrays.equals(p.job_key._kb, tmp_model.get_params().job_key._kb));
+                              p.checkpoint = dest_tmp;
 
-                            final DeepLearningModel mymodel = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                              p.source = frame;
+                              p.validation = valid;
+                              p.response = frame.vecs()[resp];
+
+                              if (i == 0 && resp == 2) p.classification = false;
+                              p.best_model_key = best_model_key;
+                              p.epochs = epochs;
+                              p.seed = seed;
+                              p.train_samples_per_iteration = train_samples_per_iteration;
+                              p.execImpl();
+                            }
+                            // score and check result (on full data)
+                            final DeepLearningModel mymodel = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
                             // test HTML
                             {
                               StringBuilder sb = new StringBuilder();
