@@ -59,7 +59,7 @@ public class Futures {
     try {
       // Block until the last Future finishes.
       while( true ) {
-        Future f = null;
+        Future f;
         synchronized(this) {
           if( _pending_cnt == 0 ) return;
           f = _pending[--_pending_cnt];
@@ -67,6 +67,6 @@ public class Futures {
         f.get();
       }
     } 
-    catch( InterruptedException | ExecutionException e ) { Log.throwErr(e); }
+    catch( InterruptedException | ExecutionException e ) { throw Log.throwErr(e); }
   }
 }
