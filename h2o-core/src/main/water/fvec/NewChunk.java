@@ -22,7 +22,7 @@ public class NewChunk extends Chunk {
   transient int    _xs[];       // Exponent, or if _ls==0, NA or Enum or Rows
   transient int    _id[];       // Indices (row numbers) of stored values, used for sparse
   transient double _ds[];       // Doubles, for inflating via doubles
-  public int _len2;             // Actual rows, if the data is sparse
+  int _len2;                    // Actual rows, if the data is sparse
   int _naCnt=-1;                // Count of NA's   appended
   int _strCnt;                  // Count of Enum's appended
   int _nzCnt;                   // Count of non-zero's appended
@@ -73,8 +73,8 @@ public class NewChunk extends Chunk {
     final Value v = new Value(lId,gId);
     final Value next = new Value(lId,gId);
     return new Iterator<Value>(){
-      public final boolean hasNext(){return next._gId < to;}
-      public final Value next(){
+      @Override public final boolean hasNext(){return next._gId < to;}
+      @Override public final Value next(){
         if(!hasNext())throw new NoSuchElementException();
         v._gId = next._gId; v._lId = next._lId;
         next._lId++;
@@ -364,7 +364,17 @@ public class NewChunk extends Chunk {
   // Study this NewVector and determine an appropriate compression scheme.
   // Return the data so compressed.
   static final int MAX_FLOAT_MANTISSA = 0x7FFFFF;
+
   Chunk compress() {
+    Chunk res = compress2();
+    // force everything to null after compress to free up the memory
+    _id = null;
+    _xs = null;
+    _ds = null;
+    _ls = null;
+    return res;
+  }
+  private final Chunk compress2() {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
@@ -393,7 +403,6 @@ public class NewChunk extends Chunk {
       set_sparse(_naCnt + _nzCnt);
       sparse = true;
     }
-
     // If the data was set8 as doubles, we do a quick check to see if it's
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
@@ -491,9 +500,9 @@ public class NewChunk extends Chunk {
       byte[] cbuf = bufB(bpv);
       return new CBSChunk(cbuf, cbuf[0], cbuf[1]);
     }
-    
+
     final boolean fpoint = xmin < 0 || min < Long.MIN_VALUE || max > Long.MAX_VALUE;
-    
+
     if( sparse ) {
       if(fpoint) return new CXDChunk(_len2,_len,8,bufD(8));
       int sz = 8;
@@ -506,7 +515,7 @@ public class NewChunk extends Chunk {
     // {1.2,23,0.34} then is normalized to always be represented with 2 digits
     // to the right: {1.20,23.00,0.34} and we scale by 100: {120,2300,34}.
     // This set fits in a 2-byte short.
-    
+
     // We use exponent-scaling for bytes & shorts only; it's uncommon (and not
     // worth it) for larger numbers.  We need to get the exponents to be
     // uniform, so we scale up the largest lmax by the largest scale we need
@@ -530,13 +539,13 @@ public class NewChunk extends Chunk {
     // Compress column into a byte
     if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
       return new C1NChunk( bufX(0,0,C1NChunk.OFF,0));
-    if( lemin < Integer.MIN_VALUE ) throw H2O.unimpl(); // return new C8Chunk( bufX(0,0,0,3));
+    if( lemin < Integer.MIN_VALUE ) return new C8Chunk( bufX(0,0,0,3));
     if( lemax-lemin < 255 ) {         // Span fits in a byte?
       if(0 <= min && max < 255 )      // Span fits in an unbiased byte?
         return new C1Chunk( bufX(0,0,C1Chunk.OFF,0));
       return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
     }
-    
+
     // Compress column into a short
     if( lemax-lemin < 65535 ) {               // Span fits in a biased short?
       if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
@@ -560,7 +569,7 @@ public class NewChunk extends Chunk {
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
     int off = CXIChunk.OFF;
-    byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
+    byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
     for( int i=0; i<_len; i++, off += elmsz ) {
       if(ridsz == 2)
         UDP.set2(buf,off,(short)_id[i]);
@@ -603,7 +612,7 @@ public class NewChunk extends Chunk {
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
     int off = CXDChunk.OFF;
-    byte [] buf = MemoryManager.malloc1(off + _len*elmsz);
+    byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
     for( int i=0; i<_len; i++, off += elmsz ) {
       if(ridsz == 2)
         UDP.set2(buf,off,(short)_id[i]);
@@ -642,11 +651,11 @@ public class NewChunk extends Chunk {
         ++j;
       }
       switch( log ) {
-        case 0:          bs [i    +off] = (byte)le ; break;
-        case 1: UDP.set2(bs,(i<<1)+off,  (short)le); break;
-        case 2: UDP.set4(bs,(i<<2)+off,    (int)le); break;
-        case 3: UDP.set8(bs,(i<<3)+off,         le); break;
-        default: throw H2O.fail();
+      case 0:          bs [i    +off] = (byte)le ; break;
+      case 1: UDP.set2(bs,(i<<1)+off,  (short)le); break;
+      case 2: UDP.set4(bs,(i<<2)+off,    (int)le); break;
+      case 3: UDP.set8(bs,(i<<3)+off,         le); break;
+      default: throw H2O.fail();
       }
     }
     assert j == _len:"j = " + j + ", len = " + _len + ", len2 = " + _len2 + ", id[j] = " + _id[j];
@@ -655,11 +664,11 @@ public class NewChunk extends Chunk {
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
-    final byte [] bs = MemoryManager.malloc1(_len2*8);
+    final byte [] bs = MemoryManager.malloc1(_len2*8,true);
     int j = 0;
     for(int i = 0; i < _len2; ++i){
       double d = 0;
-      if(_id == null || _id[j] == i){
+      if(_id == null || (j < _id.length && _id[j] == i)) {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
@@ -678,7 +687,7 @@ public class NewChunk extends Chunk {
     // Save the gap = number of unfilled bits and bpv value
     bs[0] = (byte) (((_len2*bpv)&7)==0 ? 0 : (8-((_len2*bpv)&7)));
     bs[1] = (byte) bpv;
-    
+
     // Dense bitvector
     int  boff = 0;
     byte b    = 0;

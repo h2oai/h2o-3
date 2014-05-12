@@ -54,6 +54,7 @@ abstract public class MemoryManager {
 
   // Block allocations?
   private static volatile boolean CAN_ALLOC = true;
+  private static volatile boolean MEM_LOW_CRITICAL = false;
 
   // Lock for blocking on allocations
   private static Object _lock = new Object();
@@ -200,6 +201,11 @@ abstract public class MemoryManager {
         // Memory used after this FullGC
         Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
         Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
+        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
+        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
+          setMemLow();
+        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
+          setMemGood();
         Cleaner.kick_store_cleaner();
       }
     }
@@ -210,11 +216,14 @@ abstract public class MemoryManager {
   // Will block until there is enough available memory.
   // Catches OutOfMemory, clears cache & retries.
   static Object malloc(int elems, long bytes, int type, Object orig, int from ) {
+    return malloc(elems,bytes,type,orig,from,false);
+  }
+  static Object malloc(int elems, long bytes, int type, Object orig, int from , boolean force) {
     // Do not assert on large-size here.  RF's temp internal datastructures are
     // single very large arrays.
     //assert bytes < Value.MAX : "malloc size=0x"+Long.toHexString(bytes);
     while( true ) {
-      if( !CAN_ALLOC &&         // Not allowing allocations?
+      if( (!MEM_LOW_CRITICAL && !force) && !CAN_ALLOC && // Not allowing allocations?
           bytes > 256 &&        // Allow tiny ones in any case
           // To prevent deadlock, we cannot block the cleaner thread in any
           // case.  This is probably an allocation for logging (ouch! shades of
@@ -252,7 +261,9 @@ abstract public class MemoryManager {
   }
 
   // Allocates memory with cache management
-  public static byte   [] malloc1 (int size) { return (byte   [])malloc(size,size  , 1,null,0); }
+  public static byte   [] malloc1 (int size) { return malloc1(size,false); }
+  public static byte   [] malloc1 (int size, boolean force) 
+                                             { return (byte   [])malloc(size,size*1, 1,null,0,force); }
   public static short  [] malloc2 (int size) { return (short  [])malloc(size,size*2, 2,null,0); }
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4, 4,null,0); }
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8, 8,null,0); }
@@ -290,7 +301,7 @@ abstract public class MemoryManager {
     assert m >= 0:"m < 0: " + m;
     long current = _taskMem.addAndGet(-m);
     if(current < 0){
-      current = _taskMem.addAndGet(m);
+      _taskMem.addAndGet(m);
       return false;
     }
     return true;
