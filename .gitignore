@@ -19,7 +19,7 @@ lib/
 .settings/*
 */.idea/*
 .gradle/
-h2o.iml
+*.iml
 h2o.eml
 src/main/java/water/BuildVersion.java
 /.idea
