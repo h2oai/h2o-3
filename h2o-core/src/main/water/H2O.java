@@ -501,7 +501,7 @@ final public class H2O {
     return memsz;
   }
 
-  static void waitForCloudSize(int x, long ms) {
+  public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
     while( System.currentTimeMillis() - start < ms ) {
       if( CLOUD.size() >= x && Paxos._commonKnowledge )
