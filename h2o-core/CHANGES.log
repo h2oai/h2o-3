@@ -3,6 +3,7 @@ GOALS
 - - jars downloaded via maven/gradle
 - - - Trim down final H2O.jar (8M down from 50M)
 - - - One Jar but no unzip one-jar into /tmp
+- - CRAN-acceptable jar size (under 5meg?)
 - - no class loader
 - - run JUnits direct from IDE
 - Slim & Trim Java API
