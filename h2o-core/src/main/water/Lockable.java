@@ -132,7 +132,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     final Key _job_key;         // Job doing the unlocking
     Update( Key job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
-      assert old != null && old.is_wlocked() : "Cannot update - Lockable is null or already locked!";
+      assert old != null : "Cannot update - Lockable is null!";
+      assert old.is_wlocked() : "Cannot update - Lockable is not write-locked!";
       _lockers = old._lockers;  // Keep lock state
       return Lockable.this;     // Freshen this
     }
@@ -152,7 +153,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     final Key _job_key;         // Job doing the unlocking
     Unlock( Key job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
-      assert old.is_locked(_job_key);
+      assert old != null : "Trying to unlock null!";
+      assert old.is_locked(_job_key) : "Can't unlock: Not locked!";
       set_unlocked(old._lockers,_job_key);
       return Lockable.this;
     }
