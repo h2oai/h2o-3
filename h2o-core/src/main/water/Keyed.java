@@ -12,7 +12,7 @@ public abstract class Keyed extends Iced {
     if( _key != null ) DKV.remove(_key,fs);
     return fs; 
   }
-  static void remove( Key k ) {
+  public static void remove( Key k ) {
     Value val = DKV.get(k);
     if( val==null ) return;
     ((Keyed)val.get()).remove();

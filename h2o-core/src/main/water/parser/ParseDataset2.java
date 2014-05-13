@@ -146,7 +146,7 @@ public class ParseDataset2 extends Job<Frame> {
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
-    MultiFileParseTask uzpt = new MultiFileParseTask(vg,setup,job._progress._key,fkeys).doAll(fkeys);
+    MultiFileParseTask uzpt = new MultiFileParseTask(vg,setup,job._key,job._progress._key,fkeys,delete_on_done).doAll(fkeys);
     EnumUpdateTask eut = null;
     // Calculate enum domain
     int n = 0;
@@ -177,18 +177,10 @@ public class ParseDataset2 extends Job<Frame> {
     
     // Release the frame for overwriting
     fr.unlock(job._key);
-    // Remove CSV files from H2O memory
-    for( Key k : fkeys ) {
-      Value val = DKV.get(k);
-      if( val.isVec() ) {
-        if( delete_on_done )
-          ((Vec)val.get()).remove(); // Raw vecs, bytevecs & NFSFileVecs, often from test code
-      } else {                       // Frames (of NFSFileVecs) from e.g. Import
-        Lockable l = DKV.get(k).get();
-        if( delete_on_done ) l.delete(job._key,0.0f);
-        else                 l.unlock(job._key);
-      }
-    }
+    // CSV files removed from H2O memory
+    if( delete_on_done )
+      for( Key k : fkeys )
+        assert DKV.get(k) == null;
     job.remove();
   }
 
@@ -338,9 +330,13 @@ public class ParseDataset2 extends Job<Frame> {
     private static NonBlockingHashMap<Key, Enum[]> _enums = new NonBlockingHashMap<>();
     // The Key used to sort out *this* parse's Enum[]
     private final Key _eKey = Key.make();
+    // Eagerly delete Big Data
+    private final boolean _delete_on_done;
     // Mapping from Chunk# to cluster-node-number holding the enum mapping.
     // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
     private int[] _chunk2Enum;
+    // Job Key, to unlock & remove raw parsed data
+    private final transient Key _job_key;
     // ParseMonitor key
     private final Key _progress;
     // A mapping of Key+ByteVec to rolling total Chunk counts.
@@ -349,10 +345,12 @@ public class ParseDataset2 extends Job<Frame> {
     // OUTPUT fields:
     FVecDataOut _dout;
 
-    MultiFileParseTask(VectorGroup vg,  ParserSetup setup, Key progress, Key[] fkeys ) {
+    MultiFileParseTask(VectorGroup vg,  ParserSetup setup, Key job_key, Key progress, Key[] fkeys, boolean delete_on_done ) {
       _setup = setup; 
       _vg = vg; 
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
+      _delete_on_done = delete_on_done;
+      _job_key = job_key;
       _progress = progress;
 
       // A mapping of Key+ByteVec to rolling total Chunk counts.
@@ -379,9 +377,18 @@ public class ParseDataset2 extends Job<Frame> {
     }
 
     // Flag all chunk enums as being on local (self)
-    private void chunksAreLocal( Vec vec, int chunkStartIdx ) {
+    private void chunksAreLocal( Vec vec, int chunkStartIdx, Key key ) {
       for(int i = 0; i < vec.nChunks(); ++i)  
         _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
+      // For Big Data, must delete data as eagerly as possible.
+      Iced ice = DKV.get(key).get();
+      if( ice==vec ) {
+        if( _delete_on_done ) vec.remove();
+      } else {
+        Frame fr = (Frame)ice;
+        if( _delete_on_done ) fr.delete(_job_key,0.0f);
+        else if( _fr._key != null ) fr.unlock(_job_key);
+      }
     }
 
     // Called once per file
@@ -409,7 +416,7 @@ public class ParseDataset2 extends Job<Frame> {
           } else {
             FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
             _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
-            chunksAreLocal(vec,chunkStartIdx);
+            chunksAreLocal(vec,chunkStartIdx,key);
           }
           break;
         case ZIP: {
@@ -421,7 +428,7 @@ public class ParseDataset2 extends Job<Frame> {
           if( ze != null && !ze.isDirectory() ) 
             _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx,pmon);
           else zis.close();       // Confused: which zipped file to decompress
-          chunksAreLocal(vec,chunkStartIdx);
+          chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
         case GZIP:
@@ -429,7 +436,7 @@ public class ParseDataset2 extends Job<Frame> {
           FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
           _dout = streamParse(new GZIPInputStream(vec.openStream(pmon)),localSetup,_vecIdStart, chunkStartIdx,pmon);
           // set this node as the one which processed all the chunks
-          chunksAreLocal(vec,chunkStartIdx);
+          chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
       } catch( IOException ioe ) {
@@ -471,14 +478,14 @@ public class ParseDataset2 extends Job<Frame> {
 
     // ------------------------------------------------------------------------
     private static class DParse extends MRTask<DParse> {
-      final ParserSetup _setup;
-      final int _vecIdStart;
-      final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
-      final VectorGroup _vg;
-      FVecDataOut _dout;
-      final Key _eKey;
-      final Key _progress;
-      transient final MultiFileParseTask _outerMFPT;
+      private final ParserSetup _setup;
+      private final int _vecIdStart;
+      private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
+      private final VectorGroup _vg;
+      private FVecDataOut _dout;
+      private final Key _eKey;
+      private final Key _progress;
+      private transient final MultiFileParseTask _outerMFPT;
 
       DParse(VectorGroup vg, ParserSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt) {
         super(mfpt);
@@ -517,6 +524,10 @@ public class ParseDataset2 extends Job<Frame> {
       @Override public void postGlobal() {
         super.postGlobal();
         _outerMFPT._dout = _dout;
+        _dout = null;           // Reclaim GC eagerly
+        // For Big Data, must delete data as eagerly as possible.
+        if( _outerMFPT._delete_on_done ) _fr.delete(_outerMFPT._job_key,0.0f);
+        else if( _fr._key != null ) _fr.unlock(_outerMFPT._job_key);
       }
     }
   }
