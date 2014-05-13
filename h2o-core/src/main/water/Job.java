@@ -42,7 +42,7 @@ public class Job<T extends Keyed> extends Keyed {
     _state = JobState.CREATED;  // Created, but not yet running
   }
 
-  final protected Key dest() { return _dest; }
+  public final Key dest() { return _dest; }
 
   // Job Keys are pinned to this node (i.e., the node invoked computation),
   // because it should be almost always updated locally

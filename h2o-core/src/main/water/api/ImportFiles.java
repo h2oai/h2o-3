@@ -105,8 +105,10 @@ public class ImportFiles extends Request {
     _keys  = akeys .toArray(new String[0]);
     _fails = afails.toArray(new String[0]);
     _dels  = adels .toArray(new String[0]);
+    String hex = _keys[0];
+    hex = hex.replace(".csv",".hex");
     return new Response("Imported: "+Arrays.toString(_files)+
-                        " into <a href=/2/Parse.html?hex="+_keys[0]+"&srcs="+Arrays.toString(_keys)+">"+Arrays.toString(_keys)+"</a>"+
+                        " into <a href=/2/Parse.html?hex="+hex+"&srcs="+Arrays.toString(_keys)+">"+Arrays.toString(_keys)+"</a>"+
                         ", missed "+Arrays.toString(_fails)+
                         ", deleted prior keys "+Arrays.toString(_dels));
   }

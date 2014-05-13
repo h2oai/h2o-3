@@ -27,9 +27,9 @@ public class Parse extends Request {
       String prop = e.nextElement();
       if( false ) {
       } else if( prop.equals("hex") ) { 
-        _hex = Key.make(prop);
+        _hex = Key.make(parms.getProperty(prop));
       } else if( prop.equals("srcs") ) {
-        String srcs = parms.getProperty("srcs");
+        String srcs = parms.getProperty(prop);
         if( !srcs.startsWith("[") || !srcs.endsWith("]") ) return throwIAE("Bad 'srcs' param: "+srcs);
         srcs = srcs.substring(1,srcs.length()-1);
         String ss[] = srcs.split(",");
@@ -50,8 +50,11 @@ public class Parse extends Request {
 
   @Override protected Response serve() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
-    return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");
-
+    //return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");
+    System.out.println(_hex);
+    for( Key k : H2O.localKeySet() )
+      System.out.println(k);
+    return new Response("<a href=/2/DeepLearning.html?src="+_hex+">Parse done!</a>");
   }
 
   //public static String link(String k, String content) {

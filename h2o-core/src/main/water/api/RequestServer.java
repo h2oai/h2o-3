@@ -78,7 +78,7 @@ public class RequestServer extends NanoHTTPD {
     //// FVec models
     //Request.addToNavbar(registerRequest(new PCA()),         "PCA",                      "Model");
     //Request.addToNavbar(registerRequest(new GBM()),         "GBM",                      "Model");
-    //Request.addToNavbar(registerRequest(new DeepLearning()),"Deep Learning",            "Model");
+    Request.addToNavbar(registerRequest(new DeepLearning()),"Deep Learning",            "Model");
     //Request.addToNavbar(registerRequest(new DRF()),         "Distributed RF (Beta)",    "Model");
     //Request.addToNavbar(registerRequest(new GLM2()),        "GLM (Beta)",               "Model");
     //Request.addToNavbar(registerRequest(new KMeans2()),     "KMeans (Beta)",            "Model");

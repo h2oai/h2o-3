@@ -1063,7 +1063,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
     return rowUsageFraction;
   }
 
-  DeepLearning(Key destination_key) {
+  public DeepLearning(Key destination_key) {
     super(destination_key, "Deep Learning");
   }
 }
