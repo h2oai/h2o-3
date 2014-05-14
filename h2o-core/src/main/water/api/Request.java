@@ -76,7 +76,11 @@ abstract class Request extends Iced {
       RString html = new RString(htmlTemplate());
       html.replace("CONTENTS", res.toString());
       return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_HTML, html.toString());
-    case json:  return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, new String(res.req().writeJSON(new AutoBuffer()).buf()));
+    case json: {
+      String debug = new String(res.req().writeJSON(new AutoBuffer()).buf());
+      System.out.println("JSON return for "+res.req().getClass()+" : "+debug);
+      return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_JSON, debug);
+    }
     case xml :  //return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_XML , new String(res.req().writeXML(new AutoBuffer()).buf()));
     case java:  //return server.new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_PLAINTEXT, buildJava(res));
       throw H2O.unimpl();
