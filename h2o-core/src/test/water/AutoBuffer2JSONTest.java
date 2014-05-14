@@ -52,4 +52,11 @@ public class AutoBuffer2JSONTest extends TestUtil {
     assertEqual(new A5(), "{\"b\":9.0}");
     assertEqual(new A6(), "{\"a\":7,\"a5\":{\"b\":9.0},\"c\":81}");
   }
+
+  static class A7 extends Iced { }
+  static class A8 extends A7 { }
+  @Test public void testEmpty() {
+    assertEqual(new A8(), "{}");
+    assertEqual(new A7(), "{}");
+  }
 }

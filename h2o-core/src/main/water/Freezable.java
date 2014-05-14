@@ -22,4 +22,6 @@ public interface Freezable extends Cloneable {
   // all non-transient fields.
   AutoBuffer write_impl( AutoBuffer ab );
   <D extends Freezable> D read_impl( AutoBuffer ab );
+  AutoBuffer writeJSON_impl( AutoBuffer ab );
+  <D extends Freezable> D readJSON_impl( AutoBuffer ab );
 }
