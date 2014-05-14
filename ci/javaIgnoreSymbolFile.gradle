@@ -1,0 +1,6 @@
+compileJava {
+    // This only works when forking and passing 'javac' as an executable
+    options.compilerArgs << '-XDignore.symbol.file'    
+    options.fork = true
+    options.forkOptions.executable = 'javac'
+}

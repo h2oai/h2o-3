@@ -1,0 +1,14 @@
+apply from: '../ci/java.gradle'
+apply plugin: 'fatjar'
+
+dependencies {
+  compile project(":h2o-core")
+}
+
+fatJar {
+   manifest {
+      attributes 'Main-Class': 'water.H2O'
+   }
+}
+
+build.dependsOn fatJar

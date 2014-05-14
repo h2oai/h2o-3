@@ -1,47 +1,24 @@
-apply plugin: 'java'
+buildscript {
+    repositories {
+        mavenCentral()
+    }
 
-// Version number that appears on the H2O start.
-version = '2.2.0.6'
-
-repositories {
-  mavenCentral()
-  maven {
-    url "https://repository.cloudera.com/artifactory/cloudera-repos/"
-  }
+    dependencies {
+        classpath 'eu.appsatori:gradle-fatjar-plugin:0.2-rc1'
+    }
 }
 
-dependencies {
-  // Required for h2o-core
-  compile "joda-time:joda-time:2.3"
-  compile("log4j:log4j:1.2.15") { 
-    exclude module: "activation" 
-    exclude module: "jms" 
-    exclude module: "jmxri" 
-    exclude module: "jmxtools" 
-    exclude module: "mail" 
-  }
-  // WARNING: turning back on transitive dependencies brings in 19M in 37 jars... 
-  // All unneeded to read from HDFS.
-  compile("org.apache.hadoop:hadoop-common:2.3.0") { transitive = false }
-  compile "commons-logging:commons-logging:1.1.1"
-  compile("com.google.guava:guava:16.0.1") { }
-  compile "commons-collections:commons-collections:3.0"
-  compile "org.javassist:javassist:3.15.0-GA"
-
-  testCompile "junit:junit:4.+"
+allprojects {
+    apply plugin: 'idea'
 }
 
-// Copy the libs local, so "make" can find them.
-task cpLibs(type: Copy) {
-  println "=== COPY LIBS LOCAL === "
-  configurations.compile.each { println it } 
-  configurations.testCompile.each { println it } 
-  from configurations.compile.files 
-  from configurations.testCompile.files 
-  into 'lib'
-}
+subprojects {
+    version = '0.1'
 
-task make(dependsOn:cpLibs, type:Exec) {
-  println "=== H2O: Building top-level...(${path})"
-  commandLine 'make', '-s'
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+        }
+    }
 }

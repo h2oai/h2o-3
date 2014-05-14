@@ -1,3 +1,4 @@
-include 'h2o-core'
-include 'h2o-r'
+rootProject.name = 'h2o2'
 
+include 'h2o-core'
+include 'h2o-fatjar'
