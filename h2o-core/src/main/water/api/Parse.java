@@ -51,9 +51,6 @@ public class Parse extends Request {
   @Override protected Response serve() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
     //return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");
-    System.out.println(_hex);
-    for( Key k : H2O.localKeySet() )
-      System.out.println(k);
     return new Response("<a href=/2/DeepLearning.html?src="+_hex+">Parse done!</a>");
   }
 
