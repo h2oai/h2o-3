@@ -17,12 +17,8 @@ syn_datasets
 build/
 lib/
 .settings/*
-*/.idea/*
-.gradle/
-*.iml
-h2o.eml
+.gradle
 src/main/java/water/BuildVersion.java
-/.idea
 .Rproj.user
 R/.RData
 R/.Rhistory
