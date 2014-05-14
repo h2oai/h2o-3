@@ -15,6 +15,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 
 /**
@@ -701,11 +702,28 @@ public class DeepLearning extends Job<DeepLearningModel> {
 //    return 0;
 //  }
 
+
+  /** The function implementation.
+   * <p>It introduces blocking call which after finish of
+   * the function performs cleanup.
+   * </p><p>
+   * The method should not handle exceptions which it cannot handle and should let
+   * them to propagate to upper levels.
+   * </p>
+   */
+  public final void exec() {
+    try {
+      execImpl();
+    } finally {
+      cleanup(); // Perform job cleanup
+    }
+  }
+
   /**
    * Train a Deep Learning model, assumes that all members are populated
    */
 //  @Override
-  public final void execImpl() {
+  private final void execImpl() {
     checkJob();
     DeepLearningModel cp = null;
     if (checkpoint == null) cp = initModel();
@@ -767,6 +785,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       }
     }
     trainModel(cp);
+    cleanup();
     remove();
   }
 
@@ -839,12 +858,12 @@ public class DeepLearning extends Job<DeepLearningModel> {
    * @return DataInfo object
    */
   private DataInfo prepareDataInfo() {
-//    final boolean del_enum_resp = (classification && !response.isEnum());
+    final boolean del_enum_resp = (classification && !response.isEnum());
     final Frame train = FrameTask.DataInfo.prepareFrame(source, response, ignored_cols, classification, ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(train, 1, false, true, !classification);
     final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
     assert(!classification ^ resp.isEnum()) : "Must have enum response for classification!"; //either regression or enum response
-//    if (del_enum_resp) ltrash(resp);
+    if (del_enum_resp) ltrash(resp);
     return dinfo;
   }
 
@@ -877,6 +896,52 @@ public class DeepLearning extends Job<DeepLearningModel> {
       start(null);
   }
 
+  //TODO: OUTSOURCE/RE-IMPLEMENT START
+  /** A set containing a temporary vectors which are <strong>automatically</strong> deleted when job is done.
+   *  Deletion is by {@link #cleanup()} call. */
+  private transient HashSet<Key> _gVecTrash = new HashSet<>();
+  /** Local trash which can be deleted by user call.
+   * @see #emptyLTrash() */
+  private transient HashSet<Key> _lVecTrash = new HashSet<>();
+  /** Clean-up code which is executed after each exec call in any case (normal/exceptional). */
+  protected void cleanup() {
+    // Clean-up global list of temporary vectors
+    Futures fs = new Futures();
+    cleanupTrash(_gVecTrash, fs);
+    cleanupTrash(_lVecTrash, fs);
+    fs.blockForPending();
+  }
+  /** User call which empty local trash of vectors. */
+  protected final void emptyLTrash() {
+    if (_lVecTrash.isEmpty()) return;
+    Futures fs = new Futures();
+    cleanupTrash(_lVecTrash, fs);
+    fs.blockForPending();
+  }
+  /** Append all vectors from given frame to a global clean up list.
+   * If the Frame itself is in the K-V store, then trash that too.
+   * @see #cleanup()
+   * @see #_gVecTrash */
+  protected final void gtrash(Frame fr) { gtrash(fr.vecs()); if (fr._key != null && DKV.get(fr._key) != null) _gVecTrash.add(fr._key); }
+  /** Append given vector to clean up list.
+   * @see #cleanup()*/
+  protected final void gtrash(Vec ...vec)  { appendToTrash(_gVecTrash, vec); }
+  /** Put given frame vectors into local trash which can be emptied by a user calling the {@link #emptyLTrash()} method.
+   * @see #emptyLTrash() */
+  protected final void ltrash(Frame fr) { ltrash(fr.vecs()); if (fr._key != null && DKV.get(fr._key) != null) _lVecTrash.add(fr._key); }
+  /** Put given vectors into local trash.
+   * * @see #emptyLTrash() */
+  protected final void ltrash(Vec ...vec) { appendToTrash(_lVecTrash, vec); }
+  /** Put given vectors into a given trash. */
+  private void appendToTrash(HashSet<Key> t, Vec[] vec) {
+    for (Vec v : vec) t.add(v._key);
+  }
+  /** Delete all vectors in given trash. */
+  private void cleanupTrash(HashSet<Key> trash, Futures fs) {
+    for (Key k : trash) DKV.remove(k, fs);
+  }
+  //TODO: OUTSOURCE/RE-IMPLEMENT END
+
   /**
    * Helper to update a Frame and adding it to the local trash at the same time
    * @param target Frame referece, to be overwritten
@@ -884,7 +949,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
    * @return src
    */
   Frame updateFrame(Frame target, Frame src) {
-//    if (src != target) ltrash(src);
+    if (src != target) ltrash(src);
     return src;
   }
 
@@ -921,7 +986,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       }
       model.training_rows = train.numRows();
       trainScoreFrame = sampleFrame(train, mp.score_training_samples, mp.seed); //training scoring dataset is always sampled uniformly from the training dataset
-//      if (train != trainScoreFrame) ltrash(trainScoreFrame);
+      if (train != trainScoreFrame) ltrash(trainScoreFrame);
 
       if (!quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
       if (validation != null) {
