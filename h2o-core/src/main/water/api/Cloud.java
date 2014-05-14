@@ -3,10 +3,8 @@ package water.api;
 import java.util.*;
 import water.*;
 import water.api.RequestServer.API_VERSION;
-import water.util.RString;
 
 public class Cloud extends Request {
-  static int DEBUG_WEAVER;
   // Inputs
   // NONE!!!
 

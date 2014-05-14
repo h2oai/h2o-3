@@ -129,7 +129,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     assert H2O.H2O_PORT != 0;
     try {
       // Figure out which interface matches our IP address
-      List<NetworkInterface> matchingIfs = new ArrayList();
+      List<NetworkInterface> matchingIfs = new ArrayList<>();
       Enumeration<NetworkInterface> netIfs = NetworkInterface.getNetworkInterfaces();
       while( netIfs.hasMoreElements() ) {
         NetworkInterface netIf = netIfs.nextElement();
