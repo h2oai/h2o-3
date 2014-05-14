@@ -108,6 +108,7 @@ public class Frame extends Lockable {
     _vecs = fr.vecs().clone();
   }
 
+  // Deep Copy of the *data*.  Can get expensive quick.
   public Frame deepcopy() {
     return new MRTask() {
       @Override public void map(Chunk []cs, NewChunk []ncs) {

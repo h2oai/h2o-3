@@ -105,13 +105,13 @@ class RollupStats extends DTask<RollupStats> {
     // No local cached Rollups; go ask Master for a copy
     H2ONode h2o = rskey.home_node();
     if( h2o.equals(H2O.SELF) ) {
-      if( fs == null ) { rs.compute2(); return rs; }
+      if( fs == null ) { rs.compute2(); return rs; } // Block till ready
       fs.add(H2O.submitTask(rs)); 
       throw H2O.unimpl();
       //return null;
     } else {                                   // Run remotely
       RPC<RollupStats> rpc = RPC.call(h2o,rs); // Run remote
-      if( fs == null ) return rpc.get();
+      if( fs == null ) return rpc.get();       // Block till ready
       throw H2O.unimpl();
       //fs.add(comp); 
       //return null;
