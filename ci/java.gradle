@@ -1,5 +1,12 @@
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+
+compileJava
+{ 
+    options.debug = true 
+}
+
