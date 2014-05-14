@@ -92,9 +92,9 @@ public class RequestServer extends NanoHTTPD {
     //Request.addToNavbar(registerRequest(new PCAScore()),    "PCAScore",                 "Score");
     //Request.addToNavbar(registerRequest(new Steam()),    "Multi-model Scoring (Beta)", "Score");
     //
-    //// Admin
+    // Admin
     //Request.addToNavbar(registerRequest(new Jobs()),        "Jobs",                     "Admin");
-    //Request.addToNavbar(registerRequest(new Cloud()),       "Cluster Status",           "Admin");
+    Request.addToNavbar(registerRequest(new Cloud()),       "Cluster Status",           "Admin");
     //Request.addToNavbar(registerRequest(new IOStatus()),    "Cluster I/O",              "Admin");
     //Request.addToNavbar(registerRequest(new Timeline()),    "Timeline",                 "Admin");
     //Request.addToNavbar(registerRequest(new JStack()),      "Stack Dump",               "Admin");

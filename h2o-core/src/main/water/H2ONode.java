@@ -113,7 +113,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
 
-  static final H2ONode intern( int ip, int port ) {
+  static H2ONode intern( int ip, int port ) {
     byte[] b = new byte[4];
     b[0] = (byte)(ip>> 0);
     b[1] = (byte)(ip>> 8);
@@ -221,7 +221,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
-  private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong();
+  private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong<>();
   void taskPut(int tnum, RPC rpc ) { _tasks.put(tnum,rpc); }
   RPC taskGet(int tnum) { return _tasks.get(tnum); }
   void taskRemove(int tnum) { _tasks.remove(tnum); }
@@ -241,7 +241,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // the reply to can be removed - but we must remember task-completion for all
   // time (because UDP packets can be dup'd and arrive very very late and
   // should not be confused with new work).
-  private final NonBlockingHashMapLong<RPC.RPCCall> _work = new NonBlockingHashMapLong();
+  private final NonBlockingHashMapLong<RPC.RPCCall> _work = new NonBlockingHashMapLong<>();
 
   // We must track even dead/completed tasks for All Time (lest a very very
   // delayed UDP packet look like New Work).  The easy way to do this is leave
@@ -360,4 +360,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // Custom Serialization Class: H2OKey need to be built.
   @Override public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
   @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
+  @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("_key",_key.toString()); }
+  @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
 }
