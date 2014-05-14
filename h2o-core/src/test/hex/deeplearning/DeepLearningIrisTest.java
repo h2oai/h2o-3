@@ -43,8 +43,8 @@ public class DeepLearningIrisTest extends TestUtil {
     return new Frame(names, vecs);
   }
 
-  // Default run is the long run
-  @Test public void run() throws Exception { runFraction(1.0f); }
+  // Default run is the short run
+  @Test public void run() throws Exception { runFraction(0.05f); }
 
   @BeforeClass public static void stall() {
     stall_till_cloudsize(1);
@@ -342,6 +342,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             frame.delete();
                             fr.delete();
                             p.remove();
+                            p.cleanup();
                             trainPredict.delete();
                             testPredict.delete();
                             Log.info("Parameters combination " + num_runs + ": PASS");

@@ -18,8 +18,8 @@ public class DeepLearningProstateTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  //Default: run 10%
-  @Test public void run() throws Exception { runFraction(0.1f); }
+  //Default: run 0.3%
+  @Test public void run() throws Exception { runFraction(0.003f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -38,7 +38,6 @@ public class DeepLearningProstateTest extends TestUtil {
 
       NFSFileVec vnfs = NFSFileVec.make(find_test_file(dataset));
       Frame vframe = ParseDataset2.parse(Key.make(), vnfs._key);
-
 
       for (boolean replicate : new boolean[]{
               true,
@@ -120,7 +119,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               p.quiet_mode = true;
 //                              p.quiet_mode = false;
                               p.score_validation_sampling = csm;
-                              p.execImpl();
+                              p.exec();
                             }
 
                             // Do some more training via checkpoint restart
@@ -141,7 +140,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               p.epochs = epochs;
                               p.seed = seed;
                               p.train_samples_per_iteration = train_samples_per_iteration;
-                              p.execImpl();
+                              p.exec();
                             }
                             // score and check result (on full data)
                             final DeepLearningModel mymodel = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
@@ -297,7 +296,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               bestPredict.delete();
                             }
                             mymodel.delete();
-//                            DKV.remove(dest);
+                            DKV.remove(dest);
                             DKV.remove(dest_tmp);
                             Log.info("Parameters combination " + count + ": PASS");
                             testcount++;
@@ -326,6 +325,6 @@ public class DeepLearningProstateTest extends TestUtil {
   }
 
   public static class Short extends DeepLearningProstateTest {
-    @Test public void run() throws Exception { runFraction(0.003f); }
+    @Test public void run() throws Exception { runFraction(0.0003f); }
   }
 }
