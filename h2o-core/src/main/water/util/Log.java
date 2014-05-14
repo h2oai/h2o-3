@@ -80,10 +80,17 @@ abstract public class Log {
     String hdr = header(lvl);   // Common header for all lines
     write0(sb,hdr,s);
 
+    // stdout first - in case log4j dies failing to init or write something
+    if( stdout ) System.out.println(sb);
+
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
-
-    if( stdout ) System.out.println(sb);
+    switch( lvl ) {
+    case ERRR: l4j.error(s); break;
+    case WARN: l4j.warn (s); break;
+    case INFO: l4j.info (s); break;
+    case DEBUG:l4j.debug(s); break;
+    }
   }
 
   private static void write0( StringBuilder sb, String hdr, String s ) {

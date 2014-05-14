@@ -208,6 +208,8 @@ final public class H2O {
     @Override final public int frozenType() { return icer().frozenType();   }
     @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
     @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
+    @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
+    @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
 
 
@@ -492,6 +494,7 @@ final public class H2O {
   @Override public String toString() {
     return java.util.Arrays.toString(_memary);
   }
+  public H2ONode[] members() { return _memary; }
 
   // Cluster memory
   public long memsz() {

@@ -35,4 +35,8 @@ abstract public class Iced<D extends Iced> implements Freezable {
   @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
   //noninspection UnusedDeclaration
   @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
+  //noninspection UnusedDeclaration
+  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
+  //noninspection UnusedDeclaration
+  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
 }

@@ -3,11 +3,7 @@ package water;
 import javassist.*;
 import java.lang.reflect.*;
 import java.lang.reflect.Modifier;
-
 import sun.misc.Unsafe;
-import water.Icer;
-import water.Freezable;
-import water.TypeMap;
 import water.nbhm.UtilUnsafe;
 
 public class Weaver {
@@ -145,7 +141,7 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(debug);
     String debugJ= 
-    make_body(icer_cc, iced_cc, iced_clazz, "write", super_has_fields ? null : "    ab.put1('{').", "    ab.put1(',').",
+    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", super_has_fields ? null : "    ab.", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    writeJSON"+super_id+"(ab,ice);\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
@@ -163,7 +159,7 @@ public class Weaver {
     if( debug_print ) System.out.println(wbody);
     addMethod(wbody,icer_cc);
     String wbodyJ= "  protected water.AutoBuffer writeJSON(water.AutoBuffer ab, water.Freezable ice) {\n"+
-      "    return writeJSON"+id+"(ab,("+iced_name+")ice).put1('}');\n"+
+      "    return writeJSON"+id+"(ab.put1('{'),("+iced_name+")ice).put1('}');\n"+
       "  }";
     if( debug_print ) System.out.println(wbodyJ);
     addMethod(wbodyJ,icer_cc);
@@ -181,7 +177,7 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(rbody_impl);
     String rbodyJ_impl =
-    make_body(icer_cc, iced_cc, iced_clazz, "read", null, null,
+    make_body(icer_cc, iced_cc, iced_clazz, "readJSON", null, null,
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    readJSON"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
@@ -256,23 +252,23 @@ public class Weaver {
     // Customer serializer?
     String mimpl = impl+"_impl";
     for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
-      if( mth.getName().equals(mimpl) ) {
+      if( mth.getName().equals(mimpl) ) { // Found custom serializer?
         // If the custom serializer is actually abstract, then do nothing - it
         // must be (re)implemented in all child classes which will Do The Right Thing.
         if( javassist.Modifier.isAbstract(mth.getModifiers()) || javassist.Modifier.isVolatile(mth.getModifiers()) )
-          sb.append(impl.equals("write") ? "  return ab;\n}" : "  return ice;\n}");
+          sb.append(impl.startsWith("write") ? "    return ab;\n  }" : "    return ice;\n  }");
         else 
-          sb.append("  return ice.").append(mimpl).append("(ab);\n}");
+          sb.append("    return ice.").append(mimpl).append("(ab);\n  }");
         mimpl = null;           // flag it
         break;
       }
     // For all fields...
     CtField ctfs[] = iced_cc.getDeclaredFields();
     for( CtField ctf : ctfs ) {
+      if( mimpl == null ) break; // Custom serializer, do not dump fields
       int mods = ctf.getModifiers();
       if( javassist.Modifier.isTransient(mods) || javassist.Modifier.isStatic(mods) )
         continue;  // Only serialize not-transient instance fields (not static)
-      if( mimpl == null ) continue; // Custom serializer, do not dump fields
       if( field_sep1 != null ) { sb.append(field_sep1); field_sep1 = null; }
       else if( field_sep2 != null ) sb.append(field_sep2);
 
