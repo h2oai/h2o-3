@@ -16,7 +16,10 @@ sandbox
 syn_datasets
 build/
 lib/
+out/
 .idea/
+h2o2.iws
+h2o-core/h2o-core.iml
 .settings/*
 .gradle
 src/main/java/water/BuildVersion.java

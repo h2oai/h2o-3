@@ -17,9 +17,9 @@ dependencies {
   compile("org.apache.hadoop:hadoop-common:2.3.0") { 
     transitive = false
   }
+  compile "com.google.guava:guava:16.0.1"
 
   compile "commons-logging:commons-logging:1.1.1"
-  compile "com.google.guava:guava:16.0.1"
   compile "commons-collections:commons-collections:3.0"
   compile "org.javassist:javassist:3.15.0-GA"
 
