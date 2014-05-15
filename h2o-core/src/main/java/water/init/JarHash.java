@@ -63,12 +63,12 @@ public abstract class JarHash {
       return systemLoader.getResourceAsStream("resources"+uri);
     } else {
       try {
-        File resources  = new File("src/resources");
+        File resources  = new File("src/main/resources");
         if( !resources.exists() ) {
-          // IDE mode assumes classes are in target/classes. Not using current path
+          // IDE mode assumes classes are in target/classes.  Not using current path
           // to allow running from other locations.
           String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-          resources = new File(h2oClasses + "../../src/resources");
+          resources = new File(h2oClasses + "../../src/main/resources");
         }
         return new FileInputStream(new File(resources, uri));
       } catch (FileNotFoundException e) {

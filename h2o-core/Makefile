@@ -2,10 +2,10 @@
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
-main_javas = $(wildcard src/main/water/*java src/main/water/*/*java)
-test_javas = $(wildcard src/test/water/*java src/test/water/*/*java)
-main_classes = $(patsubst src/main/%java,build/classes/%class,$(main_javas))
-test_classes = $(patsubst src/test/%java,build/classes/%class,$(test_javas))
+main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java)
+test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java)
+main_classes = $(patsubst src/main/java/%java,build/classes/%class,$(main_javas))
+test_classes = $(patsubst src/test/java/%java,build/classes/%class,$(test_javas))
 classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
@@ -62,19 +62,20 @@ check_slow: $(classes)
 	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
-$(main_classes): build/classes/%class: src/main/%java
+$(main_classes): build/classes/%class: src/main/java/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $(main_javas)
+	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(main_javas)
 
-$(test_classes): build/classes/%class: src/test/%java
+$(test_classes): build/classes/%class: src/test/java/%java
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main -d build/classes $(test_javas)
+	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(test_javas)
 
 build/classes/water/init/BuildVersion.class: ../build/BuildVersion.java
 	@echo "compiling " $?
-	@javac $(JAVAC_ARGS) -sourcepath src/main -d build/classes $?
+	@[ -d build/classes ] || mkdir -p build/classes
+	@javac $(JAVAC_ARGS) -sourcepath src/main/java -d build/classes $?
 
 # Build the h2o-core.jar file
 # All included jars are unpacked into a flat structure, then repacked into One Jar
