@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import hex.deeplearning.DeepLearningModel;
+// import hex.deeplearning.DeepLearningModel;
 import water.api.AUC;
 import water.api.ConfusionMatrix;
 import water.api.HitRatio;
@@ -253,7 +253,8 @@ public abstract class Model extends Lockable<Model> {
     String [] names = Arrays.copyOf(_names, n);
     Frame  [] subVfr;
     // replace missing columns with NaNs (or 0s for DeepLearning with sparse data)
-    subVfr = vfr.subframe(names, (this instanceof DeepLearningModel && ((DeepLearningModel)this).get_params().sparse) ? 0 : Double.NaN);
+    // subVfr = vfr.subframe(names, (this instanceof DeepLearningModel && ((DeepLearningModel)this).get_params().sparse) ? 0 : Double.NaN);
+    subVfr = vfr.subframe(names, Double.NaN);
     vfr = subVfr[0]; // extract only subframe but keep the rest for delete later
     Vec[] frvecs = vfr.vecs();
     boolean[] toEnum = new boolean[frvecs.length];
