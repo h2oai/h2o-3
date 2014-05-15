@@ -1318,12 +1318,12 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putEnumJSON( Enum e ) {
+  AutoBuffer putJSONEnum( Enum e ) {
     return e==null ? putJNULL() : put1('"').putJStr(e.toString()).put1('"');
   }
 
   AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
-  AutoBuffer putEnumJSON( String name, Enum e ) { return putJSONStr(name).put1(':').putEnumJSON(e); }
+  AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
   AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }

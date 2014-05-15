@@ -135,7 +135,7 @@ public class Weaver {
               "  protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    write"+super_id+"(ab,ice);\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "    ab.putEnum(ice.%s);\n",  "    ab.putEnum((%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "    return ab;\n" +
               "  }");
@@ -145,7 +145,7 @@ public class Weaver {
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    writeJSON"+super_id+"(ab,ice);\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "putEnumJSON(\"%s\",ice.%s);\n",  "putEnumJSON(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "    return ab;\n" +
               "  }");
@@ -171,8 +171,8 @@ public class Weaver {
               "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    read"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
-              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
+              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.put%u(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
     if( debug_print ) System.out.println(rbody_impl);
@@ -181,8 +181,8 @@ public class Weaver {
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    readJSON"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.putObject(ice,%dL,%s[ab.get1()]);  //%s\n",
-              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.putObject(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
+              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.put%u(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
     if( debug_print ) System.out.println(rbodyJ_impl);
