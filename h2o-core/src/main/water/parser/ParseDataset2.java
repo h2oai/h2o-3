@@ -180,7 +180,7 @@ public class ParseDataset2 extends Job<Frame> {
     // CSV files removed from H2O memory
     if( delete_on_done )
       for( Key k : fkeys )
-        assert DKV.get(k) == null;
+        assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
     job.remove();
   }
 
