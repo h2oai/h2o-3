@@ -2,6 +2,7 @@
 *.hprof
 *.pyc
 *.swp
+*.iml
 *hs_err_pid*
 *stdout.txt
 *~
@@ -19,7 +20,6 @@ lib/
 out/
 .idea/
 h2o2.iws
-h2o-core/h2o-core.iml
 .settings/*
 .gradle
 src/main/java/water/BuildVersion.java
