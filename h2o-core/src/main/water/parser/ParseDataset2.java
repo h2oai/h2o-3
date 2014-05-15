@@ -407,7 +407,7 @@ public class ParseDataset2 extends Job<Frame> {
         switch( cpr ) {
         case NONE:
           if( localSetup._pType._parallelParseSupported ) {
-            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx,this);
+            DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx,this,key);
             addToPendingCount(1);
             dp.setCompleter(this);
             dp.asyncExec(vec);
@@ -483,11 +483,12 @@ public class ParseDataset2 extends Job<Frame> {
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
       private final VectorGroup _vg;
       private FVecDataOut _dout;
-      private final Key _eKey;
+      private final Key _eKey;  // Parse-local-Enums key
       private final Key _progress;
       private transient final MultiFileParseTask _outerMFPT;
+      private transient final Key _srckey; // Source/text file to delete on done
 
-      DParse(VectorGroup vg, ParserSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt) {
+      DParse(VectorGroup vg, ParserSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -496,6 +497,7 @@ public class ParseDataset2 extends Job<Frame> {
         _outerMFPT = mfpt;
         _eKey = mfpt._eKey;
         _progress = mfpt._progress;
+        _srckey = srckey;
       }
       @Override public void map( Chunk in ) {
         Enum [] enums = enums(_eKey,_setup._ncols);
@@ -510,7 +512,7 @@ public class ParseDataset2 extends Job<Frame> {
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
-          dout = new SVMLightFVecDataOut(_vg, _startChunkIdx + in.cidx(), _setup._ncols, _vecIdStart, enums);
+          dout = new SVMLightFVecDataOut(_vg, _startChunkIdx + in.cidx(), enums);
           break;
         default:
           throw H2O.unimpl();
@@ -526,8 +528,14 @@ public class ParseDataset2 extends Job<Frame> {
         _outerMFPT._dout = _dout;
         _dout = null;           // Reclaim GC eagerly
         // For Big Data, must delete data as eagerly as possible.
-        if( _outerMFPT._delete_on_done ) _fr.delete(_outerMFPT._job_key,0.0f);
-        else if( _fr._key != null ) _fr.unlock(_outerMFPT._job_key);
+        Iced ice = DKV.get(_srckey).get();
+        if( ice instanceof ByteVec ) {
+          if( _outerMFPT._delete_on_done ) ((ByteVec)ice).remove();
+        } else {
+          Frame fr = (Frame)ice;
+          if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,0.0f);
+          else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
+        }
       }
     }
   }
@@ -624,7 +632,6 @@ public class ParseDataset2 extends Job<Frame> {
       }
       _col = -1;
     }
-    protected long linenum(){return _nLines;}
     @Override public void addNumCol(int colIdx, long number, int exp) {
       if( colIdx < _nCols ) _nvs[_col = colIdx].addNum(number,exp);
     }
@@ -686,7 +693,7 @@ public class ParseDataset2 extends Job<Frame> {
   // --------------------------------------------------------
   private static class SVMLightFVecDataOut extends FVecDataOut {
     protected final VectorGroup _vg;
-    private SVMLightFVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
+    private SVMLightFVecDataOut(VectorGroup vg, int cidx, Enum [] enums){
       super(vg,cidx,0,vg.reserveKeys(10000000),enums);
       _nvs = new NewChunk[0];
       _vg = vg;
