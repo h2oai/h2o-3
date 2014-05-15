@@ -610,7 +610,7 @@ public final class AutoBuffer {
   }
 
 
-  public AutoBuffer putA(Iced[] fs) {
+  public AutoBuffer putA(Freezable[] fs) {
     //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -619,7 +619,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) put(fs[i]);
     return this;
   }
-  public AutoBuffer putAA(Iced[][] fs) {
+  public AutoBuffer putAA(Freezable[][] fs) {
     //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -628,7 +628,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA(fs[i]);
     return this;
   }
-  @SuppressWarnings("unused") AutoBuffer putAAA(Iced[][][] fs) {
+  @SuppressWarnings("unused") AutoBuffer putAAA(Freezable[][][] fs) {
     //_arys++;
     long xy = putZA(fs);
     if( xy == -1 ) return this;
@@ -646,7 +646,7 @@ public final class AutoBuffer {
     short id = (short)get2();
     return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
   }
-  public <T extends Iced> T[] getA(Class<T> tc) {
+  public <T extends Freezable> T[] getA(Class<T> tc) {
     //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -657,7 +657,7 @@ public final class AutoBuffer {
     for( int i = x; i < x+y; ++i ) ts[i] = get();
     return ts;
   }
-  public <T extends Iced> T[][] getAA(Class<T> tc) {
+  public <T extends Freezable> T[][] getAA(Class<T> tc) {
     //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -669,7 +669,7 @@ public final class AutoBuffer {
     for( int i = x; i < x+y; ++i ) ts[i] = getA(tc);
     return ts;
   }
-  @SuppressWarnings("unused")  <T extends Iced> T[][][] getAAA(Class<T> tc) {
+  @SuppressWarnings("unused")  <T extends Freezable> T[][][] getAAA(Class<T> tc) {
     //_arys++;
     long xy = getZA();
     if( xy == -1 ) return null;
@@ -1173,6 +1173,103 @@ public final class AutoBuffer {
     return put1(x==null ? -1 : x.ordinal());
   }
 
+  // ==========================================================================
+  // Java Serializable objects
+
+  @SuppressWarnings("unused") public AutoBuffer putObj( Object obj ) {
+    if (obj == null) return putA1(null);
+    try {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new ObjectOutputStream(bos);
+      oos.writeObject(obj);
+      byte[] ba = bos.toByteArray();
+      oos.close(); bos.close();
+      return putA1(ba);
+
+    } catch( IOException e ) {
+      throw Log.throwErr(e);
+    }
+  }
+
+  @SuppressWarnings("unused") public AutoBuffer putAObj(Object[] fs) {
+    //_arys++;
+    long xy = putZA(fs);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putObj(fs[i]);
+    return this;
+  }
+
+  @SuppressWarnings("unused") public AutoBuffer putAAObj(Object[][] fs) {
+    //_arys++;
+    long xy = putZA(fs);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putAObj(fs[i]);
+    return this;
+  }
+
+  @SuppressWarnings("unused") public AutoBuffer putAAAObj(Object[][][] fs) {
+    //_arys++;
+    long xy = putZA(fs);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putAAObj(fs[i]);
+    return this;
+  }
+
+  @SuppressWarnings("unused") public Object getObj() {
+    try {
+      byte[] ba = getA1();
+      if (ba == null) return null;
+      return new ObjectInputStream(new ByteArrayInputStream(ba)).readObject();
+    } catch(ClassNotFoundException|IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
+  @SuppressWarnings("unused") public <T> T getObj(Class<T> tc) {
+    return (T)getObj();
+  }
+
+  @SuppressWarnings("unused") public <T> T[] getAObj(Class<T> tc) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    T[] ts = (T[]) Array.newInstance(tc, x+y+z);
+    for( int i = x; i < x+y; ++i ) ts[i] = getObj(tc);
+    return ts;
+  }
+
+  @SuppressWarnings("unused") public <T> T[][] getAAObj(Class<T> tc) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    T[][] ts = (T[][]) Array.newInstance(tc, x+y+z);
+    for( int i = x; i < x+y; ++i ) ts[i] = getAObj(tc);
+    return ts;
+  }
+
+  @SuppressWarnings("unused") public <T> T[][][] getAAAObj(Class<T> tc) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    T[][][] ts = (T[][][]) Array.newInstance(tc, x+y+z);
+    for( int i = x; i < x+y; ++i ) ts[i] = getAAObj(tc);
+    return ts;
+  }
 
   // ==========================================================================
   // JSON AutoBuffer printers
@@ -1219,6 +1316,10 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAStr (String name, String[] ss  ) { return putJSONStr(name).put1(':').putJSONAStr(ss); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAStr(String name, String[][]sss) { return putJSONStr(name).put1(':').putJSONAAStr(sss); }
 
+  @SuppressWarnings("unused")  public AutoBuffer putJSONObj   (String name, Object o         ) { return putJSONStr(name).put1(':').putJNULL(); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAObj  (String name, Object[] oo      ) { return putJSONStr(name).put1(':').putJNULL(); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAAObj (String name, Object[][] ooo   ) { return putJSONStr(name).put1(':').putJNULL(); }
+  @SuppressWarnings("unused")  public AutoBuffer putJSONAAAObj(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
   private AutoBuffer putJSON ( Freezable ice   ) { return ice == null ? putJNULL() : ice.writeJSON(this); }
   private AutoBuffer putJSONA( Freezable fs[]  ) {
@@ -1318,12 +1419,12 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putEnumJSON( Enum e ) {
+  AutoBuffer putJSONEnum( Enum e ) {
     return e==null ? putJNULL() : put1('"').putJStr(e.toString()).put1('"');
   }
 
   AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
-  AutoBuffer putEnumJSON( String name, Enum e ) { return putJSONStr(name).put1(':').putEnumJSON(e); }
+  AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
   AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
