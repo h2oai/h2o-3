@@ -2,7 +2,7 @@ apply from: '../ci/java.gradle'
 apply plugin: 'fatjar'
 
 dependencies {
-  compile project(":h2o-core")
+  compile project(":h2o-algos")
 }
 
 fatJar {

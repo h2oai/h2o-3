@@ -26,23 +26,6 @@ dependencies {
   testCompile "junit:junit:4.+"
 }
 
-sourceSets {
-  main {
-    java {
-      srcDirs = ['src/main']
-    } 
-    resources {
-      srcDirs = ['src']
-//      resourcesDir = 'resources'
-    } 
-  }
-  test { 
-    java {
-      srcDirs = ['src/test']
-    }
-  }
-}
-
 jar {
    manifest {
       attributes 'Main-Class': 'water.H2O'
