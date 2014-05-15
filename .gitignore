@@ -16,6 +16,7 @@ sandbox
 syn_datasets
 build/
 lib/
+.idea/
 .settings/*
 .gradle
 src/main/java/water/BuildVersion.java
