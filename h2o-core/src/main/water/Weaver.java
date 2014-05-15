@@ -8,13 +8,17 @@ import water.nbhm.UtilUnsafe;
 
 public class Weaver {
   private static final ClassPool _pool = ClassPool.getDefault();
-  private static final CtClass _dtask, _enum;
+  private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
     try { 
-      _dtask= _pool.get("water.DTask"); // these also need copyOver
+      _dtask= _pool.get("water.DTask");    // these also need copyOver
       _enum = _pool.get("java.lang.Enum"); // Special serialization
+      _iced = _pool.get("water.Iced");     // Base of serialization
+      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
+      _freezable = _pool.get("water.Freezable");      // Base of serialization
+      _serialize = _pool.get("java.io.Serializable"); // Base of serialization
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
@@ -39,11 +43,20 @@ public class Weaver {
   private static String implClazzName( String name ) {
     return name + "$Icer";
   }
-  private static boolean hasWovenFields( CtClass cc ) throws NotFoundException {
-    String iced_name = cc.getName();
-    if( iced_name.equals("water.Iced") ) return false;
-    if( iced_name.equals("water.H2O$H2OCountedCompleter") ) return false;
-    if( hasWovenFields(cc.getSuperclass()) ) return true;
+
+  private static boolean hasWovenJSONFields( CtClass cc ) throws NotFoundException {
+    if( !cc.subtypeOf(_freezable) &&
+        !cc.subtypeOf(_serialize) ) return false; // Cannot serialize in any case
+    // Iced & H2O$CountedCompleters are interesting oddballs: they have a short
+    // typeid that is desired field for Freezable-style serialization but not for
+    // JSON-style.  The field is fairly expensively filled in the first time any
+    // given object is serialized and used in all subsequent fast serializations.
+    // However, the value is not valid outside *this* execution of the cluster,
+    // and should not be persisted via e.g. saving the JSON and restoring from
+    // it later.
+    if( cc.equals(_iced) ||
+        cc.equals(_h2cc) ) return false;
+    if( hasWovenJSONFields(cc.getSuperclass()) ) return true;
     for( CtField ctf : cc.getDeclaredFields() ) {
       int mods = ctf.getModifiers();
       if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
@@ -77,7 +90,7 @@ public class Weaver {
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
-    boolean super_has_fields = hasWovenFields(iced_cc.getSuperclass());
+    boolean super_has_jfields = hasWovenJSONFields(iced_cc.getSuperclass());
 
     // Lock on the Iced class (prevent multiple class-gens of the SAME Iced
     // class, but also to allow parallel class-gens of unrelated Iced).
@@ -85,14 +98,14 @@ public class Weaver {
     synchronized( iced_clazz ) {
       icer_cc = _pool.getOrNull(icer_name); // Retry under lock
       if( icer_cc != null ) return Class.forName(icer_name); // Found a pre-cooked Icer implementation
-      icer_cc = genIcerClass(id,iced_cc,iced_clazz,icer_name,super_id,super_icer_cc,super_has_fields);
+      icer_cc = genIcerClass(id,iced_cc,iced_clazz,icer_name,super_id,super_icer_cc,super_has_jfields);
       icer_cc.toClass();               // Load class (but does not link & init)
       return Class.forName(icer_name); // Initialize class now, before subclasses
     }
   }
 
   // Generate the Icer class
-  private static CtClass genIcerClass(int id, CtClass iced_cc, Class iced_clazz, String icer_name, int super_id, CtClass super_icer, boolean super_has_fields ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
+  private static CtClass genIcerClass(int id, CtClass iced_cc, Class iced_clazz, String icer_name, int super_id, CtClass super_icer, boolean super_has_jfields ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
     // Generate the Icer class
     String iced_name = iced_cc.getName();
     CtClass icer_cc = _pool.makeClass(icer_name);
@@ -141,7 +154,7 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(debug);
     String debugJ= 
-    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", super_has_fields ? null : "    ab.", "    ab.put1(',').",
+    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", super_has_jfields ? null : "    ab.", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    writeJSON"+super_id+"(ab,ice);\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
@@ -283,8 +296,8 @@ public class Weaver {
       boolean can_access = !javassist.Modifier.isPrivate(mods);
       if( (impl.equals("read") || impl.equals("copyOver")) && javassist.Modifier.isFinal(mods) ) can_access = false; 
       long off = _unsafe.objectFieldOffset(iced_clazz.getDeclaredField(ctf.getName()));
-      int ftype = ftype(iced_cc, ctf.getSignature() );   // Field type encoding
-      if( ftype%20 == 9 || ftype%20 == 11 ) {         // Iced/Objects
+      int ftype = ftype(iced_cc, ctf.getSignature() ); // Field type encoding
+      if( ftype%20 == 9 || ftype%20 == 11 ) {          // Iced/Objects
         sb.append(can_access ?  iced :  iced_unsafe);
       } else if( ftype%20 == 10 ) { // Enums
         sb.append(can_access ? enums : enums_unsafe);

@@ -1175,6 +1175,7 @@ public final class AutoBuffer {
 
   // ==========================================================================
   // Java Serializable objects
+  // Note: These are heck-a-lot more expensive than their Freezable equivalents.
 
   @SuppressWarnings("unused") public AutoBuffer putObj( Object obj ) {
     if (obj == null) return putA1(null);
@@ -1185,10 +1186,7 @@ public final class AutoBuffer {
       byte[] ba = bos.toByteArray();
       oos.close(); bos.close();
       return putA1(ba);
-
-    } catch( IOException e ) {
-      throw Log.throwErr(e);
-    }
+    } catch( IOException e ) { throw Log.throwErr(e); }
   }
 
   @SuppressWarnings("unused") public AutoBuffer putAObj(Object[] fs) {
@@ -1224,11 +1222,8 @@ public final class AutoBuffer {
   @SuppressWarnings("unused") public Object getObj() {
     try {
       byte[] ba = getA1();
-      if (ba == null) return null;
-      return new ObjectInputStream(new ByteArrayInputStream(ba)).readObject();
-    } catch(ClassNotFoundException|IOException e) {
-      throw Log.throwErr(e);
-    }
+      return ba == null ? null : new ObjectInputStream(new ByteArrayInputStream(ba)).readObject();
+    } catch(ClassNotFoundException|IOException e) { throw Log.throwErr(e); }
   }
 
   @SuppressWarnings("unused") public <T> T getObj(Class<T> tc) {
