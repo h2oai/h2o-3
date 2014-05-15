@@ -3,6 +3,7 @@ package water.parser;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import water.AutoBuffer;
+import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 
@@ -112,4 +113,6 @@ final class Enum extends Iced {
       _map.put(new ValueString(ab.getA1(len)),ab.get4());
     return this;
   }
+  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public Enum readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
 }

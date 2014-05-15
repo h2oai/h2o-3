@@ -39,7 +39,7 @@ public class DeepLearning extends Request {
     dl.source = DKV.get(_src).get();
     dl.classification = true;
     dl.response = dl.source.lastVec();
-    dl.execImpl();
+    dl.exec();
     DeepLearningModel dlm = DKV.get(dl.dest()).get();
     return new Response("Deep Learning done: "+dl._key+", "+dlm.error());
   }
