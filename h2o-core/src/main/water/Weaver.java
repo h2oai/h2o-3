@@ -284,7 +284,7 @@ public class Weaver {
       if( (impl.equals("read") || impl.equals("copyOver")) && javassist.Modifier.isFinal(mods) ) can_access = false; 
       long off = _unsafe.objectFieldOffset(iced_clazz.getDeclaredField(ctf.getName()));
       int ftype = ftype(iced_cc, ctf.getSignature() );   // Field type encoding
-      if( ftype%20 == 9 ) {         // Iced/Objects
+      if( ftype%20 == 9 || ftype%20 == 11 ) {         // Iced/Objects
         sb.append(can_access ?  iced :  iced_unsafe);
       } else if( ftype%20 == 10 ) { // Enums
         sb.append(can_access ? enums : enums_unsafe);
@@ -320,12 +320,13 @@ public class Weaver {
   }
 
   static private final String[] FLDSZ1 = {
-    "Z","1","2","2","4","4f","8","8d","Str","","Enum" // prims, String, Freezable, Enum
+    "Z","1","2","2","4","4f","8","8d","Str","","Enum", "Obj" // prims, String, Freezable, Enum, Obj
   };
 
   // Field types:
   // 0-7: primitives
   // 8,9, 10: String, Freezable, Enum
+  // 11: Java serialized object (implements Serializable)
   // 20-27: array-of-prim
   // 28,29, 30: array-of-String, Freezable, Enum
   // Barfs on all others (eg Values or array-of-Frob, etc)
@@ -346,6 +347,7 @@ public class Weaver {
       CtClass argClass = _pool.get(clz);
       if( argClass.subtypeOf(_pool.get("water.Freezable")) ) return 9;
       if( argClass.subtypeOf(_enum) ) return 10;
+      if( argClass.subtypeOf(_pool.get("java.io.Serializable")) ) return 11;
       break;
     case '[':                   // Arrays
       return ftype(ct, sig.substring(1))+20; // Same as prims, plus 20
