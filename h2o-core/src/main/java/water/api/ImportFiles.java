@@ -9,7 +9,7 @@ import java.util.*;
 import water.util.FileIntegrityChecker;
 
 public class ImportFiles extends Request {
-  @Override protected water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
+  @Override public water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
 
   // Input (set by checkArguments)
   String _path;
@@ -22,7 +22,7 @@ public class ImportFiles extends Request {
   // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
   // (auto-gen moves parms into local fields & complains on errors) or 
   // it needs to move into an explicit Schema somehow.
-  @Override protected Response checkArguments(Properties parms) {
+  @Override public Response checkArguments(Properties parms) {
     _path = null;
     for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
       String prop = e.nextElement();
@@ -35,7 +35,7 @@ public class ImportFiles extends Request {
     return _path == null ? throwIAE("Missing 'path'") : null;
   }
 
-  @Override protected Response serve() {
+  @Override public Response serve() {
     assert _path != null;       // Do not get here unless checkArguments found a path
     String p2 = _path.toLowerCase();
     if( false ) return null;

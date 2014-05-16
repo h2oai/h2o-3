@@ -8,10 +8,10 @@ import java.util.Properties;
  * @author michal
  */
 public class Tutorials extends Request {
-  @Override protected water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
+  @Override public water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
 
-  @Override protected Response checkArguments(Properties parms) { return null; }
-  @Override protected Response serve() {
+  @Override public Response checkArguments(Properties parms) { return null; }
+  @Override public Response serve() {
     return new Response("<div class='container'><div class='hero-unit' style='overflow: hidden'>"
     + "<style scoped='scoped'>"
     + "  h2 { font-size:18px; }"

@@ -5,6 +5,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import jsr166y.*;
+import water.api.Request;
+import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
@@ -434,6 +436,20 @@ final public class H2O {
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread().start();
+    // Register the default Requests
+    Object x = water.api.RequestServer.class;
+  }
+
+  // Callbacks to add new Requests & menu items
+  static private volatile boolean _doneRequests;
+  static public void registerRequest( Request req, String name, String menu ) {
+    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
+    Request.addToNavbar(RequestServer.registerRequest(req),name,menu);
+  }
+  
+  static public void finalizeRequest() {
+    if( _doneRequests ) return;
+    _doneRequests = true;
     // Start the Nano HTTP server thread
     water.api.RequestServer.start();
   }
@@ -617,11 +633,6 @@ final public class H2O {
     
     // Start network services, including heartbeats & Paxos
     startNetworkServices();   // start server services
-
-    //System.out.println("Sleep 2 sec");
-    //try { Thread.sleep(2000); } catch( InterruptedException _ ) { }
-    //System.out.println("Slept, killing self");
-    //exit(0);
   }
 
   /** Notify embedding software instance H2O wants to exit.

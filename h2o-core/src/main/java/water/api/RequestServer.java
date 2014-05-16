@@ -5,7 +5,6 @@ package water.api;
 //import hex.KMeans2.KMeans2ModelView;
 //import hex.KMeans2.KMeans2Progress;
 //import hex.ReBalance;
-//import hex.deeplearning.DeepLearning;
 //import hex.drf.DRF;
 //import hex.gapstat.GapStatistic;
 //import hex.gapstat.GapStatisticModelView;
@@ -41,7 +40,7 @@ import java.util.regex.Pattern;
 
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
-  protected enum API_VERSION {
+  public enum API_VERSION {
     V_1(1, "/"),
     V_2(2, "/2/"); // FIXME: better should be /v2/
     final private int _version;
@@ -78,7 +77,6 @@ public class RequestServer extends NanoHTTPD {
     //// FVec models
     //Request.addToNavbar(registerRequest(new PCA()),         "PCA",                      "Model");
     //Request.addToNavbar(registerRequest(new GBM()),         "GBM",                      "Model");
-    //Request.addToNavbar(registerRequest(new DeepLearning()),"Deep Learning",            "Model");
     //Request.addToNavbar(registerRequest(new DRF()),         "Distributed RF (Beta)",    "Model");
     //Request.addToNavbar(registerRequest(new GLM2()),        "GLM (Beta)",               "Model");
     //Request.addToNavbar(registerRequest(new KMeans2()),     "KMeans (Beta)",            "Model");
@@ -199,7 +197,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   /** Registers the request with the request server.  */
-  private static Request registerRequest(Request req) {
+  public static Request registerRequest(Request req) {
     assert req.supportedVersions().length > 0;
     for( API_VERSION ver : req.supportedVersions() ) {
       String href = req.href(ver);

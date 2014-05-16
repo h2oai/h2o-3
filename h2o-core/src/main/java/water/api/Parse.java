@@ -15,14 +15,14 @@ public class Parse extends Request {
   // Output
   private Key _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
 
-  @Override protected API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
+  @Override public API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
 
   // MAPPING from URI ==> POJO
   // 
   // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
   // (auto-gen moves parms into local fields & complains on errors) or 
   // it needs to move into an explicit Schema somehow.
-  @Override protected Response checkArguments(Properties parms) {
+  @Override public Response checkArguments(Properties parms) {
     for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
       String prop = e.nextElement();
       if( false ) {
@@ -48,7 +48,7 @@ public class Parse extends Request {
   }
 
 
-  @Override protected Response serve() {
+  @Override public Response serve() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
     //return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");
     return new Response("<a href=/2/DeepLearning.html?src="+_hex+">Parse done!</a>");

@@ -4,6 +4,6 @@ import java.util.Properties;
 
 public class HTTP404 extends Request {
   Properties _parms;
-  @Override protected Response checkArguments(Properties parms) { _parms = parms; return null; }
-  @Override protected Response serve() { return throwIAE("Unknown parms: "+_parms); }
+  @Override public Response checkArguments(Properties parms) { _parms = parms; return null; }
+  @Override public Response serve() { return throwIAE("Unknown parms: "+_parms); }
 }

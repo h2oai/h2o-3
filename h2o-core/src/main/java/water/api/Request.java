@@ -12,7 +12,7 @@ import water.util.RString;
 
 /** Base ReST Request Handling
  */
-abstract class Request extends Iced {
+public abstract class Request extends Iced {
 
   /** Override this to check arguments and fill in fields.  Return a query
    *  String response is some args are missing, or null if All Is Well. */
@@ -22,10 +22,10 @@ abstract class Request extends Iced {
   // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
   // (auto-gen moves parms into local fields & complains on errors) or 
   // it needs to move into an explicit Schema somehow.
-  protected abstract Response checkArguments(Properties parms);
+  public abstract Response checkArguments(Properties parms);
   
   /** Override this to provide the Response for this valid Request */
-  protected abstract Response serve();
+  public abstract Response serve();
 
 
   // Top-level Request dispatch based first on Request Type (e.g. .html vs .xml
@@ -156,7 +156,7 @@ abstract class Request extends Iced {
     return str.toString();
   }
 
-  static Request addToNavbar(Request r, String name, String category) {
+  public static Request addToNavbar(Request r, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
       arl = new ArrayList();
@@ -178,19 +178,19 @@ abstract class Request extends Iced {
   //protected static final API_VERSION[] SUPPORTS_ONLY_V1 = new API_VERSION[] { API_VERSION.V_1 };
   protected static final API_VERSION[] SUPPORTS_ONLY_V2 = new API_VERSION[] { API_VERSION.V_2 };
   protected static final API_VERSION[] SUPPORTS_V1_V2   = new API_VERSION[] { API_VERSION.V_1, API_VERSION.V_2 };
-  protected API_VERSION[] supportedVersions() { return SUPPORTS_ONLY_V2; }
+  public API_VERSION[] supportedVersions() { return SUPPORTS_ONLY_V2; }
 
   private String href() { return href(supportedVersions()[0]); }
   protected String href(API_VERSION v) { return v._prefix + getClass().getSimpleName(); }
 
   // -----------------------------------------------------
-  final class Response {
+  protected final class Response {
     protected final String _msg; // Default good response
     protected final Throwable _t; // Default bad response
     protected long _timeStart;
     protected boolean isError() { return _t != null; }
     protected Request req() { return Request.this; }
-    protected Response( String msg ) { _t = null; _msg = msg; }
+    public  Response( String msg ) { _t = null; _msg = msg; }
     protected Response( Throwable t ) {
       _t = t; 
       _msg = t.toString(); 
@@ -198,5 +198,5 @@ abstract class Request extends Iced {
     }
     @Override public String toString() { return _msg; }
   }
-  Response throwIAE( String msg ) { return new Response( new IllegalArgumentException(msg)); }
+  protected Response throwIAE( String msg ) { return new Response( new IllegalArgumentException(msg)); }
 }
