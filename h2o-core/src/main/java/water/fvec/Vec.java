@@ -442,8 +442,7 @@ public class Vec extends Keyed {
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
     DKV.remove(rollupStatsKey(),fs);
-    super.remove(fs);
-    return fs;
+    return super.remove(fs);
   }
   @Override public boolean equals( Object o ) {
     return o instanceof Vec && ((Vec)o)._key.equals(_key);
