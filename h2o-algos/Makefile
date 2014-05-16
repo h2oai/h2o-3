@@ -41,7 +41,7 @@ classes: $(classes)
 
 
 JVM = java -ea -cp "build/classes$(SEP)$(jars)" 
-JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTestNeuronsTest
+JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
