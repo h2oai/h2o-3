@@ -296,8 +296,8 @@ public class DeepLearningProstateTest extends TestUtil {
                               bestPredict.delete();
                             }
                             mymodel.delete();
-                            DKV.remove(dest);
-                            DKV.remove(dest_tmp);
+                            Keyed.remove(dest);
+                            Keyed.remove(dest_tmp);
                             Log.info("Parameters combination " + count + ": PASS");
                             testcount++;
                           }

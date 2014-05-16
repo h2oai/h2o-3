@@ -18,11 +18,6 @@ public abstract class WrappedVec extends Vec {
   @Override protected Vec masterVec() {
     return _masterVec!=null ? _masterVec : (_masterVec = DKV.get(_masterVecKey).get());
   }
-  // Remove associated Keys when this guy removes
-  @Override public Futures remove( Futures fs ) {
-    Keyed.remove(_masterVecKey,fs);
-    return super.remove(fs);
-  }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
   abstract public Chunk chunkForChunkIdx(int cidx);
 }
