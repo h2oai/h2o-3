@@ -17,4 +17,9 @@ public abstract class Keyed extends Iced {
     if( val==null ) return;
     ((Keyed)val.get()).remove();
   }
+  public static void remove( Key k, Futures fs ) {
+    Value val = DKV.get(k);
+    if( val==null ) return;
+    ((Keyed)val.get()).remove(fs);
+  }
 }

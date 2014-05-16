@@ -1,8 +1,10 @@
 package hex.deeplearning;
 
-import water.*;
-import hex.FrameTask;
 import hex.FrameTask.DataInfo;
+import hex.FrameTask;
+import static water.util.MRUtils.sampleFrame;
+import static water.util.MRUtils.sampleFrameStratified;
+import water.*;
 import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
@@ -10,8 +12,6 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
-import static water.util.MRUtils.sampleFrame;
-import static water.util.MRUtils.sampleFrameStratified;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -938,7 +938,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
   }
   /** Delete all vectors in given trash. */
   private void cleanupTrash(HashSet<Key> trash, Futures fs) {
-    for (Key k : trash) DKV.remove(k, fs);
+    for (Key k : trash) Keyed.remove(k,fs);
   }
   //TODO: OUTSOURCE/RE-IMPLEMENT END
 
