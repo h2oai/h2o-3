@@ -9,6 +9,7 @@ import water.fvec.*;
 public class TestUtil {
   private static int _initial_keycnt = 0;
 
+  // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
     H2O.waitForCloudSize(x, 100000);
@@ -34,7 +35,12 @@ public class TestUtil {
     _initial_keycnt = H2O.store_size();
   }
 
-  // Hunt for test files in likely places.  Null if cannot find.
+
+  // ==== Data Frame Creation Utilities ====
+
+  /** Hunt for test files in likely places.  Null if cannot find.
+   *  @param fname Test filename
+   *  @return      Found file or null */
   protected File find_test_file( String fname ) {
     // When run from eclipse, the working directory is different.
     // Try pointing at another likely place
@@ -50,12 +56,17 @@ public class TestUtil {
     return file;
   }
 
-  // Find & parse; use random Key for result
+  /** Find & parse a CSV file.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
   protected Frame parse_test_file( String fname ) {
     NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
     return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
   }
 
+  /** Find & parse a folder of CSV files.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
     File folder = find_test_file(fname);
     assert folder.isDirectory();
@@ -68,7 +79,77 @@ public class TestUtil {
     return water.parser.ParseDataset2.parse(Key.make(),res);
   }
 
-  // Compare 2 frames
+  /** A Numeric Vec from an array of ints
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec vec(int...rows) { return vec(null, rows); }
+  /** A Enum/Factor Vec from an array of ints - with enum/domain mapping
+   *  @param domain Enum/Factor names, mapped by the data values
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec vec(String[] domain, int ...rows) { 
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( int r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** Create a new frame based on given row data.
+   *  @param names  names of frame columns
+   *  @param rows  data given in the form of rows
+   *  @return new frame which contains columns named according given names and including given data */
+  public static Frame frame(String[] names, double[]... rows) {
+    assert names == null || names.length == rows[0].length;
+    Futures fs = new Futures();
+    Vec[] vecs = new Vec[rows[0].length];
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    for( int c = 0; c < vecs.length; c++ ) {
+      AppendableVec vec = new AppendableVec(keys[c]);
+      NewChunk chunk = new NewChunk(vec, 0);
+      for (double[] row : rows) chunk.addNum(row[c]);
+      chunk.close(0, fs);
+      vecs[c] = vec.close(fs);
+    }
+    fs.blockForPending();
+    return new Frame(names, vecs);
+  }
+
+  // Shortcuts for initializing constant arrays
+  public static String[]   ar (String ...a)   { return a; }
+  public static long  []   ar (long   ...a)   { return a; }
+  public static long[][]   ar (long[] ...a)   { return a; }
+  public static int   []   ari(int    ...a)   { return a; }
+  public static int [][]   ar (int[]  ...a)   { return a; }
+  public static float []   arf(float  ...a)   { return a; }
+  public static double[]   ard(double ...a)   { return a; }
+  public static double[][] ard(double[] ...a) { return a; }
+
+
+  // ==== Comparing Results ====
+
+  /** Compare 2 doubles within a tolerance
+   *  @param a double 
+   *  @param b double
+   *  @param abseps - Absolute allowed tolerance
+   *  @param releps - Relative allowed tolerance
+   *  @return true if equal within tolerances  */
+  protected boolean compare(double a, double b, double abseps, double releps) {
+    return
+      Double.compare(a, b) == 0 || // check for equality
+      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
+      Math.abs(a - b) <= abseps; // check for small absolute error
+  }
+
+  /** Compare 2 doubles within a tolerance
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @return true if equal  */
   protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
     if( fr1.numCols() != fr2.numCols() ) return false;
     if( fr1.numRows() != fr2.numRows() ) return false;
@@ -114,31 +195,4 @@ public class TestUtil {
     }
     @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
   }
-
-
-  // A Vec from an array
-  public static Vec vec(int...rows) { return vec(null, rows); }
-  public static Vec vec(String[] domain, int ...rows) { 
-    Key k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k);
-    avec.setDomain(domain);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for( int r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.close(fs);
-    fs.blockForPending();
-    return vec;
-  }
-
-  // Shortcuts for initializing constant arrays
-  public static String[]   ar (String ...a)   { return a; }
-  public static long  []   ar (long   ...a)   { return a; }
-  public static long[][]   ar (long[] ...a)   { return a; }
-  public static int   []   ari(int    ...a)   { return a; }
-  public static int [][]   ar (int[]  ...a)   { return a; }
-  public static float []   arf(float  ...a)   { return a; }
-  public static double[]   ard(double ...a)   { return a; }
-  public static double[][] ard(double[] ...a) { return a; }
 }
-

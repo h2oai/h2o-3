@@ -1,67 +1,29 @@
 package hex.deeplearning;
 
-import hex.FrameTask;
-import static junit.framework.Assert.failNotEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import hex.FrameTask;
+import java.util.Random;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.*;
 import water.api.ConfusionMatrix;
 import water.fvec.*;
-import static water.util.ArrayUtils.subarray;
-import static water.util.ModelUtils.getPrediction;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.util.Log;
 import water.util.RandomUtils;
 
-import java.util.Random;
-
 public class DeepLearningIrisTest extends TestUtil {
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
-
-
-  /**
-   * Create a new frame based on given row data.
-   * @param names  names of frame columns
-   * @param rows  data given in the form of rows
-   * @return new frame which contains columns named according given names and including given data
-   */
-  public static Frame frame(String[] names, double[]... rows) {
-    assert names == null || names.length == rows[0].length;
-    Futures fs = new Futures();
-    Vec[] vecs = new Vec[rows[0].length];
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-    for( int c = 0; c < vecs.length; c++ ) {
-      AppendableVec vec = new AppendableVec(keys[c]);
-      NewChunk chunk = new NewChunk(vec, 0);
-      for (double[] row : rows) chunk.addNum(row[c]);
-      chunk.close(0, fs);
-      vecs[c] = vec.close(fs);
-    }
-    fs.blockForPending();
-    return new Frame(names, vecs);
-  }
 
   // Default run is the short run
   @Test public void run() throws Exception { runFraction(0.05f); }
 
-  @BeforeClass public static void stall() {
-    stall_till_cloudsize(1);
-  }
-
-  void compareVal(double a, double b, double abseps, double releps) {
-    // check for equality
-    if (Double.compare(a, b) == 0) {
-    }
-    // check for small relative error
-    else if (Math.abs(a-b)/Math.max(a,b) < releps) {
-    }
-    // check for small absolute error
-    else if (Math.abs(a - b) <= abseps) {
-    }
-    // fail
-    else failNotEquals("Not equal: ", a, b);
+  private void compareVal(double a, double b, double abseps, double releps) {
+    if( !compare(a,b,abseps,releps) ) // Complex test does not fit JUnit Assert very well
+      assertEquals("Not equal: ", a, b, 0.0); // always fails if we get here, and prints nice msg
   }
 
   void runFraction(float fraction) {
@@ -143,8 +105,8 @@ public class DeepLearningIrisTest extends TestUtil {
                               }
 
                               int limit = (int) (frame.numRows() * holdout_ratio);
-                              _train = frame(names, subarray(rows, 0, limit));
-                              _test = frame(names, subarray(rows, limit, (int) frame.numRows() - limit));
+                              _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
+                              _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
                               p = new DeepLearning(Key.make());
                               p.source = _train;
@@ -287,7 +249,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               // do the same as H2O here (compare float values and break ties based on row number)
                               float[] preds = new float[ref_preds.length + 1];
                               for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = (float) ref_preds[j];
-                              preds[0] = getPrediction(preds, i);
+                              preds[0] = water.util.ModelUtils.getPrediction(preds, i);
 
                               // compare predicted label
                               assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
@@ -358,14 +320,6 @@ public class DeepLearningIrisTest extends TestUtil {
         }
       }
     }
-  }
-
-  public static class Long extends DeepLearningIrisTest {
-    @Test public void run() throws Exception { runFraction(1.0f); }
-  }
-
-  public static class Short extends DeepLearningIrisTest {
-    @Test public void run() throws Exception { runFraction(0.05f); }
   }
 }
 
