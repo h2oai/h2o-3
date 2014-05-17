@@ -2,6 +2,7 @@ package water.schemas;
 
 import water.Iced;
 import water.H2O;
+import water.H2O.H2OCountedCompleter;
 
 /** Base Schema Class
  *  
@@ -10,13 +11,13 @@ import water.H2O;
  *  and from URLs and JSON.  The base Adapter logic is here, and will by
  *  default copy same-named fields to and from Schemas to concrete Iced objects.
  */
-public abstract class Schema<I extends Iced,S extends Schema<I,S>> extends Iced {
+public abstract class Schema<I extends H2OCountedCompleter,S extends Schema<I,S>> extends Iced {
 
   public final int getVersion() {
     throw H2O.unimpl();
   }
 
-  public static <I1 extends Iced, S1 extends Schema<I1,S1>> S1 makeSchema(I1 ice) {
+  public static <I1 extends H2OCountedCompleter, S1 extends Schema<I1,S1>> S1 makeSchema(I1 ice) {
     //S1 golden = registry1.get(ice.getClass());
     //S1 foo = golden.clone();
     // foo.override_locally()

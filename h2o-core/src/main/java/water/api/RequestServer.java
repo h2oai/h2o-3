@@ -92,7 +92,7 @@ public class RequestServer extends NanoHTTPD {
     //
     // Admin
     //Request.addToNavbar(registerRequest(new Jobs()),        "Jobs",                     "Admin");
-    Request.addToNavbar(registerRequest(new Cloud()),       "Cluster Status",           "Admin");
+    //Request.addToNavbar(registerRequest(new Cloud()),       "Cluster Status",           "Admin");
     //Request.addToNavbar(registerRequest(new IOStatus()),    "Cluster I/O",              "Admin");
     //Request.addToNavbar(registerRequest(new Timeline()),    "Timeline",                 "Admin");
     //Request.addToNavbar(registerRequest(new JStack()),      "Stack Dump",               "Admin");

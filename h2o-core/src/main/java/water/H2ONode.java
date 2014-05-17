@@ -23,9 +23,9 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   long _last_heard_from; // Time in msec since we last heard from this Node
   boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
-  volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
+  public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   int _tcp_readers;               // Count of started TCP reader threads
-  boolean _node_healthy;
+  public boolean _node_healthy;
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;

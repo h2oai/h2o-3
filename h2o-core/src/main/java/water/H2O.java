@@ -19,7 +19,7 @@ import water.util.*;
 */
 final public class H2O {
 
-  static final AbstractBuildVersion ABV;
+  public static final AbstractBuildVersion ABV;
   static {
     AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
     try {
@@ -31,7 +31,7 @@ final public class H2O {
   }
 
   // Atomically set once during startup.  Guards against repeated startups.
-  static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
+  public static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();

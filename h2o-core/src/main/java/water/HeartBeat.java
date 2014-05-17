@@ -7,7 +7,7 @@ import water.init.JarHash;
  * Struct holding H2ONode health info.
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  */
-class HeartBeat extends Iced<HeartBeat> {
+public class HeartBeat extends Iced<HeartBeat> {
   int _hb_version;
   int _cloud_hash;       // Cloud-membership hash?
   boolean _common_knowledge; // Cloud shares common knowledge
@@ -15,7 +15,7 @@ class HeartBeat extends Iced<HeartBeat> {
   long _jvm_boot_msec;   // Boot time of JVM
   byte[] _jar_md5;       // JAR file digest
   char _num_cpus;        // Number of CPUs for this Node, limit of 65535
-  float _system_load_average;
+  public float _system_load_average;
   long _system_idle_ticks;
   long _system_total_ticks;
   long _process_total_ticks;

@@ -1,33 +1,31 @@
 package water.api;
 
-import java.util.*;
-import water.*;
-import water.api.RequestServer.API_VERSION;
+import water.H2O.H2OCountedCompleter;
+import water.H2O;
+import water.H2ONode;
+import water.Paxos;
+import water.schemas.CloudV1;
 
-public class Cloud extends Request {
-  // Inputs
-  // NONE!!!
+public class Cloud extends H2OCountedCompleter {
 
-  // Output
-  private H2ONode _nodes[];
+  public String _version, _cloud_name;
+  public int _cloud_size;
+  public long _uptime_ms;
+  public boolean _cloud_healthy, _consensus, _locked;
+  public H2ONode[] _members;
 
-  @Override public API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
-
-  // MAPPING from URI ==> POJO
-  // 
-  // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
-  // (auto-gen moves parms into local fields & complains on errors) or 
-  // it needs to move into an explicit Schema somehow.
-  @Override public Response checkArguments(Properties parms) {
-    Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); 
-    return e.hasMoreElements() ? throwIAE("unknown parameter: "+e.nextElement()) : null;
-  }
-
-
-  @Override public Response serve() {
-    _nodes = H2O.CLOUD.members();
-
-    return new Response("Cloud");
+  @Override public void compute2() {
+    _version = H2O.ABV.projectVersion();
+    _cloud_name = H2O.ARGS.name;
+    _uptime_ms = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
+    _consensus = Paxos._commonKnowledge;
+    _locked = Paxos._cloudLocked;
+    H2O cloud = H2O.CLOUD;
+    _members = cloud.members();
+    _cloud_size = _members.length;
+    _cloud_healthy = true;
+    for( H2ONode h2o : _members ) _cloud_healthy &= h2o._node_healthy;
+    tryComplete();
   }
 }
 
