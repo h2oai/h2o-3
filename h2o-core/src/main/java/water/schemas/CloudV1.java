@@ -1,6 +1,8 @@
 package water.schemas;
 
-public class CloudV1 extends Schema<Cloud,CloudV1> {
+import water.Iced;
+
+public class CloudV1 extends Schema<Iced,CloudV1> {
 
   // This Schema has no inputs
   private static class Inputs {
