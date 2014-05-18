@@ -581,7 +581,10 @@ final public class H2O {
     // If the K/V mapping is changing, let the store cleaner just overwrite.
     // If the K/V mapping is new, let the store cleaner just create
     if( old != null && val == null ) old.removePersist(); // Remove the old guy
-    if( val != null ) Cleaner.dirty_store(); // Start storing the new guy
+    if( val != null ) {
+      Cleaner.dirty_store(); // Start storing the new guy
+      Scope.track(key);
+    }
     return old; // Return success
   }
   
