@@ -11,7 +11,6 @@ public class Dropout {
   private transient byte[] _bits;
   private transient double _rate;
 
-  public double rate() { return _rate; }
   public byte[] bits() { return _bits; }
 
 //  public Dropout() {
