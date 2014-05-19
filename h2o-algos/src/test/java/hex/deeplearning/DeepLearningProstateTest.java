@@ -18,8 +18,8 @@ public class DeepLearningProstateTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  //Default: run 0.3%
-  @Test public void run() throws Exception { runFraction(0.003f); }
+  //Default: run 3%
+  @Test public void run() throws Exception { runFraction(0.03f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -44,7 +44,7 @@ public class DeepLearningProstateTest extends TestUtil {
               false,
       }) {
         for (boolean load_balance : new boolean[]{
-                true,
+//                true,
                 false,
         }) {
           for (boolean shuffle : new boolean[]{
