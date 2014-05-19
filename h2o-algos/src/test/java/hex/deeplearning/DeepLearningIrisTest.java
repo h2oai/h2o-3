@@ -304,7 +304,6 @@ public class DeepLearningIrisTest extends TestUtil {
                             frame.delete();
                             fr.delete();
                             p.remove();
-                            p.cleanup();
                             trainPredict.delete();
                             testPredict.delete();
                             Log.info("Parameters combination " + num_runs + ": PASS");
