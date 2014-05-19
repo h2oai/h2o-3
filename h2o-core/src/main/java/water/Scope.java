@@ -23,7 +23,6 @@ public class Scope {
   private final Stack<HashSet<Key>> _keys = new Stack<>();
 
   static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
-  static public void exit () { exit(null); }
 
   static public Key[] exit(Key... keep) {
     List<Key> keylist = new ArrayList<>();
@@ -38,15 +37,8 @@ public class Scope {
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (keys.size() > 0) {
       for (Key key : keys.pop()) {
-        int found = -1;
-        if (arrkeep != null) found = Arrays.binarySearch(arrkeep, key);
-//        if (found >= 0) {
-//          Log.info("Not deleting key " + key);
-//        }
-        if (arrkeep.length == 0 || found < 0) {
-//          Log.info("Deleting key " + key);
-          Keyed.remove(key);
-        }
+        int found = Arrays.binarySearch(arrkeep, key);
+        if (arrkeep.length == 0 || found < 0) Keyed.remove(key);
       }
     }
     return keep;
@@ -57,9 +49,7 @@ public class Scope {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if( scope == null ) return; // Not tracking this thread
     if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
-    if (!scope._keys.peek().contains(k)) {
-//      Log.info("Tracking key: " + k);
+    if (!scope._keys.peek().contains(k))
       scope._keys.peek().add(k);            // Track key
-    }
   }
 }
