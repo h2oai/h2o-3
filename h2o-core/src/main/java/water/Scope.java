@@ -1,6 +1,10 @@
 package water;
+import water.util.ArrayUtils;
+import water.util.Log;
+
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Stack;
 
 // A "scope" for tracking Key lifetimes.
@@ -24,24 +28,28 @@ public class Scope {
   private final Stack<HashSet<Key>> _keys = new Stack<>();
 
   static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
-  static public void exit () {
-    Key k = null;
-    exit(k);
-  }
+  static public void exit () { exit(null); }
 
-  static public Key exit(Key keep) {
+  static public Key[] exit(Key... keep) {
+    Key[] arrkeep = null;
+    if (keep != null) arrkeep = (Key[]) Arrays.asList(keep).toArray();
+    Arrays.sort(arrkeep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (keys.size() > 0) {
       for (Key key : keys.pop()) {
-        if (keep == null || !Arrays.equals(key._kb, keep._kb)) {
+        int found = -1;
+        if (arrkeep!=null) found = Arrays.binarySearch(arrkeep, key);
+        if (found >= 0) {
+          Log.info("Not deleting key " + key);
+        }
+        if (arrkeep.length == 0 || found < 0) {
+          Log.info("Deleting key " + key);
           Keyed.remove(key);
         }
       }
     }
     return keep;
   }
-
-  static public Key[] exit(Key... keep) { throw H2O.unimpl(); }
 
   static public void track( Key k ) {
     if( !k.user_allowed() && !k.isVec() ) return; // Not tracked
