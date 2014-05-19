@@ -773,6 +773,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
   @Override
   public void remove() {
     super.remove();
+    for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
     int validlen = validation != null ? validation.vecs().length : 0;
     Key[] keep = new Key[source.vecs().length+validlen+4];
     //don't delete the training data
@@ -1020,6 +1021,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
    * @param local whether to only create enough chunks to max out all cores on one node only
    * @return Frame that has potentially more chunks
    */
+  transient HashSet<Frame> _delete_me = new HashSet<>();
   private Frame reBalance(final Frame fr, boolean local) {
     final int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
     if (fr.anyVec().nChunks() > chunks) {
@@ -1033,7 +1035,9 @@ public class DeepLearning extends Job<DeepLearningModel> {
     RebalanceDataSet rb = new RebalanceDataSet(fr, newKey, chunks);
     H2O.submitTask(rb);
     rb.join();
-    return DKV.get(newKey).get();
+    Frame f = DKV.get(newKey).get();
+    _delete_me.add(f);
+    return f;
   }
 
   /**
