@@ -1,11 +1,6 @@
 package water;
-import water.util.ArrayUtils;
-import water.util.Log;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 // A "scope" for tracking Key lifetimes.
 //
@@ -31,19 +26,25 @@ public class Scope {
   static public void exit () { exit(null); }
 
   static public Key[] exit(Key... keep) {
-    Key[] arrkeep = null;
-    if (keep != null) arrkeep = (Key[]) Arrays.asList(keep).toArray();
+    List<Key> keylist = new ArrayList<>();
+    if (keep != null) {
+      for (Key k : Arrays.asList(keep)) {
+        if (k != null)
+          keylist.add(k);
+      }
+    }
+    Object[] arrkeep = keylist.toArray();
     Arrays.sort(arrkeep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (keys.size() > 0) {
       for (Key key : keys.pop()) {
         int found = -1;
-        if (arrkeep!=null) found = Arrays.binarySearch(arrkeep, key);
-        if (found >= 0) {
-          Log.info("Not deleting key " + key);
-        }
+        if (arrkeep != null) found = Arrays.binarySearch(arrkeep, key);
+//        if (found >= 0) {
+//          Log.info("Not deleting key " + key);
+//        }
         if (arrkeep.length == 0 || found < 0) {
-          Log.info("Deleting key " + key);
+//          Log.info("Deleting key " + key);
           Keyed.remove(key);
         }
       }
@@ -56,6 +57,9 @@ public class Scope {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if( scope == null ) return; // Not tracking this thread
     if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
-    scope._keys.peek().add(k);            // Track key
+    if (!scope._keys.peek().contains(k)) {
+//      Log.info("Tracking key: " + k);
+      scope._keys.peek().add(k);            // Track key
+    }
   }
 }
