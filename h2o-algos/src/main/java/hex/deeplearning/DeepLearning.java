@@ -724,7 +724,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
         ignored_cols = previous.model_info().get_params().ignored_cols;
         Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
       }
-      if ((validation!=null) != (previous.model_info().get_params().validation != null)
+      if ((validation == null) == (previous.model_info().get_params().validation != null)
               || (validation != null && validation._key != null && previous.model_info().get_params().validation._key != null
               && !Arrays.equals(validation._key._kb, previous.model_info().get_params().validation._key._kb))) {
         throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
@@ -740,8 +740,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
         cp.write_lock(self());
         assert(DKV.get(cp._key) != null);
         assert(_state==JobState.RUNNING);
-        final DeepLearning mp = cp.model_info().get_params();
-        Object A = mp, B = this;
+        Object A = cp.model_info().get_params(), B = this;
         for (Field fA : A.getClass().getDeclaredFields()) {
           if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
             if (!expert_mode && ArrayUtils.contains(expert_options, fA.getName())) continue;
@@ -779,7 +778,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
     //don't delete the training data
     for (int i = 0; i< source.vecs().length; ++i)
       keep[i] = source.vecs()[i]._key;
-    keep[source.vecs().length+0] = source._key;
+    keep[source.vecs().length] = source._key;
     //don't delete the validation data
     for (int i = 0; i< validlen; ++i)
       keep[i] = validation.vecs()[i]._key;
@@ -820,7 +819,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       }
     }
     else if (hidden_dropout_ratios.length != hidden.length) throw new IllegalArgumentException("Must have " + hidden.length + " hidden layer dropout ratios.");
-    else if (hidden_dropout_ratios != null) {
+    else {
       if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
         if (!quiet_mode) Log.info("Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
       }
@@ -1015,13 +1014,13 @@ public class DeepLearning extends Job<DeepLearningModel> {
       validation.unlock(self());
   }
 
+  transient HashSet<Frame> _delete_me = new HashSet<>();
   /**
    * Rebalance a frame for load balancing
    * @param fr Input frame
    * @param local whether to only create enough chunks to max out all cores on one node only
    * @return Frame that has potentially more chunks
    */
-  transient HashSet<Frame> _delete_me = new HashSet<>();
   private Frame reBalance(final Frame fr, boolean local) {
     final int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
     if (fr.anyVec().nChunks() > chunks) {
