@@ -45,7 +45,7 @@ public class Parse extends Handler {
   //}
 
 
-  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, RequestType type) {
+  @Override protected void exec2() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
     throw H2O.unimpl();
     //return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");

@@ -35,17 +35,17 @@ public class ImportFiles extends Handler {
   //  return _path == null ? throwIAE("Missing 'path'") : null;
   //}
 
-  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, RequestType type) {
+  @Override protected Response exec2() {
     assert _path != null;       // Do not get here unless checkArguments found a path
     String p2 = _path.toLowerCase();
-    //if( false ) return null;
+    if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
     //else if( p2.startsWith("maprfs:/"  ) ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    //else return serveLocalDisk();
+    else serveLocalDisk();
     throw H2O.unimpl();
   }
 
@@ -94,7 +94,7 @@ public class ImportFiles extends Handler {
 //    fails = fail.toArray(new String[fail.size()]);
 //  }
 
-  private Response serveLocalDisk() {
+  private void serveLocalDisk() {
     File f = new File(_path);
     if( !f.exists() ) throw new IllegalArgumentException("File " + _path + " does not exist!");
     ArrayList<String> afiles = new ArrayList();
@@ -106,12 +106,6 @@ public class ImportFiles extends Handler {
     _keys  = akeys .toArray(new String[0]);
     _fails = afails.toArray(new String[0]);
     _dels  = adels .toArray(new String[0]);
-    String hex = _keys[0];
-    hex = hex.replace(".csv",".hex");
-    return new Response("Imported: "+Arrays.toString(_files)+
-                        " into <a href=/2/Parse.html?hex="+hex+"&srcs="+Arrays.toString(_keys)+">"+Arrays.toString(_keys)+"</a>"+
-                        ", missed "+Arrays.toString(_fails)+
-                        ", deleted prior keys "+Arrays.toString(_dels));
   }
 
 //  protected void serveHttp() {

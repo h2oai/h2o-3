@@ -2,6 +2,7 @@ package water.api;
 
 import java.util.Properties;
 import water.H2O;
+import water.schemas.TutorialsV1;
 
 /**
  * Summary page referencing all tutorials.
@@ -9,9 +10,8 @@ import water.H2O;
  * @author michal
  */
 public class Tutorials extends Handler {
-  Tutorials() { super(1,Integer.MAX_VALUE); }
-  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, RequestType type) {
-    return new Response("<div class='container'><div class='hero-unit' style='overflow: hidden'>"
+  final String result = 
+      "<div class='container'><div class='hero-unit' style='overflow: hidden'>"
     + "<style scoped='scoped'>"
     + "  h2 { font-size:18px; }"
     + "  p { font-size:16px; }"
@@ -47,6 +47,10 @@ public class Tutorials extends Handler {
     + "</div>"
     
     + "</div>"
-    + "</div>");
-  }
+    + "</div>";
+
+  @Override protected void exec2() { /*do nothing*/ }
+
+  // Tutorial Schemas are still at V1, unchanged for V2
+  @Override protected TutorialV1 schema(int version) { return new TutorialV1(); }
 }

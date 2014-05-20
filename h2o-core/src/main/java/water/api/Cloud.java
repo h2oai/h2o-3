@@ -9,7 +9,6 @@ import water.schemas.CloudV1;
 import water.schemas.Schema;
 
 public class Cloud<Cloud,Schema> extends Handler<Cloud,Schema> {
-  Cloud() { super(1,Integer.MAX_VALUE); }
 
   public String _version, _cloud_name;
   public int _cloud_size;
@@ -17,7 +16,7 @@ public class Cloud<Cloud,Schema> extends Handler<Cloud,Schema> {
   public boolean _cloud_healthy, _consensus, _locked;
   public H2ONode[] _members;
 
-  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, RequestType type) {
+  @Override protected void exec2() {
     //_version = H2O.ABV.projectVersion();
     //_cloud_name = H2O.ARGS.name;
     //_uptime_ms = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
@@ -31,6 +30,7 @@ public class Cloud<Cloud,Schema> extends Handler<Cloud,Schema> {
     throw H2O.unimpl();
   }
 
+  // Cloud Schemas are still at V1, unchanged for V2
   @Override protected CloudV1 schema(int version) { return new CloudV1(); }
 }
 
