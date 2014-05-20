@@ -1,8 +1,9 @@
 package water.schemas;
 
+import java.util.Properties;
 import water.Iced;
 import water.H2O;
-import water.H2O.H2OCountedCompleter;
+import water.api.Handler;
 
 /** Base Schema Class
  *  
@@ -11,24 +12,29 @@ import water.H2O.H2OCountedCompleter;
  *  and from URLs and JSON.  The base Adapter logic is here, and will by
  *  default copy same-named fields to and from Schemas to concrete Iced objects.
  */
-public abstract class Schema<I extends H2OCountedCompleter,S extends Schema<I,S>> extends Iced {
+public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> extends Iced {
+  private final transient int _version;
+  protected final int getVersion() { return _version; }
+  protected Schema() {
+    // Check version number
+    String n = this.getClass().getSimpleName();
+    assert n.charAt(n.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
+    _version = n.charAt(n.length()-1)-'0';
+    assert 0 <= _version && _version <= 9 : "Schema classname does not contain version";
+  }
 
-  public final int getVersion() {
+  // Version&Schema-specific filling into the handler
+  abstract public S fillInto( H h );
+
+  // Version&Schema-specific filling from the handler
+  abstract public S fillFrom( H h );
+
+  // Fill self from parms.  Limited to dumb primitive parsing and simple
+  // reflective field filling.  Ignores fields not in the Schema.  Throws IAE
+  // if the primitive parameter cannot be parsed as the primitive field type.
+  public S fillFrom( Properties parms ) {
     throw H2O.unimpl();
   }
 
-  public static <I1 extends H2OCountedCompleter, S1 extends Schema<I1,S1>> S1 makeSchema(I1 ice) {
-    //S1 golden = registry1.get(ice.getClass());
-    //S1 foo = golden.clone();
-    // foo.override_locally()
-    //return foo.fill(ice);
-    throw H2O.unimpl();
-  }
-
-  public I makeIced(S schema) {
-    //I golden = registry2.get(S.getClass());
-    //return schema.fillInto(golden.clone());
-    throw H2O.unimpl();
-  }
 
 }

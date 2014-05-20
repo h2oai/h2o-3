@@ -7,9 +7,9 @@ package water.api;
 import java.io.File;
 import java.util.*;
 import water.util.FileIntegrityChecker;
+import water.H2O;
 
-public class ImportFiles extends Request {
-  @Override public water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
+public class ImportFiles extends Handler {
 
   // Input (set by checkArguments)
   String _path;
@@ -22,30 +22,31 @@ public class ImportFiles extends Request {
   // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
   // (auto-gen moves parms into local fields & complains on errors) or 
   // it needs to move into an explicit Schema somehow.
-  @Override public Response checkArguments(Properties parms) {
-    _path = null;
-    for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
-      String prop = e.nextElement();
-      if( prop.equals("path") ) {
-        _path = parms.getProperty("path");
-      } else {
-        return throwIAE("unknown parameter: "+prop);
-      }
-    }
-    return _path == null ? throwIAE("Missing 'path'") : null;
-  }
+  //@Override public Response checkArguments(Properties parms) {
+  //  _path = null;
+  //  for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
+  //    String prop = e.nextElement();
+  //    if( prop.equals("path") ) {
+  //      _path = parms.getProperty("path");
+  //    } else {
+  //      return throwIAE("unknown parameter: "+prop);
+  //    }
+  //  }
+  //  return _path == null ? throwIAE("Missing 'path'") : null;
+  //}
 
-  @Override public Response serve() {
+  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, RequestType type) {
     assert _path != null;       // Do not get here unless checkArguments found a path
     String p2 = _path.toLowerCase();
-    if( false ) return null;
+    //if( false ) return null;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
     //else if( p2.startsWith("maprfs:/"  ) ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    else return serveLocalDisk();
+    //else return serveLocalDisk();
+    throw H2O.unimpl();
   }
 
 //  protected void serveHdfs() throws IOException{

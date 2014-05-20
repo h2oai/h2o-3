@@ -5,7 +5,6 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import jsr166y.*;
-import water.api.Request;
 import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
@@ -442,9 +441,9 @@ final public class H2O {
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerRequest( Request req, String name, String menu ) {
+  static public void registerRequest( Class<? extends water.api.Handler> clazz, String name, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    Request.addToNavbar(RequestServer.registerRequest(req),name,menu);
+    RequestServer.addToNavbar(RequestServer.registerRequest(clazz),name,menu);
   }
   
   static public void finalizeRequest() {
