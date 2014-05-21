@@ -548,7 +548,7 @@ public class ParseDataset2 extends Job<Frame> {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Enum [] _enums;
-    protected final byte [] _ctypes;
+    protected final transient byte [] _ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;

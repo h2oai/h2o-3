@@ -279,7 +279,7 @@ public final class AutoBuffer {
     assert !failed || expect_tcp; // If we failed TCP, we expect TCP
     try {
       if( _chan == null ) {     // No channel?
-        if( _read ) return bbFree();
+        if( _read ) return 0;
         // For small-packet write, send via UDP.  Since nothing is sent until
         // now, this close() call trivially orders - since the reader will not
         // even start (much less close()) until this packet is sent.
@@ -289,39 +289,47 @@ public final class AutoBuffer {
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
       if( tcp ) {               // TCP connection?
-        if( failed ) {          // Failed TCP?
-          try { _chan.close(); } catch( IOException ignore ) {} // Silently close
-          if( !_read ) _h2o.freeTCPSocket(null); // Tell H2ONode socket is no longer available
-        } else {                // Closing good TCP?
+        SocketChannel sock = (SocketChannel)_chan;
+        try {
+          if( failed ) throw new IOException("failed before tcp close");
           if( _read ) {         // Reader?
             int x = get1U();    // Read 1 more byte
             assert x == 0xab : "AB.close instead of 0xab sentinel got "+x+", "+this;
             // Write the reader-handshake-byte.
-            ((SocketChannel)_chan).socket().getOutputStream().write(0xcd);
+            sock.socket().getOutputStream().write(0xcd);
             // do not close actually reader socket; recycle it in TCPReader thread
           } else {              // Writer?
             put1(0xab);         // Write one-more byte
             sendPartial();      // Finish partial writes
+            sock = (SocketChannel)_chan; // Reload, in-case _chan was null and is not set
             // Read the writer-handshake-byte.
-            SocketChannel sock = (SocketChannel)_chan;
             int x = sock.socket().getInputStream().read();
             // either TCP con was dropped or other side closed connection without reading/confirming (e.g. task was cancelled).
-            if(x == -1)throw new TCPIsUnreliableException(new IOException("Other side closed connection unexpectedly."));
+            if( x == -1 ) new IOException("Other side closed connection unexpectedly.");
             assert x == 0xcd : "Handshake; writer expected a 0xcd from reader but got "+x;
-            _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
           }
+        } catch( IOException ioe ) {
+          try { _chan.close(); } catch( IOException ignore ) {} // Silently close
+          sock = null;
+          throw ioe;            // Rethrow after close
+        } finally {
+          if( !_read ) _h2o.freeTCPSocket(sock); // Recycle writeable TCP channel
+          restorePriority();        // And if we raised priority, lower it back
         }
-        restorePriority();      // And if we raised priority, lower it back
-      } else {                  // FileChannel
+
+      } else {                      // FileChannel
         if( !_read ) sendPartial(); // Finish partial file-system writes
         _chan.close();
       }
-      _time_close_ms = System.currentTimeMillis();
-      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+
     } catch( IOException e ) {  // Dunno how to handle so crash-n-burn
       throw new TCPIsUnreliableException(e);
+    } finally {
+      bbFree();
+      _time_close_ms = System.currentTimeMillis();
+      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
     }
-    return bbFree();
+    return 0;
   }
 
   // Need a sock for a big read or write operation.
@@ -339,6 +347,8 @@ public final class AutoBuffer {
   // (still sending ack ack back).
   void drainClose() {
     try {
+      try {              Log.info("drainClose channel to " + ((SocketChannel) _chan).socket().getInetAddress()); }
+      catch(Throwable t){Log.info("drainClose channel to unknown node");}
       _chan.close();
       restorePriority();        // And if we raised priority, lower it back
       bbFree();
@@ -405,7 +415,7 @@ public final class AutoBuffer {
     } else {                    // Else single-cast send
       water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
     }
-    return bbFree();
+    return 0;                   // Flow-coding
   }
 
   // Flip to write-mode
