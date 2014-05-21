@@ -22,8 +22,8 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   abstract protected void exec2();
   
   protected final Schema serve(int version, Properties parms) {
-    if( !(min_ver() <= version && version <= max_ver()) )
-      return new HTTP500V1();   // Wrong version; call it a 500
+    if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
+      return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
     // Make a version-specific Schema; primitive-parse the URL into the Schema,
     // fill the Handler from the versioned Schema.

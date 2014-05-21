@@ -8,13 +8,16 @@ import water.Paxos;
 import water.schemas.CloudV1;
 import water.schemas.Schema;
 
-public class Cloud<Cloud,Schema> extends Handler<Cloud,Schema> {
+public class Cloud extends Handler {
 
   public String _version, _cloud_name;
   public int _cloud_size;
   public long _uptime_ms;
   public boolean _cloud_healthy, _consensus, _locked;
   public H2ONode[] _members;
+
+  // Running all in exec2, no need for backgrounding on F/J threads
+  @Override public void compute2() { throw H2O.fail(); }
 
   @Override protected void exec2() {
     //_version = H2O.ABV.projectVersion();
@@ -30,6 +33,8 @@ public class Cloud<Cloud,Schema> extends Handler<Cloud,Schema> {
     throw H2O.unimpl();
   }
 
+  // Supported at V1 same as always
+  @Override protected int min_ver() { return 1; }
   // Cloud Schemas are still at V1, unchanged for V2
   @Override protected CloudV1 schema(int version) { return new CloudV1(); }
 }

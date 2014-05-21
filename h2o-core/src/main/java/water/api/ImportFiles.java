@@ -6,37 +6,23 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.util.*;
-import water.util.FileIntegrityChecker;
 import water.H2O;
+import water.schemas.ImportFilesV1;
+import water.util.FileIntegrityChecker;
 
-public class ImportFiles extends Handler {
+public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
 
-  // Input (set by checkArguments)
+  // Input
   String _path;
 
   // Outputs
   String _files[], _keys[], _fails[], _dels[];
 
-  // MAPPING from URI ==> POJO
-  // 
-  // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
-  // (auto-gen moves parms into local fields & complains on errors) or 
-  // it needs to move into an explicit Schema somehow.
-  //@Override public Response checkArguments(Properties parms) {
-  //  _path = null;
-  //  for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
-  //    String prop = e.nextElement();
-  //    if( prop.equals("path") ) {
-  //      _path = parms.getProperty("path");
-  //    } else {
-  //      return throwIAE("unknown parameter: "+prop);
-  //    }
-  //  }
-  //  return _path == null ? throwIAE("Missing 'path'") : null;
-  //}
+  // Running all in exec2, no need for backgrounding on F/J threads
+  @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected Response exec2() {
-    assert _path != null;       // Do not get here unless checkArguments found a path
+  @Override protected void exec2() {
+    assert _path != null;
     String p2 = _path.toLowerCase();
     if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
@@ -163,5 +149,7 @@ public class ImportFiles extends Handler {
 //  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
 //
+  // ImportFiles Schemas are still at V1, unchanged for V2
+  @Override protected ImportFilesV1 schema(int version) { return new ImportFilesV1(); }
 }
 

@@ -1,10 +1,10 @@
 package water.schemas;
 
-import water.api.Tutorial;
+import water.api.Tutorials;
 import water.H2O;
 import water.H2ONode;
 
-public class TutorialV1 extends Schema<Tutorial,TutorialV1> {
+public class TutorialsV1 extends Schema<Tutorials,TutorialsV1> {
 
   // Input fields
   private final Inputs _ins = new Inputs();
@@ -20,4 +20,15 @@ public class TutorialV1 extends Schema<Tutorial,TutorialV1> {
 
   //==========================
   // Customer adapters Go Here
+
+  // Version&Schema-specific filling into the handler
+  @Override public TutorialsV1 fillInto( Tutorials h ) {
+    throw H2O.unimpl();
+  }
+
+  // Version&Schema-specific filling from the handler
+  @Override public TutorialsV1 fillFrom( Tutorials h ) {
+    throw H2O.unimpl();
+  }
+
 }

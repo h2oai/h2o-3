@@ -29,9 +29,6 @@ public class RequestServer extends NanoHTTPD {
     _htmlTemplateFromFile = loadTemplate("/page.html");
     _htmlTemplate = "";
 
-    registerRequest(HTTP404.class);
-    registerRequest(HTTP500.class);
-
     // Data
     addToNavbar(registerRequest(ImportFiles.class),"Import Files", "Data");
     addToNavbar(registerRequest(Parse.class),      "Parse",        "Data");

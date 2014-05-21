@@ -1,10 +1,11 @@
 package water.schemas;
 
 import water.api.Cloud;
+import water.api.Handler;
 import water.H2O;
 import water.H2ONode;
 
-public class CloudV1 extends Schema<Cloud,CloudV1> {
+public class CloudV1 extends Schema {
 
   // Input fields
   private final Inputs _ins = new Inputs();
@@ -49,5 +50,15 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
 
   //==========================
   // Customer adapters Go Here
+
+  // Version&Schema-specific filling into the handler
+  @Override public CloudV1 fillInto( Handler h ) {
+    throw H2O.unimpl();
+  }
+
+  // Version&Schema-specific filling from the handler
+  @Override public CloudV1 fillFrom( Handler h ) {
+    throw H2O.unimpl();
+  }
 
 }
