@@ -3,7 +3,6 @@ package water.fvec;
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 import water.TestUtil;
-import water.fvec.Vec;
 
 /** This test tests stability of Vec API. */
 public class VecTest extends TestUtil {

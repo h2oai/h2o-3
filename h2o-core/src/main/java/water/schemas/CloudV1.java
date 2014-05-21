@@ -1,10 +1,11 @@
 package water.schemas;
 
 import water.api.Cloud;
+import water.api.Handler;
 import water.H2O;
 import water.H2ONode;
 
-public class CloudV1 extends Schema<Cloud,CloudV1> {
+public class CloudV1 extends Schema {
 
   // Input fields
   private final Inputs _ins = new Inputs();
@@ -48,31 +49,16 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
   }
 
   //==========================
-  // Customer adapters for V1 Go Here
+  // Customer adapters Go Here
 
-  // TODO: This is a custom adapter that should be handled automatically by the
-  // parent Schema class
-  public static CloudV1 makeSchema(Cloud C) {
-    CloudV1 cv1 = new CloudV1();
-    cv1._outs.version = C._version;
-    cv1._outs.cloud_name = C._cloud_name;
-    cv1._outs.cloud_size = C._cloud_size;
-    cv1._outs.cloud_uptime_millis = C._uptime_ms;
-    cv1._outs.cloud_healthy = C._cloud_healthy;
-    cv1._outs.consensus = C._consensus;
-    cv1._outs.locked = C._locked;
-    H2ONode[] members = C._members;
-    // Slice out the subset of H2ONode info into the nodes for display
-    cv1._outs.nodes = new Outputs.Node[members.length];
-    for( int i=0; i<members.length; i++ )
-      cv1._outs.nodes[i].sys_load = members[i]._heartbeat._system_load_average;
-    return cv1;
+  // Version&Schema-specific filling into the handler
+  @Override public CloudV1 fillInto( Handler h ) {
+    throw H2O.unimpl();
   }
 
-  // This is a custom adapter that fails, since you cannot import a Cloud
-  // status page, nor set the status merely by passing in a URL
-  public Cloud makeIced(CloudV1 schema) {
-    throw H2O.fail();
+  // Version&Schema-specific filling from the handler
+  @Override public CloudV1 fillFrom( Handler h ) {
+    throw H2O.unimpl();
   }
 
 }
