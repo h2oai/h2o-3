@@ -86,8 +86,9 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         k = PersistNFS.decodeFile(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());
+        new Frame(k).delete_and_lock(null); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
         NFSFileVec nfs = NFSFileVec.make(f, fs);
-        new Frame(k,new String[] { "0" }, new Vec[] { nfs }).delete_and_lock(null).unlock(null);
+        new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update(null).unlock(null);
       }
     }
     fs.blockForPending();

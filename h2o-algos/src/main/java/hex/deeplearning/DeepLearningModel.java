@@ -645,26 +645,27 @@ public class DeepLearningModel extends Model implements Comparable<DeepLearningM
       get_params().checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
       get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent
     }
-    get_params()._key = jobKey;
-    get_params()._dest = destKey;
-    get_params()._start_time = System.currentTimeMillis(); //for displaying the model progress
-    _actual_best_model_key = cp.get_params().best_model_key;
-    start_time = cp.start_time;
-    run_time = cp.run_time;
-    training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
-    _bestError = cp._bestError;
-
-    // deep clone scoring history
-    errors = cp.errors.clone();
-    for (int i=0; i<errors.length;++i)
-      errors[i] = cp.errors[i].deep_clone();
-
-    // set proper timing
-    _timeLastScoreEnter = System.currentTimeMillis();
-    _timeLastScoreStart = 0;
-    _timeLastScoreEnd = 0;
-    _timeLastPrintStart = 0;
-    assert(Arrays.equals(_key._kb, destKey._kb));
+    //get_params()._key = jobKey;
+    throw H2O.unimpl();
+    //get_params()._dest = destKey;
+    //get_params()._start_time = System.currentTimeMillis(); //for displaying the model progress
+    //_actual_best_model_key = cp.get_params().best_model_key;
+    //start_time = cp.start_time;
+    //run_time = cp.run_time;
+    //training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
+    //_bestError = cp._bestError;
+    //
+    //// deep clone scoring history
+    //errors = cp.errors.clone();
+    //for (int i=0; i<errors.length;++i)
+    //  errors[i] = cp.errors[i].deep_clone();
+    //
+    //// set proper timing
+    //_timeLastScoreEnter = System.currentTimeMillis();
+    //_timeLastScoreStart = 0;
+    //_timeLastScoreEnd = 0;
+    //_timeLastPrintStart = 0;
+    //assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearning params, final float[] priorDist) {

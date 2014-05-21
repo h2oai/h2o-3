@@ -22,6 +22,7 @@ public class Frame extends Lockable {
 
   public Frame( Vec... vecs ){ this(null,vecs);}
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
+  public Frame( Key key ) { this(key,null,new Vec[0]); }
   public Frame( Key key, String names[], Vec vecs[] ) { 
     super(key);
 
@@ -36,6 +37,8 @@ public class Frame extends Lockable {
     } 
     assert names.length == vecs.length;
 
+    // Make empty to dodge asserts, then "add()" them all which will check for
+    // compatible Vecs & names.
     _names = new String[0];
     _keys  = new Key   [0];
     _vecs  = new Vec   [0];
