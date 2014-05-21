@@ -150,13 +150,13 @@ public class DeepLearningProstateTest extends TestUtil {
                               mymodel.generateHTML("test", sb);
                             }
                             if (valid == null ) valid = frame;
-                            double threshold = 0;
+//                            double threshold = 0;
                             if (mymodel.isClassifier()) {
                               Frame pred = mymodel.score(valid);
                               StringBuilder sb = new StringBuilder();
 
                               AUC auc = new AUC();
-                              double error = 0;
+//                              double error = 0;
                               // binary
                               if (mymodel.nclasses()==2) {
                                 auc.actual = valid;
@@ -166,8 +166,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                 auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
                                 auc.execImpl();
                                 auc.toASCII(sb);
-                                threshold = auc.threshold();
-                                error = auc.err();
+//                                threshold = auc.threshold();
+                                double error = auc.err();
                                 Log.info(sb);
 
                                 // check that auc.cm() is the right CM
@@ -178,7 +178,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               }
 
                               // Compute CM
-                              double CMerrorOrig;
+//                              double CMerrorOrig;
                               {
                                 sb = new StringBuilder();
                                 ConfusionMatrix CM = new ConfusionMatrix();
@@ -191,7 +191,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                 sb.append("Threshold: " + "default\n");
                                 CM.toASCII(sb);
                                 Log.info(sb);
-                                CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
+//                                CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
                               }
 
                               // confirm that orig CM was made with threshold 0.5
@@ -270,9 +270,8 @@ public class DeepLearningProstateTest extends TestUtil {
                               // get the error reported by the stored best model
                               DeepLearningModel bestmodel = DKV.get(mymodel.get_params().best_model_key).get();
 //                              Log.info("Best model\n" + bestmodel.toString());
-                              final Frame fr = valid;
-                              Frame bestPredict = bestmodel.score(fr);
-                              double bestErr = bestmodel.calcError(fr, fr.vecs()[resp], bestPredict, bestPredict, validation ? "validation" : "training",
+                              Frame bestPredict = bestmodel.score(valid);
+                              double bestErr = bestmodel.calcError(valid, valid.vecs()[resp], bestPredict, bestPredict, validation ? "validation" : "training",
                                       true, bestmodel.get_params().max_confusion_matrix_size, new ConfusionMatrix(),
                                       bestmodel.nclasses() == 2 ? new AUC() : null, null); //presence of AUC object allows optimal threshold to be used for bestErr calculation
 
@@ -281,13 +280,8 @@ public class DeepLearningProstateTest extends TestUtil {
                               Log.info("Best_model's error : " + bestErr + ".");
                               Assert.assertEquals(bestmodel.model_info().get_processed_total(), best_samples); //check that the model was saved at the moment with the lowest error
 
-                              if (validation && (scorevalidation != 0 || csm != DeepLearning.ClassSamplingMethod.Uniform)) {
-                                //don't test since we didn't score on the original validation data
-                              }
-                              else if (!validation && (scoretraining != 0 || balance_classes)) {
-                                // don't check results since we cannot reproduce sampling and/or class rebalancing on training data
-                              }
-                              else {
+                              if ((!validation || (scorevalidation == 0 && csm == DeepLearning.ClassSamplingMethod.Uniform))
+                                      && (validation || (scoretraining == 0 && !balance_classes))) {
                                 Assert.assertEquals(bestErr, best_err, 1e-5);
                               }
 
