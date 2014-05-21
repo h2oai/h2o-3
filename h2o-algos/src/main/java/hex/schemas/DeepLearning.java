@@ -14,32 +14,20 @@ public class DeepLearning extends Handler {
   // Output
   private Key _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
 
-  // MAPPING from URI ==> POJO
-  // 
-  // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
-  // (auto-gen moves parms into local fields & complains on errors) or 
-  // it needs to move into an explicit Schema somehow.
-  //@Override public Response checkArguments(Properties parms) {
-  //  for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
-  //    String prop = e.nextElement();
-  //    if( false ) {
-  //    } else if( prop.equals("src") ) { 
-  //      _src = Key.make(parms.getProperty(prop));
-  //    } else {
-  //      return throwIAE("unknown parameter: "+prop);
-  //    }
-  //  }
-  //  if( _src == null ) return throwIAE("Missing 'hex'");
-  //  return null;                // Happy happy
-  //}
+  // Running all in exec2, no need for backgrounding on F/J threads
+  @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected Response serve(RequestServer server, String uri, String method, Properties parms, water.api.RequestType type) {
+  @Override protected void exec2() {
     hex.deeplearning.DeepLearning dl = new hex.deeplearning.DeepLearning(Key.make("DeepLearn_Model"));
     dl.source = DKV.get(_src).get();
     dl.classification = true;
     dl.response = dl.source.lastVec();
     dl.exec();
     DeepLearningModel dlm = DKV.get(dl.dest()).get();
-    return new Response("Deep Learning done: "+dl._key+", "+dlm.error());
+    //return new Response("Deep Learning done: "+dl._key+", "+dlm.error());
+    throw H2O.unimpl();
   }
+
+  // DL Schemas are at V2
+  @Override protected DeepLearningV2 schema(int version) { return new DeepLearningV2(); }
 }
