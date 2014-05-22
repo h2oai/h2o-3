@@ -122,9 +122,10 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
 
   // -----------
   // Atomically set a new version of self
-  public void update( Key job_key ) { 
+  public T update( Key job_key ) { 
     Log.debug("update write-locked "+_key+" by job "+job_key);
     new Update(job_key).invoke(_key); 
+    return (T)this;             // Flow-coding
   }
 
   // Freshen 'this' and leave locked

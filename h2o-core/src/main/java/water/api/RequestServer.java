@@ -1,211 +1,52 @@
 package water.api;
 
-//import hex.GridSearch.GridSearchProgress;
-//import hex.KMeans2;
-//import hex.KMeans2.KMeans2ModelView;
-//import hex.KMeans2.KMeans2Progress;
-//import hex.ReBalance;
-//import hex.drf.DRF;
-//import hex.gapstat.GapStatistic;
-//import hex.gapstat.GapStatisticModelView;
-//import hex.gbm.GBM;
-//import hex.glm.GLM2;
-//import hex.glm.GLMGridView;
-//import hex.glm.GLMModelView;
-//import hex.glm.GLMProgress;
-//import hex.nb.NBModelView;
-//import hex.nb.NBProgressPage;
-//import hex.gapstat.GapStatisticProgressPage;
-//import hex.nb.NaiveBayes;
-//import hex.pca.PCA;
-//import hex.pca.PCAModelView;
-//import hex.pca.PCAProgressPage;
-//import hex.pca.PCAScore;
-//import hex.singlenoderf.SpeeDRF;
-//import hex.singlenoderf.SpeeDRFModelView;
-//import hex.singlenoderf.SpeeDRFProgressPage;
-//import water.Boot;
-//import water.H2O;
-import water.NanoHTTPD;
-import water.util.Log;
-
 import java.io.*;
 import java.net.ServerSocket;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
+import water.H2O;
+import water.AutoBuffer;
+import water.NanoHTTPD;
+import water.nbhm.NonBlockingHashMap;
+import water.util.Log;
+import water.util.RString;
+import water.schemas.*;
 
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
-  public enum API_VERSION {
-    V_1(1, "/"),
-    V_2(2, "/2/"); // FIXME: better should be /v2/
-    final private int _version;
-    final String _prefix;
-    private API_VERSION(int version, String prefix) { _version = version; _prefix = prefix; }
-  }
+
+  private static final int LATEST_VERSION = 2;
+
   static RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
-  // cache of all loaded resources
-  private static final ConcurrentHashMap<String,byte[]> _cache = new ConcurrentHashMap();
-  protected static final HashMap<String,Request> _requests = new HashMap();
+  // Handlers ------------------------------------------------------------
+  protected static final NonBlockingHashMap<String,Class<? extends Handler>> _handlers = new NonBlockingHashMap<>();
 
-  static final Request _http404;
-  static final Request _http500;
+  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap();
+  private static ArrayList<String> _navbarOrdering = new ArrayList();
 
-  // initialization ------------------------------------------------------------
   static {
-    _http404 = registerRequest(new HTTP404());
-    _http500 = registerRequest(new HTTP500());
+    _htmlTemplateFromFile = loadTemplate("/page.html");
+    _htmlTemplate = "";
 
     // Data
-    Request.addToNavbar(registerRequest(new ImportFiles()),  "Import Files",           "Data");
-    //Request.addToNavbar(registerRequest(new Upload2()),       "Upload",                 "Data");
-    Request.addToNavbar(registerRequest(new Parse()),        "Parse",                  "Data");
-    //Request.addToNavbar(registerRequest(new Inspector()),     "Inspect",                "Data");
-    //Request.addToNavbar(registerRequest(new SummaryPage2()),  "Summary",                "Data");
-    //Request.addToNavbar(registerRequest(new QuantilesPage()), "Quantiles",              "Data");
-    //Request.addToNavbar(registerRequest(new StoreView()),     "View All",               "Data");
-    //Request.addToNavbar(registerRequest(new ExportFiles()),   "Export Files",           "Data");
-    //// Register Inspect2 just for viewing frames
-    //registerRequest(new Inspect2());
-    //
-    //// FVec models
-    //Request.addToNavbar(registerRequest(new PCA()),         "PCA",                      "Model");
-    //Request.addToNavbar(registerRequest(new GBM()),         "GBM",                      "Model");
-    //Request.addToNavbar(registerRequest(new DRF()),         "Distributed RF (Beta)",    "Model");
-    //Request.addToNavbar(registerRequest(new GLM2()),        "GLM (Beta)",               "Model");
-    //Request.addToNavbar(registerRequest(new KMeans2()),     "KMeans (Beta)",            "Model");
-    //Request.addToNavbar(registerRequest(new NaiveBayes()),  "Naive Bayes (Beta)",       "Model");
-    //
-    //// FVec scoring
-    //Request.addToNavbar(registerRequest(new Predict()),     "Predict",                  "Score");
-    //Request.addToNavbar(registerRequest(new ConfusionMatrix()), "Confusion Matrix",     "Score");
-    //Request.addToNavbar(registerRequest(new AUC()),         "AUC",                      "Score");
-    //Request.addToNavbar(registerRequest(new HitRatio()),    "HitRatio",                 "Score");
-    //Request.addToNavbar(registerRequest(new PCAScore()),    "PCAScore",                 "Score");
-    //Request.addToNavbar(registerRequest(new Steam()),    "Multi-model Scoring (Beta)", "Score");
-    //
-    // Admin
-    //Request.addToNavbar(registerRequest(new Jobs()),        "Jobs",                     "Admin");
-    //Request.addToNavbar(registerRequest(new Cloud()),       "Cluster Status",           "Admin");
-    //Request.addToNavbar(registerRequest(new IOStatus()),    "Cluster I/O",              "Admin");
-    //Request.addToNavbar(registerRequest(new Timeline()),    "Timeline",                 "Admin");
-    //Request.addToNavbar(registerRequest(new JStack()),      "Stack Dump",               "Admin");
-    //Request.addToNavbar(registerRequest(new JProfile()),    "Profile Dump",             "Admin");
-    //Request.addToNavbar(registerRequest(new Debug()),       "Debug Dump",               "Admin");
-    //Request.addToNavbar(registerRequest(new LogView()),     "Inspect Log",              "Admin");
-    //Request.addToNavbar(registerRequest(new Shutdown()),    "Shutdown",                 "Admin");
-    //
-    //// Help and Tutorials
-    //Request.addToNavbar(registerRequest(new Documentation()),       "H2O Documentation",      "Help");
-    Request.addToNavbar(registerRequest(new Tutorials()),           "Tutorials Home",         "Help");
-    //Request.addToNavbar(registerRequest(new TutorialGBM()),         "GBM Tutorial",           "Help");
-    //Request.addToNavbar(registerRequest(new TutorialDeepLearning()),"Deep Learning Tutorial", "Help");
-    //Request.addToNavbar(registerRequest(new TutorialRFIris()),      "Random Forest Tutorial", "Help");
-    //Request.addToNavbar(registerRequest(new TutorialGLMProstate()), "GLM Tutorial",           "Help");
-    //Request.addToNavbar(registerRequest(new TutorialKMeans()),      "KMeans Tutorial",        "Help");
-    //Request.addToNavbar(registerRequest(new AboutH2O()),            "About H2O",              "Help");
+    addToNavbar(registerRequest(ImportFiles.class),"Import Files", "Data");
+    addToNavbar(registerRequest(Parse.class),      "Parse",        "Data");
 
-    //Request.addToNavbar(registerRequest(new hex.LR2()),        "Linear Regression2",   "Beta");
-    //Request.addToNavbar(registerRequest(new ReBalance()),      "ReBalance",            "Beta");
-    //Request.addToNavbar(registerRequest(new FrameSplitPage()), "Split frame",          "Beta");
-    //Request.addToNavbar(registerRequest(new Console()),        "R-Like Console",       "Beta");
-    //Request.addToNavbar(registerRequest(new GapStatistic()),   "Gap Statistic",        "Beta");
-    //Request.addToNavbar(registerRequest(new SpeeDRF()),        "SpeeDRF",              "Beta");
-    //Request.addToNavbar(registerRequest(new UnlockKeys()),     "Unlock Keys",          "Beta");
+    // Help and Tutorials
+    addToNavbar(registerRequest(Tutorials.class),  "Tutorials Home","Help");
 
-
-    // internal handlers
-    //registerRequest(new Get()); // Download
-    //registerRequest(new OneHot());
-    //registerRequest(new Cancel());
-    //registerRequest(new DRFModelView());
-    //registerRequest(new DRFProgressPage());
-    //registerRequest(new DownloadDataset());
-    //registerRequest(new Exec2());
-    //registerRequest(new ExportS3Progress());
-    //registerRequest(new GBMModelView());
-    //registerRequest(new GBMProgressPage());
-    //registerRequest(new GLMGridProgress());
-    //registerRequest(new GLMProgressPage());
-    //registerRequest(new GridSearchProgress());
-    //registerRequest(new LogView.LogDownload());
-    //registerRequest(new NeuralNetModelView());
-    //registerRequest(new NeuralNetProgressPage());
-    //registerRequest(new DeepLearningModelView());
-    //registerRequest(new DeepLearningProgressPage());
-    //registerRequest(new KMeans2Progress());
-    //registerRequest(new KMeans2ModelView());
-    //registerRequest(new NBProgressPage());
-    //registerRequest(new GapStatisticProgressPage());
-    //registerRequest(new NBModelView());
-    //registerRequest(new GapStatisticModelView());
-    //registerRequest(new PCAProgressPage());
-    //registerRequest(new PCAModelView());
-    //registerRequest(new PostFile());
-    //registerRequest(new water.api.Upload2.PostFile());
-    //registerRequest(new Progress());
-    //registerRequest(new Progress2());
-    //registerRequest(new PutValue());
-    //registerRequest(new RFTreeView());
-    //registerRequest(new RFView());
-    //registerRequest(new RReaderProgress());
-    //registerRequest(new Remove());
-    //registerRequest(new RemoveAll());
-    //registerRequest(new RemoveAck());
-    //registerRequest(new SetColumnNames());
-    //registerRequest(new SpeeDRFModelView());
-    //registerRequest(new SpeeDRFProgressPage());
-    //registerRequest(new water.api.SetColumnNames2());     // Set colnames for FluidVec objects
-    //registerRequest(new LogAndEcho());
-    //registerRequest(new ToEnum());
-    //registerRequest(new ToEnum2());
-    //registerRequest(new ToInt2());
-    //registerRequest(new GLMProgress());
-    //registerRequest(new hex.glm.GLMGridProgress());
-    //registerRequest(new water.api.Levels2());    // Temporary hack to get factor levels efficiently
-    //registerRequest(new water.api.Levels());    // Ditto the above for ValueArray objects
-    //// Typeahead
-    //registerRequest(new TypeaheadModelKeyRequest());
-    //registerRequest(new TypeaheadGLMModelKeyRequest());
-    //registerRequest(new TypeaheadRFModelKeyRequest());
-    //registerRequest(new TypeaheadKMeansModelKeyRequest());
-    //registerRequest(new TypeaheadPCAModelKeyRequest());
-    //registerRequest(new TypeaheadHexKeyRequest());
-    //registerRequest(new TypeaheadFileRequest());
-    //registerRequest(new TypeaheadHdfsPathRequest());
-    //registerRequest(new TypeaheadKeysRequest("Existing H2O Key", "", null));
-    //registerRequest(new TypeaheadS3BucketRequest());
-    //// testing hooks
-    //registerRequest(new TestPoll());
-    //registerRequest(new TestRedirect());
-    //registerRequest(new GLMModelView());
-    //registerRequest(new GLMGridView());
-    //registerRequest(new LaunchJar());
-    //
-    //// Pure APIs, no HTML, to support The New World
-    //registerRequest(new Models());
-    //registerRequest(new Frames());
-    //registerRequest(new ModelMetrics());
-
-    Request.initializeNavBar();
+    initializeNavBar();
   }
 
   /** Registers the request with the request server.  */
-  public static Request registerRequest(Request req) {
-    assert req.supportedVersions().length > 0;
-    for( API_VERSION ver : req.supportedVersions() ) {
-      String href = req.href(ver);
-      assert !_requests.containsKey(href) : "Request with href "+href+" already registered";
-      _requests.put(href,req);
-    }
-    return req;
+  public static String registerRequest(Class<? extends Handler> hclass) { 
+    String href = hclass.getSimpleName();
+    assert !_handlers.containsKey(href) : "Handler with class "+href+" already registered";
+    _handlers.put(href,hclass);
+    return href;
   }
+
 
   // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
   // seperate thread (I'm guessing here) so the startup process does not hang
@@ -227,42 +68,17 @@ public class RequestServer extends NanoHTTPD {
       }, "Request Server launcher").start();
   }
 
-  private static String maybeTransformRequest (String uri) {
-    if (uri.isEmpty() || uri.equals("/"))
-      return "/Tutorials.html";
-
-    Pattern p = Pattern.compile("/R/bin/([^/]+)/contrib/([^/]+)(.*)");
-    Matcher m = p.matcher(uri);
-    boolean b = m.matches();
-    if (b) {
-      // On Jenkins, this command sticks his own R version's number
-      // into the package that gets built.
-      //
-      //     R CMD INSTALL -l $(TMP_BUILD_DIR) --build h2o-package
-      //
-      String versionOfRThatJenkinsUsed = "3.0";
-
-      String platform = m.group(1);
-      //String version = m.group(2);
-      String therest = m.group(3);
-      return "/R/bin/" + platform + "/contrib/" + versionOfRThatJenkinsUsed + therest;
-    }
-
-    return uri;
-  }
-
   // Log all requests except the overly common ones
   void maybeLogRequest (String uri, String method, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
     if (uri.endsWith(".ico")) return;
-    if (uri.startsWith("/Typeahead")) return;
-    if (uri.startsWith("/2/Typeahead")) return;
-    if (uri.startsWith("/Cloud.json")) return;
-    if (uri.endsWith("LogAndEcho.json")) return;
+    if (uri.startsWith("Typeahead")) return;
+    if (uri.startsWith("Cloud.json")) return;
+    if (uri.startsWith("LogAndEcho.json")) return;
+    if (uri.startsWith("Jobs.json")) return;
     if (uri.contains("Progress")) return;
-    if (uri.startsWith("/Jobs.json")) return;
 
     String log = String.format("%-4s %s", method, uri);
     for( Object arg : parms.keySet() ) {
@@ -273,35 +89,120 @@ public class RequestServer extends NanoHTTPD {
     Log.info(log);
   }
 
+  // Parse version number.  Java has no ref types, bleah, so return the version
+  // number and the "parse pointer" by shift-by-16 compaction.
+  // /1/xxx     --> version 1
+  // /2/xxx     --> version 2
+  // /v1/xx     --> version 1
+  // /v2/xx     --> version 2
+  // /latest/xx --> LATEST_VERSION
+  // /xx        --> LATEST_VERSION
+  private int parseVersion( String uri ) {
+    if( uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
+      return (0<<16)|LATEST_VERSION;
+    if( uri.startsWith("/latest") )
+      return (("/latest".length())<<16)|LATEST_VERSION;
+    int idx=1;                  // Skip the leading slash
+    int version=0;
+    char c = uri.charAt(idx);   // Allow both /### and /v###
+    if( c=='v' ) c = uri.charAt(++idx);
+    while( idx < uri.length() && '0' <= c && c <= '9' ) { 
+      version = version*10+(c-'0'); 
+      c = uri.charAt(++idx); 
+    }
+    if( idx > 10 || version > LATEST_VERSION || version < 1 || uri.charAt(idx) != '/' )
+      return (0<<16)|LATEST_VERSION; // Failed number parse or baloney version
+    // Happy happy version
+    return (idx<<16)|version;
+  }
+
+
   // Top-level dispatch based the URI.  Break down URI into parts;
-  // e.g. /2/Tutorials.html breaks down into requestName "/2/Tutorials" and
-  // requestType ".html".
-  @Override public NanoHTTPD.Response serve( String uri, String method, Properties header, Properties parms ) {
+  // e.g. /2/GBM.html breaks down into:
+  //   requestType:  ".html"
+  //   version:      2
+  //   requestName:  "GBM"
+  @Override public Response serve( String uri, String method, Properties header, Properties parms ) {
     // Jack priority for user-visible requests
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-    // update arguments and determine control variables
-    uri = maybeTransformRequest(uri);
-    // determine the request type
-    RequestType type = RequestType.requestType(uri);
-    String requestName = type.requestName(uri);
+
+    // The Default URI Handling
+    if (uri.isEmpty() || uri.equals("/"))
+      uri = "/Tutorials.html";
     maybeLogRequest(uri, method, parms);
 
+    // determine the request type
+    RequestType type = RequestType.requestType(uri);
+    String uri_base = type.requestName(uri); // Strip suffix type
+    
+    // determine version
+    int version = parseVersion(uri_base);
+    int idx = version>>16;
+    version &= 0xFFFF;
+
+    // determine handler name
+    String requestName = uri_base.substring(idx);
+    String remaining = "";
+    if( uri_base.charAt(idx) == '/' ) { // If not a leading slash, then I am confused
+      requestName = uri_base.substring(1);
+      int idx2 = requestName.indexOf('/');
+      if( idx2 != -1 ) {
+        remaining   = requestName.substring(idx2);
+        requestName = requestName.substring(0,idx2);
+      }
+    }
+
+    // Load resources, or dispatch on handled requests
     try {
       // determine if we have known resource
-      Request request = _requests.get(requestName);
+      Class<? extends Handler> clazz = _handlers.get(requestName);
       // if the request is not know, treat as resource request, or 404 if not found
-      return request == null ? getResource(uri) : ((Request)request.clone()).serve(this,parms,type);
+      if( clazz == null ) return getResource(uri);
+      return wrap(handle(clazz.newInstance(),version,parms,type),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      parms.setProperty("error",e.getClass().getSimpleName()+": "+e.getMessage());
-      parms.setProperty("stackTrace",Arrays.toString(e.getStackTrace()));
-      return _http500.serve(this,parms,type);
+      return wrap(new HTTP500V1(e),type);
     }
   }
 
+  // Handling ------------------------------------------------------------------
+  private Schema handle( Handler h, int version, Properties parms, RequestType type ) {
+    Schema S;
+    switch( type ) {
+    case html: // These request-types only dictate the response-type; 
+    case java: // the normal action is always done.
+    case json:
+    case xml:
+      return h.serve(version,parms);
+    case query:
+    case help:
+    default:
+      throw H2O.unimpl();
+    }
+  }
+
+  private Response wrap( Schema S, RequestType type ) {
+    // Convert Schema to desired output flavor
+    switch( type ) {
+    case json:
+      return new Response(HTTP_OK, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
+    case xml:
+      //return new Response(HTTP_OK, MIME_XML, new String(S.writeXML(new AutoBuffer()).buf()));
+    case html:
+      //return new Response(HTTP_OK, MIME_HTML, new String(S.writeHTML(new AutoBuffer()).buf()));
+    case java:
+      throw H2O.unimpl();
+    default:
+      throw H2O.fail();
+    }
+  }
+
+
   // Resource loading ----------------------------------------------------------
+  // cache of all loaded resources
+  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap();
   // Returns the response containing the given uri with the appropriate mime type.
-  private NanoHTTPD.Response getResource(String uri) {
+  private Response getResource(String uri) {
     byte[] bytes = _cache.get(uri);
     if( bytes == null ) {
       // Try-with-resource
@@ -316,20 +217,86 @@ public class RequestServer extends NanoHTTPD {
           }
         } catch( IOException ignore ) { }
     }
-    if( bytes == null || bytes.length == 0 ) {
-      // make sure that no Exception is ever thrown out from the request
-      Properties parms = new Properties();
-      parms.setProperty("error",uri);
-      return _http500.serve(this,parms,RequestType.html);
-    }
-    String mime = NanoHTTPD.MIME_DEFAULT_BINARY;
+    if( bytes == null || bytes.length == 0 ) // No resource found?
+      return wrap(new HTTP404V1(uri),RequestType.html);
+    String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";
     else if( uri.endsWith(".html") )
       mime = "text/html";
-    NanoHTTPD.Response res = new NanoHTTPD.Response(NanoHTTPD.HTTP_OK,mime,new ByteArrayInputStream(bytes));
+    Response res = new Response(HTTP_OK,mime,new ByteArrayInputStream(bytes));
     res.addHeader("Content-Length", Long.toString(bytes.length));
     return res;
+  }
+
+  // html template and navbar handling -----------------------------------------
+  private static final String _htmlTemplateFromFile;
+  private static volatile String _htmlTemplate;
+
+  protected String htmlTemplate() { return _htmlTemplate; }
+
+  private static String loadTemplate(String name) {
+    // Try-with-resource
+    try (InputStream resource = water.init.JarHash.getResource2(name)) {
+        return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
+      }
+    catch( IOException ioe ) { Log.err(ioe); return null; }
+  }
+
+  private static class MenuItem {
+    private final String _handler;
+    private final String _name;
+
+    private MenuItem(String handler, String name) {
+      _handler = handler;
+      _name = name;
+    }
+
+    private void toHTML(StringBuilder sb) {
+      sb.append("<li><a href='").append(_handler).append(".html'>").append(_name).append("</a></li>");
+    }
+  }
+
+  /**
+   * Call this after the last call addToNavbar().
+   * This is called automatically for navbar entries from inside H2O.
+   * If user app level code calls addToNavbar, then call this again to make those changes visible.
+   */
+  static void initializeNavBar() { _htmlTemplate = initializeNavBar(_htmlTemplateFromFile); }
+
+  private static String initializeNavBar(String template) {
+    StringBuilder sb = new StringBuilder();
+    for( String s : _navbarOrdering ) {
+      ArrayList<MenuItem> arl = _navbar.get(s);
+      if( (arl.size() == 1) && arl.get(0)._name.equals(s) ) {
+        arl.get(0).toHTML(sb);
+      } else {
+        sb.append("<li class='dropdown'>");
+        sb.append("<a href='#' class='dropdown-toggle' data-toggle='dropdown'>");
+        sb.append(s);
+        sb.append("<b class='caret'></b>");
+        sb.append("</a>");
+        sb.append("<ul class='dropdown-menu'>");
+        for( MenuItem i : arl )
+          i.toHTML(sb);
+        sb.append("</ul></li>");
+      }
+    }
+    RString str = new RString(template);
+    str.replace("NAVBAR", sb.toString());
+    str.replace("CONTENTS", "%CONTENTS");
+    return str.toString();
+  }
+
+  public static String addToNavbar(String r, String name, String category) {
+    ArrayList<MenuItem> arl = _navbar.get(category);
+    if( arl == null ) {
+      arl = new ArrayList();
+      _navbar.put(category, arl);
+      _navbarOrdering.add(category);
+    }
+    arl.add(new MenuItem(r, name));
+    return r;
   }
 
 }

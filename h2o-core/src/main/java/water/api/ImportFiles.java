@@ -6,46 +6,33 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.util.*;
+import water.H2O;
+import water.schemas.ImportFilesV1;
 import water.util.FileIntegrityChecker;
 
-public class ImportFiles extends Request {
-  @Override public water.api.RequestServer.API_VERSION[] supportedVersions() { return SUPPORTS_V1_V2; }
+public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
 
-  // Input (set by checkArguments)
+  // Input
   String _path;
 
   // Outputs
   String _files[], _keys[], _fails[], _dels[];
 
-  // MAPPING from URI ==> POJO
-  // 
-  // THIS IS THE WRONG ARCHITECTURE....  either this call should be auto-gened
-  // (auto-gen moves parms into local fields & complains on errors) or 
-  // it needs to move into an explicit Schema somehow.
-  @Override public Response checkArguments(Properties parms) {
-    _path = null;
-    for( Enumeration<String> e = (Enumeration<String>)parms.propertyNames(); e.hasMoreElements(); ) {
-      String prop = e.nextElement();
-      if( prop.equals("path") ) {
-        _path = parms.getProperty("path");
-      } else {
-        return throwIAE("unknown parameter: "+prop);
-      }
-    }
-    return _path == null ? throwIAE("Missing 'path'") : null;
-  }
+  // Running all in exec2, no need for backgrounding on F/J threads
+  @Override public void compute2() { throw H2O.fail(); }
 
-  @Override public Response serve() {
-    assert _path != null;       // Do not get here unless checkArguments found a path
+  @Override protected void exec2() {
+    assert _path != null;
     String p2 = _path.toLowerCase();
-    if( false ) return null;
+    if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
     //else if( p2.startsWith("maprfs:/"  ) ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    else return serveLocalDisk();
+    else serveLocalDisk();
+    throw H2O.unimpl();
   }
 
 //  protected void serveHdfs() throws IOException{
@@ -93,7 +80,7 @@ public class ImportFiles extends Request {
 //    fails = fail.toArray(new String[fail.size()]);
 //  }
 
-  private Response serveLocalDisk() {
+  private void serveLocalDisk() {
     File f = new File(_path);
     if( !f.exists() ) throw new IllegalArgumentException("File " + _path + " does not exist!");
     ArrayList<String> afiles = new ArrayList();
@@ -105,12 +92,6 @@ public class ImportFiles extends Request {
     _keys  = akeys .toArray(new String[0]);
     _fails = afails.toArray(new String[0]);
     _dels  = adels .toArray(new String[0]);
-    String hex = _keys[0];
-    hex = hex.replace(".csv",".hex");
-    return new Response("Imported: "+Arrays.toString(_files)+
-                        " into <a href=/2/Parse.html?hex="+hex+"&srcs="+Arrays.toString(_keys)+">"+Arrays.toString(_keys)+"</a>"+
-                        ", missed "+Arrays.toString(_fails)+
-                        ", deleted prior keys "+Arrays.toString(_dels));
   }
 
 //  protected void serveHttp() {
@@ -168,5 +149,7 @@ public class ImportFiles extends Request {
 //  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
 //
+  // ImportFiles Schemas are still at V1, unchanged for V2
+  @Override protected ImportFilesV1 schema(int version) { return new ImportFilesV1(); }
 }
 
