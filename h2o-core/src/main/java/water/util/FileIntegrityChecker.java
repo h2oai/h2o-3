@@ -68,13 +68,6 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
                            ArrayList<String> fails,
                            ArrayList<String> dels) {
 
-    // Remove & report all Keys that match the root prefix
-    for( Key k : H2O.localKeySet() )
-      if( k.toString().startsWith(_root) ) {
-        dels.add(k.toString());
-        Lockable.delete(k);
-      }
-
     Futures fs = new Futures();
     Key k = null;
     // Find all Keys which match ...
@@ -86,6 +79,7 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         k = PersistNFS.decodeFile(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());
+        if( DKV.get(k) != null ) dels.add(k.toString());
         new Frame(k).delete_and_lock(null); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
         NFSFileVec nfs = NFSFileVec.make(f, fs);
         new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update(null).unlock(null);
