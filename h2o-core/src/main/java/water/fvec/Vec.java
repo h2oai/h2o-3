@@ -401,7 +401,6 @@ public class Vec extends Keyed {
   /** Fetch the missing-status the slow way. */
   public final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
 
-
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
    *  if the long does not fit in a double (value is larger magnitude than
@@ -409,19 +408,96 @@ public class Vec extends Keyed {
    *  common compatible data representation.
    *
    *  */
-  public final long   set( long i, long   l) {return chunkForRow(i).set(i,l);}
+  public final long   set( long i, long   l) {
+    Chunk ck = chunkForRow(i);
+    long ret = ck.set(i,l);
+    Futures fs = new Futures();
+    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    fs.blockForPending();
+    _cache = null;
+    return ret;
+  }
 
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element.
    *  */
-  public final double set( long i, double d) {return chunkForRow(i).set(i,d);}
+  public final double set( long i, double d) {
+    Chunk ck = chunkForRow(i);
+    double ret = ck.set(i,d);
+    Futures fs = new Futures();
+    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    fs.blockForPending();
+    _cache = null;
+    return ret;
+  }
+
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element.
    *  */
-  public final float  set( long i, float  f) {return chunkForRow(i).set(i,f);}
+  public final float  set( long i, float  f) {
+    Chunk ck = chunkForRow(i);
+    float ret = ck.set(i, f);
+    Futures fs = new Futures();
+    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    fs.blockForPending();
+    _cache = null;
+    return ret;
+  }
 
   /** Set the element as missing the slow way.  */
-  final boolean setNA( long i ) { return chunkForRow(i).setNA(i);}
+  final boolean setNA( long i ) {
+    Chunk ck = chunkForRow(i);
+    boolean ret = ck.setNA(i);
+    Futures fs = new Futures();
+    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    fs.blockForPending();
+    _cache = null;
+    return ret;
+  }
+
+  /**
+   * More efficient way to write randomly to a Vec - still slow, but much faster than Vec.set()
+   *
+   * Usage:
+   * Vec.Writer vw = vec.open();
+   * vw.set(0, 3.32);
+   * vw.set(1, 4.32);
+   * vw.set(2, 5.32);
+   * vw.close();
+   */
+  public final static class Writer {
+    Vec _vec;
+    private Writer(Vec v){
+      _vec=v;
+      _vec.preWriting();
+    }
+    public final long   set( long i, long   l) { return _vec.chunkForRow(i).set(i,l); }
+    public final double set( long i, double d) { return _vec.chunkForRow(i).set(i,d); }
+    public final float  set( long i, float  f) { return _vec.chunkForRow(i).set(i,f); }
+    public final boolean setNA( long i ) { return _vec.chunkForRow(i).setNA(i); }
+    public void close() {
+      Futures fs = new Futures();
+      _vec.close(fs);
+      _vec.postWrite(fs);
+      fs.blockForPending();
+    }
+  }
+
+  public final Writer open() {
+    return new Writer(this);
+  }
+
+  /** Close all chunks that are local (not just the ones that are homed)
+   * This should only be called from a Writer object
+   * */
+  private final void close(Futures fs) {
+    int nc = nChunks();
+    for( int i=0; i<nc; i++ ) {
+      if (H2O.get(chunkKey(i)) != null) {
+        chunkForChunkIdx(i).close(i, fs);
+      }
+    }
+  }
 
   /** Pretty print the Vec: [#elems, min/mean/max]{chunks,...} */
   @Override public String toString() {
