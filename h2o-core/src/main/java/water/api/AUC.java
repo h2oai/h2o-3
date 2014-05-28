@@ -692,7 +692,8 @@ public class AUC extends Iced {
         _cms[i] = new ConfusionMatrix2(2);
       final int len = Math.min(ca._len, cp._len);
       for( int i=0; i < len; i++ ) {
-        assert(!ca.isNA0(i)); //should never have actual NaN probability!
+        if (ca.isNA0(i))
+          throw new UnsupportedOperationException("Actual class label cannot be a missing value!");
         final int a = (int)ca.at80(i); //would be a 0 if double was NaN
         assert (a == 0 || a == 1) : "Invalid vactual: must be binary (0 or 1).";
         if (cp.isNA0(i)) {
