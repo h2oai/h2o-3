@@ -261,7 +261,7 @@ public class Vec extends Keyed {
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
-  public void postWrite( Futures fs ) {
+  public Futures postWrite( Futures fs ) {
     // Get the latest rollups *directly* (do not compute them!).
     final Key rskey = rollupStatsKey();
     Value val = DKV.get(rollupStatsKey());
@@ -270,6 +270,7 @@ public class Vec extends Keyed {
       if( rs.isMutating() )  // Vector was mutating, is now allowed for rollups
         DKV.remove(rskey,fs);// Removing will cause them to be rebuilt, on demand
     }
+    return fs;                  // Flow-coding
   }
 
 
@@ -460,7 +461,8 @@ public class Vec extends Keyed {
   }
 
   /**
-   * More efficient way to write randomly to a Vec - still slow, but much faster than Vec.set()
+   * More efficient way to write randomly to a Vec - still slow, but much
+   * faster than Vec.set().  Limited to single-threaded single-machine writes.
    *
    * Usage:
    * Vec.Writer vw = vec.open();
@@ -469,38 +471,28 @@ public class Vec extends Keyed {
    * vw.set(2, 5.32);
    * vw.close();
    */
-  public final static class Writer {
+  public final static class Writer implements java.io.Closeable {
     Vec _vec;
-    private Writer(Vec v){
-      _vec=v;
-      _vec.preWriting();
-    }
+    private Writer(Vec v) { (_vec=v).preWriting(); }
     public final long   set( long i, long   l) { return _vec.chunkForRow(i).set(i,l); }
     public final double set( long i, double d) { return _vec.chunkForRow(i).set(i,d); }
     public final float  set( long i, float  f) { return _vec.chunkForRow(i).set(i,f); }
-    public final boolean setNA( long i ) { return _vec.chunkForRow(i).setNA(i); }
-    public void close() {
-      Futures fs = new Futures();
-      _vec.close(fs);
-      _vec.postWrite(fs);
-      fs.blockForPending();
-    }
+    public final boolean setNA( long i       ) { return _vec.chunkForRow(i).setNA(i); }
+    public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
+    public void close() { close(new Futures()).blockForPending(); }
   }
 
-  public final Writer open() {
-    return new Writer(this);
-  }
+  /** Create a writer for bulk serial writes into this Vec */
+  public final Writer open() { return new Writer(this); }
 
   /** Close all chunks that are local (not just the ones that are homed)
-   * This should only be called from a Writer object
-   * */
-  private final void close(Futures fs) {
+   *  This should only be called from a Writer object */
+  private final Futures closeLocal(Futures fs) {
     int nc = nChunks();
-    for( int i=0; i<nc; i++ ) {
-      if (H2O.get(chunkKey(i)) != null) {
+    for( int i=0; i<nc; i++ )
+      if( H2O.containsKey(chunkKey(i)) )
         chunkForChunkIdx(i).close(i, fs);
-      }
-    }
+    return fs;                  // Flow-coding
   }
 
   /** Pretty print the Vec: [#elems, min/mean/max]{chunks,...} */

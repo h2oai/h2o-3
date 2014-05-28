@@ -135,14 +135,11 @@ public class NewVectorTest extends TestUtil {
       assertTrue("Found chunk class " + c4.getClass() + " but expected C1NChunk", c4 instanceof C1NChunk);
 
       // Now doing the same for multiple writes, close() only at the end for better speed
-      Vec.Writer vw = vec.open();
-      try {
+      try (Vec.Writer vw = vec.open()) {
         vw.set(1, 4);
         vw.set(2, 5);
         vw.set(3, 6);
         // Updates will be immediately visible on the writing node
-      } finally {
-        vw.close(); // Propagate changes to the DKV (visibility on other nodes)
       }
       // now, after vw.close(), numbers are consistent across the H2O cloud
       assertEquals(4, vec.at8(1));
