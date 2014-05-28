@@ -7,6 +7,7 @@ import water.util.DocGen;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 import static water.util.ModelUtils.getPredictions;
 
 import java.util.Arrays;
@@ -64,9 +65,10 @@ public class HitRatio extends Iced {
     try {
       va = vactual.toEnum(); // always returns TransfVec
       actual_domain = va.factors();
-
-      if (max_k > predict.numCols()-1)
-        throw new IllegalArgumentException("K cannot be larger than " + String.format("%,d", predict.numCols()-1));
+      if (max_k > predict.numCols()-1) {
+        Log.warn("Reducing Hitratio Top-K value to maximum value allowed: " + String.format("%,d", predict.numCols() - 1));
+        max_k = predict.numCols() - 1;
+      }
       final Frame actual_predict = new Frame(predict.names().clone(), predict.vecs().clone());
       actual_predict.replace(0, va); // place actual labels in first column
       hit_ratios = new HitRatioTask(max_k, seed).doAll(actual_predict).hit_ratios();
