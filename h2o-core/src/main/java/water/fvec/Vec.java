@@ -453,7 +453,7 @@ public class Vec extends Keyed {
    * vw.close();
    */
   public final static class Writer implements java.io.Closeable {
-    Vec _vec;
+    final Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
     public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
     public final void set( long i, double d) { _vec.chunkForRow(i).set(i,d); }
