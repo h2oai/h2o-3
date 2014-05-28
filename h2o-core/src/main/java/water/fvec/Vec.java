@@ -416,7 +416,6 @@ public class Vec extends Keyed {
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
     postWrite(fs);
     fs.blockForPending();
-    _cache = null;
     return ret;
   }
 
@@ -430,7 +429,6 @@ public class Vec extends Keyed {
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
     postWrite(fs);
     fs.blockForPending();
-    _cache = null;
     return ret;
   }
 
@@ -444,7 +442,6 @@ public class Vec extends Keyed {
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
     postWrite(fs);
     fs.blockForPending();
-    _cache = null;
     return ret;
   }
 
@@ -456,7 +453,6 @@ public class Vec extends Keyed {
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
     postWrite(fs);
     fs.blockForPending();
-    _cache = null;
     return ret;
   }
 
