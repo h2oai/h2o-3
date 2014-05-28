@@ -413,6 +413,7 @@ public class Vec extends Keyed {
     long ret = ck.set(i,l);
     Futures fs = new Futures();
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    postWrite(fs);
     fs.blockForPending();
     _cache = null;
     return ret;
@@ -426,6 +427,7 @@ public class Vec extends Keyed {
     double ret = ck.set(i,d);
     Futures fs = new Futures();
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    postWrite(fs);
     fs.blockForPending();
     _cache = null;
     return ret;
@@ -439,6 +441,7 @@ public class Vec extends Keyed {
     float ret = ck.set(i, f);
     Futures fs = new Futures();
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    postWrite(fs);
     fs.blockForPending();
     _cache = null;
     return ret;
@@ -450,6 +453,7 @@ public class Vec extends Keyed {
     boolean ret = ck.setNA(i);
     Futures fs = new Futures();
     ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
+    postWrite(fs);
     fs.blockForPending();
     _cache = null;
     return ret;
