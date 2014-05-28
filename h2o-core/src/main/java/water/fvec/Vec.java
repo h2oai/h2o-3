@@ -409,51 +409,36 @@ public class Vec extends Keyed {
    *  common compatible data representation.
    *
    *  */
-  public final long   set( long i, long   l) {
+  public final void set( long i, long l) {
     Chunk ck = chunkForRow(i);
-    long ret = ck.set(i,l);
-    Futures fs = new Futures();
-    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
-    postWrite(fs);
-    fs.blockForPending();
-    return ret;
+    ck.set(i,l);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element.
+   *  Slow to do this for every set -> use Writer if writing many values
    *  */
-  public final double set( long i, double d) {
+  public final void set( long i, double d) {
     Chunk ck = chunkForRow(i);
-    double ret = ck.set(i,d);
-    Futures fs = new Futures();
-    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
-    postWrite(fs);
-    fs.blockForPending();
-    return ret;
+    ck.set(i,d);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element.
    *  */
-  public final float  set( long i, float  f) {
+  public final void set( long i, float  f) {
     Chunk ck = chunkForRow(i);
-    float ret = ck.set(i, f);
-    Futures fs = new Futures();
-    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
-    postWrite(fs);
-    fs.blockForPending();
-    return ret;
+    ck.set(i,f);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
   /** Set the element as missing the slow way.  */
-  final boolean setNA( long i ) {
+  final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
-    boolean ret = ck.setNA(i);
-    Futures fs = new Futures();
-    ck.close(ck.cidx(), fs); //slow to do this for every set -> use Writer if writing many values
-    postWrite(fs);
-    fs.blockForPending();
-    return ret;
+    ck.setNA(i);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
   /**
@@ -470,10 +455,10 @@ public class Vec extends Keyed {
   public final static class Writer implements java.io.Closeable {
     Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
-    public final long   set( long i, long   l) { return _vec.chunkForRow(i).set(i,l); }
-    public final double set( long i, double d) { return _vec.chunkForRow(i).set(i,d); }
-    public final float  set( long i, float  f) { return _vec.chunkForRow(i).set(i,f); }
-    public final boolean setNA( long i       ) { return _vec.chunkForRow(i).setNA(i); }
+    public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
+    public final void set( long i, double d) { _vec.chunkForRow(i).set(i,d); }
+    public final void set( long i, float  f) { _vec.chunkForRow(i).set(i,f); }
+    public final void setNA( long i        ) { _vec.chunkForRow(i).setNA(i); }
     public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }

@@ -67,15 +67,15 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  if the long does not fit in a double (value is larger magnitude than
    *  2^52), AND float values are stored in Vector.  In this case, there is no
    *  common compatible data representation. */
-  public final long   set( long i, long   l) { long x = i-_start; return (0 <= x && x < _len) ? set0((int)x,l) : _vec.set(i,l); }
+  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element. */
-  public final double set( long i, double d) { long x = i-_start; return (0 <= x && x < _len) ? set0((int)x,d) : _vec.set(i,d); }
+  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element. */
-  public final float  set( long i, float  f) { long x = i-_start; return (0 <= x && x < _len) ? set0((int)x,f) : _vec.set(i,f); }
+  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
   /** Set the element as missing the slow way.  */
-  final boolean setNA( long i )       { long x = i-_start; return (0 <= x && x < _len) ? setNA0((int)x) : _vec.setNA(i); }
+  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
   
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
@@ -127,12 +127,13 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** After writing we must call close() to register the bulk changes */
-  public void close( int cidx, Futures fs ) {
+  public Futures close( int cidx, Futures fs ) {
     if( this  instanceof NewChunk ) _chk2 = this;
-    if( _chk2 == null ) return;          // No change?
+    if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     if( _vec._cache == this ) _vec._cache = null;
+    return fs;
   }
 
   public int cidx() { return _vec.elem2ChunkIdx(_start); }
