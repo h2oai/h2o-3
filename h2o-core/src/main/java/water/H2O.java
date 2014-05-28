@@ -589,6 +589,7 @@ final public class H2O {
   
   // Get the value from the store
   public static Value get( Key key ) { return STORE.get(key); }
+  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Value raw_get( Key key ) { return STORE.get(key); }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
