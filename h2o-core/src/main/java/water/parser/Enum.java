@@ -115,4 +115,5 @@ final class Enum extends Iced {
   }
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
   @Override public Enum readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public AutoBuffer writeHTML_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
 }

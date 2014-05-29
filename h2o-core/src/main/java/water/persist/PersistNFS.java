@@ -69,7 +69,7 @@ public final class PersistNFS extends Persist {
     if( v.isPersisted() ) return;
     try {
       File f = getFileForKey(v._key);
-      f.mkdirs();
+      if( !f.mkdirs() ) throw new IOException("Unable to create directory "+f);
       try (FileOutputStream s = new FileOutputStream(f)) {
         byte[] m = v.memOrLoad();
         assert (m == null || m.length == v._max); // Assert not saving partial files

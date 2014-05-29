@@ -468,7 +468,7 @@ public class Vec extends Keyed {
 
   /** Close all chunks that are local (not just the ones that are homed)
    *  This should only be called from a Writer object */
-  private final Futures closeLocal(Futures fs) {
+  private Futures closeLocal(Futures fs) {
     int nc = nChunks();
     for( int i=0; i<nc; i++ )
       if( H2O.containsKey(chunkKey(i)) )

@@ -58,7 +58,6 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   }
 
   public int size() { return _files.length; }
-  public String getFileName(int i) { return _files[i]; }
 
   // Sync this directory with H2O.  Record all files that appear to be visible
   // to the entire cloud, and give their Keys.  List also all files which appear
@@ -78,7 +77,7 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
       } else {
         File f = new File(_files[i]);
         try { f = f.getCanonicalFile(); _files[i] = f.getPath(); } // Attempt to canonicalize
-        catch( IOException ignore ) {};
+        catch( IOException ignore ) {}
         k = PersistNFS.decodeFile(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());

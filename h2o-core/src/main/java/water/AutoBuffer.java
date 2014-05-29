@@ -1522,20 +1522,32 @@ public final class AutoBuffer {
   public final AutoBuffer putHTMLZ (String name, boolean b ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML1 (String name, byte    b ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML2 (String name, char    c ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML2 (String name, short   s ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML4 (String name, int     i ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML4f(String name, float   f ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML8 (String name, long    l ) { throw H2O.unimpl(); }
-  public final AutoBuffer putHTMLStr(String name, String st) { return putHTMLStr(name).putStr(" ").putHTMLStr(st); }
+  public final AutoBuffer putHTML8d(String name, double  d ) { throw H2O.unimpl(); }
   public final AutoBuffer putHTML  (String name, Freezable f){ if( f != null ) throw H2O.unimpl(); return this; }
+  public final AutoBuffer putHTMLEnum(String name, Enum  e ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLStr(String name, String st) { return putHTMLStr(name).putStr(" ").putHTMLStr(st); }
 
-  public final AutoBuffer putHTMLA1(String name, byte[] bs ) { throw H2O.unimpl(); }
-  public final AutoBuffer putHTMLA2(String name, short[]ss ) { throw H2O.unimpl(); }
-  public final AutoBuffer putHTMLA8(String name, long[] ls ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA1 (String name, byte [] bs ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA2 (String name, short[] ss ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA4 (String name, int  [] is ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA4f(String name, float[] fs ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA8 (String name, long [] ls ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA8d(String name, double[]ds ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA  (String name, Freezable[] fs){ if( fs != null ) throw H2O.unimpl(); return this; }
   public final AutoBuffer putHTMLAStr(String name, String[] sts) { 
     return putHTMLStr(name).putStr(" ").putHTMLStr(Arrays.toString(sts)); 
   }
-  public final AutoBuffer putHTMLA (String name, Freezable[] fs) { throw H2O.unimpl(); }
 
+  public final AutoBuffer putHTMLAA4  (String name, int      [][] iss) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLAA8  (String name, long     [][] lss) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLAA   (String name, Freezable[][] fss) { if( fss != null ) throw H2O.unimpl(); return this; }
+  public final AutoBuffer putHTMLAAStr(String name, String   [][] sss) { throw H2O.unimpl(); }
+
+  public final AutoBuffer putHTMLAAA8 (String name, long   [][][] lsss){ throw H2O.unimpl(); }
 
   // A non-escaped string
   public final AutoBuffer putHTMLRaw(String s) {

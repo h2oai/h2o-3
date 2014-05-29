@@ -362,4 +362,5 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
   @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("_key",_key.toString()); }
   @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public final AutoBuffer writeHTML_impl(AutoBuffer ab) { return ab.putHTMLStr("_key",_key.toString()); }
 }

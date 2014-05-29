@@ -1,9 +1,6 @@
 package water.schemas;
 
 import water.api.ImportFiles;
-import water.Iced;
-import water.H2O;
-import water.H2ONode;
 
 public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
 
