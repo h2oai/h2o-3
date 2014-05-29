@@ -13,6 +13,8 @@ public interface Freezable extends Cloneable {
   AutoBuffer writeJSON(AutoBuffer ab);
   /** Read from the AutoBuffer overwriting your own fields, returning yourself 'this'. */
   <T extends Freezable> T readJSON(AutoBuffer ab);
+  /** Write this Freezable onto the AutoBuffer.  Defaults to the HTML serializer. */
+  AutoBuffer writeHTML(AutoBuffer ab);
   /** Cluster-wide unique small dense integer specifying your class type.
    *  Totally suitable for an array index.  */
   int frozenType();
@@ -24,4 +26,5 @@ public interface Freezable extends Cloneable {
   <D extends Freezable> D read_impl( AutoBuffer ab );
   AutoBuffer writeJSON_impl( AutoBuffer ab );
   <D extends Freezable> D readJSON_impl( AutoBuffer ab );
+  AutoBuffer writeHTML_impl( AutoBuffer ab );
 }

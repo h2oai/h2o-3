@@ -19,9 +19,9 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   abstract protected S schema(int version);
 
   /** Override this to Do The Work */
-  abstract protected void exec2();
+  abstract protected void GET();
   
-  protected final Schema serve(int version, Properties parms) {
+  protected final Schema serve(int version, String method, Properties parms) {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
@@ -29,9 +29,11 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
     // fill the Handler from the versioned Schema.
     S s = schema(version).fillFrom(parms).fillInto((H)this); // Version-specific Schema
 
+
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
     _t_start = System.currentTimeMillis();
-    exec();                     // Do The Work; blocking in the Nano thread
+    if( method.equals("GET") ) GET(); // Do The Work; blocking in the Nano thread
+    else throw H2O.unimpl();
     _t_stop  = System.currentTimeMillis();
 
     // Version-specific unwind from the Handler back into the Schema

@@ -52,7 +52,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
       Log.debug("lock-then-clear "+_key+" by job "+job_key);
-      old.remove(new Futures()).blockForPending();
+      old.remove_impl(new Futures()).blockForPending();
     }
     return (T)this;
   }
@@ -70,7 +70,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
     }
-    remove(new Futures()).blockForPending();
+    remove();
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.

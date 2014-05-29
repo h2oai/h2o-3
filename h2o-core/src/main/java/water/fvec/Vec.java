@@ -491,11 +491,11 @@ public class Vec extends Keyed {
   }
 
   // Remove associated Keys when this guy removes
-  @Override public Futures remove( Futures fs ) {
+  @Override public Futures remove_impl( Futures fs ) {
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
     DKV.remove(rollupStatsKey(),fs);
-    return super.remove(fs);
+    return fs;
   }
   @Override public boolean equals( Object o ) {
     return o instanceof Vec && ((Vec)o)._key.equals(_key);

@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -1515,4 +1516,48 @@ public final class AutoBuffer {
   static final String JSON_NAN = "NaN";
   static final String JSON_POS_INF = "Infinity";
   static final String JSON_NEG_INF = "-Infinity";
+
+  // ==========================================================================
+  // HTML AutoBuffer printers
+  public final AutoBuffer putHTMLZ (String name, boolean b ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML1 (String name, byte    b ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML2 (String name, char    c ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML4 (String name, int     i ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML4f(String name, float   f ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTML8 (String name, long    l ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLStr(String name, String st) { return putHTMLStr(name).putStr(" ").putHTMLStr(st); }
+  public final AutoBuffer putHTML  (String name, Freezable f){ if( f != null ) throw H2O.unimpl(); return this; }
+
+  public final AutoBuffer putHTMLA1(String name, byte[] bs ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA2(String name, short[]ss ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLA8(String name, long[] ls ) { throw H2O.unimpl(); }
+  public final AutoBuffer putHTMLAStr(String name, String[] sts) { 
+    return putHTMLStr(name).putStr(" ").putHTMLStr(Arrays.toString(sts)); 
+  }
+  public final AutoBuffer putHTMLA (String name, Freezable[] fs) { throw H2O.unimpl(); }
+
+
+  // A non-escaped string
+  public final AutoBuffer putHTMLRaw(String s) {
+    byte[] b = s.getBytes();
+    return putA1(b,0,b.length);
+  }
+
+  // An HTML-escaped string
+  private static byte[] LTS = "&lt;".getBytes();
+  private static byte[] GTS = "&gt;".getBytes();
+  private static byte[] AMP = "&amp;".getBytes();
+  private static byte[] QUO = "&quot;".getBytes();
+  public final AutoBuffer putHTMLStr(String s) {
+    byte[] b = s.getBytes();
+    int off=0;
+    for( int i=0; i<b.length; i++ ) {
+      if( b[i] == '<' ) { putA1(b,off,i).putA1(LTS,0,LTS.length); off=i+1; }
+      if( b[i] == '>' ) { putA1(b,off,i).putA1(GTS,0,GTS.length); off=i+1; }
+      if( b[i] == '&' ) { putA1(b,off,i).putA1(AMP,0,AMP.length); off=i+1; }
+      if( b[i] == '"' ) { putA1(b,off,i).putA1(QUO,0,QUO.length); off=i+1; }
+    }
+    return putA1(b,off,b.length);
+  }
+
 }

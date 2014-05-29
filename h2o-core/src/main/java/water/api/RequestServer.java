@@ -158,22 +158,24 @@ public class RequestServer extends NanoHTTPD {
       Class<? extends Handler> clazz = _handlers.get(requestName);
       // if the request is not know, treat as resource request, or 404 if not found
       if( clazz == null ) return getResource(uri);
-      return wrap(handle(clazz.newInstance(),version,parms,type),type);
+      return wrap(HTTP_OK,handle(clazz.newInstance(),version,method,parms,type),type);
+    } catch( IllegalArgumentException e ) {
+      return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      return wrap(new HTTP500V1(e),type);
+      return wrap(e.getMessage()!="unimplemented"? HTTP_INTERNALERROR : HTTP_NOTIMPLEMENTED, new HTTP500V1(e),type);
     }
   }
 
   // Handling ------------------------------------------------------------------
-  private Schema handle( Handler h, int version, Properties parms, RequestType type ) {
+  private Schema handle( Handler h, int version, String method, Properties parms, RequestType type ) {
     Schema S;
     switch( type ) {
     case html: // These request-types only dictate the response-type; 
     case java: // the normal action is always done.
     case json:
     case xml:
-      return h.serve(version,parms);
+      return h.serve(version,method,parms);
     case query:
     case help:
     default:
@@ -181,17 +183,18 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( Schema S, RequestType type ) {
+  private Response wrap( String http_code, Schema S, RequestType type ) {
     // Convert Schema to desired output flavor
     switch( type ) {
-    case json:
-      return new Response(HTTP_OK, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
-    case xml:
-      //return new Response(HTTP_OK, MIME_XML, new String(S.writeXML(new AutoBuffer()).buf()));
-    case html:
-      //return new Response(HTTP_OK, MIME_HTML, new String(S.writeHTML(new AutoBuffer()).buf()));
+    case json:   return new Response(http_code, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
+    case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
       throw H2O.unimpl();
+    case html: {
+      RString html = new RString(_htmlTemplate);
+      html.replace("CONTENTS", new String(S.writeHTML(new AutoBuffer()).buf()));
+      return new Response(http_code, MIME_HTML, html.toString());
+    }
     default:
       throw H2O.fail();
     }
@@ -218,7 +221,7 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      return wrap(new HTTP404V1(uri),RequestType.html);
+      return wrap(HTTP_NOTFOUND,new HTTP404V1("Resource "+uri+" not found",uri),RequestType.html);
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";
@@ -232,8 +235,6 @@ public class RequestServer extends NanoHTTPD {
   // html template and navbar handling -----------------------------------------
   private static final String _htmlTemplateFromFile;
   private static volatile String _htmlTemplate;
-
-  protected String htmlTemplate() { return _htmlTemplate; }
 
   private static String loadTemplate(String name) {
     // Try-with-resource

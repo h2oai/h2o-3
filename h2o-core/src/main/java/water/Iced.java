@@ -18,6 +18,7 @@ abstract public class Iced<D extends Iced> implements Freezable {
   // Standard "write thyself into the AutoBuffer" call.
   @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(D)this); }
   @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
+  @Override final public AutoBuffer writeHTML(AutoBuffer ab) { return icer().writeHTML(ab,(D)this); }
   // Standard "read thyself from the AutoBuffer" call.
   @Override final public D read    (AutoBuffer ab) { return icer().read    (ab,(D)this); }
   @Override final public D readJSON(AutoBuffer ab) { return icer().readJSON(ab,(D)this); }
@@ -39,4 +40,6 @@ abstract public class Iced<D extends Iced> implements Freezable {
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
   //noninspection UnusedDeclaration
   @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
+  //noninspection UnusedDeclaration
+  @Override public AutoBuffer writeHTML_impl( AutoBuffer ab ) { return ab; }
 }

@@ -13,15 +13,15 @@ import water.util.FileIntegrityChecker;
 public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
 
   // Input
-  String _path;
+  public String _path;
 
   // Outputs
-  String _files[], _keys[], _fails[], _dels[];
+  public String _files[], _keys[], _fails[], _dels[];
 
-  // Running all in exec2, no need for backgrounding on F/J threads
+  // Running all in GET, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected void exec2() {
+  @Override protected void GET() {
     assert _path != null;
     String p2 = _path.toLowerCase();
     if( false ) ;
@@ -32,7 +32,6 @@ public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
     else serveLocalDisk();
-    throw H2O.unimpl();
   }
 
 //  protected void serveHdfs() throws IOException{

@@ -1,6 +1,7 @@
 package water.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import water.*;
 import water.fvec.*;
@@ -76,6 +77,8 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         if( fails != null ) fails.add(_files[i]);
       } else {
         File f = new File(_files[i]);
+        try { f = f.getCanonicalFile(); _files[i] = f.getPath(); } // Attempt to canonicalize
+        catch( IOException ignore ) {};
         k = PersistNFS.decodeFile(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());

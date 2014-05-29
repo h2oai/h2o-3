@@ -163,6 +163,16 @@ public class Weaver {
               "    return ab;\n" +
               "  }");
     if( debug_print ) System.out.println(debugJ);
+    String debugH= 
+      make_body(icer_cc, iced_cc, iced_clazz, "writeHTML", super_has_jfields ? null : "    ab.", "    ab.putHTMLRaw(\"<br>\").",
+              "  protected final water.AutoBuffer writeHTML"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
+              "    writeHTML"+super_id+"(ab,ice);\n",
+              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
+              "    return ab;\n" +
+              "  }");
+    if( debug_print ) System.out.println(debugH);
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.
@@ -176,6 +186,11 @@ public class Weaver {
       "  }";
     if( debug_print ) System.out.println(wbodyJ);
     addMethod(wbodyJ,icer_cc);
+    String wbodyH= "  protected water.AutoBuffer writeHTML(water.AutoBuffer ab, water.Freezable ice) {\n"+
+      "    return writeHTML"+id+"(ab,("+iced_name+")ice);\n"+
+      "  }";
+    if( debug_print ) System.out.println(wbodyH);
+    addMethod(wbodyH,icer_cc);
 
 
     // The read call

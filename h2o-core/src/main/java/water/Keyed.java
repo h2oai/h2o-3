@@ -7,11 +7,15 @@ public abstract class Keyed extends Iced {
   public Keyed( Key key ) { _key = key; }
 
   // Remove any K/V store parts associated with this Key
-  public void remove( ) { remove(new Futures()).blockForPending(); }
-  public Futures remove( Futures fs ) {
+  public final void remove( ) { remove(new Futures()).blockForPending(); }
+  public final Futures remove( Futures fs ) {
     if( _key != null ) DKV.remove(_key,fs);
-    return fs; 
+    return remove_impl(fs);
   }
+
+  // Override to remove subparts, but not self
+  protected Futures remove_impl( Futures fs ) { return fs; }
+
   public static void remove( Key k ) {
     Value val = DKV.get(k);
     if( val==null ) return;

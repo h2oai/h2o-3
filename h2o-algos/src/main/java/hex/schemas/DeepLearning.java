@@ -17,7 +17,7 @@ public class DeepLearning extends Handler {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected void exec2() {
+  @Override protected void GET() {
     hex.deeplearning.DeepLearning dl = new hex.deeplearning.DeepLearning(Key.make("DeepLearn_Model"));
     dl.source = DKV.get(_src).get();
     dl.classification = true;
