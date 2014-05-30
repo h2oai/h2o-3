@@ -1,46 +1,53 @@
 package water.schemas;
 
+import java.util.Arrays;
 import water.api.ImportFiles;
-import water.H2O;
-import water.H2ONode;
+import water.util.DocGen.HTML;
 
 public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
 
   // Input fields
-  private final Inputs _ins = new Inputs();
-  private static class Inputs {
-    @API(help="path", validation="/*path is required*/") 
-    String path;
-  }
+  @API(help="path", validation="/*path is required*/")
+  String path;
 
   // Output fields
-  private final Outputs _outs = new Outputs();
-  private static class Outputs {
-    @API(help="files")
-    String files[];
+  @API(help="files")
+  String files[];
 
-    @API(help="keys")
-    String keys[];
+  @API(help="keys")
+  String keys[];
 
-    @API(help="fails")
-    String fails[];
+  @API(help="fails")
+  String fails[];
 
-    @API(help="dels")
-    String dels[];
-  }
+  @API(help="dels")
+  String dels[];
 
   //==========================
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
   @Override public ImportFilesV1 fillInto( ImportFiles h ) {
-    // path is required
-    throw H2O.unimpl();
+    h._path = path;
+    return this;
   }
 
   // Version&Schema-specific filling from the handler
   @Override public ImportFilesV1 fillFrom( ImportFiles h ) {
-    throw H2O.unimpl();
+    files = h._files;
+    keys  = h._keys ;
+    fails = h._fails;
+    dels  = h._dels ;
+    return this;
   }
 
+  @Override public HTML writeHTML_impl( HTML ab ) {
+    ab.title("ImportFiles");
+    ab.href("path",path,"Parse?srcs="+Arrays.toString(keys));
+    ab.putAStr("files",files);
+    ab.putAStr( "keys", keys);
+    ab.putAStr("fails",fails);
+    ab.putAStr( "dels", dels);
+    return ab;
+  }
 }

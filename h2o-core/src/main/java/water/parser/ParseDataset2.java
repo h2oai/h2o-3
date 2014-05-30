@@ -76,10 +76,8 @@ public class ParseDataset2 extends Job<Frame> {
     _progress = new ParseMonitor(totalLen);
   }
 
-  @Override public Futures remove( Futures fs ) {
-    _progress.remove(fs);
-    super.remove(fs);
-    return fs;
+  @Override public Futures remove_impl( Futures fs ) {
+    return _progress.remove(fs);
   }
 
   // -----------------------------

@@ -19,7 +19,7 @@ public class Cloud extends Handler {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected void exec2() {
+  protected void status() {
     //_version = H2O.ABV.projectVersion();
     //_cloud_name = H2O.ARGS.name;
     //_uptime_ms = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();

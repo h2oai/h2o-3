@@ -5,23 +5,16 @@ import water.api.Handler;
 import water.schemas.API;
 import water.H2O;
 import water.Key;
-import water.H2ONode;
 
 public class DeepLearningV2 extends Schema {
 
   // Input fields
-  private final Inputs _ins = new Inputs();
-  private static class Inputs {
-    @API(help="Input source frame",validation="/*this input is required*/")
-    Key src;
-  }
+  @API(help="Input source frame",validation="/*this input is required*/")
+  Key src;
 
   // Output fields
-  private final Outputs _outs = new Outputs();
-  private static class Outputs {
-    @API(help="Job Key")
-    Key job;
-  }
+  @API(help="Job Key")
+  Key job;
 
   //==========================
   // Customer adapters Go Here

@@ -468,7 +468,7 @@ public class Vec extends Keyed {
 
   /** Close all chunks that are local (not just the ones that are homed)
    *  This should only be called from a Writer object */
-  private final Futures closeLocal(Futures fs) {
+  private Futures closeLocal(Futures fs) {
     int nc = nChunks();
     for( int i=0; i<nc; i++ )
       if( H2O.containsKey(chunkKey(i)) )
@@ -491,11 +491,11 @@ public class Vec extends Keyed {
   }
 
   // Remove associated Keys when this guy removes
-  @Override public Futures remove( Futures fs ) {
+  @Override public Futures remove_impl( Futures fs ) {
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
     DKV.remove(rollupStatsKey(),fs);
-    return super.remove(fs);
+    return fs;
   }
   @Override public boolean equals( Object o ) {
     return o instanceof Vec && ((Vec)o)._key.equals(_key);

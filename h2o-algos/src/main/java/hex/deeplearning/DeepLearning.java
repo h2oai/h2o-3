@@ -769,9 +769,8 @@ public class DeepLearning extends Job<DeepLearningModel> {
     remove();
   }
 
-  @Override
-  public void remove() {
-    super.remove();
+  @Override protected Futures remove_impl(Futures fs) {
+    super.remove_impl(fs);
     for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
     int validlen = validation != null ? validation.vecs().length : 0;
     Key[] keep = new Key[source.vecs().length+validlen+4];
@@ -788,6 +787,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
     // don't delete the model
     keep[source.vecs().length+3] = dest();
     Scope.exit(keep);
+    return fs;
   }
 
   //  /**

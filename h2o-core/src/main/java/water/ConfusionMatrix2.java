@@ -1,7 +1,7 @@
 package water;
 
 import water.util.ArrayUtils;
-import static water.util.ModelUtils.printConfusionMatrix;
+//import static water.util.ModelUtils.printConfusionMatrix;
 
 import java.util.Arrays;
 
@@ -240,9 +240,9 @@ public class ConfusionMatrix2 extends Iced {
 //    return res;
 //  }
 
-  public void toHTML(StringBuilder sb, String[] domain) {
-    long[][] cm = _arr;
-    printConfusionMatrix(sb, cm, domain, true);
-  }
+  //public void toHTML(StringBuilder sb, String[] domain) {
+  //  long[][] cm = _arr;
+  //  printConfusionMatrix(sb, cm, domain, true);
+  //}
 
 }

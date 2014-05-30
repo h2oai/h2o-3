@@ -18,7 +18,7 @@ public class Parse extends Handler {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  @Override protected void exec2() {
+  protected void parse() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
     throw H2O.unimpl();
     //return new Response("<a href=/2/Inspect.html?src="+_hex+">Parse done!</a>");

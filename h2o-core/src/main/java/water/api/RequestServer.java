@@ -1,7 +1,9 @@
 package water.api;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
+import java.lang.reflect.Method;
 import java.util.*;
 import water.H2O;
 import water.AutoBuffer;
@@ -19,32 +21,54 @@ public class RequestServer extends NanoHTTPD {
   static RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
+  private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
+  private static volatile String _htmlTemplate = "";
+
+
   // Handlers ------------------------------------------------------------
-  protected static final NonBlockingHashMap<String,Class<? extends Handler>> _handlers = new NonBlockingHashMap<>();
+
+  // An array of regexs-over-URLs and handling Methods.
+  // The list is searched in-order, first match gets dispatched.
+  protected static final LinkedHashMap<String,Method> _handlers = new LinkedHashMap<>();
 
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap();
   private static ArrayList<String> _navbarOrdering = new ArrayList();
 
   static {
-    _htmlTemplateFromFile = loadTemplate("/page.html");
-    _htmlTemplate = "";
-
     // Data
-    addToNavbar(registerRequest(ImportFiles.class),"Import Files", "Data");
-    addToNavbar(registerRequest(Parse.class),      "Parse",        "Data");
+    addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files", "Data");
+    addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",        "Data");
 
-    // Help and Tutorials
-    addToNavbar(registerRequest(Tutorials.class),  "Tutorials Home","Help");
+    // Help and Tutorials get all the rest...
+    addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
+    addToNavbar(registerGET("/"           ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
 
     initializeNavBar();
   }
 
   /** Registers the request with the request server.  */
-  public static String registerRequest(Class<? extends Handler> hclass) { 
-    String href = hclass.getSimpleName();
-    assert !_handlers.containsKey(href) : "Handler with class "+href+" already registered";
-    _handlers.put(href,hclass);
-    return href;
+  public static String registerGET   (String url, Class hclass, String hmeth) { return register("GET"   ,url,hclass,hmeth); }
+  public static String registerPUT   (String url, Class hclass, String hmeth) { return register("PUT"   ,url,hclass,hmeth); }
+  public static String registerDELETE(String url, Class hclass, String hmeth) { return register("DELETE",url,hclass,hmeth); }
+  public static String registerPOST  (String url, Class hclass, String hmeth) { return register("POST"  ,url,hclass,hmeth); }
+  private static String register(String method, String url, Class hclass, String hmeth) {
+    try {
+      assert lookup(method,url)==null; // Not shadowed
+      Method meth = hclass.getDeclaredMethod(hmeth);
+      _handlers.put(method+url,meth);
+      return url;
+    } catch( NoSuchMethodException nsme ) {
+      throw new Error("NoSuchMethodException: "+hclass.getName()+"."+hmeth);
+    }
+  }
+
+  // Lookup the method/url in the register list, and return a matching Method
+  private static Method lookup( String method, String url ) {
+    String s = method+url;
+    for( String x : _handlers.keySet() ) 
+      if( x.equals(s) )         // TODO: regex
+        return _handlers.get(x);
+    return null;
   }
 
 
@@ -93,12 +117,12 @@ public class RequestServer extends NanoHTTPD {
   // number and the "parse pointer" by shift-by-16 compaction.
   // /1/xxx     --> version 1
   // /2/xxx     --> version 2
-  // /v1/xx     --> version 1
-  // /v2/xx     --> version 2
-  // /latest/xx --> LATEST_VERSION
-  // /xx        --> LATEST_VERSION
+  // /v1/xxx    --> version 1
+  // /v2/xxx    --> version 2
+  // /latest/xxx--> LATEST_VERSION
+  // /xxx       --> LATEST_VERSION
   private int parseVersion( String uri ) {
-    if( uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
+    if( uri.length() <= 1 || uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
       return (0<<16)|LATEST_VERSION;
     if( uri.startsWith("/latest") )
       return (("/latest".length())<<16)|LATEST_VERSION;
@@ -118,62 +142,54 @@ public class RequestServer extends NanoHTTPD {
 
 
   // Top-level dispatch based the URI.  Break down URI into parts;
-  // e.g. /2/GBM.html breaks down into:
-  //   requestType:  ".html"
+  // e.g. /2/GBM.html/crunk?hex=some_hex breaks down into:
   //   version:      2
-  //   requestName:  "GBM"
+  //   requestType:  ".html"
+  //   path:         "GBM/crunk"
+  //   parms:        "{hex-->some_hex}"
   @Override public Response serve( String uri, String method, Properties header, Properties parms ) {
     // Jack priority for user-visible requests
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-
-    // The Default URI Handling
-    if (uri.isEmpty() || uri.equals("/"))
-      uri = "/Tutorials.html";
     maybeLogRequest(uri, method, parms);
 
-    // determine the request type
-    RequestType type = RequestType.requestType(uri);
-    String uri_base = type.requestName(uri); // Strip suffix type
-    
     // determine version
-    int version = parseVersion(uri_base);
+    int version = parseVersion(uri);
     int idx = version>>16;
     version &= 0xFFFF;
+    String uripath = uri.substring(idx);
 
-    // determine handler name
-    String requestName = uri_base.substring(idx);
-    String remaining = "";
-    if( uri_base.charAt(idx) == '/' ) { // If not a leading slash, then I am confused
-      requestName = uri_base.substring(1);
-      int idx2 = requestName.indexOf('/');
-      if( idx2 != -1 ) {
-        remaining   = requestName.substring(idx2);
-        requestName = requestName.substring(0,idx2);
-      }
-    }
+    // determine the request type
+    RequestType type = RequestType.requestType(uripath);
+    String path = type.requestName(uripath); // Strip suffix type from middle of URI
 
     // Load resources, or dispatch on handled requests
     try {
-      // determine if we have known resource
-      Class<? extends Handler> clazz = _handlers.get(requestName);
-      // if the request is not know, treat as resource request, or 404 if not found
-      if( clazz == null ) return getResource(uri);
-      return wrap(handle(clazz.newInstance(),version,parms,type),type);
+      // Find handler for url
+      Method meth = lookup(method,path);
+      // if the request is not known, treat as resource request, or 404 if not found
+      if( meth == null ) return getResource(uri);
+      return wrap(HTTP_OK,handle(type,meth,version,parms),type);
+    } catch( IllegalArgumentException e ) {
+      return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      return wrap(new HTTP500V1(e),type);
+      return wrap(e.getMessage()!="unimplemented"? HTTP_INTERNALERROR : HTTP_NOTIMPLEMENTED, new HTTP500V1(e),type);
     }
   }
 
   // Handling ------------------------------------------------------------------
-  private Schema handle( Handler h, int version, Properties parms, RequestType type ) {
+  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws InstantiationException, IllegalAccessException, InvocationTargetException {
     Schema S;
     switch( type ) {
     case html: // These request-types only dictate the response-type; 
     case java: // the normal action is always done.
     case json:
-    case xml:
-      return h.serve(version,parms);
+    case xml: {
+      Class x = meth.getDeclaringClass();
+      Class<Handler> clz = (Class<Handler>)x;
+      Handler h = clz.newInstance();
+      return h.handle(version,meth,parms);
+    }
     case query:
     case help:
     default:
@@ -181,17 +197,18 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( Schema S, RequestType type ) {
+  private Response wrap( String http_code, Schema S, RequestType type ) {
     // Convert Schema to desired output flavor
     switch( type ) {
-    case json:
-      return new Response(HTTP_OK, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
-    case xml:
-      //return new Response(HTTP_OK, MIME_XML, new String(S.writeXML(new AutoBuffer()).buf()));
-    case html:
-      //return new Response(HTTP_OK, MIME_HTML, new String(S.writeHTML(new AutoBuffer()).buf()));
+    case json:   return new Response(http_code, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
+    case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
       throw H2O.unimpl();
+    case html: {
+      RString html = new RString(_htmlTemplate);
+      html.replace("CONTENTS", S.writeHTML(new water.util.DocGen.HTML()).toString());
+      return new Response(http_code, MIME_HTML, html.toString());
+    }
     default:
       throw H2O.fail();
     }
@@ -218,7 +235,7 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      return wrap(new HTTP404V1(uri),RequestType.html);
+      return wrap(HTTP_NOTFOUND,new HTTP404V1("Resource "+uri+" not found",uri),RequestType.html);
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";
@@ -230,10 +247,6 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // html template and navbar handling -----------------------------------------
-  private static final String _htmlTemplateFromFile;
-  private static volatile String _htmlTemplate;
-
-  protected String htmlTemplate() { return _htmlTemplate; }
 
   private static String loadTemplate(String name) {
     // Try-with-resource

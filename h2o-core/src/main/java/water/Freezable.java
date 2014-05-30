@@ -1,5 +1,7 @@
 package water;
 
+import water.util.DocGen.HTML;
+
 /** Auto-serializer base-class using a delegator pattern.  
  *  (the faster option is to byte-code gen directly in all Iced classes, but
  *  this requires all Iced classes go through a ClassLoader).
@@ -13,6 +15,8 @@ public interface Freezable extends Cloneable {
   AutoBuffer writeJSON(AutoBuffer ab);
   /** Read from the AutoBuffer overwriting your own fields, returning yourself 'this'. */
   <T extends Freezable> T readJSON(AutoBuffer ab);
+  /** Write this Freezable onto the AutoBuffer.  Defaults to the HTML serializer. */
+  HTML writeHTML(HTML sb);
   /** Cluster-wide unique small dense integer specifying your class type.
    *  Totally suitable for an array index.  */
   int frozenType();
@@ -24,4 +28,5 @@ public interface Freezable extends Cloneable {
   <D extends Freezable> D read_impl( AutoBuffer ab );
   AutoBuffer writeJSON_impl( AutoBuffer ab );
   <D extends Freezable> D readJSON_impl( AutoBuffer ab );
+  HTML writeHTML_impl( HTML ab );
 }

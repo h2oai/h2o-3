@@ -10,7 +10,7 @@ import water.schemas.TutorialsV1;
  * @author michal
  */
 public class Tutorials extends Handler<Tutorials,TutorialsV1> {
-  final String result = 
+  public static final String HTML = 
       "<div class='container'><div class='hero-unit' style='overflow: hidden'>"
     + "<style scoped='scoped'>"
     + "  h2 { font-size:18px; }"
@@ -50,7 +50,7 @@ public class Tutorials extends Handler<Tutorials,TutorialsV1> {
     + "</div>";
 
   @Override public void compute2() { throw H2O.fail(); }
-  @Override protected void exec2() { /*do nothing*/ }
+  protected void nop() { }
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   // Tutorial Schemas are still at V1, unchanged for V2

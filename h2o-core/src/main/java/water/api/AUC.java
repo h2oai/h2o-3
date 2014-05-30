@@ -343,135 +343,134 @@ public class AUC extends Iced {
     }
   }
 
-//  @Override
-  public boolean toHTML( StringBuilder sb ) {
-    try {
-      if (actual_domain == null) actual_domain = new String[]{"false","true"};
-      // make local copies to avoid getting clear()'ed out in the middle of printing (can happen for DeepLearning, for example)
-      String[] my_actual_domain = actual_domain.clone();
-      String[] my_threshold_criteria = threshold_criteria.clone();
-      float[] my_threshold_for_criteria = threshold_for_criteria.clone();
-      float[] my_thresholds = thresholds.clone();
-      ConfusionMatrix2[] my_cms = _cms.clone();
-
-      if (my_thresholds == null) return false;
-      if (my_threshold_criteria == null) return false;
-      if (my_cms == null) return false;
-      if (idxCriter == null) return false;
-
-      sb.append("<div>");
-      DocGen.HTML.section(sb, "Scoring for Binary Classification");
-
-      // data for JS
-      sb.append("\n<script type=\"text/javascript\">");//</script>");
-      sb.append("var cms = [\n");
-      for (ConfusionMatrix2 cm : _cms) {
-        StringBuilder tmp = new StringBuilder();
-        cm.toHTML(tmp, my_actual_domain);
-//        sb.append("\t'" + StringEscapeUtils.escapeJavaScript(tmp.toString()) + "',\n"); //FIXME: import org.apache.commons.lang;
-      }
-      sb.append("];\n");
-      sb.append("var criterion = " + threshold_criterion.ordinal() + ";\n"); //which one
-      sb.append("var criteria = [");
-      for (String c : my_threshold_criteria) sb.append("\"" + c + "\",");
-      sb.append(" ];\n");
-      sb.append("var thresholds = [");
-      for (double t : my_threshold_for_criteria) sb.append((float) t + ",");
-      sb.append(" ];\n");
-      sb.append("var F1_values = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.F1() + ",");
-      sb.append(" ];\n");
-      sb.append("var accuracy = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.accuracy() + ",");
-      sb.append(" ];\n");
-      sb.append("var precision = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.precision() + ",");
-      sb.append(" ];\n");
-      sb.append("var recall = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.recall() + ",");
-      sb.append(" ];\n");
-      sb.append("var specificity = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.specificity() + ",");
-      sb.append(" ];\n");
-      sb.append("var max_per_class_error = [");
-      for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.max_per_class_error() + ",");
-      sb.append(" ];\n");
-      sb.append("var idxCriter = [");
-      for (int i : idxCriter) sb.append(i + ",");
-      sb.append(" ];\n");
-      sb.append("</script>\n");
-
-      // Selection of threshold criterion
-      sb.append("\n<div><b>Threshold criterion:</b></div><select id='threshold_select' onchange='set_criterion(this.value, idxCriter[this.value])'>\n");
-      for (int i = 0; i < my_threshold_criteria.length; ++i)
-        sb.append("\t<option value='" + i + "'" + (i == threshold_criterion.ordinal() ? "selected='selected'" : "") + ">" + my_threshold_criteria[i] + "</option>\n");
-      sb.append("</select>\n");
-      sb.append("</div>");
-
-      DocGen.HTML.arrayHead(sb);
-      sb.append("<th>AUC</th>");
-      sb.append("<th>Gini</th>");
-      sb.append("<th id='threshold_criterion'>Threshold for " + threshold_criterion.toString().replace("_", " ") + "</th>");
-      sb.append("<th>F1         </th>");
-      sb.append("<th>Accuracy   </th>");
-      sb.append("<th>Precision  </th>");
-      sb.append("<th>Recall     </th>");
-      sb.append("<th>Specificity</th>");
-      sb.append("<th>Max per class Error</th>");
-      sb.append("<tr class='warning'>");
-      sb.append("<td>" + String.format("%.5f", AUC()) + "</td>"
-                      + "<td>" + String.format("%.5f", Gini()) + "</td>"
-                      + "<td id='threshold'>" + String.format("%g", threshold()) + "</td>"
-                      + "<td id='F1_value'>" + String.format("%.7f", F1()) + "</td>"
-                      + "<td id='accuracy'>" + String.format("%.7f", accuracy()) + "</td>"
-                      + "<td id='precision'>" + String.format("%.7f", precision()) + "</td>"
-                      + "<td id='recall'>" + String.format("%.7f", recall()) + "</td>"
-                      + "<td id='specificity'>" + String.format("%.7f", specificity()) + "</td>"
-                      + "<td id='max_per_class_error'>" + String.format("%.7f", max_per_class_error()) + "</td>"
-      );
-      DocGen.HTML.arrayTail(sb);
-//    sb.append("<div id='BestConfusionMatrix'>");
-//    CM().toHTML(sb, actual_domain);
-//    sb.append("</div>");
-
-      sb.append("<table><tr><td>");
-      plotROC(sb);
-      sb.append("</td><td id='ConfusionMatrix'>");
-      CM().toHTML(sb, my_actual_domain);
-      sb.append("</td></tr>");
-      sb.append("<tr><td><h5>Threshold:</h5></div><select id=\"select\" onchange='show_cm(this.value)'>\n");
-      for (int i = 0; i < my_cms.length; ++i)
-        sb.append("\t<option value='" + i + "'" + (my_thresholds[i] == threshold() ? "selected='selected'" : "") + ">" + my_thresholds[i] + "</option>\n");
-      sb.append("</select></td></tr>");
-      sb.append("</table>");
-
-
-      sb.append("\n<script type=\"text/javascript\">");
-      sb.append("function show_cm(i){\n");
-      sb.append("\t" + "document.getElementById('ConfusionMatrix').innerHTML = cms[i];\n");
-      sb.append("\t" + "document.getElementById('F1_value').innerHTML = F1_values[i];\n");
-      sb.append("\t" + "document.getElementById('accuracy').innerHTML = accuracy[i];\n");
-      sb.append("\t" + "document.getElementById('precision').innerHTML = precision[i];\n");
-      sb.append("\t" + "document.getElementById('recall').innerHTML = recall[i];\n");
-      sb.append("\t" + "document.getElementById('specificity').innerHTML = specificity[i];\n");
-      sb.append("\t" + "document.getElementById('max_per_class_error').innerHTML = max_per_class_error[i];\n");
-      sb.append("\t" + "update(dataset);\n");
-      sb.append("}\n");
-      sb.append("function set_criterion(i, idx){\n");
-      sb.append("\t" + "criterion = i;\n");
-//    sb.append("\t" + "document.getElementById('BestConfusionMatrix').innerHTML = cms[idx];\n");
-      sb.append("\t" + "document.getElementById('threshold_criterion').innerHTML = \" Threshold for \" + criteria[i];\n");
-      sb.append("\t" + "document.getElementById('threshold').innerHTML = thresholds[i];\n");
-      sb.append("\t" + "show_cm(idx);\n");
-      sb.append("\t" + "document.getElementById(\"select\").selectedIndex = idx;\n");
-      sb.append("\t" + "update(dataset);\n");
-      sb.append("}\n");
-      sb.append("</script>\n");
-      return true;
-    } catch (Exception ex) {
-      return false;
-    }
-  }
+  //@Override public boolean toHTML( StringBuilder sb ) {
+  //  try {
+  //    if (actual_domain == null) actual_domain = new String[]{"false","true"};
+  //    // make local copies to avoid getting clear()'ed out in the middle of printing (can happen for DeepLearning, for example)
+  //    String[] my_actual_domain = actual_domain.clone();
+  //    String[] my_threshold_criteria = threshold_criteria.clone();
+  //    float[] my_threshold_for_criteria = threshold_for_criteria.clone();
+  //    float[] my_thresholds = thresholds.clone();
+  //    ConfusionMatrix2[] my_cms = _cms.clone();
+  //
+  //    if (my_thresholds == null) return false;
+  //    if (my_threshold_criteria == null) return false;
+  //    if (my_cms == null) return false;
+  //    if (idxCriter == null) return false;
+  //
+  //    sb.append("<div>");
+  //    DocGen.HTML.section(sb, "Scoring for Binary Classification");
+  //
+  //    // data for JS
+  //    sb.append("\n<script type=\"text/javascript\">");//</script>");
+  //    sb.append("var cms = [\n");
+  //    for (ConfusionMatrix2 cm : _cms) {
+  //      StringBuilder tmp = new StringBuilder();
+  //      cm.toHTML(tmp, my_actual_domain);
+////        sb.append("\t'" + StringEscapeUtils.escapeJavaScript(tmp.toString()) + "',\n"); //FIXME: import org.apache.commons.lang;
+  //    }
+  //    sb.append("];\n");
+  //    sb.append("var criterion = " + threshold_criterion.ordinal() + ";\n"); //which one
+  //    sb.append("var criteria = [");
+  //    for (String c : my_threshold_criteria) sb.append("\"" + c + "\",");
+  //    sb.append(" ];\n");
+  //    sb.append("var thresholds = [");
+  //    for (double t : my_threshold_for_criteria) sb.append((float) t + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var F1_values = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.F1() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var accuracy = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.accuracy() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var precision = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.precision() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var recall = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.recall() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var specificity = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.specificity() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var max_per_class_error = [");
+  //    for (ConfusionMatrix2 my_cm : my_cms) sb.append((float) my_cm.max_per_class_error() + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("var idxCriter = [");
+  //    for (int i : idxCriter) sb.append(i + ",");
+  //    sb.append(" ];\n");
+  //    sb.append("</script>\n");
+  //
+  //    // Selection of threshold criterion
+  //    sb.append("\n<div><b>Threshold criterion:</b></div><select id='threshold_select' onchange='set_criterion(this.value, idxCriter[this.value])'>\n");
+  //    for (int i = 0; i < my_threshold_criteria.length; ++i)
+  //      sb.append("\t<option value='" + i + "'" + (i == threshold_criterion.ordinal() ? "selected='selected'" : "") + ">" + my_threshold_criteria[i] + "</option>\n");
+  //    sb.append("</select>\n");
+  //    sb.append("</div>");
+  //
+  //    DocGen.HTML.arrayHead(sb);
+  //    sb.append("<th>AUC</th>");
+  //    sb.append("<th>Gini</th>");
+  //    sb.append("<th id='threshold_criterion'>Threshold for " + threshold_criterion.toString().replace("_", " ") + "</th>");
+  //    sb.append("<th>F1         </th>");
+  //    sb.append("<th>Accuracy   </th>");
+  //    sb.append("<th>Precision  </th>");
+  //    sb.append("<th>Recall     </th>");
+  //    sb.append("<th>Specificity</th>");
+  //    sb.append("<th>Max per class Error</th>");
+  //    sb.append("<tr class='warning'>");
+  //    sb.append("<td>" + String.format("%.5f", AUC()) + "</td>"
+  //                    + "<td>" + String.format("%.5f", Gini()) + "</td>"
+  //                    + "<td id='threshold'>" + String.format("%g", threshold()) + "</td>"
+  //                    + "<td id='F1_value'>" + String.format("%.7f", F1()) + "</td>"
+  //                    + "<td id='accuracy'>" + String.format("%.7f", accuracy()) + "</td>"
+  //                    + "<td id='precision'>" + String.format("%.7f", precision()) + "</td>"
+  //                    + "<td id='recall'>" + String.format("%.7f", recall()) + "</td>"
+  //                    + "<td id='specificity'>" + String.format("%.7f", specificity()) + "</td>"
+  //                    + "<td id='max_per_class_error'>" + String.format("%.7f", max_per_class_error()) + "</td>"
+  //    );
+  //    DocGen.HTML.arrayTail(sb);
+////    sb.append("<div id='BestConfusionMatrix'>");
+////    CM().toHTML(sb, actual_domain);
+////    sb.append("</div>");
+  //
+  //    sb.append("<table><tr><td>");
+  //    plotROC(sb);
+  //    sb.append("</td><td id='ConfusionMatrix'>");
+  //    CM().toHTML(sb, my_actual_domain);
+  //    sb.append("</td></tr>");
+  //    sb.append("<tr><td><h5>Threshold:</h5></div><select id=\"select\" onchange='show_cm(this.value)'>\n");
+  //    for (int i = 0; i < my_cms.length; ++i)
+  //      sb.append("\t<option value='" + i + "'" + (my_thresholds[i] == threshold() ? "selected='selected'" : "") + ">" + my_thresholds[i] + "</option>\n");
+  //    sb.append("</select></td></tr>");
+  //    sb.append("</table>");
+  //
+  //
+  //    sb.append("\n<script type=\"text/javascript\">");
+  //    sb.append("function show_cm(i){\n");
+  //    sb.append("\t" + "document.getElementById('ConfusionMatrix').innerHTML = cms[i];\n");
+  //    sb.append("\t" + "document.getElementById('F1_value').innerHTML = F1_values[i];\n");
+  //    sb.append("\t" + "document.getElementById('accuracy').innerHTML = accuracy[i];\n");
+  //    sb.append("\t" + "document.getElementById('precision').innerHTML = precision[i];\n");
+  //    sb.append("\t" + "document.getElementById('recall').innerHTML = recall[i];\n");
+  //    sb.append("\t" + "document.getElementById('specificity').innerHTML = specificity[i];\n");
+  //    sb.append("\t" + "document.getElementById('max_per_class_error').innerHTML = max_per_class_error[i];\n");
+  //    sb.append("\t" + "update(dataset);\n");
+  //    sb.append("}\n");
+  //    sb.append("function set_criterion(i, idx){\n");
+  //    sb.append("\t" + "criterion = i;\n");
+////    sb.append("\t" + "document.getElementById('BestConfusionMatrix').innerHTML = cms[idx];\n");
+  //    sb.append("\t" + "document.getElementById('threshold_criterion').innerHTML = \" Threshold for \" + criteria[i];\n");
+  //    sb.append("\t" + "document.getElementById('threshold').innerHTML = thresholds[i];\n");
+  //    sb.append("\t" + "show_cm(idx);\n");
+  //    sb.append("\t" + "document.getElementById(\"select\").selectedIndex = idx;\n");
+  //    sb.append("\t" + "update(dataset);\n");
+  //    sb.append("}\n");
+  //    sb.append("</script>\n");
+  //    return true;
+  //  } catch (Exception ex) {
+  //    return false;
+  //  }
+  //}
 
   public void toASCII( StringBuilder sb ) {
     sb.append(CM().toString());

@@ -15,7 +15,11 @@ public @interface API {
   
   // A Short help text to appear beside the input
   String help();
-  
+
+  // The following are markers for *input* fields.
+  // If at least one of these annotations appears, this is an input field.
+  // If none appear, this is NOT an input field.
+
   // A list of field names that this field depends on
   String[] dependsOn() default {};
 

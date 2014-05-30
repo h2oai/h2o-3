@@ -6,6 +6,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
+import water.util.DocGen.HTML;
 
 /** Class for tracking enum columns.
  *  
@@ -115,4 +116,5 @@ final class Enum extends Iced {
   }
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
   @Override public Enum readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.unimpl(); }
 }

@@ -1,6 +1,7 @@
 package water;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -9,6 +10,7 @@ import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
+import water.util.DocGen.HTML;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -189,7 +191,7 @@ final public class H2O {
     // If this is a F/J thread, return it's priority+1 - used to lift the
     // priority of a blocking remote call, so the remote node runs it at a
     // higher priority - so we don't deadlock when we burn the local thread.
-    protected final byte nextThrPriority() { 
+    protected final byte nextThrPriority() {
       Thread cThr = Thread.currentThread();
       return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority+1 : priority());
     }
@@ -200,10 +202,11 @@ final public class H2O {
     // Return the icer for this instance+class.  Will set on 1st use.
     protected Icer<T> icer() {
       int id = _ice_id;
-      return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
+      return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
     @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(T)this); }
+    @Override final public HTML       writeHTML(HTML       ab) { return icer().writeHTML(ab,(T)this); }
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
@@ -211,6 +214,7 @@ final public class H2O {
     @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
+    @Override       public HTML writeHTML_impl( HTML ab ) { return ab; }
   }
 
 
@@ -371,7 +375,7 @@ final public class H2O {
       int i = n.indexOf('@');
       if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
     } catch( Throwable ignore ) { }
-  
+
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -441,11 +445,11 @@ final public class H2O {
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerRequest( Class<? extends water.api.Handler> clazz, String name, String menu ) {
+  static public void registerGET( String url, Class hclass, String hmeth, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.registerRequest(clazz),name,menu);
+    RequestServer.addToNavbar(RequestServer.registerGET(url,hclass,hmeth),label,menu);
   }
-  
+
   static public void finalizeRequest() {
     if( _doneRequests ) return;
     _doneRequests = true;
@@ -535,7 +539,7 @@ final public class H2O {
     // Need to figure out the multi-jar HDFS story here
     //water.persist.HdfsLoader.loadJars();
     if( ARGS.aws_credentials != null ) {
-      try { water.persist.PersistS3.getClient(); } 
+      try { water.persist.PersistS3.getClient(); }
       catch( IllegalArgumentException e ) { Log.err(e); }
     }
     water.persist.Persist.initialize();
@@ -571,7 +575,7 @@ final public class H2O {
       key = old._key; // Use prior key
     if( val != null )
       val._key = key;
-  
+
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);
     if( res != old ) return res; // Return the failure cause
@@ -586,7 +590,7 @@ final public class H2O {
     }
     return old; // Return success
   }
-  
+
   // Get the value from the store
   public static Value get( Key key ) { return STORE.get(key); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
@@ -633,7 +637,7 @@ final public class H2O {
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();
-    
+
     // Start network services, including heartbeats & Paxos
     startNetworkServices();   // start server services
   }

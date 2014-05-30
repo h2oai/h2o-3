@@ -1,11 +1,13 @@
 package water.api;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
 import water.H2O;
-import water.util.Log;
-import water.schemas.Schema;
 import water.schemas.HTTP500V1;
+import water.schemas.Schema;
+import water.util.Log;
 
 public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> extends H2OCountedCompleter {
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
@@ -18,10 +20,7 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   /** Dumb Version->Schema mapping */
   abstract protected S schema(int version);
 
-  /** Override this to Do The Work */
-  abstract protected void exec2();
-  
-  protected final Schema serve(int version, Properties parms) {
+  protected final Schema handle(int version, Method meth, Properties parms) throws IllegalAccessException, InvocationTargetException {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
@@ -29,9 +28,10 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
     // fill the Handler from the versioned Schema.
     S s = schema(version).fillFrom(parms).fillInto((H)this); // Version-specific Schema
 
+
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
     _t_start = System.currentTimeMillis();
-    exec();                     // Do The Work; blocking in the Nano thread
+    meth.invoke(this);
     _t_stop  = System.currentTimeMillis();
 
     // Version-specific unwind from the Handler back into the Schema
