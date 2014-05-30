@@ -206,7 +206,7 @@ public class RequestServer extends NanoHTTPD {
       throw H2O.unimpl();
     case html: {
       RString html = new RString(_htmlTemplate);
-      html.replace("CONTENTS", new String(S.writeHTML(new AutoBuffer()).buf()));
+      html.replace("CONTENTS", S.writeHTML(new water.util.DocGen.HTML()).toString());
       return new Response(http_code, MIME_HTML, html.toString());
     }
     default:

@@ -9,6 +9,7 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import water.nbhm.*;
 import water.util.Log;
+import water.util.DocGen.HTML;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -362,5 +363,5 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
   @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("_key",_key.toString()); }
   @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
-  @Override public final AutoBuffer writeHTML_impl(AutoBuffer ab) { return ab.putHTMLStr("_key",_key.toString()); }
+  @Override public final HTML writeHTML_impl(HTML ab) { return ab.putStr("_key",_key.toString()); }
 }

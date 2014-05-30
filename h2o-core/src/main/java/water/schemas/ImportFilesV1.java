@@ -1,6 +1,8 @@
 package water.schemas;
 
+import java.util.Arrays;
 import water.api.ImportFiles;
+import water.util.DocGen.HTML;
 
 public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
 
@@ -39,4 +41,13 @@ public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
     return this;
   }
 
+  @Override public HTML writeHTML_impl( HTML ab ) {
+    ab.title("ImportFiles");
+    ab.href("path",path,"Parse?srcs="+Arrays.toString(keys));
+    ab.putAStr("files",files);
+    ab.putAStr( "keys", keys);
+    ab.putAStr("fails",fails);
+    ab.putAStr( "dels", dels);
+    return ab;
+  }
 }

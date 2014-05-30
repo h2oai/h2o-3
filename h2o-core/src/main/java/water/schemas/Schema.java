@@ -67,8 +67,9 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
         String value = parms.getProperty(key);
         if( fclz.equals(String.class) ) {
           f.set(this,value);    // Strings already the right primitive type
-        } else
-          throw H2O.unimpl();
+        } else {
+          throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
+        }
         
       } catch( NoSuchFieldException nsfe ) { // Convert missing-field to IAE
         throw new IllegalArgumentException("Unknown argument "+key);

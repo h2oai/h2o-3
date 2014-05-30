@@ -77,20 +77,19 @@ public class HitRatio extends Iced {
     }
   }
 
-//  @Override
-  public boolean toHTML( StringBuilder sb ) {
-    if (hit_ratios==null) return false;
-    sb.append("<div>");
-    DocGen.HTML.section(sb, "Hit Ratio for Multi-Class Classification");
-    DocGen.HTML.paragraph(sb, "(Frequency of actual class label to be among the top-K predicted class labels)");
-
-    DocGen.HTML.arrayHead(sb);
-    sb.append("<th>K</th>");
-    sb.append("<th>Hit Ratio</th>");
-    for (int k = 1; k<=max_k; ++k) sb.append("<tr><td>" + k + "</td><td>" + String.format("%.3f", hit_ratios[k-1]*100.) + "%</td></tr>");
-    DocGen.HTML.arrayTail(sb);
-    return true;
-  }
+  //@Override public boolean toHTML( StringBuilder sb ) {
+  //  if (hit_ratios==null) return false;
+  //  sb.append("<div>");
+  //  DocGen.HTML.section(sb, "Hit Ratio for Multi-Class Classification");
+  //  DocGen.HTML.paragraph(sb, "(Frequency of actual class label to be among the top-K predicted class labels)");
+  //
+  //  DocGen.HTML.arrayHead(sb);
+  //  sb.append("<th>K</th>");
+  //  sb.append("<th>Hit Ratio</th>");
+  //  for (int k = 1; k<=max_k; ++k) sb.append("<tr><td>" + k + "</td><td>" + String.format("%.3f", hit_ratios[k-1]*100.) + "%</td></tr>");
+  //  DocGen.HTML.arrayTail(sb);
+  //  return true;
+  //}
 
   public void toASCII( StringBuilder sb ) {
     if (hit_ratios==null) return;

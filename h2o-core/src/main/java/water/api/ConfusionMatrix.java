@@ -1,9 +1,6 @@
 package water.api;
 
-import water.DKV;
-import water.Iced;
-import water.MRTask;
-import water.Model;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TransfVec;
@@ -178,15 +175,17 @@ public class ConfusionMatrix extends Iced {
 //      sb.append("<tr class='warning'><td>" + mse + "</td></tr>");
 //      DocGen.HTML.arrayTail(sb);
 //    }
-    return true;
+//    return true;
+    throw H2O.unimpl();
   }
 
   public void toASCII( StringBuilder sb ) {
-    if (classification) {
-      if(cm == null) return;
-      ModelUtils.printConfusionMatrix(sb, cm, domain, false);
-    } else {
-      sb.append("MSE: " + mse);
-    }
+//    if (classification) {
+//      if(cm == null) return;
+//      ModelUtils.printConfusionMatrix(sb, cm, domain, false);
+//    } else {
+//      sb.append("MSE: " + mse);
+//    }
+    throw H2O.unimpl();
   }
 }

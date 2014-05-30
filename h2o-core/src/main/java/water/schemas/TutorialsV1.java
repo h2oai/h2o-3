@@ -1,7 +1,8 @@
 package water.schemas;
 
-import water.api.Tutorials;
 import water.*;
+import water.api.Tutorials;
+import water.util.DocGen.HTML;
 
 public class TutorialsV1 extends Schema<Tutorials,TutorialsV1> {
   // This Schema has no inputs
@@ -21,8 +22,5 @@ public class TutorialsV1 extends Schema<Tutorials,TutorialsV1> {
     return this;                // No fields to fill
   }
 
-  @Override public AutoBuffer writeHTML_impl( AutoBuffer ab ) {
-    byte[] b = Tutorials.HTML.getBytes();
-    return ab.putA1(b,0,b.length);
-  }
+  @Override public HTML writeHTML_impl( HTML ab ) { return ab.p(Tutorials.HTML); }
 }

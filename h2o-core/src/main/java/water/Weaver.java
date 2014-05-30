@@ -164,12 +164,12 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(debugJ);
     String debugH= 
-      make_body(icer_cc, iced_cc, iced_clazz, "writeHTML", super_has_jfields ? null : "    ab.", "    ab.putHTMLRaw(\"<br>\").",
-              "  protected final water.AutoBuffer writeHTML"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
+      make_body(icer_cc, iced_cc, iced_clazz, "writeHTML", null, null,
+              "  protected final water.util.DocGen.HTML writeHTML"+id+"(water.util.DocGen.HTML ab, "+iced_name+" ice) {\n",
               "    writeHTML"+super_id+"(ab,ice);\n",
-              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "putHTML%z(\"%s\",ice.%s);\n"  ,  "putHTML%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
+              "    ab.put%z(\"%s\",ice.%s);\n"  ,  "    ab.put%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.put%z(\"%s\",ice.%s);\n"  ,  "    ab.put%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
+              "    ab.put%z(\"%s\",ice.%s);\n"  ,  "    ab.put%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
               "    return ab;\n" +
               "  }");
     if( debug_print ) System.out.println(debugH);
@@ -186,7 +186,7 @@ public class Weaver {
       "  }";
     if( debug_print ) System.out.println(wbodyJ);
     addMethod(wbodyJ,icer_cc);
-    String wbodyH= "  protected water.AutoBuffer writeHTML(water.AutoBuffer ab, water.Freezable ice) {\n"+
+    String wbodyH= "  protected water.util.DocGen.HTML writeHTML(water.util.DocGen.HTML ab, water.Freezable ice) {\n"+
       "    return writeHTML"+id+"(ab,("+iced_name+")ice);\n"+
       "  }";
     if( debug_print ) System.out.println(wbodyH);
