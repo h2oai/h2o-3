@@ -50,7 +50,7 @@ public class Tutorials extends Handler<Tutorials,TutorialsV1> {
     + "</div>";
 
   @Override public void compute2() { throw H2O.fail(); }
-  @Override protected void GET() { /*do nothing*/ }
+  protected void nop() { }
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   // Tutorial Schemas are still at V1, unchanged for V2

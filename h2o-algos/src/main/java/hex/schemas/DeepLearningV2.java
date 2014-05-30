@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import water.Iced;
 import water.schemas.Schema;
 import water.api.Handler;
 import water.schemas.API;

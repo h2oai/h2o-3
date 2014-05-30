@@ -19,12 +19,13 @@ public enum RequestType {
     ;
   private static final RequestType[] _values = values();
 
-  /** Returns the request type of a given URL. JSON request type is the default
-   *  type when the extension from the URL cannot be determined.  */
-  static RequestType requestType(String requestUrl) {
-    int i = requestUrl.lastIndexOf('.');
-    assert i != -1;
-    String s = requestUrl.substring(i+1);
+  /** Returns the request type of a given URL. 
+   *  Missing type defaults to HTML.
+   *  Unknown type defaults to JSON. */
+  static RequestType requestType(String url) {
+    int i = url.indexOf('.');
+    if(  i == -1 ) return html; // Default for no extension
+    String s = url.substring(i+1);
     // valueOf(s) throws IAE if there is no match.
     for( RequestType t : _values )
       if( s.equals(t.name()) ) return t;
@@ -32,9 +33,11 @@ public enum RequestType {
   }
 
   /** Returns the name of the request, that is the request url without the
-   *  request suffix. */
-  String requestName(String requestUrl) {
+   *  request suffix.  E.g. converts "/GBM.html/crunk" into "/GBM/crunk" */
+  String requestName(String url) {
     String s = "."+toString();
-    return requestUrl.endsWith(s) ? requestUrl.substring(0, requestUrl.length()-s.length()) : requestUrl;
+    int i = url.indexOf(s);
+    if( i== -1 ) return url;    // No, or default, type
+    return url.substring(0,i)+url.substring(i+s.length());
   }
 }

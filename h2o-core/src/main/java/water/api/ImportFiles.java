@@ -19,15 +19,13 @@ public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
   public String _files[], _keys[], _fails[], _dels[];
 
   // Running all in GET, no need for backgrounding on F/J threads
-  @Override public void compute2() { throw H2O.fail(); }
-
-  @Override protected void GET() {
+  @Override public void compute2() { 
     assert _path != null;
     String p2 = _path.toLowerCase();
     if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
-    //else if( p2.startsWith("maprfs:/"  ) ) serveHdfs();
+    //else if( p2.startsWith("maprfs:/") ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
