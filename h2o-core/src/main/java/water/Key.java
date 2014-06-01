@@ -3,6 +3,7 @@ package water;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import water.util.DocGen.HTML;
 
 /**
  * Keys
@@ -365,4 +366,5 @@ final public class Key extends Iced<Key> implements Comparable {
   // Custom Serialization Class: Keys need to be interned
   @Override public final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
   @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
+  @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
 }

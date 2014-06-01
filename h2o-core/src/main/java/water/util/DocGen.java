@@ -45,21 +45,31 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putZ  (String name, boolean b) { return f(name,Boolean.toString(b)); }
     public HTML put1  (String name, byte    b) { return f(name,Byte   .toString(b)); }
     public HTML put2  (String name, char    c) { return f(name,Character.toString(c)); }
+    public HTML put2  (String name, short   s) { return f(name,Short  .toString(s)); }
     public HTML put4  (String name, int     i) { return f(name,Integer.toString(i)); }
     public HTML put4f (String name, float   f) { return f(name,Float  .toString(f)); }
     public HTML put8  (String name, long    l) { return f(name,Long   .toString(l)); }
-    public HTML put   (String name, Freezable f){return f.writeHTML(f0(name)).f1(); }
+    public HTML put8d (String name, double  d) { return f(name,Double .toString(d)); }
+    public HTML put   (String name, Freezable f){return f==null?f(name,"null"):f.writeHTML(f0(name)).f1(); }
+    public HTML putEnum(String name, Enum   e) { return f(name,e.toString()); }
 
     public HTML putAStr(String name, String [] ss) { return f0(name).array(ss).f1(); }
     public HTML putA1  (String name, byte   [] bs) { throw H2O.unimpl(); }
     public HTML putA2  (String name, short  [] ss) { throw H2O.unimpl(); }
+    public HTML putA4  (String name, int    [] is) { throw H2O.unimpl(); }
+    public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
     public HTML putA8  (String name, long   [] ls) { throw H2O.unimpl(); }
+    public HTML putA8d (String name, double [] ds) { throw H2O.unimpl(); }
     public HTML putA   (String name, Freezable[] fs) { 
       throw H2O.unimpl();
       //f0(name);
       ////fs.writeHTML(this);
       //return f1();
     }
+
+    public HTML putAAStr(String name, String [][] sss) { throw H2O.unimpl(); }
+    public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
+    public HTML putAA8  (String name, long   [][] lss) { throw H2O.unimpl(); }
 
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();

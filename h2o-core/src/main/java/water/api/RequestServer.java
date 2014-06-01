@@ -12,6 +12,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 import water.util.RString;
 import water.schemas.*;
+import water.fvec.Frame;
 
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
@@ -178,7 +179,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Handling ------------------------------------------------------------------
-  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws Exception {
     Schema S;
     switch( type ) {
     case html: // These request-types only dictate the response-type; 
@@ -188,7 +189,7 @@ public class RequestServer extends NanoHTTPD {
       Class x = meth.getDeclaringClass();
       Class<Handler> clz = (Class<Handler>)x;
       Handler h = clz.newInstance();
-      return h.handle(version,meth,parms);
+      return h.handle(version,meth,parms); // Can throw any Exception the handler throws
     }
     case query:
     case help:
@@ -301,6 +302,7 @@ public class RequestServer extends NanoHTTPD {
     return str.toString();
   }
 
+  // Add a new item to the navbar
   public static String addToNavbar(String r, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
@@ -312,4 +314,22 @@ public class RequestServer extends NanoHTTPD {
     return r;
   }
 
+  // Return URLs for things that want to appear Frame-inspection page
+  public static String[] frameChoices( int version, Frame fr ) {
+    ArrayList<String> al = new ArrayList<>();
+    for( String x : _handlers.keySet() ) {
+      try {
+        Method meth = _handlers.get(x);
+        Class clz0 = meth.getDeclaringClass();
+        Class<Handler> clz = (Class<Handler>)clz0;
+        Handler h = clz.newInstance();
+        String url = h.schema(version).acceptsFrame(fr);
+        if( url != null ) al.add(url);
+      } 
+      catch( InstantiationException   ignore ) { }
+      catch( IllegalArgumentException ignore ) { }
+      catch( IllegalAccessException   ignore ) { }
+    }
+    return al.toArray(new String[al.size()]);
+  }
 }

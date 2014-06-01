@@ -1,10 +1,13 @@
 package water.schemas;
 
-import java.util.Arrays;
 import java.io.File;
+import java.util.Arrays;
 import water.*;
 import water.api.Handler;
 import water.api.Parse;
+import water.api.RequestServer;
+import water.fvec.Frame;
+import water.util.DocGen.HTML;
 
 public class ParseV2 extends Schema<Parse,ParseV2> {
 
@@ -39,7 +42,19 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
 
   // Version&Schema-specific filling from the handler
   @Override public ParseV2 fillFrom( Parse h ) {
-    throw H2O.unimpl();
+    job = h._job;
+    return this;
+  }
+
+  //==========================
+
+  @Override public HTML writeHTML_impl( HTML ab ) {
+    ab.title("Parse");
+    Frame fr = DKV.get(hex).get();
+    String[] urls = RequestServer.frameChoices(getVersion(),fr);
+    for( String url : urls )
+      ab.href("hex",url,url);
+    return ab;
   }
 
   // Helper so ImportV1 can link to ParseV2
@@ -53,15 +68,19 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
     if( sep > 0 ) n = n.substring(sep+1);
     int dot = n.lastIndexOf('.');
     if( dot > 0 ) n = n.substring(0, dot);
+    // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
+    // "human%Percent" ==> "human_Percent"
     char[] cs = n.toCharArray();
     for( int i=1; i<cs.length; i++ )
       if( !Character.isJavaIdentifierPart(cs[i]) )
         cs[i] = '_';
+    // "myName" ==> "myName.hex"
     n = new String(cs);
     int i = 0;
     String res = n + ".hex";
     Key k = Key.make(res);
+    // Renumber to handle dup names
     while(DKV.get(k) != null)
       k = Key.make(res = n + ++i + ".hex");
     return res;

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 import water.*;
 import water.api.Handler;
+import water.fvec.Frame;
 
 
 /** Base Schema Class
@@ -35,6 +36,11 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
 
   // Version&Schema-specific filling from the handler
   abstract public S fillFrom( H h );
+
+  // This Schema accepts a Frame as it's first & main argument, used by the
+  // Frame Inspect & Parse pages to give obvious options for Modeling, Summary,
+  // export-to-CSV etc options.  Return a URL or null if not appropriate.
+  public String acceptsFrame( Frame fr ) { return null; }
 
   // Fill self from parms.  Limited to dumb primitive parsing and simple
   // reflective field filling.  Ignores fields not in the Schema.  Throws IAE
