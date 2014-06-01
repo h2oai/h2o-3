@@ -67,7 +67,7 @@ $(main_classes): build/classes/%class: src/main/java/%java
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(main_javas)
 
-$(test_classes): build/classes/%class: src/test/java/%java
+$(test_classes): build/classes/%class: src/test/java/%java $(main_classes)
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(test_javas)
