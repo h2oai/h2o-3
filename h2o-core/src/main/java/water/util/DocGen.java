@@ -60,16 +60,12 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
     public HTML putA8  (String name, long   [] ls) { throw H2O.unimpl(); }
     public HTML putA8d (String name, double [] ds) { throw H2O.unimpl(); }
-    public HTML putA   (String name, Freezable[] fs) { 
-      throw H2O.unimpl();
-      //f0(name);
-      ////fs.writeHTML(this);
-      //return f1();
-    }
+    public HTML putA   (String name, Freezable[]fs){ throw H2O.unimpl(); }
 
     public HTML putAAStr(String name, String [][] sss) { throw H2O.unimpl(); }
     public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
     public HTML putAA8  (String name, long   [][] lss) { throw H2O.unimpl(); }
+    public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();
