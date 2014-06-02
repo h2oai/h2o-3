@@ -129,9 +129,10 @@ public abstract class DocGen<T extends DocGen> {
     public HTML arrayTail( ) { return p("</table></span>\n"); }
     public HTML array( String[] ss ) {
       arrayHead();
-      for( String s : ss ) p("<tr><td>").p(s).p("</td></tr>");
+      for( String s : ss ) p("<tr>").cell(s).p("</tr>");
       return arrayTail();
     }
+    public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
 
     //public StringBuilder progress(float value, StringBuilder sb){
     //  int    pct  = (int) (value * 100);

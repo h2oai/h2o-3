@@ -22,8 +22,8 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
   @API(help="cloud_uptime_millis")
   public long cloud_uptime_millis;
 
-  @API(help="All nodes are reporting good health")
-  public boolean cloud_healthy;
+  @API(help="Nodes reporting unhealthy")
+  public int bad_nodes;
 
   @API(help="Cloud voting is stable")
   public boolean consensus;
@@ -36,6 +36,9 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
   
   // Output fields one-per-JVM
   private static class Node extends Iced {
+    @API(help="IP")
+    final H2ONode h2o;
+
     @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT")
     final boolean healthy;
 
@@ -91,6 +94,7 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
+      this.h2o = h2o;
       healthy = (System.currentTimeMillis()-h2o._last_heard_from)<HeartBeatThread.TIMEOUT;
       last_ping = h2o._last_heard_from;
       sys_load = hb._system_load_average;
@@ -137,22 +141,67 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
     consensus = h._consensus;
     locked = h._locked;
     nodes = new Node[h._members.length];
-    cloud_healthy = true;
     for( int i=0; i<h._members.length; i++ ) {
       nodes[i] = new Node(h._members[i]);
-      cloud_healthy &= nodes[i].healthy;
+      if( !nodes[i].healthy ) bad_nodes++;
     }
     return this;
   }
 
+  // Pretty-print the status in HTML
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.bodyHead();
     ab.title(cloud_name);
-    ab.putStr("Status", !consensus
-              ? "<div class='alert alert-warn'>Adding new members</div>"
-              : (!locked ? "<div>Accepting new members</div>" : "<div>Ready</div>"));
+
+    // Status string
+    String statstr = "<div>Ready</div>";
+    if( !locked     ) statstr = "<div>Accepting new members</div>";
+    if( !consensus  ) statstr = "<div class='alert alert-warn'>Adding new members</div>";
+    if( bad_nodes!=0) statstr = "<div class='alert alert-error'>"+bad_nodes+" nodes are unhealthy</div>";
+    ab.putStr("Status", statstr);
+
     ab.putStr("Uptime",PrettyPrint.msecs(cloud_uptime_millis,true));
+
+    // Node status display
+    ab.arrayHead(new String[]{"IP","ping","Load","Data (cached)"});
+
+    // Totals line
+    long now = System.currentTimeMillis();
+    long max_ping=0;
+    float load=0f;
+    long total_data=0, cached_data=0;
+    for( Node node : nodes ) {
+      max_ping = Math.max(max_ping,(now-node.last_ping));
+      load += node.sys_load;
+      total_data  += node.total_value_size;
+      cached_data += node.  mem_value_size;
+    }
+    float avg_load = load/nodes.length;
+    formatRow(ab,"",ab.bold("Summary"),max_ping,avg_load,total_data,cached_data);
+
+    // All Node lines
+    for( Node n : nodes ) {
+      formatRow(ab, n.healthy?"":"class=\"error\"", 
+                n.h2o.toString(), now-n.last_ping, n.sys_load,
+                n.total_value_size, n.mem_value_size);
+    }
+
+    ab.arrayTail();
 
     return ab.bodyTail();
   }
+
+  private HTML formatRow( HTML ab, String color, 
+                          String name, long ping, float load, 
+                          long total_data, long mem_data ) {
+    ab.p("<tr").p(color).p(">");
+    // Basic node health
+    ab.cell(name).cell(PrettyPrint.msecs(ping,true)).cell(String.format("%4.3f",load));
+    // Data footprint
+    int data_perc = total_data==0?100:(int)(mem_data*100/total_data);
+    ab.cell(PrettyPrint.bytes(total_data)+(total_data==0?"":" ("+data_perc+"%)"));
+
+    return ab.p("</tr>");
+  }
+
 }

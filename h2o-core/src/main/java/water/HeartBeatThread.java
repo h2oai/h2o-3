@@ -73,7 +73,7 @@ public class HeartBeatThread extends Thread {
       hb.set_tot_mem   (run.totalMemory());
       hb._keys       = (H2O.STORE.size ());
       hb.set_mvalsz    (myHisto.histo(false)._cached);
-      hb.set_tvalsz    (0);
+      hb.set_tvalsz    (myHisto.histo(false)._total );
       hb._num_cpus   = (char)run.availableProcessors();
       Object load = null;
       try {
