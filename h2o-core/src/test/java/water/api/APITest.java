@@ -19,10 +19,17 @@ public class APITest extends TestUtil {
     // Serve some pages and confirm cloud does not lock
     try {
       TypeMap._check_no_locking=true; // Blow a nice assert if locking
-      RequestServer.SERVER.serve("/Cloud.html","GET",null,new Properties());
-      assertFalse(Paxos._cloudLocked);
+      serve("/");
+      serve("/Cloud.html");
+      serve("/junk");
+      serve("/HTTP404");
     } finally {
       TypeMap._check_no_locking=false;
     }
+  }
+
+  private void serve(String s) {
+    RequestServer.SERVER.serve(s,"GET",null,new Properties());
+    assertFalse(Paxos._cloudLocked);
   }
 }

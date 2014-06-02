@@ -36,15 +36,15 @@ public class RequestServer extends NanoHTTPD {
 
   static {
     // Data
-    addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files", "Data");
-    addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",        "Data");
+    addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files",  "Data");
+    addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",         "Data");
 
     // Admin
-    addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),  "Cloud","Admin");
+    addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),"Cloud",         "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
-    addToNavbar(registerGET("/"           ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
+    addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(registerGET("/"           ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
 
     initializeNavBar();
   }

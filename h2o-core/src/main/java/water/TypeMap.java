@@ -25,7 +25,10 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     "water.schemas.CloudV1",
-    "water.schemas.Schema"
+    "water.schemas.HTTP404V1",
+    "water.schemas.HTTP500V1",
+    "water.schemas.Schema",
+    "water.schemas.TutorialsV1",
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
