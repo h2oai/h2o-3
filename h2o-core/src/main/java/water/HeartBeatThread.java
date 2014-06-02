@@ -77,6 +77,8 @@ public class HeartBeatThread extends Thread {
       Object load = null;
       try {
         load = mbs.getAttribute(os, "SystemLoadAverage");
+        if( (double)load == -1 ) // SystemLoadAverage not available on windows
+          load = mbs.getAttribute(os, "SystemCpuLoad");
       } catch( Exception e ) {
         // Ignore, data probably not available on this VM
       }

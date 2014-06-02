@@ -1,7 +1,6 @@
 package water.api;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -32,13 +31,16 @@ public class RequestServer extends NanoHTTPD {
   // The list is searched in-order, first match gets dispatched.
   protected static final LinkedHashMap<String,Method> _handlers = new LinkedHashMap<>();
 
-  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap();
-  private static ArrayList<String> _navbarOrdering = new ArrayList();
+  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
+  private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
   static {
     // Data
     addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files", "Data");
     addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",        "Data");
+
+    // Admin
+    addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),  "Cloud","Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
@@ -218,7 +220,7 @@ public class RequestServer extends NanoHTTPD {
 
   // Resource loading ----------------------------------------------------------
   // cache of all loaded resources
-  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap();
+  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
   // Returns the response containing the given uri with the appropriate mime type.
   private Response getResource(String uri) {
     byte[] bytes = _cache.get(uri);
@@ -306,7 +308,7 @@ public class RequestServer extends NanoHTTPD {
   public static String addToNavbar(String r, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
-      arl = new ArrayList();
+      arl = new ArrayList<>();
       _navbar.put(category, arl);
       _navbarOrdering.add(category);
     }
@@ -326,9 +328,7 @@ public class RequestServer extends NanoHTTPD {
         String url = h.schema(version).acceptsFrame(fr);
         if( url != null ) al.add(url);
       } 
-      catch( InstantiationException   ignore ) { }
-      catch( IllegalArgumentException ignore ) { }
-      catch( IllegalAccessException   ignore ) { }
+      catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }
     return al.toArray(new String[al.size()]);
   }

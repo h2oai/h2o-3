@@ -60,7 +60,16 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
     public HTML putA8  (String name, long   [] ls) { throw H2O.unimpl(); }
     public HTML putA8d (String name, double [] ds) { throw H2O.unimpl(); }
-    public HTML putA   (String name, Freezable[]fs){ throw H2O.unimpl(); }
+    public HTML putA   (String name, Freezable[]fs){ 
+      if( fs==null ) return f(name,"null");
+      f0(name).arrayHead();
+      for( Freezable f : fs ) {
+        p("<tr><td>");
+        if( f!=null ) f.writeHTML(this);
+        p("</td></tr>");
+      }
+      return arrayTail().f1();
+    }
 
     public HTML putAAStr(String name, String [][] sss) { throw H2O.unimpl(); }
     public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
