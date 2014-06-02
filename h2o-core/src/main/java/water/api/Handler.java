@@ -20,7 +20,8 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   /** Dumb Version->Schema mapping */
   abstract protected S schema(int version);
 
-  protected final Schema handle(int version, Method meth, Properties parms) throws IllegalAccessException, InvocationTargetException {
+  // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
+  protected final Schema handle(int version, Method meth, Properties parms) throws Exception {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
@@ -31,7 +32,13 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
 
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
     _t_start = System.currentTimeMillis();
-    meth.invoke(this);
+    try { meth.invoke(this); }
+    // Exception throws out of the invoked method turn into InvocationTargetException
+    // rather uselessly.  Peel out the original exception & throw it.
+    catch( InvocationTargetException ite ) {
+      Throwable t = ite.getCause();
+      throw (t instanceof Exception) ? (Exception)t : new RuntimeException(t);
+    }
     _t_stop  = System.currentTimeMillis();
 
     // Version-specific unwind from the Handler back into the Schema

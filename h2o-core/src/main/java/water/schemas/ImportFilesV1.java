@@ -43,7 +43,8 @@ public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ImportFiles");
-    ab.href("path",path,"Parse?srcs="+Arrays.toString(keys));
+    if( keys.length==0 ) ab.putStr("path",path);
+    else ab.href("path",path,ParseV2.link(keys));
     ab.putAStr("files",files);
     ab.putAStr( "keys", keys);
     ab.putAStr("fails",fails);

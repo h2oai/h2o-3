@@ -7,12 +7,15 @@ import water.api.Handler;
 import water.api.RequestServer;
 import water.util.RString;
 
-public class DeepLearning extends Handler {
+public class DeepLearningHandler extends Handler<DeepLearningHandler,DeepLearningV2> {
   // Inputs
-  private Key _src; // Key holding final value after job is removed
+  Key _src; // Key holding final value after job is removed
 
   // Output
-  private Key _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
+  Key _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
+
+  // The model!
+  DeepLearningModel _dlm;
 
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { 
@@ -21,9 +24,7 @@ public class DeepLearning extends Handler {
     dl.classification = true;
     dl.response = dl.source.lastVec();
     dl.exec();
-    DeepLearningModel dlm = DKV.get(dl.dest()).get();
-    //return new Response("Deep Learning done: "+dl._key+", "+dlm.error());
-    throw H2O.unimpl();
+    _dlm = DKV.get(dl.dest()).get();
   }
 
   // DL Schemas are at V2

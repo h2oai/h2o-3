@@ -1,7 +1,6 @@
 package water.api;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -12,6 +11,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 import water.util.RString;
 import water.schemas.*;
+import water.fvec.Frame;
 
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
@@ -31,13 +31,16 @@ public class RequestServer extends NanoHTTPD {
   // The list is searched in-order, first match gets dispatched.
   protected static final LinkedHashMap<String,Method> _handlers = new LinkedHashMap<>();
 
-  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap();
-  private static ArrayList<String> _navbarOrdering = new ArrayList();
+  private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
+  private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
   static {
     // Data
     addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files", "Data");
     addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",        "Data");
+
+    // Admin
+    addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),  "Cloud","Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),  "Tutorials Home","Help");
@@ -178,7 +181,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Handling ------------------------------------------------------------------
-  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws Exception {
     Schema S;
     switch( type ) {
     case html: // These request-types only dictate the response-type; 
@@ -188,7 +191,7 @@ public class RequestServer extends NanoHTTPD {
       Class x = meth.getDeclaringClass();
       Class<Handler> clz = (Class<Handler>)x;
       Handler h = clz.newInstance();
-      return h.handle(version,meth,parms);
+      return h.handle(version,meth,parms); // Can throw any Exception the handler throws
     }
     case query:
     case help:
@@ -217,7 +220,7 @@ public class RequestServer extends NanoHTTPD {
 
   // Resource loading ----------------------------------------------------------
   // cache of all loaded resources
-  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap();
+  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
   // Returns the response containing the given uri with the appropriate mime type.
   private Response getResource(String uri) {
     byte[] bytes = _cache.get(uri);
@@ -301,10 +304,11 @@ public class RequestServer extends NanoHTTPD {
     return str.toString();
   }
 
+  // Add a new item to the navbar
   public static String addToNavbar(String r, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
-      arl = new ArrayList();
+      arl = new ArrayList<>();
       _navbar.put(category, arl);
       _navbarOrdering.add(category);
     }
@@ -312,4 +316,20 @@ public class RequestServer extends NanoHTTPD {
     return r;
   }
 
+  // Return URLs for things that want to appear Frame-inspection page
+  public static String[] frameChoices( int version, Frame fr ) {
+    ArrayList<String> al = new ArrayList<>();
+    for( String x : _handlers.keySet() ) {
+      try {
+        Method meth = _handlers.get(x);
+        Class clz0 = meth.getDeclaringClass();
+        Class<Handler> clz = (Class<Handler>)clz0;
+        Handler h = clz.newInstance();
+        String url = h.schema(version).acceptsFrame(fr);
+        if( url != null ) al.add(url);
+      } 
+      catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
+    }
+    return al.toArray(new String[al.size()]);
+  }
 }
