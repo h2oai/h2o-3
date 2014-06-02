@@ -18,10 +18,13 @@ import java.util.regex.Pattern;
 public class LinuxProcFileReader {
   private String _systemData;
   private String _processData;
+  private String _pid;
 
   private long _systemIdleTicks = -1;
   private long _systemTotalTicks = -1;
   private long _processTotalTicks = -1;
+
+  private long _processRss = -1;
 
   private int _processNumOpenFds = -1;
 
@@ -47,31 +50,42 @@ public class LinuxProcFileReader {
   public long getProcessTotalTicks() { assert _processTotalTicks > 0;  return _processTotalTicks; }
 
   /**
+   * @return resident set size (RSS) of this process.
+   */
+  public long getProcessRss()        { assert _processRss > 0;         return _processRss; }
+
+  /**
    * @return number of currently open fds of this process.
    */
   public int getProcessNumOpenFds() { assert _processNumOpenFds > 0;  return _processNumOpenFds; }
 
+
+  /**
+   * @return process id for this node as a String.
+   */
+  public String getProcessID() { return _pid; }
   /**
    * Read and parse data from /proc/stat and /proc/<pid>/stat.
    * If this doesn't work for some reason, the values will be -1.
    */
   public void read() {
-    File f = new File ("/proc/stat");
-    if (! f.exists()) {
-      return;
-    }
-
-    String pid;
+    String pid = "-1";
     try {
-      pid = getProcessId();
+      _pid = pid = getProcessId_impl();
+    }
+    catch( Exception ignore ) {}
 
+    File f = new File ("/proc/stat");
+    if( !f.exists() ) return;
+
+    try {
       readSystemProcFile();
       readProcessProcFile(pid);
       readProcessNumOpenFds(pid);
       parseSystemProcFile(_systemData);
       parseProcessProcFile(_processData);
     }
-    catch (Exception _) {}
+    catch (Exception ignore) {}
   }
 
   /**
@@ -82,7 +96,7 @@ public class LinuxProcFileReader {
             (_processNumOpenFds >= 0));
   }
 
-  private static String getProcessId() throws Exception {
+  private static String getProcessId_impl() throws Exception {
     // Note: may fail in some JVM implementations
     // therefore fallback has to be provided
 
@@ -127,7 +141,7 @@ public class LinuxProcFileReader {
     try {
       _systemData = readFile(new File("/proc/stat"));
     }
-    catch (Exception _) {}
+    catch (Exception ignore) {}
   }
 
   /**
@@ -153,15 +167,12 @@ public class LinuxProcFileReader {
       _systemIdleTicks   = Long.parseLong(m.group(4));
       _systemTotalTicks = systemUserTicks + systemNiceTicks + systemSystemTicks + _systemIdleTicks;
     }
-    catch (Exception _) {}
+    catch (Exception ignore) {}
   }
 
   private void readProcessProcFile(String pid) {
-    try {
-      String s = "/proc/" + pid + "/stat";
-      _processData = readFile(new File(s));
-    }
-    catch (Exception _) {}
+    try { _processData = readFile(new File("/proc/" + pid + "/stat")); }
+    catch (Exception ignore) {}
   }
 
   private void parseProcessProcFile(String s) {
@@ -171,7 +182,12 @@ public class LinuxProcFileReader {
       BufferedReader reader = new BufferedReader(new StringReader(s));
       String line = reader.readLine();
 
-      Pattern p = Pattern.compile("(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+).*");
+      Pattern p = Pattern.compile(
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + ".*");
       Matcher m = p.matcher(line);
       boolean b = m.matches();
       if (! b) {
@@ -181,8 +197,9 @@ public class LinuxProcFileReader {
       long processUserTicks   = Long.parseLong(m.group(14));
       long processSystemTicks   = Long.parseLong(m.group(15));
       _processTotalTicks = processUserTicks + processSystemTicks;
+      _processRss = Long.parseLong(m.group(24));
     }
-    catch (Exception _) {}
+    catch (Exception ignore) {}
   }
 
   private void readProcessNumOpenFds(String pid) {
@@ -194,7 +211,7 @@ public class LinuxProcFileReader {
         _processNumOpenFds = arr.length;
       }
     }
-    catch (Exception _) {}
+    catch (Exception ignore) {}
   }
 
   /**
@@ -251,5 +268,6 @@ public class LinuxProcFileReader {
     System.out.println("System idle ticks: " + lpfr.getSystemIdleTicks());
     System.out.println("System total ticks: " + lpfr.getSystemTotalTicks());
     System.out.println("Process total ticks: " + lpfr.getProcessTotalTicks());
+    System.out.println("Process RSS: " + lpfr.getProcessRss());
   }
 }

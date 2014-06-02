@@ -12,7 +12,7 @@ public class Cloud extends Handler<Cloud,CloudV1> {
 
   public String _version, _cloud_name;
   public long _uptime_ms;
-  public boolean _cloud_healthy, _consensus, _locked;
+  public boolean _consensus, _locked;
   public H2ONode[] _members;
 
   // Running all in exec2, no need for backgrounding on F/J threads
@@ -26,8 +26,6 @@ public class Cloud extends Handler<Cloud,CloudV1> {
     _locked = Paxos._cloudLocked;
     H2O cloud = H2O.CLOUD;
     _members = cloud.members();
-    _cloud_healthy = true;
-    for( H2ONode h2o : _members ) _cloud_healthy &= h2o._node_healthy;
   }
 
   // Supported at V1 same as always

@@ -22,11 +22,10 @@ import water.util.DocGen.HTML;
 
 public class H2ONode extends Iced<H2ONode> implements Comparable {
   int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
-  long _last_heard_from; // Time in msec since we last heard from this Node
   boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
+  public long _last_heard_from; // Time in msec since we last heard from this Node
   public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
-  int _tcp_readers;               // Count of started TCP reader threads
-  public boolean _node_healthy;
+  public int _tcp_readers;               // Count of started TCP reader threads
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
@@ -77,7 +76,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     _unique_idx = unique_idx;
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
-    _node_healthy = true;
   }
 
   // ---------------
