@@ -3,6 +3,8 @@ package water.schemas;
 import water.*;
 import water.api.Cloud;
 import water.api.Handler;
+import water.util.DocGen.HTML;
+import water.util.PrettyPrint;
 
 public class CloudV1 extends Schema<Cloud,CloudV1> {
   // This Schema has no inputs
@@ -143,4 +145,14 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
     return this;
   }
 
+  @Override public HTML writeHTML_impl( HTML ab ) {
+    ab.bodyHead();
+    ab.title(cloud_name);
+    ab.putStr("Status", !consensus
+              ? "<div class='alert alert-warn'>Adding new members</div>"
+              : (!locked ? "<div>Accepting new members</div>" : "<div>Ready</div>"));
+    ab.putStr("Uptime",PrettyPrint.msecs(cloud_uptime_millis,true));
+
+    return ab.bodyTail();
+  }
 }

@@ -101,10 +101,8 @@ public class RequestServer extends NanoHTTPD {
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
     if (uri.endsWith(".ico")) return;
-    if (uri.startsWith("Typeahead")) return;
-    if (uri.startsWith("Cloud.json")) return;
-    if (uri.startsWith("LogAndEcho.json")) return;
-    if (uri.startsWith("Jobs.json")) return;
+    if (uri.startsWith("/Typeahead")) return;
+    if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
 
     String log = String.format("%-4s %s", method, uri);
@@ -153,7 +151,6 @@ public class RequestServer extends NanoHTTPD {
   @Override public Response serve( String uri, String method, Properties header, Properties parms ) {
     // Jack priority for user-visible requests
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-    maybeLogRequest(uri, method, parms);
 
     // determine version
     int version = parseVersion(uri);
@@ -166,6 +163,7 @@ public class RequestServer extends NanoHTTPD {
     String path = type.requestName(uripath); // Strip suffix type from middle of URI
 
     // Load resources, or dispatch on handled requests
+    maybeLogRequest(path, method, parms);
     try {
       // Find handler for url
       Method meth = lookup(method,path);
