@@ -9,8 +9,14 @@ public class APITest extends TestUtil {
 
   @BeforeClass public static void stall() { 
     stall_till_cloudsize(1); 
-    // Start Nano server
-    H2O.finalizeRequest();
+    // Start Nano server; block for starting
+    Runnable run = H2O.finalizeRequest();
+    if( run != null ) 
+      synchronized(run) {
+        while( water.api.RequestServer.SERVER==null ) 
+          try { run.wait(); }
+          catch( InterruptedException ignore ) {}
+      }
   }
 
   // ---

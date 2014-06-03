@@ -117,7 +117,7 @@ public abstract class DocGen<T extends DocGen> {
 
     public HTML arrayHead( ) { return arrayHead(null); }
     public HTML arrayHead( String[] headers ) {
-      p("<span style='display: inline-block;'>");
+      p("<span style='display: block;'>");
       p("<table class='table table-striped table-bordered'>\n");
       if( headers != null ) {
         p("<tr>");
@@ -133,6 +133,7 @@ public abstract class DocGen<T extends DocGen> {
       return arrayTail();
     }
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
+    public HTML cell( long l ) { return cell(Long.toString(l)); }
 
     //public StringBuilder progress(float value, StringBuilder sb){
     //  int    pct  = (int) (value * 100);

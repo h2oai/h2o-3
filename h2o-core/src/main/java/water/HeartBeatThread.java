@@ -31,10 +31,6 @@ public class HeartBeatThread extends Thread {
   // to remove him.  This must be strictly greater than the TIMEOUT.
   static final int SUSPECT = TIMEOUT+500;
 
-  // Receive queue depth count before we decide a Node is suspect, and call for a vote
-  // to remove him.
-  static public final int QUEUEDEPTH = 100;
-
   // My Histogram. Called from any thread calling into the MM.
   // Singleton, allocated now so I do not allocate during an OOM event.
   static private final Cleaner.Histo myHisto = new Cleaner.Histo();

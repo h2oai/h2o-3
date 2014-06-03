@@ -78,13 +78,16 @@ public class RequestServer extends NanoHTTPD {
   // Keep spinning until we get to launch the NanoHTTPD.  Launched in a
   // seperate thread (I'm guessing here) so the startup process does not hang
   // if the various web-port accesses causes Nano to hang on startup.
-  public static void start() {
-    new Thread( new Runnable() {
+  public static Runnable start() {
+    Runnable run=new Runnable() {
         @Override public void run()  {
           while( true ) {
             try {
               // Try to get the NanoHTTP daemon started
-              SERVER = new RequestServer(water.init.NetworkInit._apiSocket);
+              synchronized(this) {
+                SERVER = new RequestServer(water.init.NetworkInit._apiSocket);
+                notifyAll();
+              }
               break;
             } catch( Exception ioe ) {
               Log.err("Launching NanoHTTP server got ",ioe);
@@ -92,7 +95,9 @@ public class RequestServer extends NanoHTTPD {
             }
           }
         }
-      }, "Request Server launcher").start();
+      };
+    new Thread(run, "Request Server launcher").start();
+    return run;
   }
 
   // Log all requests except the overly common ones

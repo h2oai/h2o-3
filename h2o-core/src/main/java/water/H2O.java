@@ -1,7 +1,6 @@
 package water;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -450,11 +449,13 @@ final public class H2O {
     RequestServer.addToNavbar(RequestServer.registerGET(url,hclass,hmeth),label,menu);
   }
 
-  static public void finalizeRequest() {
-    if( _doneRequests ) return;
+  /** Start the web service; disallow future URL registration.
+   *  Returns a Runnable that will be notified once the server is up.  */
+  static public Runnable finalizeRequest() {
+    if( _doneRequests ) return null;
     _doneRequests = true;
     // Start the Nano HTTP server thread
-    water.api.RequestServer.start();
+    return water.api.RequestServer.start();
   }
 
   // --------------------------------------------------------------------------
