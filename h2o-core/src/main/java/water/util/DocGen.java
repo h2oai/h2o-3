@@ -53,7 +53,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML put   (String name, Freezable f){return f==null?f(name,"null"):f.writeHTML(f0(name)).f1(); }
     public HTML putEnum(String name, Enum   e) { return f(name,e.toString()); }
 
-    public HTML putAStr(String name, String [] ss) { return f0(name).array(ss).f1(); }
+    public HTML putAStr(String name, String [] ss) { return ss==null?f(name,"null"):f0(name).array(ss).f1(); }
     public HTML putA1  (String name, byte   [] bs) { throw H2O.unimpl(); }
     public HTML putA2  (String name, short  [] ss) { 
       if( ss==null ) return f(name,"null");

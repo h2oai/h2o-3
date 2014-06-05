@@ -3,10 +3,7 @@ package water.schemas;
 import java.io.File;
 import java.util.Arrays;
 import water.*;
-import water.api.Handler;
 import water.api.Parse;
-import water.api.RequestServer;
-import water.fvec.Frame;
 import water.util.DocGen.HTML;
 
 public class ParseV2 extends Schema<Parse,ParseV2> {
@@ -50,11 +47,8 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Parse");
-    Frame fr = DKV.get(hex).get();
-    String[] urls = RequestServer.frameChoices(getVersion(),fr);
-    for( String url : urls )
-      ab.href("hex",url,url);
-    return ab;
+    String url = InspectV1.link(hex);
+    return ab.href("hex",url,url);
   }
 
   // Helper so ImportV1 can link to ParseV2

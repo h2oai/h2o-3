@@ -191,13 +191,13 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
       gc_free    += n.free_mem; // GC
       gc_tot     += n. tot_mem;
       gc_max     += n. max_mem;
-      disk_free  += n.free_disk;
+      disk_free  += n.free_disk; // Disk
       disk_max   += n. max_disk;
-      cpu_rpcs   += n.rpcs_active;
-      tcps       += n.tcps_active;
+      cpu_rpcs   += n.rpcs_active; // Work
+      tcps       += n.tcps_active; // I/O
       fds        += n.open_fds;
-      cores      += n.num_cpus;
-      for( int i=0; i<fjthrds.length; i++ ) {
+      cores      += n.num_cpus; // CPUs
+      for( int i=0; i<fjthrds.length; i++ ) { // Work
         fjadd(fjthrds,i,n.fjthrds[i]);
         fjadd(fjqueue,i,n.fjqueue[i]);
       }

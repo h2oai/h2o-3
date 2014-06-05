@@ -1,7 +1,6 @@
 package water.api;
 
 import java.util.Properties;
-import water.H2O.H2OCountedCompleter;
 import water.H2O;
 import water.H2ONode;
 import water.Paxos;
