@@ -87,7 +87,7 @@ build/classes/water/init/BuildVersion.class: ../build/BuildVersion.java
 build/h2o-core.jar: $(classes) build/classes/water/init/BuildVersion.class
 	@mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
-	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes . -C build/tmp .
+	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes . -C build/tmp . -C src/main resources
 	@rm -rf build/tmp
 
 
