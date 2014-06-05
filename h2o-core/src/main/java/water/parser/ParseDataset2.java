@@ -67,7 +67,6 @@ public class ParseDataset2 extends Job<Frame> {
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
     job.start(fjt);
-    H2O.submitTask(fjt);
     return job;
   }
   // Setup a private background parse job

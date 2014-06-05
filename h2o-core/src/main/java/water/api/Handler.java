@@ -37,7 +37,9 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {
       Throwable t = ite.getCause();
-      throw (t instanceof Exception) ? (Exception)t : new RuntimeException(t);
+      if( t instanceof RuntimeException ) throw (RuntimeException)t;
+      if( t instanceof Error ) throw (Error)t;
+      throw new RuntimeException(t);
     }
     _t_stop  = System.currentTimeMillis();
 

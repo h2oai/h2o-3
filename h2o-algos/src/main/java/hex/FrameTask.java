@@ -438,7 +438,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * and adapts response according to the CaseMode/CaseValue if set.
    */
   @Override public final void map(Chunk [] chunks, NewChunk [] outputs){
-    if(_job != null && _job._key != null && !Job.isRunning(_job._key))throw new Job.JobCancelledException();
+    if(_job != null && _job._key != null && !Job.isRunning(_job._key)) throw new RuntimeException("Job cancelled");
     final int nrows = chunks[0]._len;
     final long offset = chunks[0]._start;
     chunkInit();
