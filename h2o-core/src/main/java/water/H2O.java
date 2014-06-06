@@ -41,6 +41,7 @@ final public class H2O {
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }
+  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.

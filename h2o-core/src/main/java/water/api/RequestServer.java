@@ -48,6 +48,8 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(registerGET("/"           ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
 
     initializeNavBar();
+
+    registerGET("/Frames", FramesHandler.class, "list");
   }
 
   /** Registers the request with the request server.  */
@@ -69,7 +71,7 @@ public class RequestServer extends NanoHTTPD {
   // Lookup the method/url in the register list, and return a matching Method
   private static Method lookup( String method, String url ) {
     String s = method+url;
-    for( String x : _handlers.keySet() ) 
+    for( String x : _handlers.keySet() )
       if( x.equals(s) )         // TODO: regex
         return _handlers.get(x);
     return null;
@@ -137,9 +139,9 @@ public class RequestServer extends NanoHTTPD {
     int version=0;
     char c = uri.charAt(idx);   // Allow both /### and /v###
     if( c=='v' ) c = uri.charAt(++idx);
-    while( idx < uri.length() && '0' <= c && c <= '9' ) { 
-      version = version*10+(c-'0'); 
-      c = uri.charAt(++idx); 
+    while( idx < uri.length() && '0' <= c && c <= '9' ) {
+      version = version*10+(c-'0');
+      c = uri.charAt(++idx);
     }
     if( idx > 10 || version > LATEST_VERSION || version < 1 || uri.charAt(idx) != '/' )
       return (0<<16)|LATEST_VERSION; // Failed number parse or baloney version
@@ -175,6 +177,7 @@ public class RequestServer extends NanoHTTPD {
       Method meth = lookup(method,path);
       // if the request is not known, treat as resource request, or 404 if not found
       if( meth == null ) return getResource(uri);
+      // TODO: handlers should return an object that has the result as well as the needed http headers including status code
       return wrap(HTTP_OK,handle(type,meth,version,parms),type);
     } catch( IllegalArgumentException e ) {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
@@ -188,7 +191,7 @@ public class RequestServer extends NanoHTTPD {
   private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws Exception {
     Schema S;
     switch( type ) {
-    case html: // These request-types only dictate the response-type; 
+    case html: // These request-types only dictate the response-type;
     case java: // the normal action is always done.
     case json:
     case xml: {
@@ -232,7 +235,7 @@ public class RequestServer extends NanoHTTPD {
       // Try-with-resource
       try (InputStream resource = water.init.JarHash.getResource2(uri)) {
           if( resource != null ) {
-            try { bytes = water.persist.Persist.toByteArray(resource); } 
+            try { bytes = water.persist.Persist.toByteArray(resource); }
             catch( IOException e ) { Log.err(e); }
             if( bytes != null ) {
               byte[] res = _cache.putIfAbsent(uri,bytes);
@@ -331,7 +334,7 @@ public class RequestServer extends NanoHTTPD {
         Handler h = clz.newInstance();
         String url = h.schema(version).acceptsFrame(fr);
         if( url != null ) al.add(url);
-      } 
+      }
       catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }
     return al.toArray(new String[al.size()]);
