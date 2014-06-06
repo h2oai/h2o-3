@@ -174,8 +174,8 @@ final public class H2O {
     // Do the actually intended work
     protected abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
-        ex.printStackTrace();
+      // if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
+      ex.printStackTrace();
       return true;
     }
     // In order to prevent deadlock, threads that block waiting for a reply
