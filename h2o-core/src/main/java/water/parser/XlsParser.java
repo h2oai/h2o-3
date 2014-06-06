@@ -9,7 +9,6 @@ import water.UDP;
 
 class XlsParser extends Parser {
   XlsParser( ParserSetup ps ) { super(ps); }
-  @Override protected boolean parallelParseSupported() { return false; }
   @Override DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
 
   // A Stream, might be a Zip stream
