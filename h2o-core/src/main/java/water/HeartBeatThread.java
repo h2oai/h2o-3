@@ -31,10 +31,6 @@ public class HeartBeatThread extends Thread {
   // to remove him.  This must be strictly greater than the TIMEOUT.
   static final int SUSPECT = TIMEOUT+500;
 
-  // Receive queue depth count before we decide a Node is suspect, and call for a vote
-  // to remove him.
-  static public final int QUEUEDEPTH = 100;
-
   // My Histogram. Called from any thread calling into the MM.
   // Singleton, allocated now so I do not allocate during an OOM event.
   static private final Cleaner.Histo myHisto = new Cleaner.Histo();
@@ -72,7 +68,8 @@ public class HeartBeatThread extends Thread {
       hb.set_max_mem   (run.  maxMemory());
       hb.set_tot_mem   (run.totalMemory());
       hb._keys       = (H2O.STORE.size ());
-      hb.set_valsz     (myHisto.histo(false)._cached);
+      hb.set_mvalsz    (myHisto.histo(false)._cached);
+      hb.set_tvalsz    (myHisto.histo(false)._total );
       hb._num_cpus   = (char)run.availableProcessors();
       Object load = null;
       try {
@@ -116,6 +113,7 @@ public class HeartBeatThread extends Thread {
         hb._process_total_ticks = -1;
         hb._process_num_open_fds = -1;
       }
+      hb._pid = lpfr.getProcessID();
 
       // Announce what Cloud we think we are in.
       // Publish our health as well.

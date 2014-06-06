@@ -194,7 +194,7 @@ public class Vec extends Keyed {
   public final boolean isEnum(){return _domain != null;}
 
   /** Whether or not this column parsed as a time, and if so what pattern was used. */
-  private final boolean isTime(){ return _time>=0; }
+  public final boolean isTime(){ return _time>=0; }
   private final int timeMode(){ return _time; }
   public final String timeParse(){ return ParseTime.TIME_PARSE[_time]; }
 

@@ -13,27 +13,44 @@ import water.util.Log;
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
   public static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY);
-
-  public Key _dest;       // Key for result
-  public T _result;
+  private static class JobList extends Keyed { 
+    Key[] _jobs;
+    JobList() { super(LIST); _jobs = new Key[0]; }
+  }
 
   transient H2OCountedCompleter _fjtask; // Top-level task you can block on
 
+  /** Jobs produce a single DKV result into Key _dest */
+  public final Key _dest;       // Key for result
+  public final Key dest() { return _dest; }
+
+  /** Basic metadata about the Job */
   public final String _description;
   public long _start_time;     // Job started
-  public long   _end_time;     // Job ended
-  private String _exception;    // Unpacked exception & stack trace
+  public long   _end_time;     // Job end time, or 0 if not ended
+  private String _exception;   // Unpacked exception & stack trace
 
   /** Possible job states. */
   public static enum JobState {
     CREATED,   // Job was created
     RUNNING,   // Job is running
     CANCELLED, // Job was cancelled by user
-    FAILED,   // Job crashed, error message/exception is available
+    FAILED,    // Job crashed, error message/exception is available
     DONE       // Job was successfully finished
   }
 
   public JobState _state;
+
+  /** Returns true if the job was cancelled by the user or crashed.
+   *  @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#FAILED} */
+  private boolean isCancelledOrCrashed() {
+    return _state == JobState.CANCELLED || _state == JobState.FAILED;
+  }
+
+  /** Returns true if this job is running
+   * @return returns true only if this job is in running state. */
+  public boolean isRunning() { return _state == JobState.RUNNING; }
+
 
   protected Job( Key dest, String desc ) { 
     super(defaultJobKey()); 
@@ -41,23 +58,22 @@ public class Job<T extends Keyed> extends Keyed {
     _dest = dest; 
     _state = JobState.CREATED;  // Created, but not yet running
   }
-
-  public final Key dest() { return _dest; }
-
-  // Job Keys are pinned to this node (i.e., the node invoked computation),
-  // because it should be almost always updated locally
+  // Job Keys are pinned to this node (i.e., the node that invoked the
+  // computation), because it should be almost always updated locally
   private static Key defaultJobKey() { return Key.make((byte) 0, Key.JOB, H2O.SELF); }
 
+
   /** Start this task based on given top-level fork-join task representing job computation.
-   * @param fjtask top-level job computation task.
-   * @return this job in {@link JobState#RUNNING} state
-   *
-   * @see JobState
-   * @see H2OCountedCompleter
+   *  @param fjtask top-level job computation task.
+   *  @return this job in {@link JobState#RUNNING} state
+   *  
+   *  @see JobState
+   *  @see H2OCountedCompleter
    */
   protected Job start(final H2OCountedCompleter fjtask) {
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
-//    assert fjtask != null : "Starting a job with null working task is not permitted!";
+    assert fjtask != null : "Starting a job with null working task is not permitted!";
+    assert _key.home();         // Always starting on same node job was created
     _fjtask = fjtask;
     _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
@@ -73,6 +89,7 @@ public class Job<T extends Keyed> extends Keyed {
         return old;
       }
     }.invoke(LIST);
+    H2O.submitTask(fjtask);
     return this;
   }
 
@@ -88,10 +105,14 @@ public class Job<T extends Keyed> extends Keyed {
   protected T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _fjtask.join();             // Block until top-level job is done
+    assert _key.home();         // Always blocking on same node job was created
     T ans = DKV.get(_dest).get();
-    remove();                   // Remove self-job
+    done();                     // Remove self-job
     return ans;
   }
+
+  /** Marks job as finished and records job end time. */
+  public void done() { cancel(null,JobState.DONE); }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
@@ -99,10 +120,10 @@ public class Job<T extends Keyed> extends Keyed {
   public void cancel() {
     cancel(null, JobState.CANCELLED);
   }
+
   /** Signal exceptional cancellation of this job.
-   * @param ex exception causing the termination of job.
-   */
-  public void cancel(Throwable ex){
+   *  @param ex exception causing the termination of job. */
+  public void cancel(Throwable ex) {
     if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
@@ -110,16 +131,18 @@ public class Job<T extends Keyed> extends Keyed {
     String stackTrace = sw.toString();
     cancel("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
   }
+
   /** Signal exceptional cancellation of this job.
-   * @param msg cancellation message explaining reason for cancelation
-   */
+   *  @param msg cancellation message explaining reason for cancelation */
   public void cancel(final String msg) {
-    JobState js = msg == null ? JobState.CANCELLED : JobState.FAILED;
-    cancel(msg, js);
+    cancel(msg, msg == null ? JobState.CANCELLED : JobState.FAILED);
   }
+
   private void cancel(final String msg, final JobState resultingState ) {
-    if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     assert resultingState != JobState.RUNNING;
+    if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
+    if( _state == resultingState ) return; // No change if already done
+
     final long done = System.currentTimeMillis();
     _exception = msg;
     _state = resultingState;
@@ -128,18 +151,19 @@ public class Job<T extends Keyed> extends Keyed {
     new TAtomic<Job>() {
       @Override public Job atomic(Job old) {
         if( old == null ) return null; // Job already removed
-        if( old.isCancelledOrCrashed() ) return null; // Job already canceled/crashed
+        if( old._state == resultingState ) return null; // Job already canceled/crashed
         // Atomically capture cancel/crash state, plus end time
         old._exception = msg;
         old._state = resultingState;
         old._end_time = done;
-        old._result = null; // No result, especially no giant but broken result
         return old;
       }
+      @Override void onSuccess( Job old ) {
+        // Run the onCancelled code synchronously, right now
+        if( isCancelledOrCrashed() )
+          onCancelled();
+      }
     }.invoke(_key);
-
-    // Run the onCancelled code synchronously, right now
-    onCancelled();
   }
 
   /**
@@ -147,18 +171,6 @@ public class Job<T extends Keyed> extends Keyed {
    */
   protected void onCancelled() {
   }
-
-  /** Returns true if the job was cancelled by the user or crashed.
-   * @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#FAILED}
-   */
-  private boolean isCancelledOrCrashed() {
-    return _state == JobState.CANCELLED || _state == JobState.FAILED;
-  }
-
-  /** Returns true if this job is running
-   * @return returns true only if this job is in running state.
-   */
-  public boolean isRunning() { return _state == JobState.RUNNING; }
 
    /** Check if given job is running.
    *
@@ -171,15 +183,6 @@ public class Job<T extends Keyed> extends Keyed {
     return ((Job)j.get()).isRunning();
   }
 
-  public static class JobCancelledException extends RuntimeException {
-    public JobCancelledException(){super("job was cancelled!");}
-    public JobCancelledException(String msg){super("job was cancelled! with msg '" + msg + "'");}
-  }
-
   public interface ProgressMonitor { public void update( long len ); }
 
-  private static class JobList extends Keyed { 
-    Key[] _jobs;
-    JobList() { super(LIST); _jobs = new Key[0]; }
-  }
 }

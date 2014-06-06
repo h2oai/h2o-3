@@ -1,7 +1,6 @@
 package water;
 
 import java.util.Arrays;
-import water.Weaver;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -23,6 +22,13 @@ public class TypeMap {
     "water.fvec.C1NChunk",// used as constant in parser
     "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
     "water.fvec.Vec$VectorGroup", // Used in TestUtil
+
+    // Status pages looked at without locking the cloud
+    "water.schemas.CloudV1",
+    "water.schemas.HTTP404V1",
+    "water.schemas.HTTP500V1",
+    "water.schemas.Schema",
+    "water.schemas.TutorialsV1",
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
@@ -30,8 +36,10 @@ public class TypeMap {
   static private String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of IcedImpl
   static private Icer[] GOLD;
-  // Unique ides
+  // Unique IDs
   static private int IDS;
+  // JUnit helper flag
+  static public volatile boolean _check_no_locking;
   static {
     CLAZZES = BOOTSTRAP_CLASSES;
     GOLD = new Icer[BOOTSTRAP_CLASSES.length];
@@ -113,6 +121,7 @@ public class TypeMap {
   // get either the old or new arrays.  However readers are all reader with
   // smaller type ids, and these will work fine in either old or new arrays.
   synchronized static private int install( String className, int id ) {
+    assert !_check_no_locking : "Locking cloud to assign typeid to "+className;
     Paxos.lockCloud();
     if( id == -1 ) id = IDS++;  // Leader will get an ID under lock
     MAP.put(className,id);      // No race on insert, since under lock

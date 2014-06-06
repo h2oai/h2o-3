@@ -53,9 +53,15 @@ public abstract class DocGen<T extends DocGen> {
     public HTML put   (String name, Freezable f){return f==null?f(name,"null"):f.writeHTML(f0(name)).f1(); }
     public HTML putEnum(String name, Enum   e) { return f(name,e.toString()); }
 
-    public HTML putAStr(String name, String [] ss) { return f0(name).array(ss).f1(); }
+    public HTML putAStr(String name, String [] ss) { return ss==null?f(name,"null"):f0(name).array(ss).f1(); }
     public HTML putA1  (String name, byte   [] bs) { throw H2O.unimpl(); }
-    public HTML putA2  (String name, short  [] ss) { throw H2O.unimpl(); }
+    public HTML putA2  (String name, short  [] ss) { 
+      if( ss==null ) return f(name,"null");
+      f0(name).arrayHead();
+      for( short s : ss ) p("<tr><td>").p(Integer.toString(s)).p("</td></tr>");
+      return arrayTail().f1();
+    }
+
     public HTML putA4  (String name, int    [] is) { throw H2O.unimpl(); }
     public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
     public HTML putA8  (String name, long   [] ls) { throw H2O.unimpl(); }
@@ -111,7 +117,7 @@ public abstract class DocGen<T extends DocGen> {
 
     public HTML arrayHead( ) { return arrayHead(null); }
     public HTML arrayHead( String[] headers ) {
-      p("<span style='display: inline-block;'>");
+      p("<span style='display: block;'>");
       p("<table class='table table-striped table-bordered'>\n");
       if( headers != null ) {
         p("<tr>");
@@ -123,9 +129,11 @@ public abstract class DocGen<T extends DocGen> {
     public HTML arrayTail( ) { return p("</table></span>\n"); }
     public HTML array( String[] ss ) {
       arrayHead();
-      for( String s : ss ) p("<tr><td>").p(s).p("</td></tr>");
+      for( String s : ss ) p("<tr>").cell(s).p("</tr>");
       return arrayTail();
     }
+    public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
+    public HTML cell( long l ) { return cell(Long.toString(l)); }
 
     //public StringBuilder progress(float value, StringBuilder sb){
     //  int    pct  = (int) (value * 100);

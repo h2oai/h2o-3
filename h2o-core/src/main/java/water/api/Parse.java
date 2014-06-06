@@ -20,7 +20,6 @@ public class Parse extends Handler<Parse,ParseV2> {
   // Entry point for parsing.
   protected void parse() {
     water.parser.ParseDataset2.parse(_hex,_srcs);
-    //return new Response("<a href=/2/DeepLearning.html?src="+_hex+">Parse done!</a>");
   }
 
   // Parse Schemas are at V2

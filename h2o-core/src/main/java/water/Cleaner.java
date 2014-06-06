@@ -195,10 +195,11 @@ class Cleaner extends Thread {
     final long[] _hs = new long[128];
     long _oldest; // Time of the oldest K/V discovered this pass
     long _eldest; // Time of the eldest K/V found in some prior pass
-    long _hStep; // Histogram step: (now-eldest)/histogram.length
+    long _hStep;  // Histogram step: (now-eldest)/histogram.length
     long _cached; // Total alive data in the histogram
-    long _when; // When was this histogram computed
-    Value _vold; // For assertions: record the oldest Value
+    long _total;  // Total data in local K/V
+    long _when;   // When was this histogram computed
+    Value _vold;  // For assertions: record the oldest Value
     boolean _clean; // Was "clean" K/V when built?
 
     // Return the current best histogram, recomputing in-place if it is
@@ -224,6 +225,7 @@ class Cleaner extends Thread {
       // Compute the hard way
       Object[] kvs = H2O.STORE.raw_array();
       long cached = 0; // Total K/V cached in ram
+      long total = 0;  // Total K/V in local node
       long oldest = Long.MAX_VALUE; // K/V with the longest time since being touched
       Value vold = null;
       // Start the walk at slot 2, because slots 0,1 hold meta-data
@@ -233,6 +235,7 @@ class Cleaner extends Thread {
         if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
         Value val = (Value)ov;
+        total += val._max;
         int len = 0;
         byte[] m = val.rawMem();
         Object p = val.rawPOJO();
@@ -253,6 +256,7 @@ class Cleaner extends Thread {
         _hs[idx] += len;      // Bump histogram bucket
       }
       _cached = cached; // Total cached; NOTE: larger than sum of histogram buckets
+      _total = total;   // Total used data
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
       _clean = clean && _dirty==Long.MAX_VALUE; // Looks like a clean K/V the whole time?

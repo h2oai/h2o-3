@@ -9,9 +9,11 @@ import water.util.Log;
  * Persistence backend using local file system.
  */
 final class PersistFS extends Persist {
+  final File _root;
   final File _dir;
 
   PersistFS(File root) {
+    _root = root;
     _dir = new File(root, "ice" + H2O.API_PORT);
     // Make the directory as-needed
     root.mkdirs();
@@ -86,10 +88,10 @@ final class PersistFS extends Persist {
   }
 
   @Override public long getUsableSpace() {
-    return _dir.getUsableSpace();
+    return _root.getUsableSpace();
   }
 
   @Override public long getTotalSpace() {
-    return _dir.getTotalSpace();
+    return _root.getTotalSpace();
   }
 }
