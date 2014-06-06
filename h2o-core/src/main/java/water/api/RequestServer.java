@@ -181,7 +181,7 @@ public class RequestServer extends NanoHTTPD {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      return wrap(e.getMessage().equals("unimplemented")? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HTTP500V1(e),type);
+      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HTTP500V1(e),type);
     }
   }
 
