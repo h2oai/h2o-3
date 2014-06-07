@@ -8,7 +8,7 @@ import java.io.*;
 import water.Key;
 import water.Value;
 import water.H2O;
-import water.Job.ProgressMonitor;
+import water.Job;
 //import water.fvec.Vec;
 import water.util.Log;
 //import water.util.RIStream;
@@ -71,7 +71,7 @@ public final class PersistS3 extends Persist {
   //  }
   //}
   //
-  public static InputStream openStream(Key k, ProgressMonitor pmon) throws IOException {
+  public static InputStream openStream(Key k, Job pmon) throws IOException {
     throw H2O.unimpl();
   //  return new H2SO3InputStream(k, pmon);
   }

@@ -15,7 +15,6 @@ import water.util.PrettyPrint;
 import water.util.Log;
 
 public class ParseDataset2 extends Job<Frame> {
-  final ParseMonitor _progress;
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, 0/*guess header*/); }
@@ -24,14 +23,22 @@ public class ParseDataset2 extends Job<Frame> {
   // Suitable for e.g. testing setups, where the data is known to be sane.
   // NOT suitable for random user input!
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, int checkHeader) {
-    Key k = keys[0];
+    return parse(okey,keys,delete_on_done,setup(keys[0],checkHeader)); 
+  }
+  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParserSetup globalSetup) {
+    ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
+    Frame fr = job.get();
+    job.remove();
+    return fr;
+  }
+
+  public static ParseDataset2 startParse(Key okey, Key... keys) { return forkParseDataset(okey,keys, setup(keys[0],0/*guess header*/),true); }
+
+  private static ParserSetup setup(Key k, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParserSetup globalSetup = ParserSetup.guessSetup(bits, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
-    return parse(okey,keys,delete_on_done,globalSetup);
-  }
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParserSetup globalSetup) {
-    return forkParseDataset(okey, keys, globalSetup, delete_on_done).get();
+    return globalSetup;
   }
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
@@ -71,43 +78,7 @@ public class ParseDataset2 extends Job<Frame> {
   }
   // Setup a private background parse job
   private ParseDataset2(Key dest, long totalLen) {
-    super(dest,"Parse");
-    _progress = new ParseMonitor(totalLen);
-  }
-
-  @Override public Futures remove_impl( Futures fs ) {
-    return _progress.remove(fs);
-  }
-
-  // -----------------------------
-  // Class to track parsing progress across all nodes & files
-  static class ParseMonitor extends Keyed {
-    final long _total;
-    private long _parsedBytes;
-    ParseMonitor( long totalLen ) {
-      super(Key.make((byte) 0, Key.JOB)); 
-      _total = totalLen; 
-      DKV.put(_key,this); 
-    }
-    void onProgress( final long len ) {
-      // Background (lazy) atomic update the remote value
-      new TAtomic<ParseMonitor>() {
-        @Override public ParseMonitor atomic(ParseMonitor old) {
-          if( old == null ) return null;
-          old._parsedBytes += len;
-          return old;
-        }
-      }.fork(_key);
-    }
-  }
-
-  // -----------------------------
-  // Class to track parsing progress within 1 file on 1 node
-  static class FileMonitor implements ProgressMonitor {
-    private final ParseMonitor _pmon;
-    long _parsedBytes;
-    FileMonitor( ParseMonitor pmon ) { _pmon = pmon; }
-    @Override public void update( long len ) { synchronized(this) {_parsedBytes += len;} _pmon.onProgress(len); }
+    super(dest,"Parse",totalLen);
   }
 
   // -------------------------------
@@ -134,6 +105,10 @@ public class ParseDataset2 extends Job<Frame> {
       ex.printStackTrace();
       return true;
     }
+    @Override public void onCompletion(CountedCompleter caller){
+      _job.done();
+    }
+
   }
 
   // --------------------------------------------------------------------------
@@ -143,7 +118,7 @@ public class ParseDataset2 extends Job<Frame> {
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
-    MultiFileParseTask uzpt = new MultiFileParseTask(vg,setup,job._key,job._progress._key,fkeys,delete_on_done).doAll(fkeys);
+    MultiFileParseTask uzpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done).doAll(fkeys);
     EnumUpdateTask eut = null;
     // Calculate enum domain
     int n = 0;
@@ -178,7 +153,6 @@ public class ParseDataset2 extends Job<Frame> {
     if( delete_on_done )
       for( Key k : fkeys )
         assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
-    job.remove();
   }
 
   // --------------------------------------------------------------------------
@@ -332,23 +306,20 @@ public class ParseDataset2 extends Job<Frame> {
     // Mapping from Chunk# to cluster-node-number holding the enum mapping.
     // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
     private int[] _chunk2Enum;
-    // Job Key, to unlock & remove raw parsed data
-    private final transient Key _job_key;
-    // ParseMonitor key
-    private final Key _progress;
+    // Job Key, to unlock & remove raw parsed data; to report progress
+    private final Key _job_key;
     // A mapping of Key+ByteVec to rolling total Chunk counts.
     private final int[]  _fileChunkOffsets;
 
     // OUTPUT fields:
     FVecDataOut _dout;
 
-    MultiFileParseTask(VectorGroup vg,  ParserSetup setup, Key job_key, Key progress, Key[] fkeys, boolean delete_on_done ) {
+    MultiFileParseTask(VectorGroup vg,  ParserSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _setup = setup; 
       _vg = vg; 
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
-      _progress = progress;
 
       // A mapping of Key+ByteVec to rolling total Chunk counts.
       _fileChunkOffsets = new int[fkeys.length];
@@ -411,30 +382,31 @@ public class ParseDataset2 extends Job<Frame> {
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2Enum[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
-            FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
-            _dout = streamParse(vec.openStream(pmon), localSetup, _vecIdStart, chunkStartIdx,pmon);
+            InputStream bvs = vec.openStream(_job_key);
+            _dout = streamParse(bvs, localSetup, _vecIdStart, chunkStartIdx, bvs);
             chunksAreLocal(vec,chunkStartIdx,key);
           }
           break;
         case ZIP: {
           // Zipped file; no parallel decompression;
-          FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
-          ZipInputStream zis = new ZipInputStream(vec.openStream(pmon));
+          InputStream bvs = vec.openStream(_job_key);
+          ZipInputStream zis = new ZipInputStream(bvs);
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() ) 
-            _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx,pmon);
+            _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx, bvs);
           else zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
-        case GZIP:
+        case GZIP: {
+          InputStream bvs = vec.openStream(_job_key);
           // Zipped file; no parallel decompression;
-          FileMonitor pmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
-          _dout = streamParse(new GZIPInputStream(vec.openStream(pmon)),localSetup,_vecIdStart, chunkStartIdx,pmon);
+          _dout = streamParse(new GZIPInputStream(bvs),localSetup,_vecIdStart, chunkStartIdx,bvs);
           // set this node as the one which processed all the chunks
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
+        }
         }
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
@@ -459,13 +431,13 @@ public class ParseDataset2 extends Job<Frame> {
 
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-    private FVecDataOut streamParse( final InputStream is, final ParserSetup localSetup, int vecIdStart, int chunkStartIdx, FileMonitor pmon) throws IOException {
+    private FVecDataOut streamParse( final InputStream is, final ParserSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols));
       Parser p = localSetup.parser();
       // assume 2x inflation rate
-      if( localSetup._pType._parallelParseSupported ) p.streamParse(is, dout, pmon);
-      else                                            p.streamParse(is, dout);
+      if( localSetup._pType._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
+      else                                            p.streamParse   (is, dout);
       // Parse all internal "chunks", until we drain the zip-stream dry.  Not
       // real chunks, just flipping between 32K buffers.  Fills up the single
       // very large NewChunk.
@@ -481,7 +453,7 @@ public class ParseDataset2 extends Job<Frame> {
       private final VectorGroup _vg;
       private FVecDataOut _dout;
       private final Key _eKey;  // Parse-local-Enums key
-      private final Key _progress;
+      private final Key _job_key;
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
 
@@ -493,7 +465,7 @@ public class ParseDataset2 extends Job<Frame> {
         _startChunkIdx = startChunkIdx;
         _outerMFPT = mfpt;
         _eKey = mfpt._eKey;
-        _progress = mfpt._progress;
+        _job_key = mfpt._job_key;
         _srckey = srckey;
       }
       @Override public void map( Chunk in ) {
@@ -516,8 +488,7 @@ public class ParseDataset2 extends Job<Frame> {
         }
         p.parallelParse(in.cidx(),din,dout);
         (_dout = dout).close(_fs);
-        FileMonitor fmon = new FileMonitor((ParseMonitor)DKV.get(_progress).get());
-        fmon.update(in._len);   // Record bytes parsed
+        Job.update(in._len,_job_key); // Record bytes parsed
       }
       @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {

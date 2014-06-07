@@ -8,8 +8,6 @@ class CsvParser extends Parser {
 
   CsvParser( ParserSetup ps ) { super(ps); }
 
-  @Override protected boolean parallelParseSupported() { return true; }
-
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {

@@ -4,12 +4,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
-import water.H2O;
 import water.schemas.HTTP500V1;
 import water.schemas.Schema;
-import water.util.Log;
 
 public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> extends H2OCountedCompleter {
+  public Handler( ) { super(); }
+  public Handler( Handler completer ) { super(completer); }
+
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
   /** Default supported versions: Version 2 onwards, not Version 1.  Override

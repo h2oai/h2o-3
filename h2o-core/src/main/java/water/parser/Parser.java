@@ -60,8 +60,6 @@ abstract class Parser extends Iced {
   protected final ParserSetup _setup;
   Parser( ParserSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
 
-  // Does this parser flavor support parallel parsing?
-  abstract protected boolean parallelParseSupported();
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
@@ -78,17 +76,19 @@ abstract class Parser extends Iced {
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
-  DataOut streamParse( final InputStream is, final StreamDataOut dout, ParseDataset2.FileMonitor pmon) throws IOException {
+  DataOut streamParseZip( final InputStream is, final StreamDataOut dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
     if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamDataOut nextChunk = dout;
-    long lastProgress = pmon._parsedBytes; // File progress changes on a new Chunk of Zipfile being inflated
+    int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
+    assert zidx==1;
     while( is.available() > 0 ) {
-      if( pmon._parsedBytes != lastProgress ) {
-        lastProgress = pmon._parsedBytes;
-        nextChunk.close();      // Match output chunks to input zipfile chunks
+      int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
+      if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
+        zidx = xidx;       // Record advancing of chunk
+        nextChunk.close(); // Match output chunks to input zipfile chunks
         if( dout != nextChunk ) dout.reduce(nextChunk);
         nextChunk = nextChunk.nextChunk();
       }
@@ -140,6 +140,7 @@ abstract class Parser extends Iced {
   }
 
   /** Class implementing DataIn from a Stream (probably a GZIP stream)
+   *  Implements a classic double-buffer reader.
    */
   private static class StreamData implements Parser.DataIn {
     final transient InputStream _is;

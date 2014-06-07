@@ -3,6 +3,7 @@ package water.api;
 import water.*;
 import water.schemas.ParseV2;
 import water.util.RString;
+import water.parser.ParseDataset2;
 
 public class Parse extends Handler<Parse,ParseV2> {
   // Inputs
@@ -12,14 +13,14 @@ public class Parse extends Handler<Parse,ParseV2> {
   public boolean _blocking = true;
   
   // Output
-  public Key _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
+  public ParseDataset2 _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
 
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
   // Entry point for parsing.
   protected void parse() {
-    water.parser.ParseDataset2.parse(_hex,_srcs);
+    _job = water.parser.ParseDataset2.startParse(_hex,_srcs);
   }
 
   // Parse Schemas are at V2

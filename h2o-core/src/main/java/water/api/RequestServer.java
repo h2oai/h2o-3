@@ -42,6 +42,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),"Cloud",         "Admin");
+    addToNavbar(registerGET("/JobPoll"    ,JobPoll    .class,"poll"    ),"Job Poll",      "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
@@ -180,13 +181,12 @@ public class RequestServer extends NanoHTTPD {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      return wrap(e.getMessage()!="unimplemented"? HTTP_INTERNALERROR : HTTP_NOTIMPLEMENTED, new HTTP500V1(e),type);
+      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HTTP500V1(e),type);
     }
   }
 
   // Handling ------------------------------------------------------------------
   private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws Exception {
-    Schema S;
     switch( type ) {
     case html: // These request-types only dictate the response-type; 
     case java: // the normal action is always done.
