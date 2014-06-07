@@ -19,6 +19,7 @@ build/
 lib/
 out/
 .idea/
+h2o2.ipr
 h2o2.iws
 .settings/*
 .gradle
