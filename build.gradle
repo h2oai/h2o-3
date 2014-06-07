@@ -26,6 +26,5 @@ subprojects {
 
 // Cliff command-line 'gradle make'.  Not required for standard gradle build.
 task make(dependsOn:":h2o-core:cpLibs", type:Exec) {
-  println "=== H2O: Building top-level...(${path})"
   commandLine 'make', '-s'
 }
