@@ -51,6 +51,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( 0 <= x && x < _len ) return isNA0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
   }
+  public final long at16l( long i ) {
+    long x = i-_start;
+    if( 0 <= x && x < _len ) return at16l0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+  }
+  public final long at16h( long i ) {
+    long x = i-_start;
+    if( 0 <= x && x < _len ) return at16h0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+  }
 
 
   /** The zero-based API.  Somewhere between 10% to 30% faster in a tight-loop
@@ -60,6 +70,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
   public final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
   public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
+  public final long   at16l0( int i ) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
+  public final long   at16h0( int i ) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
 
 
   /** Write element the slow way, as a long.  There is no way to write a
@@ -142,6 +154,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract protected double   atd_impl(int idx);
   abstract protected long     at8_impl(int idx);
   abstract protected boolean isNA_impl(int idx);
+  protected long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  protected long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */

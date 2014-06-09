@@ -79,6 +79,9 @@ class ParserSetup extends Iced {
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
       if( ParseTime.attemptTimeParse(str.setTo(s)) != Long.MIN_VALUE ) return false;
+      ParseTime.attemptUUIDParse0(str.setTo(s));
+      ParseTime.attemptUUIDParse1(str);
+      if( str.get_off() != -1 ) return false; // Valid UUID parse
     }
     return true;
   }

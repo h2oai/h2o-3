@@ -191,6 +191,22 @@ public class Frame extends Lockable {
     return vecs;
   }
 
+  /** true/false every Vec is a UUID */
+  public boolean[] uuids() {
+    boolean bs[] = new boolean[vecs().length];
+    for( int i=0; i<vecs().length; i++ )
+      bs[i] = vecs()[i].isUUID();
+    return bs;
+  }
+
+  /** Time status for every Vec */
+  public byte[] times() {
+    byte bs[] = new byte[vecs().length];
+    for( int i=0; i<vecs().length; i++ )
+      bs[i] = vecs()[i]._time;
+    return bs;
+  }
+
   /** All the domains for enum columns; null for non-enum columns.  */
   public String[][] domains() {
     String ds[][] = new String[vecs().length][];
@@ -365,7 +381,5 @@ public class Frame extends Lockable {
     _col0 = null;
     return vec;
   }
-
-
 
 }

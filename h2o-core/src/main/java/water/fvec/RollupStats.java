@@ -38,7 +38,17 @@ class RollupStats extends DTask<RollupStats> {
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
+    // UUID columns do not compute min/max/mean/sigma
+    if( c._vec._isUUID ) {
+      _min = _max = _mean = _sigma = Double.NaN;
+      for( int i=0; i<c._len; i++ ) {
+        if( c.isNA0(i) ) _naCnt++;
+        else _rows++;
+      }
+      return this;
+    }
     for( int i=0; i<c._len; i++ ) {
+      // All other columns have useful rollups
       double d = c.at0(i);
       if( Double.isNaN(d) ) _naCnt++;
       else {
