@@ -170,6 +170,7 @@ public class TimeLine extends UDP {
   static long[][] SNAPSHOT;
   static long TIME_LAST_SNAPSHOT = 1;
   static public H2O CLOUD;      // Cloud instance being snapshotted
+  public static H2O getCLOUD(){return CLOUD;}
   static public long[][] system_snapshot() {
     // Now spin-wait until we see all snapshots check in.
     // Be atomic about it.
