@@ -28,3 +28,5 @@ src/main/java/water/BuildVersion.java
 R/.RData
 R/.Rhistory
 Rsandbox
+.DS_Store
+.DS_Store?
