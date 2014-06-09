@@ -44,7 +44,7 @@ public class ParseTimeTest extends TestUtil {
       d(1500  ,  129625200000L, 1247641200000L, 1247641200000L, 0 ),
       d(15000 , 1296028800000L, 1254294000000L, 1254294000000L, 2 ),
     };
-    ParserTest.testParsed(parse_test_file("smalldata/jira/v-11.csv"),exp,exp.length);
+    ParserTest.testParsed(parse_test_file("smalldata/junit/ven-11.csv"),exp,exp.length);
   }
 
   private long[] l(long... ls) { return ls; }
@@ -70,7 +70,7 @@ public class ParseTimeTest extends TestUtil {
       l(         8,0x8000000000000000L,0x0000000000000000L,0),
       l(         9,0xFFFFFFFFFFFFFFFFL,0xFFFFFFFFFFFFFFFFL,1),
     };
-    Frame fr = parse_test_file("smalldata/test/test_uuid.csv");
+    Frame fr = parse_test_file("smalldata/junit/test_uuid.csv");
     Vec vecs[] = fr.vecs();
     try {
       assertEquals(exp.length,fr.numRows());
