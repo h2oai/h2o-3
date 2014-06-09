@@ -1,0 +1,31 @@
+.y-dialog-container
+  .y-dialog.y-configure-strip-plot-dialog(data-dialog-width='400')
+    .y-dialog-title-bar
+      .y-dialog-title Configure
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      table.table.table-condensed
+        tbody
+          tr
+            td
+              // ko foreach:parameters.group1
+              div
+                input(type='checkbox' data-bind='attr:{id:id}, checked:isSelected')
+                label(data-bind="text:caption, attr:{'for':id}")
+              // /ko
+            td
+              // ko foreach:parameters.group2
+              div
+                input(type='checkbox' data-bind='attr:{id:id}, checked:isSelected')
+                label(data-bind="text:caption, attr:{'for':id}")
+              // /ko
+            td
+              // ko foreach:parameters.group3
+              div
+                input(type='checkbox' data-bind='attr:{id:id}, checked:isSelected')
+                label(data-bind="text:caption, attr:{'for':id}")
+              // /ko
+      .y-dialog-actions
+        button.btn(data-bind='click:cancel') Cancel
+        button.btn.btn-primary(data-bind='click:confirm') OK

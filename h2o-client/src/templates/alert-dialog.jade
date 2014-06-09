@@ -1,0 +1,10 @@
+.y-dialog-container
+  .y-dialog.y-alert-dialog(data-dialog-width='400')
+    .y-dialog-title-bar
+      .y-dialog-title(data-bind='text:title')
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      div(data-bind='paragraph:message')
+      .y-dialog-actions
+        button.btn.btn-primary(data-bind='click:confirm') OK

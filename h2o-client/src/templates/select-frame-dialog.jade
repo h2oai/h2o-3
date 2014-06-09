@@ -1,0 +1,31 @@
+.y-dialog-container
+  .y-dialog.y-select-frame-dialog(data-dialog-width='600')
+    .y-dialog-title-bar
+      .y-dialog-title Select Dataset
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      div Select a dataset to score on.
+      .y-item-list
+        table.table.table-condensed.table-hover.y-item-table
+          thead
+            tr
+              th Key
+              th Columns
+              th Created
+          tbody
+            // ko foreach:items
+            tr(data-bind='click:select, css:{active:isActive}')
+              td(data-bind='text:key')
+              td(data-bind='text:count')
+              td(data-bind='timeago:timestamp')
+            // /ko
+      .y-dialog-actions
+        button.btn(data-bind='click:cancel') Cancel
+        button.btn.btn-primary(data-bind='click:confirm') OK
+      //- ko if:isBusy
+      //-.y-mask
+      //-  .y-spinner-box
+      //-    .y-spinner.y-spinner-32
+      //- /ko
+

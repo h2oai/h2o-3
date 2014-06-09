@@ -1,0 +1,27 @@
+.y-model-inspection-view
+  h1.y-title(data-bind='text:key')
+  h2.y-subtitle(data-bind='collapse:false') Details
+  table.table.table-condensed
+    tbody
+      // ko foreach:summary
+      tr
+        th(data-bind='text:key')
+        td(data-bind='text:value')
+      // /ko
+  h2.y-subtitle(data-bind='collapse:false') Parameters
+  table.table.table-condensed
+    tbody
+      // ko foreach:parameters
+      tr
+        th(data-bind='text:key')
+        td(data-bind='text:value')
+      // /ko
+
+  h2.y-subtitle(data-bind='collapse:false') Input Columns 
+    span(data-bind='text:inputColumnsCount')
+  table.table.table-condensed
+    tbody
+      // ko foreach:inputColumns
+      tr
+        td(data-bind='text:$data')
+      // /ko

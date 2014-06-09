@@ -1,0 +1,51 @@
+.y-model-view
+  .clearfix
+    .y-tag Model
+    .y-tagline(data-bind='timeago:timestamp')
+  h1.y-title(data-bind='text:key')
+  .y-section
+    .y-summary
+      // ko foreach:summary
+      .y-summary-item
+        .y-summary-key(data-bind='text:key')
+        .y-summary-value(data-bind='text:value')
+      // /ko
+  h2.y-subtitle(data-bind='collapse:false') Parameters
+  .y-parameters
+    .y-summary
+      // ko foreach:parameters
+      .y-summary-item
+        .y-summary-key(data-bind='text:key')
+        .y-summary-value(data-bind='text:value')
+      // /ko
+
+  h2.y-subtitle(data-bind='collapse:false') Input Columns 
+    span(data-bind='text:inputColumnsCount')
+  .y-input-columns
+    table.table.table-condensed
+      tbody
+        // ko foreach:inputColumns
+        tr
+          td(data-bind='text:$data')
+        // /ko
+  h2.y-subtitle(data-bind='collapse:false') Compatible Datasets 
+    span(data-bind='text:compatibleFramesCount')
+  div
+    .y-frames
+      table.table.table-condensed
+        thead
+          tr
+            th Dataset
+            th Columns
+        tbody
+          // ko foreach:compatibleFrames
+          tr
+            td
+              a.help(data-bind='text:frameKey, click:inspect')
+            td(data-bind='text:columns')
+          // /ko
+    .y-controls
+      button.btn(data-bind='click:loadCompatibleFrames') View These Datasets&hellip;
+  h2.y-subtitle(data-bind='collapse:true') JSON
+  pre(data-bind='json:data')
+

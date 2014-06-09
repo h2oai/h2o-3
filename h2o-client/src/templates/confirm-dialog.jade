@@ -1,0 +1,12 @@
+.y-dialog-container
+  .y-dialog.y-confirm-dialog(data-dialog-width='400')
+    .y-dialog-title-bar
+      .y-dialog-title(data-bind='text:title')
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      div(data-bind='paragraph:message')
+      .y-dialog-actions
+        button.btn(data-bind='text:cancelCaption, click:cancel')
+        button.btn.btn-warning(data-bind='text:confirmCaption, click:confirm')
+

@@ -1,7 +1,6 @@
 package water.schemas;
 
 import java.lang.reflect.*;
-import java.util.ArrayList;
 import java.util.Properties;
 import water.*;
 import water.api.Handler;
@@ -106,6 +105,7 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
   // URL parameter parse
   private <E> Object parse( String s, Class fclz ) {
     if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
+    if( fclz.equals(int.class) ) return Integer.valueOf(s);
     if( fclz.isArray() ) {      // An array?
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
