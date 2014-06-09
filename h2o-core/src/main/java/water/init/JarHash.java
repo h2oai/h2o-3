@@ -60,22 +60,22 @@ public abstract class JarHash {
   public static InputStream getResource2(String uri) {
     try {
       ClassLoader systemLoader = ClassLoader.getSystemClassLoader();
+      String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+      File f;
 
       // Jar file mode.
       if (JARPATH != null) {
         return systemLoader.getResourceAsStream("www" + uri);
       }
 
-      // Class path mode.
-      File resources;
-      String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-      resources = new File(h2oClasses + "www");
-      if (resources.exists()) {
-        return new FileInputStream(new File(resources, uri));
+      // STEAM IDE developer mode.
+      f = new File(System.getProperty("user.dir") + "/h2o-client/src/main/resources/www", uri);
+      if (f.exists()) {
+        return new FileInputStream(f);
       }
 
-      // Source file mode.
-      resources = new File("src/main/resources/www");
+      // Class path mode.
+      File resources = new File(h2oClasses + "www");
       if (resources.exists()) {
         return new FileInputStream(new File(resources, uri));
       }

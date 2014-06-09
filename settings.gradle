@@ -1,5 +1,6 @@
 rootProject.name = 'h2o2'
 
+include 'h2o-client'
 include 'h2o-core'
 include 'h2o-algos'
 include 'h2o-web'
