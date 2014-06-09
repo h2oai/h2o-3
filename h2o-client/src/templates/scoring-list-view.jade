@@ -1,0 +1,30 @@
+.y-scoring-list-view
+  // ko if:hasItems
+  .y-scorings
+    // ko foreach:items
+    .y-scoring(data-bind='css:{"y-active":isActive}')
+      input(type='checkbox' data-bind='checked:isSelected')
+      .y-scoring-details(data-bind='click:display')
+        .y-scoring-title(data-bind='text:title, css:{"y-failed":hasFailed}')
+        .y-scoring-caption(data-bind='text:caption')
+        .y-scoring-cutline(data-bind='timeago:timestamp')
+      //ko ifnot:isReady
+      .y-scoring-status
+        .y-spinner-box
+          .y-spinner.y-spinner-32
+      // /ko
+    // /ko
+
+  .y-predicate
+    .y-predicate-selector
+      input(type='checkbox' data-bind='checked:isSelectAll')
+    .y-predicate-caption(data-bind='paragraph:predicateCaption')
+    button.y-predicate-clear.btn.fa-btn.fa.fa-times-circle(data-bind='visible:canClearPredicate, click:clearPredicate' title='Clear')
+  // /ko
+
+  // ko ifnot:hasItems
+  .y-no-scorings
+    .y-middle No scores to display.
+  // /ko
+
+

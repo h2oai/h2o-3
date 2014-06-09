@@ -1,0 +1,47 @@
+//TODO Duplicate of y-model-list-view - refactor
+.y-scoring-list-view
+  dock()
+
+  .y-no-scorings
+    dock()
+
+  .y-scorings
+    dock(top:y-desktop-header-height)
+    overflow auto
+
+  .y-scoring
+    position relative
+    padding 10px
+    border-left 3px solid transparent
+    border-bottom 1px solid #ddd
+    &:hover
+      background #f5f5f5
+    &.y-active
+      background #eee
+      border-left-color y-color-yellow-dk
+      border-left-color y-color-grey-md
+    input[type='checkbox']
+      position relative
+      float left
+      top 18px
+  .y-scoring-details
+    cursor pointer
+    margin-left 25px 
+  .y-scoring-title
+    font-size 18px
+    font-weight 300
+    &.y-failed
+      color: red
+  .y-scoring-caption
+    font-size 11px
+    text-transform uppercase
+    color #888
+    overflow ellipsis
+  .y-scoring-cutline
+    font-size 11px
+    color #888
+    overflow ellipsis
+  .y-scoring-status
+    dock()
+    background rgba(255,255,255,0.75)
+    text-align: center

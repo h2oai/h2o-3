@@ -1,0 +1,194 @@
+.y-main
+  dock()
+
+.y-navigation-bar
+  dock-top(y-navigation-bar-height)
+  background-color y-color-yellow
+
+.y-toggle-inspector-button
+  float right
+  background none
+  border none
+  padding 0
+  width 32px
+  font-size 16px
+  color y-color-grey-md
+  &:hover
+    color black
+
+.y-logo-area
+  dock-left(y-topic-lane-width)
+  background-color y-color-yellow-dk
+  text-align center
+
+.y-navigation-area
+  dock(left:y-topic-lane-width)
+  line-height y-navigation-bar-height
+
+.y-desktop
+  dock(top:y-navigation-bar-height, bottom:y-status-bar-height)
+
+.y-workspace
+  dock(right:y-inspector-lane-width)
+
+.y-lane-header
+  dock-top(y-desktop-header-height)
+  border-bottom 1px solid #ddd
+
+.y-lane-body
+  dock(top:y-desktop-header-height)
+
+.y-topic-lane
+  dock-left(y-topic-lane-width)
+  border-right 1px solid #ddd
+
+.y-view-lane
+  dock(left:y-topic-lane-width)
+  h3
+    font-size 12px
+    margin-top 30px
+    text-transform uppercase
+
+.y-page-views, .y-modal-views
+  dock()
+  padding 25px 30px
+  overflow auto
+
+
+.y-modal-dialogs-container
+.y-modal-dialogs
+  dock()
+
+.y-modal-views
+  background white
+
+.y-selection-views
+  margin 7px 30px
+  .y-caption
+    display inline-block
+    height 30px
+    line-height 30px
+    text-transform uppercase
+    font-size 11px
+  .y-hover-capture
+    display inline-block
+    margin-left 5px
+  .btn
+    height 30px
+
+.y-inspector-lane
+  background white
+  dock-right(y-inspector-lane-width)
+  border-left 1px solid #ddd
+  .y-inspector
+    dock-top(50%)
+    overflow auto
+  .y-grab-bar
+    cursor ns-resize
+    dock-top(10px, 50%)
+  .y-grab-bar-border
+    dock-top(0, 50%)
+    border-top 1px solid #ddd
+  .y-help-pane
+    border-top 1px solid #ddd
+    dock-bottom(50%)
+
+.y-topic-button
+  dock-left(48px, 6px, 6px, 6px)
+
+.y-topic-title
+  text-block(y-desktop-header-height, 6px + 48px + 6px, 6px + 48px + 6px)
+  font-size 18px
+  font-weight 300
+  text-align center
+
+.y-upload-button
+  dock-right(48px, 6px, 6px, 6px)
+
+.y-inspector-title
+  line-height y-desktop-header-height
+  font-size 18px
+  font-weight 300
+  text-align center
+
+.y-help-pane-header
+  border-bottom 1px solid #eee
+
+  text-block(y-desktop-header-height, 0, 0)
+  line-height y-desktop-header-height
+  font-weight 300
+  text-align center
+  button
+    background none
+    color y-color-grey-md
+    &:focus
+      outline 0 !important
+    &:hover
+      background none
+      color #000
+    &:disabled
+      color #ccc
+  .btn
+    padding 0
+
+.y-help-home-button
+  dock-left(32px, 6px, 6px, 6px)
+
+.y-help-back-button
+  dock-right(32px, 6px, 2 * 6px + 32px, 6px)
+
+.y-help-forward-button
+  dock-right(32px, 6px, 6px, 6px)
+
+.y-help
+  dock(y-desktop-header-height)
+  overflow auto
+
+.y-inspector, .y-help
+  padding 10px
+  font-size 90%
+  h1
+    font-size 18px
+    font-weight 300
+  h2
+    font-size 16px
+    font-weight 300
+    text-align center
+    padding 5px 0
+    color gray
+    margin-top 30px
+  ul
+    padding 0
+  li
+    list-style-type none
+    color y-color-hyperlink
+    cursor pointer
+
+.y-help
+  h2
+    text-align left
+
+.y-status-bar
+  dock-bottom(y-status-bar-height)
+  line-height y-status-bar-height
+  border-top 1px solid #ddd
+  padding 0px 10px
+  font-size 12px
+
+
+// Adding a .y-main-no-topic class on .y-main hides the inspector area
+//    and docks .y-view-lane to the left
+.y-main-no-topic
+  .y-topic-lane
+    display none
+  .y-view-lane
+    left 0
+
+// Adding a .y-main-no-inspector class on .y-main hides the inspector area
+//    and docks .y-view-lane to the right
+.y-main-no-inspector
+  .y-inspector-lane
+    display none
+  .y-workspace
+    right 0
+    

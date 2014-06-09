@@ -1,0 +1,39 @@
+{
+  "name": "Steam",
+  "version": "0.0.0",
+  "homepage": "https://github.com/0xdata/h2o",
+  "authors": [
+    "Prithvi Prabhu <prithvi@0xdata.com>"
+  ],
+  "description": "H2O Web Client",
+  "main": "steam.js",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "H2O",
+    "Machine Learning"
+  ],
+  "license": "Apache License Version 2.0",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.0",
+    "d3": "~3.4.4",
+    "bootstrap": "~3.1.1",
+    "knockout": "komputing/knockout",
+    "lodash": "~2.4.1",
+    "chai": "~1.9.1",
+    "hasher": "~1.2.0",
+    "crossroads": "~0.12.0",
+    "fontawesome": "~4.0.3",
+    "stacktrace": "~0.6.0",
+    "momentjs": "~2.6.0"
+  }
+}
