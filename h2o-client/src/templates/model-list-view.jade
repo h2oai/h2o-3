@@ -1,0 +1,24 @@
+.y-model-list-view
+  // ko if:hasItems
+  .y-models
+    // ko foreach:items
+    .y-model(data-bind='css:{"y-active":isActive}')
+      input(type='checkbox' data-bind='checked:isSelected')
+      .y-model-details(data-bind='click:display')
+        .y-model-title(data-bind='text:title')
+        .y-model-caption(data-bind='text:caption')
+        .y-model-cutline(data-bind='timeago:timestamp')
+    // /ko
+
+  .y-predicate
+    .y-predicate-selector
+      input(type='checkbox' data-bind='checked:isSelectAll')
+    .y-predicate-caption(data-bind='paragraph:predicateCaption')
+    button.y-predicate-clear.btn.fa-btn.fa.fa-times-circle(data-bind='visible:canClearPredicate, click:clearPredicate' title='Clear')
+  // /ko
+
+  // ko ifnot:hasItems
+  .y-no-models
+    .y-middle No models to display.
+  // /ko
+

@@ -39,16 +39,18 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
 
   // Version&Schema-specific filling from the handler
   @Override public ParseV2 fillFrom( Parse h ) {
-    job = h._job;
+    job = h._job._key;
     return this;
   }
 
   //==========================
 
   @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("Parse");
-    String url = InspectV1.link(hex);
-    return ab.href("hex",url,url);
+    ab.title("Parse Started");
+    String url = JobPollV2.link(job);
+    return ab.href("Poll",url,url);
+    //String url = InspectV1.link(hex);
+    //return ab.href("hex",url,url);
   }
 
   // Helper so ImportV1 can link to ParseV2

@@ -1,0 +1,24 @@
+.y-frame-inspection-view
+  h1.y-title(data-bind='text:title')
+
+  // ko ifnot:isRawFrame
+  h2.y-subtitle(data-bind='collapse:false') Columns 
+    span(data-bind='text:columnCount')
+  .y-columns
+    table.table.table-condensed
+      tbody
+        // ko foreach:columns
+        tr
+          td(data-bind='text:$data')
+        // /ko
+
+  // /ko
+
+  // ko if:isRawFrame
+  h2.y-subtitle(data-bind='collapse:false') Parse
+  p This is a raw dataset. You need to parse this dataset first before you can use it in H<sub>2</sub>O.
+  p
+    a(target='_blank' data-bind='attr:{ href:parseUrl }') Parse this dataset&hellip;
+
+  // /ko
+

@@ -1,0 +1,121 @@
+.y-scoring-view
+  .clearfix
+    .y-tag(data-bind='text:tag')
+    .y-tagline(data-bind='timeago:timestamp')
+  h1.y-title(data-bind="text:caption")
+
+  // TODO remove this 'if' condition when model summary is fixed
+  // ko if:modelSummary
+  .y-model-summary
+    .y-summary
+      // ko foreach:modelSummary
+      .y-summary-item
+        .y-summary-key(data-bind='text:key')
+        .y-summary-value(data-bind='text:value')
+      // /ko
+  // /ko
+
+  // ko ifnot:hasFailed
+
+  // ko if:isScoringView
+  div(data-bind='geyser:comparisonTable')
+  // /ko
+
+  // ko if:isComparisonView
+  .y-tabs
+    a.y-tab(data-bind='click:switchToTabularView, css:{active:isTabularComparisonView}') Tabular
+    a.y-tab(data-bind='click:switchToAdvancedView, css:{active:isAdvancedComparisonView}') Advanced
+    a.y-tab(data-bind='click:switchToSheetView, css:{active:isSheetView}') Sheet
+
+  // ko if:isTabularComparisonView
+  div(data-bind='geyser:comparisonTable')
+  // /ko
+  // ko if:isAdvancedComparisonView
+  h2.y-subtitle(data-bind='collapse:false') Scorings in this comparison
+  div
+    div Click on a scoring to inspect it.
+    table.table.table-condensed
+      tbody
+        // ko foreach:scoringList
+        tr
+          td
+            .y-legend-swatch(data-bind='style:{backgroundColor:color}')
+          td.y-legend-label
+             a.help(data-bind='text:caption, click:inspect')
+        // /ko
+  h2.y-subtitle(data-bind='collapse:false') ROC Plot
+  div(data-bind='geyser:multiRocPlot')
+  h2.y-subtitle(data-bind='collapse:false') Compare Scoring Outputs
+  div
+    span Compare scorings by:
+    select(data-bind="options:categories, optionsText:'caption', value:selectedCategory")
+    .y-criteria-comparision
+      table(width='400')
+        tbody
+          // ko foreach:comparisonPlot
+          tr
+            td(colspan='2')
+              a.help(data-bind='text:caption, click:inspect')
+          tr
+            td(data-bind='style:{width:span}' style='position:relative')
+              div(style='position:absolute;height:10px' data-bind='style:{left:left, width:width, backgroundColor:color}')
+            td(width='100' data-bind='text:value')
+          // /ko
+
+  h2.y-subtitle(data-bind='collapse:false') Plot Model Inputs and Scoring Outputs
+  div
+    h3(data-bind='collapse:true') Modify this plot
+    .y-shade
+      table.table.table-condensed
+        tbody
+          tr
+            th X-Axis
+            td
+              select(data-bind="options:inputOutputCategories, optionsText:'caption', value:inputOutputPlotX")
+          tr
+            th Y-Axis
+            td
+              select(data-bind="options:inputOutputCategories, optionsText:'caption', value:inputOutputPlotY")
+    div(data-bind='geyser:inputOutputPlot')
+  h2.y-subtitle(data-bind='collapse:false') Plot Scoring Outputs by Threshold
+  div
+    h3(data-bind='collapse:true') Modify this plot
+    .y-shade
+      table.table.table-condensed
+        tbody
+          tr
+            th X-Axis
+            td
+              select(data-bind="options:thresholdPlotVariables, optionsText:'caption', value:thresholdPlotX")
+          tr
+            th Y-Axis
+            td
+              select(data-bind="options:thresholdPlotVariables, optionsText:'caption', value:thresholdPlotY")
+    div(data-bind='geyser:thresholdPlot')
+  h2.y-subtitle(data-bind='collapse:false') Compare All Scoring Outputs
+  div
+    div(data-bind='geyser:stripPlot')
+    //-
+      div
+        button.btn.btn-primary(data-bind='click:configureStripPlot') Configure...
+
+  // /ko
+  //- if:isAdvancedComparisonView
+
+  // ko if:isSheetView
+  // ko with:sheetView
+  div(data-bind="geyser:metricTable")
+  // /ko
+  // /ko
+  //- if:isSheetView
+
+  // /ko
+  //- if:isComparisonView
+
+  // /ko
+  //- ifnot:hasFailed
+
+  // ko if:hasFailed
+  h2.y-subtitle Scoring Failure
+  pre(data-bind='json:failure')
+  // /ko

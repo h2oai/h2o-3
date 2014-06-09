@@ -4,12 +4,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
-import water.H2O;
 import water.schemas.HTTP500V1;
 import water.schemas.Schema;
-import water.util.Log;
 
 public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> extends H2OCountedCompleter {
+  public Handler( ) { super(); }
+  public Handler( Handler completer ) { super(completer); }
+
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
   /** Default supported versions: Version 2 onwards, not Version 1.  Override
@@ -37,7 +38,9 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {
       Throwable t = ite.getCause();
-      throw (t instanceof Exception) ? (Exception)t : new RuntimeException(t);
+      if( t instanceof RuntimeException ) throw (RuntimeException)t;
+      if( t instanceof Error ) throw (Error)t;
+      throw new RuntimeException(t);
     }
     _t_stop  = System.currentTimeMillis();
 

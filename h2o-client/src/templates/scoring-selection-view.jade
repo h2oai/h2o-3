@@ -1,0 +1,20 @@
+.y-scoring-selection-view
+  // ko ifnot:hasSelection
+  // ko if:hasScorings
+  button.btn.btn-primary(title='Rescore on another frame' data-bind='click:rescore') Rescore...
+  // /ko
+  // /ko
+  // ko if:hasSelection
+  .y-caption(data-bind='text:caption')
+  //- This div exists because mouse events are not triggered on disabled elements
+  .y-hover-capture(data-bind='hover:tryCompareScorings')
+    button.btn.btn-primary(title='Compare selected scorings' data-bind='click:compareScorings, enable:canCompareScorings') Compare
+  button.btn(title='Clear selections' data-bind='click:clearSelections') Clear
+  button.btn.btn-warning(title='Permanently delete selected scorings' style='float:right' data-bind='click:deleteScorings') Delete Selected
+  // /ko
+  // ko ifnot:hasSelection
+  // ko if:hasScorings
+  button.btn.btn-warning(title='Permanently delete this scoring' style='float:right' data-bind='click:deleteActiveScoring') Delete
+  // /ko
+  // /ko
+

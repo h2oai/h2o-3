@@ -174,7 +174,7 @@ final public class H2O {
     // Do the actually intended work
     protected abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
+      if(!(ex instanceof RuntimeException) && this.getCompleter() == null)
         ex.printStackTrace();
       return true;
     }

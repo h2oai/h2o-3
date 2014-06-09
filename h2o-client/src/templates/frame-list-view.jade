@@ -1,0 +1,19 @@
+.y-frame-list-view
+  // ko if:hasItems
+  .y-frames
+    // ko foreach:items
+    .y-frame(data-bind='click:display, css:{"y-active":isActive}')
+      .y-frame-title(data-bind='text:title')
+      .y-frame-caption(data-bind='text:caption')
+      .y-frame-cutline(data-bind='timeago:timestamp')
+    // /ko
+
+  .y-predicate
+    .y-predicate-caption(data-bind='paragraph:predicateCaption')
+    button.y-predicate-clear.btn.fa-btn.fa.fa-times-circle(data-bind='visible:canClearPredicate, click:clearPredicate' title='Clear')
+  // /ko
+
+  // ko ifnot:hasItems
+  .y-no-frames
+    .y-middle No datasets to display.
+  // /ko

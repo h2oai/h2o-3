@@ -37,7 +37,6 @@ class SVMLightParser extends Parser {
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
 
-  @Override protected boolean parallelParseSupported() { return true; }
   @SuppressWarnings("fallthrough")
   @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
       ValueString _str = new ValueString();

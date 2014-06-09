@@ -706,7 +706,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
    * Train a Deep Learning model, assumes that all members are populated
    */
   public final void exec() {
-    checkJob();
     DeepLearningModel cp = null;
     if (checkpoint == null) cp = initModel();
     else {
@@ -875,7 +874,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
   public final DeepLearningModel initModel() {
     try {
       lock_data();
-      checkJob();
       checkParams();
       final DataInfo dinfo = prepareDataInfo();
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
@@ -888,15 +886,6 @@ public class DeepLearning extends Job<DeepLearningModel> {
       unlock_data();
     }
   }
-
-  /**
-   * Create a proper Job in DKV, if necessary
-   */
-  void checkJob() {
-    if (DKV.get(self()) == null)
-      start(null);
-  }
-
 
   /**
    * Train a Deep Learning neural net model
@@ -979,7 +968,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
       Log.info("Finished training the Deep Learning model.");
       return model;
     }
-    catch(JobCancelledException ex) {
+    catch(RuntimeException ex) {
       model = DKV.get(dest()).get();
       _state = JobState.CANCELLED; //for JSON REST response
       model.get_params()._state = _state; //for parameter JSON on the HTML page
@@ -1076,7 +1065,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
   }
 
   public DeepLearning(Key destination_key) {
-    super(destination_key, "Deep Learning");
+    super(destination_key, "Deep Learning",0);
     Scope.enter();
   }
 }

@@ -1,0 +1,44 @@
+// TODO clone of frame-list-view -- refactor
+.y-file-list-view
+  dock()
+
+  .y-no-files
+    dock(bottom:y-desktop-header-height)
+
+  .y-files
+    dock(top:y-desktop-header-height, bottom:y-desktop-header-height)
+    overflow auto
+
+  .y-file
+    cursor pointer
+    padding 10px
+    border-left 3px solid transparent
+    border-bottom 1px solid #ddd
+    &:hover
+      background #f5f5f5
+    &.y-active
+      background #eee
+      border-left-color y-color-yellow-dk
+      border-left-color y-color-grey-md
+  .y-file-title
+    font-size 18px
+    font-weight 300
+  .y-file-caption
+    font-size 11px
+    text-transform uppercase
+    color #888
+    overflow ellipsis
+  .y-file-cutline
+    font-size 11px
+    color #888
+    overflow ellipsis
+
+  .y-import-file
+    dock-bottom(y-desktop-header-height)
+    text-align center
+    border-top 1px solid #ddd
+    button
+      position relative
+      width 50%
+      top 7px
+

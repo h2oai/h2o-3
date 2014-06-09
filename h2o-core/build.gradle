@@ -34,9 +34,6 @@ jar {
 
 // Cliff command-line copy libs.  Not required for standard gradle build.
 task cpLibs(type: Copy) {
-  println "=== COPY LIBS LOCAL === "
-  configurations.compile.each { println it } 
-  configurations.testCompile.each { println it } 
   from configurations.compile.files 
   from configurations.testCompile.files 
   into '../lib'
