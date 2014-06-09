@@ -191,7 +191,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
-  static String nameOfPersist(int x) {
+  public static String nameOfPersist(int x) {
     switch( x ) {
     case ICE : return "ICE";
     case HDFS: return "HDFS";

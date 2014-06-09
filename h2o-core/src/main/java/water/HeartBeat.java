@@ -13,6 +13,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   boolean _common_knowledge; // Cloud shares common knowledge
   char _cloud_size;      // Cloud-size this guy is reporting
   long _jvm_boot_msec;   // Boot time of JVM
+  public long jvmBootTimeMsec(){return _jvm_boot_msec;}
   byte[] _jar_md5;       // JAR file digest
   public char _num_cpus; // Number of CPUs for this Node, limit of 65535
   public float _system_load_average;
