@@ -234,10 +234,17 @@ public class RequestServer extends NanoHTTPD {
           if( resource != null ) {
             try { bytes = water.persist.Persist.toByteArray(resource); } 
             catch( IOException e ) { Log.err(e); }
-            if( bytes != null ) {
-              byte[] res = _cache.putIfAbsent(uri,bytes);
-              if( res != null ) bytes = res; // Racey update; take what is in the _cache
-            }
+
+            // PP 06-06-2014 Disable caching for now so that the browser
+            //  always gets the latest sources and assets when h2o-client is rebuilt.
+            // TODO need to rethink caching behavior when h2o2 is merged into h2o.
+            //
+            // if( bytes != null ) {
+            //  byte[] res = _cache.putIfAbsent(uri,bytes);
+            //  if( res != null ) bytes = res; // Racey update; take what is in the _cache
+            //}
+            //
+
           }
         } catch( IOException ignore ) { }
     }
