@@ -4,17 +4,24 @@ import java.lang.annotation.*;
 
 /** API Annotation
  *
- *  API annotations are used to document *input field* behaviors for the
- *  external REST API.  Each input field to some web page is described by a
- *  matching Java field, plus these annotations.
+ *  API annotations are used to document field behaviors for the external REST API.  Each
+ *  field is described by a matching Java field, plus these annotations.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 @Documented
 public @interface API {
-  
+
+  public enum Direction {INPUT, OUTPUT, INOUT};
+
   // A Short help text to appear beside the input
   String help();
+
+  // Is this field required?
+  boolean required() default false;
+
+  // Is this field an input, output or inout?
+  Direction direction() default Direction.INPUT; // TODO: should this be INOUT?
 
   // The following are markers for *input* fields.
   // If at least one of these annotations appears, this is an input field.
@@ -32,7 +39,7 @@ public @interface API {
   //
   // The Big Hammer Notation for overriding all other validation schemes in the
   // API language is to call out a ?validation URL:
-  //       "Cloud?validation=some_java_func"  calls 
+  //       "Cloud?validation=some_java_func"  calls
   //       boolean CloudV1Handler.some_java_func(CloudV1 cv1)
   String validation() default "";
 

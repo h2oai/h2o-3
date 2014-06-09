@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Pattern;
+
 import water.H2O;
 import water.AutoBuffer;
 import water.NanoHTTPD;
@@ -29,7 +31,7 @@ public class RequestServer extends NanoHTTPD {
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  protected static final LinkedHashMap<String,Method> _handlers = new LinkedHashMap<>();
+  protected static final LinkedHashMap<Pattern,Method> _handlers = new LinkedHashMap<>();
 
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
@@ -50,6 +52,7 @@ public class RequestServer extends NanoHTTPD {
 
     initializeNavBar();
 
+    registerGET("/Frames/.*", FramesHandler.class, "fetch");
     registerGET("/Frames", FramesHandler.class, "list");
   }
 
@@ -62,7 +65,7 @@ public class RequestServer extends NanoHTTPD {
     try {
       assert lookup(method,url)==null; // Not shadowed
       Method meth = hclass.getDeclaredMethod(hmeth);
-      _handlers.put(method+url,meth);
+      _handlers.put(Pattern.compile(method + url), meth);
       return url;
     } catch( NoSuchMethodException nsme ) {
       throw new Error("NoSuchMethodException: "+hclass.getName()+"."+hmeth);
@@ -72,9 +75,9 @@ public class RequestServer extends NanoHTTPD {
   // Lookup the method/url in the register list, and return a matching Method
   private static Method lookup( String method, String url ) {
     String s = method+url;
-    for( String x : _handlers.keySet() )
-      if( x.equals(s) )         // TODO: regex
-        return _handlers.get(x);
+    for( Pattern p : _handlers.keySet() )
+      if (p.matcher(s).matches())
+        return _handlers.get(p);
     return null;
   }
 
@@ -177,9 +180,10 @@ public class RequestServer extends NanoHTTPD {
       // Find handler for url
       Method meth = lookup(method,path);
       // if the request is not known, treat as resource request, or 404 if not found
-      if( meth == null ) return getResource(uri);
-      // TODO: handlers should return an object that has the result as well as the needed http headers including status code
-      return wrap(HTTP_OK,handle(type,meth,version,parms),type);
+      if( meth == null )
+        return getResource(uri);
+      else
+        return wrap(HTTP_OK,handle(type,meth,version,parms),type);
     } catch( IllegalArgumentException e ) {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
@@ -333,9 +337,9 @@ public class RequestServer extends NanoHTTPD {
   // Return URLs for things that want to appear Frame-inspection page
   public static String[] frameChoices( int version, Frame fr ) {
     ArrayList<String> al = new ArrayList<>();
-    for( String x : _handlers.keySet() ) {
+    for( Pattern p : _handlers.keySet() ) {
       try {
-        Method meth = _handlers.get(x);
+        Method meth = _handlers.get(p);
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance();

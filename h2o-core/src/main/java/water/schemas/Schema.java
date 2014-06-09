@@ -1,6 +1,8 @@
 package water.schemas;
 
 import java.lang.reflect.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import water.*;
 import water.api.Handler;
@@ -8,7 +10,7 @@ import water.fvec.Frame;
 
 
 /** Base Schema Class
- *  
+ *
  *  All Schemas inherit from here.  Schemas have a State section (broken into
  *  Input fields and Output fields) and an Adapter section to fill the State to
  *  and from URLs and JSON.  The base Adapter logic is here, and will by
@@ -52,27 +54,44 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
   // private.  Input fields get filled here, so must not be final.
   public S fillFrom( Properties parms ) {
     // Get passed-in fields, assign into Schema
-    Class clz = getClass();
+
+    Map<String, Field> fields = new HashMap<>();
+    try {
+      Class clz = getClass();
+      do {
+        Field[] some_fields = clz.getDeclaredFields();
+
+        for (Field f : some_fields)
+          if (null == fields.get(f.getName()))
+            fields.put(f.getName(), f);
+
+        clz = clz.getSuperclass();
+      } while (Iced.class.isAssignableFrom(clz.getSuperclass()));
+    }
+    catch (SecurityException e) {
+        throw new RuntimeException("Exception accessing fields: " + e);
+    }
+
     for( String key : parms.stringPropertyNames() ) {
       try {
-        Field f = clz.getDeclaredField(key); // No such field error, if parm is junk
+        Field f = fields.get(key); // No such field error, if parm is junk
+
+        if (null == f)
+          throw new IllegalArgumentException("Unknown argument: " + key);
+
         int mods = f.getModifiers();
         if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
           // Attempting to set a transient or static; treat same as junk fieldname
           throw new IllegalArgumentException("Unknown argument "+key);
         // Only support a single annotation which is an API, and is required
-        API api = (API)f.getAnnotations()[0]; 
+        API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
-        if( api.validation().length()==0 && 
-            api.values    ().length()==0 && 
-            api.dependsOn ().length  ==0 ) 
+        if( api.direction() == API.Direction.OUTPUT )
           throw new IllegalArgumentException("Attempting to set output field "+key);
 
         // Primitive parse by field type
         f.set(this,parse(parms.getProperty(key),f.getType()));
-        
-      } catch( NoSuchFieldException nsfe ) { // Convert missing-field to IAE
-        throw new IllegalArgumentException("Unknown argument "+key);
+
       } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
         throw new RuntimeException("Broken internal schema; missing API annotation: "+key);
@@ -85,20 +104,17 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
     // checked for unknown or extra parms.
 
     // Confirm required fields are set
-    do {
-      for( Field f : clz.getDeclaredFields() ) {
-        int mods = f.getModifiers();
-        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
-          continue;             // Ignore transient & static
-        API api = (API)f.getAnnotations()[0]; 
-        if( api.validation().length() > 0 ) {
-          // TODO: execute "validation language" in the BackEnd, which includes a "required check", if any
-          if( parms.getProperty(f.getName()) == null )
-            throw new IllegalArgumentException("Required field "+f.getName()+" not specified");
-        }      
+    for( Field f : fields.values() ) {
+      int mods = f.getModifiers();
+      if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
+        continue;             // Ignore transient & static
+      API api = (API)f.getAnnotations()[0];
+      if( api.required() ) {
+        if( parms.getProperty(f.getName()) == null )
+          throw new IllegalArgumentException("Required field "+f.getName()+" not specified");
       }
-      clz = clz.getSuperclass();
-    } while( Iced.class.isAssignableFrom(clz.getSuperclass()) );
+      // TODO: execute "validation language" in the BackEnd, which includes a "required check", if any
+    }
     return (S)this;
   }
 
@@ -119,7 +135,7 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
     if( fclz.equals(Key.class) ) return Key.make(s);
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
-  }  
+  }
   private int read( String s, int x, char c, Class fclz ) {
     if( peek(s,x,c) ) return x+1;
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
