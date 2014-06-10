@@ -1,5 +1,7 @@
 apply from: '../ci/java.gradle'
 
+description = "H2O Algorithms"
+
 dependencies {
   compile project(":h2o-core")
 

@@ -1,6 +1,8 @@
 apply from: '../ci/java.gradle'
 apply plugin: 'fatjar'
 
+description = "H2O Web Application"
+
 dependencies {
   compile project(":h2o-client")
   compile project(":h2o-algos")

@@ -8,23 +8,33 @@
 //
 apply from: 'ci/java.gradle'
 
+// The build scrit settings to fetch plugins and put them on 
+// classpath
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
+        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
     }
 }
 
 allprojects {
+    group = 'ai.h2o'
+
     apply plugin: 'idea'
     apply plugin: 'eclipse'
 }
 
+// 
+// Common configuration for all subprojects
+//
 subprojects {
-    version = '0.1'
+    // All project inherits the same versioning number
+    version = rootProject.version
 
     repositories {
         mavenCentral()
@@ -32,6 +42,9 @@ subprojects {
             url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
     }
+    // Publish artifacts - we should filter subproject in future but now apply publisher plugin
+    // to all projects
+    apply from: "$rootDir/ci/publish.gradle"
 }
 
 // Cliff command-line 'gradle make'.  Not required for standard gradle build.

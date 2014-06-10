@@ -1,3 +1,5 @@
+description = "H2O Core"
+
 apply from: '../ci/java.gradle'
 
 dependencies {
