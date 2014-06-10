@@ -13,13 +13,10 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
-  /** Default supported versions: Version 2 onwards, not Version 1.  Override
-   *  in child handlers to e.g. support V1. */
-  protected int min_ver() { return 2; }
-  protected int max_ver() { return Integer.MAX_VALUE; }
-
   /** Dumb Version->Schema mapping */
   abstract protected S schema(int version);
+  abstract protected int min_ver();
+  abstract protected int max_ver();
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   protected final Schema handle(int version, Method meth, Properties parms) throws Exception {

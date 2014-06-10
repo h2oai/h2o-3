@@ -38,17 +38,17 @@ public class RequestServer extends NanoHTTPD {
 
   static {
     // Data
-    addToNavbar(registerGET("/ImportFiles",ImportFiles.class,"compute2"),"Import Files",  "Data");
-    addToNavbar(registerGET("/Parse"      ,Parse      .class,"parse"   ),"Parse",         "Data");
-    addToNavbar(registerGET("/Inspect"    ,Inspect    .class,"inspect" ),"Inspect",       "Data");
+    addToNavbar(registerGET("/ImportFiles",ImportFilesHandler.class,"compute2"),"Import Files",  "Data");
+    addToNavbar(registerGET("/Parse"      ,ParseHandler      .class,"parse"   ),"Parse",         "Data");
+    addToNavbar(registerGET("/Inspect"    ,InspectHandler    .class,"inspect" ),"Inspect",       "Data");
 
     // Admin
-    addToNavbar(registerGET("/Cloud"      ,Cloud      .class,"status"  ),"Cloud",         "Admin");
-    addToNavbar(registerGET("/JobPoll"    ,JobPoll    .class,"poll"    ),"Job Poll",      "Admin");
+    addToNavbar(registerGET("/Cloud"      ,CloudHandler      .class,"status"  ),"Cloud",         "Admin");
+    addToNavbar(registerGET("/JobPoll"    ,JobPollHandler    .class,"poll"    ),"Job Poll",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(registerGET("/Tutorials"  ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
-    addToNavbar(registerGET("/"           ,Tutorials  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(registerGET("/Tutorials"  ,TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(registerGET("/"           ,TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
 
     initializeNavBar();
 
@@ -343,6 +343,7 @@ public class RequestServer extends NanoHTTPD {
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance();
+        if( version < h.min_ver() || h.max_ver() > version ) continue;
         String url = h.schema(version).acceptsFrame(fr);
         if( url != null ) al.add(url);
       }

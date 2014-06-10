@@ -5,6 +5,8 @@ import water.*;
 import water.api.Handler;
 
 public class DeepLearningHandler extends Handler<DeepLearningHandler,DeepLearningV2> {
+  @Override protected int min_ver() { return 2; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
   // Inputs
   Key _src; // Key holding final value after job is removed
 

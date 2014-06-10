@@ -1,11 +1,11 @@
 package water.schemas;
 
 import water.*;
-import water.api.Inspect;
+import water.api.InspectHandler;
 import water.api.Handler;
 import water.util.DocGen.HTML;
 
-public class InspectV1 extends Schema {
+public class  InspectV1 extends Schema {
 
   // Input fields
   @API(help="Key to inspect",validation="/*this input is required*/")
@@ -26,14 +26,14 @@ public class InspectV1 extends Schema {
   @Override public InspectV1 fillInto( Handler h ) {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
-    ((Inspect)h)._val = _val;
+    ((InspectHandler)h)._val = _val;
     return this;
   }
 
   // Version&Schema-specific filling from the handler
   @Override public InspectV1 fillFrom( Handler h ) {
     className = _val.className();
-    schema = ((Inspect)h)._schema;         // Output schema
+    schema = ((InspectHandler)h)._schema;         // Output schema
     schema.fillFrom(h);                    // Recursively fill in schema
     return this;
   }

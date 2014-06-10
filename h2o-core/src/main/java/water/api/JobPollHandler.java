@@ -5,7 +5,11 @@ import water.schemas.JobPollV2;
 
 // This is a place-holder Handler to handle polling.
 // The JobPollV2 Schema pulls out all the polling information from the Job.
-public class JobPoll extends Handler<JobPoll,JobPollV2> {
+public class JobPollHandler extends Handler<JobPollHandler,JobPollV2> {
+  // Supported at V1 same as always
+  @Override protected int min_ver() { return 1; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
+
   // Inputs
   public Key _jobkey;
   // Output

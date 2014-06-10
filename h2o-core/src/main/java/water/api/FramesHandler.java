@@ -8,6 +8,8 @@ import water.schemas.FramesV2;
 
 public class FramesHandler extends Handler<FramesHandler, FramesBase> {
   // TODO: handlers should return an object that has the result as well as the needed http headers including status code
+  @Override protected int min_ver() { return 2; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   public Key key;
   public Frame[] frames;
@@ -21,9 +23,8 @@ public class FramesHandler extends Handler<FramesHandler, FramesBase> {
       return;
 
     Iced ice = DKV.get(key).get();
-    if (! (ice instanceof Frame)) {
-        throw H2O.fail("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
-    }
+    if (! (ice instanceof Frame))
+      throw H2O.fail("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
 
     frames = new Frame[1];
     frames[0] = (Frame)ice;
@@ -32,10 +33,8 @@ public class FramesHandler extends Handler<FramesHandler, FramesBase> {
 
   @Override protected FramesBase schema(int version) {
     switch (version) {
-    case 2:
-      return new FramesV2();
-    default:
-      throw H2O.fail("Bad version for Frames schema: " + version);
+    case 2:   return new FramesV2();
+    default:  throw H2O.fail("Bad version for Frames schema: " + version);
     }
   }
 

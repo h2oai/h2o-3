@@ -1,11 +1,11 @@
 package water.schemas;
 
 import water.*;
-import water.api.JobPoll;
+import water.api.JobPollHandler;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-public class JobPollV2 extends Schema<JobPoll,JobPollV2> {
+public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
 
   // Input fields
   @API(help="Job Key",validation="/*required field*/")
@@ -28,7 +28,7 @@ public class JobPollV2 extends Schema<JobPoll,JobPollV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public JobPollV2 fillInto( JobPoll h ) {
+  @Override public JobPollV2 fillInto( JobPollHandler h ) {
     assert key != null;         // checked by required-field parsing
     Value val = DKV.get(key);
     if( val==null ) throw new IllegalArgumentException("Job is missing");
@@ -39,7 +39,7 @@ public class JobPollV2 extends Schema<JobPoll,JobPollV2> {
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public JobPollV2 fillFrom( JobPoll h ) {
+  @Override public JobPollV2 fillFrom( JobPollHandler h ) {
     // Fetch the latest Job status from the K/V store
     Job job = DKV.get(h._jobkey).get();
     progress = job.progress();
@@ -55,8 +55,14 @@ public class JobPollV2 extends Schema<JobPoll,JobPollV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");
-    String url = link(key);
-    ab.href("Poll",url,url).putStr("status",status).put4f("progress",progress);
+    if( "DONE".equals(status) ) {
+      Job job = DKV.get(key).get();
+      String url = InspectV1.link(job.dest());
+      ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
+    } else {
+      String url = link(key);
+      ab.href("JobPoll",url,url).putStr("status",status).put4f("progress",progress);
+  }
     return ab.putStr("msec",PrettyPrint.msecs(msec,false)).putStr("exception",exception);
   }
 }

@@ -4,6 +4,8 @@ import water.*;
 import water.api.Handler;
 
 public class SlowJob extends Handler<SlowJob,SlowJobV2> {
+  @Override protected int min_ver() { return 2; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
   // Inputs
   public int _work;
   

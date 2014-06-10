@@ -7,7 +7,10 @@ import water.Paxos;
 import water.schemas.CloudV1;
 import water.schemas.Schema;
 
-public class Cloud extends Handler<Cloud,CloudV1> {
+public class CloudHandler extends Handler<CloudHandler,CloudV1> {
+  // Supported at V1 same as always
+  @Override protected int min_ver() { return 1; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   public String _version, _cloud_name;
   public long _uptime_ms;
@@ -27,8 +30,6 @@ public class Cloud extends Handler<Cloud,CloudV1> {
     _members = cloud.members();
   }
 
-  // Supported at V1 same as always
-  @Override protected int min_ver() { return 1; }
   // Cloud Schemas are still at V1, unchanged for V2
   @Override protected CloudV1 schema(int version) { return new CloudV1(); }
 }

@@ -5,7 +5,10 @@ import water.schemas.ParseV2;
 import water.util.RString;
 import water.parser.ParseDataset2;
 
-public class Parse extends Handler<Parse,ParseV2> {
+public class ParseHandler extends Handler<ParseHandler,ParseV2> {
+  @Override protected int min_ver() { return 2; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
+
   // Inputs
   public Key _hex;              // Key holding final value after job is removed
   public Key[] _srcs;           // Source keys

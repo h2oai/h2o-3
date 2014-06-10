@@ -5,7 +5,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, KEY;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                 // 1 - 
@@ -29,6 +29,7 @@ public class TypeMap {
     "water.schemas.HTTP500V1",
     "water.schemas.Schema",
     "water.schemas.TutorialsV1",
+    "water.Key",
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
@@ -54,6 +55,7 @@ public class TypeMap {
     C1NCHUNK    = (short)onIce("water.fvec.C1NChunk"); // Used in water.fvec.FileVec
     FRAME       = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP    = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
+    KEY         = (short)onIce("water.Key");           // Used in water.api
 
     // Fill in some pre-cooked delegates so seralization has a base-case
     GOLD[ICED ] = Icer.ICER;

@@ -1,10 +1,10 @@
 package water.schemas;
 
 import java.util.Arrays;
-import water.api.ImportFiles;
+import water.api.ImportFilesHandler;
 import water.util.DocGen.HTML;
 
-public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
+public class ImportFilesV2 extends Schema<ImportFilesHandler,ImportFilesV2> {
 
   // Input fields
   @API(help="path", validation="/*path is required*/")
@@ -27,13 +27,13 @@ public class ImportFilesV1 extends Schema<ImportFiles,ImportFilesV1> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public ImportFilesV1 fillInto( ImportFiles h ) {
+  @Override public ImportFilesV2 fillInto( ImportFilesHandler h ) {
     h._path = path;
     return this;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public ImportFilesV1 fillFrom( ImportFiles h ) {
+  @Override public ImportFilesV2 fillFrom( ImportFilesHandler h ) {
     files = h._files;
     keys  = h._keys ;
     fails = h._fails;

@@ -7,10 +7,12 @@ package water.api;
 import java.io.File;
 import java.util.*;
 import water.H2O;
-import water.schemas.ImportFilesV1;
+import water.schemas.ImportFilesV2;
 import water.util.FileIntegrityChecker;
 
-public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
+public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
+  @Override protected int min_ver() { return 2; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // Input
   public String _path;
@@ -146,7 +148,6 @@ public class ImportFiles extends Handler<ImportFiles,ImportFilesV1> {
 //  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
 //
-  // ImportFiles Schemas are still at V1, unchanged for V2
-  @Override protected ImportFilesV1 schema(int version) { return new ImportFilesV1(); }
+  @Override protected ImportFilesV2 schema(int version) { return new ImportFilesV2(); }
 }
 

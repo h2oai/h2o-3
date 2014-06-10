@@ -4,7 +4,8 @@ import jsr166y.CountedCompleter;
 import org.apache.hadoop.ipc.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.api.Timeline;
+import water.api.TimelineHandler;
+import water.api.TimelineHandler;
 import water.schemas.TimelineV2;
 import water.util.TimelineSnapshot;
 
@@ -73,7 +74,7 @@ public class TimelineTest extends TestUtil{
       }
     };
     H2O.submitTask(test).join();
-    Timeline handler = new Timeline();
+    TimelineHandler handler = new TimelineHandler();
     handler.compute2();
     Set<String> msgs = new HashSet<String>();
     for(TimelineV2.Event e:new TimelineV2().fillFrom(handler).events){

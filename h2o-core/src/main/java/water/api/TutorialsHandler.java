@@ -9,7 +9,10 @@ import water.schemas.TutorialsV1;
  *
  * @author michal
  */
-public class Tutorials extends Handler<Tutorials,TutorialsV1> {
+public class TutorialsHandler extends Handler<TutorialsHandler,TutorialsV1> {
+  // Supported at V1 same as always
+  @Override protected int min_ver() { return 1; }
+  @Override protected int max_ver() { return Integer.MAX_VALUE; }
   public static final String HTML = 
       "<div class='container'><div class='hero-unit' style='overflow: hidden'>"
     + "<style scoped='scoped'>"
@@ -51,8 +54,6 @@ public class Tutorials extends Handler<Tutorials,TutorialsV1> {
 
   @Override public void compute2() { throw H2O.fail(); }
   protected void nop() { }
-  // Supported at V1 same as always
-  @Override protected int min_ver() { return 1; }
   // Tutorial Schemas are still at V1, unchanged for V2
   @Override protected TutorialsV1 schema(int version) { return new TutorialsV1(); }
 }

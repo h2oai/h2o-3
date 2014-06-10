@@ -1,7 +1,8 @@
 package water.schemas;
 
+
 import water.*;
-import water.api.Timeline;
+import water.api.TimelineHandler;
 import water.util.DocGen;
 import water.util.TimelineSnapshot;
 
@@ -9,10 +10,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+
 /**
  * Created by tomasnykodym on 6/5/14.
  */
-public class TimelineV2 extends Schema<Timeline,TimelineV2> {
+public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
+  // This schema has no input params
   @API(help="Current time in millis.")
   public long now;
 
@@ -133,15 +136,15 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss:SSS");
 
   @Override
-  public TimelineV2 fillInto(Timeline timeline) {
+  public TimelineV2 fillInto(TimelineHandler timeline) {
     return this;
   }
 
   @Override
-  public TimelineV2 fillFrom(Timeline timeline) {
+  public TimelineV2 fillFrom(TimelineHandler timeline) {
     ArrayList<Event> outputEvents = new ArrayList<Event>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
-    H2O cloud = TimeLine.CLOUD;
+    H2O cloud = TimeLine.getCLOUD();
     for(TimelineSnapshot.Event event:timeline.snapshot) {
       H2ONode h2o = cloud.members()[event._nodeId];
       // The event type.  First get payload.
