@@ -4,7 +4,7 @@ import water.H2O;
 import water.H2ONode;
 import water.TimeLine;
 import water.UDP;
-import water.api.Timeline;
+import water.api.TimelineHandler;
 import water.util.TimelineSnapshot;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 /**
  * Created by tomasnykodym on 6/5/14.
  */
-public class TimelineV2 extends Schema<Timeline,TimelineV2> {
+public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
   // This schema has no input params
 
   @API(help="Current time in millis.")
@@ -33,12 +33,12 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   public Event [] events;
 
   @Override
-  public TimelineV2 fillInto(Timeline timeline) {
+  public TimelineV2 fillInto(TimelineHandler timeline) {
     return this;
   }
 
   @Override
-  public TimelineV2 fillFrom(Timeline timeline) {
+  public TimelineV2 fillFrom(TimelineHandler timeline) {
     ArrayList<Event> outputEvents = new ArrayList<Event>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
     H2O cloud = TimeLine.getCLOUD();

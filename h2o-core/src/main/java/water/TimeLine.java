@@ -144,7 +144,7 @@ public class TimeLine extends UDP {
   public static InetAddress inet( long[] tl, int idx ) {
     int adr = (int)x0(tl,idx);
     byte[] ip4 = new byte[4];
-    ip4[0] = (byte)(adr>> 0);
+    ip4[0] = (byte)(adr    );
     ip4[1] = (byte)(adr>> 8);
     ip4[2] = (byte)(adr>>16);
     ip4[3] = (byte)(adr>>24);
@@ -230,7 +230,7 @@ public class TimeLine extends UDP {
 
   // Receive a remote timeline
   static void tcp_call( final AutoBuffer ab ) {
-    int port = ab.getPort();
+    ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
     if( idx >= 0 && idx < SNAPSHOT.length )
@@ -247,7 +247,7 @@ public class TimeLine extends UDP {
    *
    * To be used in case of an error when global timeline can not be relied upon as we might not be able to talk to other nodes.
    */
-  private static void printMyTimeLine(){
+  static void printMyTimeLine(){
     long [] s = TimeLine.snapshot();
     System.err.println("===================================<TIMELINE>==============================================");
     for(int i = 0; i < TimeLine.length(); ++i) {

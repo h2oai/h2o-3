@@ -3,10 +3,10 @@ package water.schemas;
 import java.io.File;
 import java.util.Arrays;
 import water.*;
-import water.api.Parse;
+import water.api.ParseHandler;
 import water.util.DocGen.HTML;
 
-public class ParseV2 extends Schema<Parse,ParseV2> {
+public class ParseV2 extends Schema<ParseHandler,ParseV2> {
 
   // Input fields
   @API(help="Final hex key name",validation="/*this input is required*/")
@@ -29,7 +29,7 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public ParseV2 fillInto( Parse h ) {
+  @Override public ParseV2 fillInto( ParseHandler h ) {
     h._hex = hex;
     h._srcs = srcs;
     h._delete_on_done = delete_on_done;
@@ -38,7 +38,7 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public ParseV2 fillFrom( Parse h ) {
+  @Override public ParseV2 fillFrom( ParseHandler h ) {
     job = h._job._key;
     return this;
   }

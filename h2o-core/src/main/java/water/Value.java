@@ -213,6 +213,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
 
+  public boolean isKey()      { return _type == TypeMap.KEY; }
   public boolean isFrame()    { return _type == TypeMap.FRAME; }
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }

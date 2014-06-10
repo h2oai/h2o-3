@@ -1,9 +1,6 @@
 package water.schemas;
 
-import water.H2O;
-import water.Key;
 import water.api.FramesHandler;
-import water.api.Handler;
 
 public class FramesV2 extends FramesBase {
   // Version-  and Schema-specific filling into the handler

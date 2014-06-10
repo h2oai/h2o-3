@@ -1,11 +1,11 @@
 package water.schemas;
 
 import water.*;
-import water.api.Cloud;
+import water.api.CloudHandler;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-public class CloudV1 extends Schema<Cloud,CloudV1> {
+public class CloudV1 extends Schema<CloudHandler,CloudV1> {
   // This Schema has no inputs
 
   // Output fields
@@ -127,12 +127,12 @@ public class CloudV1 extends Schema<Cloud,CloudV1> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public CloudV1 fillInto( Cloud h ) {
+  @Override public CloudV1 fillInto( CloudHandler h ) {
     return this;                // No inputs
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public CloudV1 fillFrom( Cloud h ) {
+  @Override public CloudV1 fillFrom( CloudHandler h ) {
     version = h._version;
     cloud_name = h._cloud_name;
     cloud_size = h._members.length;
