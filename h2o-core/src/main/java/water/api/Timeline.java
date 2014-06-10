@@ -18,5 +18,5 @@ public class Timeline extends Handler<Timeline,TimelineV2> {
   }
   public TimelineSnapshot snapshot;
   @Override
-  protected void compute2() { snapshot = new TimelineSnapshot(TimeLine.getCLOUD(),TimeLine.system_snapshot());}
+  public void compute2() { snapshot = new TimelineSnapshot(/*TimeLine.getCLOUD()*/H2O.CLOUD,TimeLine.system_snapshot());}
 }

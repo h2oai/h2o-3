@@ -60,7 +60,7 @@ public abstract class UDP {
 
   // Dispatch on the enum opcode and return a pretty string
   static private final byte[] pbuf = new byte[16];
-  static String printx16( long lo, long hi ) {
+  public static String printx16( long lo, long hi ) {
     set8(pbuf,0,lo);
     set8(pbuf,8,hi);
     return udp.UDPS[(int)(lo&0xFF)]._udp.print16(new AutoBuffer(pbuf));

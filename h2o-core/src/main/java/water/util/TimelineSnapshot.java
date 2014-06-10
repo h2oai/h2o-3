@@ -88,6 +88,10 @@ public final class TimelineSnapshot implements
     H2ONode _packh2o;           // The H2O in the packet
     boolean _blocked;
 
+    public UDP.udp udpType(){
+      return UDP.getUdp((int)(dataLo() & 0xff));
+    } // First byte is UDP packet type
+
     public Event(int nodeId, int eventIdx) {
       _nodeId   = nodeId;
       _eventIdx = eventIdx;

@@ -127,6 +127,11 @@ public abstract class DocGen<T extends DocGen> {
       return this;
     }
     public HTML arrayTail( ) { return p("</table></span>\n"); }
+    public HTML arrayRow( String[] ss ) {
+      p("<tr>");
+      for( String s : ss ) cell(s);
+      return p("</tr>");
+    }
     public HTML array( String[] ss ) {
       arrayHead();
       for( String s : ss ) p("<tr>").cell(s).p("</tr>");

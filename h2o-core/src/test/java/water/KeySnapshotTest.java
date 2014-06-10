@@ -1,6 +1,10 @@
 package water;
 
 import junit.framework.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.ArrayList;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
@@ -18,48 +22,54 @@ public class KeySnapshotTest extends TestUtil {
     public final double value;
     public IcedDouble (double v) {value = v;}
   }
+  @BeforeClass
+  public static void stall() { stall_till_cloudsize(5); }
+
+  @Test
   public void testGlobalKeySet(){
+    ArrayList<Key> madeKeys = new ArrayList<Key>();
     try {
       Futures fs = new Futures();
-      for (int i = 0; i < 100; ++i)
-        DKV.put(Key.make("key" + i), new IcedInt(i),fs,true);
-      for (int i = 0; i < 100; ++i)
-        DKV.put(Key.makeUserHidden(Key.make()), new IcedInt(i),fs,true);
+
+      for (int i = 0; i < 100; ++i) {
+        Key k = Key.make("key" + i); madeKeys.add(k);
+        DKV.put(k, new IcedInt(i), fs, true);
+      }
+      for (int i = 0; i < 100; ++i) {
+        Key k = Key.makeUserHidden(Key.make()); madeKeys.add(k);
+        DKV.put(k, new IcedInt(i), fs, true);
+      }
       fs.blockForPending();
       Key[] keys = KeySnapshot.globalSnapshot().keys();
       assertEquals(100, keys.length);
     } finally {
-      for (int i = 0; i < 100; ++i) {
-        DKV.remove(Key.make("key" + i));
-        DKV.remove(Key.makeUserHidden(Key.make()));
-      }
+      for(Key k:madeKeys) DKV.remove(k);
     }
   }
-
+  @Test
   public void testLocalKeySet(){
-    Key [] userKeys = new Key[100];
-    Key [] systemKeys = new Key[100];
+    ArrayList<Key> madeKeys = new ArrayList<Key>();
     int homeKeys = 0;
     Futures fs = new Futures();
     try {
-      for(int i = 0; i < userKeys.length; ++i){
-        DKV.put(userKeys[i] = Key.make("key" + i), new IcedInt(i),fs,true);
-        if(userKeys[i].home())++homeKeys;
-        DKV.put(systemKeys[i] = Key.makeUserHidden(Key.make()), new IcedInt(i),fs,true);
+      for(int i = 0; i < 200; ++i){
+        Key k = Key.make("key" + i); madeKeys.add(k);
+        DKV.put(k, new IcedInt(i),fs,true);
+        if(k.home())++homeKeys;
+        k = Key.makeUserHidden(Key.make()); madeKeys.add(k);
+        DKV.put(k, new IcedInt(i),fs,true);
       }
       fs.blockForPending();
       Key[] keys = KeySnapshot.localSnapshot().keys();
-      Assert.assertEquals(homeKeys, keys.length);
+      assertEquals(homeKeys, keys.length);
       for (Key k:keys)
-        Assert.assertTrue(k.home());
+        assertTrue(k.home());
     } finally {
-      for (int i = 0; i < userKeys.length; ++i) {
-        DKV.remove(userKeys[i]);
-        DKV.remove(systemKeys[i]);
-      }
+      for(Key k:madeKeys)
+        DKV.remove(k);
     }
   }
-
+  @Test
   public void testFetchAll(){
     Key [] userKeys = new Key[200];
     Key [] systemKeys = new Key[200];
