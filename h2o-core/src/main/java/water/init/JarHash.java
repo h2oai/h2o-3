@@ -63,8 +63,17 @@ public abstract class JarHash {
       if (JARPATH != null)
         return ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
 
-      // STEAM IDE developer mode.
-      File f = new File(System.getProperty("user.dir") + "/h2o-client/src/main/resources/www", uri);
+      // IDE developer mode.. . .
+      // TODO: this creates a soft dependency from h2o-core to h2o-client.
+      // Have h2o-client register itself as a source for web server resources.
+      // Steam resources in h2o-client:
+      File f = null;
+      f = new File(System.getProperty("user.dir") + "/h2o-client/src/main/resources/www", uri);
+      if( f.exists() )
+        return new FileInputStream(f);
+
+      // Resources in h2o-core (the old pages):
+      f = new File(System.getProperty("user.dir") + "/h2o-core/src/main/resources/www", uri);
       if( f.exists() )
         return new FileInputStream(f);
 
