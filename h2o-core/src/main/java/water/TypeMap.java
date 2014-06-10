@@ -24,11 +24,11 @@ public class TypeMap {
     "water.fvec.Vec$VectorGroup", // Used in TestUtil
 
     // Status pages looked at without locking the cloud
-    "water.schemas.CloudV1",
-    "water.schemas.HTTP404V1",
-    "water.schemas.HTTP500V1",
-    "water.schemas.Schema",
-    "water.schemas.TutorialsV1",
+    "water.api.CloudV1",
+    "water.api.HTTP404V1",
+    "water.api.HTTP500V1",
+    "water.api.Schema",
+    "water.api.TutorialsV1",
     "water.Key",
   };
   // Class name -> ID mapping
