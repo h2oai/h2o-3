@@ -742,19 +742,22 @@ public class ParseDataset2 extends Job<Frame> {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
 
+      String format = " %-7s  %11s %12s %12s %11s %8s %6s";
+      Log.info(String.format(format, "Col", "type", "min", "max", "NAs", "constant", "numLevels"));
+
       Vec[] vecArr = fr.vecs();
-      for (int i = 0; i < vecArr.length; i++) {
+      for( int i = 0; i < vecArr.length; i++ ) {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
         String CStr = String.format("C%d:", i+1);
         String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : "numeric")));
-        String minStr = String.format("min(%f)", v.min());
-        String maxStr = String.format("max(%f)", v.max());
+        String minStr = String.format("%g", v.min());
+        String maxStr = String.format("%g", v.max());
         long numNAs = v.naCnt();
-        String naStr = (numNAs > 0) ? String.format("na(%d)", numNAs) : "";
+        String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
         String isConstantStr = isConstant ? "constant" : "";
-        String numLevelsStr = isCategorical ? String.format("numLevels(%d)", v.domain().length) : "";
+        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
 
         boolean printLogSeparatorToStdout = false;
         boolean printColumnToStdout;
@@ -784,7 +787,7 @@ public class ParseDataset2 extends Job<Frame> {
           System.out.println("Additional column information only sent to log file...");
         }
 
-        String s = String.format(" %-5s %12s %15s %15s %15s %8s %16s", CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
+        String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
         if( printColumnToStdout ) Log.info          (s);
         else                      Log.info_no_stdout(s);
       }
