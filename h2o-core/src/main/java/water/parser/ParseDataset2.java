@@ -671,7 +671,6 @@ public class ParseDataset2 extends Job<Frame> {
     @Override public void setColumnNames(String [] names){}
     @Override public final void rollbackLine() {}
     @Override public void invalidLine(String err) { newLine(); }
-    @Override public void invalidValue(int line, int col) {}
   }
 
   // --------------------------------------------------------
@@ -785,14 +784,9 @@ public class ParseDataset2 extends Job<Frame> {
           System.out.println("Additional column information only sent to log file...");
         }
 
-        if (printColumnToStdout) {
-          // Log to both stdout and log file.
-          Log.info(String.format("    %-8s %15s %20s %20s %15s %11s %16s", CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr));
-        }
-        else {
-          // Log only to log file.
-          Log.info_no_stdout(String.format("    %-8s %15s %20s %20s %15s %11s %16s", CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr));
-        }
+        String s = String.format(" %-5s %12s %15s %15s %15s %8s %16s", CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
+        if( printColumnToStdout ) Log.info          (s);
+        else                      Log.info_no_stdout(s);
       }
     }
     catch(Exception ignore) {}   // Don't fail due to logging issues.  Just ignore them.

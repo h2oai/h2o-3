@@ -129,7 +129,6 @@ abstract class Parser extends Iced {
     // Final rolling back of partial line
     void rollbackLine();
     void invalidLine(String err);
-    void invalidValue(int line, int col);
   }
 
   interface StreamDataOut extends DataOut {
@@ -193,7 +192,6 @@ abstract class Parser extends Iced {
     protected int _nlines;
     protected int _ncols;
     protected int _invalidLines;
-    private   boolean _header;
     private   String []   _colNames;
     protected String [][] _data = new String[MAX_PREVIEW_LINES][MAX_PREVIEW_COLS];
     protected final static int MAX_PREVIEW_COLS  = 100;
@@ -203,19 +201,12 @@ abstract class Parser extends Iced {
      for(int i = 0; i < MAX_PREVIEW_LINES;++i)
        Arrays.fill(_data[i],"NA");
     }
-    private String [][] data(){
-      String [][] res = Arrays.copyOf(_data, Math.min(MAX_PREVIEW_LINES, _nlines));
-      for(int i = 0; i < res.length; ++i)
-        res[i] = Arrays.copyOf(_data[i], Math.min(MAX_PREVIEW_COLS,_ncols));
-      return (_data = res);
-    }
     String[] colNames() { return _colNames; }
     @Override public void setColumnNames(String[] names) {
       _colNames = names;
       _data[0] = names;
       ++_nlines;
       _ncols = names.length;
-      _header = true;
     }
     @Override public void newLine() { ++_nlines; }
     @Override public boolean isString(int colIdx) { return false; }
@@ -243,7 +234,6 @@ abstract class Parser extends Iced {
       if( _errors.size() < 10 )
         _errors.add("Error at line: " + _nlines + ", reason: " + err);
     }
-    @Override public void invalidValue(int linenum, int colnum) {}
     String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
   }
 }

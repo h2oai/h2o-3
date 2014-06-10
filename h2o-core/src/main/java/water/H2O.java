@@ -277,7 +277,7 @@ final public class H2O {
   static private final H2O[] CLOUDS = new H2O[256];
 
   // Enables debug features like more logging and multiple instances per JVM
-  public static final String DEBUG_ARG = "h2o.debug";
+  static final String DEBUG_ARG = "h2o.debug";
   static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
 
   static void printHelp() {
