@@ -2,23 +2,22 @@ package water.api;
 
 import water.*;
 import water.fvec.Frame;
-import water.schemas.*;
 
-public class InspectHandler extends Handler {
+class InspectHandler extends Handler {
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // Inputs
-  public Value _val;            // Thing to inspect
+  Value _val;            // Thing to inspect
 
   // Outputs
-  public Schema _schema;        // Schema for viewing
+  Schema _schema;        // Schema for viewing
 
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  protected Schema inspect() {
+  Schema inspect() {
     assert _val != null : "schema checks null-ness";
 
     if( _val.isKey() ) {        // Peek thru a Key
@@ -35,4 +34,3 @@ public class InspectHandler extends Handler {
   // Inspect Schemas are still at V1, unchanged for V2
   @Override protected InspectV1 schema(int version) { return new InspectV1(); }
 }
-

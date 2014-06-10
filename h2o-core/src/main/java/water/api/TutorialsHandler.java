@@ -1,19 +1,17 @@
 package water.api;
 
-import java.util.Properties;
 import water.H2O;
-import water.schemas.TutorialsV1;
 
 /**
  * Summary page referencing all tutorials.
  *
  * @author michal
  */
-public class TutorialsHandler extends Handler<TutorialsHandler,TutorialsV1> {
+class TutorialsHandler extends Handler<TutorialsHandler,TutorialsV1> {
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  public static final String HTML = 
+  static final String HTML = 
       "<div class='container'><div class='hero-unit' style='overflow: hidden'>"
     + "<style scoped='scoped'>"
     + "  h2 { font-size:18px; }"
@@ -52,8 +50,8 @@ public class TutorialsHandler extends Handler<TutorialsHandler,TutorialsV1> {
     + "</div>"
     + "</div>";
 
-  @Override public void compute2() { throw H2O.fail(); }
-  protected void nop() { }
+  @Override protected void compute2() { throw H2O.fail(); }
+  void nop() { }
   // Tutorial Schemas are still at V1, unchanged for V2
   @Override protected TutorialsV1 schema(int version) { return new TutorialsV1(); }
 }

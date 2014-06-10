@@ -2,7 +2,6 @@ package water.api;
 
 import water.H2O;
 import water.TimeLine;
-import water.schemas.TimelineV2;
 import water.util.TimelineSnapshot;
 
 /** UDP Timeline
@@ -13,7 +12,7 @@ public class TimelineHandler extends Handler<TimelineHandler,TimelineV2> {
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  public TimelineSnapshot snapshot;
+  TimelineSnapshot snapshot;
 
   @Override protected TimelineV2 schema(int version) {  return new TimelineV2(); }
   @Override public void compute2() { snapshot = new TimelineSnapshot(H2O.CLOUD,TimeLine.system_snapshot());}

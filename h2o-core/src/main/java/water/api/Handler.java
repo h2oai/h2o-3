@@ -4,12 +4,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
-import water.schemas.HTTP500V1;
-import water.schemas.Schema;
 
 public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> extends H2OCountedCompleter {
-  public Handler( ) { super(); }
-  public Handler( Handler completer ) { super(completer); }
+  protected Handler( ) { super(); }
+  protected Handler( Handler completer ) { super(completer); }
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
@@ -19,7 +17,7 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   abstract protected int max_ver();
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  protected final Schema handle(int version, Method meth, Properties parms) throws Exception {
+  final Schema handle(int version, Method meth, Properties parms) throws Exception {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 

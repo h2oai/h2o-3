@@ -1,24 +1,21 @@
 package water.api;
 
 import water.*;
-import water.fvec.ByteVec;
 import water.fvec.Frame;
-import water.schemas.FramesBase;
-import water.schemas.FramesV2;
 
-public class FramesHandler extends Handler<FramesHandler, FramesBase> {
+class FramesHandler extends Handler<FramesHandler, FramesBase> {
   // TODO: handlers should return an object that has the result as well as the needed http headers including status code
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  public Key key;
-  public Frame[] frames;
+  Key key;
+  Frame[] frames;
 
-  protected void list() {
+  private void list() {
     // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
   }
 
-  protected void fetch() {
+  private void fetch() {
     if (null == key)
       return;
 
@@ -28,7 +25,6 @@ public class FramesHandler extends Handler<FramesHandler, FramesBase> {
 
     frames = new Frame[1];
     frames[0] = (Frame)ice;
-    return;
   }
 
   @Override protected FramesBase schema(int version) {

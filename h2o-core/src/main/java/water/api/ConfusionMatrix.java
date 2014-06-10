@@ -32,7 +32,7 @@ import java.util.Arrays;
  */
 public class ConfusionMatrix extends Iced {
 //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
+//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
 
 //  @API(help = "", required = true, filter = Default.class)
   public Frame actual;
@@ -53,8 +53,7 @@ public class ConfusionMatrix extends Iced {
 //  @API(help="domain of the predicted response")
   String [] predicted_domain;
 //  @API(help="union of domains")
-  public
-  String [] domain;
+  private String [] domain;
 //  @API(help="Confusion Matrix (or co-occurrence matrix)")
   public long cm[][];
 
@@ -115,7 +114,7 @@ public class ConfusionMatrix extends Iced {
   private static class CM extends MRTask<CM> {
     /* @IN */ final int _c_len;
     /* @OUT Classification */ long _cm[][];
-    /* @OUT Regression */ public double mse() { return _count > 0 ? _mse/_count : Double.POSITIVE_INFINITY; }
+    /* @OUT Regression */ private double mse() { return _count > 0 ? _mse/_count : Double.POSITIVE_INFINITY; }
     /* @OUT Regression Helper */ private double _mse;
     /* @OUT Regression Helper */ private long _count;
     CM(int c_len) { _c_len = c_len;  }
@@ -162,7 +161,7 @@ public class ConfusionMatrix extends Iced {
     }
   }
 
-  public boolean toHTML( StringBuilder sb ) {
+  private boolean toHTML( StringBuilder sb ) {
     //TODO: Re-enable
 //    if (classification) {
 //      DocGen.HTML.section(sb,"Confusion Matrix");

@@ -12,7 +12,6 @@ import water.NanoHTTPD;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 import water.util.RString;
-import water.schemas.*;
 import water.fvec.Frame;
 
 /** This is a simple web server. */
@@ -31,7 +30,7 @@ public class RequestServer extends NanoHTTPD {
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  protected static final LinkedHashMap<Pattern,Method> _handlers = new LinkedHashMap<>();
+  private static final LinkedHashMap<Pattern,Method> _handlers = new LinkedHashMap<>();
 
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
@@ -58,10 +57,10 @@ public class RequestServer extends NanoHTTPD {
   }
 
   /** Registers the request with the request server.  */
-  public static String registerGET   (String url, Class hclass, String hmeth) { return register("GET"   ,url,hclass,hmeth); }
-  public static String registerPUT   (String url, Class hclass, String hmeth) { return register("PUT"   ,url,hclass,hmeth); }
-  public static String registerDELETE(String url, Class hclass, String hmeth) { return register("DELETE",url,hclass,hmeth); }
-  public static String registerPOST  (String url, Class hclass, String hmeth) { return register("POST"  ,url,hclass,hmeth); }
+  public  static String registerGET   (String url, Class hclass, String hmeth) { return register("GET"   ,url,hclass,hmeth); }
+  private static String registerPUT   (String url, Class hclass, String hmeth) { return register("PUT"   ,url,hclass,hmeth); }
+  private static String registerDELETE(String url, Class hclass, String hmeth) { return register("DELETE",url,hclass,hmeth); }
+  private static String registerPOST  (String url, Class hclass, String hmeth) { return register("POST"  ,url,hclass,hmeth); }
   private static String register(String method, String url, Class hclass, String hmeth) {
     try {
       assert lookup(method,url)==null; // Not shadowed
@@ -336,7 +335,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Return URLs for things that want to appear Frame-inspection page
-  public static String[] frameChoices( int version, Frame fr ) {
+  static String[] frameChoices( int version, Frame fr ) {
     ArrayList<String> al = new ArrayList<>();
     for( Pattern p : _handlers.keySet() ) {
       try {

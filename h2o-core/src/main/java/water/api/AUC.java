@@ -1,21 +1,20 @@
 package water.api;
+
 import static java.util.Arrays.sort;
+import java.util.HashSet;
 import water.ConfusionMatrix2;
 import water.DKV;
 import water.Iced;
 import water.MRTask;
-import water.util.DocGen;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import java.util.HashSet;
-
 public class AUC extends Iced {
 //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//  public static final String DOC_GET = "AUC";
+//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
+//  private static final String DOC_GET = "AUC";
 //
 //  @API(help = "", required = true, filter = Default.class, json=true)
   public Frame actual;
@@ -32,7 +31,7 @@ public class AUC extends Iced {
 //  class predictVecSelect extends VecClassSelect { predictVecSelect() { super("predict"); } }
 
 //  @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", required = false, filter = Default.class, json = true)
-  public float[] thresholds;
+  private float[] thresholds;
 
 //  @API(help = "Threshold criterion", filter = Default.class, json = true)
   public ThresholdCriterion threshold_criterion = ThresholdCriterion.maximum_F1;
@@ -51,22 +50,22 @@ public class AUC extends Iced {
 //  @API(help="AUC (ROC)")
   public double AUC;
 //  @API(help="Gini")
-  public double Gini;
+  private double Gini;
 
 //  @API(help = "Confusion Matrices for all thresholds")
-  public long[][][] confusion_matrices;
+  private long[][][] confusion_matrices;
 //  @API(help = "F1 for all thresholds")
-  public float[] F1;
+  private float[] F1;
 //  @API(help = "Accuracy for all thresholds")
-  public float[] accuracy;
+  private float[] accuracy;
 //  @API(help = "Precision for all thresholds")
-  public float[] precision;
+  private float[] precision;
 //  @API(help = "Recall for all thresholds")
-  public float[] recall;
+  private float[] recall;
 //  @API(help = "Specificity for all thresholds")
-  public float[] specificity;
+  private float[] specificity;
 //  @API(help = "Max per class error for all thresholds")
-  public float[] max_per_class_error;
+  private float[] max_per_class_error;
 
 //  @API(help="Threshold criteria")
   String[] threshold_criteria;
@@ -90,7 +89,7 @@ public class AUC extends Iced {
   /**
    * Clean out large JSON fields. Only keep AUC and Gini. Useful for models that score often.
    */
-  public void clear() {
+  private void clear() {
     actual_domain = null;
     threshold_criteria = null;
     thresholds = null;
@@ -112,36 +111,36 @@ public class AUC extends Iced {
   }
 
   /* Independent on thresholds */
-  public double AUC() { return AUC; }
-  public double Gini() { return Gini; }
+  public  double AUC() { return AUC; }
+  private double Gini() { return Gini; }
 
   /* Return the metrics for given criterion */
-  public double F1(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].F1(); }
-  public double err(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].err(); }
-  public double precision(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].precision(); }
-  public double recall(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].recall(); }
-  public double specificity(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].specificity(); }
-  public double accuracy(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].accuracy(); }
-  public double max_per_class_error(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].max_per_class_error(); }
-  public float threshold(ThresholdCriterion criter) { return threshold_for_criteria[criter.ordinal()]; }
-  public long[][] cm(ThresholdCriterion criter) { return confusion_matrix_for_criteria[criter.ordinal()]; }
+  private double F1(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].F1(); }
+  private double err(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].err(); }
+  private double precision(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].precision(); }
+  private double recall(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].recall(); }
+  private double specificity(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].specificity(); }
+  private double accuracy(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].accuracy(); }
+  private double max_per_class_error(ThresholdCriterion criter) { return _cms[idxCriter[criter.ordinal()]].max_per_class_error(); }
+  private float threshold(ThresholdCriterion criter) { return threshold_for_criteria[criter.ordinal()]; }
+  private long[][] cm(ThresholdCriterion criter) { return confusion_matrix_for_criteria[criter.ordinal()]; }
 
 
   /* Return the metrics for chosen threshold criterion */
-  public double F1() { return F1(threshold_criterion); }
-  public double err() { return err(threshold_criterion); }
-  public double precision() { return precision(threshold_criterion); }
-  public double recall() { return recall(threshold_criterion); }
-  public double specificity() { return specificity(threshold_criterion); }
-  public double accuracy() { return accuracy(threshold_criterion); }
-  public double max_per_class_error() { return max_per_class_error(threshold_criterion); }
-  public float threshold() { return threshold(threshold_criterion); }
-  public long[][] cm() { return cm(threshold_criterion); }
-  public ConfusionMatrix2 CM() { return _cms[idxCriter[threshold_criterion.ordinal()]]; }
+  public  double F1() { return F1(threshold_criterion); }
+  public  double err() { return err(threshold_criterion); }
+  private double precision() { return precision(threshold_criterion); }
+  private double recall() { return recall(threshold_criterion); }
+  private double specificity() { return specificity(threshold_criterion); }
+  private double accuracy() { return accuracy(threshold_criterion); }
+  private double max_per_class_error() { return max_per_class_error(threshold_criterion); }
+  private float threshold() { return threshold(threshold_criterion); }
+  public  long[][] cm() { return cm(threshold_criterion); }
+  private ConfusionMatrix2 CM() { return _cms[idxCriter[threshold_criterion.ordinal()]]; }
 
   /* Return the best possible metrics */
-  public double bestF1() { return F1(ThresholdCriterion.maximum_F1); }
-  public double bestErr() { return err(ThresholdCriterion.maximum_Accuracy); }
+  private double bestF1() { return F1(ThresholdCriterion.maximum_F1); }
+  private double bestErr() { return err(ThresholdCriterion.maximum_Accuracy); }
 
   /* Helpers */
   private int[] idxCriter;
@@ -156,7 +155,7 @@ public class AUC extends Iced {
    * @param cms ConfusionMatrices
    * @param thresh Thresholds
    */
-  public AUC(ConfusionMatrix2[] cms, float[] thresh) {
+  private AUC(ConfusionMatrix2[] cms, float[] thresh) {
     this(cms, thresh, null);
   }
   /**
@@ -165,7 +164,7 @@ public class AUC extends Iced {
    * @param thresh Thresholds
    * @param domain Domain
    */
-  public AUC(ConfusionMatrix2[] cms, float[] thresh, String[] domain) {
+  private AUC(ConfusionMatrix2[] cms, float[] thresh, String[] domain) {
     _cms = cms;
     thresholds = thresh;
     actual_domain = domain;
@@ -343,7 +342,7 @@ public class AUC extends Iced {
     }
   }
 
-  //@Override public boolean toHTML( StringBuilder sb ) {
+  //@Override private boolean toHTML( StringBuilder sb ) {
   //  try {
   //    if (actual_domain == null) actual_domain = new String[]{"false","true"};
   //    // make local copies to avoid getting clear()'ed out in the middle of printing (can happen for DeepLearning, for example)
@@ -676,7 +675,7 @@ public class AUC extends Iced {
 
   // Compute CMs for different thresholds via MRTask2
   private static class AUCTask extends MRTask<AUCTask> {
-    /* @OUT CMs */ public final ConfusionMatrix2[] getCMs() { return _cms; }
+    /* @OUT CMs */ private final ConfusionMatrix2[] getCMs() { return _cms; }
     private ConfusionMatrix2[] _cms;
 
     /* IN thresholds */ final private float[] _thresh;

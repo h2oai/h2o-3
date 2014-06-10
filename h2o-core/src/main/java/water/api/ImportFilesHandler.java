@@ -6,19 +6,17 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.util.*;
-import water.H2O;
-import water.schemas.ImportFilesV2;
 import water.util.FileIntegrityChecker;
 
-public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
+class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // Input
-  public String _path;
+  String _path;
 
   // Outputs
-  public String _files[], _keys[], _fails[], _dels[];
+  String _files[], _keys[], _fails[], _dels[];
 
   // Running all in GET, no need for backgrounding on F/J threads
   @Override public void compute2() { 
@@ -34,7 +32,7 @@ public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2
     else serveLocalDisk();
   }
 
-//  protected void serveHdfs() throws IOException{
+//  private void serveHdfs() throws IOException{
 //    if (isBareS3NBucketWithoutTrailingSlash(path)) { path += "/"; }
 //    Log.info("ImportHDFS processing (" + path + ")");
 //    ArrayList<String> succ = new ArrayList<String>();
@@ -47,7 +45,7 @@ public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2
 //  }
 //
 //
-//  protected void serveS3(){
+//  private void serveS3(){
 //    Futures fs = new Futures();
 //    assert path.startsWith("s3://");
 //    path = path.substring(5);
@@ -87,13 +85,13 @@ public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2
     ArrayList<String> afails = new ArrayList();
     ArrayList<String> adels  = new ArrayList();
     FileIntegrityChecker.check(f).syncDirectory(afiles,akeys,afails,adels);
-    _files = afiles.toArray(new String[0]);
-    _keys  = akeys .toArray(new String[0]);
-    _fails = afails.toArray(new String[0]);
-    _dels  = adels .toArray(new String[0]);
+    _files = afiles.toArray(new String[afiles.size()]);
+    _keys  = akeys .toArray(new String[akeys .size()]);
+    _fails = afails.toArray(new String[afails.size()]);
+    _dels  = adels .toArray(new String[adels .size()]);
   }
 
-//  protected void serveHttp() {
+//  private void serveHttp() {
 //    try {
 //      java.net.URL url = new URL(path);
 //      Key k = Key.make(path);
@@ -118,7 +116,7 @@ public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2
 //  }
 //
 //  // HTML builder
-//  @Override public boolean toHTML( StringBuilder sb ) {
+//  @Override protected boolean toHTML( StringBuilder sb ) {
 //    if(files == null)return false;
 //    if( files != null && files.length > 1 )
 //      sb.append("<div class='alert'>")
@@ -145,7 +143,7 @@ public class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2
 //    boolean b = m.matches();
 //    return b;
 //  }
-//  protected String parseLink(String k, String txt) { return Parse2.link(k, txt); }
+//  private String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
 //
   @Override protected ImportFilesV2 schema(int version) { return new ImportFilesV2(); }

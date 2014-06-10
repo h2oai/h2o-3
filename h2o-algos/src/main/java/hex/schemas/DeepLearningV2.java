@@ -1,8 +1,7 @@
 package hex.schemas;
 
-import water.schemas.Schema;
-import water.schemas.API;
-import water.H2O;
+import water.api.Schema;
+import water.api.API;
 import water.Key;
 import water.fvec.Frame;
 

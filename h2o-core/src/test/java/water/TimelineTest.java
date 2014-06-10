@@ -1,15 +1,11 @@
 package water;
 
 import jsr166y.CountedCompleter;
-import org.apache.hadoop.ipc.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.api.TimelineHandler;
-import water.api.TimelineHandler;
-import water.schemas.TimelineV2;
-import water.util.TimelineSnapshot;
+import water.api.TimelineV2;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 

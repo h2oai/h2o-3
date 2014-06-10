@@ -1,7 +1,7 @@
 
 import water.*;
 import water.util.DocGen.HTML;
-import water.schemas.*;
+import water.api.*;
 
 public class SlowJobV2 extends Schema<SlowJob,SlowJobV2> {
 
