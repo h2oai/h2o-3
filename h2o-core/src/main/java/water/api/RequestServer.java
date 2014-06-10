@@ -45,6 +45,7 @@ public class RequestServer extends NanoHTTPD {
     // Admin
     addToNavbar(registerGET("/Cloud"      ,CloudHandler      .class,"status"  ),"Cloud",         "Admin");
     addToNavbar(registerGET("/JobPoll"    ,JobPollHandler    .class,"poll"    ),"Job Poll",      "Admin");
+    addToNavbar(registerGET("/Timeline"   ,TimelineHandler   .class,"compute2"),"Timeline",      "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(registerGET("/Tutorials"  ,TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
