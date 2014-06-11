@@ -53,7 +53,7 @@ abstract class Parser extends Iced {
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
 
-  protected static final long LARGEST_DIGIT_NUMBER = 1000000000000000000L;
+  protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
 
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 

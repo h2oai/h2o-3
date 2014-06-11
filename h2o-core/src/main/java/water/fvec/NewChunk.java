@@ -466,13 +466,12 @@ public class NewChunk extends Chunk {
     // Data in some fixed-point format, not doubles
     // See if we can sanely normalize all the data to the same fixed-point.
     int  xmin = Integer.MAX_VALUE;   // min exponent found
-    long lemin= 0, lemax=lemin; // min/max at xmin fixed-point
-    boolean overflow=false;
     boolean floatOverflow = false;
-    boolean first = true;
     double min = Double.POSITIVE_INFINITY;
     double max = Double.NEGATIVE_INFINITY;
     int p10iLength = PrettyPrint.powers10i.length;
+    long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
+    int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
 
     for( int i=0; i<_len; i++ ) {
       if( isNA2(i) ) continue;
@@ -481,38 +480,20 @@ public class NewChunk extends Chunk {
       assert x != Integer.MIN_VALUE:"l = " + l + ", x = " + x;
       if( x==Integer.MIN_VALUE+1) x=0; // Replace enum flag with no scaling
       assert l!=0 || x==0:"l == 0 while x = " + x + " ls = " + Arrays.toString(_ls);      // Exponent of zero is always zero
-      // Compute per-chunk min/max
-      double d = l*PrettyPrint.pow10(x);
-      if( d < min ) min = d;
-      if( d > max ) max = d;
       long t;                   // Remove extra scaling
       while( l!=0 && (t=l/10)*10==l ) { l=t; x++; }
+      // Compute per-chunk min/max
+      double d = l*PrettyPrint.pow10(x);
+      if( d < min ) { min = d; llo=l; xlo=x; }
+      if( d > max ) { max = d; lhi=l; xhi=x; }
       floatOverflow = Math.abs(l) > MAX_FLOAT_MANTISSA;
-      if( first ) {
-        first = false;
-        xmin = x;
-        lemin = lemax = l;
-        continue;
-      }
-      // Track largest/smallest values at xmin scale.  Note overflow.
-      if( x < xmin ) {
-        if( overflow || (overflow = ((xmin-x) >=p10iLength)) ) continue;
-        lemin *= PrettyPrint.pow10i(xmin-x);
-        lemax *= PrettyPrint.pow10i(xmin-x);
-        xmin = x;               // Smaller xmin
-      }
-      // *this* value, as a long scaled at the smallest scale
-      if( overflow || (overflow = ((x-xmin) >=p10iLength)) ) continue;
-      long le = l*PrettyPrint.pow10i(x-xmin);
-      if( le < lemin ) lemin=le;
-      if( le > lemax ) lemax=le;
+      xmin = Math.min(xmin,x);
     }
 
-    if(_len2 != _len){ // sparse? compare xmin/lemin/lemax with 0
-      lemin = Math.min(0, lemin);
-      lemax = Math.max(0, lemax);
-      min = Math.min(min,0);
-      max = Math.max(max,0);
+    if(_len2 != _len){ // sparse?  then compare vs implied 0s
+      if( min > 0 ) { min = 0; llo=0; xlo=0; }
+      if( max < 0 ) { max = 0; lhi=0; xhi=0; }
+      xmin = Math.min(xmin,0);
     }
 
     // Constant column?
@@ -520,6 +501,22 @@ public class NewChunk extends Chunk {
       return ((long)min  == min)
           ? new C0LChunk((long)min,_len2)
           : new C0DChunk(      min,_len2);
+    }
+
+    // Compute min & max, as scaled integers in the xmin scale.
+    // Check for overflow along the way
+    boolean overflow = (xhi-xmin) >= p10iLength;
+    long lemax=0, lemin=0;
+    if( !overflow ) {           // Can at least get the power-of-10 without overflow
+      long pow10 = PrettyPrint.pow10i(xhi-xmin);
+      lemax = lhi*pow10;
+      // Hacker's Delight, Section 2-13, checking overflow.
+      // Note that the power-10 is always positive, so the test devolves this:
+      if( (lemax/pow10) != lhi ) overflow = true;
+      // Note that xlo might be > xmin; e.g. { 101e-49 , 1e-48}.
+      long pow10lo = PrettyPrint.pow10i(xlo-xmin);
+      lemin = llo*pow10lo;
+      assert overflow || (lemin/pow10lo)==llo;
     }
 
     // Boolean column?
@@ -570,12 +567,13 @@ public class NewChunk extends Chunk {
       }
       return chunkD();
     } // else an integer column
+
     // Compress column into a byte
     if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
       return new C1NChunk( bufX(0,0,C1NChunk.OFF,0));
     if( lemin < Integer.MIN_VALUE ) return new C8Chunk( bufX(0,0,0,3));
-    if( lemax-lemin < 255 ) {         // Span fits in a byte?
-      if(0 <= min && max < 255 )      // Span fits in an unbiased byte?
+    if( lemax-lemin < 255 ) {    // Span fits in a byte?
+      if(0 <= min && max < 255 ) // Span fits in an unbiased byte?
         return new C1Chunk( bufX(0,0,C1Chunk.OFF,0));
       return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
     }
