@@ -7,7 +7,7 @@ import water.*;
 import water.fvec.*;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -490,7 +490,7 @@ public class ParserTest extends TestUtil {
       ard(1e10), ard(1e11), ard(1e12), ard(1e13), ard(1e14), ard(1e15), ard(1e16), ard(1e17), ard(1e18), ard(1e19),
       ard(1e20), ard(1e21), ard(1e22), ard(1e23),
     };
-    Key k = makeByteVec("test_digits.csv",pows10);
+    Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -549,7 +549,7 @@ public class ParserTest extends TestUtil {
       ard(9.99999999999999999e22),
       ard(9.99999999999999999e23),
     };
-    Key k = makeByteVec("test_digits.csv",pows10);
+    Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -567,7 +567,7 @@ public class ParserTest extends TestUtil {
       ard(1000001L),
       ard(2000001L),
     };
-    Key k = makeByteVec("test_digits.csv",pows10);
+    Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -585,7 +585,7 @@ public class ParserTest extends TestUtil {
       ard(1e-18),
       ard(1e-34),
     };
-    Key k = makeByteVec("test_digits.csv",pows10);
+    Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,pows10_exp);
