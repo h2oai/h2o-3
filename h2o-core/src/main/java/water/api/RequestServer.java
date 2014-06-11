@@ -211,16 +211,16 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( String http_code, Schema S, RequestType type ) {
+  private Response wrap( String http_code, Schema s, RequestType type ) {
     // Convert Schema to desired output flavor
     switch( type ) {
-    case json:   return new Response(http_code, MIME_JSON, new String(S.writeJSON(new AutoBuffer()).buf()));
+    case json:   return new Response(http_code, MIME_JSON, new String(s.writeJSON(new AutoBuffer()).buf()));
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
       throw H2O.unimpl();
     case html: {
       RString html = new RString(_htmlTemplate);
-      html.replace("CONTENTS", S.writeHTML(new water.util.DocGen.HTML()).toString());
+      html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
       return new Response(http_code, MIME_HTML, html.toString());
     }
     default:

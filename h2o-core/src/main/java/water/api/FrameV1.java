@@ -87,13 +87,25 @@ class FrameV1 extends Schema {
 
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
-  FrameV1( Frame fr ) { key = fr._key;  _fr = fr; }
+
+  FrameV1( Frame fr ) {
+    key = fr._key;
+    _fr = fr;
+    off = 0;
+    len = 100;                  // comes from Frame??? TODO
+    columns = new Col[_fr.numCols()];
+    Vec[] vecs = _fr.vecs();
+    for( int i=0; i<columns.length; i++ )
+      columns[i] = new Col(_fr._names[i],vecs[i],off,len);
+  }
 
   //==========================
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected FrameV1 fillInto( Handler h ) { throw H2O.fail(); }
+  @Override protected FrameV1 fillInto( Handler h ) {
+    throw H2O.fail();
+  }
 
   // Version&Schema-specific filling from the handler
   @Override protected FrameV1 fillFrom( Handler h ) {

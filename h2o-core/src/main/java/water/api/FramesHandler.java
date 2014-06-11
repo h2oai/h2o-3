@@ -11,16 +11,20 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   Key key;
   Frame[] frames;
 
-  private void list() {
+  protected void list() {
     // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
   }
 
-  private void fetch() {
+  protected void fetch() {
     if (null == key)
       return;
 
-    Iced ice = DKV.get(key).get();
-    if (! (ice instanceof Frame))
+    Value v = DKV.get(key);
+    if (null == v)  // TODO: 404
+      throw H2O.fail("Did not find key in DKV: " + key.toString());
+
+    Iced ice = v.get();
+    if (! (ice instanceof Frame))  // TODO: 404
       throw H2O.fail("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
 
     frames = new Frame[1];
