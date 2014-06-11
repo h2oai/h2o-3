@@ -447,7 +447,7 @@ final public class H2O {
   static private volatile boolean _doneRequests;
   static public void registerGET( String url, Class hclass, String hmeth, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.registerGET(url,hclass,hmeth),label,menu);
+    RequestServer.addToNavbar(RequestServer.register(url,"GET",hclass,hmeth),label,menu);
   }
 
   /** Start the web service; disallow future URL registration.

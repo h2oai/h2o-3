@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
+import water.api.RequestServer.Route;
 
 public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> extends H2OCountedCompleter {
   protected Handler( ) { super(); }
@@ -17,7 +18,7 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   abstract protected int max_ver();
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  final Schema handle(int version, Method meth, Properties parms) throws Exception {
+  final Schema handle(int version, Route route, Properties parms) throws Exception {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
@@ -28,7 +29,7 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
 
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
     _t_start = System.currentTimeMillis();
-    try { meth.invoke(this); }
+    try { route.handler_method.invoke(this); }
     // Exception throws out of the invoked method turn into InvocationTargetException
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {

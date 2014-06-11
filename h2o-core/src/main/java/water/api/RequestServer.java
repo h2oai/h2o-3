@@ -1,8 +1,8 @@
 package water.api;
 
 import java.io.*;
-import java.net.ServerSocket;
 import java.lang.reflect.Method;
+import java.net.ServerSocket;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -25,59 +25,111 @@ public class RequestServer extends NanoHTTPD {
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
   private static volatile String _htmlTemplate = "";
 
+  public static class Route {
+    public String http_method;
+    public Pattern url_pattern = null;
+    public Class handler_class = null;
+    public Method handler_method = null;
+    public String[] path_params = null; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+
+    public Route(String http_method, Pattern url_pattern, Class handler_class, Method handler_method, String[] path_params) {
+      this.http_method = http_method;
+      this.url_pattern = url_pattern;
+      this.handler_class = handler_class;
+      this.handler_method = handler_method;
+      this.path_params = path_params;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Route route = (Route) o;
+
+      if (handler_class != null ? !handler_class.equals(route.handler_class) : route.handler_class != null)
+        return false;
+      if (handler_method != null ? !handler_method.equals(route.handler_method) : route.handler_method != null)
+        return false;
+      if (http_method != null ? !http_method.equals(route.http_method) : route.http_method != null) return false;
+      if (!Arrays.equals(path_params, route.path_params)) return false;
+      if (url_pattern != null ? !url_pattern.equals(route.url_pattern) : route.url_pattern != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = http_method != null ? http_method.hashCode() : 0;
+      result = 31 * result + (url_pattern != null ? url_pattern.hashCode() : 0);
+      result = 31 * result + (handler_class != null ? handler_class.hashCode() : 0);
+      result = 31 * result + (handler_method != null ? handler_method.hashCode() : 0);
+      result = 31 * result + (path_params != null ? Arrays.hashCode(path_params) : 0);
+      return result;
+    }
+  }
+
 
   // Handlers ------------------------------------------------------------
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  private static final LinkedHashMap<Pattern,Method> _handlers = new LinkedHashMap<>();
+  private static final LinkedHashMap<Pattern,Route> _routes = new LinkedHashMap<>();
 
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
   static {
     // Data
-    addToNavbar(registerGET("/ImportFiles",ImportFilesHandler.class,"compute2"),"Import Files",  "Data");
-    addToNavbar(registerGET("/Parse"      ,ParseHandler      .class,"parse"   ),"Parse",         "Data");
-    addToNavbar(registerGET("/Inspect"    ,InspectHandler    .class,"inspect" ),"Inspect",       "Data");
+    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"Import Files",  "Data");
+    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"Parse",         "Data");
+    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"Inspect",       "Data");
 
     // Admin
-    addToNavbar(registerGET("/Cloud"      ,CloudHandler      .class,"status"  ),"Cloud",         "Admin");
-    addToNavbar(registerGET("/JobPoll"    ,JobPollHandler    .class,"poll"    ),"Job Poll",      "Admin");
-    addToNavbar(registerGET("/Timeline"   ,TimelineHandler   .class,"compute2"),"Timeline",      "Admin");
+    addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"Cloud",         "Admin");
+    addToNavbar(register("/JobPoll"    ,"GET",JobPollHandler    .class,"poll"    ),"Job Poll",      "Admin");
+    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"Timeline",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(registerGET("/Tutorials"  ,TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
-    addToNavbar(registerGET("/"           ,TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(register("/"           ,"GET",TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
 
     initializeNavBar();
 
-    registerGET("/Frames/.*", FramesHandler.class, "fetch");
-    registerGET("/Frames", FramesHandler.class, "list");
+    // REST only, no html:
+    register("/Frames/.*"              ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
+    register("/Frames"                 ,"GET",FramesHandler.class, "list");
   }
 
-  /** Registers the request with the request server.  */
-  public  static String registerGET   (String url, Class hclass, String hmeth) { return register("GET"   ,url,hclass,hmeth); }
-  private static String registerPUT   (String url, Class hclass, String hmeth) { return register("PUT"   ,url,hclass,hmeth); }
-  private static String registerDELETE(String url, Class hclass, String hmeth) { return register("DELETE",url,hclass,hmeth); }
-  private static String registerPOST  (String url, Class hclass, String hmeth) { return register("POST"  ,url,hclass,hmeth); }
-  private static String register(String method, String url, Class hclass, String hmeth) {
+  private static final String[] no_strings = new String[] { };
+
+  public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
+    return register(url_pattern, http_method, handler_class, handler_method, no_strings);
+  }
+
+  public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
     try {
-      assert lookup(method,url)==null; // Not shadowed
-      Method meth = hclass.getDeclaredMethod(hmeth);
-      _handlers.put(Pattern.compile(method + url), meth);
-      return url;
+      assert lookup(handler_method,url_pattern)==null; // Not shadowed
+      Method meth = handler_class.getDeclaredMethod(handler_method);
+      Pattern p = Pattern.compile(url_pattern);
+      Route route = new Route(http_method, p, handler_class, meth, path_params);
+      _routes.put(p, route);
+      return route;
     } catch( NoSuchMethodException nsme ) {
-      throw new Error("NoSuchMethodException: "+hclass.getName()+"."+hmeth);
+      throw new Error("NoSuchMethodException: "+handler_class.getName()+"."+handler_method);
     }
   }
 
   // Lookup the method/url in the register list, and return a matching Method
-  private static Method lookup( String method, String url ) {
-    String s = method+url;
-    for( Pattern p : _handlers.keySet() )
-      if (p.matcher(s).matches())
-        return _handlers.get(p);
+  private static Route lookup( String http_method, String url ) {
+    if (null == http_method || null == url)
+      return null;
+
+    for( Route r : _routes.values() )
+      if (r.url_pattern.matcher(url).matches())
+        if (http_method.equals(r.http_method))
+          return r;
+
     return null;
   }
 
@@ -178,12 +230,13 @@ public class RequestServer extends NanoHTTPD {
     maybeLogRequest(path, method, parms);
     try {
       // Find handler for url
-      Method meth = lookup(method,path);
+      Route route = lookup(method,path);
+
       // if the request is not known, treat as resource request, or 404 if not found
-      if( meth == null )
+      if( route == null )
         return getResource(uri);
       else
-        return wrap(HTTP_OK,handle(type,meth,version,parms),type);
+        return wrap(HTTP_OK,handle(type,route,version,parms),type);
     } catch( IllegalArgumentException e ) {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
@@ -193,16 +246,15 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Handling ------------------------------------------------------------------
-  private Schema handle( RequestType type, Method meth, int version, Properties parms ) throws Exception {
+  private Schema handle( RequestType type, Route route, int version, Properties parms ) throws Exception {
     switch( type ) {
     case html: // These request-types only dictate the response-type;
     case java: // the normal action is always done.
     case json:
     case xml: {
-      Class x = meth.getDeclaringClass();
-      Class<Handler> clz = (Class<Handler>)x;
+      Class<Handler> clz = (Class<Handler>)route.handler_class;
       Handler h = clz.newInstance();
-      return h.handle(version,meth,parms); // Can throw any Exception the handler throws
+      return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
     case query:
     case help:
@@ -323,23 +375,23 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Add a new item to the navbar
-  public static String addToNavbar(String r, String name, String category) {
+  public static String addToNavbar(Route route, String name, String category) {
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
       arl = new ArrayList<>();
       _navbar.put(category, arl);
       _navbarOrdering.add(category);
     }
-    arl.add(new MenuItem(r, name));
-    return r;
+    arl.add(new MenuItem(route.url_pattern.pattern(), name));
+    return route.url_pattern.pattern();
   }
 
   // Return URLs for things that want to appear Frame-inspection page
   static String[] frameChoices( int version, Frame fr ) {
     ArrayList<String> al = new ArrayList<>();
-    for( Pattern p : _handlers.keySet() ) {
+    for( Pattern p : _routes.keySet() ) {
       try {
-        Method meth = _handlers.get(p);
+        Method meth = _routes.get(p).handler_method;
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance();
