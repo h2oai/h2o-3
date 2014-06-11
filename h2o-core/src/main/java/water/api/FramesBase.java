@@ -6,8 +6,11 @@ import water.fvec.Frame;
 // class FramesBase<H extends Handler<H,S>, S extends Schema<H,S>> extends Schema<H, S> {
 abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
   // Input fields
-  @API(help="Key to inspect") // TODO: no validation yet, because right now fields are required if they have validation.
+  @API(help="Key of Frame of interest") // TODO: no validation yet, because right now fields are required if they have validation.
   Key key;
+
+  @API(help="Name of column of interest") // TODO: no validation yet, because right now fields are required if they have validation.
+  String column;
 
   // Output fields
   @API(help="Frames")
@@ -16,6 +19,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
   // Non-version-specific filling into the handler
   @Override protected FramesBase fillInto( FramesHandler h ) {
     h.key = this.key;
+    h.column = this.column; // NOTE: this is needed for request handling, but isn't really partof state; base
 
     if (null != frames) {
       h.frames = new Frame[frames.length];
@@ -31,6 +35,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
   // Version&Schema-specific filling from the handler
   @Override protected FramesBase fillFrom( FramesHandler h ) {
     this.key = h.key;
+    this.column = h.column; // NOTE: this is needed for request handling, but isn't really partof state; base
 
     if (null != h.frames) {
       this.frames = new FrameV1[h.frames.length];

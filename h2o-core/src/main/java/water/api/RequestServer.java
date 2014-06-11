@@ -4,6 +4,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import water.H2O;
@@ -25,19 +26,22 @@ public class RequestServer extends NanoHTTPD {
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
   private static volatile String _htmlTemplate = "";
 
+  private static final String[] NO_STRINGS = new String[] { };
+
   public static class Route {
     public String http_method;
     public Pattern url_pattern = null;
     public Class handler_class = null;
     public Method handler_method = null;
-    public String[] path_params = null; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+    // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
+    public String[] path_params = NO_STRINGS; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
 
     public Route(String http_method, Pattern url_pattern, Class handler_class, Method handler_method, String[] path_params) {
       this.http_method = http_method;
       this.url_pattern = url_pattern;
       this.handler_class = handler_class;
       this.handler_method = handler_method;
-      this.path_params = path_params;
+      this.path_params = (null == path_params ? NO_STRINGS : path_params);
     }
 
     @Override
@@ -97,14 +101,14 @@ public class RequestServer extends NanoHTTPD {
     initializeNavBar();
 
     // REST only, no html:
-    register("/Frames/.*"              ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
-    register("/Frames"                 ,"GET",FramesHandler.class, "list");
+    register("/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
+    register("/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
+    register("/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
+    register("/Frames"                                    ,"GET",FramesHandler.class, "list", new String[] {"key"}); // NOTE: we want ?key ONLY for V2 backward compatibility
   }
 
-  private static final String[] no_strings = new String[] { };
-
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
-    return register(url_pattern, http_method, handler_class, handler_method, no_strings);
+    return register(url_pattern, http_method, handler_class, handler_method, NO_STRINGS);
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
@@ -206,6 +210,21 @@ public class RequestServer extends NanoHTTPD {
   }
 
 
+  private void capturePathParms(Properties parms, String path, Route route) {
+    if (null == route.path_params) return; // path_params is public, so someone may set it to null
+
+    Matcher m = route.url_pattern.matcher(path);
+    if (! m.matches()) {
+      throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route.url_pattern.pattern() + " and path: " + path);
+    }
+
+    for (String key : route.path_params) {
+      String val = m.group(key);
+      if (null != val)
+        parms.put(key, val);
+    }
+  }
+
   // Top-level dispatch based the URI.  Break down URI into parts;
   // e.g. /2/GBM.html/crunk?hex=some_hex breaks down into:
   //   version:      2
@@ -235,8 +254,11 @@ public class RequestServer extends NanoHTTPD {
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
         return getResource(uri);
-      else
+      else {
+        capturePathParms(parms, path, route); // get any parameters like /Frames/<key>
+        Log.info("Path: " + path + ", route: " + route.url_pattern.pattern() + ", parms: " + parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
+      }
     } catch( IllegalArgumentException e ) {
       return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
     } catch( Exception e ) {
