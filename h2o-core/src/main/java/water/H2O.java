@@ -536,6 +536,21 @@ final public class H2O {
       throw new RuntimeException("Cloud size under " + x);
   }
 
+  // - Wait for at least HeartBeatThread.SLEEP msecs and
+  //   try to join others, if any. Try 2x just in case.
+  // - Assume that we get introduced to everybody else
+  //   in one Paxos update, if at all (i.e, rest of
+  //   the cloud was already formed and stable by now)
+  // - If nobody else is found, not an error.
+  public static void joinOthers() {
+    long start = System.currentTimeMillis();
+    while( System.currentTimeMillis() - start < 2000 ) {
+      if( CLOUD.size() > 1 && Paxos._commonKnowledge )
+        break;
+      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+    }
+  }
+
   // --------------------------------------------------------------------------
   static void initializePersistence() {
     // Need to figure out the multi-jar HDFS story here
