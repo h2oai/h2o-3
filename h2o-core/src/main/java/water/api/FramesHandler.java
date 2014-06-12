@@ -17,6 +17,15 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
                  // the Schema.
 
   protected void list() {
+    if (null != key) {
+      if (this.version == 2 ) {
+        // backward compatibility
+        fetch();
+        return;
+      } else {
+        throw H2O.fail("Did not expect a key for version: " + this.version + " of route: " + this.route);
+      }
+    }
     // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
   }
 

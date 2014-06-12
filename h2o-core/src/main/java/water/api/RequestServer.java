@@ -101,10 +101,10 @@ public class RequestServer extends NanoHTTPD {
     initializeNavBar();
 
     // REST only, no html:
-    register("/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
-    register("/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
-    register("/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
-    register("/Frames"                                    ,"GET",FramesHandler.class, "list", new String[] {"key"}); // NOTE: we want ?key ONLY for V2 backward compatibility
+    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
+    register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
+    register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
+    register("/3/Frames"                                    ,"GET",FramesHandler.class, "list", new String[] {"key"}); // NOTE: we want ?key ONLY for V2 backward compatibility
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
@@ -112,9 +112,18 @@ public class RequestServer extends NanoHTTPD {
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
+    assert url_pattern.startsWith("/");
     try {
-      assert lookup(handler_method,url_pattern)==null; // Not shadowed
       Method meth = handler_class.getDeclaredMethod(handler_method);
+
+      if (url_pattern.matches("^/v?\\d+/.*")) {
+        // register specifies a version
+      } else {
+        // register all versions
+        url_pattern = "^(/v?\\d+)?" + url_pattern;
+      }
+
+      assert lookup(handler_method,url_pattern)==null; // Not shadowed
       Pattern p = Pattern.compile(url_pattern);
       Route route = new Route(http_method, p, handler_class, meth, path_params);
       _routes.put(p, route);
@@ -245,19 +254,20 @@ public class RequestServer extends NanoHTTPD {
     // determine the request type
     RequestType type = RequestType.requestType(uripath);
     String path = type.requestName(uripath); // Strip suffix type from middle of URI
+    String versioned_path = "/" + version + path;
 
     // Load resources, or dispatch on handled requests
-    maybeLogRequest(path, method, parms);
+    maybeLogRequest(versioned_path, method, parms);
     try {
       // Find handler for url
-      Route route = lookup(method,path);
+      Route route = lookup(method, versioned_path);
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
         return getResource(uri);
       else {
-        capturePathParms(parms, path, route); // get any parameters like /Frames/<key>
-        Log.info("Path: " + path + ", route: " + route.url_pattern.pattern() + ", parms: " + parms);
+        capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
+        Log.info("Path: " + versioned_path + ", route: " + route.url_pattern.pattern() + ", parms: " + parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     } catch( IllegalArgumentException e ) {
@@ -276,7 +286,7 @@ public class RequestServer extends NanoHTTPD {
     case json:
     case xml: {
       Class<Handler> clz = (Class<Handler>)route.handler_class;
-      Handler h = clz.newInstance();
+      Handler h = clz.newInstance(); // NOTE: currently h has state, so we must create new instances
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
     case query:
