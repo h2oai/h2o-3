@@ -11,7 +11,10 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
 
   Key key;
   Frame[] frames;
-  String column; // NOTE: this is needed for request handling, but isn't really partof state; base
+  String column; // NOTE: this is needed for request handling, but isn't really part of
+                 // state.  We should be able to have verb request params that aren't part
+                 // of the state.  Another example: find_compatible_models is not part of
+                 // the Schema.
 
   protected void list() {
     // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
@@ -66,6 +69,7 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   @Override protected FramesBase schema(int version) {
     switch (version) {
     case 2:   return new FramesV2();
+    case 3:   return new FramesV3();
     default:  throw H2O.fail("Bad version for Frames schema: " + version);
     }
   }

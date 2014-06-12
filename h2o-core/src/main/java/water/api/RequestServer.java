@@ -18,7 +18,7 @@ import water.fvec.Frame;
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
 
-  private static final int LATEST_VERSION = 2;
+  private static final int DEFAULT_VERSION = 2;
 
   static RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
@@ -188,13 +188,13 @@ public class RequestServer extends NanoHTTPD {
   // /2/xxx     --> version 2
   // /v1/xxx    --> version 1
   // /v2/xxx    --> version 2
-  // /latest/xxx--> LATEST_VERSION
-  // /xxx       --> LATEST_VERSION
+  // /latest/xxx--> DEFAULT_VERSION
+  // /xxx       --> DEFAULT_VERSION
   private int parseVersion( String uri ) {
     if( uri.length() <= 1 || uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
-      return (0<<16)|LATEST_VERSION;
+      return (0<<16)| DEFAULT_VERSION;
     if( uri.startsWith("/latest") )
-      return (("/latest".length())<<16)|LATEST_VERSION;
+      return (("/latest".length())<<16)| DEFAULT_VERSION;
     int idx=1;                  // Skip the leading slash
     int version=0;
     char c = uri.charAt(idx);   // Allow both /### and /v###
@@ -203,8 +203,9 @@ public class RequestServer extends NanoHTTPD {
       version = version*10+(c-'0');
       c = uri.charAt(++idx);
     }
-    if( idx > 10 || version > LATEST_VERSION || version < 1 || uri.charAt(idx) != '/' )
-      return (0<<16)|LATEST_VERSION; // Failed number parse or baloney version
+    // Allow versions > DEFAULT_VERSION
+    if( idx > 10 || version < 1 || uri.charAt(idx) != '/' )
+      return (0<<16)| DEFAULT_VERSION; // Failed number parse or baloney version
     // Happy happy version
     return (idx<<16)|version;
   }
