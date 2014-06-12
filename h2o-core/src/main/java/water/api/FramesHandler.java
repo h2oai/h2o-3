@@ -16,21 +16,25 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
                  // of the state.  Another example: find_compatible_models is not part of
                  // the Schema.
 
-  protected void list() {
+  // /2/Frames backward compatibility
+  protected void list_or_fetch() {
+    if (this.version != 2)
+      throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
+
     if (null != key) {
-      if (this.version == 2 ) {
-        // backward compatibility
-        fetch();
-        return;
-      } else {
-        throw H2O.fail("Did not expect a key for version: " + this.version + " of route: " + this.route);
-      }
+      fetch();
+    } else {
+      list();
     }
+  }
+
+  protected void list() {
     // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
   }
 
   /** NOTE: We really want to return a different schema here! */
   protected void columns() {
+    // TODO: return *only* the columns. . .
     fetch();
   }
 
@@ -57,7 +61,6 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     frames = new Frame[1];
     frames[0] = f;
   }
-
 
   protected void fetch() {
     if (null == key)

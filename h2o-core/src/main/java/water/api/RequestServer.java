@@ -104,7 +104,8 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
     register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
-    register("/3/Frames"                                    ,"GET",FramesHandler.class, "list", new String[] {"key"}); // NOTE: we want ?key ONLY for V2 backward compatibility
+    register("/3/Frames"                                    ,"GET",FramesHandler.class, "list");
+    register("/2/Frames"                                    ,"GET",FramesHandler.class, "list_or_fetch"); // uses ?key=
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
@@ -229,7 +230,13 @@ public class RequestServer extends NanoHTTPD {
     }
 
     for (String key : route.path_params) {
-      String val = m.group(key);
+      String val = null;
+      try {
+        val = m.group(key);
+      }
+      catch (IllegalArgumentException e) {
+        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route.url_pattern.pattern() + " with expected parameters: " + route.path_params + " for URL: " + path);
+      }
       if (null != val)
         parms.put(key, val);
     }
