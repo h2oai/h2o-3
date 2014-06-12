@@ -119,7 +119,8 @@ public class Frame extends Lockable {
           Chunk c = cs[col];
           NewChunk nc = ncs[col];
           for( int row = 0; row < c._len; row++ )
-            nc.addNum(c.at0(row));
+            if( c._vec.isUUID() ) nc.addUUID(c,row);
+            else nc.addNum(c.at0(row));
         }
       }
     }.doAll(numCols(),this).outputFrame(names(),domains());

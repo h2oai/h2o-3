@@ -188,6 +188,14 @@ public class NewChunk extends Chunk {
     _len2++;
     assert _len <= _len2;
   }
+  public void addUUID( Chunk c, long row ) {
+    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else addUUID(c.at16l(row),c.at16h(row));
+  }
+  public void addUUID( Chunk c, int row ) {
+    if( c.isNA0(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else addUUID(c.at16l0(row),c.at16h0(row));
+  }
 
   public final boolean isUUID(){return _ls != null && _ds != null; }
   public final boolean sparse(){return _id != null;}
