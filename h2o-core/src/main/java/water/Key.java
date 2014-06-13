@@ -276,7 +276,7 @@ final public class Key extends Iced<Key> implements Comparable {
   }
 
   // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
-  final public static Key makeUserHidden(final Key orig) {
+  public static Key makeUserHidden(final Key orig) {
     if (!orig.user_allowed()) return orig; //already hidden
     byte[] kb = orig._kb.clone();
     kb[0] = Key.HIDDEN_USER_KEY;
@@ -362,9 +362,9 @@ final public class Key extends Iced<Key> implements Comparable {
     return this.toString().compareTo(o.toString());
   }
 
-
   // Custom Serialization Class: Keys need to be interned
   @Override public final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
   @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
   @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
+  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); }
 }

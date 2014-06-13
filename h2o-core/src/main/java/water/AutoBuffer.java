@@ -1282,7 +1282,7 @@ public final class AutoBuffer {
 
   private AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
-  AutoBuffer putJStr( String s ) {
+  private AutoBuffer putJStr( String s ) {
     byte[] b = s.getBytes();
     int off=0;
     for( int i=0; i<b.length; i++ ) {
