@@ -131,7 +131,9 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
         a[i] = (E)parse(splits[i],afclz);
       return a;
     }
-    if( fclz.equals(Key.class) ) return Key.make(s);
+    if( fclz.equals(Key.class) )
+      if( s==null || s.length()==0 ) throw new IllegalArgumentException("Missing key");
+      else return Key.make(s);
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
   }
