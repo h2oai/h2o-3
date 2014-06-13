@@ -26,50 +26,44 @@ public class RequestServer extends NanoHTTPD {
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");
   private static volatile String _htmlTemplate = "";
 
-  private static final String[] NO_STRINGS = new String[] { };
-
-  public static class Route {
-    public String http_method;
-    public Pattern url_pattern = null;
-    public Class handler_class = null;
-    public Method handler_method = null;
+  final static class Route {
+    public final String  _http_method;
+    public final Pattern _url_pattern;
+    public final Class   _handler_class;
+    public final Method  _handler_method;
     // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
-    public String[] path_params = NO_STRINGS; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+    public final String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
 
     public Route(String http_method, Pattern url_pattern, Class handler_class, Method handler_method, String[] path_params) {
-      this.http_method = http_method;
-      this.url_pattern = url_pattern;
-      this.handler_class = handler_class;
-      this.handler_method = handler_method;
-      this.path_params = (null == path_params ? NO_STRINGS : path_params);
+      assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
+      _http_method = http_method;
+      _url_pattern = url_pattern;
+      _handler_class = handler_class;
+      _handler_method = handler_method;
+      _path_params = path_params;
     }
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-
+      if( this == o ) return true;
+      if( !(o instanceof Route) ) return false;
       Route route = (Route) o;
-
-      if (handler_class != null ? !handler_class.equals(route.handler_class) : route.handler_class != null)
-        return false;
-      if (handler_method != null ? !handler_method.equals(route.handler_method) : route.handler_method != null)
-        return false;
-      if (http_method != null ? !http_method.equals(route.http_method) : route.http_method != null) return false;
-      if (!Arrays.equals(path_params, route.path_params)) return false;
-      if (url_pattern != null ? !url_pattern.equals(route.url_pattern) : route.url_pattern != null) return false;
-
+      if( !_handler_class .equals(route._handler_class )) return false;
+      if( !_handler_method.equals(route._handler_method)) return false;
+      if( !_http_method   .equals(route._http_method   )) return false;
+      if( !_url_pattern   .equals(route._url_pattern   )) return false;
+      if( !Arrays.equals(_path_params, route._path_params)) return false;
       return true;
     }
 
     @Override
     public int hashCode() {
-      int result = http_method != null ? http_method.hashCode() : 0;
-      result = 31 * result + (url_pattern != null ? url_pattern.hashCode() : 0);
-      result = 31 * result + (handler_class != null ? handler_class.hashCode() : 0);
-      result = 31 * result + (handler_method != null ? handler_method.hashCode() : 0);
-      result = 31 * result + (path_params != null ? Arrays.hashCode(path_params) : 0);
-      return result;
+      long result = _http_method.hashCode();
+      result = 31 * result + _url_pattern.hashCode();
+      result = 31 * result + _handler_class.hashCode();
+      result = 31 * result + _handler_method.hashCode();
+      result = 31 * result + Arrays.hashCode(_path_params);
+      return (int)result;
     }
   }
 
@@ -109,21 +103,19 @@ public class RequestServer extends NanoHTTPD {
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
-    return register(url_pattern, http_method, handler_class, handler_method, NO_STRINGS);
+    return register(url_pattern, http_method, handler_class, handler_method, new String[]{});
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
     assert url_pattern.startsWith("/");
     try {
       Method meth = handler_class.getDeclaredMethod(handler_method);
-
       if (url_pattern.matches("^/v?\\d+/.*")) {
         // register specifies a version
       } else {
         // register all versions
         url_pattern = "^(/v?\\d+)?" + url_pattern;
       }
-
       assert lookup(handler_method,url_pattern)==null; // Not shadowed
       Pattern p = Pattern.compile(url_pattern);
       Route route = new Route(http_method, p, handler_class, meth, path_params);
@@ -140,8 +132,8 @@ public class RequestServer extends NanoHTTPD {
       return null;
 
     for( Route r : _routes.values() )
-      if (r.url_pattern.matcher(url).matches())
-        if (http_method.equals(r.http_method))
+      if (r._url_pattern.matcher(url).matches())
+        if (http_method.equals(r._http_method))
           return r;
 
     return null;
@@ -222,20 +214,20 @@ public class RequestServer extends NanoHTTPD {
 
 
   private void capturePathParms(Properties parms, String path, Route route) {
-    if (null == route.path_params) return; // path_params is public, so someone may set it to null
+    if (null == route._path_params) return; // path_params is public, so someone may set it to null
 
-    Matcher m = route.url_pattern.matcher(path);
+    Matcher m = route._url_pattern.matcher(path);
     if (! m.matches()) {
-      throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route.url_pattern.pattern() + " and path: " + path);
+      throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route._url_pattern.pattern() + " and path: " + path);
     }
 
-    for (String key : route.path_params) {
+    for (String key : route._path_params) {
       String val = null;
       try {
         val = m.group(key);
       }
       catch (IllegalArgumentException e) {
-        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route.url_pattern.pattern() + " with expected parameters: " + route.path_params + " for URL: " + path);
+        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route._url_pattern.pattern() + " with expected parameters: " + route._path_params + " for URL: " + path);
       }
       if (null != val)
         parms.put(key, val);
@@ -274,7 +266,7 @@ public class RequestServer extends NanoHTTPD {
         return getResource(uri);
       else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        Log.info("Path: " + versioned_path + ", route: " + route.url_pattern.pattern() + ", parms: " + parms);
+        Log.info("Path: " + versioned_path + ", route: " + route._url_pattern.pattern() + ", parms: " + parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     } catch( IllegalArgumentException e ) {
@@ -292,7 +284,7 @@ public class RequestServer extends NanoHTTPD {
     case java: // the normal action is always done.
     case json:
     case xml: {
-      Class<Handler> clz = (Class<Handler>)route.handler_class;
+      Class<Handler> clz = (Class<Handler>)route._handler_class;
       Handler h = clz.newInstance(); // NOTE: currently h has state, so we must create new instances
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
@@ -422,8 +414,8 @@ public class RequestServer extends NanoHTTPD {
       _navbar.put(category, arl);
       _navbarOrdering.add(category);
     }
-    arl.add(new MenuItem(route.url_pattern.pattern(), name));
-    return route.url_pattern.pattern();
+    arl.add(new MenuItem(route._url_pattern.pattern(), name));
+    return route._url_pattern.pattern();
   }
 
   // Return URLs for things that want to appear Frame-inspection page
@@ -431,7 +423,7 @@ public class RequestServer extends NanoHTTPD {
     ArrayList<String> al = new ArrayList<>();
     for( Pattern p : _routes.keySet() ) {
       try {
-        Method meth = _routes.get(p).handler_method;
+        Method meth = _routes.get(p)._handler_method;
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance();

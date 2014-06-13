@@ -38,7 +38,7 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
 
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
     _t_start = System.currentTimeMillis();
-    try { route.handler_method.invoke(this); }
+    try { route._handler_method.invoke(this); }
     // Exception throws out of the invoked method turn into InvocationTargetException
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {
