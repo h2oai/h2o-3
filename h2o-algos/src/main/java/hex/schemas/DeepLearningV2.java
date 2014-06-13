@@ -34,5 +34,5 @@ public class DeepLearningV2 extends Schema<DeepLearningHandler,DeepLearningV2> {
   }
 
   // Return a URL to invoke DeepLearning on this Frame
-  public String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?src="+fr._key; }
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?src="+fr._key; }
 }

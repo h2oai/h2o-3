@@ -3,7 +3,7 @@ package water.api;
 import water.*;
 import water.util.DocGen.HTML;
 
-class InspectV1 extends Schema {
+class InspectV2 extends Schema {
 
   // Input fields
   @API(help="Key to inspect",required=true)
@@ -21,7 +21,7 @@ class InspectV1 extends Schema {
 
   // Version&Schema-specific filling into the handler
   private transient Value _val; // To avoid a race, cached lookup here
-  @Override protected InspectV1 fillInto( Handler h ) {
+  @Override protected InspectV2 fillInto( Handler h ) {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
     ((InspectHandler)h)._val = _val;
@@ -29,7 +29,7 @@ class InspectV1 extends Schema {
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected InspectV1 fillFrom( Handler h ) {
+  @Override protected InspectV2 fillFrom( Handler h ) {
     className = _val.className();
     schema = ((InspectHandler)h)._schema; // Output schema
     schema.fillFrom(h);                   // Recursively fill in schema
@@ -42,6 +42,6 @@ class InspectV1 extends Schema {
   }
 
   //==========================
-  // Helper so ParseV2 can link to InspectV1
-  static String link(Key key) { return "Inspect?key="+key; }
+  // Helper so ParseV2 can link to InspectV2
+  static String link(Key key) { return "/2/Inspect?key="+key; }
 }

@@ -14,7 +14,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
 
   // Output fields
   @API(help="Frames")
-  FrameV1[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV1
+  FrameV2[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
 
   // Non-version-specific filling into the handler
   @Override protected FramesBase fillInto( FramesHandler h ) {
@@ -25,7 +25,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
       h.frames = new Frame[frames.length];
 
       int i = 0;
-      for (FrameV1 frame : this.frames) {
+      for (FrameV2 frame : this.frames) {
         h.frames[i++] = frame._fr;
       }
     }
@@ -38,11 +38,11 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
     this.column = h.column; // NOTE: this is needed for request handling, but isn't really partof state; base
 
     if (null != h.frames) {
-      this.frames = new FrameV1[h.frames.length];
+      this.frames = new FrameV2[h.frames.length];
 
       int i = 0;
       for (Frame frame : h.frames) {
-        this.frames[i++] = new FrameV1(frame);
+        this.frames[i++] = new FrameV2(frame);
       }
     }
     return this;

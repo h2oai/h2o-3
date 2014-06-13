@@ -429,7 +429,7 @@ public class RequestServer extends NanoHTTPD {
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance();
-        if( version < h.min_ver() || h.max_ver() > version ) continue;
+        if( version < h.min_ver() || h.max_ver() < version ) continue;
         String url = h.schema(version).acceptsFrame(fr);
         if( url != null ) al.add(url);
       }

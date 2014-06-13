@@ -15,7 +15,7 @@ public class DeepLearningHandler extends Handler<DeepLearningHandler,DeepLearnin
   // The model!
   DeepLearningModel _dlm;
 
-  DeepLearningHandler() {}
+  public DeepLearningHandler() {}
 
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { 

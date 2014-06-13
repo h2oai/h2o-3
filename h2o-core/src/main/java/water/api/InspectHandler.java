@@ -25,12 +25,12 @@ class InspectHandler extends Handler {
       if( _val == null ) throw new IllegalArgumentException("Key is missing");
     }
 
-    if( _val.isFrame() ) return (_schema = new FrameV1((Frame)_val.get()));
+    if( _val.isFrame() ) return (_schema = new FrameV2((Frame)_val.get()));
 
     // Need a generic viewer here
     throw H2O.unimpl();
   }
 
   // Inspect Schemas are still at V1, unchanged for V2
-  @Override protected InspectV1 schema(int version) { return new InspectV1(); }
+  @Override protected Schema schema(int version) { return version==1 ? new InspectV1() : new InspectV2(); }
 }

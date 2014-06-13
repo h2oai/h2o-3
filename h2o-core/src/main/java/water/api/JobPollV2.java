@@ -50,13 +50,13 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
 
   //==========================
   // Helper so Jobs can link to JobPoll
-  public  static String link(Key key) { return "JobPoll?key="+key; }
+  public static String link(Key key) { return "JobPoll?key="+key; }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");
     if( "DONE".equals(status) ) {
       Job job = DKV.get(key).get();
-      String url = InspectV1.link(job.dest());
+      String url = InspectV2.link(job.dest());
       ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
     } else {
       String url = link(key);
