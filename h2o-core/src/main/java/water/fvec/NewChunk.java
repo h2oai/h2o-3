@@ -524,7 +524,7 @@ public class NewChunk extends Chunk {
       // Note that xlo might be > xmin; e.g. { 101e-49 , 1e-48}.
       long pow10lo = PrettyPrint.pow10i(xlo-xmin);
       lemin = llo*pow10lo;
-      assert overflow || (lemin/pow10lo)==llo;
+      if( (lemin/pow10lo) != llo ) overflow = true;
     }
 
     // Boolean column?
