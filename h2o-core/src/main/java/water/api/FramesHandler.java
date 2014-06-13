@@ -43,17 +43,17 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
       return;
 
     Value value = DKV.get(key);
-    if (null == value)  // TODO: 404
-      throw H2O.fail("Did not find key in DKV: " + key.toString());
+    if (null == value)
+      throw new IllegalArgumentException("Did not find key: " + key.toString());
 
     Iced ice = value.get();
-    if (! (ice instanceof Frame))  // TODO: 404
-      throw H2O.fail("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
+    if (! (ice instanceof Frame))
+      throw new IllegalArgumentException("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
 
     // NOTE: We really want to return a different schema here!
     Vec vec = ((Frame)ice).vec(column);
     if (null == vec)
-      throw H2O.fail("Did not find column: " + column + " in frame: " + key.toString());
+      throw new IllegalArgumentException("Did not find column: " + column + " in frame: " + key.toString());
 
     Vec[] vecs = { vec };
     String[] names = { column };
@@ -67,12 +67,12 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
       return;
 
     Value v = DKV.get(key);
-    if (null == v)  // TODO: 404
-      throw H2O.fail("Did not find key in DKV: " + key.toString());
+    if (null == v)
+      throw new IllegalArgumentException("Did not find key: " + key.toString());
 
     Iced ice = v.get();
-    if (! (ice instanceof Frame))  // TODO: 404
-      throw H2O.fail("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
+    if (! (ice instanceof Frame))
+      throw new IllegalArgumentException("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
 
     frames = new Frame[1];
     frames[0] = (Frame)ice;
