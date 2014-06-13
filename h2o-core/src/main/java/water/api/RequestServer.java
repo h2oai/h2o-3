@@ -79,18 +79,18 @@ public class RequestServer extends NanoHTTPD {
 
   static {
     // Data
-    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"Import Files",  "Data");
-    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"Parse",         "Data");
-    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"Inspect",       "Data");
+    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"/Parse"      , "Parse",         "Data");
+    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"/Inspect"    , "Inspect",       "Data");
 
     // Admin
-    addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"Cloud",         "Admin");
-    addToNavbar(register("/JobPoll"    ,"GET",JobPollHandler    .class,"poll"    ),"Job Poll",      "Admin");
-    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"Timeline",      "Admin");
+    addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"/Cloud"      , "Cloud",         "Admin");
+    addToNavbar(register("/JobPoll"    ,"GET",JobPollHandler    .class,"poll"    ),"/JobPoll"    , "Job Poll",      "Admin");
+    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"/Timeline"   , "Timeline",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
-    addToNavbar(register("/"           ,"GET",TutorialsHandler  .class,"nop"     ),"Tutorials Home","Help");
+    addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"/Tutorials"  , "Tutorials Home","Help");
+    register("/"           ,"GET",TutorialsHandler  .class,"nop"     );
 
     initializeNavBar();
 
@@ -407,14 +407,16 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Add a new item to the navbar
-  public static String addToNavbar(Route route, String name, String category) {
+  public static String addToNavbar(Route route, String base_url, String name, String category) {
+    assert route != null && base_url != null && name != null && category != null;
+
     ArrayList<MenuItem> arl = _navbar.get(category);
     if( arl == null ) {
       arl = new ArrayList<>();
       _navbar.put(category, arl);
       _navbarOrdering.add(category);
     }
-    arl.add(new MenuItem(route._url_pattern.pattern(), name));
+    arl.add(new MenuItem(base_url, name));
     return route._url_pattern.pattern();
   }
 
