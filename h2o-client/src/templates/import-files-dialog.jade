@@ -5,14 +5,13 @@
       .y-dialog-exit(data-bind='click:cancel')
         i.fa.fa-times 
     .y-dialog-body
-      form
-        .form-group
-          label Enter file path:
-          input.form-control(type='text' data-bind='value:filePath')
-        .form-group
-          .y-error-message(data-bind='text:errorMessage')
-        .y-dialog-actions
-          button.btn(data-bind='click:cancel') Cancel
-          button.btn.btn-primary(data-bind='click:confirm') OK
+      .form-group
+        label Enter file path:
+        input.form-control(type='text' data-bind='value:filePath')
+      .form-group
+        .y-error-message(data-bind='text:errorMessage')
+      .y-dialog-actions
+        button.btn(data-bind='click:cancel') Cancel
+        button.btn.btn-primary(data-bind='click:confirm') OK
 
 
