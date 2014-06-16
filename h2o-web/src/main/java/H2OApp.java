@@ -9,6 +9,8 @@ public class H2OApp {
     // Register menu items and service handlers for algos
     water.H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
 
+    water.H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"compute2","/KMeans","KMeans","Model");
+
     // An empty Job for testing job polling
     water.H2O.registerGET("/SlowJob", SlowJob.class, "work", "/SlowJob", "Slow Job", "Model");
 
