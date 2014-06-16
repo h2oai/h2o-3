@@ -1,22 +1,22 @@
 package water.api;
+
+import static water.util.ModelUtils.getPredictions;
+import java.util.Arrays;
+import java.util.Random;
 import water.DKV;
 import water.Iced;
 import water.MRTask;
-import water.util.ArrayUtils;
-import water.util.DocGen;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.DocGen;
 import water.util.Log;
-import static water.util.ModelUtils.getPredictions;
-
-import java.util.Arrays;
-import java.util.Random;
 
 public class HitRatio extends Iced {
 //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//  public static final String DOC_GET = "Hit Ratio";
+//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
+//  private static final String DOC_GET = "Hit Ratio";
 //
 //  @API(help = "", required = true, filter = Default.class, json=true)
   public Frame actual;
@@ -40,7 +40,7 @@ public class HitRatio extends Iced {
 
 //  @API(help="Hit ratios for k=1...K")
   private float[] hit_ratios;
-//  public float[] hit_ratios() { return hit_ratios; }
+//  private float[] hit_ratios() { return hit_ratios; }
 
   public HitRatio() {}
 
@@ -77,7 +77,7 @@ public class HitRatio extends Iced {
     }
   }
 
-  //@Override public boolean toHTML( StringBuilder sb ) {
+  //@Override private boolean toHTML( StringBuilder sb ) {
   //  if (hit_ratios==null) return false;
   //  sb.append("<div>");
   //  DocGen.HTML.section(sb, "Hit Ratio for Multi-Class Classification");
@@ -122,7 +122,7 @@ public class HitRatio extends Iced {
 
   // Compute CMs for different thresholds via MRTask2
   private static class HitRatioTask extends MRTask<HitRatioTask> {
-    /* @OUT CMs */ public final float[] hit_ratios() {
+    /* @OUT CMs */ private final float[] hit_ratios() {
       float[] hit_ratio = new float[_K];
       if (_count == 0) return new float[_K];
       for (int i=0;i<_K;++i) {

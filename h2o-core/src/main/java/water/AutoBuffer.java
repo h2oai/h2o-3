@@ -1282,7 +1282,7 @@ public final class AutoBuffer {
 
   private AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
-  AutoBuffer putJStr( String s ) {
+  private AutoBuffer putJStr( String s ) {
     byte[] b = s.getBytes();
     int off=0;
     for( int i=0; i<b.length; i++ ) {
@@ -1349,11 +1349,11 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSON  ( String name, Freezable f   ) { return putJSONStr(name).put1(':').putJSON  (f); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONA ( String name, Freezable f[] ) { return putJSONStr(name).put1(':').putJSONA (f); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
-  
+
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJSONStr("" + value); }
 
   // Most simple integers
-  private AutoBuffer putJInt( int i ) { 
+  private AutoBuffer putJInt( int i ) {
     byte b[] = Integer.toString(i).getBytes();
     return putA1(b,b.length);
   }
@@ -1432,7 +1432,7 @@ public final class AutoBuffer {
   public AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
   AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
-  AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
+  public AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
   AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
   AutoBuffer putJSON4 ( int i ) { return putJStr(Integer.toString(i)); }
@@ -1488,8 +1488,8 @@ public final class AutoBuffer {
   }
 
   AutoBuffer putJSON8d( double d ) { return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d)))); }
-  AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
-  AutoBuffer putJSONA8d( double[] a ) {
+  public AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
+  public AutoBuffer putJSONA8d( double[] a ) {
     if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
@@ -1498,7 +1498,7 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONA8d( String name, double[] a ) {
+  public AutoBuffer putJSONA8d( String name, double[] a ) {
     putJSONStr(name).put1(':');
     return putJSONA8d(a);
   }

@@ -119,7 +119,8 @@ public class Frame extends Lockable {
           Chunk c = cs[col];
           NewChunk nc = ncs[col];
           for( int row = 0; row < c._len; row++ )
-            nc.addNum(c.at0(row));
+            if( c._vec.isUUID() ) nc.addUUID(c,row);
+            else nc.addNum(c.at0(row));
         }
       }
     }.doAll(numCols(),this).outputFrame(names(),domains());
@@ -189,6 +190,22 @@ public class Frame extends Lockable {
     Vec [] vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) vecs[i] = DKV.get(_keys[i]).get();
     return vecs;
+  }
+
+  /** true/false every Vec is a UUID */
+  public boolean[] uuids() {
+    boolean bs[] = new boolean[vecs().length];
+    for( int i=0; i<vecs().length; i++ )
+      bs[i] = vecs()[i].isUUID();
+    return bs;
+  }
+
+  /** Time status for every Vec */
+  public byte[] times() {
+    byte bs[] = new byte[vecs().length];
+    for( int i=0; i<vecs().length; i++ )
+      bs[i] = vecs()[i]._time;
+    return bs;
   }
 
   /** All the domains for enum columns; null for non-enum columns.  */
@@ -365,7 +382,5 @@ public class Frame extends Lockable {
     _col0 = null;
     return vec;
   }
-
-
 
 }

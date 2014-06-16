@@ -17,8 +17,10 @@ sandbox
 syn_datasets
 build/
 lib/
+h2o-client/src/main/resources/www/steam
 out/
 .idea/
+h2o2.ipr
 h2o2.iws
 .settings/*
 .gradle
@@ -27,3 +29,6 @@ src/main/java/water/BuildVersion.java
 R/.RData
 R/.Rhistory
 Rsandbox
+.DS_Store
+.DS_Store?
+h2o2.ipr

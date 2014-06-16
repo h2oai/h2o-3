@@ -1065,7 +1065,7 @@ public class DeepLearning extends Job<DeepLearningModel> {
   }
 
   public DeepLearning(Key destination_key) {
-    super(destination_key, "Deep Learning");
+    super(destination_key, "Deep Learning",0);
     Scope.enter();
   }
 }

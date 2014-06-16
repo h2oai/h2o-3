@@ -1,20 +1,40 @@
+//
+// The top-level h2o2 project does not have any java pieces itself, but
+// apply from the standard java.gradle so that 'gradle idea' generates IDE
+// files with the right settings.
+//
+// The top-level h2o2.jar file that gets produced is empty and not usable
+// for anything.  Use the jar file produced by the h2o-web subproject.
+//
+apply from: 'ci/java.gradle'
+
+// The build scrit settings to fetch plugins and put them on 
+// classpath
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
+        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
     }
 }
 
 allprojects {
+    group = 'ai.h2o'
+
     apply plugin: 'idea'
     apply plugin: 'eclipse'
 }
 
+// 
+// Common configuration for all subprojects
+//
 subprojects {
-    version = '0.1'
+    // All project inherits the same versioning number
+    version = rootProject.version
 
     repositories {
         mavenCentral()
@@ -22,10 +42,12 @@ subprojects {
             url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
     }
+    // Publish artifacts - we should filter subproject in future but now apply publisher plugin
+    // to all projects
+    apply from: "$rootDir/ci/publish.gradle"
 }
 
 // Cliff command-line 'gradle make'.  Not required for standard gradle build.
 task make(dependsOn:":h2o-core:cpLibs", type:Exec) {
-  println "=== H2O: Building top-level...(${path})"
   commandLine 'make', '-s'
 }

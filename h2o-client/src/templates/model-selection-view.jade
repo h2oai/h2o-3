@@ -1,0 +1,8 @@
+.y-model-selection-view
+  // ko if:hasSelection
+  .y-caption(data-bind='text:caption')
+  //- This div exists because mouse events are not triggered on disabled elements
+  .y-hover-capture(data-bind='hover:tryScoreSelections')
+    button.btn.btn-primary(title='Score selected models' data-bind='click:scoreSelections, enable:canScoreSelections') Score&hellip;
+  button.btn(title='Clear selections' data-bind='click:clearSelections') Clear
+  // /ko

@@ -1,0 +1,43 @@
+{
+  "name": "Steam",
+  "version": "0.0.0",
+  "description": "H2O Web Client",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xdata/h2o"
+  },
+  "keywords": [
+    "H2O",
+    "Machine Learning"
+  ],
+  "author": "Prithvi Prabhu <prithvi@0xdata.com>",
+  "license": "Apache License Version 2.0",
+  "bugs": {
+    "url": "https://github.com/0xdata/h2o/issues"
+  },
+  "homepage": "https://github.com/0xdata/h2o",
+  "dependencies": {
+    "coffee-script": "~1.7.1",
+    "istanbul": "~0.2.7",
+    "uglify-js": "~2.4.13",
+    "jade": "~1.3.1",
+    "stylus": "~0.43.0",
+    "coffeelint": "~1.1.0",
+    "nib": "~1.0.2",
+    "groc": "~0.6.3",
+    "lodash": "~2.4.1",
+    "watchy": "~0.4.3",
+    "request": "~2.34.0",
+    "tape": "~2.12.3",
+    "browserify": "~3.44.2",
+    "faucet": "0.0.1",
+    "jshint": "~2.5.0"
+  }
+}

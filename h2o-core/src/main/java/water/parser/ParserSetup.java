@@ -11,7 +11,6 @@ import water.Iced;
 class ParserSetup extends Iced {
                 boolean _isValid;   // The initial parse is sane
   private final long _invalidLines; // Number of broken/invalid lines found
-  private final String[] _errors;   // A collection of error messages, but still could be a valid parse setup
   // Parse Flavor
           final ParserType _pType; // CSV, XLS, XSLX, SVMLight, Auto
   static  final byte AUTO_SEP = -1;
@@ -23,12 +22,10 @@ class ParserSetup extends Iced {
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
           final boolean _singleQuotes;
           final String[] _columnNames;
-  private       String[][] _data;   // Preview data; a few lines and columns of varying length
 
   ParserSetup( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
     _isValid = isValid;
     _invalidLines = invalidLines;
-    _errors = errors;
     _pType = t;
     _sep = sep;
     _ncols = ncols;
@@ -41,8 +38,6 @@ class ParserSetup extends Iced {
     this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames);
   }
 
-  // Got parse errors?
-  final boolean hasErrors() { return _errors != null && _errors.length > 0; }
   final boolean hasHeaders() { return _columnNames != null; }
 
   Parser parser() {
@@ -65,11 +60,6 @@ class ParserSetup extends Iced {
   }
 
   @Override public String toString() { return _pType.toString( _ncols, _sep ); }
-  public String parseStatusString() {
-    return "Parser setup "+
-      (_isValid ? (hasErrors() ? "appears to work with some errors" : "working fine") : "appears to be broken")+
-      ", got "+toString();
-  }
 
   static boolean allStrings(String [] line){
     ValueString str = new ValueString();
@@ -79,6 +69,9 @@ class ParserSetup extends Iced {
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
       if( ParseTime.attemptTimeParse(str.setTo(s)) != Long.MIN_VALUE ) return false;
+      ParseTime.attemptUUIDParse0(str.setTo(s));
+      ParseTime.attemptUUIDParse1(str);
+      if( str.get_off() != -1 ) return false; // Valid UUID parse
     }
     return true;
   }

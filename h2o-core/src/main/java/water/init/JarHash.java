@@ -59,28 +59,32 @@ public abstract class JarHash {
   // from a possible local dev build.
   public static InputStream getResource2(String uri) {
     try {
-      ClassLoader systemLoader = ClassLoader.getSystemClassLoader();
-
       // Jar file mode.
-      if (JARPATH != null) {
-        return systemLoader.getResourceAsStream("www" + uri);
-      }
+      if (JARPATH != null)
+        return ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
+
+      // IDE developer mode.. . .
+      // TODO: this creates a soft dependency from h2o-core to h2o-client.
+      // Have h2o-client register itself as a source for web server resources.
+      // Steam resources in h2o-client:
+      File f = null;
+      f = new File(System.getProperty("user.dir") + "/h2o-client/src/main/resources/www", uri);
+      if( f.exists() )
+        return new FileInputStream(f);
+
+      // Resources in h2o-core (the old pages):
+      f = new File(System.getProperty("user.dir") + "/h2o-core/src/main/resources/www", uri);
+      if( f.exists() )
+        return new FileInputStream(f);
 
       // Class path mode.
-      File resources;
-      String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-      resources = new File(h2oClasses + "www");
-      if (resources.exists()) {
+      //String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+      // CNC: This does not work, going back to The Old Way which does
+      File resources = new File("src/main/resources/www");
+      if( resources.exists() )
         return new FileInputStream(new File(resources, uri));
-      }
-
-      // Source file mode.
-      resources = new File("src/main/resources/www");
-      if (resources.exists()) {
-        return new FileInputStream(new File(resources, uri));
-      }
     }
-    catch (FileNotFoundException xe) {}
+    catch (FileNotFoundException ignore) {}
 
     Log.info("Resource not found: " + uri);
     return null;

@@ -1,0 +1,16 @@
+//- Duplicate of y-frame-list-view. Refactor
+.y-notification-list-view
+  // ko if:hasItems
+  .y-notifications
+    // ko foreach:items
+    .y-notification(data-bind='click:display, css:{"y-active":isActive}')
+      .y-notification-title(data-bind='text:title')
+      .y-notification-caption(data-bind='text:caption')
+      .y-notification-cutline(data-bind='text:cutline')
+    // /ko
+  // /ko
+
+  // ko ifnot:hasItems
+  .y-no-notifications
+    .y-middle No notifications to display.
+  // /ko

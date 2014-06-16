@@ -1,0 +1,83 @@
+
+block()
+  position absolute
+  display block
+
+text-block(height, right=0, left=0)
+  block()
+  left left
+  right right
+  height height
+  line-height height
+
+size(width, height=width)
+  width width
+  height height
+
+banner(height)
+  height height
+  line-height height
+
+// These mixins turn elements into absolutely position block elements.
+// The arguments are always in CSS order: top, right, bottom, left
+//    unless they have widths or heights defined, in which case those
+//    arguments go first.
+dock(top=0, right=0, bottom=0, left=0)
+  block()
+  top top
+  right right
+  bottom bottom
+  left left
+
+dock-top(height, top=0, right=0, left=0)
+  block()
+  top top
+  right right
+  left left
+  height height
+
+dock-bottom(height, right=0, bottom=0, left=0)
+  block()
+  right right
+  bottom bottom
+  left left
+  height height
+
+dock-left(width, top=0, bottom=0, left=0)
+  block()
+  top top
+  bottom bottom
+  left left
+  width width
+
+dock-right(width, top=0, right=0, bottom=0)
+  block()
+  top top
+  right right
+  bottom bottom
+  width width
+
+dock-top-left(width, height, top=0, left=0)
+  block()
+  top top
+  left left
+  size(width, height)
+
+dock-bottom-left(width, height, bottom=0, left=0)
+  block()
+  bottom bottom
+  left left
+  size(width, height)
+
+dock-top-right(width, height, top=0, right=0)
+  block()
+  top top
+  right right
+  size(width, height)
+
+dock-bottom-right(width, height, right=0, bottom=0)
+  block()
+  right right
+  bottom bottom
+  size(width, height)
+

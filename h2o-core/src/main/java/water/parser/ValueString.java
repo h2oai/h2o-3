@@ -74,6 +74,7 @@ public final class ValueString extends Iced implements Comparable<ValueString> {
     _len = _buf.length;
     return this;
   }
+  public void setOff(int off) { _off=off; }
 
   @Override public boolean equals(Object o){
     if(!(o instanceof ValueString)) return false;

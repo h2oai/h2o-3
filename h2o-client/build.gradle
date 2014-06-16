@@ -1,0 +1,14 @@
+apply plugin: 'java'
+
+description = "H2O web client"
+
+task localProcessResources(type: Exec) {
+  commandLine 'make'
+}
+
+task localClean(type: Exec) {
+  commandLine 'make', 'clean'
+}
+
+processResources.dependsOn localProcessResources
+clean.dependsOn localClean

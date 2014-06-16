@@ -8,8 +8,6 @@ class CsvParser extends Parser {
 
   CsvParser( ParserSetup ps ) { super(ps); }
 
-  @Override protected boolean parallelParseSupported() { return true; }
-
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
@@ -199,9 +197,8 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case NUMBER:
           if ((c >= '0') && (c <= '9')) {
-            number = (number*10)+(c-'0');
-            if (number >= LARGEST_DIGIT_NUMBER)
-              state = NUMBER_SKIP;
+            if (number >= LARGEST_DIGIT_NUMBER)  state = NUMBER_SKIP;
+            else  number = (number*10)+(c-'0');
             break;
           } else if (c == CHAR_DECIMAL_SEP) {
             state = NUMBER_FRACTION;
@@ -260,6 +257,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case NUMBER_SKIP:
           if ((c >= '0') && (c <= '9')) {
+            exp++;
             break;
           } else if (c == CHAR_DECIMAL_SEP) {
             state = NUMBER_SKIP_NO_DOT;

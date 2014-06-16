@@ -82,4 +82,15 @@ public class PrettyPrint {
   public static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
   public static long pow10i(int exp){ return powers10i[exp]; }
   public static final boolean fitsIntoInt(double d) { return Math.abs((int)d - d) < 1e-8; }
+
+
+  // About as clumsy and random as a blaster...
+  public static String UUID( long lo, long hi ) {
+    long lo0 = (lo>>32)&0xFFFFFFFFL;
+    long lo1 = (lo>>16)&0xFFFFL;
+    long lo2 = (lo>> 0)&0xFFFFL;
+    long hi0 = (hi>>48)&0xFFFFL;
+    long hi1 = (hi>> 0)&0xFFFFFFFFFFFFL;
+    return String.format("%08X-%04X-%04X-%04X-%012X",lo0,lo1,lo2,hi0,hi1);
+  }
 }

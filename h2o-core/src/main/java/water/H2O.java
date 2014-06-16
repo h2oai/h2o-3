@@ -41,6 +41,7 @@ final public class H2O {
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }
+  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.
@@ -174,8 +175,8 @@ final public class H2O {
     // Do the actually intended work
     protected abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      // if(!(ex instanceof Job.JobCancelledException) && this.getCompleter() == null)
-      ex.printStackTrace();
+      if(!(ex instanceof RuntimeException) && this.getCompleter() == null)
+        ex.printStackTrace();
       return true;
     }
     // In order to prevent deadlock, threads that block waiting for a reply
@@ -444,9 +445,9 @@ final public class H2O {
 
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
-  static public void registerGET( String url, Class hclass, String hmeth, String label, String menu ) {
+  static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.addToNavbar(RequestServer.registerGET(url,hclass,hmeth),label,menu);
+    RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth),base_url,label,menu);
   }
 
   /** Start the web service; disallow future URL registration.
@@ -533,6 +534,21 @@ final public class H2O {
     }
     if( H2O.CLOUD.size() < x )
       throw new RuntimeException("Cloud size under " + x);
+  }
+
+  // - Wait for at least HeartBeatThread.SLEEP msecs and
+  //   try to join others, if any. Try 2x just in case.
+  // - Assume that we get introduced to everybody else
+  //   in one Paxos update, if at all (i.e, rest of
+  //   the cloud was already formed and stable by now)
+  // - If nobody else is found, not an error.
+  public static void joinOthers() {
+    long start = System.currentTimeMillis();
+    while( System.currentTimeMillis() - start < 2000 ) {
+      if( CLOUD.size() > 1 && Paxos._commonKnowledge )
+        break;
+      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+    }
   }
 
   // --------------------------------------------------------------------------

@@ -28,7 +28,7 @@ public class Job<T extends Keyed> extends Keyed {
   public final String _description;
   public long _start_time;     // Job started
   public long   _end_time;     // Job end time, or 0 if not ended
-  private String _exception;   // Unpacked exception & stack trace
+  public String _exception;    // Unpacked exception & stack trace
 
   /** Possible job states. */
   public static enum JobState {
@@ -48,15 +48,30 @@ public class Job<T extends Keyed> extends Keyed {
   }
 
   /** Returns true if this job is running
-   * @return returns true only if this job is in running state. */
+   *  @return returns true only if this job is in running state. */
   public boolean isRunning() { return _state == JobState.RUNNING; }
 
+  /** Returns true if this job was started and is now stopped */
+  public boolean isStopped() { return _state == JobState.DONE || isCancelledOrCrashed(); }
 
-  protected Job( Key dest, String desc ) { 
+  /** Check if given job is running.
+   *  @param job_key job key
+   *  @return true if job is still running else returns false.  */
+  public static boolean isRunning(Key job_key) {
+    return ((Job)DKV.get(job_key).get()).isRunning();
+  }
+
+  /** Create a Job
+   *  @param dest Final result Key to be produced by this Job
+   *  @param desc String description
+   *  @param work Units of work to be completed
+   */
+  protected Job( Key dest, String desc, long work ) { 
     super(defaultJobKey()); 
     _description = desc; 
     _dest = dest; 
     _state = JobState.CREATED;  // Created, but not yet running
+    _work = work;               // Units of work
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
@@ -70,7 +85,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  protected Job start(final H2OCountedCompleter fjtask) {
+  public Job start(final H2OCountedCompleter fjtask) {
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert _key.home();         // Always starting on same node job was created
@@ -102,13 +117,12 @@ public class Job<T extends Keyed> extends Keyed {
    * @see #start(H2OCountedCompleter)
    * @see DKV
    */
-  protected T get() {
+  public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
-    _fjtask.join();             // Block until top-level job is done
     assert _key.home();         // Always blocking on same node job was created
-    T ans = DKV.get(_dest).get();
-    done();                     // Remove self-job
-    return ans;
+    _fjtask.join();
+    assert !isRunning();
+    return DKV.get(_dest).get();
   }
 
   /** Marks job as finished and records job end time. */
@@ -172,17 +186,21 @@ public class Job<T extends Keyed> extends Keyed {
   protected void onCancelled() {
   }
 
-   /** Check if given job is running.
-   *
-   * @param job_key job key
-   * @return true if job is still running else returns false.
-   */
-  public static boolean isRunning(Key job_key) {
-    Value j = DKV.get(job_key);
-    assert j!=null : "Job should always be in DKV!";
-    return ((Job)j.get()).isRunning();
-  }
 
-  public interface ProgressMonitor { public void update( long len ); }
+  /** Returns a float from 0 to 1 representing progress.  Polled periodically.  
+   *  Can default to returning e.g. 0 always.  */
+  public final long _work;
+  private long _worked;
+  public final float progress() { return (float)_worked/(float)_work; }
+  public final void update(final long newworked) { update(newworked,_key); }
+  public static void update(final long newworked, Key jobkey) { 
+    new TAtomic<Job>() {
+      @Override public Job atomic(Job old) {
+        assert newworked+old._worked <= old._work;
+        old._worked+=newworked;
+        return old;
+      }
+    }.fork(jobkey);
+  }
 
 }

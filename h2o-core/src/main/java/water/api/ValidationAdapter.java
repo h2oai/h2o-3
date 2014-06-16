@@ -17,17 +17,17 @@ public class ValidationAdapter {
   final private transient boolean classification;
 
   /** Validation vector extracted from validation frame. */
-  protected transient Vec _validResponse;
+  private transient Vec _validResponse;
   /** Validation response domain or null if validation is not specified or null if response is float. */
-  protected transient String[] _validResponseDomain;
+  private transient String[] _validResponseDomain;
   /** Source response domain or null if response is float. */
-  protected transient String[] _sourceResponseDomain;
+  private transient String[] _sourceResponseDomain;
   /** CM domain derived from {@link #_validResponseDomain} and {@link #_sourceResponseDomain}. */
-  protected transient String[] _cmDomain;
+  private transient String[] _cmDomain;
   /** Names of columns */
-  protected transient String[] _names;
+  private transient String[] _names;
   /** Name of validation response. Should be same as source response. */
-  protected transient String _responseName;
+  private transient String _responseName;
 
   /** Adapted validation frame to a computed model. */
   private transient Frame _adaptedValidation;
@@ -36,14 +36,14 @@ public class ValidationAdapter {
   private transient int[][] _fromValid2CM;            // Transformation for validation response to common CM domain
 
   /** Returns true if the job has specified validation dataset. */
-  protected final boolean  hasValidation() { return validation!=null; }
+  private final boolean  hasValidation() { return validation!=null; }
   /** Returns a domain for confusion matrix. */
-  protected final String[] getCMDomain() { return _cmDomain; }
+  private final String[] getCMDomain() { return _cmDomain; }
   /** Return validation dataset which can be adapted to a model if it is necessary. */
-  public final Frame    getValidation() { return _adaptedValidation!=null ? _adaptedValidation : validation; }
+  public  final Frame    getValidation() { return _adaptedValidation!=null ? _adaptedValidation : validation; }
   /** Returns original validation dataset. */
-  protected final Frame    getOrigValidation() { return validation; }
-  public final Response2CMAdaptor getValidAdaptor() { return new Response2CMAdaptor(); }
+  private final Frame    getOrigValidation() { return validation; }
+  public  final Response2CMAdaptor getValidAdaptor() { return new Response2CMAdaptor(); }
 
   /** */
   public final void prepareValidationWithModel(final Model model) {
@@ -64,18 +64,18 @@ public class ValidationAdapter {
   /** A micro helper for transforming model/validation responses to confusion matrix domain. */
   public class Response2CMAdaptor {
     /** Adapt given vector produced by a model to confusion matrix domain. Always return a new vector which needs to be deleted. */
-    public Vec adaptModelResponse2CM(final Vec v) { return  v.makeTransf(_fromModel2CM, getCMDomain()); }
+    public  Vec adaptModelResponse2CM(final Vec v) { return  v.makeTransf(_fromModel2CM, getCMDomain()); }
     /** Adapt given validation vector to confusion matrix domain. Always return a new vector which needs to be deleted. */
-    public Vec adaptValidResponse2CM(final Vec v) { return  v.makeTransf(_fromValid2CM, getCMDomain()); }
+    private Vec adaptValidResponse2CM(final Vec v) { return  v.makeTransf(_fromValid2CM, getCMDomain()); }
     /** Returns validation dataset. */
-    public Frame getValidation() { return getValidation(); }
+    private Frame getValidation() { return getValidation(); }
     /** Return cached validation response already adapted to CM domain. */
-    public Vec getAdaptedValidationResponse2CM() { return _adaptedValidationResponse; }
+    public  Vec getAdaptedValidationResponse2CM() { return _adaptedValidationResponse; }
     /** Return cm domain. */
-    public String[] getCMDomain() { return getCMDomain(); }
+    private String[] getCMDomain() { return getCMDomain(); }
     /** Returns true if model/validation responses need to be adapted to confusion matrix domain. */
-    public boolean needsAdaptation2CM() { return _fromModel2CM != null; }
+    public  boolean needsAdaptation2CM() { return _fromModel2CM != null; }
     /** Return the adapted response name */
-    public String adaptedValidationResponse(final String response) { return response + ".adapted"; }
+    public  String adaptedValidationResponse(final String response) { return response + ".adapted"; }
   }
 }

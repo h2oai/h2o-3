@@ -43,7 +43,7 @@ public class TimeLine extends UDP {
 
 
   // Snapshot and return the current TIMELINE array
-  public static long[] snapshot() { return TIMELINE.clone(); }
+  private static long[] snapshot() { return TIMELINE.clone(); }
 
   // CAS access to the TIMELINE array
   private static final int _Lbase  = _unsafe.arrayBaseOffset(long[].class);
@@ -52,11 +52,11 @@ public class TimeLine extends UDP {
     assert i >= 0 && i < ary.length;
     return _Lbase + i * _Lscale;
   }
-  private final static boolean CAS( long[] A, int idx, long old, long nnn ) {
+  private static boolean CAS( long[] A, int idx, long old, long nnn ) {
     return _unsafe.compareAndSwapLong( A, rawIndex(A,idx), old, nnn );
   }
   // Return the next index into the TIMELINE array
-  private final static int next_idx( long [] tl ) {
+  private static int next_idx( long [] tl ) {
     // Spin until we can CAS-acquire a fresh index
     while( true ) {
       int oldidx = (int)tl[0];
@@ -96,11 +96,11 @@ public class TimeLine extends UDP {
     final long ns = System.nanoTime();
     record2(b._h2o, ns, tcp,sr,drop,b.get8(0),b.get8(8));
   }
-  public static void record_send( AutoBuffer b, boolean tcp)           { record1(b,tcp,0,   0); }
-  public static void record_recv( AutoBuffer b, boolean tcp, int drop) { record1(b,tcp,1,drop); }
+  static void record_send( AutoBuffer b, boolean tcp)           { record1(b,tcp,0,   0); }
+  static void record_recv( AutoBuffer b, boolean tcp, int drop) { record1(b,tcp,1,drop); }
 
   // Record a completed I/O event.  The nanosecond time slot is actually nano's-blocked-on-io
-  public static void record_IOclose( AutoBuffer b, int flavor ) {
+  static void record_IOclose( AutoBuffer b, int flavor ) {
     H2ONode h2o = b._h2o==null ? H2O.SELF : b._h2o;
     // First long word going out has sender-port and a 'bad' control packet
     long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
@@ -122,7 +122,7 @@ public class TimeLine extends UDP {
    * @param size - bytes read/written
    * @param flavor - Value.HDFS or Value.S3
    */
-  public static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
+  private static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
     long block_ns = System.nanoTime() - start_ns;
     long io_ms = System.currentTimeMillis() - start_io_ms;
     // First long word going out has sender-port and a 'bad' control packet
@@ -144,7 +144,7 @@ public class TimeLine extends UDP {
   public static InetAddress inet( long[] tl, int idx ) {
     int adr = (int)x0(tl,idx);
     byte[] ip4 = new byte[4];
-    ip4[0] = (byte)(adr>> 0);
+    ip4[0] = (byte)(adr    );
     ip4[1] = (byte)(adr>> 8);
     ip4[2] = (byte)(adr>>16);
     ip4[3] = (byte)(adr>>24);
@@ -169,7 +169,8 @@ public class TimeLine extends UDP {
   // possible to the same point in time.
   static long[][] SNAPSHOT;
   static long TIME_LAST_SNAPSHOT = 1;
-  static public H2O CLOUD;      // Cloud instance being snapshotted
+  static private H2O CLOUD;      // Cloud instance being snapshotted
+  public static H2O getCLOUD(){return CLOUD;}
   static public long[][] system_snapshot() {
     // Now spin-wait until we see all snapshots check in.
     // Be atomic about it.
@@ -204,7 +205,7 @@ public class TimeLine extends UDP {
   }
 
   // Send our most recent timeline to the remote via TCP
-  @Override public AutoBuffer call( AutoBuffer ab ) {
+  @Override AutoBuffer call( AutoBuffer ab ) {
     long[] a = snapshot();
     if( ab._h2o == H2O.SELF ) {
       synchronized(TimeLine.class) {
@@ -229,7 +230,7 @@ public class TimeLine extends UDP {
 
   // Receive a remote timeline
   static void tcp_call( final AutoBuffer ab ) {
-    int port = ab.getPort();
+    ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
     if( idx >= 0 && idx < SNAPSHOT.length )
@@ -238,7 +239,7 @@ public class TimeLine extends UDP {
     synchronized(TimeLine.class) {  TimeLine.class.notify();  }
   }
 
-  public String print16( AutoBuffer ab ) { return ""; } // no extra info in a timeline packet
+  String print16( AutoBuffer ab ) { return ""; } // no extra info in a timeline packet
 
   /**
    * Only for debugging.
@@ -246,7 +247,7 @@ public class TimeLine extends UDP {
    *
    * To be used in case of an error when global timeline can not be relied upon as we might not be able to talk to other nodes.
    */
-  public static void printMyTimeLine(){
+  static void printMyTimeLine(){
     long [] s = TimeLine.snapshot();
     System.err.println("===================================<TIMELINE>==============================================");
     for(int i = 0; i < TimeLine.length(); ++i) {

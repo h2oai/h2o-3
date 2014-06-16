@@ -7,7 +7,7 @@ import water.*;
 import water.fvec.*;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -456,5 +456,138 @@ public class ParserTest extends TestUtil {
     };
     Frame fr = parse_test_file("smalldata/junit/test_parse_mix.csv");
     testParsed(fr._key, exp);
+  }
+
+  // Test of parsing numbers with many digits
+  @Test public void testParseManyDigits1() {
+    String pows10 = 
+      "1\n"+
+      "10\n"+
+      "100\n"+
+      "1000\n"+
+      "10000\n"+
+      "100000\n"+
+      "1000000\n"+
+      "10000000\n"+
+      "100000000\n"+
+      "1000000000\n"+
+      "10000000000\n"+
+      "100000000000\n"+
+      "1000000000000\n"+
+      "10000000000000\n"+
+      "100000000000000\n"+
+      "1000000000000000\n"+
+      "10000000000000000\n"+
+      "100000000000000000\n"+
+      "1000000000000000000\n"+
+      "10000000000000000000\n"+
+      "100000000000000000000\n"+
+      "1000000000000000000000\n"+
+      "10000000000000000000000\n"+
+      "100000000000000000000000\n";
+    double[][] pows10_exp = new double[][] {
+      ard(1e0 ), ard(1e1 ), ard(1e2 ), ard(1e3 ), ard(1e4 ), ard(1e5 ), ard(1e6 ), ard(1e7 ), ard(1e8 ), ard(1e9 ),
+      ard(1e10), ard(1e11), ard(1e12), ard(1e13), ard(1e14), ard(1e15), ard(1e16), ard(1e17), ard(1e18), ard(1e19),
+      ard(1e20), ard(1e21), ard(1e22), ard(1e23),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset2.parse(r1, k);
+    testParsed(r1,pows10_exp);
+  }
+
+  // Test of parsing numbers with many digits
+  @Test public void testParseManyDigits2() {
+    String pows10 = 
+      "9\n"+
+      "99\n"+
+      "999\n"+
+      "9999\n"+
+      "99999\n"+
+      "999999\n"+
+      "9999999\n"+
+      "99999999\n"+
+      "999999999\n"+
+      "9999999999\n"+
+      "99999999999\n"+
+      "999999999999\n"+
+      "9999999999999\n"+
+      "99999999999999\n"+
+      "999999999999999\n"+
+      "9999999999999999\n"+
+      "99999999999999999\n"+
+      "999999999999999999\n"+
+      "9999999999999999999\n"+
+      "99999999999999999999\n"+
+      "999999999999999999999\n"+
+      "9999999999999999999999\n"+
+      "99999999999999999999999\n"+
+      "999999999999999999999999\n";
+    double[][] pows10_exp = new double[][] {
+      ard(9L),
+      ard(99L),
+      ard(999L),
+      ard(9999L),
+      ard(99999L),
+      ard(999999L),
+      ard(9999999L),
+      ard(99999999L),
+      ard(999999999L),
+      ard(9999999999L),
+      ard(99999999999L),
+      ard(999999999999L),
+      ard(9999999999999L),
+      ard(99999999999999L),
+      ard(999999999999999L),
+      ard(9999999999999999L),
+      ard(99999999999999999L),
+      ard(999999999999999999L),
+      ard(9.99999999999999999e18),
+      ard(9.99999999999999999e19),
+      ard(9.99999999999999999e20),
+      ard(9.99999999999999999e21),
+      ard(9.99999999999999999e22),
+      ard(9.99999999999999999e23),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset2.parse(r1, k);
+    testParsed(r1,pows10_exp);
+  }
+
+  // Test of parsing numbers with many digits
+  @Test public void testParseManyDigits3() {
+    String pows10 = 
+      "0.00000000000001\n"+
+      "1000001\n"+
+      "2000001\n"+
+      "";
+    double[][] pows10_exp = new double[][] {
+      ard(1e-14),
+      ard(1000001L),
+      ard(2000001L),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset2.parse(r1, k);
+    testParsed(r1,pows10_exp);
+  }
+
+  // Test of parsing numbers with many digits
+  @Test public void testParseManyDigits4() {
+    String pows10 = 
+      "3\n"+
+      "1e-18\n"+
+      "1e-34\n"+
+      "";
+    double[][] pows10_exp = new double[][] {
+      ard(3),
+      ard(1e-18),
+      ard(1e-34),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset2.parse(r1, k);
+    testParsed(r1,pows10_exp);
   }
 }

@@ -1,15 +1,14 @@
 package hex.schemas;
 
-import water.schemas.Schema;
-import water.schemas.API;
-import water.H2O;
+import water.api.Schema;
+import water.api.API;
 import water.Key;
 import water.fvec.Frame;
 
 public class DeepLearningV2 extends Schema<DeepLearningHandler,DeepLearningV2> {
 
   // Input fields
-  @API(help="Input source frame",validation="/*this input is required*/")
+  @API(help="Input source frame",required=true)
   public Key src;
 
   // Output fields
@@ -35,5 +34,5 @@ public class DeepLearningV2 extends Schema<DeepLearningHandler,DeepLearningV2> {
   }
 
   // Return a URL to invoke DeepLearning on this Frame
-  public String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?src="+fr._key; }
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?src="+fr._key; }
 }

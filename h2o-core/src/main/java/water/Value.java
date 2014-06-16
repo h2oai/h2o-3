@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import jsr166y.ForkJoinPool;
-import water.Job.ProgressMonitor;
 import water.fvec.*;
 import water.nbhm.NonBlockingSetInt;
 import water.persist.*;
@@ -191,7 +190,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
-  static String nameOfPersist(int x) {
+  public static String nameOfPersist(int x) {
     switch( x ) {
     case ICE : return "ICE";
     case HDFS: return "HDFS";
@@ -214,6 +213,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
 
+  public boolean isKey()      { return _type == TypeMap.KEY; }
   public boolean isFrame()    { return _type == TypeMap.FRAME; }
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
@@ -222,7 +222,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   private InputStream openStream() throws IOException {  return openStream(null); }
   /** Creates a Stream for reading bytes */
-  private InputStream openStream(ProgressMonitor p) throws IOException {
+  private InputStream openStream(Job p) throws IOException {
     if(onNFS() ) return PersistNFS .openStream(_key  );
     if(onHDFS()) return PersistHdfs.openStream(_key,p);
     if(onS3()  ) return PersistS3  .openStream(_key,p);
@@ -252,7 +252,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
   private Value(Key k, int max ) { this(k, max, new byte[max], TypeMap.PRIM_B, ICE); }
   private Value(Key k, int max, byte be ) { this(k, max, null, TypeMap.PRIM_B,  be); }
-  Value(Key k, String s ) { this(k, s.getBytes()); }
+  public Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {
     _key = k;

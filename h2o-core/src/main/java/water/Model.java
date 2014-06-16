@@ -3,19 +3,9 @@ package water;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
-// import hex.deeplearning.DeepLearningModel;
-import water.api.AUC;
-import water.api.ConfusionMatrix;
-import water.api.HitRatio;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.TransfVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
-import static water.util.ArrayUtils.contains;
 import water.util.Log;
-import water.util.ModelUtils;
 
 /**
  * A Model models reality (hopefully).
@@ -26,9 +16,15 @@ import water.util.ModelUtils;
 public abstract class Model extends Lockable<Model> {
   Model( Key selfkey ) { super(selfkey); }
 
-  protected float[] _priorClassDist;
-  protected float[] _modelClassDist;
-  public void setModelClassDistribution(float[] classdist) { _modelClassDist = classdist.clone(); }
+  /** Columns used in the model and are used to match up with scoring data
+   *  columns.  The last name is the response column name. */
+  String _names[];
+  /** Returns number of input features */
+  public int nfeatures() { return _names.length - 1; }
+
+  /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
+   *  The last column holds the response col enums.  */
+  String _domains[][];
 
   public String responseName() { return   _names[  _names.length-1]; }
   public String[] classNames() { return _domains[_domains.length-1]; }
@@ -37,47 +33,23 @@ public abstract class Model extends Lockable<Model> {
     String cns[] = classNames();
     return cns==null ? 1 : cns.length;
   }
-  /** Returns number of input features */
-  public int nfeatures() { return _names.length - 1; }
-
-  /** Columns used in the model and are used to match up with scoring data
-   *  columns.  The last name is the response column name. */
-  String _names[];
-
-  /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
-   *  The last column holds the response col enums.  */
-  String _domains[][];
 
 
-  /** Full constructor from frame: Strips out the Vecs to just the names needed
-   *  to match columns later for future datasets.  */
-  public Model( Key selfKey, Frame fr, float[] priorClassDist ) {
-    this(selfKey,fr.names(),fr.domains(),priorClassDist);
-  }
-
-  /** Constructor from frame (without prior class dist): Strips out the Vecs to just the names needed
+  /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */
   public Model( Key selfKey, Frame fr ) {
-    this(selfKey,fr.names(),fr.domains(),null);
-  }
-
-  /** Constructor without prior class distribution */
-  public Model( Key selfKey, String names[], String domains[][]) {
-    this(selfKey,names,domains,null);
+    this(selfKey,fr.names(),fr.domains());
   }
 
   /** Full constructor */
-  public Model( Key selfKey, String names[], String domains[][], float[] priorClassDist ) {
+  public Model( Key selfKey, String names[], String domains[][] ) {
     super(selfKey);
-//    this.uniqueId = new UniqueId(_key);
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
     assert names.length > 1;
     assert names[names.length-1] != null; // Have a valid response-column name?
-//    _dataKey = dataKey;
     _names   = names;
     _domains = domains;
-    _priorClassDist = priorClassDist;
   }
 
   /** Bulk score for given <code>fr</code> frame.
@@ -144,7 +116,7 @@ public abstract class Model extends Lockable<Model> {
     if( nclasses() > 1 ) {
       String prefix = "";
       for( int c=0; c<nclasses(); c++ ) // if any class is the same as column name in frame, then prefix all classnames
-        if (contains(adaptFrm._names, classNames()[c])) { prefix = "class_"; break; }
+        if (ArrayUtils.contains(adaptFrm._names, classNames()[c])) { prefix = "class_"; break; }
       for( int c=0; c<nclasses(); c++ )
         adaptFrm.add(prefix+classNames()[c],adaptFrm.anyVec().makeZero());
     }
@@ -286,89 +258,6 @@ public abstract class Model extends Lockable<Model> {
     return new Frame[] { new Frame(names,frvecs), vecTrash };
   }
 
-  /**
-   * Compute the model error for a given test data set
-   * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.
-   * For binary classification, this is the classification error based on assigning labels using the optimal threshold for maximizing the F1 score.
-   * For regression, this is the mean squared error (MSE).
-   * @param ftest Frame containing test data
-   * @param vactual The response column Vec
-   * @param fpreds Frame containing ADAPTED (domain labels from train+test data) predicted data (classification: label + per-class probabilities, regression: target)
-   * @param hitratio_fpreds Frame containing predicted data (domain labels from test data) (classification: label + per-class probabilities, regression: target)
-   * @param label Name for the scored data set to be printed
-   * @param printMe Whether to print the scoring results to Log.info
-   * @param max_conf_mat_size Largest size of Confusion Matrix (#classes) for it to be printed to Log.info
-   * @param cm Confusion Matrix object to populate for multi-class classification (also used for regression)
-   * @param auc AUC object to populate for binary classification
-   * @param hr HitRatio object to populate for classification
-   * @return model error, see description above
-   */
-  public double calcError(final Frame ftest, final Vec vactual,
-                          final Frame fpreds, final Frame hitratio_fpreds,
-                          final String label, final boolean printMe,
-                          final int max_conf_mat_size,
-                          final ConfusionMatrix cm,
-                          final AUC auc,
-                          final HitRatio hr)
-  {
-    StringBuilder sb = new StringBuilder();
-    double error = Double.POSITIVE_INFINITY;
-    // populate AUC
-    if (auc != null) {
-      assert(isClassifier());
-      assert(nclasses() == 2);
-      auc.actual = ftest;
-      auc.vactual = vactual;
-      auc.predict = fpreds;
-      auc.vpredict = fpreds.vecs()[2]; //binary classifier (label, prob0, prob1 (THIS ONE), adaptedlabel)
-      auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
-      auc.execImpl();
-      auc.toASCII(sb);
-      error = auc.err(); //using optimal threshold for F1
-    }
-    // populate CM
-    if (cm != null) {
-      cm.actual = ftest;
-      cm.vactual = vactual;
-      cm.predict = fpreds;
-      cm.vpredict = fpreds.vecs()[0]; // prediction (either label or regression target)
-      cm.execImpl();
-      if (isClassifier()) {
-        if (auc != null) {
-          //override the CM with the one computed by AUC (using optimal threshold)
-          //Note: must still call invoke above to set the domains etc.
-          cm.cm = new long[3][3]; // 1 extra layer for NaNs (not populated here, since AUC skips them)
-          cm.cm[0][0] = auc.cm()[0][0];
-          cm.cm[1][0] = auc.cm()[1][0];
-          cm.cm[0][1] = auc.cm()[0][1];
-          cm.cm[1][1] = auc.cm()[1][1];
-          assert(new ConfusionMatrix2(cm.cm).err() == auc.err()); //check consistency with AUC-computed error
-        } else {
-          error = new ConfusionMatrix2(cm.cm).err(); //only set error if AUC didn't already set the error
-        }
-        if (cm.cm.length <= max_conf_mat_size) cm.toASCII(sb);
-      } else {
-        assert(auc == null);
-        error = cm.mse;
-        cm.toASCII(sb);
-      }
-    }
-    // populate HitRatio
-    if (hr != null) {
-      assert(isClassifier());
-      hr.actual = ftest;
-      hr.vactual = vactual;
-      hr.predict = hitratio_fpreds;
-      hr.execImpl();
-      hr.toASCII(sb);
-    }
-    if (printMe && sb.length() > 0) {
-      Log.info("Scoring on " + label + " data:");
-      for (String s : sb.toString().split("\n")) Log.info(s);
-    }
-    return error;
-  }
-
   /** Returns a mapping between values of model domains (<code>modelDom</code>) and given column domain.
    *  @see #getDomainMapping(String, String[], String[], boolean) */
   public static int[][] getDomainMapping(String[] modelDom, String[] colDom, boolean exact) {
@@ -426,26 +315,7 @@ public abstract class Model extends Lockable<Model> {
     assert chks.length>=_names.length; // Last chunk is for the response
     for( int i=0; i<_names.length-1; i++ ) // Do not include last value since it can contains a response
       tmp[i] = chks[i].at0(row_in_chunk);
-    float[] scored = score0(tmp,preds);
-    // Correct probabilities obtained from training on oversampled data back to original distribution
-    // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if (isClassifier() && _priorClassDist != null && _modelClassDist != null) {
-      assert(scored.length == nclasses()+1); //1 label + nclasses probs
-      double probsum=0;
-      for( int c=1; c<scored.length; c++ ) {
-        final double original_fraction = _priorClassDist[c-1];
-        assert(original_fraction > 0);
-        final double oversampled_fraction = _modelClassDist[c-1];
-        assert(oversampled_fraction > 0);
-        assert(!Double.isNaN(scored[c]));
-        scored[c] *= original_fraction / oversampled_fraction;
-        probsum += scored[c];
-      }
-      for (int i=1;i<scored.length;++i) scored[i] /= probsum;
-      //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
-      scored[0] = ModelUtils.getPrediction(scored, tmp);
-    }
-    return scored;
+    return score0(tmp,preds);
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a

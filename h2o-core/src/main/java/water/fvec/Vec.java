@@ -61,6 +61,8 @@ public class Vec extends Keyed {
 
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
   protected byte _time;
+  /** UUID flag */
+  protected boolean _isUUID;    // All UUIDs (or zero or missing)
 
   /** Maximal size of enum domain */
   private static final int MAX_ENUM_SIZE = 10000;
@@ -68,11 +70,13 @@ public class Vec extends Keyed {
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
   protected Vec( Key key, long espc[]) { this(key, espc, null); }
-  protected Vec( Key key, long espc[], String[] domain) {
+  protected Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
+  protected Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
     super(key);
     assert key._kb[0]==Key.VEC;
     _espc = espc;
-    _time = -1;                 // not-a-time
+    _time = time;               // is-a-time, or not (and what flavor used to parse time)
+    _isUUID = hasUUID;          // all-or-nothing UUIDs
     _domain = domain;
   }
 
@@ -107,11 +111,15 @@ public class Vec extends Keyed {
   }
 
   // Make a bunch of compatible zero Vectors
-  Vec[] makeZeros(int n, String[][] domains) {
+  Vec[] makeZeros(int n, String[][] domains, boolean[] uuids, byte[] times) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
-    for(int i = 0; i < vs.length; ++i) vs[i] = new Vec(keys[i],_espc, domains == null ? null : domains[i]);
+    for(int i = 0; i < vs.length; ++i) 
+      vs[i] = new Vec(keys[i],_espc,
+                      domains== null ? null    : domains[i],
+                      uuids  == null ? false   : uuids  [i],
+                      times  == null ? (byte)-1: times  [i]);
     new MRTask() {
       @Override protected void setupLocal() {
         for (Vec v1 : vs) {
@@ -192,6 +200,7 @@ public class Vec extends Keyed {
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
   public final boolean isEnum(){return _domain != null;}
+  public final boolean isUUID(){return _isUUID;}
 
   /** Whether or not this column parsed as a time, and if so what pattern was used. */
   public final boolean isTime(){ return _time>=0; }
@@ -401,6 +410,10 @@ public class Vec extends Keyed {
   public final double at( long i ) { return chunkForRow(i).at(i); }
   /** Fetch the missing-status the slow way. */
   public final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
+
+  /** Fetch element the slow way, as a long.  Throws if the value is missing or not a UUID. */
+  public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
+  public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:

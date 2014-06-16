@@ -7,7 +7,7 @@ package water.api;
  * the webpage, or the help type that displays the extended help for the
  * request.
  */
-public enum RequestType {
+enum RequestType {
   json , // json type request, a result is a JSON structure
   html , // webpage request
   help , // should display the help on the given request

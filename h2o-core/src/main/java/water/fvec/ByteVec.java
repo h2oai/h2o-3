@@ -2,8 +2,9 @@ package water.fvec;
 
 import java.io.IOException;
 import java.io.InputStream;
-import water.Job.ProgressMonitor;
+
 import water.Key;
+import water.Job;
 
 /**
  * A vector of plain Bytes.
@@ -19,7 +20,7 @@ public class ByteVec extends Vec {
   public byte[] getFirstBytes() { return chunkForChunkIdx(0).getBytes(); }
 
   /** Open a stream view over the underlying data  */
-  public InputStream openStream(final ProgressMonitor pmon) {
+  public InputStream openStream(final Key job_key) {
     return new InputStream() {
       final long [] sz = new long[1];
       private int _cidx, _sz;
@@ -30,7 +31,7 @@ public class ByteVec extends Vec {
           if( _cidx >= nChunks() ) return 0;
           _c0 = chunkForChunkIdx(_cidx++);
           _sz = C1NChunk.OFF;
-          if( pmon != null ) pmon.update(_c0._len);
+          Job.update(_c0._len,job_key);
         }
         return _c0._len-_sz;
       }
@@ -39,6 +40,7 @@ public class ByteVec extends Vec {
         return available() == 0 ? -1 : 0xFF&_c0._mem[_sz++];
       }
       @Override public int read(byte[] b, int off, int len) {
+        if( b==null ) return _cidx;// Back-channel read of cidx
         int sz = available();
         if( sz == 0 )
           return -1;

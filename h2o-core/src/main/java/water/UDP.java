@@ -13,7 +13,7 @@ import water.nbhm.UtilUnsafe;
 
 public abstract class UDP {
   // Types of UDP packets I grok
-  static enum udp {
+  public static enum udp {
     bad(false,null), // Do not use the zero packet, too easy to make mistakes
       // Some health-related packet types.  These packets are all stateless, in
       // that we do not need to send any replies back.
@@ -40,7 +40,7 @@ public abstract class UDP {
     udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
     static udp[] UDPS = values();
   }
-
+  public static final udp getUdp(int id){return udp.UDPS[id];}
   // Handle an incoming I/O transaction, probably from a UDP packet.  The
   // returned Autobuffer will be closed().  If the returned buffer is not the
   // passed-in buffer, the call() method must close it's AutoBuffer arg.
@@ -60,7 +60,7 @@ public abstract class UDP {
 
   // Dispatch on the enum opcode and return a pretty string
   static private final byte[] pbuf = new byte[16];
-  static String printx16( long lo, long hi ) {
+  static public String printx16( long lo, long hi ) {
     set8(pbuf,0,lo);
     set8(pbuf,8,hi);
     return udp.UDPS[(int)(lo&0xFF)]._udp.print16(new AutoBuffer(pbuf));

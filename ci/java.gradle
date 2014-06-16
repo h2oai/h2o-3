@@ -1,3 +1,5 @@
+// Gradle file for java-based project
+//
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'jacoco'
@@ -5,8 +7,7 @@ apply plugin: 'jacoco'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-compileJava
-{ 
+compileJava { 
     options.debug = true 
 }
 

@@ -20,7 +20,7 @@ import java.util.Random;
  * It contains a DeepLearningModelInfo with the most up-to-date model,
  * a scoring history, as well as some helpers to indicated the progress
  */
-public class DeepLearningModel extends Model implements Comparable<DeepLearningModel> {
+public class DeepLearningModel extends SupervisedModel implements Comparable<DeepLearningModel> {
   @Override
   protected String errStr() {
     return "Locking of DeepLearningModel failed.";
