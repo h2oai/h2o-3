@@ -30,7 +30,7 @@ public class KMeansV2 extends Schema<KMeansHandler,KMeansV2> {
 
   // Version&Schema-specific filling from the handler
   @Override public KMeansV2 fillFrom( KMeansHandler h ) {
-    job = h._job;
+    job = h._job._key;
     return this;
   }
 
