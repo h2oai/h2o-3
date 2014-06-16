@@ -80,6 +80,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAAStr(String name, String [][] sss) { throw H2O.unimpl(); }
     public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
     public HTML putAA8  (String name, long   [][] lss) { throw H2O.unimpl(); }
+    public HTML putAA8d (String name, double [][] dss) { throw H2O.unimpl(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
     public HTML href( String name, String text, String link ) {

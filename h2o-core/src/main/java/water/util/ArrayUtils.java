@@ -377,4 +377,15 @@ public class ArrayUtils {
     return Arrays.copyOf(r, cnt);
   }
 
+
+  static public double[][] append( double[][] a, double[][] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    assert a[0].length==b[0].length;
+    double[][] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
 }

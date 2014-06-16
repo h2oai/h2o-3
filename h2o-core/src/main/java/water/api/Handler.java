@@ -19,15 +19,8 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
 
   private static final Properties NO_PROPERTIES = new Properties();
 
-  protected int version = -1; // allow handlers to know the version
-  protected Route route = null; // allow handlers to know the route, for error messages and such (TODO: remove?)
-  protected Properties parms = NO_PROPERTIES;
-
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
-    this.version = version;
-    this.route = route;
-    this.parms = parms;
 
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HTTP500V1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));

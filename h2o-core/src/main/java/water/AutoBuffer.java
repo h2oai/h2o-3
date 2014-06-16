@@ -1143,7 +1143,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA8(ary[i]);
     return this;
   }
-  @SuppressWarnings("unused")  AutoBuffer putAA8d( double[][] ary ) {
+  @SuppressWarnings("unused")  public AutoBuffer putAA8d( double[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;

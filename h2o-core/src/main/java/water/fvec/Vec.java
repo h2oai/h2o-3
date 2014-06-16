@@ -224,7 +224,7 @@ public class Vec extends Keyed {
   public String[] domain() { return _domain; }
 
   /** Returns cardinality for enum domain or -1 for other types. */
-  private int cardinality() { return isEnum() ? _domain.length : -1; }
+  public int cardinality() { return isEnum() ? _domain.length : -1; }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }

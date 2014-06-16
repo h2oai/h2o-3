@@ -137,7 +137,7 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
-  public void cancel(Throwable ex) {
+  public void cancel2(Throwable ex) {
     if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
@@ -166,6 +166,7 @@ public class Job<T extends Keyed> extends Keyed {
       @Override public Job atomic(Job old) {
         if( old == null ) return null; // Job already removed
         if( old._state == resultingState ) return null; // Job already canceled/crashed
+        if( !isCancelledOrCrashed() && old.isCancelledOrCrashed() ) return null;
         // Atomically capture cancel/crash state, plus end time
         old._exception = msg;
         old._state = resultingState;

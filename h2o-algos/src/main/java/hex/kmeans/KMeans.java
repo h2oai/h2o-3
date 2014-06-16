@@ -1,22 +1,15 @@
 package hex.kmeans;
 
-//import hex.FrameTask.DataInfo;
-//import hex.KMeans.Initialization;
+import hex.schemas.KMeansHandler;
+import java.util.ArrayList;
+import java.util.Random;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-//import water.api.DocGen;
-//import water.api.Progress2;
-//import water.api.Request;
-//import water.fvec.Chunk;
+import water.fvec.Chunk;
 import water.fvec.Frame;
-//import water.fvec.NewChunk;
-//import water.fvec.Vec;
-//import water.util.RString;
-//import water.util.Utils;
-//
-//import java.util.ArrayList;
-//import java.util.Arrays;
-//import java.util.Random;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.RandomUtils;
 
 /**
  * Scalable K-Means++ (KMeans||)<br>
@@ -24,29 +17,16 @@ import water.fvec.Frame;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends Job<KMeansModel> {
+  public enum Initialization {
+    None, PlusPlus, Furthest
+  }
 
-//  @API(help = "Cluster initialization: None - chooses initial centers at random; Plus Plus - choose first center at random, subsequent centers chosen from probability distribution weighted so that points further from first center are more likey to be selected; Furthest - chooses initial point at random, subsequent point taken as the point furthest from prior point.", filter = Default.class, json=true)
-//  public Initialization initialization = Initialization.None;
-//
-//  @API(help = "Whether data should be normalized", filter = Default.class, json=true)
-//  public boolean normalize;
-//
-//  @API(help = "Seed for the random number generator", filter = Default.class, json=true)
-//  public long seed = new Random().nextLong();
-//
-//  @API(help = "Drop columns with more than 20% missing values", filter = Default.class)
-//  public boolean drop_na_cols = true;
-
-  final Key _src;               // Source frame 
-  final int _K;                 // Number of clusters
-  final int _max_iter;          // Max iterations to try
+  final transient KMeansHandler _parms; // All the parms
 
   // Called from Nano thread; start the KMeans Job on a F/J thread
-  public KMeans( Key src, int K, int max_iter) {
-    super(Key.make("KMeansModel"),"K-means",max_iter/*work is clusters*/);
-    _src = src;
-    _K = K;
-    _max_iter = max_iter;
+  public KMeans( KMeansHandler parms) {
+    super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is clusters*/);
+    _parms = parms;
     start(new KMeansDriver());
   }
 
@@ -55,83 +35,75 @@ public class KMeans extends Job<KMeansModel> {
 
     @Override protected void compute2() {
       Frame fr = null;
+      KMeansModel model = null;
       try {
-        fr = DKV.get(_src).get();
+        // Fetch & read-lock source frame
+        fr = DKV.get(_parms._src).get();
         fr.read_lock(_key);
 
-//    // Drop ignored cols and, if user asks for it, cols with too many NAs
-//    Frame fr = DataInfo.prepareFrame(source, ignored_cols, false, drop_na_cols);
-//    String[] names = fr.names();
-//    Vec[] vecs = fr.vecs();
-//    if(vecs == null || vecs.length == 0)
-//      throw new IllegalArgumentException("No columns selected. Check that selected columns have not been dropped due to too many NAs.");
-//    DataInfo dinfo = new DataInfo(fr, 0, false, normalize, false);
-//
-//    // Fill-in response based on K99
-//    String[] domain = new String[k];
-//    for( int i = 0; i < domain.length; i++ )
-//      domain[i] = "Cluster " + i;
-//    String[] namesResp = Utils.append(names, "response");
-//    String[][] domaiResp = (String[][]) Utils.append((new Frame(names, vecs)).domains(), (Object) domain);
-//    KMeans2Model model = new KMeans2Model(this, destination_key, sourceKey, namesResp, domaiResp);
-//    model.delete_and_lock(self());
-//    model.k = k; model.normalized = normalize; model.max_iter = max_iter;
-//
-//    // TODO remove when stats are propagated with vecs?
-//    double[] means = new double[vecs.length];
-//    double[] mults = normalize ? new double[vecs.length] : null;
-//    for( int i = 0; i < vecs.length; i++ ) {
-//      means[i] = (float) vecs[i].mean();
-//      if( mults != null ) {
-//        double sigma = vecs[i].sigma();
-//        mults[i] = normalize(sigma) ? 1.0 / sigma : 1.0;
-//      }
-//    }
-//
-//    // -1 to be different from all chunk indexes (C.f. Sampler)
-//    Random rand = Utils.getRNG(seed - 1);
-//    double[][] clusters;
-//    if( initialization == Initialization.None ) {
-//      // Initialize all clusters to random rows
-//      clusters = new double[k][vecs.length];
-//      for (double[] cluster : clusters)
-//        randomRow(vecs, rand, cluster, means, mults);
-//    } else {
-//      // Initialize first cluster to random row
-//      clusters = new double[1][];
-//      clusters[0] = new double[vecs.length];
-//      randomRow(vecs, rand, clusters[0], means, mults);
-//
-//      while( model.iterations < 5 ) {
-//        // Sum squares distances to clusters
-//        SumSqr sqr = new SumSqr();
-//        sqr._clusters = clusters;
-//        sqr._means = means;
-//        sqr._mults = mults;
-//        sqr.doAll(vecs);
-//
-//        // Sample with probability inverse to square distance
-//        Sampler sampler = new Sampler();
-//        sampler._clusters = clusters;
-//        sampler._sqr = sqr._sqr;
-//        sampler._probability = k * 3; // Over-sampling
-//        sampler._seed = seed;
-//        sampler._means = means;
-//        sampler._mults = mults;
-//        sampler.doAll(vecs);
-//        clusters = Utils.append(clusters, sampler._sampled);
-//
-//        if( !isRunning(self()) )
-//          return;
-//        model.centers = normalize ? denormalize(clusters, vecs) : clusters;
-//        model.total_within_SS = sqr._sqr;
-//        model.iterations++;
-//        model.update(self());
-//      }
-//
-//      clusters = recluster(clusters, k, rand, initialization);
-//    }
-//
+        // The model to be built
+        model = new KMeansModel(dest(), fr, _parms);
+        model.delete_and_lock(_key);
+
+        // means are used to impute NAs
+        Vec vecs[] = fr.vecs();
+        double[] means = new double[vecs.length];
+        for( int i = 0; i < vecs.length; i++ )
+          means[i] = vecs[i].mean();
+        // mults & means for normalization
+        double[] mults = null;
+        if( _parms._normalize ) {
+          mults = new double[vecs.length];
+          for( int i = 0; i < vecs.length; i++ ) {
+            double sigma = vecs[i].sigma();
+            mults[i] = normalize(sigma) ? 1.0 / sigma : 1.0;
+          }
+        }
+
+        // Initialize clusters
+        Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
+        double clusters[][];
+        if( _parms._init == Initialization.None ) {
+          // Initialize all clusters to random rows
+          clusters = model._clusters = new double[_parms._K][fr.numCols()];
+          for( double[] cluster : clusters )
+            randomRow(vecs, rand, cluster, means, mults);
+        } else {
+          clusters = new double[1][vecs.length];
+          // Initialize first cluster to random row
+          randomRow(vecs, rand, clusters[0], means, mults);
+
+          while( model._iters < 5 ) {
+            // Sum squares distances to clusters
+            SumSqr sqr = new SumSqr();
+            sqr._clusters = clusters;
+            sqr._means = means;
+            sqr._mults = mults;
+            sqr.doAll(vecs);
+            
+            // Sample with probability inverse to square distance
+            Sampler sampler = new Sampler();
+            sampler._clusters = clusters;
+            sampler._sqr = sqr._sqr;
+            sampler._probability = _parms._K * 3; // Over-sampling
+            sampler._seed = _parms._seed;
+            sampler._means = means;
+            sampler._mults = mults;
+            sampler.doAll(vecs);
+            clusters = ArrayUtils.append(clusters,sampler._sampled);
+            
+            if( !isRunning() )
+              return;
+            model._clusters = denormalize(clusters, means, mults);
+            model._mse = sqr._sqr/fr.numRows();
+            model._iters++;     // One iteration done
+            update(1);          // One unit of work
+            model.update(_key); // Early version of model is visible
+          }
+
+          clusters = recluster(clusters, _parms._K, rand, _parms._init);
+        }
+        throw H2O.unimpl();
 //    for( ;; ) {
 //      Lloyds task = new Lloyds();
 //      task._clusters = clusters;
@@ -170,12 +142,16 @@ public class KMeans extends Job<KMeansModel> {
 //      if( !isRunning(self()) )
 //        break;
 //    }
-//    model.unlock(self());
+      } catch( Throwable t ) {
+        t.printStackTrace();
+        cancel2(t);
+        throw t;
       } finally {
+        if( model != null ) model.unlock(_key);
         if( fr != null ) fr.unlock(_key);
+        done();                 // Job done!
       }
-      tryComplete();
-      throw H2O.unimpl();
+      //tryComplete();
     }
   }
 
@@ -409,66 +385,64 @@ public class KMeans extends Job<KMeansModel> {
 //          }
 //      }
 //  }
-//
-//  public static class SumSqr extends MRTask2<SumSqr> {
-//    // IN
-//    double[] _means, _mults; // Normalization
-//    double[][] _clusters;
-//
-//    // OUT
-//    double _sqr;
-//
-//    @Override public void map(Chunk[] cs) {
-//      double[] values = new double[cs.length];
-//      ClusterDist cd = new ClusterDist();
-//      for( int row = 0; row < cs[0]._len; row++ ) {
-//        data(values, cs, row, _means, _mults);
-//        _sqr += minSqr(_clusters, values, cd);
-//      }
-//      _means = _mults = null;
-//      _clusters = null;
-//    }
-//
-//    @Override public void reduce(SumSqr other) {
-//      _sqr += other._sqr;
-//    }
-//  }
-//
-//  public static class Sampler extends MRTask2<Sampler> {
-//    // IN
-//    double[][] _clusters;
-//    double _sqr;           // Min-square-error
-//    double _probability;   // Odds to select this point
-//    long _seed;
-//    double[] _means, _mults; // Normalization
-//
-//    // OUT
-//    double[][] _sampled;   // New clusters
-//
-//    @Override public void map(Chunk[] cs) {
-//      double[] values = new double[cs.length];
-//      ArrayList<double[]> list = new ArrayList<double[]>();
-//      Random rand = Utils.getRNG(_seed + cs[0]._start);
-//      ClusterDist cd = new ClusterDist();
-//
-//      for( int row = 0; row < cs[0]._len; row++ ) {
-//        data(values, cs, row, _means, _mults);
-//        double sqr = minSqr(_clusters, values, cd);
-//        if( _probability * sqr > rand.nextDouble() * _sqr )
-//          list.add(values.clone());
-//      }
-//
-//      _sampled = new double[list.size()][];
-//      list.toArray(_sampled);
-//      _clusters = null;
-//      _means = _mults = null;
-//    }
-//
-//    @Override public void reduce(Sampler other) {
-//      _sampled = Utils.append(_sampled, other._sampled);
-//    }
-//  }
-//
+
+  public static class SumSqr extends MRTask<SumSqr> {
+    // IN
+    double[] _means, _mults; // Normalization
+    double[][] _clusters;
+
+    // OUT
+    double _sqr;
+
+    @Override public void map(Chunk[] cs) {
+      double[] values = new double[cs.length];
+      ClusterDist cd = new ClusterDist();
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        data(values, cs, row, _means, _mults);
+        _sqr += minSqr(_clusters, values, cd);
+      }
+      _means = _mults = null;
+      _clusters = null;
+    }
+
+    @Override public void reduce(SumSqr other) { _sqr += other._sqr; }
+  }
+
+  public static class Sampler extends MRTask<Sampler> {
+    // IN
+    double[][] _clusters;
+    double _sqr;           // Min-square-error
+    double _probability;   // Odds to select this point
+    long _seed;
+    double[] _means, _mults; // Normalization
+
+    // OUT
+    double[][] _sampled;   // New clusters
+
+    @Override public void map(Chunk[] cs) {
+      double[] values = new double[cs.length];
+      ArrayList<double[]> list = new ArrayList<>();
+      Random rand = RandomUtils.getRNG(_seed + cs[0]._start);
+      ClusterDist cd = new ClusterDist();
+
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        data(values, cs, row, _means, _mults);
+        double sqr = minSqr(_clusters, values, cd);
+        if( _probability * sqr > rand.nextDouble() * _sqr )
+          list.add(values.clone());
+      }
+
+      _sampled = new double[list.size()][];
+      list.toArray(_sampled);
+      _clusters = null;
+      _means = _mults = null;
+    }
+
+    @Override public void reduce(Sampler other) {
+      _sampled = ArrayUtils.append(_sampled, other._sampled);
+    }
+  }
+
 //  public static class Lloyds extends MRTask2<Lloyds> {
 //    // IN
 //    double[][] _clusters;
@@ -547,137 +521,128 @@ public class KMeans extends Job<KMeansModel> {
 //      _sqr += mr._sqr;
 //    }
 //  }
-//
-//  private static final class ClusterDist {
-//    int _cluster;
-//    double _dist;
-//  }
-//
-//  private static double minSqr(double[][] clusters, double[] point, ClusterDist cd) {
-//    return closest(clusters, point, cd, clusters.length)._dist;
-//  }
-//
-//  private static double minSqr(double[][] clusters, double[] point, ClusterDist cd, int count) {
-//    return closest(clusters, point, cd, count)._dist;
-//  }
-//
-//  private static ClusterDist closest(double[][] clusters, double[] point, ClusterDist cd) {
-//    return closest(clusters, point, cd, clusters.length);
-//  }
-//
-//  private static ClusterDist closest(double[][] clusters, double[] point, int ncats, ClusterDist cd) {
-//    return closest(clusters, point, ncats, cd, clusters.length);
-//  }
-//
-//  private static ClusterDist closest(double[][] clusters, double[] point, ClusterDist cd, int count) {
-//    return closest(clusters, point, 0, cd, count);
-//  }
-//
-//  private static ClusterDist closest(double[][] clusters, double[] point, int ncats, ClusterDist cd, int count) {
-//    return closest(clusters, point, ncats, cd, count, 1);
-//  }
-//
-//  /** Return both nearest of N cluster/centroids, and the square-distance. */
-//  private static ClusterDist closest(double[][] clusters, double[] point, int ncats, ClusterDist cd, int count, double dist) {
-//    int min = -1;
-//    double minSqr = Double.MAX_VALUE;
-//    for( int cluster = 0; cluster < count; cluster++ ) {
-//      double sqr = 0;           // Sum of dimensional distances
-//      int pts = point.length;   // Count of valid points
-//
-//      // Expand categoricals into binary indicator cols
-//      for(int column = 0; column < ncats; column++) {
-//        double d = point[column];
-//        if(Double.isNaN(d))
-//          pts--;
-//        else {
-//          // TODO: What is the distance between unequal categoricals?
-//          if(d != clusters[cluster][column])
-//             sqr += 2 * dist * dist;
-//        }
-//      }
-//
-//      for( int column = ncats; column < clusters[cluster].length; column++ ) {
-//        double d = point[column];
-//        if( Double.isNaN(d) ) { // Bad data?
-//          pts--;                // Do not count
-//        } else {
-//          double delta = d - clusters[cluster][column];
-//          sqr += delta * delta;
-//        }
-//      }
-//      // Scale distance by ratio of valid dimensions to all dimensions - since
-//      // we did not add any error term for the missing point, the sum of errors
-//      // is small - ratio up "as if" the missing error term is equal to the
-//      // average of other error terms.  Same math another way:
-//      //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
-//      //   sqr = sqr * point.length;    // Total dist is average*#dimensions
-//      if( 0 < pts && pts < point.length )
-//        sqr *= point.length / pts;
-//      if( sqr < minSqr ) {
-//        min = cluster;
-//        minSqr = sqr;
-//      }
-//    }
-//    cd._cluster = min;          // Record nearest cluster
-//    cd._dist = minSqr;          // Record square-distance
-//    return cd;                  // Return for flow-coding
-//  }
-//
-//  // KMeans++ re-clustering
-//  public static double[][] recluster(double[][] points, int k, Random rand, Initialization init) {
-//    double[][] res = new double[k][];
-//    res[0] = points[0];
-//    int count = 1;
-//    ClusterDist cd = new ClusterDist();
-//    switch( init ) {
-//        case None:
-//            break;
-//        case PlusPlus: { // k-means++
-//        while( count < res.length ) {
-//          double sum = 0;
-//            for (double[] point1 : points) sum += minSqr(res, point1, cd, count);
-//
-//            for (double[] point : points) {
-//                if (minSqr(res, point, cd, count) >= rand.nextDouble() * sum) {
-//                    res[count++] = point;
-//                    break;
-//                }
-//            }
-//        }
-//        break;
-//      }
-//      case Furthest: { // Takes cluster further from any already chosen ones
-//        while( count < res.length ) {
-//          double max = 0;
-//          int index = 0;
-//          for( int i = 0; i < points.length; i++ ) {
-//            double sqr = minSqr(res, points[i], cd, count);
-//            if( sqr > max ) {
-//              max = sqr;
-//              index = i;
-//            }
-//          }
-//          res[count++] = points[index];
-//        }
-//        break;
-//      }
-//      default:
-//        throw new IllegalStateException();
-//    }
-//    return res;
-//  }
-//
-//  private void randomRow(Vec[] vecs, Random rand, double[] cluster, double[] means, double[] mults) {
-//    long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
-//    data(cluster, vecs, row, means, mults);
-//  }
-//
-//  private static boolean normalize(double sigma) {
-//    // TODO unify handling of constant columns
-//    return sigma > 1e-6;
-//  }
-//
+
+  private static final class ClusterDist {
+    int _cluster;
+    double _dist;
+  }
+
+  private static double minSqr(double[][] clusters, double[] point, ClusterDist cd) {
+    return closest(clusters, point, cd, clusters.length)._dist;
+  }
+
+  private static double minSqr(double[][] clusters, double[] point, ClusterDist cd, int count) {
+    return closest(clusters, point, cd, count)._dist;
+  }
+
+  private static ClusterDist closest(double[][] clusters, double[] point, ClusterDist cd) {
+    return closest(clusters, point, cd, clusters.length);
+  }
+
+  private static ClusterDist closest(double[][] clusters, double[] point, int ncats, ClusterDist cd) {
+    return closest(clusters, point, ncats, cd, clusters.length);
+  }
+
+  private static ClusterDist closest(double[][] clusters, double[] point, ClusterDist cd, int count) {
+    return closest(clusters, point, 0, cd, count);
+  }
+
+  /** Return both nearest of N cluster/centroids, and the square-distance. */
+  private static ClusterDist closest(double[][] clusters, double[] point, int ncats, ClusterDist cd, int count) {
+    final double CAT_DIST = 2.0; // Squared distance between unequal categoricals
+    int min = -1;
+    double minSqr = Double.MAX_VALUE;
+    for( int cluster = 0; cluster < count; cluster++ ) {
+      double sqr = 0;           // Sum of dimensional distances
+      int pts = point.length;   // Count of valid points
+
+      // Expand categoricals into binary indicator cols
+      for(int column = 0; column < ncats; column++) {
+        double d = point[column];
+        if( Double.isNaN(d) ) pts--;
+        else if( d != clusters[cluster][column] )
+          sqr += CAT_DIST;
+      }
+
+      for( int column = ncats; column < clusters[cluster].length; column++ ) {
+        double d = point[column];
+        if( Double.isNaN(d) ) pts--; // Do not count
+        else {
+          double delta = d - clusters[cluster][column];
+          sqr += delta * delta;
+        }
+      }
+      // Scale distance by ratio of valid dimensions to all dimensions - since
+      // we did not add any error term for the missing point, the sum of errors
+      // is small - ratio up "as if" the missing error term is equal to the
+      // average of other error terms.  Same math another way:
+      //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
+      //   sqr = sqr * point.length;    // Total dist is average*#dimensions
+      if( 0 < pts && pts < point.length )
+        sqr *= point.length / pts;
+      if( sqr < minSqr ) {
+        min = cluster;
+        minSqr = sqr;
+      }
+    }
+    cd._cluster = min;          // Record nearest cluster
+    cd._dist = minSqr;          // Record square-distance
+    return cd;                  // Return for flow-coding
+  }
+
+  // KMeans++ re-clustering
+  public static double[][] recluster(double[][] points, int k, Random rand, Initialization init) {
+    double[][] res = new double[k][];
+    res[0] = points[0];
+    int count = 1;
+    ClusterDist cd = new ClusterDist();
+    switch( init ) {
+    case None:
+      break;
+    case PlusPlus: { // k-means++
+      while( count < res.length ) {
+        double sum = 0;
+        for (double[] point1 : points) sum += minSqr(res, point1, cd, count);
+        
+        for (double[] point : points) {
+          if (minSqr(res, point, cd, count) >= rand.nextDouble() * sum) {
+            res[count++] = point;
+            break;
+          }
+        }
+      }
+      break;
+    }
+    case Furthest: { // Takes cluster further from any already chosen ones
+      while( count < res.length ) {
+        double max = 0;
+        int index = 0;
+        for( int i = 0; i < points.length; i++ ) {
+          double sqr = minSqr(res, points[i], cd, count);
+          if( sqr > max ) {
+            max = sqr;
+            index = i;
+          }
+        }
+        res[count++] = points[index];
+      }
+      break;
+    }
+    default:  throw H2O.fail();
+    }
+    return res;
+  }
+
+  private void randomRow(Vec[] vecs, Random rand, double[] cluster, double[] means, double[] mults) {
+    long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
+    data(cluster, vecs, row, means, mults);
+  }
+
+  private static boolean normalize(double sigma) {
+    // TODO unify handling of constant columns
+    return sigma > 1e-6;
+  }
+
 //  private static double[][] normalize(double[][] clusters, Chunk[] chks) {
 //    double[][] value = new double[clusters.length][clusters[0].length];
 //    for( int row = 0; row < value.length; row++ ) {
@@ -692,61 +657,57 @@ public class KMeans extends Job<KMeansModel> {
 //    return value;
 //  }
 //
-//  private static double[][] denormalize(double[][] clusters, Vec[] vecs) {
-//    double[][] value = new double[clusters.length][clusters[0].length];
-//    for( int row = 0; row < value.length; row++ ) {
-//      for( int col = 0; col < clusters[row].length; col++ ) {
-//        double d = clusters[row][col];
-//        d *= vecs[col].sigma();
-//        d += vecs[col].mean();
-//        value[row][col] = d;
-//      }
-//    }
-//    return value;
-//  }
-//
-//  private static void data(double[] values, Vec[] vecs, long row, double[] means, double[] mults) {
-//    for( int i = 0; i < values.length; i++ ) {
-//      double d = vecs[i].at(row);
-//      // values[i] = data(d, i, means, mults);
-//      values[i] = data(d, i, means, mults, vecs[i].cardinality());
-//    }
-//  }
-//
-//  private static void data(double[] values, Chunk[] chks, int row, double[] means, double[] mults) {
-//    for( int i = 0; i < values.length; i++ ) {
-//      double d = chks[i].at0(row);
-//      // values[i] = data(d, i, means, mults);
-//      values[i] = data(d, i, means, mults, chks[i]._vec.cardinality());
-//    }
-//  }
-//
-//  /**
-//   * Takes mean if NaN, normalize if requested.
-//   */
-//  private static double data(double d, int i, double[] means, double[] mults) {
-//    if( Double.isNaN(d) )
-//      d = means[i];
-//    if( mults != null ) {
-//      d -= means[i];
-//      d *= mults[i];
-//    }
-//    return d;
-//  }
-//
-//  private static double data(double d, int i, double[] means, double[] mults, int cardinality) {
-//    if(cardinality == -1) {
-//      if( Double.isNaN(d) )
-//        d = means[i];
-//      if( mults != null ) {
-//        d -= means[i];
-//        d *= mults[i];
-//      }
-//    } else {
-//      // TODO: If NaN, then replace with majority class?
-//      if(Double.isNaN(d))
-//        d = Math.min(Math.round(means[i]), cardinality-1);
-//    }
-//    return d;
-//  }
+  private static double[][] denormalize(double[][] clusters, double[] means, double[] mults) {
+    if( mults == null ) return clusters; // No normalization, no change
+    double[][] value = new double[clusters.length][clusters[0].length];
+    for( int row = 0; row < clusters.length; row++ )
+      for( int col = 0; col < clusters[row].length; col++ )
+        value[row][col] = clusters[row][col] * mults[col] + means[col];
+    return value;
+  }
+
+  private static void data(double[] values, Vec[] vecs, long row, double[] means, double[] mults) {
+    for( int i = 0; i < values.length; i++ ) {
+      double d = vecs[i].at(row);
+      // values[i] = data(d, i, means, mults);
+      values[i] = data(d, i, means, mults, vecs[i].cardinality());
+    }
+  }
+
+  private static void data(double[] values, Chunk[] chks, int row, double[] means, double[] mults) {
+    for( int i = 0; i < values.length; i++ ) {
+      double d = chks[i].at0(row);
+      // values[i] = data(d, i, means, mults);
+      values[i] = data(d, i, means, mults, chks[i]._vec.cardinality());
+    }
+  }
+
+  /**
+   * Takes mean if NaN, normalize if requested.
+   */
+  private static double data(double d, int i, double[] means, double[] mults) {
+    if( Double.isNaN(d) )
+      d = means[i];
+    if( mults != null ) {
+      d -= means[i];
+      d *= mults[i];
+    }
+    return d;
+  }
+
+  private static double data(double d, int i, double[] means, double[] mults, int cardinality) {
+    if(cardinality == -1) {
+      if( Double.isNaN(d) )
+        d = means[i];
+      if( mults != null ) {
+        d -= means[i];
+        d *= mults[i];
+      }
+    } else {
+      // TODO: If NaN, then replace with majority class?
+      if(Double.isNaN(d))
+        d = Math.min(Math.round(means[i]), cardinality-1);
+    }
+    return d;
+  }
 }

@@ -18,8 +18,8 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
 
   // /2/Frames backward compatibility
   protected void list_or_fetch() {
-    if (this.version != 2)
-      throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
+    //if (this.version != 2)
+    //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
 
     if (null != key) {
       fetch();
