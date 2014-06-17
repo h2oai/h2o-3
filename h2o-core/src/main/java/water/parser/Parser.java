@@ -20,7 +20,7 @@ import water.*;
  *  InspectDataOut - Class implementing DataOut, on behalf of the GUI, for
  *                parsing & previewing the first few lines & columns of a file.
  */
-abstract class Parser extends Iced {
+public abstract class Parser extends Iced {
   static final byte CHAR_TAB = '\t';
   static final byte CHAR_CR = 13;
   static final byte CHAR_LF = 10;
@@ -57,8 +57,8 @@ abstract class Parser extends Iced {
 
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
-  protected final ParserSetup _setup;
-  Parser( ParserSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
+  protected final ParseSetupHandler _setup;
+  Parser( ParseSetupHandler setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);

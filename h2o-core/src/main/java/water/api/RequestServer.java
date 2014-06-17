@@ -12,6 +12,7 @@ import water.AutoBuffer;
 import water.NanoHTTPD;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
+import water.parser.ParseSetupHandler;
 import water.util.RString;
 import water.fvec.Frame;
 
@@ -83,6 +84,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Data
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"/Parse"      , "Parse",         "Data");
     addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"/Inspect"    , "Inspect",       "Data");
 

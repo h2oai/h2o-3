@@ -48,8 +48,6 @@ class ParseV2 extends Schema<ParseHandler,ParseV2> {
     ab.title("Parse Started");
     String url = JobPollV2.link(job);
     return ab.href("Poll",url,url);
-    //String url = InspectV1.link(hex);
-    //return ab.href("hex",url,url);
   }
 
   // Helper so ImportV1 can link to ParseV2

@@ -2,7 +2,7 @@ package water.parser;
 
 /** Which parse flavor is being used, and does it support parallel parsing.
  */
-enum ParserType {
+public enum ParserType {
   AUTO(false), XLS(false), XLSX(false), CSV(true), SVMLight(true);
   final boolean _parallelParseSupported;
   private ParserType( boolean par ) { _parallelParseSupported = par; }
