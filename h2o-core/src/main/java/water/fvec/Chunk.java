@@ -165,8 +165,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
 
   int nextNZ(int rid){return rid+1;}
-  protected boolean isSparse() {return false;}
-  protected int sparseLen(){return _len;}
+  public boolean isSparse() {return false;}
+  public int sparseLen(){return _len;}
 
   /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
    *  For dense chunks, this will contain indices of all the rows in this chunk.
