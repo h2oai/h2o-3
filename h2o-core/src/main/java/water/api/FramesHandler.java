@@ -58,7 +58,7 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   }
 
   protected void column() {
-    Frame frame = this.getFromDKV(key);
+    Frame frame = FramesHandler.getFromDKV(key);
 
     // NOTE: We really want to return a different schema here!
     Vec vec = frame.vec(column);
@@ -73,7 +73,7 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   }
 
   protected void fetch() {
-    Frame frame = this.getFromDKV(key);
+    Frame frame = FramesHandler.getFromDKV(key);
     frames = new Frame[1];
     frames[0] = frame;
   }
