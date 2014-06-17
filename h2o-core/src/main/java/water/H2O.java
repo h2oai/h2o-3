@@ -1,5 +1,7 @@
 package water;
 
+import java.io.File;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.util.*;
@@ -448,6 +450,10 @@ final public class H2O {
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth),base_url,label,menu);
+  }
+
+  public static void registerResourceRoot(File f) {
+    JarHash.registerResourceRoot(f);
   }
 
   /** Start the web service; disallow future URL registration.

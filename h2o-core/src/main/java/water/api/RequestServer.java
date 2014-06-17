@@ -78,6 +78,9 @@ public class RequestServer extends NanoHTTPD {
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
   static {
+    // Local resources at h2o2/h2o-core/src/main/resources/www
+    water.init.JarHash.registerResourceRoot(new File("src/main/resources/www"));
+
     // Data
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"/Parse"      , "Parse",         "Data");

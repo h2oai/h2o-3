@@ -5,6 +5,7 @@ import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.ArrayList;
 import water.util.Log;
 
 
@@ -55,6 +56,14 @@ public abstract class JarHash {
     return ffHash;
   }
 
+
+  private static final ArrayList<File> RESOURCE_FILES = new ArrayList<>();
+  
+  public static void registerResourceRoot(File f) {
+    if( !f.exists() ) throw new IllegalArgumentException("Resource root does not exist: "+f);
+    RESOURCE_FILES.add(f);
+  }
+
   // Look for resources (JS files, PNG's, etc) from the self-jar first, then
   // from a possible local dev build.
   public static InputStream getResource2(String uri) {
@@ -62,27 +71,11 @@ public abstract class JarHash {
       // Jar file mode.
       if (JARPATH != null)
         return ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
-
-      // IDE developer mode.. . .
-      // TODO: this creates a soft dependency from h2o-core to h2o-client.
-      // Have h2o-client register itself as a source for web server resources.
-      // Steam resources in h2o-client:
-      File f = null;
-      f = new File(System.getProperty("user.dir") + "/h2o-client/src/main/resources/www", uri);
-      if( f.exists() )
-        return new FileInputStream(f);
-
-      // Resources in h2o-core (the old pages):
-      f = new File(System.getProperty("user.dir") + "/h2o-core/src/main/resources/www", uri);
-      if( f.exists() )
-        return new FileInputStream(f);
-
-      // Class path mode.
-      //String h2oClasses = JarHash.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-      // CNC: This does not work, going back to The Old Way which does
-      File resources = new File("src/main/resources/www");
-      if( resources.exists() )
-        return new FileInputStream(new File(resources, uri));
+      for( File f : RESOURCE_FILES ) {
+        File f2 = new File(f,uri);
+        if( f2.exists() )
+          return new FileInputStream(f2);
+      }
     }
     catch (FileNotFoundException ignore) {}
 
