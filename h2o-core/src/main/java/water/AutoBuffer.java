@@ -1280,7 +1280,7 @@ public final class AutoBuffer {
   // ==========================================================================
   // JSON AutoBuffer printers
 
-  private AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
+  public AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
   private AutoBuffer putJStr( String s ) {
     byte[] b = s.getBytes();
@@ -1297,7 +1297,7 @@ public final class AutoBuffer {
     }
     return putA1(b,off,b.length);
   }
-  private AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
+  public AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
   private AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
   private AutoBuffer putJSONAStr( String[] ss) {
     if( ss == null ) return putJNULL();
@@ -1327,7 +1327,7 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAObj (String name, Object[][] ooo   ) { return putJSONStr(name).put1(':').putJNULL(); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAAObj(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
-  private AutoBuffer putJSON ( Freezable ice   ) { return ice == null ? putJNULL() : ice.writeJSON(this); }
+  public AutoBuffer putJSON(Freezable ice) { return ice == null ? putJNULL() : ice.writeJSON(this); }
   private AutoBuffer putJSONA( Freezable fs[]  ) {
     if( fs == null ) return putJNULL();
     put1('[');

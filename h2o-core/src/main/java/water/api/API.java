@@ -47,4 +47,6 @@ public @interface API {
   // selection of valid values.  Used for e.g. drop-down menus where response
   // times are interactive.
   String values() default "";
+
+  boolean json() default true;
 }

@@ -4,6 +4,7 @@ import javassist.*;
 import java.lang.reflect.*;
 import java.lang.reflect.Modifier;
 import sun.misc.Unsafe;
+import water.api.API;
 import water.nbhm.UtilUnsafe;
 
 public class Weaver {
@@ -297,6 +298,9 @@ public class Weaver {
       int mods = ctf.getModifiers();
       if( javassist.Modifier.isTransient(mods) || javassist.Modifier.isStatic(mods) )
         continue;  // Only serialize not-transient instance fields (not static)
+      if (ctf.hasAnnotation(API.class))
+        if( ((API)ctf.getAvailableAnnotations()[0]).json() == false )
+          continue;
       if( field_sep1 != null ) { sb.append(field_sep1); field_sep1 = null; }
       else if( field_sep2 != null ) sb.append(field_sep2);
 
