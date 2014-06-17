@@ -45,7 +45,7 @@ public class KMeansV2 extends Schema<KMeansHandler,KMeansV2> {
 
     h._normalize = normalize;
 
-    init = KMeans.Initialization.PlusPlus;
+    h._init = init = KMeans.Initialization.PlusPlus;
 
     if( max_iters < 0 || max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
     if( max_iters==0 ) max_iters = 1000; // Default is 1000 max_iters
