@@ -233,7 +233,7 @@ really_build: \
 	$(DEPLOY)/js/lib.js \
 	$(DEPLOY)/js/steam.js
 
-build: setup
+build:
 	$(MAKE) really_build
 
 unit: \
