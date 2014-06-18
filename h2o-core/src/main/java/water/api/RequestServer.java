@@ -357,7 +357,7 @@ public class RequestServer extends NanoHTTPD {
 
   private static String loadTemplate(String name) {
     // Local resources at h2o2/h2o-core/src/main/resources/www
-    water.init.JarHash.registerResourceRoot(new File("src/main/resources/www"));
+    water.init.JarHash.registerResourceRoot(new File("h2o-core/src/main/resources/www"));
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
         return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
