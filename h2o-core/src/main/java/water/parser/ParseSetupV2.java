@@ -58,4 +58,18 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   static public String link(String[] keys) {
     return "ParseSetup?srcs="+Arrays.toString(keys);
   }
+
+
+  @Override public HTML writeHTML_impl( HTML ab ) {
+    ab.title("ParseSetup");
+    ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,singleQuotes,columnNames));
+    ab.putA( "srcs", srcs);
+    ab.putStr( "hexName", hexName);
+    ab.putEnum("pType",pType);
+    ab.put1("sep",sep);
+    ab.put4("ncols",ncols);
+    ab.putZ("singleQuotes",singleQuotes);
+    ab.putAStr("columnNames",columnNames);
+    return ab;
+  }
 }

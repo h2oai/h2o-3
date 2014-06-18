@@ -27,8 +27,8 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   boolean _singleQuotes;
   String[] _columnNames;
   private long _invalidLines; // Number of broken/invalid lines found
-
-  ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
+  
+  public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
     _isValid = isValid;
     _invalidLines = invalidLines;
     _pType = t;

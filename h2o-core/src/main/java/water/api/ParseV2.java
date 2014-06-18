@@ -4,8 +4,9 @@ import java.io.File;
 import java.util.Arrays;
 import water.*;
 import water.util.DocGen.HTML;
+import water.parser.ParserType;
 
-class ParseV2 extends Schema<ParseHandler,ParseV2> {
+public class ParseV2 extends Schema<ParseHandler,ParseV2> {
 
   // Input fields
   @API(help="Final hex key name",required=true)
@@ -13,6 +14,21 @@ class ParseV2 extends Schema<ParseHandler,ParseV2> {
 
   @API(help="Source keys",required=true,dependsOn={"hex"})
   Key[] srcs;
+
+  @API(help="Parser Type",dependsOn={"srcs"})
+  ParserType pType;
+
+  @API(help="separator",dependsOn={"srcs"})
+  byte sep;
+
+  @API(help="ncols",dependsOn={"srcs"})
+  int ncols;
+
+  @API(help="single Quotes",dependsOn={"srcs"})
+  boolean singleQuotes;
+
+  @API(help="Column Names",dependsOn={"srcs"})
+  String[] columnNames;
 
   @API(help="Delete input key after parse")
   boolean delete_on_done;
@@ -31,6 +47,11 @@ class ParseV2 extends Schema<ParseHandler,ParseV2> {
   @Override protected ParseV2 fillInto( ParseHandler h ) {
     h._hex = hex;
     h._srcs = srcs;
+    h._pType = pType;
+    h._sep = sep;
+    h._ncols = ncols;
+    h._singleQuotes = singleQuotes;
+    h._columnNames = columnNames;
     h._delete_on_done = delete_on_done;
     h._blocking = blocking;
     return this;
@@ -53,6 +74,18 @@ class ParseV2 extends Schema<ParseHandler,ParseV2> {
   // Helper so ImportV1 can link to ParseV2
   static String link(String[] keys) {
     return "Parse?hex="+hex(keys[0])+"&srcs="+Arrays.toString(keys);
+  }
+
+  // Helper so ParseSetup can link to Parse
+  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, boolean singleQuotes, String[] columnNames) {
+    return "Parse?srcs="+Arrays.toString(srcs)+
+      "&hex="+hexName+
+      "&pType="+pType+
+      "&sep="+sep+
+      "&ncols="+ncols+
+      "&singleQuotes="+singleQuotes+
+      "&columnNames="+Arrays.toString(columnNames)+
+      "";
   }
 
   private static String hex( String n ) {

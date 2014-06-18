@@ -34,6 +34,10 @@ public class ParseDataset2 extends Job<Frame> {
 
   public static ParseDataset2 startParse(Key okey, Key... keys) { return forkParseDataset(okey,keys, setup(keys[0],0/*guess header*/),true); }
 
+  public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
+    return forkParseDataset(okey,keys, globalSetup,delete_on_done); 
+  }
+
   private static ParseSetupHandler setup(Key k, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParseSetupHandler globalSetup = ParseSetupHandler.guessSetup(bits, checkHeader);

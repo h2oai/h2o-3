@@ -122,7 +122,9 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
     if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
     if( fclz.equals(int.class) ) return Integer.valueOf(s);
     if( fclz.equals(boolean.class) ) return Boolean.valueOf(s);
+    if( fclz.equals(byte.class) ) return Byte.valueOf(s);
     if( fclz.isArray() ) {      // An array?
+      if( s.equals("null") ) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
       String[] splits = s.substring(1,s.length()-1).split(",");
@@ -135,6 +137,8 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
     if( fclz.equals(Key.class) )
       if( s==null || s.length()==0 ) throw new IllegalArgumentException("Missing key");
       else return Key.make(s);
+    if( Enum.class.isAssignableFrom(fclz) )
+      return Enum.valueOf(fclz,s);
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
   }
