@@ -13,7 +13,7 @@ import water.util.Log;
  * compatible dataset - meaning the row has all the columns with the same names
  * as used to build the mode.
  */
-public abstract class Model extends Lockable<Model> {
+public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P>> extends Lockable<M> {
   Model( Key selfkey ) { super(selfkey); }
 
   /** Columns used in the model and are used to match up with scoring data
@@ -34,15 +34,25 @@ public abstract class Model extends Lockable<Model> {
     return cns==null ? 1 : cns.length;
   }
 
+  // Model-specific parameter class.  Each model sub-class also supports a
+  // sub-parameter list with model-specific parameters.  E.g. KMeansModel
+  // extends Model & has a KMeansParameters extending Model.Parameters; sample
+  // parameters include K, whether or not to normalize, max iterations and the
+  // initial random seed.
+  public abstract static class Parameters<M extends Model<M,P>, P extends Parameters<M,P>> extends Iced {
+    /* This class has no fields and no code */
+  }
+  Parameters _parms;
+
 
   /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */
-  public Model( Key selfKey, Frame fr ) {
-    this(selfKey,fr.names(),fr.domains());
+  public Model( Key selfKey, Frame fr, Parameters parms ) {
+    this(selfKey,fr.names(),fr.domains(),parms);
   }
 
   /** Full constructor */
-  public Model( Key selfKey, String names[], String domains[][] ) {
+  public Model( Key selfKey, String names[], String domains[][], Parameters parms ) {
     super(selfKey);
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
@@ -50,6 +60,8 @@ public abstract class Model extends Lockable<Model> {
     assert names[names.length-1] != null; // Have a valid response-column name?
     _names   = names;
     _domains = domains;
+    assert parms != null;
+    _parms = parms;
   }
 
   /** Bulk score for given <code>fr</code> frame.

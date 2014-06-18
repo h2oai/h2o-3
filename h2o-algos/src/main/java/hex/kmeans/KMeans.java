@@ -1,6 +1,5 @@
 package hex.kmeans;
 
-import hex.schemas.KMeansHandler;
 import java.util.ArrayList;
 import java.util.Random;
 import water.*;
@@ -19,13 +18,13 @@ public class KMeans extends Job<KMeansModel> {
     None, PlusPlus, Furthest
   }
 
-  final transient KMeansHandler _parms; // All the parms
+  final KMeansModel.KMeansParameters _parms; // All the parms
 
   // Number of categorical columns
   private int _ncats;
 
   // Called from Nano thread; start the KMeans Job on a F/J thread
-  public KMeans( KMeansHandler parms) {
+  public KMeans( KMeansModel.KMeansParameters parms) {
     super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is clusters*/);
     _parms = parms;
     start(new KMeansDriver());
@@ -476,8 +475,7 @@ public class KMeans extends Job<KMeansModel> {
     int N = clusters[0].length;
     double[][] value = new double[K][N];
     for( int clu = 0; clu < K; clu++ ) {
-      for( int col = 0; col < N; col++ ) // Take the cluster mean or cat choice
-        value[clu][col] = clusters[clu][col];
+      System.arraycopy(clusters[clu],0,value[clu],0,N);
       if( mults!=null )         // Reverse normalization
         for( int col = ncats; col < N; col++ )
           value[clu][col] = value[clu][col] * mults[col] + means[col];

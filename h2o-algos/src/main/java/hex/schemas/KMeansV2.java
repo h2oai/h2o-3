@@ -1,6 +1,7 @@
 package hex.schemas;
 
 import hex.kmeans.KMeans;
+import hex.kmeans.KMeansModel;
 import water.Key;
 import water.api.API;
 import water.api.JobPollV2;
@@ -38,21 +39,22 @@ public class KMeansV2 extends Schema<KMeansHandler,KMeansV2> {
 
   // Version&Schema-specific filling into the handler
   @Override public KMeansV2 fillInto( KMeansHandler h ) {
-    h._src = src;
+    h._parms = new KMeansModel.KMeansParameters();
+    h._parms._src = src;
 
     if( K < 2 || K > 9999999 ) throw new IllegalArgumentException("2<= K && K < 10000000");
-    h._K = K;
+    h._parms._K = K;
 
-    h._normalize = normalize;
+    h._parms._normalize = normalize;
 
-    h._init = init = KMeans.Initialization.PlusPlus;
+    h._parms._init = init = KMeans.Initialization.PlusPlus;
 
     if( max_iters < 0 || max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
     if( max_iters==0 ) max_iters = 1000; // Default is 1000 max_iters
-    h._max_iters = max_iters;
+    h._parms._max_iters = max_iters;
 
     if( seed == 0 ) seed = System.nanoTime();
-    h._seed = seed;
+    h._parms._seed = seed;
     return this;
   }
 

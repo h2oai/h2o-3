@@ -1,11 +1,18 @@
 package hex.kmeans;
 
-import hex.schemas.KMeansHandler;
 import water.*;
 import water.fvec.Frame;
 
-public class KMeansModel extends Model {
-  private final KMeansHandler _parms; // K, max_iter, seed, normalize
+public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters> {
+
+  public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters> {
+    public Key _src;              // Frame being clustered
+    public int _K;                // Number of clusters
+    public boolean _normalize;    // Normalize columns
+    public int _max_iters;        // Max iterations
+    public long _seed;            // RNG seed
+    public KMeans.Initialization _init;
+  }
 
   // Iterations executed
   int _iters;
@@ -22,9 +29,8 @@ public class KMeansModel extends Model {
   // Sum squared distance between each point and its new cluster center 
   public double _total_within_SS;
 
-  KMeansModel( Key selfKey, Frame fr, KMeansHandler parms) { 
-    super(selfKey,fr); 
-    _parms=parms; 
+  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) { 
+    super(selfKey,fr,parms); 
   }
 
   protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
