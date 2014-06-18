@@ -25,17 +25,20 @@ public class APITest extends TestUtil {
     // Serve some pages and confirm cloud does not lock
     try {
       TypeMap._check_no_locking=true; // Blow a nice assert if locking
-      serve("/");
-      serve("/Cloud.html");
-      serve("/junk");
-      serve("/HTTP404");
+      serve("/",null);
+      serve("/Cloud.html",null);
+      serve("/junk",null);
+      serve("/HTTP404",null);
+      Properties parms = new Properties();
+      parms.setProperty("src","./smalldata/iris");
+      serve("/Typeahead/files",parms);
     } finally {
       TypeMap._check_no_locking=false;
     }
   }
 
-  private void serve(String s) {
-    RequestServer.SERVER.serve(s,"GET",null,new Properties());
+  private void serve(String s, Properties parms) {
+    RequestServer.SERVER.serve(s,"GET",null,parms==null?new Properties():parms);
     assertFalse(Paxos._cloudLocked);
   }
 }

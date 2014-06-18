@@ -29,6 +29,7 @@ public class TypeMap {
     "water.api.HTTP500V1",
     "water.api.Schema",
     "water.api.TutorialsV1",
+    "water.api.TypeaheadV2",    // Allow typeahead without locking
     "water.Key",
   };
   // Class name -> ID mapping
