@@ -97,6 +97,8 @@ public class RequestServer extends NanoHTTPD {
     initializeNavBar();
 
     // REST only, no html:
+    register("/Typeahead/files" ,"GET",TypeaheadHandler.class, "files");
+
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
     register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
@@ -168,7 +170,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Log all requests except the overly common ones
-  void maybeLogRequest (String uri, String method, Properties parms) {
+  void maybeLogRequest(String uri, String versioned_path, String pattern, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
@@ -177,13 +179,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
 
-    String log = String.format("%-4s %s", method, uri);
-    for( Object arg : parms.keySet() ) {
-      String value = parms.getProperty((String) arg);
-      if( value != null && value.length() != 0 )
-        log += " " + arg + "=" + value;
-    }
-    Log.info(log);
+    Log.info("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
 
   // Parse version number.  Java has no ref types, bleah, so return the version
@@ -258,7 +254,6 @@ public class RequestServer extends NanoHTTPD {
     String versioned_path = "/" + version + path;
 
     // Load resources, or dispatch on handled requests
-    maybeLogRequest(versioned_path, method, parms);
     try {
       // Find handler for url
       Route route = lookup(method, versioned_path);
@@ -268,7 +263,7 @@ public class RequestServer extends NanoHTTPD {
         return getResource(uri);
       else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        Log.info("Path: " + versioned_path + ", route: " + route._url_pattern.pattern() + ", parms: " + parms);
+        maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     } catch( IllegalArgumentException e ) {
