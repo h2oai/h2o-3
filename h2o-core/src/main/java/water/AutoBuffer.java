@@ -1430,7 +1430,7 @@ public final class AutoBuffer {
   }
 
   public AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
-  AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
+  public AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
   public AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
