@@ -29,7 +29,18 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   }
 
   protected void list() {
-    // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
+    final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+        @Override
+        public boolean filter(KeySnapshot.KeyInfo k) {
+          return k._type == TypeMap.FRAME;
+        }
+      }).keys();
+
+    frames = new Frame[frameKeys.length];
+    for (int i = 0; i < frameKeys.length; i++) {
+      Frame frame = this.getFromDKV(frameKeys[i]);
+      frames[i] = frame;
+    }
   }
 
   /** NOTE: We really want to return a different schema here! */

@@ -113,6 +113,7 @@ public class IcedHashMap<K, V>
     if (_map == null) return ab.putJNULL();
 
     // ab.put1('{'); // NOTE: the serialization framework adds this automagically
+    boolean first = true;
     for (Entry<K, V> entry : _map.entrySet()) {
       K key = entry.getKey();
       V value = entry.getValue();
@@ -120,6 +121,7 @@ public class IcedHashMap<K, V>
       assert entry.getKey() instanceof String;
       assert value instanceof String || value instanceof Freezable;
 
+      if (first) { first = false; } else {ab.put1(',').put1(' '); }
       ab.putJSONName((String) key);
       ab.put1(':');
 
