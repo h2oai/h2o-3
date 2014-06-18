@@ -1,17 +1,48 @@
 .y-dialog-container
-  .y-dialog.y-import-files-dialog(data-dialog-width='600')
+  .y-dialog.y-import-files-dialog
     .y-dialog-title-bar
-      .y-dialog-title Import File
+      .y-dialog-title Import Files
       .y-dialog-exit(data-bind='click:cancel')
         i.fa.fa-times 
     .y-dialog-body
-      .form-group
-        label Enter file path:
-        input.form-control(type='text' data-bind='value:filePath')
-      .form-group
+      .y-search-panel
+        table
+          tbody
+            tr
+              td
+                input.form-control(type='text' data-bind="value:specifiedPath, valueUpdate:'keyup', enterKey:tryImportFiles" placeholder='Enter a file or directory path')
+              td(width='1')
+                button.button.btn(data-bind='click:tryImportFiles')
+                  i.fa.fa-search(style='font-size:14px')
+
+      .y-dialog-content
+        // ko if:hasErrorMessage
         .y-error-message(data-bind='text:errorMessage')
+        // /ko
+
+        // ko if:hasImportedFiles
+        table.table.table-condensed.table-hover
+          thead
+            tr
+              th
+                label 
+                  input(type='checkbox' data-bind='checked:selectAllFiles') 
+                  span.caption(data-bind='text:importedPath')
+              th &nbsp;
+          tbody
+            // ko foreach:importedFiles
+            tr
+              td
+                label
+                  input(type='checkbox' data-bind='checked:isSelected') 
+                  span.caption(data-bind='text:path')
+              td(align='right')
+                button.btn(data-bind='click:importFile') Import
+            // /ko
+        // /ko
       .y-dialog-actions
         button.btn(data-bind='click:cancel') Cancel
-        button.btn.btn-primary(data-bind='click:confirm') OK
+        button.btn.btn-primary(data-bind='click:importSelectedFiles, enable:hasSelectedFiles') Import Selected
+        span(style='float:left' data-bind='text:fileSelectionCaption')
 
 

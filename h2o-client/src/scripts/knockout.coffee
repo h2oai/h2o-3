@@ -245,3 +245,15 @@ ko.bindingHandlers.draggable =
       #TODO - resize linked elements
       console.log rect
 
+ko.bindingHandlers.enterKey =
+  init: (element, valueAccessor, allBindings, viewModel, bindingContext) ->
+    if action = ko.unwrap valueAccessor() 
+      if isFunction action
+        $element = $ element
+        $element.keydown (e) -> 
+          if e.which is 13
+            action viewModel
+          return
+    return
+
+

@@ -23,10 +23,17 @@ Steam.H2OProxy = (_) ->
     opts = path: encodeURIComponent filePath
     request '/ImportFiles.json', opts, go
 
-  requestParseFiles = (src, hex, deleteOnDone, go) ->
+  requestParseSetup = (sources, go) ->
+    encodedPaths = map sources, encodeURIComponent
+    opts =
+      srcs: "[#{join encodedPaths, ','}]"
+    request '/ParseSetup.json', opts, go
+
+  requestParseFiles = (sources, hex, deleteOnDone, go) ->
+    encodedPaths = map sources, encodeURIComponent
     opts =
       hex: encodeURIComponent hex
-      srcs: "[#{encodeURIComponent src}]"
+      srcs: "[#{join encodedPaths, ','}]"
       # delete_on_done: deleteOnDone # TODO failing with "Attempting to set output field delete_on_done"
     request '/Parse.json', opts, go
 
@@ -74,6 +81,7 @@ Steam.H2OProxy = (_) ->
         go error, response: response, models: filterOutUnhandledModels values models
 
   link$ _.requestImportFiles, requestImportFiles
+  link$ _.requestParseSetup, requestParseSetup
   link$ _.requestParseFiles, requestParseFiles
   link$ _.requestFrames, (go) -> requestFrames go
   link$ _.requestFramesAndCompatibleModels, (go) -> requestFrames go, find_compatible_models: yes
