@@ -642,10 +642,8 @@ public class ParseDataset2 extends Job<Frame> {
         } else if( _ctypes[colIdx] == ICOL ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
-          if( str.get_off() == -1 )  addInvalidCol(colIdx);
-          else {
-            if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
-          }
+          if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
+          if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
         } else if(!_enums[_col = colIdx].isKilled()) {
           // store enum id into exponent, so that it will be interpreted as NA if compressing as numcol.
           int id = _enums[colIdx].addKey(str);

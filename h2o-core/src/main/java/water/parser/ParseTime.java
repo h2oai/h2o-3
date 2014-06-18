@@ -147,7 +147,7 @@ public abstract class ParseTime {
   public static long attemptUUIDParse0( ValueString str ) {
     final byte[] buf = str.get_buf();
     int i=str.get_off();
-    if( i+36>=buf.length ) return badUUID(str);
+    if( i+36>buf.length ) return badUUID(str);
     long lo=0;
     lo = get2(lo,buf,(i+=2)-2);
     lo = get2(lo,buf,(i+=2)-2);
