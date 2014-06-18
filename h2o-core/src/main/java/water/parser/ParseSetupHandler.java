@@ -1,10 +1,8 @@
 package water.parser;
 
 import java.util.HashSet;
-import java.util.zip.*;
 import water.*;
 import water.api.Handler;
-import water.parser.*;
 
 /** A class holding parser-setup flags: kind of parser, field separator, column
  *  header labels, whether or not to allow single-quotes to quote, number of

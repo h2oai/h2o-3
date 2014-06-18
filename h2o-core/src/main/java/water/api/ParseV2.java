@@ -1,6 +1,5 @@
 package water.api;
 
-import java.io.File;
 import java.util.Arrays;
 import water.*;
 import water.util.DocGen.HTML;
@@ -71,11 +70,6 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
     return ab.href("Poll",url,url);
   }
 
-  // Helper so ImportV1 can link to ParseV2
-  static String link(String[] keys) {
-    return "Parse?hex="+hex(keys[0])+"&srcs="+Arrays.toString(keys);
-  }
-
   // Helper so ParseSetup can link to Parse
   public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, boolean singleQuotes, String[] columnNames) {
     return "Parse?srcs="+Arrays.toString(srcs)+
@@ -86,29 +80,5 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
       "&singleQuotes="+singleQuotes+
       "&columnNames="+Arrays.toString(columnNames)+
       "";
-  }
-
-  private static String hex( String n ) {
-    // blahblahblah/myName.ext ==> myName
-    int sep = n.lastIndexOf(File.separatorChar);
-    if( sep > 0 ) n = n.substring(sep+1);
-    int dot = n.lastIndexOf('.');
-    if( dot > 0 ) n = n.substring(0, dot);
-    // "2012_somedata" ==> "X2012_somedata"
-    if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
-    // "human%Percent" ==> "human_Percent"
-    char[] cs = n.toCharArray();
-    for( int i=1; i<cs.length; i++ )
-      if( !Character.isJavaIdentifierPart(cs[i]) )
-        cs[i] = '_';
-    // "myName" ==> "myName.hex"
-    n = new String(cs);
-    int i = 0;
-    String res = n + ".hex";
-    Key k = Key.make(res);
-    // Renumber to handle dup names
-    while(DKV.get(k) != null)
-      k = Key.make(res = n + ++i + ".hex");
-    return res;
   }
 }
