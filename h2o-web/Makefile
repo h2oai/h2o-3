@@ -1,6 +1,6 @@
 BUILD=build
 DIST=$(BUILD)/dist
-DEPLOY=../h2o-core/src/main/resources/www/steam
+DEPLOY=./src/main/resources/www/steam
 LIB=lib
 MODULES=node_modules
 BIN=$(MODULES)/.bin

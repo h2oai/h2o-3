@@ -17,7 +17,7 @@ sandbox
 syn_datasets
 build/
 lib/
-h2o-client/src/main/resources/www/steam
+h2o-web/src/main/resources/www/steam
 out/
 .idea/
 h2o2.ipr
