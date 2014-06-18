@@ -60,7 +60,6 @@ public abstract class JarHash {
   private static final ArrayList<File> RESOURCE_FILES = new ArrayList<>();
   
   public static void registerResourceRoot(File f) {
-    if( !f.exists() ) throw new IllegalArgumentException("Resource root does not exist: "+f);
     RESOURCE_FILES.add(f);
   }
 
