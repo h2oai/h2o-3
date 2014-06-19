@@ -1,7 +1,6 @@
 package water;
 
 import java.io.File;
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.util.*;

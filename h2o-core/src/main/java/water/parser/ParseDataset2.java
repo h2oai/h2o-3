@@ -359,7 +359,7 @@ public class ParseDataset2 extends Job<Frame> {
       } else {
         Frame fr = (Frame)ice;
         if( _delete_on_done ) fr.delete(_job_key,0.0f);
-        else if( _fr._key != null ) fr.unlock(_job_key);
+        else if( fr._key != null ) fr.unlock(_job_key);
       }
     }
 
