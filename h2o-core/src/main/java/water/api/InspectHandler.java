@@ -27,6 +27,8 @@ class InspectHandler extends Handler {
 
     if( _val.isFrame() ) return (_schema = new FrameV2((Frame)_val.get()));
 
+    if( _val.isModel() ) return (_schema = ((Model)_val.get()).schema());
+
     // Need a generic viewer here
     throw H2O.unimpl();
   }

@@ -3,10 +3,7 @@ package hex.deeplearning;
 import static java.lang.Double.isNaN;
 import hex.FrameTask.DataInfo;
 import water.*;
-import water.api.AUC;
-import water.api.ConfusionMatrix;
-import water.api.HitRatio;
-import water.api.ValidationAdapter;
+import water.api.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -21,14 +18,13 @@ import java.util.Random;
  * a scoring history, as well as some helpers to indicated the progress
  */
 public class DeepLearningModel extends SupervisedModel implements Comparable<DeepLearningModel> {
-  @Override
-  protected String errStr() {
+  @Override protected String errStr() {
     return "Locking of DeepLearningModel failed.";
   }
 
-  //  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//
+  // Default publically visible Schema is V2
+  public Schema schema() { throw H2O.unimpl(); }
+
 //  @API(help="Model info", json = true)
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }

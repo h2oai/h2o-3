@@ -6,6 +6,7 @@ import java.util.HashMap;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.api.Schema;
 
 /**
  * A Model models reality (hopefully).
@@ -44,6 +45,8 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
   }
   Parameters _parms;
 
+  // Externally visible default schema
+  public abstract Schema schema();
 
   /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */

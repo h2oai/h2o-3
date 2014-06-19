@@ -25,7 +25,7 @@ public class KMeans extends Job<KMeansModel> {
 
   // Called from Nano thread; start the KMeans Job on a F/J thread
   public KMeans( KMeansModel.KMeansParameters parms) {
-    super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is clusters*/);
+    super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is max iterations*/);
     _parms = parms;
     start(new KMeansDriver());
   }
@@ -34,11 +34,14 @@ public class KMeans extends Job<KMeansModel> {
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
 
     @Override protected void compute2() {
+      assert _parms != null;
       Frame fr = null;
       KMeansModel model = null;
       try {
         // Fetch & read-lock source frame
-        fr = DKV.get(_parms._src).get();
+        Value val = DKV.get(_parms._src);
+        if( val == null ) throw new IllegalArgumentException("Missing frame "+_parms._src);
+        fr = val.get();
         fr.read_lock(_key);
 
         // Sort columns, so the categoricals are all up front.  They use a
@@ -48,8 +51,8 @@ public class KMeans extends Job<KMeansModel> {
         int ncats=0, len=N;
         while( ncats != len ) {
           while( vecs[ncats].isEnum() ) ncats++;
-          while(!vecs[len-1].isEnum() ) len--;
-          if( ncats < len ) fr.swap(ncats,len-1);
+          while( len > 0 && !vecs[len-1].isEnum() ) len--;
+          if( ncats < len-1 ) fr.swap(ncats,len-1);
         }
         _ncats = ncats;
 

@@ -15,7 +15,7 @@ public class KMeansHandler extends Handler<KMeansHandler,KMeansV2> {
   public KMeans _job;           // The modelling job
 
   public KMeansHandler() {}
-  public void work() { _job = new KMeans(_parms); }
+  public void work() { assert _parms != null; _job = new KMeans(_parms); }
   @Override protected KMeansV2 schema(int version) { return new KMeansV2(); }
   @Override public void compute2() { throw H2O.fail(); }
 }

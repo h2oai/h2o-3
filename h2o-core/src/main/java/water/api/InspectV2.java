@@ -38,7 +38,7 @@ class InspectV2 extends Schema {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title(className+" "+key);
-    return schema.writeHTML_impl(ab);
+    return schema.writeHTML(ab);
   }
 
   //==========================

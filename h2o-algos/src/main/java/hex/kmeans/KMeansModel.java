@@ -2,6 +2,8 @@ package hex.kmeans;
 
 import water.*;
 import water.fvec.Frame;
+import water.api.Schema;
+import hex.schemas.KMeansModelV2;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters> {
 
@@ -32,6 +34,9 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) { 
     super(selfKey,fr,parms); 
   }
+
+  // Default publically visible Schema is V2
+  public Schema schema() { return new KMeansModelV2(this); }
 
   protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();

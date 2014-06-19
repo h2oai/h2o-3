@@ -271,7 +271,6 @@ public class Frame extends Lockable {
 
   public int  numCols() { return _keys.length; }
   public long numRows() { return anyVec().length(); }
-  public final long byteSize() { throw H2O.unimpl(); }
 
   public Vec lastVec() {
     final Vec [] vecs = vecs();
