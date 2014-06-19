@@ -69,9 +69,9 @@ public class Vec extends Keyed {
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
-  protected Vec( Key key, long espc[]) { this(key, espc, null); }
-  protected Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
-  protected Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
+  public Vec( Key key, long espc[]) { this(key, espc, null); }
+  public Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
+  public Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
     super(key);
     assert key._kb[0]==Key.VEC;
     _espc = espc;
@@ -185,7 +185,7 @@ public class Vec extends Keyed {
   long chunk2StartElem( int cidx ) { return _espc[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  public int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
