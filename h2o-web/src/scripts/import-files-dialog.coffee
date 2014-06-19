@@ -173,7 +173,9 @@ Steam.ImportFilesDialog = (_, _go) ->
     sourceKeys = map _parsedFiles(), (file) -> file.name
     columnNames = map _columns(), (column) -> column.name()
     _.requestParseFiles sourceKeys, _destinationKey(), _parserType().type, _delimiter().charCode, _columnCount(), _useSingleQuotes(), columnNames, _deleteOnDone(), (error, result) -> 
-      console.log error, result
+      if error
+      else
+        result.job
 
   backToImport = ->
     _isParseMode no

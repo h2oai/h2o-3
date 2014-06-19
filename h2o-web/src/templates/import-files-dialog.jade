@@ -12,7 +12,7 @@
             tbody
               tr
                 td
-                  input.form-control(type='text' data-bind="value:specifiedPath, valueUpdate:'keyup', enterKey:tryImportFiles" placeholder='Enter a file or directory path and hit Enter')
+                  input.form-control(type='text' data-bind="value:specifiedPath, valueUpdate:'keydown', enterKey:tryImportFiles" placeholder='Enter a file or directory path and hit Enter')
                 td(width='1')
                   button.btn(data-bind='click:tryImportFiles')
                     i.fa.fa-search(style='font-size:14px')
@@ -70,6 +70,14 @@
 
         // ko if:isParseMode
         .y-dialog-content
+          h1(data-bind='collapse:false') Sources
+          table.table.table-condensed
+            tbody
+              // ko foreach:parsedFiles
+              tr
+                td(data-bind='text:name')
+              // /ko
+
           h1(data-bind='collapse:false') Parse
           table
             tbody
@@ -107,22 +115,14 @@
 
           // ko if:hasColumns
           h1(data-bind='collapse:false') Columns
-          table.y-sample-table.table.table-condensed.table-bordered
-            thead
-              tr
-                // ko foreach:columns
-                th(width='100')
-                  input.form-control(type='textbox' data-bind='value:name')
-                // /ko
-          // /ko
-          h1(data-bind='collapse:false') Source Files
-          table.table.table-condensed
+          table.y-sample-table
             tbody
-              // ko foreach:parsedFiles
+              // ko foreach:columns
               tr
-                td(data-bind='text:name')
+                td
+                  input.form-control(type='textbox' data-bind='value:name')
               // /ko
-
+          // /ko
         .y-import-actions(style='width:50%;text-align:left')
           button.btn(data-bind='click:backToImport')
             i.fa.fa-arrow-left
