@@ -156,12 +156,20 @@ public abstract class DocGen<T extends DocGen> {
     }
     public HTML array( String[][] sss ) {
       arrayHead();
-      for( String[] ss : sss ) p("<tr>").cell(ss).p("</tr>");
+      for( String[] ss : sss ) {
+        p("<tr>");
+        if( ss != null ) for( String s : ss ) cell(s);
+        p("</tr>");
+      }
       return arrayTail();
     }
     public HTML array( double[][] dss ) {
       arrayHead();
-      for( double[] ds : dss ) p("<tr>").cell(ds).p("</tr>");
+      for( double[] ds : dss ) { 
+        p("<tr>");
+        if( ds != null ) for( double d : ds ) cell(d);
+        p("</tr>");
+      }
       return arrayTail();
     }
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
