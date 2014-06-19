@@ -1,5 +1,4 @@
 Steam.H2OProxy = (_) ->
-
   composePath = (path, opts) ->
     if opts
       params = mapWithKey opts, (v, k) -> "#{k}=#{v}"
@@ -29,12 +28,18 @@ Steam.H2OProxy = (_) ->
       srcs: "[#{join encodedPaths, ','}]"
     request '/ParseSetup.json', opts, go
 
-  requestParseFiles = (sources, hex, deleteOnDone, go) ->
-    encodedPaths = map sources, encodeURIComponent
+  encodeArray = (array) -> "[#{join (map array, encodeURIComponent), ','}]"
+
+  requestParseFiles = (sourceKeys, destinationKey, parserType, separator, columnCount, useSingleQuotes, columnNames, deleteOnDone, go) ->
     opts =
-      hex: encodeURIComponent hex
-      srcs: "[#{join encodedPaths, ','}]"
-      # delete_on_done: deleteOnDone # TODO failing with "Attempting to set output field delete_on_done"
+      hex: encodeURIComponent destinationKey
+      srcs: encodeArray sourceKeys
+      pType: parserType
+      sep: separator
+      ncols: columnCount
+      singleQuotes: useSingleQuotes
+      columnNames: encodeArray columnNames
+      delete_on_done: deleteOnDone
     request '/Parse.json', opts, go
 
   filterOutUnhandledModels = (models) -> filter models, (model) -> model.state is 'DONE' and model.model_category is 'Binomial'

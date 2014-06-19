@@ -25,19 +25,27 @@ Steam.DialogManager = (_) ->
     $dialogContainer = $ element
     $dialog = $ $dialogContainer.children()[0]
     [ $dialogHeader, $dialogBody ] = map $dialog.children(), (child) -> $ child
-    dialogWidth = parseInt $dialog.attr 'data-dialog-width'
-    dialogHeight = parseInt $dialog.attr 'data-dialog-height'
+    widthAttr = $dialog.attr 'data-dialog-width'
+    heightAttr = $dialog.attr 'data-dialog-height'
+    dialogWidth = if isUndefined widthAttr then 0 else parseInt widthAttr
+    dialogHeight = if isUndefined heightAttr then 0 else parseInt heightAttr
 
-    parentWidth = $dialog.parent().parent().width()
+    $container = $dialog.parent().parent()
+    parentWidth = $container.width()
 
-    unless dialogWidth > 0
+    if dialogWidth is 0
       dialogWidth = parentWidth * 0.75
+    else if dialogWidth is -1
+      dialogWidth = parentWidth * 0.95
 
     # Set the dialog width so that the .height() measurement returns an accurate height.
     $dialog.width dialogWidth
 
-    unless dialogHeight > 0
+    if dialogHeight is 0
       dialogHeight = $dialog.height()
+    else if dialogHeight is -1
+      parentHeight = $container.height()
+      dialogHeight = parentHeight * 0.95
 
     dialogLeft = -dialogWidth / 2
     dialogTop = -dialogHeight / 2

@@ -1,6 +1,8 @@
 .y-import-files-dialog
-  .y-search-panel
-    margin-bottom 20px
+  .y-dialog-margin
+    dock(15px, 20px, 5px, 20px)
+  .y-file-search-panel
+    dock-top(35px)
     table
       width 100%
     input
@@ -11,10 +13,52 @@
       height 34px
       border 1px solid #ccc
       border-left none
+  .y-file-search-results-panel
+    dock-left(49%, 45px, 50px, 0)
+    .y-is-selected
+      color #aaa
+    i
+      cursor pointer
+      margin-right 10px
+    i.fa-check-circle-o
+      color green
+  .y-file-selection-separator
+    dock-left(0, 45px, 50px, 50%)
+    border-left 1px solid #ddd
+  .y-file-selection-panel
+    dock-right(49%, 45px, 0, 50px)
+    i
+      cursor pointer
+      margin-right 10px
+      color red
+  .y-file-list-header
+    dock-top(34px)
+    line-height 34px
+    span
+      font-size 11px
+      text-transform uppercase
+  .y-file-list
+    dock(34px)
+    overflow auto
   .y-dialog-content
     overflow auto
-    height 400px
+    dock(0, 0, 50px, 0)
+  .y-import-actions
+    dock-bottom(40px)
+    line-height 40px
+    text-align right
+    border-top 1px solid #ddd
   .y-error-message
     color red
     overflow auto
     height 75px
+  .y-sample-table
+    input.form-control
+      padding 6px
+      border-radius 0
+      border-width 0
+      box-shadow none
+      &:focus
+        background #eee
+        border-bottom-width 1px
+
