@@ -33,11 +33,11 @@ Steam.FrameListView = (_) ->
 
   createItem = (frame) ->
     #TODO replace with type checking
-    console.assert isArray frame.column_names
+    console.assert isArray frame.columns
     self =
       data: frame
-      title: frame.key
-      caption: (describeCount frame.column_names.length, 'column') + ': ' + join (head frame.column_names, 5), ', '
+      title: frame.key.name
+      caption: (describeCount frame.columns.length, 'column') + ': ' + join (map (head frame.columns, 5), (column) -> column.label), ', '
       timestamp: frame.creation_epoch_time_millis
       display: -> activateAndDisplayItem self
       isActive: node$ no
@@ -51,11 +51,11 @@ Steam.FrameListView = (_) ->
     console.assert isDefined predicate
     switch predicate.type
       when 'all'
-        _.requestFramesAndCompatibleModels (error, data) ->
+        _.requestFrames (error, frames) ->
           if error
             #TODO handle errors
           else
-            displayFrames data.frames
+            displayFrames frames
 
       when 'compatibleWithModel'
         #FIXME Need an api call to get "frames and compatible models for all frames compatible with a model"
@@ -76,6 +76,13 @@ Steam.FrameListView = (_) ->
     _predicate predicate
     return
 
+  importFile = ->
+    _.promptImportFiles (action, job) ->
+      switch action
+        when 'confirm'
+          console.log 'Job submitted successfully.', job
+      return
+
   clearPredicate = -> loadFrames type: 'all'
 
   link$ _.loadFrames, (predicate) ->
@@ -84,10 +91,13 @@ Steam.FrameListView = (_) ->
     else
       displayActiveItem()
 
+  link$ _.refreshFrames, -> loadFrames _predicate()
+
   items: _items
   predicateCaption: _predicateCaption
   clearPredicate: clearPredicate
   canClearPredicate: _canClearPredicate
+  importFile: importFile
   hasItems: _hasItems
   template: 'frame-list-view'
 

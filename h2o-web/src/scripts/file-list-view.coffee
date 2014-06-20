@@ -65,13 +65,6 @@ Steam.FileListView = (_) ->
 
   clearPredicate = -> loadFiles type: 'all'
 
-  importFile = ->
-    _.promptImportFiles (action, result) ->
-      switch action
-        when 'confirm'
-          displayFile result
-      return
-
   link$ _.loadFiles, (predicate) ->
     if predicate
       loadFiles predicate

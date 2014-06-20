@@ -38,7 +38,7 @@ Steam.MainView = (_) ->
     navigateHelpHome()
 
     #TODO do this through hash uris
-    switchToFiles type: 'all'
+    switchToFrames type: 'all'
 
   createTopic = (title, handle) ->
     self =
@@ -48,11 +48,6 @@ Steam.MainView = (_) ->
 
   switchTopic = (topic) ->
     switch topic
-      when _fileTopic
-        unless _topic() is topic
-          _topic topic
-          switchListView _fileListView
-          switchSelectionView null
       when _frameTopic
         unless _topic() is topic
           _topic topic
@@ -76,10 +71,6 @@ Steam.MainView = (_) ->
     _isDisplayingTopics no
     return
   
-  switchToFiles = (predicate) ->
-    switchTopic _fileTopic
-    _.loadFiles predicate
-
   switchToFrames = (predicate) ->
     switchTopic _frameTopic
     _.loadFrames predicate
@@ -97,8 +88,7 @@ Steam.MainView = (_) ->
     _.loadNotifications predicate
 
   _topics = node$ [
-    _fileTopic = createTopic 'Files', switchToFiles
-    _frameTopic = createTopic 'Datasets', null #switchToFrames
+    _frameTopic = createTopic 'Datasets', switchToFrames
     _modelTopic = createTopic 'Models', null #switchToModels
     _scoringTopic = createTopic 'Scoring', null #switchToScoring
     _timelineTopic = createTopic 'Timeline', null
@@ -110,8 +100,7 @@ Steam.MainView = (_) ->
 
   # List views
   _topicListView = Steam.TopicListView _, _topics
-  _fileListView = Steam.FileListView _
-  #_frameListView = Steam.FrameListView _
+  _frameListView = Steam.FrameListView _
   #_modelListView = Steam.ModelListView _
   #_scoringListView = Steam.ScoringListView _
   _notificationListView = Steam.NotificationListView _
@@ -133,6 +122,13 @@ Steam.MainView = (_) ->
   switchPageView = (view) -> switchView _pageViews, view
   switchModalView = (view) -> switchView _modalViews, view
   fixDialogPlacement = (element) -> _.positionDialog element
+  refresh = ->
+    switch _topic()
+      when _frameTopic
+        _.refreshFrames()
+    return
+
+
 
   #
   # Status bar
@@ -207,9 +203,6 @@ Steam.MainView = (_) ->
   link$ _.displayEmpty, ->
     switchPageView template: 'empty-view'
 
-  link$ _.displayFile, (file) ->
-    switchPageView Steam.FileView _, file if _topic() is _fileTopic
-
   link$ _.displayFrame, (frame) ->
     switchPageView Steam.FrameView _, frame if _topic() is _frameTopic
 
@@ -253,6 +246,7 @@ Steam.MainView = (_) ->
   isViewMasked: _isViewMasked
   isInspectorHidden: _isInspectorHidden
   inspectorViews: _inspectorViews
+  refresh: refresh
   help: _help
   navigateHelpHome: navigateHelpHome
   canNavigateHelpBack: _canNavigateHelpBack

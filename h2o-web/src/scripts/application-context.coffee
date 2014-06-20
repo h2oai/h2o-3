@@ -59,7 +59,6 @@ Steam.ApplicationContext = ->
     removeFromCache: do edge$
 
     switchTopic: do edge$
-    switchToFiles: do edge$
     switchToFrames: do edge$
     switchToModels: do edge$
     switchToScoring: do edge$
@@ -67,13 +66,11 @@ Steam.ApplicationContext = ->
 
     displayEmpty: do edge$
 
-    loadFiles: do edge$
-    filesLoaded: do edge$
-    displayFile: do edge$
     promptImportFiles: do edge$
     promptParseFiles: do edge$
 
     loadFrames: do edge$
+    refreshFrames: do edge$
     framesLoaded: do edge$
     displayFrame: do edge$
     promptForFrame: do edge$

@@ -96,6 +96,8 @@ Steam.ImportFilesDialog = (_, _go) ->
     sourceKeys = map files, (file) -> file.key
     _.requestParseSetup sourceKeys, (error, result) ->
       if error
+        #TODO handle this properly
+        _.fail 'Error', error, null, noop
       else
         _isImportMode no
         processParseSetupResult result
@@ -174,8 +176,10 @@ Steam.ImportFilesDialog = (_, _go) ->
     columnNames = map _columns(), (column) -> column.name()
     _.requestParseFiles sourceKeys, _destinationKey(), _parserType().type, _delimiter().charCode, _columnCount(), _useSingleQuotes(), columnNames, _deleteOnDone(), (error, result) -> 
       if error
+        #TODO handle this properly
+        _.fail 'Error', error, null, noop
       else
-        result.job
+        _go 'confirm', result.job
 
   backToImport = ->
     _isParseMode no

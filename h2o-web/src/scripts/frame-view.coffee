@@ -1,37 +1,30 @@
-
-helpIndex =
-  modelCategories:
-    Binomial: 'model.category.binomial'
-  modelMethods:
-    DeepLearning: 'model.method.deep_learning'
-    GBM: 'model.method.gbm'
-    GLM: 'model.method.glm'
-    DRF: 'model.method.drf'
-    SpeeDRF: 'model.method.speed_drf'
-
 Steam.FrameView = (_, _frame) ->
-  createCompatibleModelItem = (model) ->
-    key: model.key
-    algorithm: model.model_algorithm
-    category: model.model_category
-    responseColumnName: model.response_column_name
-    inspect: -> _.inspect Steam.ModelInspectionView _, model
-    inspectAlgorithm: -> _.help helpIndex.modelMethods[model.model_algorithm]
-    inspectCategory: -> _.help helpIndex.modelCategories[model.model_category]
+  createRow = (attribute, columns) ->
+    header: attribute
+    cells: map columns, (column) -> column[attribute]
 
-  loadCompatibleModels = ->
-    _.switchToModels type: 'compatibleWithFrame', frameKey: _frame.key
+  createDataRow = (offset, index, columns) ->
+    header: "Row #{offset + index}"
+    cells: map columns, (column) -> column.data[index]
+
+  createRows = (offset, rowCount, columns) ->
+    rows = []
+    for attribute in words 'type min max mean sigma missing lo hi'
+      rows.push createRow attribute, columns
+    for index in [0 ... rowCount]
+      rows.push createDataRow offset, index, columns
+    rows
+  
+  createFrameTable = (offset, rowCount, columns) ->
+    header: createRow 'label', columns
+    rows: createRows offset, rowCount, columns
 
   data: _frame
-  key: _frame.key
+  key: _frame.key.name
   timestamp: _frame.creation_epoch_time_millis
-  title: _frame.key
+  title: _frame.key.name
   columns: _frame.column_names
-  columnCount: "(#{_frame.column_names.length})"
-  compatibleModels: map _frame.compatible_models, createCompatibleModelItem
-  compatibleModelsCount: "(#{_frame.compatible_models.length})"
-  hasCompatibleModels: _frame.compatible_models.length > 0
-  loadCompatibleModels: loadCompatibleModels
+  table: createFrameTable _frame.off, _frame.len, _frame.columns
   isRawFrame: _frame.is_raw_frame
   parseUrl: "/2/Parse2.query?source_key=#{encodeURIComponent _frame.key}"
   dispose: ->
