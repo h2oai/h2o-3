@@ -12,7 +12,7 @@
             tbody
               tr
                 td
-                  input.form-control(type='text' data-bind="value:specifiedPath, valueUpdate:'keydown', enterKey:tryImportFiles" placeholder='Enter a file or directory path and hit Enter')
+                  input.form-control(type='text' data-bind="value:specifiedPath, valueUpdate:'keydown', enterKey:tryImportFiles, typeahead:listPathHints" placeholder='Enter a file or directory path and hit Enter')
                 td(width='1')
                   button.btn(data-bind='click:tryImportFiles')
                     i.fa.fa-search(style='font-size:14px')

@@ -254,6 +254,19 @@ ko.bindingHandlers.enterKey =
           if e.which is 13
             action viewModel
           return
+      else
+        throw 'Enter key action is not a function'
     return
 
+ko.bindingHandlers.typeahead =
+  init: (element, valueAccessor, allBindings, viewModel, bindingContext) ->
+    if action = ko.unwrap valueAccessor() 
+      if isFunction action
+        $element = $ element
+        $element.typeahead null,
+          displayKey: 'value'
+          source: action
+      else
+        throw 'Typeahead action is not a function'
+    return
 

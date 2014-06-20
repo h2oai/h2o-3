@@ -108,6 +108,7 @@ BROWSER_LIB_SCRIPTS=\
 	$(LIB)/jquery/dist/jquery.js \
 	$(LIB)/lodash/dist/lodash.js \
 	$(LIB)/momentjs/min/moment.min.js \
+	$(LIB)/typeahead.js/dist/typeahead.jquery.min.js \
 	$(LIB)/js-signals/dist/signals.js \
 	$(LIB)/crossroads/dist/crossroads.js \
 	$(LIB)/hasher/dist/js/hasher.js \
