@@ -45,14 +45,11 @@ BROWSER_SCRIPTS=\
 	$(BUILD)/scripts/select-frame-dialog.js \
 	$(BUILD)/scripts/configure-strip-plot-dialog.js \
 	$(BUILD)/scripts/import-files-dialog.js \
-	$(BUILD)/scripts/parse-files-dialog.js \
 	$(BUILD)/scripts/topic-list-view.js \
-	$(BUILD)/scripts/file-list-view.js \
 	$(BUILD)/scripts/frame-list-view.js \
 	$(BUILD)/scripts/model-list-view.js \
 	$(BUILD)/scripts/scoring-list-view.js \
 	$(BUILD)/scripts/notification-list-view.js \
-	$(BUILD)/scripts/file-view.js \
 	$(BUILD)/scripts/frame-view.js \
 	$(BUILD)/scripts/model-view.js \
 	$(BUILD)/scripts/frame-inspection-view.js \
@@ -79,14 +76,11 @@ TEST_SCRIPTS=\
 	$(BUILD)/scripts/select-frame-dialog.js \
 	$(BUILD)/scripts/configure-strip-plot-dialog.js \
 	$(BUILD)/scripts/import-files-dialog.js \
-	$(BUILD)/scripts/parse-files-dialog.js \
 	$(BUILD)/scripts/topic-list-view.js \
-	$(BUILD)/scripts/file-list-view.js \
 	$(BUILD)/scripts/frame-list-view.js \
 	$(BUILD)/scripts/model-list-view.js \
 	$(BUILD)/scripts/scoring-list-view.js \
 	$(BUILD)/scripts/notification-list-view.js \
-	$(BUILD)/scripts/file-view.js \
 	$(BUILD)/scripts/frame-view.js \
 	$(BUILD)/scripts/model-view.js \
 	$(BUILD)/scripts/frame-inspection-view.js \
@@ -137,15 +131,12 @@ TEMPLATES=\
 	src/templates/select-frame-dialog.jade \
 	src/templates/configure-strip-plot-dialog.jade \
 	src/templates/import-files-dialog.jade \
-	src/templates/parse-files-dialog.jade \
 	src/templates/topic-list-view.jade \
-	src/templates/file-list-view.jade \
 	src/templates/frame-list-view.jade \
 	src/templates/model-list-view.jade \
 	src/templates/scoring-list-view.jade \
 	src/templates/notification-list-view.jade \
 	src/templates/empty-view.jade \
-	src/templates/file-view.jade \
 	src/templates/frame-view.jade \
 	src/templates/model-view.jade \
 	src/templates/model-selection-view.jade \
@@ -164,15 +155,12 @@ STYLES=\
 	src/styles/main-view.styl \
 	src/styles/select-frame-dialog.styl \
 	src/styles/import-files-dialog.styl \
-	src/styles/parse-files-dialog.styl \
 	src/styles/topic-list-view.styl \
-	src/styles/file-list-view.styl \
 	src/styles/frame-list-view.styl \
 	src/styles/model-list-view.styl \
 	src/styles/scoring-list-view.styl \
 	src/styles/notification-list-view.styl \
 	src/styles/empty-view.styl \
-	src/styles/file-view.styl \
 	src/styles/frame-view.styl \
 	src/styles/model-view.styl \
 	src/styles/model-selection-view.styl \
