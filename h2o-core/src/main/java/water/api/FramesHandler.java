@@ -49,10 +49,12 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     fetch();
   }
 
+  // TODO: almost identical to ModelsHandler; refactor
   public static Frame getFromDKV(String key_str) {
     return getFromDKV(Key.make(key_str));
   }
 
+  // TODO: almost identical to ModelsHandler; refactor
   public static Frame getFromDKV(Key key) {
     if (null == key)
       throw new IllegalArgumentException("Got null key.");

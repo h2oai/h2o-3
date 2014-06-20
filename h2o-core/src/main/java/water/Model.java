@@ -27,12 +27,27 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
    *  The last column holds the response col enums.  */
   String _domains[][];
 
+  public String[] allNames() { return _names; }
   public String responseName() { return   _names[  _names.length-1]; }
   public String[] classNames() { return _domains[_domains.length-1]; }
   public boolean isClassifier() { return classNames() != null ; }
   public int nclasses() {
     String cns[] = classNames();
     return cns==null ? 1 : cns.length;
+  }
+
+  public enum ModelCategory {
+    Unknown,
+    Binomial,
+    Multinomial,
+    Regression,
+    Clustering;
+  }
+
+  public ModelCategory getModelCategory() {
+    return (isClassifier() ?
+            (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
+            ModelCategory.Regression);
   }
 
   // Model-specific parameter class.  Each model sub-class also supports a

@@ -16,9 +16,14 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
     public KMeans.Initialization _init;
   }
 
+  @Override
+  public ModelCategory getModelCategory() {
+    return Model.ModelCategory.Clustering;
+  }
+
   // Iterations executed
   int _iters;
-  
+
   // Cluster centers.  During model init, might be null or might have a "K"
   // which is oversampled alot.
   public double[/*K*/][/*features*/] _clusters;
@@ -28,11 +33,11 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   // Sum squared distance between each point and its new cluster center
   public double[/*K*/] _within_cluster_variances;
 
-  // Sum squared distance between each point and its new cluster center 
+  // Sum squared distance between each point and its new cluster center
   public double _total_within_SS;
 
-  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) { 
-    super(selfKey,fr,parms); 
+  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) {
+    super(selfKey,fr,parms);
   }
 
   // Default publically visible Schema is V2

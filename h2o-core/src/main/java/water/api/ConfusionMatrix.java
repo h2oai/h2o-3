@@ -63,12 +63,14 @@ public class ConfusionMatrix extends Iced {
   private boolean classification;
 
   private void init() throws IllegalArgumentException {
-    classification = vactual.isInt() && vpredict.isInt();
     // Input handling
     if( vactual==null || vpredict==null )
       throw new IllegalArgumentException("Missing actual or predict!");
     if (vactual.length() != vpredict.length())
       throw new IllegalArgumentException("Both arguments must have the same length!");
+
+    classification = vactual.isInt() && vpredict.isInt();
+
     // Handle regression kind which is producing CM 1x1 elements
     if (!classification && vactual.isEnum())
       throw new IllegalArgumentException("Actual vector cannot be categorical for regression scoring.");
@@ -153,7 +155,7 @@ public class ConfusionMatrix extends Iced {
       if (_cm != null && cm._cm != null) {
         ArrayUtils.add(_cm,cm._cm);
       } else {
-        assert(_mse != Double.NaN && cm._mse != Double.NaN);
+        assert(! Double.isNaN(_mse) && ! Double.isNaN(cm._mse));
         assert(_cm == null && cm._cm == null);
         _mse += cm._mse;
         _count += cm._count;

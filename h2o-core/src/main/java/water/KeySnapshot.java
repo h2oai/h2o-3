@@ -134,7 +134,7 @@ public class KeySnapshot {
     TreeMap<String, T> res = new TreeMap<String, T>();
     final int typeId = TypeMap.onIce(c.getName());
     for (KeyInfo kinfo : _keyInfos) {
-      if (kinfo._type == typeId || (!exact && c.isAssignableFrom(TypeMap.newInstance(kinfo._type).getClass()))) {
+      if (kinfo._type == typeId || (!exact && Value.isSubclassOf(kinfo._type, c))) {
         if (offset > 0) {
           --offset;
           continue;

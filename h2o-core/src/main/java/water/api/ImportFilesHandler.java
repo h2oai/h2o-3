@@ -21,7 +21,7 @@ class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
   // Running all in GET, no need for backgrounding on F/J threads
   @Override public void compute2() { 
     assert _path != null;
-    String p2 = _path.toLowerCase();
+//    String p2 = _path.toLowerCase();
     if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();

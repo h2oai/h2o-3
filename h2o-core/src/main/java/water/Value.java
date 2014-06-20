@@ -212,6 +212,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _mem = mem; // Close a race with the H2O cleaner zapping _mem while removing from ice
   }
 
+  public boolean isSubclassOf(Class clz) { return isSubclassOf(_type, clz); }
+  // In KeySnapshot we don't have the value, only the type:
+  public static boolean isSubclassOf(int type, Class clz) { return clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
 
   public boolean isKey()      { return _type == TypeMap.KEY; }
   public boolean isFrame()    { return _type == TypeMap.FRAME; }

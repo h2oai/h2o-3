@@ -21,7 +21,7 @@ class FramesV2 extends FramesBase {
   IcedHashMap<String, FrameSummaryV2> frames;
 
   @API(help="Map of (string representation of) key to Model summary.")
-  IcedHashMap<String, ModelSummaryV2> models;
+  IcedHashMap<String, ModelsV2.ModelSummaryV2> models;
 
   @API(help="General information on the response.")
   ResponseInfoV2 response;
@@ -30,7 +30,7 @@ class FramesV2 extends FramesBase {
    * Schema for the simple Frame summary representation used (only) in /2/Frames and
    * /2/Models.
    */
-  static final private class FrameSummaryV2 extends Schema {
+  static final class FrameSummaryV2 extends Schema {
     @API(help="String representation of the Frame's key.")
     String key;
 
@@ -65,35 +65,6 @@ class FramesV2 extends FramesBase {
     @Override protected FrameSummaryV2 fillFrom( Handler h ) { throw H2O.fail("fillFrom should never be called on FrameSummaryV2"); }
   }
 
-  /**
-   * Schema for the simple Model summary representation used (only) in /2/Frames and
-   * /2/Models.
-   */
-  private class ModelSummaryV2 extends Schema {
-    @Override protected ModelSummaryV2 fillInto( Handler h ) { throw H2O.fail("fillInto should never be called on ModelSummaryV2"); }
-    @Override protected ModelSummaryV2 fillFrom( Handler h ) { throw H2O.fail("fillFrom should never be called on ModelSummaryV2"); }
-  }
-
-  // TODO: pull this out in way that's easily usable by all the V2 endpoints!
-  /**
-   * Schema for the response blob used in /2/*.
-   */
-  static final private class ResponseInfoV2 extends Schema {
-    @API(help="h2o")
-    String h2o;
-
-    @API(help="node")
-    String node;
-
-    @API(help="status")
-    String status;
-
-    @API(help="time")
-    int time;
-
-    @Override protected ResponseInfoV2 fillInto( Handler h ) { throw H2O.fail("fillInto should never be called on ResponseInfoV2"); }
-    @Override protected ResponseInfoV2 fillFrom( Handler h ) { throw H2O.fail("fillFrom should never be called on ResponseInfoV2"); }
-  }
 
   // Version-specific filling into the handler
   @Override protected FramesBase fillInto( FramesHandler h ) {
@@ -124,7 +95,7 @@ class FramesV2 extends FramesBase {
     }
 
     // TODO:
-    this.models = new IcedHashMap<String, ModelSummaryV2>();
+    this.models = new IcedHashMap<String, ModelsV2.ModelSummaryV2>();
 
     // TODO:
     this.response = new ResponseInfoV2();
