@@ -2,10 +2,46 @@ package hex.kmeans;
 
 import water.*;
 import water.fvec.Frame;
+import water.api.Schema;
+import hex.schemas.KMeansModelV2;
 
-public class KMeansModel extends Model {
+public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters> {
 
-  KMeansModel( Key selfKey, Frame fr) { super(selfKey,fr); }
+  public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters> {
+    public Key _src;              // Frame being clustered
+    public int _K;                // Number of clusters
+    public boolean _normalize;    // Normalize columns
+    public int _max_iters;        // Max iterations
+    public long _seed;            // RNG seed
+    public KMeans.Initialization _init;
+  }
+
+  @Override
+  public ModelCategory getModelCategory() {
+    return Model.ModelCategory.Clustering;
+  }
+
+  // Iterations executed
+  int _iters;
+
+  // Cluster centers.  During model init, might be null or might have a "K"
+  // which is oversampled alot.
+  public double[/*K*/][/*features*/] _clusters;
+  // Rows per cluster
+  public long[/*K*/] _rows;
+
+  // Sum squared distance between each point and its new cluster center
+  public double[/*K*/] _within_cluster_variances;
+
+  // Sum squared distance between each point and its new cluster center
+  public double _total_within_SS;
+
+  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) {
+    super(selfKey,fr,parms);
+  }
+
+  // Default publically visible Schema is V2
+  public Schema schema() { return new KMeansModelV2(this); }
 
   protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
@@ -14,5 +50,214 @@ public class KMeansModel extends Model {
   protected String errStr() {
     throw H2O.unimpl();
   }
-
+//  public static class KMeans2ModelView extends Request2 {
+//    static final int API_WEAVER = 1;
+//    static public DocGen.FieldDoc[] DOC_FIELDS;
+//
+//    @API(help = "KMeans2 Model", json = true, filter = Default.class)
+//    public KMeans2Model model;
+//
+//    public static String link(String txt, Key model) {
+//      return "<a href='" + new KMeans2ModelView().href() + ".html?model=" + model + "'>" + txt + "</a>";
+//    }
+//
+//    public static Response redirect(Request req, Key model) {
+//      return Response.redirect(req, new KMeans2ModelView().href(), "model", model);
+//    }
+//
+//    @Override protected Response serve() {
+//      return Response.done(this);
+//    }
+//
+//    @Override public boolean toHTML(StringBuilder sb) {
+//      if( model != null ) {
+//        model.parameters.makeJsonBox(sb);
+//        DocGen.HTML.section(sb, "Cluster Centers: "); //"Total Within Cluster Sum of Squares: " + model.total_within_SS);
+//        table(sb, "Clusters", model._names, model.centers);
+//        double[][] rows = new double[model.within_cluster_variances.length][1];
+//        for( int i = 0; i < rows.length; i++ )
+//          rows[i][0] = model.within_cluster_variances[i];
+//        columnHTMLlong(sb, "Cluster Size", model.size);
+//        DocGen.HTML.section(sb, "Cluster Variances: ");
+//        table(sb, "Clusters", new String[]{"Within Cluster Variances"}, rows);
+//        columnHTML(sb, "Between Cluster Variances", model.between_cluster_variances);
+//        sb.append("<br />");
+//        DocGen.HTML.section(sb, "Overall Totals: ");
+//        double[] row = new double[]{model.total_SS, model.total_within_SS, model.between_cluster_SS};
+//        rowHTML(sb, new String[]{"Total Sum of Squares", "Total Within Cluster Sum of Squares", "Between Cluster Sum of Squares"}, row);
+//        DocGen.HTML.section(sb, "Cluster Assignments by Observation: ");
+//        RString rs = new RString("<a href='Inspect2.html?src_key=%$key'>%content</a>");
+//        rs.replace("key", model._key + "_clusters");
+//        rs.replace("content", "View the row-by-row cluster assignments");
+//        sb.append(rs.toString());
+//        //sb.append("<iframe src=\"" + "/Inspect.html?key=KMeansClusters\"" + "width = \"850\" height = \"550\" marginwidth=\"25\" marginheight=\"25\" scrolling=\"yes\"></iframe>" );
+//        return true;
+//      }
+//      return false;
+//    }
+//
+//    private static void rowHTML(StringBuilder sb, String[] header, double[] ro) {
+//        sb.append("<span style='display: inline-block; '>");
+//        sb.append("<table class='table table-striped table-bordered'>");
+//        sb.append("<tr>");
+//        for (String aHeader : header) sb.append("<th>").append(aHeader).append("</th>");
+//        sb.append("</tr>");
+//        sb.append("<tr>");
+//        for (double row : ro) {
+//            sb.append("<td>").append(ElementBuilder.format(row)).append("</td>");
+//        }
+//        sb.append("</tr>");
+//        sb.append("</table></span>");
+//    }
+//
+//    private static void columnHTML(StringBuilder sb, String name, double[] rows) {
+//        sb.append("<span style='display: inline-block; '>");
+//        sb.append("<table class='table table-striped table-bordered'>");
+//        sb.append("<tr>");
+//        sb.append("<th>").append(name).append("</th>");
+//        sb.append("</tr>");
+//        sb.append("<tr>");
+//        for (double row : rows) {
+//            sb.append("<tr>");
+//            sb.append("<td>").append(ElementBuilder.format(row)).append("</td>");
+//            sb.append("</tr>");
+//        }
+//        sb.append("</table></span>");
+//    }
+//
+//    private static void columnHTMLlong(StringBuilder sb, String name, long[] rows) {
+//      sb.append("<span style='display: inline-block; '>");
+//      sb.append("<table class='table table-striped table-bordered'>");
+//      sb.append("<tr>");
+//      sb.append("<th>").append(name).append("</th>");
+//      sb.append("</tr>");
+//      sb.append("<tr>");
+//      for (double row : rows) {
+//         sb.append("<tr>");
+//         sb.append("<td>").append(ElementBuilder.format(row)).append("</td>");
+//         sb.append("</tr>");
+//      }
+//      sb.append("</table></span>");
+//    }
+//
+//    private static void table(StringBuilder sb, String title, String[] names, double[][] rows) {
+//      sb.append("<span style='display: inline-block;'>");
+//      sb.append("<table class='table table-striped table-bordered'>");
+//      sb.append("<tr>");
+//      sb.append("<th>").append(title).append("</th>");
+//      for( int i = 0; names != null && i < rows[0].length; i++ )
+//        sb.append("<th>").append(names[i]).append("</th>");
+//      sb.append("</tr>");
+//      for( int r = 0; r < rows.length; r++ ) {
+//        sb.append("<tr>");
+//        sb.append("<td>").append(r).append("</td>");
+//        for( int c = 0; c < rows[r].length; c++ )
+//          sb.append("<td>").append(ElementBuilder.format(rows[r][c])).append("</td>");
+//        sb.append("</tr>");
+//      }
+//      sb.append("</table></span>");
+//    }
+//  }
+//
+//  public static class KMeans2Model extends Model implements Progress {
+//    static final int API_WEAVER = 1;
+//    static public DocGen.FieldDoc[] DOC_FIELDS;
+//
+//    @API(help = "Model parameters")
+//    private final KMeans2 parameters;    // This is used purely for printing values out.
+//
+//    @API(help = "Cluster centers, always denormalized")
+//    public double[][] centers;
+//
+//    @API(help = "Sum of within cluster sum of squares")
+//    public double total_within_SS;
+//
+//    @API(help = "Between cluster sum of square distances")
+//    public double between_cluster_SS;
+//
+//    @API(help = "Total Sum of squares = total_within_SS + between_cluster_SS")
+//    public double total_SS;
+//
+//    @API(help = "Number of clusters")
+//    public int k;
+//
+//    @API(help = "Numbers of observations in each cluster.")
+//    public long[] size;
+//
+//    @API(help = "Whether data was normalized")
+//    public boolean normalized;
+//
+//    @API(help = "Maximum number of iterations before stopping")
+//    public int max_iter = 100;
+//
+//    @API(help = "Iterations the algorithm ran")
+//    public int iterations;
+//
+//    @API(help = "Within cluster sum of squares per cluster")
+//    public double[] within_cluster_variances;
+//
+//    @API(help = "Between Cluster square distances per cluster")
+//    public double[] between_cluster_variances;
+//
+//    @API(help = "The row-by-row cluster assignments")
+//    public final Key _clustersKey;
+//
+//    // Normalization caches
+//    private transient double[][] _normClust;
+//    private transient double[] _means, _mults;
+//    private transient int _ncats, _nnums;
+//
+//    public KMeans2Model(KMeans2 params, Key selfKey, Key dataKey, String names[], String domains[][]) {
+//      super(selfKey, dataKey, names, domains);
+//      parameters = params;
+//      _clustersKey = Key.make(selfKey.toString() + "_clusters");
+//    }
+//
+//    @Override public double mse() { return total_within_SS; }
+//
+//    @Override public float progress() {
+//      return Math.min(1f, iterations / (float) max_iter);
+//    }
+//
+//    @Override protected float[] score0(Chunk[] chunks, int rowInChunk, double[] tmp, float[] preds) {
+//      // If only one cluster, then everything is trivially assigned to it
+//      if(preds.length == 1) {
+//        preds[0] = 0;
+//        return preds;
+//      }
+//      double[][] cs = centers;
+//      int numInputCols = tmp.length-1; // -1 as there is no response column here
+//      if( normalized && _normClust == null )
+//        cs = _normClust = normalize(centers, chunks);
+//      if( _means == null ) {
+//        _means = new double[numInputCols];
+//        for( int i = 0; i < numInputCols; i++ )
+//          _means[i] = chunks[i]._vec.mean();
+//      }
+//      if( normalized && _mults == null ) {
+//        _mults = new double[numInputCols];
+//        for( int i = 0; i < numInputCols; i++ ) {
+//          double sigma = chunks[i]._vec.sigma();
+//          _mults[i] = normalize(sigma) ? 1 / sigma : 1;
+//        }
+//      }
+//      data(tmp, chunks, rowInChunk, _means, _mults);
+//      Arrays.fill(preds, 0);
+//      // int cluster = closest(cs, tmp, new ClusterDist())._cluster;
+//      int cluster = closest(cs, tmp, _ncats, new ClusterDist())._cluster;
+//      preds[0] = cluster;       // prediction in preds[0]
+//      preds[1+cluster] = 1;     // class distribution
+//      return preds;
+//    }
+//
+//    @Override protected float[] score0(double[] data, float[] preds) {
+//      throw new UnsupportedOperationException();
+//    }
+//
+//    /** Remove any Model internal Keys */
+//    @Override public Futures delete_impl(Futures fs) {
+//      Lockable.delete(_clustersKey);
+//      return fs;
+//    }
+//  }
 }

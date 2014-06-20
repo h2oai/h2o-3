@@ -69,9 +69,9 @@ public class Vec extends Keyed {
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
-  protected Vec( Key key, long espc[]) { this(key, espc, null); }
-  protected Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
-  protected Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
+  public Vec( Key key, long espc[]) { this(key, espc, null); }
+  public Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
+  public Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
     super(key);
     assert key._kb[0]==Key.VEC;
     _espc = espc;
@@ -185,7 +185,7 @@ public class Vec extends Keyed {
   long chunk2StartElem( int cidx ) { return _espc[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  public int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
@@ -224,7 +224,7 @@ public class Vec extends Keyed {
   public String[] domain() { return _domain; }
 
   /** Returns cardinality for enum domain or -1 for other types. */
-  private int cardinality() { return isEnum() ? _domain.length : -1; }
+  public int cardinality() { return isEnum() ? _domain.length : -1; }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -631,7 +631,7 @@ public class Vec extends Keyed {
    */
   public static class VectorGroup extends Iced {
     // The common shared vector group for length==1 vectors
-    public static VectorGroup VG_LEN1 = new VectorGroup();
+    public static final VectorGroup VG_LEN1 = new VectorGroup();
     final int _len;
     final Key _key;
     private VectorGroup(Key key, int len){_key = key;_len = len;}

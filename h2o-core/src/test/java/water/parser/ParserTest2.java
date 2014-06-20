@@ -65,7 +65,7 @@ public class ParserTest2 extends TestUtil {
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
-    ParserSetup gSetupF = ParserSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, -1, null);
+    ParseSetupHandler gSetupF = ParseSetupHandler.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, -1, null);
     Frame frF = ParseDataset2.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
@@ -75,7 +75,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectTrue = new String[][] { ar("Tomas's,test", null),
                                              ar("Tomasstest2","test2"),
                                              ar("last", "lines trailing piece") };
-    ParserSetup gSetupT = ParserSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null);
+    ParseSetupHandler gSetupT = ParseSetupHandler.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null);
     Frame frT = ParseDataset2.parse(Key.make(), new Key[]{k},  true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
     frT.delete();

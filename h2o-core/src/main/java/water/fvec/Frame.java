@@ -63,6 +63,17 @@ public class Frame extends Lockable {
   // Append a Frame
   public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
 
+  // Allow sorting of columns based on some function
+  public void swap( int lo, int hi ) {
+    assert 0 <= lo && lo < _keys.length;
+    assert 0 <= hi && hi < _keys.length;
+    if( lo==hi ) return;
+    Vec vecs[] = vecs();
+    Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
+    Key k   = _keys[lo]; _keys [lo] = _keys [hi]; _keys [hi] = k;
+    String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+  }
+
   /** Check that the vectors are all compatible.  All Vecs have their content
    *  sharded using same number of rows per chunk, and all names are unique.
    *  Throw an IAE if something does not match.  */
@@ -260,7 +271,6 @@ public class Frame extends Lockable {
 
   public int  numCols() { return _keys.length; }
   public long numRows() { return anyVec().length(); }
-  public final long byteSize() { throw H2O.unimpl(); }
 
   public Vec lastVec() {
     final Vec [] vecs = vecs();

@@ -52,6 +52,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
   }
+  public static long[][][] add(long[][][] a, long[][][] b) {
+    for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
+    return a;
+  }
   public static float[] add(float[] a, float[] b) {
     if( b==null ) return a;
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
@@ -165,6 +169,12 @@ public class ArrayUtils {
   }
 
   public static int maxIndex(int[] from) {
+    int result = 0;
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]>from[result]) result = i;
+    return result;
+  }
+  public static int maxIndex(long[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]>from[result]) result = i;
@@ -377,4 +387,15 @@ public class ArrayUtils {
     return Arrays.copyOf(r, cnt);
   }
 
+
+  static public double[][] append( double[][] a, double[][] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    assert a[0].length==b[0].length;
+    double[][] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
 }

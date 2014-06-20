@@ -17,22 +17,22 @@ class SVMLightParser extends Parser {
   private static final int COL = 2;
   private static final int VAL = 3;
 
-  SVMLightParser( ParserSetup ps ) { super(ps); }
+  SVMLightParser( ParseSetupHandler ps ) { super(ps); }
 
-  /** Try to parse the bytes as svm light format, return a ParserSetup with type 
+  /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
-  public static ParserSetup guessSetup(byte [] bytes) {
+  public static ParseSetupHandler guessSetup(byte [] bytes) {
     // find the last eof
     int i = bytes.length-1;
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParserSetup(true, 0, null, ParserType.SVMLight, ParserSetup.AUTO_SEP, -1, false, null));
+    SVMLightParser p = new SVMLightParser(new ParseSetupHandler(true, 0, null, ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, -1, false, null));
     InspectDataOut2 dout = new InspectDataOut2();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParserSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                           dout._invalidLines, dout.errors(), ParserType.SVMLight, ParserSetup.AUTO_SEP, dout._ncols,false,null);
+    return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
+                           dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, dout._ncols,false,null);
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}

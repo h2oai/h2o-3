@@ -18,8 +18,8 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
 
   // /2/Frames backward compatibility
   protected void list_or_fetch() {
-    if (this.version != 2)
-      throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
+    //if (this.version != 2)
+    //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
 
     if (null != key) {
       fetch();
@@ -29,7 +29,18 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   }
 
   protected void list() {
-    // was:    H2O.KeySnapshot.globalSnapshot().fetchAll(Frame.class); // Sort for pretty display and reliable ordering.
+    final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+        @Override
+        public boolean filter(KeySnapshot.KeyInfo k) {
+          return k._type == TypeMap.FRAME;
+        }
+      }).keys();
+
+    frames = new Frame[frameKeys.length];
+    for (int i = 0; i < frameKeys.length; i++) {
+      Frame frame = getFromDKV(frameKeys[i]);
+      frames[i] = frame;
+    }
   }
 
   /** NOTE: We really want to return a different schema here! */
@@ -38,20 +49,32 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     fetch();
   }
 
-  protected void column() {
-    if (null == key)
-      return;
+  // TODO: almost identical to ModelsHandler; refactor
+  public static Frame getFromDKV(String key_str) {
+    return getFromDKV(Key.make(key_str));
+  }
 
-    Value value = DKV.get(key);
-    if (null == value)
+  // TODO: almost identical to ModelsHandler; refactor
+  public static Frame getFromDKV(Key key) {
+    if (null == key)
+      throw new IllegalArgumentException("Got null key.");
+
+    Value v = DKV.get(key);
+    if (null == v)
       throw new IllegalArgumentException("Did not find key: " + key.toString());
 
-    Iced ice = value.get();
+    Iced ice = v.get();
     if (! (ice instanceof Frame))
       throw new IllegalArgumentException("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
 
+    return (Frame)ice;
+  }
+
+  protected void column() {
+    Frame frame = getFromDKV(key);
+
     // NOTE: We really want to return a different schema here!
-    Vec vec = ((Frame)ice).vec(column);
+    Vec vec = frame.vec(column);
     if (null == vec)
       throw new IllegalArgumentException("Did not find column: " + column + " in frame: " + key.toString());
 
@@ -63,19 +86,9 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
   }
 
   protected void fetch() {
-    if (null == key)
-      return;
-
-    Value v = DKV.get(key);
-    if (null == v)
-      throw new IllegalArgumentException("Did not find key: " + key.toString());
-
-    Iced ice = v.get();
-    if (! (ice instanceof Frame))
-      throw new IllegalArgumentException("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
-
+    Frame frame = getFromDKV(key);
     frames = new Frame[1];
-    frames[0] = (Frame)ice;
+    frames[0] = frame;
   }
 
   @Override protected FramesBase schema(int version) {

@@ -1143,7 +1143,7 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA8(ary[i]);
     return this;
   }
-  @SuppressWarnings("unused")  AutoBuffer putAA8d( double[][] ary ) {
+  @SuppressWarnings("unused")  public AutoBuffer putAA8d( double[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;
@@ -1280,7 +1280,7 @@ public final class AutoBuffer {
   // ==========================================================================
   // JSON AutoBuffer printers
 
-  private AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
+  public AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
   private AutoBuffer putJStr( String s ) {
     byte[] b = s.getBytes();
@@ -1297,9 +1297,9 @@ public final class AutoBuffer {
     }
     return putA1(b,off,b.length);
   }
-  private AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
+  public AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
   private AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
-  private AutoBuffer putJSONAStr( String[] ss) {
+  public AutoBuffer putJSONAStr(String[] ss) {
     if( ss == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ss.length; i++ ) {
@@ -1327,8 +1327,8 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAObj (String name, Object[][] ooo   ) { return putJSONStr(name).put1(':').putJNULL(); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAAObj(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
-  private AutoBuffer putJSON ( Freezable ice   ) { return ice == null ? putJNULL() : ice.writeJSON(this); }
-  private AutoBuffer putJSONA( Freezable fs[]  ) {
+  public AutoBuffer putJSON(Freezable ice) { return ice == null ? putJNULL() : ice.writeJSON(this); }
+  public AutoBuffer putJSONA( Freezable fs[]  ) {
     if( fs == null ) return putJNULL();
     put1('[');
     for( int i=0; i<fs.length; i++ ) {
@@ -1430,7 +1430,7 @@ public final class AutoBuffer {
   }
 
   public AutoBuffer putJSON8 ( String name, long l   ) { return putJSONStr(name).put1(':').putJSON8(l); }
-  AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
+  public AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
   public AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
   AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }

@@ -41,6 +41,7 @@ public abstract class DocGen<T extends DocGen> {
     private HTML f1() { return p("</dd></dl>\n");  }
     private HTML f(String name, String s) { return f0(name).p(s).f1();  }
     // Weaver entry points
+    public HTML putObj(String name, Serializable obj) { throw H2O.unimpl(); }
     public HTML putStr(String name, String  s) { return f(name,s); }
     public HTML putZ  (String name, boolean b) { return f(name,Boolean.toString(b)); }
     public HTML put1  (String name, byte    b) { return f(name,Byte   .toString(b)); }
@@ -64,8 +65,18 @@ public abstract class DocGen<T extends DocGen> {
 
     public HTML putA4  (String name, int    [] is) { throw H2O.unimpl(); }
     public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
-    public HTML putA8  (String name, long   [] ls) { throw H2O.unimpl(); }
-    public HTML putA8d (String name, double [] ds) { throw H2O.unimpl(); }
+    public HTML putA8  (String name, long   [] ls) { 
+      if( ls==null ) return f(name,"null");
+      f0(name).arrayHead();
+      for( long l : ls ) p("<tr><td>").p(Long.toString(l)).p("</td></tr>");
+      return arrayTail().f1();
+    }
+    public HTML putA8d (String name, double [] ds) { 
+      if( ds==null ) return f(name,"null");
+      f0(name).arrayHead();
+      for( double d : ds ) p("<tr><td>").p(Double.toString(d)).p("</td></tr>");
+      return arrayTail().f1();
+    }
     public HTML putA   (String name, Freezable[]fs){ 
       if( fs==null ) return f(name,"null");
       f0(name).arrayHead();
@@ -77,9 +88,10 @@ public abstract class DocGen<T extends DocGen> {
       return arrayTail().f1();
     }
 
-    public HTML putAAStr(String name, String [][] sss) { throw H2O.unimpl(); }
+    public HTML putAAStr(String name, String [][] sss) { return sss==null?f(name,"null"):f0(name).array(sss).f1(); }
     public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
     public HTML putAA8  (String name, long   [][] lss) { throw H2O.unimpl(); }
+    public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
     public HTML href( String name, String text, String link ) {
@@ -134,11 +146,37 @@ public abstract class DocGen<T extends DocGen> {
     }
     public HTML array( String[] ss ) {
       arrayHead();
-      for( String s : ss ) p("<tr>").cell(s).p("</tr>");
+      if( ss != null ) for( String s : ss ) p("<tr>").cell(s).p("</tr>");
+      return arrayTail();
+    }
+    public HTML array( double[] ds ) {
+      arrayHead();
+      if( ds != null ) for( double d : ds ) p("<tr>").cell(d).p("</tr>");
+      return arrayTail();
+    }
+    public HTML array( String[][] sss ) {
+      arrayHead();
+      for( String[] ss : sss ) {
+        p("<tr>");
+        if( ss != null ) for( String s : ss ) cell(s);
+        p("</tr>");
+      }
+      return arrayTail();
+    }
+    public HTML array( double[][] dss ) {
+      arrayHead();
+      for( double[] ds : dss ) { 
+        p("<tr>");
+        if( ds != null ) for( double d : ds ) cell(d);
+        p("</tr>");
+      }
       return arrayTail();
     }
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
-    public HTML cell( long l ) { return cell(Long.toString(l)); }
+    public HTML cell( long l )   { return cell(Long.toString(l)); }
+    public HTML cell( double d ) { return cell(Double.toString(d)); }
+    public HTML cell( String[] ss ) { return p("<td>").array(ss).p("</td>"); }
+    public HTML cell( double[] ds ) { return p("<td>").array(ds).p("</td>"); }
 
     //public StringBuilder progress(float value, StringBuilder sb){
     //  int    pct  = (int) (value * 100);

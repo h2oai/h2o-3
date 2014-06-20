@@ -8,7 +8,7 @@ import water.H2O;
 import water.UDP;
 
 class XlsParser extends Parser {
-  XlsParser( ParserSetup ps ) { super(ps); }
+  XlsParser( ParseSetupHandler ps ) { super(ps); }
   @Override DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
 
   // A Stream, might be a Zip stream
@@ -73,14 +73,14 @@ class XlsParser extends Parser {
 
 
   /** Try to parse the bytes as XLS format  */
-  public static ParserSetup guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParserSetup(true, 0, null, ParserType.XLS, ParserSetup.AUTO_SEP, -1, false, null));
+  public static ParseSetupHandler guessSetup( byte[] bytes ) {
+    XlsParser p = new XlsParser(new ParseSetupHandler(true, 0, null, ParserType.XLS, ParseSetupHandler.AUTO_SEP, -1, false, null));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     InspectDataOut dout = new InspectDataOut();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParserSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                           dout._invalidLines, dout.errors(), ParserType.XLS, ParserSetup.AUTO_SEP, dout._ncols,false,dout.colNames());
+    return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
+                           dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetupHandler.AUTO_SEP, dout._ncols,false,dout.colNames());
   }
 
 

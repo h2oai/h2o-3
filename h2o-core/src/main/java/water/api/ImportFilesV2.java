@@ -43,7 +43,7 @@ class ImportFilesV2 extends Schema<ImportFilesHandler,ImportFilesV2> {
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ImportFiles");
     if( keys.length==0 ) ab.putStr("path",path);
-    else ab.href("path",path,ParseV2.link(keys));
+    else ab.href("path",path,water.parser.ParseSetupV2.link(keys));
     ab.putAStr("files",files);
     ab.putAStr( "keys", keys);
     ab.putAStr("fails",fails);

@@ -12,7 +12,7 @@ abstract public class AbstractBuildVersion {
   }
   
   /** Dummy version of H2O. */
-  public static AbstractBuildVersion UNKNOWN_VERSION = new AbstractBuildVersion() {
+  public static final AbstractBuildVersion UNKNOWN_VERSION = new AbstractBuildVersion() {
       @Override public String projectVersion() { return "(unknown)"; }
       @Override public String lastCommitHash() { return "(unknown)"; }
       @Override public String describe()   { return "(unknown)"; }

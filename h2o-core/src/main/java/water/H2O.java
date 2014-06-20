@@ -1,5 +1,6 @@
 package water;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.util.*;
@@ -31,7 +32,7 @@ final public class H2O {
   }
 
   // Atomically set once during startup.  Guards against repeated startups.
-  public static AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
+  public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
@@ -220,7 +221,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   // List of arguments.
-  public static OptArgs ARGS = new OptArgs();
+  public static final OptArgs ARGS = new OptArgs();
   public static class OptArgs extends Arguments.Opt {
     boolean h = false;
     boolean help = false;
@@ -448,6 +449,10 @@ final public class H2O {
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth),base_url,label,menu);
+  }
+
+  public static void registerResourceRoot(File f) {
+    JarHash.registerResourceRoot(f);
   }
 
   /** Start the web service; disallow future URL registration.

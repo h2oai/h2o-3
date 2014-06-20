@@ -1,0 +1,68 @@
+// ko with:view
+.y-main(data-bind="css:{'y-main-no-inspector':isInspectorHidden}")
+  .y-navigation-bar
+    .y-logo-area
+      img(src='img/h2o.png' width='12%' style='position:relative; top:10px')
+    .y-navigation-area
+      button.y-toggle-inspector-button(data-bind='click:toggleInspector' title='Toggle inspector pane')
+        i.fa.fa-columns
+  .y-desktop
+    .y-workspace
+      .y-topic-lane
+        .y-lane-header
+          button.y-topic-button.btn.fa-btn(data-bind='click:toggleTopics')
+            i.fa.fa-bars
+          .y-topic-title(data-bind='text:topicTitle')
+          button.y-upload-button.btn.fa-btn(data-bind='click:refresh')
+            i.fa.fa-refresh
+
+        // ko if:isNavigatorMasked
+        .y-mask
+        // /ko
+
+        .y-lane-body(data-bind="template:{name:template, foreach:listViews}")
+
+        // ko if:isListMasked
+        .y-mask
+        // /ko
+
+      .y-view-lane
+        .y-lane-header
+          .y-selection-views(data-bind="template:{name:template, foreach:selectionViews}")
+        .y-lane-body
+          .y-page-views(data-bind="template:{name:template, foreach:pageViews}")
+          // ko if:hasModalView
+          .y-modal-views(data-bind="template:{name:template, foreach:modalViews}")
+          // /ko
+
+        // ko if:isViewMasked
+        .y-mask
+        // /ko
+
+      .y-modal-dialogs-container(data-bind="visible:hasModalDialog")
+        .y-modal-dialogs(data-bind="template:{name:template, foreach:modalDialogs, afterAdd:fixDialogPlacement}")
+          
+    .y-inspector-lane
+      .y-lane-header
+        .y-inspector-title Inspector
+
+      .y-lane-body
+        .y-inspector(data-bind="template:{name:template, foreach:inspectorViews}")
+
+        .y-help-pane
+          .y-help-pane-header
+            button.y-help-home-button.btn.fa-btn(data-bind='click:navigateHelpHome')
+              i.fa.fa-home
+            .y-help-title Help
+            button.y-help-back-button.btn.fa-btn(data-bind='click:navigateHelpBack, enable:canNavigateHelpBack')
+              i.fa.fa-arrow-left
+            button.y-help-forward-button.btn.fa-btn(data-bind='click:navigateHelpForward, enable:canNavigateHelpForward')
+              i.fa.fa-arrow-right
+          .y-help(data-bind="raw:help")
+      //-
+        .y-grab-bar
+          .y-grab-bar-border
+
+
+  .y-status-bar(data-bind='text:status')
+// /ko

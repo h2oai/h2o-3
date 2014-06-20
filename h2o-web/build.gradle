@@ -1,18 +1,14 @@
-apply from: '../ci/java.gradle'
-apply plugin: 'fatjar'
+apply plugin: 'java'
 
-description = "H2O Web Application"
+description = "H2O web client"
 
-dependencies {
-  compile project(":h2o-client")
-  compile project(":h2o-algos")
-  compile project(":h2o-core")
+task localProcessResources(type: Exec) {
+  commandLine 'make'
 }
 
-fatJar {
-   manifest {
-      attributes 'Main-Class': 'H2OApp'
-   }
+task localClean(type: Exec) {
+  commandLine 'make', 'clean'
 }
 
-build.dependsOn fatJar
+processResources.dependsOn localProcessResources
+clean.dependsOn localClean

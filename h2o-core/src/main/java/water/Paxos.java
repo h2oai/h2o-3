@@ -30,7 +30,7 @@ public abstract class Paxos {
   // allowed to change shape once we begin writing.
   public static volatile boolean _cloudLocked = false;
 
-  public static NonBlockingHashMap<H2Okey,H2ONode> PROPOSED = new NonBlockingHashMap<>();
+  public static final NonBlockingHashMap<H2Okey,H2ONode> PROPOSED = new NonBlockingHashMap<>();
 
   // ---
   // This is a packet announcing what Cloud this Node thinks is the current

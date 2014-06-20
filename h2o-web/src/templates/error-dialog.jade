@@ -1,0 +1,11 @@
+.y-dialog-container
+  .y-dialog.y-dialog-failure.y-error-dialog(data-dialog-width='600')
+    .y-dialog-title-bar
+      .y-dialog-title(data-bind='text:title')
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      pre(style='background:#fff;max-height:300px;overflow:auto' data-bind='text:message')
+      .y-dialog-actions
+        button.btn(data-bind='click:confirm') OK
+

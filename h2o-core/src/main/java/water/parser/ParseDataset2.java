@@ -25,7 +25,7 @@ public class ParseDataset2 extends Job<Frame> {
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, int checkHeader) {
     return parse(okey,keys,delete_on_done,setup(keys[0],checkHeader)); 
   }
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParserSetup globalSetup) {
+  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
     ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
     Frame fr = job.get();
     job.remove();
@@ -34,15 +34,19 @@ public class ParseDataset2 extends Job<Frame> {
 
   public static ParseDataset2 startParse(Key okey, Key... keys) { return forkParseDataset(okey,keys, setup(keys[0],0/*guess header*/),true); }
 
-  private static ParserSetup setup(Key k, int checkHeader) {
+  public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
+    return forkParseDataset(okey,keys, globalSetup,delete_on_done); 
+  }
+
+  private static ParseSetupHandler setup(Key k, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
-    ParserSetup globalSetup = ParserSetup.guessSetup(bits, checkHeader);
+    ParseSetupHandler globalSetup = ParseSetupHandler.guessSetup(bits, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
     return globalSetup;
   }
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
-  private static ByteVec getByteVec(Key key) {
+  static ByteVec getByteVec(Key key) {
     Iced ice = DKV.get(key).get();
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
@@ -53,7 +57,7 @@ public class ParseDataset2 extends Job<Frame> {
   }
 
   // Same parse, as a backgroundable Job
-  public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParserSetup setup, boolean delete_on_done) {
+  public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParseSetupHandler setup, boolean delete_on_done) {
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
@@ -86,10 +90,10 @@ public class ParseDataset2 extends Job<Frame> {
   public static class ParserFJTask extends water.H2O.H2OCountedCompleter {
     final ParseDataset2 _job;
     final Key[] _keys;
-    final ParserSetup _setup;
+    final ParseSetupHandler _setup;
     final boolean _delete_on_done;
 
-    public ParserFJTask( ParseDataset2 job, Key[] keys, ParserSetup setup, boolean delete_on_done) {
+    public ParserFJTask( ParseDataset2 job, Key[] keys, ParseSetupHandler setup, boolean delete_on_done) {
       _job = job;
       _keys = keys;
       _setup = setup;
@@ -113,7 +117,7 @@ public class ParseDataset2 extends Job<Frame> {
 
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParserSetup setup, boolean delete_on_done) {
+  private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParseSetupHandler setup, boolean delete_on_done) {
     assert setup._ncols > 0;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
@@ -293,7 +297,7 @@ public class ParseDataset2 extends Job<Frame> {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    private final ParserSetup _setup; // The expected column layout
+    private final ParseSetupHandler _setup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
@@ -314,7 +318,7 @@ public class ParseDataset2 extends Job<Frame> {
     // OUTPUT fields:
     FVecDataOut _dout;
 
-    MultiFileParseTask(VectorGroup vg,  ParserSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
+    MultiFileParseTask(VectorGroup vg,  ParseSetupHandler setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _setup = setup; 
       _vg = vg; 
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
@@ -355,7 +359,7 @@ public class ParseDataset2 extends Job<Frame> {
       } else {
         Frame fr = (Frame)ice;
         if( _delete_on_done ) fr.delete(_job_key,0.0f);
-        else if( _fr._key != null ) fr.unlock(_job_key);
+        else if( fr._key != null ) fr.unlock(_job_key);
       }
     }
 
@@ -366,7 +370,7 @@ public class ParseDataset2 extends Job<Frame> {
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
-      ParserSetup localSetup = _setup.guessSetup(bits);
+      ParseSetupHandler localSetup = _setup.guessSetup(bits);
       if( !localSetup._isValid ) return;
 
       // Parse the file
@@ -431,7 +435,7 @@ public class ParseDataset2 extends Job<Frame> {
 
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-    private FVecDataOut streamParse( final InputStream is, final ParserSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
+    private FVecDataOut streamParse( final InputStream is, final ParseSetupHandler localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols));
       Parser p = localSetup.parser();
@@ -447,7 +451,7 @@ public class ParseDataset2 extends Job<Frame> {
 
     // ------------------------------------------------------------------------
     private static class DParse extends MRTask<DParse> {
-      private final ParserSetup _setup;
+      private final ParseSetupHandler _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
       private final VectorGroup _vg;
@@ -457,7 +461,7 @@ public class ParseDataset2 extends Job<Frame> {
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
 
-      DParse(VectorGroup vg, ParserSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
+      DParse(VectorGroup vg, ParseSetupHandler setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -638,10 +642,8 @@ public class ParseDataset2 extends Job<Frame> {
         } else if( _ctypes[colIdx] == ICOL ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
-          if( str.get_off() == -1 )  addInvalidCol(colIdx);
-          else {
-            if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
-          }
+          if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
+          if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
         } else if(!_enums[_col = colIdx].isKilled()) {
           // store enum id into exponent, so that it will be interpreted as NA if compressing as numcol.
           int id = _enums[colIdx].addKey(str);

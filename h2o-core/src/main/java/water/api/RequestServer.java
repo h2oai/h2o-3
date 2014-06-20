@@ -12,6 +12,7 @@ import water.AutoBuffer;
 import water.NanoHTTPD;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
+import water.parser.ParseSetupHandler;
 import water.util.RString;
 import water.fvec.Frame;
 
@@ -80,6 +81,7 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"/Parse"      , "Parse",         "Data");
     addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"/Inspect"    , "Inspect",       "Data");
 
@@ -95,11 +97,17 @@ public class RequestServer extends NanoHTTPD {
     initializeNavBar();
 
     // REST only, no html:
+    register("/Typeahead/files" ,"GET",TypeaheadHandler.class, "files");
+
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
     register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
     register("/3/Frames"                                    ,"GET",FramesHandler.class, "list");
     register("/2/Frames"                                    ,"GET",FramesHandler.class, "list_or_fetch"); // uses ?key=
+
+    register("/3/Models/(?<key>.*)"                         ,"GET",ModelsHandler.class, "fetch", new String[] {"key"});
+    register("/3/Models"                                    ,"GET",ModelsHandler.class, "list");
+    register("/2/Models"                                    ,"GET",ModelsHandler.class, "list_or_fetch"); // uses ?key=
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
@@ -166,7 +174,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   // Log all requests except the overly common ones
-  void maybeLogRequest (String uri, String method, Properties parms) {
+  void maybeLogRequest(String uri, String versioned_path, String pattern, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
@@ -175,13 +183,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
 
-    String log = String.format("%-4s %s", method, uri);
-    for( Object arg : parms.keySet() ) {
-      String value = parms.getProperty((String) arg);
-      if( value != null && value.length() != 0 )
-        log += " " + arg + "=" + value;
-    }
-    Log.info(log);
+    Log.info("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
 
   // Parse version number.  Java has no ref types, bleah, so return the version
@@ -227,7 +229,7 @@ public class RequestServer extends NanoHTTPD {
         val = m.group(key);
       }
       catch (IllegalArgumentException e) {
-        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route._url_pattern.pattern() + " with expected parameters: " + route._path_params + " for URL: " + path);
+        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route._url_pattern.pattern() + " with expected parameters: " + Arrays.toString(route._path_params) + " for URL: " + path);
       }
       if (null != val)
         parms.put(key, val);
@@ -256,7 +258,6 @@ public class RequestServer extends NanoHTTPD {
     String versioned_path = "/" + version + path;
 
     // Load resources, or dispatch on handled requests
-    maybeLogRequest(versioned_path, method, parms);
     try {
       // Find handler for url
       Route route = lookup(method, versioned_path);
@@ -266,7 +267,7 @@ public class RequestServer extends NanoHTTPD {
         return getResource(uri);
       else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        Log.info("Path: " + versioned_path + ", route: " + route._url_pattern.pattern() + ", parms: " + parms);
+        maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     } catch( IllegalArgumentException e ) {
@@ -354,6 +355,7 @@ public class RequestServer extends NanoHTTPD {
   // html template and navbar handling -----------------------------------------
 
   private static String loadTemplate(String name) {
+    water.H2O.registerResourceRoot(new File("src/main/resources/www"));
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
         return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
