@@ -18,7 +18,14 @@
           // /ko
       // /ko
       tbody
-        // ko foreach:rows
+        // ko foreach:summaryRows
+        tr.y-summary-rows
+          th(data-bind='text:header')
+          // ko foreach:cells
+          td(data-bind='text:$data')
+          // /ko
+        // /ko
+        // ko foreach:dataRows
         tr
           th(data-bind='text:header')
           // ko foreach:cells
