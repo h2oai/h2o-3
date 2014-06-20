@@ -127,6 +127,13 @@ Steam.ImportFilesDialog = (_, _go) ->
       deselectFile: ->
         file.deselectFile() if file = (find _selectedFiles(), (file) -> file.key is key)
 
+  listPathHints = (query, process) ->
+    _.requestTypeaheadFiles query, 10, (error, result) ->
+      if error
+        # swallow
+      else
+        process map result.matches, (value) -> value: value
+
   selectAllFiles = ->
     _selectedFiles map _importedFiles(), (file) ->
       createSelectedFileItem file.key, file.path
@@ -195,6 +202,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   errorMessage: _errorMessage
   tryImportFiles: tryImportFiles
 
+  listPathHints: throttle listPathHints, 100
   hasImportedFiles: _hasImportedFiles
   importedFiles: _importedFiles
   importedFileCount: _importedFileCount

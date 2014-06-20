@@ -17,6 +17,11 @@ Steam.H2OProxy = (_) ->
         else
           go error, result.data
 
+  requestTypeaheadFiles = (path, limit, go) ->
+    opts =
+      src: encodeURIComponent path
+      limit: limit
+    request '/Typeahead.json/files', opts, go
 
   requestImportFiles = (filePath, go) ->
     opts = path: encodeURIComponent filePath
@@ -84,6 +89,7 @@ Steam.H2OProxy = (_) ->
         #TODO remove 'filterOutUnhandledModels' when issue with non-DONE models is resolved.
         go error, response: response, models: filterOutUnhandledModels values models
 
+  link$ _.requestTypeaheadFiles, requestTypeaheadFiles
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
   link$ _.requestParseFiles, requestParseFiles
