@@ -1299,7 +1299,7 @@ public final class AutoBuffer {
   }
   public AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
   private AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
-  private AutoBuffer putJSONAStr( String[] ss) {
+  public AutoBuffer putJSONAStr(String[] ss) {
     if( ss == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ss.length; i++ ) {
@@ -1328,7 +1328,7 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAAObj(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
   public AutoBuffer putJSON(Freezable ice) { return ice == null ? putJNULL() : ice.writeJSON(this); }
-  private AutoBuffer putJSONA( Freezable fs[]  ) {
+  public AutoBuffer putJSONA( Freezable fs[]  ) {
     if( fs == null ) return putJNULL();
     put1('[');
     for( int i=0; i<fs.length; i++ ) {

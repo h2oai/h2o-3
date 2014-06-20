@@ -266,11 +266,12 @@ class CloudV1 extends Schema<CloudHandler,CloudV1> {
     int max_lo;
     for( max_lo=H2O.MIN_HI_PRIORITY; max_lo>0; max_lo-- )
       if( fjs[max_lo-1]!= -1 ) break;
-    String s = "<br>[";
-    for( int i=0; i<max_lo; i++ ) s += Math.max(fjs[i],0)+"/";
-    s += ".../";
-    for( int i=H2O.MIN_HI_PRIORITY; i<fjs.length-1; i++ ) s += fjs[i]+"/";
-    s += fjs[fjs.length-1];
-    return s+"]";
+    StringBuffer s = new StringBuffer("<br>[");
+    for( int i=0; i<max_lo; i++ ) s.append(Math.max(fjs[i],0)).append("/");
+    s.append(".../");
+    for( int i=H2O.MIN_HI_PRIORITY; i<fjs.length-1; i++ ) s .append(fjs[i]).append("/");
+    s.append(fjs[fjs.length-1]);
+    s.append("]");
+    return s.toString();
   }
 }

@@ -29,6 +29,7 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     enum EventType {heartbeat, network_msg, io}
     @API(help="type of recorded event")
     private final EventType type;
+    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss:SSS"); // SDF is not thread-safe :-(
     private Event(EventType type, long millis, long nanos){
       this.type = type;
       this.date = sdf.format(new Date(millis));
@@ -110,8 +111,6 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     @Override public    String bytes() { return data;}
     @Override public    String toString() { return "I_O('" + ioFlavor + "')"; }
   }
-
-  static SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss:SSS");
 
   @Override protected TimelineV2 fillInto(TimelineHandler timeline) {
     return this;

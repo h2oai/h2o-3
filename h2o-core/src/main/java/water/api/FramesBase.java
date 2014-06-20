@@ -32,7 +32,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
     return this;
   }
 
-  // Version&Schema-specific filling from the handler
+  // TODO: parameterize on the FrameVx Schema class
   @Override protected FramesBase fillFrom( FramesHandler h ) {
     this.key = h.key;
     this.column = h.column; // NOTE: this is needed for request handling, but isn't really partof state; base
