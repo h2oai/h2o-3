@@ -143,7 +143,10 @@ public class NewChunk extends Chunk {
   }
 
   public void addEnum(int e) {append2(e,Integer.MIN_VALUE+1);}
-  public void addNA  (     ) {append2(Long.MAX_VALUE,Integer.MIN_VALUE  ); }
+  public void addNA() {
+    if( isUUID() ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else append2(Long.MAX_VALUE,Integer.MIN_VALUE);
+  }
   public void addNum (long val, int exp) {
     if(_ds != null){
       assert _ls == null;
