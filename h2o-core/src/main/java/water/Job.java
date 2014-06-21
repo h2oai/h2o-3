@@ -18,6 +18,20 @@ public class Job<T extends Keyed> extends Keyed {
     JobList() { super(LIST); _jobs = new Key[0]; }
   }
 
+  // Get a list of all Jobs
+  public static Job[] jobs() {
+    Value val = DKV.get(LIST);
+    if( val==null ) return new Job[0];
+    JobList jl = val.get();
+    Job[] jobs = new Job[jl._jobs.length];
+    int j=0;
+    for( int i=0; i<jl._jobs.length; i++ ) {
+      val = DKV.get(jl._jobs[i]);
+      if( val != null ) jobs[j++] = val.get();
+    }
+    return j < jobs.length ? Arrays.copyOf(jobs,j) : jobs;
+  }
+
   transient H2OCountedCompleter _fjtask; // Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
@@ -61,6 +75,15 @@ public class Job<T extends Keyed> extends Keyed {
     return ((Job)DKV.get(job_key).get()).isRunning();
   }
 
+  /** Current runtime; zero if not started */
+  public final long msec() {
+    switch( _state ) {
+    case CREATED: return 0;
+    case RUNNING: return System.currentTimeMillis() - _start_time;
+    default:      return _end_time                  - _start_time;
+    }
+  }
+
   /** Create a Job
    *  @param dest Final result Key to be produced by this Job
    *  @param desc String description
@@ -95,12 +118,13 @@ public class Job<T extends Keyed> extends Keyed {
     // Save the full state of the job
     DKV.put(_key, this);
     // Update job list
+    final Key jobkey = _key;
     new TAtomic<JobList>() {
       @Override public JobList atomic(JobList old) {
         if( old == null ) old = new JobList();
         Key[] jobs = old._jobs;
         old._jobs = Arrays.copyOf(jobs, jobs.length + 1);
-        old._jobs[jobs.length] = _key;
+        old._jobs[jobs.length] = jobkey;
         return old;
       }
     }.invoke(LIST);

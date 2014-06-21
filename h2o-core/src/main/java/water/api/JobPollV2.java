@@ -23,6 +23,15 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
   @API(help="exception")
   String exception;
 
+  JobPollV2( ) {}
+  JobPollV2( Key key, String status, float progress, long msec, String exception ) {
+    this.key = key;
+    this.status = status;
+    this.progress = progress;
+    this.msec = msec;
+    this.exception = exception;
+  }
+
   //==========================
   // Customer adapters Go Here
 
