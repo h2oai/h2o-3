@@ -31,8 +31,10 @@ Steam.FrameView = (_, _frame) ->
           if value is 'NaN' then '-' else value #TODO handle precision
 
   createSummaryRows = (columns) ->
+    attributes = words 'type min max mean sigma cardinality'
+    push attributes, 'missing' if some columns, (column) -> column.missing > 0
     rows = []
-    for attribute in words 'type min max mean sigma missing cardinality'
+    for attribute in attributes
       rows.push createRow attribute, columns
     rows
   
