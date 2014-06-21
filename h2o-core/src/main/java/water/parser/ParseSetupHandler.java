@@ -53,7 +53,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
     _sep = psh._sep;
     _ncols = psh._ncols;
     _singleQuotes = psh._singleQuotes;
-    _columnNames = psh._columnNames;
+    _columnNames = psh._columnNames == null ? ParseDataset2.genericColumnNames(_ncols) : psh._columnNames;
     _invalidLines = psh._invalidLines;
   }
 

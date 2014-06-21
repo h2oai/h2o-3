@@ -218,6 +218,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   // Support for fixed-width format printing
   private String pformat () { return pformat0(); }
   private int pformat_len() { return pformat_len0(); }
+  public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
   protected String pformat0() { 
     long min = (long)_vec.min();
     if( min < 0 ) return "% "+pformat_len0()+"d";
