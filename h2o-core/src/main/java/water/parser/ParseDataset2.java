@@ -50,7 +50,7 @@ public class ParseDataset2 extends Job<Frame> {
     Iced ice = DKV.get(key).get();
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
-  private static String [] genericColumnNames(int ncols){
+  static String [] genericColumnNames(int ncols){
     String [] res = new String[ncols];
     for(int i = 0; i < res.length; ++i) res[i] = "C" + String.valueOf(i+1);
     return res;

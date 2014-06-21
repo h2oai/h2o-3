@@ -369,3 +369,15 @@ luid = ->
     d = Math.floor d / 16
     (if c is 'x' then r else (r & 0x7 | 0x8)).toString(16)
 
+forEachAsync = (actions, go) ->
+  queue = copy actions
+  results = []
+  runNext = ->
+    if action = shift queue
+      action (actions.length - queue.length),  (result) ->
+        results.push result
+        defer runNext
+    else
+      go results
+  defer runNext
+

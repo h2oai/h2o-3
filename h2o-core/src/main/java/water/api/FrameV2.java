@@ -51,9 +51,11 @@ class FrameV2 extends Schema {
     @API(help="data")
     final double[] data;
 
-    @API(help="UUID")
-    final long[] lo;
-    final long[] hi;
+    @API(help="string data")
+    final String[] str_data;
+
+    @API(help="decimal precision, -1 for all")
+    final byte precision;
 
     transient Vec _vec;
 
@@ -68,20 +70,18 @@ class FrameV2 extends Schema {
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
-        lo = MemoryManager.malloc8(len);
-        hi = MemoryManager.malloc8(len);
-        for( int i=0; i<len; i++ ) {
-          lo[i] = vec.isNA(i) ? C16Chunk._LO_NA : vec.at16l(off+i);
-          hi[i] = vec.isNA(i) ? C16Chunk._HI_NA : vec.at16h(off+i);
-        }
+        str_data = new String[len];
+        for( int i=0; i<len; i++ )
+          str_data[i] = vec.isNA(i) ? null : PrettyPrint.UUID(vec.at16l(off+i),vec.at16h(off+i));
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);
         for( int i=0; i<len; i++ )
           data[i] = vec.at(off+i);
-        lo = hi = null;
+        str_data = null;
       }
       _vec = vec;               // Better HTML display, not in the JSON
+      precision = vec.chunkForRow(0).precision();
     }
   }
 
@@ -155,7 +155,7 @@ class FrameV2 extends Schema {
       final int row = i;
       formatRow(ab,"",Integer.toString(row+1),new ColOp() { 
           String op(Col c) { 
-            return formatCell(c.data==null?0:c.data[row],c.lo==null?0:c.lo[row],c.hi==null?0:c.hi[row],c); } 
+            return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c); }
         } );
     }
 
@@ -166,7 +166,7 @@ class FrameV2 extends Schema {
 
   private abstract static class ColOp { abstract String op(Col v); }
   private String rollUpStr(Col c, double d) {
-    return formatCell(c.domain!=null || "uuid".equals(c.type) ? Double.NaN : d,0,0,c);
+    return formatCell(c.domain!=null || "uuid".equals(c.type) ? Double.NaN : d,null,c);
   }
 
   private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
@@ -176,13 +176,13 @@ class FrameV2 extends Schema {
     ab.p("</tr>");
   }
 
-  private String formatCell( double d, long lo, long hi, Col c ) {
+  private String formatCell( double d, String str, Col c ) {
     if( Double.isNaN(d) ) return "-";
     if( c.domain!=null ) return c.domain[(int)d];
     if( "uuid".equals(c.type) ) {
       // UUID handling
-      if( lo==C16Chunk._LO_NA && hi==C16Chunk._HI_NA ) return "-";
-      return "<b style=\"font-family:monospace;\">"+PrettyPrint.UUID(lo, hi)+"</b>";
+      if( str==null ) return "-";
+      return "<b style=\"font-family:monospace;\">"+str+"</b>";
     }
 
     Chunk chk = c._vec.chunkForRow(off);

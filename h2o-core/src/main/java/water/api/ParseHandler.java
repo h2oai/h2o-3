@@ -27,7 +27,7 @@ class ParseHandler extends Handler<ParseHandler,ParseV2> {
 
   // Entry point for parsing.
   void parse() {
-    ParseSetupHandler setup = new ParseSetupHandler(true,0,null,_pType,_sep,_ncols,_singleQuotes,_columnNames);
+    ParseSetupHandler setup = new ParseSetupHandler(true,0,null,_pType,_sep,_ncols,_singleQuotes,_columnNames,null);
     _job = water.parser.ParseDataset2.startParse2(_hex,_srcs,_delete_on_done,setup);
   }
 

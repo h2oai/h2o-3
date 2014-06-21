@@ -28,11 +28,11 @@ class SVMLightParser extends Parser {
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetupHandler(true, 0, null, ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, -1, false, null));
+    SVMLightParser p = new SVMLightParser(new ParseSetupHandler(true, 0, null, ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, -1, false, null,null));
     InspectDataOut2 dout = new InspectDataOut2();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                           dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, dout._ncols,false,null);
+                                 dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, dout._ncols,false,null,dout._data);
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}

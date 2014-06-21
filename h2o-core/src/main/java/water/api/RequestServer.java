@@ -87,7 +87,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"/Cloud"      , "Cloud",         "Admin");
-    addToNavbar(register("/JobPoll"    ,"GET",JobPollHandler    .class,"poll"    ),"/JobPoll"    , "Job Poll",      "Admin");
+    addToNavbar(register("/Jobs"       ,"GET",JobsHandler       .class,"list"    ),"/Jobs"       , "Jobs",          "Admin");
     addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"/Timeline"   , "Timeline",      "Admin");
 
     // Help and Tutorials get all the rest...
@@ -98,6 +98,7 @@ public class RequestServer extends NanoHTTPD {
 
     // REST only, no html:
     register("/Typeahead/files" ,"GET",TypeaheadHandler.class, "files");
+    register("/JobPoll"         ,"GET",JobPollHandler  .class, "poll" );
 
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});

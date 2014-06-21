@@ -23,9 +23,16 @@ Steam.H2OProxy = (_) ->
       limit: limit
     request '/Typeahead.json/files', opts, go
 
-  requestImportFiles = (filePath, go) ->
-    opts = path: encodeURIComponent filePath
+  requestImportFile = (path, go) ->
+    opts = path: encodeURIComponent path
     request '/ImportFiles.json', opts, go
+
+  requestImportFiles = (paths, go) ->
+    actions = map paths, (path) ->
+      (index, go) ->
+        requestImportFile path, (error, result) ->
+          go error: error, result: result
+    forEachAsync actions, go
 
   requestParseSetup = (sources, go) ->
     encodedPaths = map sources, encodeURIComponent
