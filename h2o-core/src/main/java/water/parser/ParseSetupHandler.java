@@ -11,7 +11,7 @@ import water.api.Handler;
 public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   static final byte AUTO_SEP = -1;
   Key[] _srcs;                      // Source Keys being parsed
-  String _hexName;                  // Cleanedup result Key suggested name
+  String _hexName;                  // Cleaned up result Key suggested name
 
   boolean _isValid;   // The initial parse is sane
   // Parse Flavor
@@ -25,8 +25,9 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   boolean _singleQuotes;
   String[] _columnNames;
   private long _invalidLines; // Number of broken/invalid lines found
+  String[][] _data;           // First few rows of parsed/tokenized data
   
-  public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames ) {
+  public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] data ) {
     _isValid = isValid;
     _invalidLines = invalidLines;
     _pType = t;
@@ -34,11 +35,12 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
     _ncols = ncols;
     _singleQuotes = singleQuotes;
     _columnNames = columnNames;
+    _data = data;
   }
 
   // Invalid setup based on a prior valid one
   ParseSetupHandler(ParseSetupHandler ps, String err) {
-    this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames);
+    this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames,ps._data);
   }
 
   // Called from Nano request server with a set of Keys, produce a suitable parser setup guess.
@@ -55,6 +57,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
     _singleQuotes = psh._singleQuotes;
     _columnNames = psh._columnNames == null ? ParseDataset2.genericColumnNames(_ncols) : psh._columnNames;
     _invalidLines = psh._invalidLines;
+    _data = psh._data;
   }
 
 
@@ -120,7 +123,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
         } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
       }
     }
-    return new ParseSetupHandler( false, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames );
+    return new ParseSetupHandler( false, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, null );
   }
 
   // Guess a local setup that is compatible to the given global (this) setup.

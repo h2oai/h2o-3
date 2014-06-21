@@ -33,6 +33,9 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   @API(help="Column Names")
   public String[] columnNames;
 
+  @API(help="Sample Data")
+  public String[][] data;
+
   //==========================
   // Customer adapters Go Here
 
@@ -50,6 +53,7 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
     ncols = h._ncols;
     singleQuotes = h._singleQuotes;
     columnNames = h._columnNames;
+    data = h._data;
     return this;
   }
 
@@ -70,6 +74,7 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
     ab.put4("ncols",ncols);
     ab.putZ("singleQuotes",singleQuotes);
     ab.putAStr("columnNames",columnNames);
+    ab.putAAStr("data",data);
     return ab;
   }
 }
