@@ -1,23 +1,51 @@
 Steam.FrameView = (_, _frame) ->
   createRow = (attribute, columns) ->
     header: attribute
-    cells: map columns, (column) -> column[attribute]
+    cells: map columns, (column) ->
+      switch column.type
+        when 'enum'
+          switch attribute
+            when 'min', 'max', 'mean', 'sigma'
+              '-'
+            when 'cardinality'
+              column.domain.length
+            else
+              column[attribute]
+        else
+          switch attribute
+            when 'cardinality'
+              '-'
+            else
+              column[attribute]
 
   createDataRow = (offset, index, columns) ->
     header: "Row #{offset + index}"
-    cells: map columns, (column) -> column.data[index]
+    cells: map columns, (column) ->
+      switch column.type
+        when 'uuid'
+          'TODO'
+        when 'enum'
+          column.domain[column.data[index]]
+        else
+          value = column.data[index]
+          if value is 'NaN' then '-' else value #TODO handle precision
 
-  createRows = (offset, rowCount, columns) ->
+  createSummaryRows = (columns) ->
     rows = []
-    for attribute in words 'type min max mean sigma missing lo hi'
+    for attribute in words 'type min max mean sigma missing cardinality'
       rows.push createRow attribute, columns
+    rows
+  
+  createDataRows = (offset, rowCount, columns) ->
+    rows = []
     for index in [0 ... rowCount]
       rows.push createDataRow offset, index, columns
     rows
-  
+
   createFrameTable = (offset, rowCount, columns) ->
     header: createRow 'label', columns
-    rows: createRows offset, rowCount, columns
+    summaryRows: createSummaryRows columns
+    dataRows: createDataRows offset, rowCount, columns
 
   data: _frame
   key: _frame.key.name

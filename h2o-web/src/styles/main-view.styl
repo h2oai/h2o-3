@@ -1,5 +1,7 @@
 .y-main
   dock()
+  // Workaround for a Chrome bug - prevent extra whitespace along the right edge
+  overflow hidden
 
 .y-navigation-bar
   dock-top(y-navigation-bar-height)
