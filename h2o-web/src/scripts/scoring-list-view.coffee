@@ -81,20 +81,11 @@ Steam.ScoringListView = (_) ->
 
     self
 
-  runScoringJobs = (jobs, go) ->
-    queue = copy jobs
-    runNext = ->
-      if job = shift queue
-        job.run -> defer runNext
-      else
-        go()
-    defer runNext
-
   createScoringJobs = (items) ->
     map items, (item) ->
       frameKey = item.data.input.frameKey
       modelKey = item.data.input.model.key
-      run: (go) ->
+      (index, go) ->
         item.state 'running'
         _.requestScoringOnFrame frameKey, modelKey, (error, result) ->
           if error
@@ -123,7 +114,7 @@ Steam.ScoringListView = (_) ->
         items = map predicate.scorings, createScoringItem
         _items.splice.apply _items, [0, 0].concat items
         jobs = createScoringJobs items
-        runScoringJobs jobs, ->
+        forEachAsync jobs, ->
           for item in items
             unless item.hasFailed()
               item.timestamp = (head item.data.output.metrics).scoring_time

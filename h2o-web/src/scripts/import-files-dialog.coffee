@@ -68,7 +68,7 @@ Steam.ImportFilesDialog = (_, _go) ->
 
   tryImportFiles = ->
     specifiedPath = _specifiedPath()
-    _.requestImportFiles specifiedPath, (error, result) ->
+    _.requestTypeaheadFiles specifiedPath, 0, (error, result) ->
       if error
         _errorMessage error.data.errmsg
       else
@@ -87,45 +87,46 @@ Steam.ImportFilesDialog = (_, _go) ->
   _selectedFilesDictionary = lift$ _selectedFiles, (files) ->
     dictionary = {}
     for file in files
-      dictionary[file.key] = yes
+      dictionary[file.path] = yes
     dictionary
   _selectedFileCount = lift$ _selectedFiles, (files) -> "#{describeCount files.length, 'file'} selected."
   _hasSelectedFiles = lift$ _selectedFiles, (files) -> files.length > 0
 
   importFiles = (files) ->
-    sourceKeys = map files, (file) -> file.key
-    _.requestParseSetup sourceKeys, (error, result) ->
-      if error
-        #TODO handle this properly
-        _.fail 'Error', error, null, noop
-      else
-        _isImportMode no
-        processParseSetupResult result
-        _isParseMode yes
+    paths = map files, (file) -> file.path
+    _.requestImportFiles paths, (responses) ->
+      passedResponses = filter responses, (response) -> not response.error
+      sourceKeys = flatten map passedResponses, (response) -> response.result.keys
+      _.requestParseSetup sourceKeys, (error, result) ->
+        if error
+          #TODO handle this properly
+          _.fail 'Error', error, null, noop
+        else
+          _isImportMode no
+          processParseSetupResult result
+          _isParseMode yes
     return
 
   importSelectedFiles = -> importFiles _selectedFiles()
 
-  createSelectedFileItem = (key, path) ->
+  createSelectedFileItem = (path) ->
     self =
-      key: key
       path: path
       deselectFile: ->
         _selectedFiles.remove self
-        for file in _importedFiles() when file.key is key
+        for file in _importedFiles() when file.path is path
           file.isSelected no
         return
 
-  createFileItem = (key, path, isSelected) ->
+  createFileItem = (path, isSelected) ->
     self =
-      key: key
       path: path
       isSelected: node$ isSelected
       selectFile: ->
-        _selectedFiles.push createSelectedFileItem self.key, self.path
+        _selectedFiles.push createSelectedFileItem self.path
         self.isSelected yes 
       deselectFile: ->
-        file.deselectFile() if file = (find _selectedFiles(), (file) -> file.key is key)
+        file.deselectFile() if file = (find _selectedFiles(), (file) -> file.path is path)
 
   listPathHints = (query, process) ->
     _.requestTypeaheadFiles query, 10, (error, result) ->
@@ -136,7 +137,7 @@ Steam.ImportFilesDialog = (_, _go) ->
 
   selectAllFiles = ->
     _selectedFiles map _importedFiles(), (file) ->
-      createSelectedFileItem file.key, file.path
+      createSelectedFileItem file.path
     for file in _importedFiles()
       file.isSelected yes
     return
@@ -148,8 +149,8 @@ Steam.ImportFilesDialog = (_, _go) ->
     return
   
   createFileItems = (result) ->
-    map result.keys, (key, index) ->
-      createFileItem key, result.files[index], _selectedFilesDictionary()[key]
+    map result.matches, (path) ->
+      createFileItem path, _selectedFilesDictionary()[path]
 
   processImportResult = (result) -> 
     files = createFileItems result
@@ -169,7 +170,6 @@ Steam.ImportFilesDialog = (_, _go) ->
   _deleteOnDone = node$ yes
 
   processParseSetupResult = (result) ->
-    console.log result
     _parserType find parserTypes, (parserType) -> parserType.type is result.pType
     _delimiter find parseDelimiters, (delimiter) -> delimiter.charCode is result.sep 
     _useSingleQuotes result.singleQuotes isnt 'false'
