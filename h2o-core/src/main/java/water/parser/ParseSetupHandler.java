@@ -140,10 +140,13 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
 
   private static String hex( String n ) {
     // blahblahblah/myName.ext ==> myName
+    // blahblahblah/myName.csv.ext ==> myName
     int sep = n.lastIndexOf(java.io.File.separatorChar);
     if( sep > 0 ) n = n.substring(sep+1);
     int dot = n.lastIndexOf('.');
     if( dot > 0 ) n = n.substring(0, dot);
+    int dot2 = n.lastIndexOf('.');
+    if( dot2 > 0 ) n = n.substring(0, dot2);
     // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
     // "human%Percent" ==> "human_Percent"
