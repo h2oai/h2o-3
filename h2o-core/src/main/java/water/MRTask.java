@@ -266,7 +266,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Possibly blocks the current thread.  Returns true if isReleasable would
   // return true.  Used by the FJ Pool management to spawn threads to prevent
   // deadlock is otherwise all threads would block on waits.
-  public boolean block() {
+  public boolean block() throws InterruptedException {
     while( !isDone() ) join();
     return true;
   }
