@@ -17,13 +17,13 @@ import water.util.Log;
 public class ParseDataset2 extends Job<Frame> {
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
-  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, 0/*guess header*/); }
+  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false,0/*guess header*/); }
 
   // Guess setup from inspecting the first Key only, then parse.
   // Suitable for e.g. testing setups, where the data is known to be sane.
   // NOT suitable for random user input!
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, int checkHeader) {
-    return parse(okey,keys,delete_on_done,setup(keys[0],checkHeader)); 
+  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, boolean singleQuote, int checkHeader) {
+    return parse(okey,keys,delete_on_done,setup(keys[0],singleQuote,checkHeader));
   }
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
     ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
@@ -32,15 +32,13 @@ public class ParseDataset2 extends Job<Frame> {
     return fr;
   }
 
-  public static ParseDataset2 startParse(Key okey, Key... keys) { return forkParseDataset(okey,keys, setup(keys[0],0/*guess header*/),true); }
-
   public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
     return forkParseDataset(okey,keys, globalSetup,delete_on_done); 
   }
 
-  private static ParseSetupHandler setup(Key k, int checkHeader) {
+  private static ParseSetupHandler setup(Key k, boolean singleQuote, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
-    ParseSetupHandler globalSetup = ParseSetupHandler.guessSetup(bits, checkHeader);
+    ParseSetupHandler globalSetup = ParseSetupHandler.guessSetup(bits, singleQuote, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
     return globalSetup;
   }
@@ -148,7 +146,11 @@ public class ParseDataset2 extends Job<Frame> {
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       eut.doAll(evecs);
     }
-    
+
+    // Log any errors
+    if( uzpt._errors != null )
+      for( String err : uzpt._errors )
+        Log.warn(err);
     logParseResults(job, fr);
     
     // Release the frame for overwriting
@@ -317,6 +319,7 @@ public class ParseDataset2 extends Job<Frame> {
 
     // OUTPUT fields:
     FVecDataOut _dout;
+    String[] _errors;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetupHandler setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _setup = setup; 
@@ -367,14 +370,18 @@ public class ParseDataset2 extends Job<Frame> {
     @Override public void map( Key key ) {
       // Get parser setup info for this chunk
       ByteVec vec = getByteVec(key);
+      final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
       ParseSetupHandler localSetup = _setup.guessSetup(bits);
-      if( !localSetup._isValid ) return;
+      if( !localSetup._isValid ) {
+        _errors = localSetup._errors;
+        chunksAreLocal(vec,chunkStartIdx,key);
+        return;
+      }
 
       // Parse the file
-      final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];
       try {
         switch( cpr ) {
         case NONE:
@@ -431,6 +438,7 @@ public class ParseDataset2 extends Job<Frame> {
           else assert uzpt._chunk2Enum[i] == -1 : Arrays.toString(_chunk2Enum) + " :: " + Arrays.toString(uzpt._chunk2Enum);
         }
       }
+      _errors = ArrayUtils.append(_errors,uzpt._errors);
     }
 
     // Zipped file; no parallel decompression; decompress into local chunks,
@@ -550,6 +558,7 @@ public class ParseDataset2 extends Job<Frame> {
     }
     @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){
       FVecDataOut dout = (FVecDataOut)sdout;
+      if( dout == null ) return this;
       _nCols = Math.max(_nCols,dout._nCols);
       if(dout._vecs.length > _vecs.length){
         AppendableVec [] v = _vecs;

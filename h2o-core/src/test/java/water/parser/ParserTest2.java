@@ -60,8 +60,8 @@ public class ParserTest2 extends TestUtil {
 
   
   @Test public void testSingleQuotes(){
-    String[] data  = new String[]{"Tomas's,test\n'Tomas''s,test2',test2\nlast,'line''","s, trailing, piece'"};
-    String[][] expectFalse = new String[][] { ar("Tomas's"  ,"test"  ,null   ,null),
+    String[] data  = new String[]{"'Tomass,test,first,line'\n'Tomas''s,test2',test2\nlast,'line''","s, trailing, piece'"};
+    String[][] expectFalse = new String[][] { ar("'Tomass"  ,"test"  ,"first","line'"),
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
@@ -69,11 +69,8 @@ public class ParserTest2 extends TestUtil {
     Frame frF = ParseDataset2.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
-    // true  singleQuote ==> Tomas's,test
-    //                       Tomass,test2   test2
-    //                       last,          line","s,_trailing,_piece
-    String[][] expectTrue = new String[][] { ar("Tomas's,test", null),
-                                             ar("Tomasstest2","test2"),
+    String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
+                                             ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
     ParseSetupHandler gSetupT = ParseSetupHandler.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null);
     Frame frT = ParseDataset2.parse(Key.make(), new Key[]{k},  true, gSetupT);
