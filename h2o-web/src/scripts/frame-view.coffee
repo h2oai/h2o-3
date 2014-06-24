@@ -1,8 +1,41 @@
+significantDigitsBeforeDecimal = (value) -> 1 + Math.floor Math.log(value) / Math.LN10
+
+formatToSignificantDigits = (digits, value) ->
+  if value is 0
+    0
+  else
+    sd = significantDigitsBeforeDecimal value
+    if sd >= digits
+      value.toFixed 0
+    else
+      magnitude = Math.pow 10, digits - sd
+      Math.round(value * magnitude) / magnitude
+
+formatTime = d3.time.format '%Y-%m-%d %H:%M:%S'
+formatDateTime = (time) -> if time then formatTime new Date time else '-'
+
+formatReal = do ->
+  __formatFunctions = {}
+  getFormatFunction = (precision) ->
+    if precision is -1
+      identity
+    else
+      __formatFunctions[precision] or __formatFunctions[precision] = d3.format ".#{precision}f"
+
+  (precision, value) ->
+    (getFormatFunction precision) value
+
 Steam.FrameView = (_, _frame) ->
-  createRow = (attribute, columns) ->
+  createSummaryRow = (attribute, columns) ->
     header: attribute
     cells: map columns, (column) ->
       switch column.type
+        when 'uuid'
+          switch attribute
+            when 'min', 'max', 'mean', 'sigma', 'cardinality'
+              '-'
+            else
+              column[attribute]
         when 'enum'
           switch attribute
             when 'min', 'max', 'mean', 'sigma'
@@ -11,10 +44,32 @@ Steam.FrameView = (_, _frame) ->
               column.domain.length
             else
               column[attribute]
-        else
+        when 'time'
+          switch attribute
+            when 'min', 'max', 'mean'
+              formatDateTime column[attribute]
+            when 'sigma'
+              formatToSignificantDigits 6, column[attribute]
+            when 'cardinality'
+              '-'
+            else
+              column[attribute]
+        when 'real'
           switch attribute
             when 'cardinality'
               '-'
+            when 'min', 'max', 'mean'
+              formatReal column.precision, column[attribute]
+            when 'sigma'
+              formatToSignificantDigits 6, column[attribute]
+            else
+              column[attribute]
+        else # int
+          switch attribute
+            when 'cardinality'
+              '-'
+            when 'min', 'max', 'mean', 'sigma'
+              formatToSignificantDigits 6, column[attribute]
             else
               column[attribute]
 
@@ -23,21 +78,29 @@ Steam.FrameView = (_, _frame) ->
     cells: map columns, (column) ->
       switch column.type
         when 'uuid'
-          'TODO'
+          column.str_data[index] or '-'
         when 'enum'
           column.domain[column.data[index]]
+        when 'time'
+          formatDateTime column.data[index]
         else
           value = column.data[index]
-          if value is 'NaN' then '-' else value #TODO handle precision
+          if value is 'NaN'
+            '-'
+          else
+            if column.type is 'real'
+              formatReal column.precision, value
+            else
+              value
 
   createSummaryRows = (columns) ->
     attributes = words 'type min max mean sigma cardinality'
     push attributes, 'missing' if some columns, (column) -> column.missing > 0
     rows = []
     for attribute in attributes
-      rows.push createRow attribute, columns
+      rows.push createSummaryRow attribute, columns
     rows
-  
+
   createDataRows = (offset, rowCount, columns) ->
     rows = []
     for index in [0 ... rowCount]
@@ -45,7 +108,7 @@ Steam.FrameView = (_, _frame) ->
     rows
 
   createFrameTable = (offset, rowCount, columns) ->
-    header: createRow 'label', columns
+    header: createSummaryRow 'label', columns
     summaryRows: createSummaryRows columns
     dataRows: createDataRows offset, rowCount, columns
 

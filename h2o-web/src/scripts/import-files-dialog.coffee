@@ -163,6 +163,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   _delimiter = node$ null
   _useSingleQuotes = node$ no
   _columns = node$ []
+  _rows = node$ []
   _columnCount = node$ 0
   _hasColumns = lift$ _columnCount, (count) -> count > 0
   _destinationKey = node$ ''
@@ -177,6 +178,7 @@ Steam.ImportFilesDialog = (_, _go) ->
     _columnCount result.ncols
     _parsedFiles result.srcs
     _columns map result.columnNames, (name) -> name: node$ name
+    _rows tail result.data
 
   parseFiles = ->
     sourceKeys = map _parsedFiles(), (file) -> file.name
@@ -219,6 +221,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   delimiter: _delimiter
   useSingleQuotes: _useSingleQuotes
   columns: _columns
+  rows: _rows
   columnCount: _columnCount
   hasColumns: _hasColumns
   destinationKey: _destinationKey
