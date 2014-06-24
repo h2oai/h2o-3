@@ -195,7 +195,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // check priorities - FJ task can only block on a task with higher priority!
     Thread cThr = Thread.currentThread();
     int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
-    assert _dt.priority() > priority || (_dt.priority() == priority && (_dt instanceof DRemoteTask || _dt instanceof MRTask))
+    assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
       : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
     if( _done ) return result(); // Fast-path shortcut
     // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
@@ -312,7 +312,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       }
       if( dt == null )
         Log.info("Cancelled remote task#"+_tsknum+" "+(origDt != null ? origDt.getClass() : "null")+" to "+_client + " has been cancelled by remote");
-      else if( (dt instanceof DRemoteTask || dt instanceof MRTask) && dt.logVerbose() )
+      else if( dt instanceof MRTask && dt.logVerbose() )
         Log.debug("Done  remote task#"+_tsknum+" "+dt.getClass()+" to "+_client);
       _client.record_task_answer(this); // Setup for retrying Ack & AckAck
     }
@@ -398,7 +398,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       }
       RPCCall rpc2 = ab._h2o.record_task(rpc);
       if( rpc2==null ) {        // Atomically insert (to avoid double-work)
-        if( (rpc._dt instanceof DRemoteTask || rpc._dt instanceof MRTask) && rpc._dt.logVerbose() )
+        if( rpc._dt instanceof MRTask && rpc._dt.logVerbose() )
           Log.debug("Start remote task#"+task+" "+rpc._dt.getClass()+" from "+ab._h2o);
         H2O.submitTask(rpc);    // And execute!
       } else {                  // Else lost the task-insertion race
