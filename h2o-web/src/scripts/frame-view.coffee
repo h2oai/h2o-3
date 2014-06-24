@@ -1,3 +1,10 @@
+__formatFunctions = {}
+getFormatFunction = (precision) ->
+  if precision is -1
+    identity
+  else
+    __formatFunctions[precision] or __formatFunctions[precision] = d3.format ".#{precision}f"
+
 Steam.FrameView = (_, _frame) ->
   createSummaryRow = (attribute, columns) ->
     header: attribute
@@ -34,7 +41,13 @@ Steam.FrameView = (_, _frame) ->
           column.domain[column.data[index]]
         else
           value = column.data[index]
-          if value is 'NaN' then '-' else value #TODO handle precision
+          if value is 'NaN'
+            '-'
+          else
+            if column.type is 'real'
+              (getFormatFunction column.precision) value
+            else
+              value
 
   createSummaryRows = (columns) ->
     attributes = words 'type min max mean sigma cardinality'
