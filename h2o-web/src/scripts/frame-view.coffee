@@ -29,7 +29,7 @@ Steam.FrameView = (_, _frame) ->
     cells: map columns, (column) ->
       switch column.type
         when 'uuid'
-          column.str_data[index]
+          column.str_data[index] or '-'
         when 'enum'
           column.domain[column.data[index]]
         else
