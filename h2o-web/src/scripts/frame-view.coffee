@@ -11,6 +11,9 @@ formatToSignificantDigits = (digits, value) ->
       magnitude = Math.pow 10, digits - sd
       Math.round(value * magnitude) / magnitude
 
+formatTime = d3.time.format '%Y-%m-%d %H:%M:%S'
+formatDateTime = (time) -> if time then formatTime new Date time else '-'
+
 formatReal = do ->
   __formatFunctions = {}
   getFormatFunction = (precision) ->
@@ -41,6 +44,16 @@ Steam.FrameView = (_, _frame) ->
               column.domain.length
             else
               column[attribute]
+        when 'time'
+          switch attribute
+            when 'min', 'max', 'mean'
+              formatDateTime column[attribute]
+            when 'sigma'
+              formatToSignificantDigits 6, column[attribute]
+            when 'cardinality'
+              '-'
+            else
+              column[attribute]
         when 'real'
           switch attribute
             when 'cardinality'
@@ -51,7 +64,6 @@ Steam.FrameView = (_, _frame) ->
               formatToSignificantDigits 6, column[attribute]
             else
               column[attribute]
-
         else # int
           switch attribute
             when 'cardinality'
@@ -69,6 +81,8 @@ Steam.FrameView = (_, _frame) ->
           column.str_data[index] or '-'
         when 'enum'
           column.domain[column.data[index]]
+        when 'time'
+          formatDateTime column.data[index]
         else
           value = column.data[index]
           if value is 'NaN'
