@@ -8,30 +8,31 @@
   h2.y-subtitle(data-bind='collapse:false') Data
   .y-data
     // ko with:table
-    table.table.table-condensed.table-striped.y-monospace
-      // ko with:header
-      thead
-        tr
-          th(data-bind='text:header')
-          // ko foreach:cells
-          th(data-bind='text:$data')
-          // /ko
-      // /ko
-      tbody
-        // ko foreach:summaryRows
-        tr.y-summary-rows
-          th(data-bind='text:header')
-          // ko foreach:cells
-          td(data-bind='text:$data')
-          // /ko
+    div(style='overflow:auto')
+      table.table.table-condensed.table-striped.y-monospace
+        // ko with:header
+        thead
+          tr
+            th(data-bind='text:header')
+            // ko foreach:cells
+            th(data-bind='text:$data')
+            // /ko
         // /ko
-        // ko foreach:dataRows
-        tr
-          th(data-bind='text:header')
-          // ko foreach:cells
-          td(data-bind='text:$data')
+        tbody
+          // ko foreach:summaryRows
+          tr.y-summary-rows
+            th(data-bind='text:header')
+            // ko foreach:cells
+            td(data-bind='text:$data')
+            // /ko
           // /ko
-        // /ko
+          // ko foreach:dataRows
+          tr
+            th(data-bind='text:header')
+            // ko foreach:cells
+            td(data-bind='text:$data')
+            // /ko
+          // /ko
     // /ko
   // /ko
 
