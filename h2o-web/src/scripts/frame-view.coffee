@@ -1,8 +1,14 @@
 Steam.FrameView = (_, _frame) ->
-  createRow = (attribute, columns) ->
+  createSummaryRow = (attribute, columns) ->
     header: attribute
     cells: map columns, (column) ->
       switch column.type
+        when 'uuid'
+          switch attribute
+            when 'min', 'max', 'mean', 'sigma', 'cardinality'
+              '-'
+            else
+              column[attribute]
         when 'enum'
           switch attribute
             when 'min', 'max', 'mean', 'sigma'
@@ -23,7 +29,7 @@ Steam.FrameView = (_, _frame) ->
     cells: map columns, (column) ->
       switch column.type
         when 'uuid'
-          'TODO'
+          column.str_data[index]
         when 'enum'
           column.domain[column.data[index]]
         else
@@ -35,7 +41,7 @@ Steam.FrameView = (_, _frame) ->
     push attributes, 'missing' if some columns, (column) -> column.missing > 0
     rows = []
     for attribute in attributes
-      rows.push createRow attribute, columns
+      rows.push createSummaryRow attribute, columns
     rows
   
   createDataRows = (offset, rowCount, columns) ->
@@ -45,7 +51,7 @@ Steam.FrameView = (_, _frame) ->
     rows
 
   createFrameTable = (offset, rowCount, columns) ->
-    header: createRow 'label', columns
+    header: createSummaryRow 'label', columns
     summaryRows: createSummaryRows columns
     dataRows: createDataRows offset, rowCount, columns
 
