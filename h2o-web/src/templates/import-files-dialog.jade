@@ -115,13 +115,22 @@
 
           // ko if:hasColumns
           h1(data-bind='collapse:false') Columns
-          table.y-sample-table
-            tbody
-              // ko foreach:columns
-              tr
-                td
-                  input.form-control(type='textbox' data-bind='value:name')
-              // /ko
+          div(style='overflow:auto')
+            table.table.table-condensed.table-striped.y-monospace.y-sample-table
+              thead
+                tr
+                  // ko foreach:columns
+                  th
+                    input.form-control(type='textbox' data-bind='value:name')
+                  // /ko
+
+              tbody
+                // ko foreach:rows
+                tr
+                  // ko foreach:$data
+                  td(data-bind="text:$data")
+                  // /ko
+                // /ko
           // /ko
         .y-import-actions(style='width:50%;text-align:left')
           button.btn(data-bind='click:backToImport')
