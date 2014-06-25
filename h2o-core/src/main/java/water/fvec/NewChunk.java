@@ -802,7 +802,7 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
-    while(i >= _len2) append2slowd();
+    assert i < _len;
     _ds[i] = d;
     return true;
   }

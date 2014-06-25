@@ -1,0 +1,27 @@
+.y-job-view
+  .clearfix
+    .y-tag Job
+  // ko with:job
+  h1.y-title(data-bind='text:title')
+
+  h2.y-subtitle(data-bind='collapse:false') Status
+  .y-parameters
+    .y-summary
+      .y-summary-item
+        .y-summary-key Status
+        .y-summary-value(data-bind='text:status')
+      .y-summary-item
+        .y-summary-key Progress
+        .y-summary-value(data-bind='text:progress')
+      .y-summary-item
+        .y-summary-key Duration
+        .y-summary-value(data-bind='text:duration')
+
+  // ko if:exception
+  h2.y-subtitle(data-bind='collapse:false') Exception
+  pre(data-bind='json:exception')
+  // /ko
+
+  // /ko
+
+

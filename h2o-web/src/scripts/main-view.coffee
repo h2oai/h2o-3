@@ -68,6 +68,11 @@ Steam.MainView = (_) ->
           _topic topic
           switchListView _notificationListView
           switchSelectionView null
+      when _jobTopic
+        unless _topic() is topic
+          _topic topic
+          switchListView _jobListView
+          switchSelectionView null
     _isDisplayingTopics no
     return
   
@@ -87,13 +92,17 @@ Steam.MainView = (_) ->
     switchTopic _notificationTopic
     _.loadNotifications predicate
 
+  switchToJobs = (predicate) ->
+    switchTopic _jobTopic
+    _.loadJobs if predicate then predicate else type: 'all'
+
   _topics = node$ [
     _frameTopic = createTopic 'Datasets', switchToFrames
     _modelTopic = createTopic 'Models', null #switchToModels
     _scoringTopic = createTopic 'Scoring', null #switchToScoring
     _timelineTopic = createTopic 'Timeline', null
     _notificationTopic = createTopic 'Notifications', switchToNotifications
-    _jobTopic = createTopic 'Jobs', null
+    _jobTopic = createTopic 'Jobs', switchToJobs
     _clusterTopic = createTopic 'Cluster', null
     _administrationTopic = createTopic 'Administration', null
   ]
@@ -104,6 +113,7 @@ Steam.MainView = (_) ->
   #_modelListView = Steam.ModelListView _
   #_scoringListView = Steam.ScoringListView _
   _notificationListView = Steam.NotificationListView _
+  _jobListView = Steam.JobListView _
 
   # Selection views
   _modelSelectionView = Steam.ModelSelectionView _
@@ -126,6 +136,8 @@ Steam.MainView = (_) ->
     switch _topic()
       when _frameTopic
         _.refreshFrames()
+      when _jobTopic
+        _.refreshJobs()
     return
 
 
@@ -215,10 +227,14 @@ Steam.MainView = (_) ->
   link$ _.displayNotification, (notification) ->
     switchPageView Steam.NotificationView _, notification if _topic() is _notificationTopic
 
+  link$ _.displayJob, (job) ->
+    switchPageView Steam.JobView _, job if _topic() is _jobTopic
+
   link$ _.switchToFrames, switchToFrames
   link$ _.switchToModels, switchToModels
   link$ _.switchToScoring, switchToScoring
   link$ _.switchToNotifications, switchToNotifications
+  link$ _.switchToJobs, switchToJobs
   link$ _.inspect, inspect
 
   # Not in use. Leaving this here as an example of how a modal view can be displayed.

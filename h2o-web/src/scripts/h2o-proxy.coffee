@@ -96,6 +96,17 @@ Steam.H2OProxy = (_) ->
         #TODO remove 'filterOutUnhandledModels' when issue with non-DONE models is resolved.
         go error, response: response, models: filterOutUnhandledModels values models
 
+  requestJobs = (go) ->
+    request '/Jobs.json', null, (error, result) ->
+      if error
+        go error, result
+      else
+        go error, result.jobs
+
+  requestJobPoll = (key, go) ->
+    opts = key: encodeURIComponent key
+    request '/JobPoll.json', opts, go
+
   link$ _.requestTypeaheadFiles, requestTypeaheadFiles
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
@@ -110,6 +121,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestModelsAndCompatibleFrames, (go) -> requestModels go, find_compatible_frames: yes
   link$ _.requestModel, (key, go) -> requestModels go, key: (encodeURIComponent key)
   link$ _.requestModelAndCompatibleFrames, (key, go) -> requestModels go, key: (encodeURIComponent key), find_compatible_frames: yes
-
+  link$ _.requestJobs, requestJobs
+  link$ _.requestJobPoll, requestJobPoll
 
 
