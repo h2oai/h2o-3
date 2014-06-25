@@ -10,6 +10,9 @@ public class JStackTest extends TestUtil {
     for( int i=0; i<10; i++ ) {
       String traces[] = new water.util.JStackCollectorTask().doAllNodes()._traces;
       Assert.assertEquals(traces.length,H2O.CLOUD.size());
+      for (int j=0; j<traces.length; ++j) {
+        Assert.assertTrue(traces[j] != null);
+      }
     }
   }
 }
