@@ -3,7 +3,7 @@ package water.fvec;
 import water.*;
 
 public class C16Chunk extends Chunk {
-  public static final long _LO_NA = Long.MIN_VALUE;
+  public static final long _LO_NA = Long.MAX_VALUE;
   public static final long _HI_NA = 0;
   C16Chunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>4; }
   @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8 but 16-byte UUID");  }

@@ -615,7 +615,10 @@ public class ParseDataset2 extends Job<Frame> {
       _col = -1;
     }
     @Override public void addNumCol(int colIdx, long number, int exp) {
-      if( colIdx < _nCols ) _nvs[_col = colIdx].addNum(number,exp);
+      if( colIdx < _nCols ) {
+        _nvs[_col = colIdx].addNum(number, exp);
+        if(_ctypes[colIdx] == UCOL ) _ctypes[colIdx] = NCOL;
+      }
     }
 
     @Override public final void addInvalidCol(int colIdx) {
