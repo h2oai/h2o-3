@@ -46,6 +46,8 @@ Steam.ApplicationContext = ->
     requestModelsAndCompatibleFrames: do edge$
     requestModel: do edge$
     requestModelAndCompatibleFrames: do edge$
+    requestJobs: do edge$
+    requestJobPoll: do edge$
 
     # Local Storage
     putLocalObject: do edge$
@@ -64,6 +66,7 @@ Steam.ApplicationContext = ->
     switchToModels: do edge$
     switchToScoring: do edge$
     switchToNotifications: do edge$
+    switchToJobs: do edge$
 
     displayEmpty: do edge$
 
@@ -99,6 +102,12 @@ Steam.ApplicationContext = ->
     scoringAvailable: do edge$
     rescore: do edge$
     configureStripPlot: do edge$
+
+    displayJob: do edge$
+    jobsLoaded: do edge$
+    loadJobs: do edge$
+    refreshJobs: do edge$
+
 
 
 

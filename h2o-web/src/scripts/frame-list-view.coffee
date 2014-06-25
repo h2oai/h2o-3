@@ -81,6 +81,7 @@ Steam.FrameListView = (_) ->
       switch action
         when 'confirm'
           console.log 'Job submitted successfully.', job
+          _.switchToJobs()
       return
 
   clearPredicate = -> loadFrames type: 'all'
