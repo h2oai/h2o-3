@@ -87,6 +87,8 @@ public class TCPReceiverThread extends Thread {
           case timeline: TimeLine.tcp_call(_ab); break;
           default: throw new RuntimeException("Unknown TCP Type: " + ctrl+" "+_ab._h2o);
           }
+        } catch( java.nio.channels.AsynchronousCloseException ex ) {
+          break;                // Socket closed for shutdown
         } catch( Exception e ) {
           // On any error from anybody, close everything
           Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
