@@ -20,15 +20,19 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
   @API(help="runtime")
   long msec;
 
+  @API(help="destination key")
+  Key dest;
+
   @API(help="exception")
   String exception;
 
   JobPollV2( ) {}
-  JobPollV2( Key key, String status, float progress, long msec, String exception ) {
+  JobPollV2( Key key, String status, float progress, long msec, Key dest, String exception ) {
     this.key = key;
     this.status = status;
     this.progress = progress;
     this.msec = msec;
+    this.dest = dest;
     this.exception = exception;
   }
 
@@ -53,6 +57,7 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
+    dest = job.dest();
     exception = job._exception;
     return this;
   }

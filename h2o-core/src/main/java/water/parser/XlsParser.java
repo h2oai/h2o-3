@@ -74,13 +74,14 @@ class XlsParser extends Parser {
 
   /** Try to parse the bytes as XLS format  */
   public static ParseSetupHandler guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParseSetupHandler(true, 0, null, ParserType.XLS, ParseSetupHandler.AUTO_SEP, -1, false, null, null));
+    XlsParser p = new XlsParser(new ParseSetupHandler(true, 0, null, ParserType.XLS, ParseSetupHandler.AUTO_SEP, -1, false, null, null,0));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     InspectDataOut dout = new InspectDataOut();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetupHandler.AUTO_SEP, dout._ncols,false,dout.colNames(), dout._data);
+                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetupHandler.AUTO_SEP, dout._ncols,
+                                 false,dout.colNames(), dout._data, dout.colNames()==null?-1:1);
   }
 
 

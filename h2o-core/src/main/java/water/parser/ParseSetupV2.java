@@ -14,8 +14,14 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   @API(help="Source keys",required=true)
   public Key[] srcs;
 
+  @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",direction=API.Direction.INOUT)
+  public int checkHeader;
+
+  @API(help="Single quotes",direction=API.Direction.INPUT)
+  public boolean singleQuotes;
+
   // Output fields
-  @API(help="Result name")
+  @API(help="Suggested name", direction=API.Direction.OUTPUT)
   public String hexName;
 
   @API(help="Parser Type")
@@ -27,10 +33,7 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   @API(help="Number of columns")
   public int ncols;
 
-  @API(help="Single quotes")
-  public boolean singleQuotes;
-
-  @API(help="Column Names")
+  @API(help="Column Names",direction=API.Direction.OUTPUT)
   public String[] columnNames;
 
   @API(help="Sample Data")
@@ -42,6 +45,8 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   // Version&Schema-specific filling into the handler
   @Override protected ParseSetupV2 fillInto( ParseSetupHandler h ) {
     h._srcs = srcs;
+    h._checkHeader = checkHeader;
+    h._singleQuotes = singleQuotes;
     return this;
   }
 
@@ -51,7 +56,6 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
     pType = h._pType;
     sep = h._sep;
     ncols = h._ncols;
-    singleQuotes = h._singleQuotes;
     columnNames = h._columnNames;
     data = h._data;
     return this;

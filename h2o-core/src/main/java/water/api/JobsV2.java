@@ -23,7 +23,7 @@ public class JobsV2 extends Schema<JobsHandler,JobsV2> {
     Job[] js = h.jobs;
     jobs = new JobPollV2[js.length];
     for( int i=0; i<js.length; i++ )
-      jobs[i] = new JobPollV2(js[i]._key,js[i]._state.toString(),js[i].progress(),js[i].msec(),js[i]._exception);
+      jobs[i] = new JobPollV2(js[i]._key,js[i]._state.toString(),js[i].progress(),js[i].msec(),js[i].dest(),js[i]._exception);
     return this;
   }
 }

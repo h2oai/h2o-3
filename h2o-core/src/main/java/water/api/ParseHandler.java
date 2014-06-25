@@ -15,6 +15,7 @@ class ParseHandler extends Handler<ParseHandler,ParseV2> {
   int _ncols;                   // Number of columns to expect
   boolean _singleQuotes;        // Single quotes a valid char, or not
   String[] _columnNames;        // Column names to use
+  int _checkHeader;             // Parse 1st line as header, or not.
 
   boolean _delete_on_done = true;
   boolean _blocking = true;
@@ -27,7 +28,7 @@ class ParseHandler extends Handler<ParseHandler,ParseV2> {
 
   // Entry point for parsing.
   void parse() {
-    ParseSetupHandler setup = new ParseSetupHandler(true,0,null,_pType,_sep,_ncols,_singleQuotes,_columnNames,null);
+    ParseSetupHandler setup = new ParseSetupHandler(true,0,null,_pType,_sep,_ncols,_singleQuotes,_columnNames,null,_checkHeader);
     _job = water.parser.ParseDataset2.startParse2(_hex,_srcs,_delete_on_done,setup);
   }
 

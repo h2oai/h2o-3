@@ -279,9 +279,9 @@ public class NewChunk extends Chunk {
     if( _len > Vec.CHUNK_SZ )
       throw new ArrayIndexOutOfBoundsException(_len);
     if( _ds==null && _ls!=null ) { // This can happen for columns with all NAs and then a UUID
-      for( int i=0; i<_len; i++ ) { assert _xs[i]==Integer.MIN_VALUE; assert _ls[i]==C16Chunk._LO_NA; }
       _xs=null;
       _ds = MemoryManager.malloc8d(_len);
+      Arrays.fill(_ls,C16Chunk._LO_NA);
       Arrays.fill(_ds,Double.longBitsToDouble(C16Chunk._HI_NA));
     }
     if( _ls != null && _ls.length > 0 ) {

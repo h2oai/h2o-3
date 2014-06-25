@@ -107,11 +107,11 @@ public class AppendableVec extends Vec {
         if(_chunkTypes[i] == ENUM)
           DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
     }
-    // enum & number wins over UUID
+    // UUID wins over enum & number
     if( hasUUID && (hasEnum || hasNumber) ) {
-      hasUUID=false;
+      hasEnum=hasNumber=false;
       for(int i = 0; i < nchunk; ++i)
-        if(_chunkTypes[i] == UUID)
+        if((_chunkTypes[i] & UUID)==0)
           DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
     }
 

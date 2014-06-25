@@ -1,5 +1,6 @@
 package water.parser;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import water.*;
 import water.api.Handler;
@@ -11,55 +12,58 @@ import water.api.Handler;
 public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   static final byte AUTO_SEP = -1;
   Key[] _srcs;                      // Source Keys being parsed
-  String _hexName;                  // Cleaned up result Key suggested name
-
-  boolean _isValid;   // The initial parse is sane
-  // Parse Flavor
-  ParserType _pType; // CSV, XLS, XSLX, SVMLight, Auto
-  byte _sep; // Field separator, usually comma ',' or TAB or space ' '
-  int _ncols;     // Columns to parse
+  int _checkHeader;                 // 1st row: 0: guess, +1 header, -1 data
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
   // raw data:  123,'Mally,456,O'Mally
   // singleQuotes==True  ==> 2 columns: 123  and  Mally,456,OMally
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
   boolean _singleQuotes;
+
+  String _hexName;                  // Cleaned up result Key suggested name
+  ParserType _pType;                // CSV, XLS, XSLX, SVMLight, Auto
+  byte _sep;          // Field separator, usually comma ',' or TAB or space ' '
+  int _ncols;         // Columns to parse
   String[] _columnNames;
-  private long _invalidLines; // Number of broken/invalid lines found
   String[][] _data;           // First few rows of parsed/tokenized data
+  boolean _isValid;           // The initial parse is sane
   String[] _errors;           // Errors in this parse setup
+  private long _invalidLines; // Number of broken/invalid lines found
   
-  public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] data ) {
+  public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] data, int checkHeader ) {
     _isValid = isValid;
     _invalidLines = invalidLines;
+    _errors = errors;
     _pType = t;
     _sep = sep;
     _ncols = ncols;
     _singleQuotes = singleQuotes;
     _columnNames = columnNames;
     _data = data;
-    _errors = errors;
+    _checkHeader = checkHeader;
   }
 
   // Invalid setup based on a prior valid one
   ParseSetupHandler(ParseSetupHandler ps, String err) {
-    this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames,ps._data);
+    this(false,ps._invalidLines,new String[]{err},ps._pType,ps._sep,ps._ncols,ps._singleQuotes,ps._columnNames,ps._data,ps._checkHeader);
   }
 
   // Called from Nano request server with a set of Keys, produce a suitable parser setup guess.
   public ParseSetupHandler() {}
   public void guessSetup( ) {
-    _hexName = hex(_srcs[0].toString());
     byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(_srcs[0]));
-    ParseSetupHandler psh = guessSetup(bits,false,0/*guess header*/);
+    ParseSetupHandler psh = guessSetup(bits,_singleQuotes,_checkHeader);
     // Update in-place
-    _isValid = psh._isValid;
+    assert psh._checkHeader != 0; // Need to fill in the guess
+    _checkHeader = psh._checkHeader;
+    _hexName = hex(_srcs[0].toString());
     _pType = psh._pType;
     _sep = psh._sep;
     _ncols = psh._ncols;
-    _singleQuotes = psh._singleQuotes;
     _columnNames = psh._columnNames == null ? ParseDataset2.genericColumnNames(_ncols) : psh._columnNames;
-    _invalidLines = psh._invalidLines;
     _data = psh._data;
+    if( _checkHeader==1 ) _data = Arrays.copyOfRange(_data,1,_data.length-1); // Drop header from the preview data
+    _isValid = psh._isValid;
+    _invalidLines = psh._invalidLines;
   }
 
 
@@ -125,7 +129,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
         } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
       }
     }
-    return new ParseSetupHandler( false, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, null );
+    return new ParseSetupHandler( false, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, null, checkHeader );
   }
 
   // Guess a local setup that is compatible to the given global (this) setup.

@@ -561,7 +561,7 @@ MAIN_LOOP:
       }
     }
     if( nlines==0 )
-      return new ParseSetupHandler(false,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null);
+      return new ParseSetupHandler(false,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,checkHeader);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -573,7 +573,7 @@ MAIN_LOOP:
         if( lines[0].split(",").length > 2 ) sep = (byte)',';
         else if( lines[0].split(" ").length > 2 ) sep = ' ';
         else 
-          return new ParseSetupHandler(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,data);
+          return new ParseSetupHandler(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,data,checkHeader);
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
@@ -606,6 +606,7 @@ MAIN_LOOP:
       } else {                  // Told: no headers
         labels = null;
       }
+      if( checkHeader == 0 ) checkHeader = labels==null ? -1 : +1;
       
       // See if compatible headers
       if( columnNames != null && labels != null ) {
@@ -635,6 +636,6 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Return the final setup
-    return new ParseSetupHandler( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels, data );
+    return new ParseSetupHandler( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels, data, checkHeader );
   }
 }
