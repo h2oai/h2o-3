@@ -29,21 +29,21 @@ And then point your browser to [http://localhost:54321/steam/index.html](http://
 
 Step 1. Install Node.js [using the official installer](http://nodejs.org/download/). When done, you should have node.exe and npm.cmd in `\Program Files\node\`. These should also be available on your PATH. If not, add the folder to your PATH.
 
-Step 2. Install `bower`
+Step 2. Install `bower` using a windows CMD shell
 
     npm install -g bower
 
 
-Step 3. Install the required `npm` and `bower` packages (outside cygwin):
+Step 3. Install the required `npm` and `bower` packages (again windows CMD shell):
 
-    cd \h2o\client
+    cd \h2o-dev\h2o-web
     npm install
     bower install
 
 Step 4. Now, from your cygwin prompt, run:
 
-    cd /h2o/client
-    make build
+    cd /h2o-dev/h2o-web
+    make
 
 *Note: On OSX/Linux, you would normally run Step 3 as `make setup`, which would in turn run `npm install` and `bower install`. However, running npm from within cygwin currently has issues: see [#3710](https://github.com/npm/npm/issues/3710)).*
 
