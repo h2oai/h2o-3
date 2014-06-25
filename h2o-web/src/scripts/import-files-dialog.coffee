@@ -178,7 +178,7 @@ Steam.ImportFilesDialog = (_, _go) ->
     _columnCount result.ncols
     _parsedFiles result.srcs
     _columns map result.columnNames, (name) -> name: node$ name
-    _rows tail result.data
+    _rows result.data
 
   parseFiles = ->
     sourceKeys = map _parsedFiles(), (file) -> file.name
