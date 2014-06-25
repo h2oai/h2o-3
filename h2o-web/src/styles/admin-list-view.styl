@@ -1,14 +1,11 @@
-.y-job-list-view
+.y-admin-list-view
   dock()
 
-  .y-no-jobs
+  .y-admin-topics
     dock()
-
-  .y-jobs
-    dock(top:y-desktop-header-height)
     overflow auto
 
-  .y-job
+  .y-admin-topic
     cursor pointer
     padding 10px
     border-left 3px solid transparent
@@ -19,15 +16,13 @@
       background #eee
       border-left-color y-color-yellow-dk
       border-left-color y-color-grey-md
-    .progress
-      height 8px
-      margin-bottom 5px
-  .y-job-title
+
+  .y-admin-topic-title
     font-size 18px
     font-weight 300
-  .y-job-caption
-    font-size 12px
+
+  .y-admin-topic-caption
+    font-size 11px
+    text-transform uppercase
     color #888
     overflow ellipsis
-
-

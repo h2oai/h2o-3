@@ -1,0 +1,21 @@
+.y-cloud-view
+  .clearfix
+    .y-tag Administration
+    .y-tagline(data-bind='timeago:timestamp')
+  h1.y-title Cloud
+
+  // ko if:nodes
+  h2.y-subtitle(data-bind='collapse:false') Nodes
+  table.table.table-condensed.table-striped
+    tbody
+      // ko foreach:nodes
+      tr(data-bind="css:{'danger':isUnhealthy}")
+        // ko foreach:attributes
+        td(data-bind='text:$data')
+        // /ko
+      // /ko
+  // /ko
+
+
+
+

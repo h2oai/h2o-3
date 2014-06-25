@@ -1,0 +1,22 @@
+.y-timeline-view
+  .clearfix
+    .y-tag Administration
+    .y-tagline(data-bind='timeago:timestamp')
+  h1.y-title Timeline
+
+  // ko if:timeline
+  table.table.table-condensed.table-striped
+    thead
+      tr
+        // ko foreach:header
+        th(data-bind='text:$data')
+        // /ko
+    tbody
+      // ko foreach:timeline
+      tr
+        // ko foreach:$data
+        td(data-bind='html:$data')
+        // /ko
+      // /ko
+  // /ko
+

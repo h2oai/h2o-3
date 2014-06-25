@@ -73,6 +73,12 @@ Steam.MainView = (_) ->
           _topic topic
           switchListView _jobListView
           switchSelectionView null
+      when _adminTopic
+        unless _topic() is topic
+          _topic topic
+          switchListView _adminListView
+          switchSelectionView null
+          
     _isDisplayingTopics no
     return
   
@@ -96,6 +102,10 @@ Steam.MainView = (_) ->
     switchTopic _jobTopic
     _.loadJobs if predicate then predicate else type: 'all'
 
+  switchToAdmin = ->
+    switchTopic _adminTopic
+    _.loadAdmin()
+
   _topics = node$ [
     _frameTopic = createTopic 'Datasets', switchToFrames
     _modelTopic = createTopic 'Models', null #switchToModels
@@ -103,8 +113,7 @@ Steam.MainView = (_) ->
     _timelineTopic = createTopic 'Timeline', null
     _notificationTopic = createTopic 'Notifications', switchToNotifications
     _jobTopic = createTopic 'Jobs', switchToJobs
-    _clusterTopic = createTopic 'Cluster', null
-    _administrationTopic = createTopic 'Administration', null
+    _adminTopic = createTopic 'Administration', switchToAdmin
   ]
 
   # List views
@@ -114,6 +123,7 @@ Steam.MainView = (_) ->
   #_scoringListView = Steam.ScoringListView _
   _notificationListView = Steam.NotificationListView _
   _jobListView = Steam.JobListView _
+  _adminListView = Steam.AdminListView _
 
   # Selection views
   _modelSelectionView = Steam.ModelSelectionView _
@@ -214,6 +224,9 @@ Steam.MainView = (_) ->
 
   link$ _.displayEmpty, ->
     switchPageView template: 'empty-view'
+
+  link$ _.displayView, (view) ->
+    switchPageView view
 
   link$ _.displayFrame, (frame) ->
     switchPageView Steam.FrameView _, frame if _topic() is _frameTopic

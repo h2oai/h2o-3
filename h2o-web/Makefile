@@ -50,6 +50,7 @@ BROWSER_SCRIPTS=\
 	$(BUILD)/scripts/model-list-view.js \
 	$(BUILD)/scripts/scoring-list-view.js \
 	$(BUILD)/scripts/notification-list-view.js \
+	$(BUILD)/scripts/admin-list-view.js \
 	$(BUILD)/scripts/job-list-view.js \
 	$(BUILD)/scripts/frame-view.js \
 	$(BUILD)/scripts/model-view.js \
@@ -59,6 +60,8 @@ BROWSER_SCRIPTS=\
 	$(BUILD)/scripts/scoring-view.js \
 	$(BUILD)/scripts/scoring-sheet-view.js \
 	$(BUILD)/scripts/notification-view.js \
+	$(BUILD)/scripts/cloud-view.js \
+	$(BUILD)/scripts/timeline-view.js \
 	$(BUILD)/scripts/job-view.js \
 	$(BUILD)/scripts/scoring-selection-view.js \
 	$(BUILD)/scripts/main-view.js \
@@ -83,6 +86,7 @@ TEST_SCRIPTS=\
 	$(BUILD)/scripts/model-list-view.js \
 	$(BUILD)/scripts/scoring-list-view.js \
 	$(BUILD)/scripts/notification-list-view.js \
+	$(BUILD)/scripts/admin-list-view.js \
 	$(BUILD)/scripts/job-list-view.js \
 	$(BUILD)/scripts/frame-view.js \
 	$(BUILD)/scripts/model-view.js \
@@ -92,6 +96,8 @@ TEST_SCRIPTS=\
 	$(BUILD)/scripts/scoring-view.js \
 	$(BUILD)/scripts/scoring-sheet-view.js \
 	$(BUILD)/scripts/notification-view.js \
+	$(BUILD)/scripts/cloud-view.js \
+	$(BUILD)/scripts/timeline-view.js \
 	$(BUILD)/scripts/job-view.js \
 	$(BUILD)/scripts/scoring-selection-view.js \
 	$(BUILD)/scripts/main-view.js \
@@ -141,6 +147,7 @@ TEMPLATES=\
 	src/templates/model-list-view.jade \
 	src/templates/scoring-list-view.jade \
 	src/templates/notification-list-view.jade \
+	src/templates/admin-list-view.jade \
 	src/templates/job-list-view.jade \
 	src/templates/empty-view.jade \
 	src/templates/frame-view.jade \
@@ -150,6 +157,8 @@ TEMPLATES=\
 	src/templates/model-inspection-view.jade \
 	src/templates/scoring-view.jade \
 	src/templates/notification-view.jade \
+	src/templates/cloud-view.jade \
+	src/templates/timeline-view.jade \
 	src/templates/job-view.jade \
 	src/templates/scoring-selection-view.jade
 
@@ -167,6 +176,7 @@ STYLES=\
 	src/styles/model-list-view.styl \
 	src/styles/scoring-list-view.styl \
 	src/styles/notification-list-view.styl \
+	src/styles/admin-list-view.styl \
 	src/styles/job-list-view.styl \
 	src/styles/empty-view.styl \
 	src/styles/frame-view.styl \
@@ -174,6 +184,8 @@ STYLES=\
 	src/styles/model-selection-view.styl \
 	src/styles/scoring-view.styl \
 	src/styles/notification-view.styl \
+	src/styles/cloud-view.styl \
+	src/styles/timeline-view.styl \
 	src/styles/job-view.styl \
 	src/styles/scoring-selection-view.styl
 

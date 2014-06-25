@@ -48,6 +48,8 @@ Steam.ApplicationContext = ->
     requestModelAndCompatibleFrames: do edge$
     requestJobs: do edge$
     requestJobPoll: do edge$
+    requestCloud: do edge$
+    requestTimeline: do edge$
 
     # Local Storage
     putLocalObject: do edge$
@@ -69,6 +71,7 @@ Steam.ApplicationContext = ->
     switchToJobs: do edge$
 
     displayEmpty: do edge$
+    displayView: do edge$
 
     promptImportFiles: do edge$
     promptParseFiles: do edge$
@@ -103,11 +106,11 @@ Steam.ApplicationContext = ->
     rescore: do edge$
     configureStripPlot: do edge$
 
+    loadJobs: do edge$
     displayJob: do edge$
     jobsLoaded: do edge$
-    loadJobs: do edge$
     refreshJobs: do edge$
-
-
+    
+    loadAdmin: do edge$
 
 

@@ -107,6 +107,12 @@ Steam.H2OProxy = (_) ->
     opts = key: encodeURIComponent key
     request '/JobPoll.json', opts, go
 
+  requestCloud = (go) ->
+    request '/Cloud.json', null, go
+
+  requestTimeline = (go) ->
+    request '/Timeline.json', null, go
+
   link$ _.requestTypeaheadFiles, requestTypeaheadFiles
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
@@ -123,5 +129,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestModelAndCompatibleFrames, (key, go) -> requestModels go, key: (encodeURIComponent key), find_compatible_frames: yes
   link$ _.requestJobs, requestJobs
   link$ _.requestJobPoll, requestJobPoll
+  link$ _.requestCloud, requestCloud
+  link$ _.requestTimeline, requestTimeline
 
 

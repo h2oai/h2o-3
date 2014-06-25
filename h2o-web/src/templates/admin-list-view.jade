@@ -1,0 +1,8 @@
+.y-admin-list-view
+  .y-admin-topics
+    // ko foreach:items
+    .y-admin-topic(data-bind='click:display, css:{"y-active":isActive}')
+      .y-admin-topic-title(data-bind='text:title')
+      .y-admin-topic-caption(data-bind='text:caption')
+    // /ko
+  // /ko
