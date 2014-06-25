@@ -472,7 +472,7 @@ final public class H2O {
   // ---
   // A dense array indexing all Cloud members. Fast reversal from "member#" to
   // Node.  No holes.  Cloud size is _members.length.
-  final H2ONode[] _memary;
+  public final H2ONode[] _memary;
   final int _hash;
 
   // A dense integer identifier that rolls over rarely. Rollover limits the

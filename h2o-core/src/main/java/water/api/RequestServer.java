@@ -51,7 +51,7 @@ public class RequestServer extends NanoHTTPD {
       Route route = (Route) o;
       if( !_handler_class .equals(route._handler_class )) return false;
       if( !_handler_method.equals(route._handler_method)) return false;
-      if( !_http_method   .equals(route._http_method   )) return false;
+      if( !_http_method   .equals(route._http_method)) return false;
       if( !_url_pattern   .equals(route._url_pattern   )) return false;
       if( !Arrays.equals(_path_params, route._path_params)) return false;
       return true;
@@ -89,6 +89,7 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"/Cloud"      , "Cloud",         "Admin");
     addToNavbar(register("/Jobs"       ,"GET",JobsHandler       .class,"list"    ),"/Jobs"       , "Jobs",          "Admin");
     addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"/Timeline"   , "Timeline",      "Admin");
+    addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"compute2"),"/Profiler"   , "Profiler",      "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"/Tutorials"  , "Tutorials Home","Help");
@@ -197,7 +198,7 @@ public class RequestServer extends NanoHTTPD {
   // /xxx       --> DEFAULT_VERSION
   private int parseVersion( String uri ) {
     if( uri.length() <= 1 || uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
-      return (0<<16)| DEFAULT_VERSION;
+      return DEFAULT_VERSION;
     if( uri.startsWith("/latest") )
       return (("/latest".length())<<16)| DEFAULT_VERSION;
     int idx=1;                  // Skip the leading slash
@@ -217,15 +218,13 @@ public class RequestServer extends NanoHTTPD {
 
 
   private void capturePathParms(Properties parms, String path, Route route) {
-    if (null == route._path_params) return; // path_params is public, so someone may set it to null
-
     Matcher m = route._url_pattern.matcher(path);
     if (! m.matches()) {
       throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route._url_pattern.pattern() + " and path: " + path);
     }
 
     for (String key : route._path_params) {
-      String val = null;
+      String val;
       try {
         val = m.group(key);
       }
