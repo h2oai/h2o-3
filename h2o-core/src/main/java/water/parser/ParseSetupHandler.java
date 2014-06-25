@@ -26,6 +26,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   String[] _columnNames;
   private long _invalidLines; // Number of broken/invalid lines found
   String[][] _data;           // First few rows of parsed/tokenized data
+  String[] _errors;           // Errors in this parse setup
   
   public ParseSetupHandler( boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] data ) {
     _isValid = isValid;
@@ -36,6 +37,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
     _singleQuotes = singleQuotes;
     _columnNames = columnNames;
     _data = data;
+    _errors = errors;
   }
 
   // Invalid setup based on a prior valid one
@@ -48,7 +50,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   public void guessSetup( ) {
     _hexName = hex(_srcs[0].toString());
     byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(_srcs[0]));
-    ParseSetupHandler psh = guessSetup(bits,0/*guess header*/);
+    ParseSetupHandler psh = guessSetup(bits,false,0/*guess header*/);
     // Update in-place
     _isValid = psh._isValid;
     _pType = psh._pType;
@@ -107,7 +109,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   // Guess everything from a single pile-o-bits.  Used in tests, or in initial
   // parser inspections when the user has not told us anything about separators
   // or headers.
-  public static ParseSetupHandler guessSetup( byte[] bits, int checkHeader ) { return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, false, checkHeader, null); }
+  public static ParseSetupHandler guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) { return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null); }
 
   private static final ParserType guessTypeOrder[] = {ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
   public static ParseSetupHandler guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
@@ -130,10 +132,10 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   // If they are not compatible, there will be _errors set.
   ParseSetupHandler guessSetup( byte[] bits ) {
     assert _isValid;
-    ParseSetupHandler ps = guessSetup(bits, _pType, _sep, _ncols, _singleQuotes, 0/*guess header*/, _columnNames);
+    ParseSetupHandler ps = guessSetup(bits, _singleQuotes, 0/*guess header*/);
     if( !ps._isValid ) return ps; // Already invalid
     if( _pType != ps._pType ||
-        (_pType == ParserType.CSV && (_sep != ps._sep && _ncols != ps._ncols)) )
+        (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) )
       return new ParseSetupHandler(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
     return ps;
   }

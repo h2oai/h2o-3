@@ -522,7 +522,7 @@ MAIN_LOOP:
     int lengths[] = new int[longest+1];
     for( String[] s : data ) lengths[s.length]++;
     int maxCnt = 0;             // Most common line length
-    for( int i=0; i<longest; i++ ) if( lengths[i] > lengths[maxCnt] ) maxCnt = i;
+    for( int i=0; i<=longest; i++ ) if( lengths[i] > lengths[maxCnt] ) maxCnt = i;
     return maxCnt;
   }
 
@@ -596,7 +596,7 @@ MAIN_LOOP:
       for( int i = 0; i < nlines; ++i )
         data[i] = determineTokens(lines[i], sep, single_quote );
       // guess columns from tokenization
-      if( ncols == -1 ) ncols = guessNcols(columnNames,data);
+      ncols = guessNcols(columnNames,data);
 
       // Asked to check for a header, so see if 1st line looks header-ish
       if( checkHeader == 0 ) {  // Guess
