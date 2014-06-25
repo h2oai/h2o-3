@@ -1,6 +1,7 @@
 package water.api;
 
 import water.*;
+import water.api.API;
 import water.fvec.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
@@ -12,11 +13,17 @@ class FrameV2 extends Schema {
   @API(help="Key to inspect",required=true)
   Key key;
 
-  @API(help="Row offset to display")
+  @API(help="Row offset to display",direction=API.Direction.INPUT)
   long off;
 
-  @API(help="Number of rows to display")
+  @API(help="Number of rows to display",direction=API.Direction.INOUT)
   int len;
+
+  @API(help="Number of rows")
+  long rows;
+
+  @API(help="Total data size in bytes")
+  long byteSize;
 
   // Output fields
   @API(help="Columns")
@@ -54,7 +61,7 @@ class FrameV2 extends Schema {
     @API(help="string data")
     final String[] str_data;
 
-    @API(help="decimal precision, -1 for all")
+    @API(help="decimal precision, -1 for all digits")
     final byte precision;
 
     transient Vec _vec;
@@ -92,7 +99,9 @@ class FrameV2 extends Schema {
     key = fr._key;
     _fr = fr;
     off = 0;
-    len = 100;                  // comes from Frame??? TODO
+    rows = fr.numRows();
+    len = (int)Math.min(100,rows);
+    byteSize = fr.byteSize();
     columns = new Col[_fr.numCols()];
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )
@@ -110,7 +119,9 @@ class FrameV2 extends Schema {
   // Version&Schema-specific filling from the handler
   @Override protected FrameV2 fillFrom( Handler h ) {
     off = 0;
-    len = 100;                  // comes from Frame??? TODO
+    rows = _fr.numRows();
+    len = (int)Math.min(100,rows);
+    byteSize = _fr.byteSize();
     columns = new Col[_fr.numCols()];
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )

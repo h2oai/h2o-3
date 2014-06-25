@@ -229,6 +229,14 @@ public class Frame extends Lockable {
 
   public String[] names() { return _names; }
 
+  public long byteSize() {
+    long sum=0;
+    Vec[] vecs = vecs();
+    for( int i=0; i<vecs.length; i++ )
+      sum += vecs[i].byteSize();
+    return sum;
+  }
+
   // For MRTask: allow rollups for all written-into vecs
   public Futures postWrite(Futures fs) {
     for( Vec v : vecs() ) v.postWrite(fs);

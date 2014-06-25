@@ -528,7 +528,7 @@ public class ParseDataset2 extends Job<Frame> {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Enum [] _enums;
-    protected final transient byte [] _ctypes;
+    protected transient byte [] _ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
@@ -699,8 +699,9 @@ public class ParseDataset2 extends Job<Frame> {
     
     private void addColumns(int ncols){
       if(ncols > _nCols){
-        _nvs = Arrays.copyOf(_nvs, ncols);
-        _vecs = Arrays.copyOf(_vecs, ncols);
+        _nvs   = Arrays.copyOf(_nvs   , ncols);
+        _vecs  = Arrays.copyOf(_vecs  , ncols);
+        _ctypes= Arrays.copyOf(_ctypes, ncols);
         for(int i = _nCols; i < ncols; ++i){
           _vecs[i] = new AppendableVec(_vg.vecKey(i+1));
           _nvs[i] = new NewChunk(_vecs[i], _cidx);
