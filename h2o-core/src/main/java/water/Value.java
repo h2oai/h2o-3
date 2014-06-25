@@ -66,7 +66,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // - the POJO might be dropped by the MemoryManager and reconstituted from
   //   disk and/or the byte array back to it's original form, losing your changes.
   private volatile Freezable _pojo;
-  Freezable rawPOJO() { return _pojo; }
+  public Freezable rawPOJO() { return _pojo; }
 
   // Free array (but always be able to rebuild the array)
   final void freeMem() {

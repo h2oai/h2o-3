@@ -287,7 +287,7 @@ final public class Key extends Iced<Key> implements Comparable {
   public boolean user_allowed() { return type()==USER_KEY; }
 
   // Returns the type of the key.
-  int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
+  public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
 
   static final char MAGIC_CHAR = '$'; // Used to hexalate displayed keys
   private static final char[] HEX = "0123456789abcdef".toCharArray();

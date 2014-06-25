@@ -206,6 +206,22 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     assert !is_locked(job_key);
   }
 
+  // Unlock from all lockers
+  public void unlock_all() {
+    if( _key != null )
+      for (Key k : _lockers) new UnlockSafe(k).invoke(_key);
+  }
+
+  private class UnlockSafe extends TAtomic<Lockable> {
+    final Key _job_key;         // potential job doing the unlocking
+    UnlockSafe( Key job_key ) { _job_key = job_key; }
+    @Override public Lockable atomic(Lockable old) {
+      if (old.is_locked(_job_key))
+        set_unlocked(old._lockers,_job_key);
+      return Lockable.this;
+    }
+  }
+
   // Pretty string when locking fails
   protected abstract String errStr();
 }
