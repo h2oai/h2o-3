@@ -4,9 +4,7 @@ import water.*;
 import water.util.Log;
 
 public class UnlockTask extends MRTask<UnlockTask> {
-  @Override public void reduce(UnlockTask drt) { }
   @Override public byte priority() { return H2O.GUI_PRIORITY; }
-
   @Override public void setupLocal() {
     final KeySnapshot.KeyInfo[] kinfo = KeySnapshot.localSnapshot(true)._keyInfos;
     for(KeySnapshot.KeyInfo k:kinfo) {
@@ -21,7 +19,8 @@ public class UnlockTask extends MRTask<UnlockTask> {
         // check that none of the locking jobs is still running
         for (Key locker : lockers) {
           if (locker != null && locker.type() == Key.JOB) {
-            final Job job = DKV.get(locker).get();
+            final Value jobv = DKV.get(locker);
+            final Job job = jobv == null ? null : (Job)jobv.get();
             if (job != null && job.isRunning())
               throw new UnsupportedOperationException("Cannot unlock all keys since locking jobs are still running.");
           }
