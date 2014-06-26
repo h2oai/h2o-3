@@ -78,7 +78,7 @@ class FrameV2 extends Schema {
     Col( String name, Vec vec, long off, int len ) {
       label=name;
       missing = vec.naCnt();
-      zeros = vec.nzCnt();
+      zeros = vec.length()-vec.nzCnt();
       pinfs = vec.pinfs();
       ninfs = vec.ninfs();
       mins  = vec.mins();
@@ -209,7 +209,7 @@ class FrameV2 extends Schema {
     }
 
     long l = (long)d;
-    if( (double)l == d ) Long.toString(l);
+    if( (double)l == d ) return Long.toString(l);
     if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
     Chunk chk = c._vec.chunkForRow(off);
     Class Cc = chk._vec.chunkForRow(off).getClass();
