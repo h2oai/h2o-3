@@ -136,7 +136,7 @@ public class ParseSetupHandler extends Handler<ParseSetupHandler,ParseSetupV2> {
   // If they are not compatible, there will be _errors set.
   ParseSetupHandler guessSetup( byte[] bits ) {
     assert _isValid;
-    ParseSetupHandler ps = guessSetup(bits, _singleQuotes, 0/*guess header*/);
+    ParseSetupHandler ps = guessSetup(bits, _singleQuotes, _checkHeader);
     if( !ps._isValid ) return ps; // Already invalid
     if( _pType != ps._pType ||
         (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) )

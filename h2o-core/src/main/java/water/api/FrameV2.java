@@ -25,6 +25,9 @@ class FrameV2 extends Schema {
   @API(help="Total data size in bytes")
   long byteSize;
 
+  @API(help="Raw unparsed text")
+  boolean isText;
+
   // Output fields
   @API(help="Columns")
   Col[] columns;
@@ -130,10 +133,11 @@ class FrameV2 extends Schema {
     rows = fr.numRows();
     len = (int)Math.min(100,rows);
     byteSize = fr.byteSize();
-    columns = new Col[_fr.numCols()];
-    Vec[] vecs = _fr.vecs();
+    columns = new Col[fr.numCols()];
+    Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new Col(_fr._names[i],vecs[i],off,len);
+      columns[i] = new Col(fr._names[i],vecs[i],off,len);
+    isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
   }
 
   //==========================
