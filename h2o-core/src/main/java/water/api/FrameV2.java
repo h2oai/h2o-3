@@ -40,11 +40,11 @@ class FrameV2 extends Schema {
     @API(help="zeros")
     final long zeros;
 
-    @API(help="min")
-    final double min;
+    @API(help="mins")
+    final double[] mins;
 
-    @API(help="max")
-    final double max;
+    @API(help="maxs")
+    final double[] maxs;
 
     @API(help="mean")
     final double mean;
@@ -52,7 +52,7 @@ class FrameV2 extends Schema {
     @API(help="sigma")
     final double sigma;
 
-    @API(help="datatype: {time, enum, int, real}")
+    @API(help="datatype: {enum, int, real, time, uuid}")
     final String type;
 
     @API(help="domain; not-null for enum columns only")
@@ -73,8 +73,8 @@ class FrameV2 extends Schema {
       label=name;
       missing = vec.naCnt();
       zeros = vec.nzCnt();
-      min = vec.min();
-      max = vec.max();
+      mins = vec.mins();
+      maxs = vec.maxs();
       mean = vec.mean();
       sigma = vec.sigma();
       type = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
@@ -147,23 +147,19 @@ class FrameV2 extends Schema {
 
     // Rollup data
     formatRow(ab,"","type" ,new ColOp() { String op(Col c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.min); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.max); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mean); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.sigma); } } );
+    formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mins[0]); } } );
+    formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.maxs[0]); } } );
+    formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mean   ); } } );
+    formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.sigma  ); } } );
 
-    // Optional missing-element line
-    boolean has_miss=false, has_zero=false;
+    // Optional rows: missing elements, zeros, levels
+    boolean has_miss=false, has_zero=false, has_enum=false;
     for( Col c : columns ) if( c.missing > 0 ) { has_miss=true; break; }
-    if( has_miss ) formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing==0?"":Long.toString(c.missing); } } );
+    if( has_miss ) formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing== 0 ?"":Long.toString(c.missing      );}});
     for( Col c : columns ) if( c.zeros   > 0 ) { has_zero=true; break; }
-    if( has_zero ) formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  ==0?"":Long.toString(c.zeros  ); } } );
-
-    // enums
-    ab.p("<tr>").cell("levels");
-    for( Col c : columns )
-      ab.cell(c.domain==null?"":Integer.toString(c.domain.length));
-    ab.p("</tr>");
+    if( has_zero ) formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}});
+    for( Col c : columns ) if( c.domain!=null) { has_enum=true; break; }
+    if( has_enum ) formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(Col c) { return c.domain==null?"":Long.toString(c.domain.length);}});
 
     // Frame data
     int len = columns.length > 0 ? columns[0].data.length : 0;
@@ -201,14 +197,15 @@ class FrameV2 extends Schema {
       return "<b style=\"font-family:monospace;\">"+str+"</b>";
     }
 
+    long l = (long)d;
+    if( (double)l == d ) Long.toString(l);
     if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
     Chunk chk = c._vec.chunkForRow(off);
     Class Cc = chk._vec.chunkForRow(off).getClass();
     if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk)._scale);
     if( Cc == C2SChunk.class ) return x2(d,((C2SChunk)chk)._scale);
     if( Cc == C4SChunk.class ) return x2(d,((C4SChunk)chk)._scale);
-    long l = (long)d;
-    return (double)l == d ? Long.toString(l) : Double.toString(d);
+    return Double.toString(d);
   }
 
   private static String x2( double d, double scale ) {

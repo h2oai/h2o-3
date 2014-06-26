@@ -233,9 +233,11 @@ public class Vec extends Keyed {
 
   /** RollupStats: min/max/mean of this Vec lazily computed.  */
   /** Return column min - lazily computed as needed. */
-  public double min()  { return rollupStats()._min; }
+  public double min()  { return mins()[0]; }
+  public double[]mins(){ return rollupStats()._mins; }
   /** Return column max - lazily computed as needed. */
-  public double max()  { return rollupStats()._max; }
+  public double max()  { return maxs()[0]; }
+  public double[]maxs(){ return rollupStats()._maxs; }
   /** Return column mean - lazily computed as needed. */
   public double mean() { return rollupStats()._mean; }
   /** Return column standard deviation - lazily computed as needed. */
@@ -494,7 +496,7 @@ public class Vec extends Keyed {
   /** Pretty print the Vec: [#elems, min/mean/max]{chunks,...} */
   @Override public String toString() {
     RollupStats rs = RollupStats.getOrNull(this);
-    String s = "["+length()+(rs == null ? ", {" : ","+rs._min+"/"+rs._mean+"/"+rs._max+", "+PrettyPrint.bytes(rs._size)+", {");
+    String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {
       s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";

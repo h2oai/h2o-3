@@ -1,5 +1,6 @@
 package water.fvec;
 
+import java.util.Arrays;
 import water.*;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
@@ -24,7 +25,7 @@ class RollupStats extends DTask<RollupStats> {
   double _mean, _sigma;
   long _rows, _nzCnt, _size;
   boolean _isInt=true;
-  double _min=Double.MAX_VALUE, _max=-Double.MAX_VALUE;
+  double[] _mins, _maxs;
 
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
@@ -40,6 +41,8 @@ class RollupStats extends DTask<RollupStats> {
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
+    _mins = new double[5];  Arrays.fill(_mins, Double.MAX_VALUE);
+    _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec._isUUID;
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i<c._len; i=c.nextNZ(i) ) {
@@ -53,7 +56,7 @@ class RollupStats extends DTask<RollupStats> {
       } else {                  // All other columns have useful rollups
 
         if( d == 0 ) _nzCnt++;
-        minmax(d);
+        min(d);  max(d);
         _mean += d;
         _rows++;
         if( _isInt && ((long)d) != d ) _isInt = false;
@@ -63,13 +66,13 @@ class RollupStats extends DTask<RollupStats> {
     // Sparse?  We skipped all the zeros; do them now
     if( c.isSparse() ) {
       int zeros = c._len - c.sparseLen();
-      if( zeros > 0 ) minmax(0); // At least 1 zero?
+      if( zeros > 0 ) { min(0); max(0); } // At least 1 zero?
       _rows += zeros;
     }
 
     // UUID columns do not compute min/max/mean/sigma
     if( isUUID ) {
-      _min = _max = _mean = _sigma = Double.NaN;
+      _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
       for( int i=0; i<c._len; i++ ) {
@@ -83,8 +86,8 @@ class RollupStats extends DTask<RollupStats> {
   }
 
   private void reduce( RollupStats rs ) {
-    _min = Math.min(_min,rs._min);
-    _max = Math.max(_max,rs._max);
+    for( double d : rs._mins ) min(d);
+    for( double d : rs._maxs ) max(d);
     _naCnt += rs._naCnt;
     _nzCnt += rs._nzCnt;
     double delta = _mean - rs._mean;
@@ -98,9 +101,17 @@ class RollupStats extends DTask<RollupStats> {
     _isInt &= rs._isInt;
   }
 
-  private void minmax( double d ) {
-    if( d < _min ) _min = d;
-    if( d > _max ) _max = d;
+  private void min( double d ) {
+    if( d >= _mins[_mins.length-1] ) return;
+    for( int i=0; i<_mins.length; i++ )
+      if( d < _mins[i] ) 
+        { double tmp = _mins[i];  _mins[i] = d;  d = tmp; }
+  }
+  private void max( double d ) {
+    if( d <= _maxs[_maxs.length-1] ) return;
+    for( int i=0; i<_maxs.length; i++ )
+      if( d > _maxs[i] ) 
+        { double tmp = _maxs[i];  _maxs[i] = d;  d = tmp; }
   }
 
   private static class Roll extends MRTask<Roll> {
