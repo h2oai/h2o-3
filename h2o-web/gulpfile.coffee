@@ -56,7 +56,7 @@ gulp.task 'build-global-scripts', ->
 gulp.task 'build-browser-script', [ 'build-scripts', 'build-global-scripts' ], ->
   gulp.src [ 'build/scripts/prelude.global.js', 'build/scripts/*.global.js', 'build/scripts/*.js' ]
     .pipe concat 'steam.js'
-    .pipe header 'use strict;(function(){'
+    .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + '/js/'
 
@@ -82,6 +82,7 @@ gulp.task 'compile-browser-assets', ->
     .pipe gulp.dest config.dir.deploy + '/fonts/'
 
   gulp.src config.lib.css
+    .pipe concat 'lib.css'
     .pipe gulp.dest config.dir.deploy + '/css/'
 
 gulp.task 'watch', ->
