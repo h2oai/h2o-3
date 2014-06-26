@@ -2,6 +2,7 @@ package water.api;
 
 import water.*;
 import water.fvec.Frame;
+import water.fvec.RollupStats;
 import water.fvec.Vec;
 
 class FramesHandler extends Handler<FramesHandler, FramesBase> {
@@ -83,6 +84,11 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     Frame f = new Frame(names, vecs);
     frames = new Frame[1];
     frames[0] = f;
+  }
+
+  protected void summary() {
+    column();                   // Parse out 1 col
+    RollupStats.computeHisto(frames[0].vecs()[0]);
   }
 
   protected void fetch() {

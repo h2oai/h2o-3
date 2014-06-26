@@ -2,6 +2,7 @@ package water.fvec;
 
 import java.util.Arrays;
 import water.*;
+import water.util.ArrayUtils;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
@@ -14,18 +15,26 @@ import water.*;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-class RollupStats extends DTask<RollupStats> {
+public class RollupStats extends DTask<RollupStats> {
   final Key _rskey;
   final private byte _priority;
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
-  long _naCnt;
-  double _mean, _sigma;
-  long _rows, _nzCnt, _size, _pinfs, _ninfs;
-  boolean _isInt=true;
-  double[] _mins, _maxs;
+  public long _naCnt;
+  // Computed in 1st pass
+  public double _mean, _sigma;
+  public long _rows, _nzCnt, _size, _pinfs, _ninfs;
+  public boolean _isInt=true;
+  public double[] _mins, _maxs;
+
+  // Expensive histogram & percentiles
+  // Computed in a 2nd pass, on-demand, by calling computeHisto
+  private final int MAX_SIZE = 1024;
+  private final int MAX_ENUM_SIZE = 1000000;
+  private static final double DEFAULT_PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  volatile public long[] _bins;
 
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
@@ -51,7 +60,7 @@ class RollupStats extends DTask<RollupStats> {
         _naCnt++;
 
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        if( c.at16l0(i)==0 && c.at16h0(i)==0 ) _nzCnt++;
+        if( c.at16l0(i)!=0 || c.at16h0(i)!=0 ) _nzCnt++;
 
       } else {                  // All other columns have useful rollups
 
@@ -202,4 +211,71 @@ class RollupStats extends DTask<RollupStats> {
     fs.blockForPending();       // Block for any invalidates
     tryComplete();
   }
+
+  // ----------------------------
+  // Compute the expensive histogram on-demand
+  public static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
+  // Version that allows histograms to be computed in parallel
+  static Futures computeHisto(Vec vec, Futures fs) {
+    while( true ) {
+      RollupStats rs = get(vec,null); // Block for normal histogram
+      if( rs._bins != null ) return fs;
+      rs.computeHisto_impl(vec);
+      Value old = DKV.get(rs._rskey);
+      if( old.get(RollupStats.class) == rs ) {  // Nothing changed during the compute...
+        DKV.DputIfMatch(rs._rskey,new Value(rs._rskey,rs),old,fs);
+        return fs;
+      }
+    }
+  }
+
+  // Compute the expensive histogram
+  private void computeHisto_impl(Vec vec) {
+    // All NAs or non-math; histogram has zero bins
+    if( _naCnt == vec.length() || vec.isUUID() ) { _bins = new long[0]; return; }
+    // Constant: use a single bin
+    double span = _maxs[0]-_mins[0];
+    if( span==0 ) { _bins = new long[]{vec.length()-_naCnt}; return;  }
+
+    // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
+    // - unless the count gets too high; allow a very high count for enums.
+    int nbins=MAX_SIZE;
+    if( _isInt && (int)span==span ) {
+      nbins = (int)span+1;      // 1 bin per int
+      int lim = vec.isEnum() ? MAX_ENUM_SIZE : MAX_SIZE; 
+      nbins = Math.min(lim,nbins); // Cap nbins at sane levels
+    }
+    _bins = new Histo(this,nbins).doAll(vec)._bins;
+
+  }
+
+  // Histogram base & stride
+  public double h_base() { return _mins[0]; }
+  public double h_stride() { return h_stride(_bins.length); }
+  private double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
+
+  // Compute expensive histogram
+  private static class Histo extends MRTask<Histo> {
+    final double _base, _stride; // Inputs
+    final int _nbins;            // Inputs
+    long[] _bins;                // Outputs
+    Histo( RollupStats rs, int nbins ) { _base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
+    @Override public void map( Chunk c ) {
+      _bins = new long[_nbins];
+      for( int i=c.nextNZ(-1); i<c._len; i=c.nextNZ(i) ) {
+        double d = c.at0(i);
+        if( Double.isNaN(d) ) continue;
+        _bins[idx(d)]++;
+      }
+      // Sparse?  We skipped all the zeros; do them now
+      if( c.isSparse() )
+        _bins[idx(0.0)] += (c._len - c.sparseLen());
+    }
+    private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
+
+    @Override public void reduce( Histo h ) { ArrayUtils.add(_bins,h._bins); }
+    // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
+    @Override public boolean logVerbose() { return false; }
+  }
+
 }

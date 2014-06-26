@@ -73,18 +73,28 @@ class FrameV2 extends Schema {
     @API(help="decimal precision, -1 for all digits")
     final byte precision;
 
+    @API(help="Histogram bins; null if not computed")
+    final long[] bins;
+
+    @API(help="Start of histogram bin zero")
+    final double base;
+
+    @API(help="Stride per bin")
+    final double stride;
+
     transient Vec _vec;
 
     Col( String name, Vec vec, long off, int len ) {
       label=name;
-      missing = vec.naCnt();
-      zeros = vec.length()-vec.nzCnt();
-      pinfs = vec.pinfs();
-      ninfs = vec.ninfs();
-      mins  = vec.mins();
-      maxs  = vec.maxs();
-      mean  = vec.mean();
-      sigma = vec.sigma();
+      RollupStats rs = vec.rollupStats();
+      missing = rs._naCnt;
+      zeros = vec.length()-rs._nzCnt;
+      pinfs = rs._pinfs;
+      ninfs = rs._ninfs;
+      mins  = rs._mins;
+      maxs  = rs._maxs;
+      mean  = rs._mean;
+      sigma = rs._sigma;
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
@@ -101,6 +111,12 @@ class FrameV2 extends Schema {
       }
       _vec = vec;               // Better HTML display, not in the JSON
       precision = vec.chunkForRow(0).precision();
+
+      // Histogram data is only computed on-demand.  By default here we do NOT
+      // compute it, but will return any prior computed & cached histogram.
+      bins  = rs._bins;
+      base  = bins==null ? 0 : rs.h_base();
+      stride= bins==null ? 0 : rs.h_stride();
     }
   }
 

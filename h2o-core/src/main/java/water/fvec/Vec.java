@@ -253,8 +253,18 @@ public class Vec extends Keyed {
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
+
+  /** Histogram bins.  Computed on-demand to 1st call to these methods.  
+   *  bins[] are row-counts in each bin
+   *  base - start of bin 0
+   *  stride - relative start of next bin
+   */
+  public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins;  }
+  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base();  }
+  public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
+
   /** Compute the roll-up stats as-needed */
-  private RollupStats rollupStats() { return RollupStats.get(this, null); }
+  public RollupStats rollupStats() { return RollupStats.get(this, null); }
 
   /** Writing into this Vector from *some* chunk.  Immediately clear all caches
    *  (_min, _max, _mean, etc).  Can be called repeatedly from one or all
