@@ -11,10 +11,6 @@ public class UnlockTest extends TestUtil {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(3); }
 
-  static class DJob extends Job {
-    DJob(Key a) { super(a,"DJob",1); }
-  }
-
   @Test
   public void run() {
     // Put chunks into KV store
@@ -22,17 +18,16 @@ public class UnlockTest extends TestUtil {
     // Create two lockable frames in KV store
     Frame fr1 = new Frame(Key.make(), f.names(), f.vecs());
     Frame fr2 = new Frame(Key.make(), f.names(), f.vecs());
-    DJob dj = new DJob(Key.make());
     // Lock the frames against writes
-    fr1.delete_and_lock(dj._key);
-    fr2.delete_and_lock(dj._key);
+    fr1.delete_and_lock(null);
+    fr2.delete_and_lock(null);
     int i = 0;
     try {
       // try to delete the write-locked frames -> will throw an exception
       fr1.delete();
       fr2.delete(); // won't be reached
     } catch (Throwable t) {
-      Log.info("Correctly caught exception: " + t.getClass()); //either AssertionError if local or DistributedException if remote
+      Log.info("Correctly unable to delete (was locked): " + t.getClass()); //either AssertionError if local or DistributedException if remote
       i++;
     } finally {
       // second attempt: will unlock and delete properly
