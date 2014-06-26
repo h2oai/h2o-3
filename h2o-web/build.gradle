@@ -1,24 +1,34 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: 'java'
 
 description = "H2O web client"
 
-task localInstallNpm(type: Exec) {
-  commandLine 'npm', 'install'
+def getOsSpecificCommandLine(command, arg) {
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    return [ 'cmd', '/c', command, arg ]
+  } else {
+    return [ command, arg ]
+  }
 }
 
-task localInstallBower(type: Exec) {
-  commandLine 'bower', 'install'
+task installNpmPackages(type: Exec) {
+  commandLine = getOsSpecificCommandLine( 'npm', 'install' )
 }
 
-task localProcessResources(type: Exec) {
-  commandLine 'gulp'
+task installBowerPackages(type: Exec) {
+  commandLine = getOsSpecificCommandLine( 'bower', 'install' )
 }
 
-task localClean(type: Exec) {
-  commandLine 'gulp', 'clean'
+task buildClientWithGulp(type: Exec) {
+  commandLine = getOsSpecificCommandLine( 'gulp', '' )
 }
 
-localProcessResources.dependsOn localInstallNpm
-localProcessResources.dependsOn localInstallBower
-processResources.dependsOn localProcessResources
-clean.dependsOn localClean
+task cleanClientWithGulp(type: Exec) {
+  commandLine = getOsSpecificCommandLine( 'gulp', 'clean' )
+}
+
+installBowerPackages.dependsOn installNpmPackages
+buildClientWithGulp.dependsOn installBowerPackages
+processResources.dependsOn buildClientWithGulp
+clean.dependsOn cleanClientWithGulp
