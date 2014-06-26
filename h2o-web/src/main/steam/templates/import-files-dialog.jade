@@ -105,14 +105,25 @@
                     tbody
                       tr
                         td.y-form-field
-                          label
+                          label.checkbox-inline
                             input(type='checkbox' data-bind='checked:useSingleQuotes')
                             span.caption Enable single quotes as a field quotation character
-                      tr
-                        td.y-form-field
-                          label
+                          label.checkbox-inline
                             input(type='checkbox' data-bind='checked:deleteOnDone')
                             span.caption Delete on done
+                      tr
+                        td.y-form-field
+                          span(style='display:inline-block;vertical-align:middle;font-size:11px;text-transform:uppercase') Column headers:&nbsp;
+                          label.radio-inline
+                            input(type='radio' name='hasHeader' value='auto' data-bind='checked:headerOption')
+                            span Auto
+                          label.radio-inline
+                            input(type='radio' name='hasHeader' value='header' data-bind='checked:headerOption')
+                            span First row contains column names
+                          label.radio-inline
+                            input(type='radio' name='hasHeader' value='data' data-bind='checked:headerOption')
+                            span First row contains data
+
 
 
           // ko if:hasColumns

@@ -173,13 +173,16 @@ Steam.ImportFilesDialog = (_, _go) ->
   _hasColumns = lift$ _columnCount, (count) -> count > 0
   _destinationKey = node$ ''
   _parsedFiles = nodes$ []
+  _headerOption = node$ 'auto'
   _deleteOnDone = node$ yes
+  _headerOptions = auto: 0, header: 1, data: -1
 
   processParseSetupResult = (result) ->
     _parserType find parserTypes, (parserType) -> parserType.type is result.pType
     _delimiter find parseDelimiters, (delimiter) -> delimiter.charCode is result.sep 
     _useSingleQuotes result.singleQuotes isnt 'false'
     _destinationKey result.hexName
+    _headerOption if result.checkHeader is 0 then 'auto' else if result.checkHeader is -1 then 'data' else 'header'
     _columnCount result.ncols
     _parsedFiles result.srcs
     _columns map result.columnNames, (name) -> name: node$ name
@@ -188,7 +191,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   parseFiles = ->
     sourceKeys = map _parsedFiles(), (file) -> file.name
     columnNames = map _columns(), (column) -> column.name()
-    _.requestParseFiles sourceKeys, _destinationKey(), _parserType().type, _delimiter().charCode, _columnCount(), _useSingleQuotes(), columnNames, _deleteOnDone(), (error, result) -> 
+    _.requestParseFiles sourceKeys, _destinationKey(), _parserType().type, _delimiter().charCode, _columnCount(), _useSingleQuotes(), columnNames, _deleteOnDone(), _headerOptions[_headerOption()], (error, result) -> 
       if error
         #TODO handle this properly
         _.fail 'Error', error, null, noop
@@ -230,6 +233,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   columnCount: _columnCount
   hasColumns: _hasColumns
   destinationKey: _destinationKey
+  headerOption: _headerOption
   parsedFiles: _parsedFiles
   deleteOnDone: _deleteOnDone
   backToImport: backToImport

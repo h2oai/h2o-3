@@ -23,6 +23,9 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
   @API(help="ncols",dependsOn={"srcs"})
   int ncols;
 
+  @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",dependsOn={"srcs"})
+  int checkHeader;
+
   @API(help="single Quotes",dependsOn={"srcs"})
   boolean singleQuotes;
 
@@ -49,6 +52,7 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
     h._pType = pType;
     h._sep = sep;
     h._ncols = ncols;
+    h._checkHeader = checkHeader;
     h._singleQuotes = singleQuotes;
     h._columnNames = columnNames;
     h._delete_on_done = delete_on_done;
@@ -71,12 +75,13 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
   }
 
   // Helper so ParseSetup can link to Parse
-  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, boolean singleQuotes, String[] columnNames) {
+  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames) {
     return "Parse?srcs="+Arrays.toString(srcs)+
       "&hex="+hexName+
       "&pType="+pType+
       "&sep="+sep+
       "&ncols="+ncols+
+      "&checkHeader="+checkHeader+
       "&singleQuotes="+singleQuotes+
       "&columnNames="+Arrays.toString(columnNames)+
       "";

@@ -70,7 +70,7 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ParseSetup");
-    ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,singleQuotes,columnNames));
+    ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
     ab.putA( "srcs", srcs);
     ab.putStr( "hexName", hexName);
     ab.putEnum("pType",pType);

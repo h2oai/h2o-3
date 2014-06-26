@@ -42,7 +42,7 @@ Steam.H2OProxy = (_) ->
 
   encodeArray = (array) -> "[#{join (map array, encodeURIComponent), ','}]"
 
-  requestParseFiles = (sourceKeys, destinationKey, parserType, separator, columnCount, useSingleQuotes, columnNames, deleteOnDone, go) ->
+  requestParseFiles = (sourceKeys, destinationKey, parserType, separator, columnCount, useSingleQuotes, columnNames, deleteOnDone, checkHeader, go) ->
     opts =
       hex: encodeURIComponent destinationKey
       srcs: encodeArray sourceKeys
@@ -51,6 +51,7 @@ Steam.H2OProxy = (_) ->
       ncols: columnCount
       singleQuotes: useSingleQuotes
       columnNames: encodeArray columnNames
+      checkHeader: checkHeader
       delete_on_done: deleteOnDone
     request '/Parse.json', opts, go
 
