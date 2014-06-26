@@ -1,6 +1,5 @@
 package water;
 
-import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -10,9 +9,6 @@ import java.util.Map;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
-/**
- * Created by tomasnykodym on 5/30/14.
- */
 public class KeySnapshotTest extends TestUtil {
   private static class IcedInt extends Iced {
     public final int value;
@@ -27,7 +23,7 @@ public class KeySnapshotTest extends TestUtil {
 
   @Test
   public void testGlobalKeySet(){
-    ArrayList<Key> madeKeys = new ArrayList<Key>();
+    ArrayList<Key> madeKeys = new ArrayList<>();
     try {
       Futures fs = new Futures();
 
@@ -48,7 +44,7 @@ public class KeySnapshotTest extends TestUtil {
   }
   @Test
   public void testLocalKeySet(){
-    ArrayList<Key> madeKeys = new ArrayList<Key>();
+    ArrayList<Key> madeKeys = new ArrayList<>();
     int homeKeys = 0;
     Futures fs = new Futures();
     try {
@@ -73,18 +69,15 @@ public class KeySnapshotTest extends TestUtil {
   public void testFetchAll(){
     Key [] userKeys = new Key[200];
     Key [] systemKeys = new Key[200];
-    int homeKeys = 0;
     Futures fs = new Futures();
     try {
       for(int i = 0; i < (userKeys.length >> 1); ++i){
         DKV.put(userKeys[i] = Key.make("key" + i), new IcedInt(i),fs,false);
-        if(userKeys[i].home())++homeKeys;
         systemKeys[i] = Key.makeUserHidden(Key.make());
         DKV.put(systemKeys[i], new Value(systemKeys[i], new IcedInt(i)));
       }
       for(int i = (userKeys.length >> 1); i < userKeys.length; ++i){
         DKV.put(userKeys[i] = Key.make("key" + i), new IcedDouble(i),fs,false);
-        if(userKeys[i].home())++homeKeys;
         systemKeys[i] = Key.makeUserHidden(Key.make());
         DKV.put(systemKeys[i], new Value(systemKeys[i], new IcedDouble(i)));
       }
