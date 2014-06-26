@@ -22,7 +22,7 @@ function(path, root, optional_root_parent = NULL) {
         return(0)
     }
 
-    if (basename(path) == "h2o2" || "smalldata" %in% dir(path)) {
+    if (basename(path) == "h2o-dev" || "smalldata" %in% dir(path)) {
         print("\n[INFO]: Could not find the bucket that you specified! Checking R/*. Will fail if cannot find\n")
         SEARCHPATH <<- path
         return(-1)

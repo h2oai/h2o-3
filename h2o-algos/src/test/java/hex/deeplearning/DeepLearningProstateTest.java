@@ -200,7 +200,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               pred2.delete_and_lock(null);
                               pred2.unlock(null);
 
-                              //FIXME: Get Exec2 back into H2O2
+                              //FIXME: Get Exec2 back into H2O-DEV
 //                              if (mymodel.nclasses()==2) {
 //                                // make labels with 0.5 threshold for binary classifier
 //                                Env ev = Exec2.exec("pred2[,1]=pred2[,3]>=" + 0.5);

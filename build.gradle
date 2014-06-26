@@ -1,9 +1,9 @@
 //
-// The top-level h2o2 project does not have any java pieces itself, but
+// The top-level h2o-dev project does not have any java pieces itself, but
 // apply from the standard java.gradle so that 'gradle idea' generates IDE
 // files with the right settings.
 //
-// The top-level h2o2.jar file that gets produced is empty and not usable
+// The top-level h2o-dev.jar file that gets produced is empty and not usable
 // for anything.  Use the jar file produced by the h2o-web subproject.
 //
 apply from: 'ci/java.gradle'

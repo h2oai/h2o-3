@@ -20,8 +20,8 @@ lib/
 h2o-web/src/main/resources/www/steam
 out/
 .idea/
-h2o2.ipr
-h2o2.iws
+h2o-dev.ipr
+h2o-dev.iws
 .settings/*
 .gradle
 src/main/java/water/BuildVersion.java
@@ -31,4 +31,4 @@ R/.Rhistory
 Rsandbox
 .DS_Store
 .DS_Store?
-h2o2.ipr
+h2o-dev.ipr
