@@ -244,7 +244,7 @@ public final class AutoBuffer {
   }
 
   private int bbFree() {
-    if( _bb.isDirect() ) bbFree(_bb);
+    if( _bb != null && _bb.isDirect() ) bbFree(_bb);
     _bb = null;
     return 0;                   // Flow-coding
   }
@@ -314,7 +314,7 @@ public final class AutoBuffer {
           sock = null;
           throw ioe;            // Rethrow after close
         } finally {
-          if( !_read ) _h2o.freeTCPSocket(sock); // Recycle writeable TCP channel
+          if( !_read ) _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
           restorePriority();        // And if we raised priority, lower it back
         }
 

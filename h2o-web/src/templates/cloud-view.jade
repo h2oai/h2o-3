@@ -1,21 +1,84 @@
 .y-cloud-view
   .clearfix
-    .y-tag Administration
+    .y-tag Cloud
     .y-tagline(data-bind='timeago:timestamp')
-  h1.y-title Cloud
-
-  // ko if:nodes
-  h2.y-subtitle(data-bind='collapse:false') Nodes
-  table.table.table-condensed.table-striped
-    tbody
-      // ko foreach:nodes
-      tr(data-bind="css:{'danger':isUnhealthy}")
-        // ko foreach:attributes
-        td(data-bind='text:$data')
-        // /ko
-      // /ko
+  // ko with:cloud
+  h1.y-title(data-bind='text:name')
+  // ko if:canAcceptNodes
+  div.alert.alert-info This cloud is currently accepting new nodes.
   // /ko
+  // ko if:isAddingNodes
+  div.alert.alert-warning This cloud is currently adding new nodes.
+  // /ko
+  // ko if:hasBadNodes
+  div.alert.alert-danger(data-bind='text:badNodeMessage')
+  // /ko
+  h2.y-subtitle(data-bind='collapse:false, text:size')
+  div
+    // ko foreach:nodes
+    .y-node(data-bind="css:{'bg-danger':isUnhealthy}")
+      .y-node-title(data-bind='text:name')
+      .y-node-attr
+        .y-node-l.y-subtle Last ping
+        .y-node-r(data-bind='text:ping')
+      .y-node-attr
+        .y-node-l.y-subtle Cores
+        .y-node-r(data-bind='text:cores')
+      .y-node-attr
+        .y-node-l.y-subtle Keys
+        .y-node-r(data-bind='text:keys')
+      .y-node-attr
+        .y-node-l.y-subtle TCP
+        .y-node-r(data-bind='text:tcps')
+      .y-node-attr
+        .y-node-l.y-subtle FD
+        .y-node-r(data-bind='text:fds')
+      .y-node-attr
+        .y-node-l.y-subtle PID
+        .y-node-r(data-bind='text:pid')
+      .y-node-section
+        .y-node-subtitle Load
+        .y-node-m(data-bind='text:load')
+        .progress
+          .progress-bar(data-bind='style:{width:loadProgress}')
+      .y-node-section
+        .y-node-subtitle Data
+        .progress
+          .progress-bar(data-bind='style:{width:dataProgress}')
+        .y-node-attr
+          .y-node-l(data-bind='text:data')
+          .y-node-r(data-bind='text:cachedData')
+        .y-node-attr
+          .y-node-l.y-subtle Used / Total
+          .y-node-r.y-subtle % Cached
+      .y-node-section
+        .y-node-subtitle GC
+        .progress
+          .progress-bar.y-progress-bar-alt(data-bind='style:{width:memoryProgress1}')
+          .progress-bar(data-bind='style:{width:memoryProgress2}')
+        .y-node-m(data-bind='text:memory')
+        .y-node-m.y-subtle (Free / Total / Max)
+      .y-node-section
+        .y-node-subtitle Disk
+        .progress
+          .progress-bar(data-bind='style:{width:diskProgress}')
+        .y-node-attr
+          .y-node-l(data-bind='text:disk')
+          .y-node-r(data-bind='text:freeDisk')
+        .y-node-attr
+          .y-node-l.y-subtle Free / Max
+          .y-node-r.y-subtle % Free
+      .y-node-section
+        .y-node-subtitle CPU
+        .y-node-attr
+          .y-node-l.y-subtle RPCs
+          .y-node-r(data-bind='text:rpcs')
+        .y-node-m.y-subtle Threads
+        .y-node-m(data-bind='text:threads')
+        .y-node-m.y-subtle Tasks
+        .y-node-m(data-bind='text:tasks')
 
-
+    // /ko
+  // /ko
 
 
