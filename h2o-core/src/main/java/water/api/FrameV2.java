@@ -40,6 +40,12 @@ class FrameV2 extends Schema {
     @API(help="zeros")
     final long zeros;
 
+    @API(help="positive infinities")
+    final long pinfs;
+
+    @API(help="negative infinities")
+    final long ninfs;
+
     @API(help="mins")
     final double[] mins;
 
@@ -73,11 +79,13 @@ class FrameV2 extends Schema {
       label=name;
       missing = vec.naCnt();
       zeros = vec.nzCnt();
-      mins = vec.mins();
-      maxs = vec.maxs();
-      mean = vec.mean();
+      pinfs = vec.pinfs();
+      ninfs = vec.ninfs();
+      mins  = vec.mins();
+      maxs  = vec.maxs();
+      mean  = vec.mean();
       sigma = vec.sigma();
-      type = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
@@ -152,14 +160,17 @@ class FrameV2 extends Schema {
     formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mean   ); } } );
     formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.sigma  ); } } );
 
-    // Optional rows: missing elements, zeros, levels
-    boolean has_miss=false, has_zero=false, has_enum=false;
-    for( Col c : columns ) if( c.missing > 0 ) { has_miss=true; break; }
-    if( has_miss ) formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing== 0 ?"":Long.toString(c.missing      );}});
-    for( Col c : columns ) if( c.zeros   > 0 ) { has_zero=true; break; }
-    if( has_zero ) formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}});
-    for( Col c : columns ) if( c.domain!=null) { has_enum=true; break; }
-    if( has_enum ) formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(Col c) { return c.domain==null?"":Long.toString(c.domain.length);}});
+    // Optional rows: missing elements, zeros, positive & negative infinities, levels
+    for( Col c : columns ) if( c.missing > 0 )
+        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing== 0 ?"":Long.toString(c.missing      );}}); break; }
+    for( Col c : columns ) if( c.zeros   > 0 )
+        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}}); break; }
+    for( Col c : columns ) if( c.pinfs   > 0 )
+        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(Col c) { return c.pinfs  == 0 ?"":Long.toString(c.pinfs        );}}); break; }
+    for( Col c : columns ) if( c.ninfs   > 0 )
+        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(Col c) { return c.ninfs  == 0 ?"":Long.toString(c.ninfs        );}}); break; }
+    for( Col c : columns ) if( c.domain!=null)
+        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(Col c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
 
     // Frame data
     int len = columns.length > 0 ? columns[0].data.length : 0;

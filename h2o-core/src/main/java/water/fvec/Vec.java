@@ -246,6 +246,9 @@ public class Vec extends Keyed {
   public long  naCnt() { return rollupStats()._naCnt; }
   /** Return column zero-element-count - lazily computed as needed. */
   public long  nzCnt() { return rollupStats()._nzCnt; }
+  /** Positive and negative infinity counts */
+  public long  pinfs() { return rollupStats()._pinfs; }
+  public long  ninfs() { return rollupStats()._ninfs; }
   /** Is all integers? */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */

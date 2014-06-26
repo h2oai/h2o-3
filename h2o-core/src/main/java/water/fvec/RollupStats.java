@@ -23,7 +23,7 @@ class RollupStats extends DTask<RollupStats> {
    *  modification.   */
   long _naCnt;
   double _mean, _sigma;
-  long _rows, _nzCnt, _size;
+  long _rows, _nzCnt, _size, _pinfs, _ninfs;
   boolean _isInt=true;
   double[] _mins, _maxs;
 
@@ -55,11 +55,15 @@ class RollupStats extends DTask<RollupStats> {
 
       } else {                  // All other columns have useful rollups
 
-        if( d == 0 ) _nzCnt++;
-        min(d);  max(d);
-        _mean += d;
-        _rows++;
-        if( _isInt && ((long)d) != d ) _isInt = false;
+        if( d == Double.POSITIVE_INFINITY) _pinfs++;
+        else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
+        else {
+          if( d == 0 ) _nzCnt++;
+          min(d);  max(d);
+          _mean += d;
+          _rows++;
+          if( _isInt && ((long)d) != d ) _isInt = false;
+        }
       }
     }
 
@@ -90,6 +94,8 @@ class RollupStats extends DTask<RollupStats> {
     for( double d : rs._maxs ) max(d);
     _naCnt += rs._naCnt;
     _nzCnt += rs._nzCnt;
+    _pinfs += rs._pinfs;
+    _ninfs += rs._ninfs;
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else {
