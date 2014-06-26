@@ -34,8 +34,6 @@ And then point your browser to [http://localhost:54321/steam/index.html](http://
 
 ## Windows
 
-*Note: You'll need a working cygwin environment. You probably have one already for building h2o.*
-
 Step 1. Install Node.js [using the official installer](http://nodejs.org/download/). When done, you should have node.exe and npm.cmd in `\Program Files\node\`. These should also be available on your PATH. If not, add the folder to your PATH.
 
 Step 2. Install `bower` and `gulp` using a windows CMD shell

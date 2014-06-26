@@ -242,6 +242,8 @@ public class Vec extends Keyed {
   public double sigma(){ return rollupStats()._sigma; }
   /** Return column missing-element-count - lazily computed as needed. */
   public long  naCnt() { return rollupStats()._naCnt; }
+  /** Return column zero-element-count - lazily computed as needed. */
+  public long  nzCnt() { return rollupStats()._nzCnt; }
   /** Is all integers? */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
