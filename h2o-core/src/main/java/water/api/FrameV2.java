@@ -37,6 +37,9 @@ class FrameV2 extends Schema {
     @API(help="missing")
     final long missing;
 
+    @API(help="zeros")
+    final long zeros;
+
     @API(help="min")
     final double min;
 
@@ -69,6 +72,7 @@ class FrameV2 extends Schema {
     Col( String name, Vec vec, long off, int len ) {
       label=name;
       missing = vec.naCnt();
+      zeros = vec.nzCnt();
       min = vec.min();
       max = vec.max();
       mean = vec.mean();
@@ -141,18 +145,19 @@ class FrameV2 extends Schema {
     System.arraycopy(_fr._names,0,titles,1,_fr._names.length);
     ab.arrayHead(titles);
 
-    // Optional missing-element line
-    boolean has_miss=false;
-    for( Col c : columns ) if( c.missing > 0 ) { has_miss=true; break; }
-    if( has_miss )
-      formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing==0?"":Long.toString(c.missing); } } );
-
     // Rollup data
     formatRow(ab,"","type" ,new ColOp() { String op(Col c) { return c.type; } } );
     formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.min); } } );
     formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.max); } } );
     formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mean); } } );
     formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.sigma); } } );
+
+    // Optional missing-element line
+    boolean has_miss=false, has_zero=false;
+    for( Col c : columns ) if( c.missing > 0 ) { has_miss=true; break; }
+    if( has_miss ) formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing==0?"":Long.toString(c.missing); } } );
+    for( Col c : columns ) if( c.zeros   > 0 ) { has_zero=true; break; }
+    if( has_zero ) formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  ==0?"":Long.toString(c.zeros  ); } } );
 
     // enums
     ab.p("<tr>").cell("levels");
@@ -166,7 +171,7 @@ class FrameV2 extends Schema {
       final int row = i;
       formatRow(ab,"",Integer.toString(row+1),new ColOp() { 
           String op(Col c) { 
-            return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c); }
+            return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c,0); }
         } );
     }
 
@@ -177,7 +182,7 @@ class FrameV2 extends Schema {
 
   private abstract static class ColOp { abstract String op(Col v); }
   private String rollUpStr(Col c, double d) {
-    return formatCell(c.domain!=null || "uuid".equals(c.type) ? Double.NaN : d,null,c);
+    return formatCell(c.domain!=null || "uuid".equals(c.type) ? Double.NaN : d,null,c,4);
   }
 
   private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
@@ -187,7 +192,7 @@ class FrameV2 extends Schema {
     ab.p("</tr>");
   }
 
-  private String formatCell( double d, String str, Col c ) {
+  private String formatCell( double d, String str, Col c, int precision ) {
     if( Double.isNaN(d) ) return "-";
     if( c.domain!=null ) return c.domain[(int)d];
     if( "uuid".equals(c.type) ) {
@@ -196,6 +201,7 @@ class FrameV2 extends Schema {
       return "<b style=\"font-family:monospace;\">"+str+"</b>";
     }
 
+    if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
     Chunk chk = c._vec.chunkForRow(off);
     Class Cc = chk._vec.chunkForRow(off).getClass();
     if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk)._scale);

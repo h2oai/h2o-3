@@ -21,7 +21,7 @@ class RollupStats extends DTask<RollupStats> {
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
   double _min=Double.MAX_VALUE, _max=-Double.MAX_VALUE, _mean, _sigma;
-  long _rows, _naCnt, _size;
+  long _rows, _naCnt, _nzCnt, _size;
   boolean _isInt=true;
 
   // Check for: Vector is mutating and rollups cannot be asked for
@@ -38,20 +38,19 @@ class RollupStats extends DTask<RollupStats> {
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
-    // UUID columns do not compute min/max/mean/sigma
-    if( c._vec._isUUID ) {
-      _min = _max = _mean = _sigma = Double.NaN;
-      for( int i=0; i<c._len; i++ ) {
-        if( c.isNA0(i) ) _naCnt++;
-        else _rows++;
-      }
-      return this;
-    }
+    boolean isUUID = c._vec._isUUID;
     for( int i=0; i<c._len; i++ ) {
-      // All other columns have useful rollups
       double d = c.at0(i);
-      if( Double.isNaN(d) ) _naCnt++;
-      else {
+      if( Double.isNaN(d) ) {
+        _naCnt++;
+
+      } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
+        _min = _max = _mean = _sigma = Double.NaN;
+        if( c.at16l0(i)==0 && c.at16h0(i)==0 ) _nzCnt++;
+
+      } else {                  // All other columns have useful rollups
+
+        if( d == 0 ) _nzCnt++;
         if( d < _min ) _min = d;
         if( d > _max ) _max = d;
         _mean += d;
@@ -59,11 +58,13 @@ class RollupStats extends DTask<RollupStats> {
         if( _isInt && ((long)d) != d ) _isInt = false;
       }
     }
-    _mean = _mean / _rows;
-    for( int i=0; i<c._len; i++ ) {
-      if( !c.isNA0(i) ) {
-        double d = c.at0(i);
-        _sigma += (d - _mean) * (d - _mean);
+    if( !Double.isNaN(_mean) ) {
+      _mean = _mean / _rows;
+      for( int i=0; i<c._len; i++ ) {
+        if( !c.isNA0(i) ) {
+          double d = c.at0(i)-_mean;
+          _sigma += d*d;
+        }
       }
     }
     return this;
@@ -73,9 +74,10 @@ class RollupStats extends DTask<RollupStats> {
     _min = Math.min(_min,rs._min);
     _max = Math.max(_max,rs._max);
     _naCnt += rs._naCnt;
+    _nzCnt += rs._nzCnt;
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
-    else if (rs._rows > 0) {
+    else {
       _mean = (_mean*_rows + rs._mean*rs._rows)/(_rows + rs._rows);
       _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
