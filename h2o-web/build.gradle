@@ -2,13 +2,23 @@ apply plugin: 'java'
 
 description = "H2O web client"
 
+task localInstallNpm(type: Exec) {
+  commandLine 'npm', 'install'
+}
+
+task localInstallBower(type: Exec) {
+  commandLine 'bower', 'install'
+}
+
 task localProcessResources(type: Exec) {
-  commandLine 'make'
+  commandLine 'gulp'
 }
 
 task localClean(type: Exec) {
-  commandLine 'make', 'clean'
+  commandLine 'gulp', 'clean'
 }
 
+localProcessResources.dependsOn localInstallNpm
+localProcessResources.dependsOn localInstallBower
 processResources.dependsOn localProcessResources
 clean.dependsOn localClean

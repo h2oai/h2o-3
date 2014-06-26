@@ -23,7 +23,8 @@
     "url": "https://github.com/0xdata/h2o/issues"
   },
   "homepage": "https://github.com/0xdata/h2o",
-  "dependencies": {
+  "devDependencies": {
+    "gulp": "~3.8.2",
     "coffee-script": "~1.7.1",
     "istanbul": "~0.2.7",
     "uglify-js": "~2.4.13",
@@ -38,6 +39,15 @@
     "tape": "~2.12.3",
     "browserify": "~3.44.2",
     "faucet": "0.0.1",
-    "jshint": "~2.5.0"
+    "jshint": "~2.5.0",
+    "gulp-clean": "~0.3.1",
+    "gulp-concat": "~2.2.0",
+    "gulp-task-listing": "~0.3.0",
+    "gulp-util": "~2.2.18",
+    "gulp-header": "~1.0.2",
+    "gulp-footer": "~1.0.4",
+    "gulp-coffee": "~2.0.1",
+    "gulp-jade": "~0.6.0",
+    "gulp-stylus": "~1.0.2"
   }
 }
