@@ -112,7 +112,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   createSelectedFileItem = (path) ->
     self =
       path: path
-      deselectFile: ->
+      deselect: ->
         _selectedFiles.remove self
         for file in _importedFiles() when file.path is path
           file.isSelected no
@@ -122,11 +122,16 @@ Steam.ImportFilesDialog = (_, _go) ->
     self =
       path: path
       isSelected: node$ isSelected
-      selectFile: ->
+      toggle: ->
+        if self.isSelected()
+          self.deselect()
+        else
+          self.select()
+      select: ->
         _selectedFiles.push createSelectedFileItem self.path
         self.isSelected yes 
-      deselectFile: ->
-        file.deselectFile() if file = (find _selectedFiles(), (file) -> file.path is path)
+      deselect: ->
+        file.deselect() if file = (find _selectedFiles(), (file) -> file.path is path)
 
   listPathHints = (query, process) ->
     _.requestTypeaheadFiles query, 10, (error, result) ->

@@ -32,13 +32,14 @@
                 // ko foreach:importedFiles
                 tr
                   td(width='1')
-                    // ko if:isSelected
-                    i.fa.fa-check-circle-o(title='This file is selected' data-bind='click:deselectFile')
-                    // /ko
-                    // ko ifnot:isSelected
-                    i.fa.fa-plus-circle(title='Select file' data-bind='click:selectFile')
-                    // /ko
-                    span(data-bind="text:path,css:{'y-is-selected':isSelected}")
+                    .y-file(data-bind='click:toggle')
+                      // ko if:isSelected
+                      i.fa.fa-check-circle-o(title='This file is selected')
+                      // /ko
+                      // ko ifnot:isSelected
+                      i.fa.fa-plus-circle(title='Select file')
+                      // /ko
+                      span(data-bind="text:path,css:{'y-is-selected':isSelected}")
                 // /ko
           // /ko
         .y-file-selection-separator
@@ -55,8 +56,9 @@
                 // ko foreach:selectedFiles
                 tr
                   td(width='1')
-                    i.fa.fa-times-circle-o(title='Deselect file' data-bind='click:deselectFile')
-                    span(data-bind='text:path')
+                    .y-file(data-bind='click:deselect')
+                      i.fa.fa-times-circle-o(title='Deselect file')
+                      span(data-bind='text:path')
                 // /ko
           // /ko
 
