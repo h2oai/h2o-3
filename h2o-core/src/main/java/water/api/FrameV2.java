@@ -19,6 +19,7 @@ class FrameV2 extends Schema {
   @API(help="Number of rows to display",direction=API.Direction.INOUT)
   int len;
 
+  // Output fields
   @API(help="Number of rows")
   long rows;
 
@@ -31,7 +32,6 @@ class FrameV2 extends Schema {
   @API(help="Default percentiles, from 0 to 1")
   final double[] default_pctiles;
 
-  // Output fields
   @API(help="Columns")
   Col[] columns;
 

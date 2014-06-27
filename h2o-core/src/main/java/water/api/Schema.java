@@ -121,6 +121,7 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
   private <E> Object parse( String s, Class fclz ) {
     if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
     if( fclz.equals(int.class) ) return Integer.valueOf(s);
+    if( fclz.equals(long.class) ) return Long.valueOf(s);
     if( fclz.equals(boolean.class) ) return Boolean.valueOf(s);
     if( fclz.equals(byte.class) ) return Byte.valueOf(s);
     if( fclz.isArray() ) {      // An array?
@@ -131,7 +132,7 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a= (E[])Array.newInstance(afclz,splits.length);
       for( int i=0; i<splits.length; i++ )
-        a[i] = (E)parse(splits[i],afclz);
+        a[i] = (E)parse(splits[i].trim(),afclz);
       return a;
     }
     if( fclz.equals(Key.class) )

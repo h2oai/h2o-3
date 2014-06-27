@@ -59,7 +59,7 @@ public class RollupStats extends DTask<RollupStats> {
     for( int i=c.nextNZ(-1); i<c._len; i=c.nextNZ(i) ) {
       double d = c.at0(i);
       if( Double.isNaN(d) ) {
-        _naCnt++;
+        _naCnt++;  _nzCnt++;
 
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
         if( c.at16l0(i)!=0 || c.at16h0(i)!=0 ) _nzCnt++;

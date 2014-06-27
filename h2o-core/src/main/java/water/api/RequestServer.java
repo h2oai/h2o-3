@@ -103,6 +103,8 @@ public class RequestServer extends NanoHTTPD {
     register("/Typeahead/files" ,"GET",TypeaheadHandler.class, "files");
     register("/JobPoll"         ,"GET",JobPollHandler  .class, "poll" );
 
+    register("/Find","GET",FindHandler.class, "find" );
+
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET",FramesHandler.class, "summary", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
     register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
