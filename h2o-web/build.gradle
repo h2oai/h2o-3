@@ -13,16 +13,20 @@ def getOsSpecificCommandLine(command, arg) {
 }
 
 def checkPrerequisite(name, message) {
+  def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
+  def command = prefix + name + ' -v'
+  def proc
+  def success = true
   try {
-    def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
-    def command = prefix + name + ' -v'
-	def proc = command.execute()
-	proc.waitFor()
-	if (proc.exitValue() != 0) {
-	  throw new StopExecutionException(message)
-	}
+    proc = command.execute()
+    if (proc != null) {
+      proc.waitFor()
+    }
   } catch(e) {
-    println e.getMessage()
+    success = false
+    throw new StopExecutionException(message)
+  }
+  if (!success || proc == null || (proc != null && proc.exitValue() != 0)) {
     throw new StopExecutionException(message)
   }
 }
