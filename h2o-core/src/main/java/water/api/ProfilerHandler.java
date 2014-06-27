@@ -14,6 +14,6 @@ public class ProfilerHandler extends Handler<ProfilerHandler,ProfilerV2> {
 
   @Override protected ProfilerV2 schema(int version) { return new ProfilerV2(); }
   @Override public void compute2() {
-    _profile = new JProfile(_depth);
-    _profile.execImpl(); }
+    _profile = new JProfile(_depth).execImpl();
+  }
 }
