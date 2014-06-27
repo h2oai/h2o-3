@@ -1,6 +1,9 @@
 gulp = require 'gulp'
 clean = require 'gulp-clean'
 concat = require 'gulp-concat'
+iff = require 'gulp-if'
+ignore = require 'gulp-ignore'
+order = require 'gulp-order'
 header = require 'gulp-header'
 footer = require 'gulp-footer'
 gutil = require 'gulp-util'
@@ -41,32 +44,24 @@ config =
       'src/main/steam/images/*.*'
     ]
 
-gulp.task 'build-scripts', ->
-  gulp.src [ 'src/main/steam/scripts/*.coffee', '!src/main/steam/scripts/*.global.coffee' ]
-    .pipe coffee bare: no
-    .on 'error', gutil.log
-    .pipe gulp.dest 'build/scripts/'
-
-gulp.task 'build-global-scripts', ->
-  gulp.src [ 'src/main/steam/scripts/*.global.coffee' ]
-    .pipe coffee bare: yes
-    .on 'error', gutil.log
-    .pipe gulp.dest 'build/scripts/'
-
-gulp.task 'build-browser-script', [ 'build-scripts', 'build-global-scripts' ], ->
-  gulp.src [ 'build/scripts/prelude.global.js', 'build/scripts/*.global.js', 'build/scripts/*.js' ]
+gulp.task 'build-browser-script', ->
+  gulp.src 'src/main/steam/scripts/*.coffee'
+    .pipe iff /\.global\.coffee$/, (coffee bare: yes), (coffee bare: no)
+    .pipe order [ 'prelude.global.js', '*.global.js', '*.js' ]
     .pipe concat 'steam.js'
     .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + '/js/'
 
 gulp.task 'build-templates', ->
-  gulp.src 'src/main/steam/templates/index.jade'
-    .pipe jade { pretty: yes }
+  gulp.src 'src/main/steam/templates/*.jade'
+    .pipe ignore.include /\/index.jade$/
+    .pipe jade pretty: yes
     .pipe gulp.dest config.dir.deploy
 
 gulp.task 'build-styles', ->
-  gulp.src 'src/main/steam/styles/steam.styl'
+  gulp.src 'src/main/steam/styles/*.styl'
+    .pipe ignore.include /\/steam.styl$/
     .pipe stylus use: [ nib() ]
     .pipe gulp.dest config.dir.deploy + '/css/'
 

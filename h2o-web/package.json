@@ -48,6 +48,10 @@
     "gulp-footer": "~1.0.4",
     "gulp-coffee": "~2.0.1",
     "gulp-jade": "~0.6.0",
-    "gulp-stylus": "~1.0.2"
-  }
+    "gulp-stylus": "~1.0.2",
+    "gulp-order": "~1.1.1",
+    "gulp-if": "~1.2.1",
+    "gulp-ignore": "~1.1.0"
+  },
+  "dependencies": {}
 }
