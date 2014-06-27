@@ -12,6 +12,44 @@ def getOsSpecificCommandLine(command, arg) {
   }
 }
 
+def checkPrerequisite(name, message) {
+  try {
+    def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
+    def command = prefix + name + ' -v'
+	def proc = command.execute()
+	proc.waitFor()
+	if (proc.exitValue() != 0) {
+	  throw new StopExecutionException(message)
+	}
+  } catch(e) {
+    println e.getMessage()
+    throw new StopExecutionException(message)
+  }
+}
+
+task checkClientPrerequisites {
+  def nodeInstallationInstruction = """\
+ 
+To install node.js, try one of these:
+
+Mac OS:
+Use the official installer at http://nodejs.org/download/
+OR
+If you have homebrew installed, run 'brew install node'.
+
+Linux:
+See https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager
+
+Windows:
+Use the official installer at http://nodejs.org/download/
+
+"""
+  checkPrerequisite( 'node', 'Could not detect a node.js installation on this system.\nInstall node.js and try again.\n' + nodeInstallationInstruction )
+  checkPrerequisite( 'npm', "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction )
+  checkPrerequisite( 'bower', "Could not find command 'bower'.\nInstall 'bower' using the command 'npm install -g bower' and try again." )
+  checkPrerequisite( 'gulp', "Could not find command 'gulp'.\nInstall 'gulp' using the command 'npm install -g gulp' and try again." )
+}
+
 task installNpmPackages(type: Exec) {
   commandLine = getOsSpecificCommandLine( 'npm', 'install' )
 }
@@ -28,6 +66,7 @@ task cleanClientWithGulp(type: Exec) {
   commandLine = getOsSpecificCommandLine( 'gulp', 'clean' )
 }
 
+installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
 buildClientWithGulp.dependsOn installBowerPackages
 processResources.dependsOn buildClientWithGulp
