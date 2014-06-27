@@ -94,6 +94,8 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
+    public HTML putAAA8 (String name, long   [][][]lsss) { throw H2O.unimpl(); }
+
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();
     }
