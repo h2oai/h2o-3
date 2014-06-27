@@ -89,7 +89,6 @@ Steam.FrameListView = (_) ->
     _.promptImportFiles (action, job) ->
       switch action
         when 'confirm'
-          console.log 'Job submitted successfully.', job
           _.switchToJobs()
       return
 

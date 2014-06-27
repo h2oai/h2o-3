@@ -125,7 +125,8 @@ Steam.H2OProxy = (_) ->
   link$ _.requestInspect, requestInspect
   link$ _.requestFrames, (go) -> requestFrames go
   link$ _.requestFramesAndCompatibleModels, (go) -> requestFrames go, find_compatible_models: yes
-  link$ _.requestFrame, (key, go) -> requestFrames go, key: (encodeURIComponent key)
+  link$ _.requestFrame, (key, go) ->
+    request "/3/Frames/#{encodeURIComponent key}", null, (error, result) -> go error, result.frames
   link$ _.requestFrameAndCompatibleModels, (key, go) -> requestFrames go, key: (encodeURIComponent key), find_compatible_models: yes
   #TODO test
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
