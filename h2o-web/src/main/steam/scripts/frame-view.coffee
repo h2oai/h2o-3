@@ -88,11 +88,15 @@ Steam.FrameView = (_, _frame) ->
   createPlainRow = (attribute, columns) ->
     map columns, (column) -> column[attribute]
 
+  createMissingsRow = (columns) ->
+    map columns, (column) -> 
+      if column.missing is 0 then '-' else column.missing
+
   createInfRow = (attribute, columns) ->
     map columns, (column) ->
       switch column.type
         when 'real', 'int'
-          column[attribute]
+          if column[attribute] is 0 then '-' else column[attribute]
         else
           '-'
 
@@ -142,7 +146,7 @@ Steam.FrameView = (_, _frame) ->
     meanRow: createMeanRow columns
     sigmaRow: createSigmaRow columns
     cardinalityRow: createCardinalityRow columns
-    missingsRow: if hasMissings then createPlainRow 'missing', columns else null
+    missingsRow: if hasMissings then createMissingsRow columns else null
     zerosRow: if hasZeros then createInfRow 'zeros', columns else null
     pinfsRow: if hasPinfs then createInfRow 'pinfs', columns else null
     ninfsRow: if hasNinfs then createInfRow 'ninfs', columns else null
