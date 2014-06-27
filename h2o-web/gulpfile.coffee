@@ -15,7 +15,7 @@ nib = require 'nib'
 
 config =
   dir:
-    deploy: 'src/main/resources/www/steam'
+    deploy: 'src/main/resources/www/steam/'
   lib:
     js: [
       'lib/stacktrace/stacktrace.js'
@@ -51,34 +51,34 @@ gulp.task 'build-browser-script', ->
     .pipe concat 'steam.js'
     .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
-    .pipe gulp.dest config.dir.deploy + '/js/'
+    .pipe gulp.dest config.dir.deploy + 'js/'
 
 gulp.task 'build-templates', ->
   gulp.src 'src/main/steam/templates/*.jade'
-    .pipe ignore.include /\/index.jade$/
+    .pipe ignore.include /index.jade$/
     .pipe jade pretty: yes
     .pipe gulp.dest config.dir.deploy
 
 gulp.task 'build-styles', ->
   gulp.src 'src/main/steam/styles/*.styl'
-    .pipe ignore.include /\/steam.styl$/
+    .pipe ignore.include /steam.styl$/
     .pipe stylus use: [ nib() ]
-    .pipe gulp.dest config.dir.deploy + '/css/'
+    .pipe gulp.dest config.dir.deploy + 'css/'
 
 gulp.task 'compile-browser-assets', ->
   gulp.src config.lib.js
     .pipe concat 'lib.js'
-    .pipe gulp.dest config.dir.deploy + '/js/'
+    .pipe gulp.dest config.dir.deploy + 'js/'
 
   gulp.src config.lib.img
-    .pipe gulp.dest config.dir.deploy + '/img/'
+    .pipe gulp.dest config.dir.deploy + 'img/'
 
   gulp.src config.lib.fonts
-    .pipe gulp.dest config.dir.deploy + '/fonts/'
+    .pipe gulp.dest config.dir.deploy + 'fonts/'
 
   gulp.src config.lib.css
     .pipe concat 'lib.css'
-    .pipe gulp.dest config.dir.deploy + '/css/'
+    .pipe gulp.dest config.dir.deploy + 'css/'
 
 gulp.task 'watch', ->
   gulp.watch 'src/main/steam/scripts/*.coffee', [ 'build-browser-script' ]
