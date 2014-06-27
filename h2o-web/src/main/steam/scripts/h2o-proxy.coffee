@@ -55,6 +55,10 @@ Steam.H2OProxy = (_) ->
       delete_on_done: deleteOnDone
     request '/Parse.json', opts, go
 
+  requestInspect = (key, go) ->
+    opts = key: encodeURIComponent key
+    request '/Inspect.json', opts, go
+
   filterOutUnhandledModels = (models) -> filter models, (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
 
   requestFrames = (go, opts) ->
@@ -118,6 +122,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
   link$ _.requestParseFiles, requestParseFiles
+  link$ _.requestInspect, requestInspect
   link$ _.requestFrames, (go) -> requestFrames go
   link$ _.requestFramesAndCompatibleModels, (go) -> requestFrames go, find_compatible_models: yes
   link$ _.requestFrame, (key, go) -> requestFrames go, key: (encodeURIComponent key)

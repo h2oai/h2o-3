@@ -2,7 +2,7 @@
   .clearfix
     .y-tag Job
   // ko with:job
-  h1.y-title(data-bind='text:title')
+  h1.y-title(data-bind='text:destinationKey')
 
   h2.y-subtitle(data-bind='collapse:false') Status
   .y-parameters
@@ -20,6 +20,13 @@
   // ko if:exception
   h2.y-subtitle(data-bind='collapse:false') Exception
   pre(data-bind='json:exception')
+  // /ko
+
+  // ko ifnot:exception
+  // ko ifnot:isRunning
+  div(style='margin:10px 0')
+    button.btn.btn-primary(data-bind='click:$parent.viewResult') Inspect Results
+  // /ko
   // /ko
 
   // /ko

@@ -3,7 +3,7 @@
   .y-jobs
     // ko foreach:items
     .y-job(data-bind='click:display, css:{"y-active":isActive}')
-      .y-job-title(data-bind='text:title')
+      .y-job-title(data-bind='text:destinationKey')
       .progress(style='height:8px')
         .progress-bar(data-bind="style:{background:statusColor,width:progress}")
       .y-job-caption(data-bind='text:caption')

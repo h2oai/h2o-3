@@ -37,6 +37,7 @@ Steam.ApplicationContext = ->
     requestImportFiles: do edge$
     requestParseSetup: do edge$
     requestParseFiles: do edge$
+    requestInspect: do edge$
     requestFrames: do edge$
     requestFramesAndCompatibleModels: do edge$
     requestFrame: do edge$

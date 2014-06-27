@@ -8,6 +8,8 @@ Steam.FrameListView = (_) ->
     switch predicate.type
       when 'all'
         'Showing\nall datasets'
+      when 'one'
+        'Showing one dataset'
       when 'compatibleWithModel'
         "Showing datasets compatible with\n#{predicate.modelKey}"
       else
@@ -57,6 +59,13 @@ Steam.FrameListView = (_) ->
           else
             displayFrames frames
 
+      when 'one'
+        _.requestFrame predicate.key, (error, frames) ->
+          if error
+            #TODO handle errors
+          else
+            displayFrames frames
+
       when 'compatibleWithModel'
         #FIXME Need an api call to get "frames and compatible models for all frames compatible with a model"
         _.requestModelAndCompatibleFrames predicate.modelKey, (error, data) ->
@@ -90,7 +99,7 @@ Steam.FrameListView = (_) ->
     if predicate
       loadFrames predicate
     else
-      displayActiveItem()
+      loadFrames type: 'all'
 
   link$ _.refreshFrames, -> loadFrames _predicate()
 

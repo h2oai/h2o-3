@@ -51,14 +51,19 @@ Steam.JobListView = (_) ->
 
     displayItem item
 
+  isJobRunning = (job) ->
+    job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+
   pollJobStatus = (item)->
     _.requestJobPoll item.data.key.name, (error, job) ->
       if error
       else
         if job
           updateItem item, job
-          if job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+          if isJobRunning job
             delay pollJobStatus, 1000, item
+          else
+            item.isRunning no
 
   createJobCaption = (job) ->
     "#{job.status}: #{getProgressPercent job.progress} (#{formatTimeDuration job.msec})"
@@ -72,8 +77,6 @@ Steam.JobListView = (_) ->
     item.exception job.exception
 
   createItem = (job) ->
-    isRunning = job.status is 'RUNNING'
-
     self =
       data: job
       title: job.key.name
@@ -83,13 +86,15 @@ Steam.JobListView = (_) ->
       progress: node$ null
       duration: node$ null
       exception: node$ null
+      destinationKey: job.dest.name
       display: -> activateAndDisplayItem self
       isActive: node$ no
+      isRunning: node$ isJobRunning job
+      result: node$ null
 
     updateItem self, job
 
-    if isRunning
-      delay pollJobStatus, 1000, self
+    delay pollJobStatus, 1000, self if self.isRunning()
 
     self
   
@@ -106,7 +111,6 @@ Steam.JobListView = (_) ->
           if error
             #TODO handle errors
           else
-            console.log jobs
             displayJobs jobs
 
     _predicate predicate
