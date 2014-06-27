@@ -28,6 +28,9 @@ class FrameV2 extends Schema {
   @API(help="Raw unparsed text")
   boolean isText;
 
+  @API(help="Default percentiles, from 0 to 1")
+  final double[] default_pctiles;
+
   // Output fields
   @API(help="Columns")
   Col[] columns;
@@ -85,6 +88,9 @@ class FrameV2 extends Schema {
     @API(help="Stride per bin")
     final double stride;
 
+    @API(help="Percentile values, matching the default percentiles")
+    final double[] pctiles;
+
     transient Vec _vec;
 
     Col( String name, Vec vec, long off, int len ) {
@@ -120,6 +126,7 @@ class FrameV2 extends Schema {
       bins  = rs._bins;
       base  = bins==null ? 0 : rs.h_base();
       stride= bins==null ? 0 : rs.h_stride();
+      pctiles=rs._pctiles;
     }
   }
 
@@ -138,6 +145,7 @@ class FrameV2 extends Schema {
     for( int i=0; i<columns.length; i++ )
       columns[i] = new Col(fr._names[i],vecs[i],off,len);
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
+    default_pctiles = RollupStats.PERCENTILES;
   }
 
   //==========================

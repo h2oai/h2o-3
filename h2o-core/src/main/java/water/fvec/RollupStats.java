@@ -33,8 +33,10 @@ public class RollupStats extends DTask<RollupStats> {
   // Computed in a 2nd pass, on-demand, by calling computeHisto
   private final int MAX_SIZE = 1024;
   private final int MAX_ENUM_SIZE = 1000000;
-  private static final double DEFAULT_PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
   volatile public long[] _bins;
+  // Approximate data value closest to the Xth percentile
+  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  public double[] _pctiles;
 
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
@@ -235,7 +237,8 @@ public class RollupStats extends DTask<RollupStats> {
     if( _naCnt == vec.length() || vec.isUUID() ) { _bins = new long[0]; return; }
     // Constant: use a single bin
     double span = _maxs[0]-_mins[0];
-    if( span==0 ) { _bins = new long[]{vec.length()-_naCnt}; return;  }
+    long rows = vec.length()-_naCnt;
+    if( span==0 ) { _bins = new long[]{rows}; return;  }
 
     // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
     // - unless the count gets too high; allow a very high count for enums.
@@ -246,6 +249,22 @@ public class RollupStats extends DTask<RollupStats> {
       nbins = Math.min(lim,nbins); // Cap nbins at sane levels
     }
     _bins = new Histo(this,nbins).doAll(vec)._bins;
+
+    // Compute percentiles from histogram
+    _pctiles = new double[PERCENTILES.length];
+    int j=0;                    // Histogram bin number
+    long hsum=0;                // Rolling histogram sum
+    double base = h_base();
+    double stride = h_stride();
+    for( int i=0; i<PERCENTILES.length; i++ ) {
+      final double P = PERCENTILES[i];
+      long pint = (long)(P*rows);
+      while( hsum < pint ) hsum += _bins[j++];
+      // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
+      _pctiles[i] = base+stride*(j-1);
+      // linear interpolate stride, based on fraction of bin
+      _pctiles[i] += stride*((double)(pint-(hsum-_bins[j-1]))/_bins[j-1]);
+    }
 
   }
 
