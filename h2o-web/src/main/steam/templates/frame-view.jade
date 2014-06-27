@@ -4,28 +4,106 @@
     .y-tagline(data-bind='timeago:timestamp')
   h1.y-title(data-bind='text:title')
 
-  // ko ifnot:isRawFrame
   h2.y-subtitle(data-bind='collapse:false') Data
   .y-data
     // ko with:table
     div(style='overflow:auto')
       table.table.table-condensed.table-striped.y-monospace
-        // ko with:header
         thead
           tr
-            th(data-bind='text:header')
-            // ko foreach:cells
+            th Label
+            // ko foreach:header
             th(data-bind='text:$data')
             // /ko
-        // /ko
         tbody
-          // ko foreach:summaryRows
-          tr.y-summary-rows
-            th(data-bind='text:header')
-            // ko foreach:cells
+
+          tr.y-summary-row
+            th Type
+            // ko foreach:typeRow
+            td(data-bind='text:$data')
+            // /ko
+
+          tr.y-summary-row
+            th Min
+            // ko foreach:minRow
+            td
+              // ko if:$data
+              a(data-bind='text:value, click:showMore')
+              // /ko
+              // ko ifnot:$data
+              span -
+              // /ko
+            // /ko
+
+          tr.y-summary-row
+            th Max
+            // ko foreach:maxRow
+            td
+              // ko if:$data
+              a(data-bind='text:value, click:showMore')
+              // /ko
+              // ko ifnot:$data
+              span -
+              // /ko
+            // /ko
+
+          tr.y-summary-row
+            th Mean
+            // ko foreach:meanRow
+            td(data-bind='text:$data')
+            // /ko
+
+          tr.y-summary-row
+            th Sigma
+            // ko foreach:sigmaRow
+            td(data-bind='text:$data')
+            // /ko
+
+          tr.y-summary-row
+            th Cardinality
+            // ko foreach:cardinalityRow
+            td(data-bind='text:$data')
+            // /ko
+
+          // ko if:hasMissings
+          tr.y-summary-row
+            th Missings
+            // ko foreach:missingsRow
             td(data-bind='text:$data')
             // /ko
           // /ko
+
+          // ko if:hasZeros
+          tr.y-summary-row
+            th Zeros
+            // ko foreach:zerosRow
+            td(data-bind='text:$data')
+            // /ko
+          // /ko
+
+          // ko if:hasPinfs
+          tr.y-summary-row
+            th +Inf
+            // ko foreach:pinfsRow
+            td(data-bind='text:$data')
+            // /ko
+          // /ko
+
+          // ko if:hasNinfs
+          tr.y-summary-row
+            th -Inf
+            // ko foreach:ninfsRow
+            td(data-bind='text:$data')
+            // /ko
+          // /ko
+
+          tr.y-summary-row
+            th Summary
+            // ko foreach:summaryRow
+            td.y-clickable(data-bind='click:displaySummary') 
+              i.fa.fa-share-square-o
+            // /ko
+
           // ko foreach:dataRows
           tr
             th(data-bind='text:header')
@@ -34,15 +112,7 @@
             // /ko
           // /ko
     // /ko
-  // /ko
 
-  // ko if:isRawFrame
-  h2.y-subtitle(data-bind='collapse:false') Parse
-  p This is a raw dataset. You need to parse this dataset first before you can use it in H<sub>2</sub>O.
-  p
-    a(target='_blank' data-bind='attr:{ href:parseUrl }') Parse this dataset&hellip;
-
-  // /ko
   h2.y-subtitle(data-bind='collapse:true') JSON
   pre(data-bind='json:data')
 

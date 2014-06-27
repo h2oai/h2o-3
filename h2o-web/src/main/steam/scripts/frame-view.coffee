@@ -26,52 +26,80 @@ formatReal = do ->
     (getFormatFunction precision) value
 
 Steam.FrameView = (_, _frame) ->
-  createSummaryRow = (attribute, columns) ->
-    header: attribute
-    cells: map columns, (column) ->
+  createMinMaxInspection = (column, attribute) ->
+    [ div, h1, table, tbody, tr, td ] = geyser.generate words 'div h1 table.y-monospace.table.table-condensed tbody tr td'
+    div [
+      h1 "#{column.label} - #{attribute}"
+      table tbody map column[attribute], (value, i) -> tr td formatMinMaxValue column, attribute, i
+    ]
+
+  createMinMaxCell = (column, attribute, value) ->
+    value: value
+    showMore: ->
+      _.inspect
+        content: createMinMaxInspection column, attribute
+        template: 'geyser'
+
+  formatMinMaxValue = (column, attribute, index) ->
+    switch column.type
+      when 'time'
+        formatDateTime column[attribute][index]
+      when 'real'
+        formatReal column.precision, column[attribute][index]
+      when 'int'
+        formatToSignificantDigits 6, column[attribute][index]
+
+  createMinMaxRow = (attribute, columns) ->
+    map columns, (column) ->
       switch column.type
-        when 'uuid'
-          switch attribute
-            when 'min', 'max', 'mean', 'sigma', 'cardinality'
-              '-'
-            else
-              column[attribute]
-        when 'enum'
-          switch attribute
-            when 'min', 'max', 'mean', 'sigma'
-              '-'
-            when 'cardinality'
-              column.domain.length
-            else
-              column[attribute]
+        when 'time', 'real', 'int'
+          createMinMaxCell column, attribute, formatMinMaxValue column, attribute, 0
+        else
+          null
+
+  createMeanRow = (columns) ->
+    map columns, (column) ->
+      switch column.type
         when 'time'
-          switch attribute
-            when 'min', 'max', 'mean'
-              formatDateTime column[attribute]
-            when 'sigma'
-              formatToSignificantDigits 6, column[attribute]
-            when 'cardinality'
-              '-'
-            else
-              column[attribute]
+          formatDateTime column.mean
         when 'real'
-          switch attribute
-            when 'cardinality'
-              '-'
-            when 'min', 'max', 'mean'
-              formatReal column.precision, column[attribute]
-            when 'sigma'
-              formatToSignificantDigits 6, column[attribute]
-            else
-              column[attribute]
-        else # int
-          switch attribute
-            when 'cardinality'
-              '-'
-            when 'min', 'max', 'mean', 'sigma'
-              formatToSignificantDigits 6, column[attribute]
-            else
-              column[attribute]
+          formatReal column.precision, column.mean
+        when 'int'
+          formatToSignificantDigits 6, column.mean
+        else
+          '-'
+
+  createSigmaRow = (columns) ->
+    map columns, (column) ->
+      switch column.type
+        when 'time', 'real', 'int'
+          formatToSignificantDigits 6, column.sigma
+        else
+          '-'
+
+  createCardinalityRow = (columns) ->
+    map columns, (column) ->
+      switch column.type
+        when 'enum'
+          column.domain.length
+        else
+          '-'
+
+  createPlainRow = (attribute, columns) ->
+    map columns, (column) -> column[attribute]
+
+  createInfRow = (attribute, columns) ->
+    map columns, (column) ->
+      switch column.type
+        when 'real', 'int'
+          column[attribute]
+        else
+          '-'
+
+  createSummaryRow = (columns) ->
+    map columns, (column) ->
+      displaySummary: ->
+        alert 'Not implemented'
 
   createDataRow = (offset, index, columns) ->
     header: "Row #{offset + index}"
@@ -93,14 +121,6 @@ Steam.FrameView = (_, _frame) ->
             else
               value
 
-  createSummaryRows = (columns) ->
-    attributes = words 'type min max mean sigma cardinality'
-    push attributes, 'missing' if some columns, (column) -> column.missing > 0
-    rows = []
-    for attribute in attributes
-      rows.push createSummaryRow attribute, columns
-    rows
-
   createDataRows = (offset, rowCount, columns) ->
     rows = []
     for index in [0 ... rowCount]
@@ -108,8 +128,30 @@ Steam.FrameView = (_, _frame) ->
     rows
 
   createFrameTable = (offset, rowCount, columns) ->
-    header: createSummaryRow 'label', columns
-    summaryRows: createSummaryRows columns
+    hasMissings = hasZeros = hasPinfs = hasNinfs = no
+    for column in columns
+      hasMissings = yes if not hasMissings and column.missing > 0
+      hasZeros = yes if not hasZeros and column.zeros > 0
+      hasPinfs = yes if not hasPinfs and column.pinfs > 0
+      hasNinfs = yes if not hasNinfs and column.ninfs > 0
+
+    header: createPlainRow 'label', columns
+    typeRow: createPlainRow 'type', columns
+    minRow: createMinMaxRow 'mins', columns
+    maxRow: createMinMaxRow 'maxs', columns
+    meanRow: createMeanRow columns
+    sigmaRow: createSigmaRow columns
+    cardinalityRow: createCardinalityRow columns
+    missingsRow: if hasMissings then createPlainRow 'missing', columns else null
+    zerosRow: if hasZeros then createInfRow 'zeros', columns else null
+    pinfsRow: if hasPinfs then createInfRow 'pinfs', columns else null
+    ninfsRow: if hasNinfs then createInfRow 'ninfs', columns else null
+    summaryRow: createSummaryRow columns
+    #summaryRows: createSummaryRows columns
+    hasMissings: hasMissings
+    hasZeros: hasZeros
+    hasPinfs: hasPinfs
+    hasNinfs: hasNinfs
     dataRows: createDataRows offset, rowCount, columns
 
   data: _frame
@@ -118,8 +160,6 @@ Steam.FrameView = (_, _frame) ->
   title: _frame.key.name
   columns: _frame.column_names
   table: createFrameTable _frame.off, _frame.len, _frame.columns
-  isRawFrame: _frame.is_raw_frame
-  parseUrl: "/2/Parse2.query?source_key=#{encodeURIComponent _frame.key}"
   dispose: ->
   template: 'frame-view'
 

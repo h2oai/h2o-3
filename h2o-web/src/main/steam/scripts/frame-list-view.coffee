@@ -9,7 +9,7 @@ Steam.FrameListView = (_) ->
       when 'all'
         'Showing\nall datasets'
       when 'one'
-        'Showing one dataset'
+        'Showing\none dataset'
       when 'compatibleWithModel'
         "Showing datasets compatible with\n#{predicate.modelKey}"
       else

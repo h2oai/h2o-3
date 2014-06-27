@@ -319,5 +319,3 @@ Steam.ScoringSheetView = (_, _scorings) ->
 
   metricTable: _metricTable
 
-
-
