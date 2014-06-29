@@ -28,6 +28,11 @@ dependencies {
   testCompile "junit:junit:4.+"
 }
 
+javadoc {
+  exclude "**/fvec/C*Chunk.java/**"
+  exclude "**/nbhm/**"
+}
+
 jar {
    manifest {
       attributes 'Main-Class': 'water.H2O'
