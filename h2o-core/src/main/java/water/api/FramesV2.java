@@ -6,8 +6,6 @@ import water.Key;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
 
-import java.util.Arrays;
-
 class FramesV2 extends FramesBase {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
@@ -87,7 +85,7 @@ class FramesV2 extends FramesBase {
     this.key = h.key;
     this.column = h.column; // NOTE: this is needed for request handling, but isn't really part of state
 
-    this.frames = new IcedHashMap<String, FrameSummaryV2>();
+    this.frames = new IcedHashMap<>();
     if (null != h.frames) {
       for (Frame frame : h.frames) {
         this.frames.put(frame._key.toString(), new FrameSummaryV2(frame));
@@ -95,7 +93,7 @@ class FramesV2 extends FramesBase {
     }
 
     // TODO:
-    this.models = new IcedHashMap<String, ModelsV2.ModelSummaryV2>();
+    this.models = new IcedHashMap<>();
 
     // TODO:
     this.response = new ResponseInfoV2();
