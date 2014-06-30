@@ -22,6 +22,7 @@ public class AppendableVec extends Vec {
   public static final byte NUMBER = 4;
   public static final byte TIME   = 8;
   public static final byte UUID   =16;
+  public static final byte STR    =32;
   byte [] _chunkTypes;
   long _naCnt;
   long _strCnt;

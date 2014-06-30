@@ -433,6 +433,8 @@ public class Vec extends Keyed {
   public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
   public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
 
+  public final String atStr( long i ) { return chunkForRow(i).atStr(i); }
+
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
    *  if the long does not fit in a double (value is larger magnitude than
@@ -469,6 +471,12 @@ public class Vec extends Keyed {
   final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
     ck.setNA(i);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set( long i, String str) {
+    Chunk ck = chunkForRow(i);
+    ck.set(i,str);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
