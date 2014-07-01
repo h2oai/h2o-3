@@ -113,7 +113,7 @@ Steam.JobListView = (_) ->
             #TODO handle errors
             _.error 'Error requesting job list', null, error
           else
-            displayJobs jobs
+            displayJobs reverse jobs
 
     _predicate predicate
     return
