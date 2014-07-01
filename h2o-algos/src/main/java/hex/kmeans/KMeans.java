@@ -6,6 +6,7 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.RandomUtils;
 
 /**
@@ -109,20 +110,33 @@ public class KMeans extends Job<KMeansModel> {
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations
+        LOOP:
         for( ; model._iters < _parms._max_iters; model._iters++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
           Lloyds task = new Lloyds(clusters,means,mults,_ncats, _parms._K).doAll(vecs);
           // Pick the max categorical level for clusters' center
           max_cats(task._cMeans,task._cats);
 
-          // Compute change in clusters centers
-          double sum=0;
+          // Handle the case where some clusters go dry.  Rescue only 1 cluster
+          // per iteration ('cause we only tracked the 1 worse row)
+          boolean badrow=false;          
           for( int clu=0; clu<_parms._K; clu++ )
-            sum += distance(clusters[clu],task._cMeans[clu],ncats);
-          sum /= N;             // Average change per feature
-          System.out.println("Change in cluster centers="+sum);
-          if( sum < 1e-6 ) break;  // Model appears to be stable
-          clusters = task._cMeans; // Update cluster centers
+            if( task._rows[clu]==0 ) {
+              // If we see 2 or more bad rows, just re-run Lloyds to get the
+              // next-worse row.  We don't count this as an iteration, because
+              // we're not really adjusting the centers, we're trying to get
+              // some centers *at-all*.
+              if( badrow ) {
+                Log.warn("KMeans: Re-running Lloyds to re-init another cluster");
+                model._iters--; // Do not count against iterations
+                continue LOOP;  // Rerun Lloyds
+              }
+              long row = task._worse_row;
+              Log.warn("KMeans: Re-initing cluster "+clu+" to row "+row);
+              data(clusters[clu]=task._cMeans[clu], vecs, row, means, mults);
+              task._rows[clu] = 1;
+              badrow = true;              
+            }
 
           // Fill in the model; denormalized centers
           model._clusters = denormalize(task._cMeans, ncats, means, mults);
@@ -134,10 +148,20 @@ public class KMeans extends Job<KMeansModel> {
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
-          System.out.print("iter: "+model._iters+", total_within_SS="+model._total_within_SS);
+          // Compute change in clusters centers
+          double sum=0;
+          for( int clu=0; clu<_parms._K; clu++ )
+            sum += distance(clusters[clu],task._cMeans[clu],ncats);
+          sum /= N;             // Average change per feature
+          Log.info("KMeans: Change in cluster centers="+sum);
+          if( sum < 1e-6 ) break;  // Model appears to be stable
+          clusters = task._cMeans; // Update cluster centers
+
+          StringBuilder sb = new StringBuilder();
+          sb.append("KMeans: iter: ").append(model._iters).append(", total_within_SS=").append(model._total_within_SS);
           for( int i=0; i<_parms._K; i++ )
-            System.out.print(", "+task._cSqr[i]+"/"+task._rows[i]);
-          System.out.println();
+            sb.append(", ").append(task._cSqr[i]).append("/").append(task._rows[i]);
+          Log.info(sb);
         }
 
       } catch( Throwable t ) {
@@ -253,6 +277,8 @@ public class KMeans extends Job<KMeansModel> {
     double[] _cSqr;             // Sum of squares for each cluster
     long[] _rows;               // Rows per cluster
     double _sqr;                // Total sqr distance
+    long _worse_row;            // Row with max err
+    double _worse_err;          // Max-err-row's max-err
 
     Lloyds( double[][] clusters, double[] means, double[] mults, int ncats, int K ) {
       _clusters = clusters;
@@ -273,6 +299,7 @@ public class KMeans extends Job<KMeansModel> {
       for( int clu=0; clu<_K; clu++ )
         for( int col=0; col<_ncats; col++ )
           _cats[clu][col] = new long[cs[col]._vec.cardinality()];
+      _worse_err = 0;
 
       // Find closest cluster for each row
       double[] values = new double[N];
@@ -291,10 +318,12 @@ public class KMeans extends Job<KMeansModel> {
         for( int col = _ncats; col < N; col++ )
           _cMeans[clu][col] += values[col];
         _rows[clu]++;
+        // Track worse row
+        if( cd._dist > _worse_err ) { _worse_err = cd._dist; _worse_row = cs[0]._start+row; }
       }
       // Scale back down to local mean
       for( int clu = 0; clu < _K; clu++ )
-        ArrayUtils.div(_cMeans[clu],_rows[clu]);
+        if( _rows[clu] != 0 ) ArrayUtils.div(_cMeans[clu],_rows[clu]);
       _clusters = null;
       _means = _mults = null;
     }
@@ -306,12 +335,14 @@ public class KMeans extends Job<KMeansModel> {
         double[] ma =    _cMeans[clu];
         double[] mb = mr._cMeans[clu];
         for( int c = 0; c < ma.length; c++ ) // Recursive mean
-          ma[c] = (ma[c] * ra + mb[c] * rb) / (ra + rb);
+          if( ra+rb > 0 ) ma[c] = (ma[c] * ra + mb[c] * rb) / (ra + rb);
       }
       ArrayUtils.add(_cats, mr._cats);
       ArrayUtils.add(_cSqr, mr._cSqr);
       ArrayUtils.add(_rows, mr._rows);
       _sqr += mr._sqr;
+      // track global worse-row
+      if( _worse_err < mr._worse_err ) { _worse_err = mr._worse_err; _worse_row = mr._worse_row; }
     }
   }
 
