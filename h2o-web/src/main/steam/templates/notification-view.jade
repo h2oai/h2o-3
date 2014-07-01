@@ -3,8 +3,10 @@
     .y-tag(data-bind='text:level')
     .y-tagline(data-bind='text:timestamp')
   h1.y-title(data-bind='text:title')
+  // ko if:data
   h2.y-subtitle(data-bind='collapse:false') Details
   pre(data-bind='json:data')
+  // /ko
   // ko if:cause
   h2.y-subtitle(data-bind='collapse:false') Cause
   pre(data-bind='json:cause')

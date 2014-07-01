@@ -57,6 +57,7 @@ Steam.JobListView = (_) ->
   pollJobStatus = (item)->
     _.requestJobPoll item.data.key.name, (error, job) ->
       if error
+        # Do nothing
       else
         if job
           updateItem item, job
@@ -110,6 +111,7 @@ Steam.JobListView = (_) ->
         _.requestJobs (error, jobs) ->
           if error
             #TODO handle errors
+            _.error 'Error requesting job list', null, error
           else
             displayJobs jobs
 

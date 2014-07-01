@@ -6,6 +6,7 @@ Steam.JobView = (_, _jobItem) ->
       _.requestInspect _jobItem.destinationKey, (error, result) ->
         if error
           #TODO
+          _.error 'Error inspecting job result', _jobItem.destinationKey, error
         else
           switch result.className 
             when 'water.fvec.Frame'

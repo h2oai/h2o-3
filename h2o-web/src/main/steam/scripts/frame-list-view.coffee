@@ -50,19 +50,18 @@ Steam.FrameListView = (_) ->
     _.framesLoaded()
 
   loadFrames = (predicate) ->
-    console.assert isDefined predicate
     switch predicate.type
       when 'all'
         _.requestFrames (error, frames) ->
           if error
-            #TODO handle errors
+            _.error 'Error requesting all frames', null, error
           else
             displayFrames frames
 
       when 'one'
         _.requestFrame predicate.key, (error, frames) ->
           if error
-            #TODO handle errors
+            _.error 'Error requesting frame', predicate.key, error
           else
             displayFrames frames
 

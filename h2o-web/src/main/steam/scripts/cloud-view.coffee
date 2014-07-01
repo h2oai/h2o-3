@@ -66,6 +66,7 @@ Steam.CloudView = (_) ->
     _.requestCloud (error, result) ->
       if error
         #TODO
+        _.error 'Error requesting cloud status', null, error
       else
         _cloud createCloud result
         _timestamp Date.now()

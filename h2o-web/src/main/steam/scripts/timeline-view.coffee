@@ -49,6 +49,7 @@ Steam.TimelineView = (_) ->
     _.requestTimeline (error, result) ->
       if error
         #TODO
+        _.error 'Error fetching timeline', null, error
       else
         _timeline createTimeline result
         _timestamp Date.now()
