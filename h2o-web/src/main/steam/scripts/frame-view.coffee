@@ -1,4 +1,4 @@
-significantDigitsBeforeDecimal = (value) -> 1 + Math.floor Math.log(value) / Math.LN10
+significantDigitsBeforeDecimal = (value) -> 1 + Math.floor Math.log(Math.abs value) / Math.LN10
 
 formatToSignificantDigits = (digits, value) ->
   if value is 0
