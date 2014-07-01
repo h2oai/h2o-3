@@ -33,6 +33,8 @@ config =
     css: [
       'lib/fontawesome/css/font-awesome.css'
       'lib/bootstrap/dist/css/bootstrap.css'
+    ]
+    cssmap: [
       'lib/bootstrap/dist/css/bootstrap.css.map'
     ]
     fonts: [
@@ -78,6 +80,9 @@ gulp.task 'compile-browser-assets', ->
 
   gulp.src config.lib.css
     .pipe concat 'lib.css'
+    .pipe gulp.dest config.dir.deploy + 'css/'
+
+  gulp.src config.lib.cssmap
     .pipe gulp.dest config.dir.deploy + 'css/'
 
 gulp.task 'watch', ->
