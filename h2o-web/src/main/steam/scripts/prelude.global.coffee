@@ -383,16 +383,19 @@ forEachAsync = (actions, go) ->
 
 #TODO test
 formatTimeDuration = (ms) ->
-  units = 'ms'
   if ms > 1000
     ms /= 1000
     units = 'sec'
-  if ms > 60
-    ms /= 60
-    units = 'min'
-  if ms > 60
-    ms /= 60
-    units = 'hrs'
 
-  "#{ms.toFixed 2} #{units}"
+    if ms > 60
+      ms /= 60
+      units = 'min'
+
+      if ms > 60
+        ms /= 60
+        units = 'hrs'
+
+    "#{ms.toFixed 2} #{units}"
+  else
+    "#{ms} ms"
 
