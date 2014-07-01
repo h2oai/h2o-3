@@ -42,6 +42,7 @@ Steam.ApplicationContext = ->
     requestFramesAndCompatibleModels: do edge$
     requestFrame: do edge$
     requestFrameAndCompatibleModels: do edge$
+    requestColumnSummary: do edge$
     requestScoringOnFrame: do edge$
     requestModels: do edge$
     requestModelsAndCompatibleFrames: do edge$

@@ -59,11 +59,13 @@
             td(data-bind='text:$data')
             // /ko
 
+          // ko if:hasEnums
           tr.y-summary-row
             th Cardinality
             // ko foreach:cardinalityRow
             td(data-bind='text:$data')
             // /ko
+          // /ko
 
           // ko if:hasMissings
           tr.y-summary-row

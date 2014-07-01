@@ -1,0 +1,35 @@
+.y-histogram
+  font 10px sans-serif
+
+  .bar
+    rect
+      fill #aaa
+      shape-rendering crispEdges
+      &:hover
+        fill #777
+  .axis
+    path, line
+    fill none
+    stroke black
+    shape-rendering crispEdges
+
+
+.y-topcounts
+  .table
+    td
+      padding 0 5px
+  .y-box
+    position relative
+    display inline-block
+    width 100px
+    height 10px
+    overflow hidden
+  .y-bar
+    position absolute
+    top 0
+    bottom 0
+    left 0
+    background #aaa
+    
+
+
