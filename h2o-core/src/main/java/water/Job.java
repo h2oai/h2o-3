@@ -16,9 +16,11 @@ public class Job<T extends Keyed> extends Keyed {
   private static class JobList extends Keyed { 
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
+    private JobList(Key[]jobs) { super(LIST); _jobs = jobs; }
   }
 
-  // Get a list of all Jobs
+  // Get a list of all Jobs.  Will remove from the Jobs list any Job keys that
+  // no longer map to Jobs.
   public static Job[] jobs() {
     Value val = DKV.get(LIST);
     if( val==null ) return new Job[0];
@@ -29,7 +31,13 @@ public class Job<T extends Keyed> extends Keyed {
       val = DKV.get(jl._jobs[i]);
       if( val != null ) jobs[j++] = val.get();
     }
-    return j < jobs.length ? Arrays.copyOf(jobs,j) : jobs;
+    if( j==jobs.length ) return jobs; // All jobs still exist
+    jobs = Arrays.copyOf(jobs,j);     // Shrink out removed 
+    Key keys[] = new Key[j];
+    for( int i=0; i<j; i++ ) keys[i] = jobs[i]._key;
+    // One-shot throw-away attempt at remove dead jobs from the jobs list
+    DKV.DputIfMatch(LIST,val,new Value(LIST,new JobList(keys)),new Futures());
+    return jobs;
   }
 
   transient H2OCountedCompleter _fjtask; // Top-level task you can block on

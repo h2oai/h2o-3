@@ -19,7 +19,7 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
 
   /** Columns used in the model and are used to match up with scoring data
    *  columns.  The last name is the response column name. */
-  String _names[];
+  protected String _names[];
   /** Returns number of input features */
   public int nfeatures() { return _names.length - 1; }
 
@@ -41,7 +41,7 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
     Binomial,
     Multinomial,
     Regression,
-    Clustering;
+    Clustering
   }
 
   public ModelCategory getModelCategory() {
@@ -134,9 +134,10 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
    */
   private Frame scoreImpl(Frame adaptFrm) {
     int ridx = adaptFrm.find(responseName());
+    Vec vecs[] = adaptFrm.vecs();
     assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
     assert nfeatures() == adaptFrm.numCols() : "Number of model features " + nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
-    assert adaptFrm.vecs().length == _names.length-1 : "Scoring data set contains wrong number of columns: " + adaptFrm.vecs().length  + " instead of " + (_names.length-1);
+    assert vecs.length == _names.length-1 : "Scoring data set contains wrong number of columns: " + vecs.length  + " instead of " + (_names.length-1);
 
     // Create a new vector for response
     // If the model produces a classification/enum, copy the domain into the
@@ -152,7 +153,7 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
     }
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        double tmp [] = new double[_names.length-1]; // We do not need the last field representing response
+        double tmp [] = new double[_names.length];
         float preds[] = new float [nclasses()==1?1:nclasses()+1];
         int len = chks[0]._len;
         for( int row=0; row<len; row++ ) {
@@ -306,7 +307,7 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
   public static int[][] getDomainMapping(String colName, String[] modelDom, String[] colDom, boolean logNonExactMapping) {
     int emap[] = new int[modelDom.length];
     boolean bmap[] = new boolean[modelDom.length];
-    HashMap<String,Integer> md = new HashMap<String, Integer>((int) ((colDom.length/0.75f)+1));
+    HashMap<String,Integer> md = new HashMap<>((int) ((colDom.length/0.75f)+1));
     for( int i = 0; i < colDom.length; i++) md.put(colDom[i], i);
     for( int i = 0; i < modelDom.length; i++) {
       Integer I = md.get(modelDom[i]);
@@ -341,12 +342,7 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_names.length; // Last chunk is for the response
-    for( int i=0; i<_names.length-1; i++ ) // Do not include last value since it can contains a response
-      tmp[i] = chks[i].at0(row_in_chunk);
-    return score0(tmp,preds);
-  }
+  abstract protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds );
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are

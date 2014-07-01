@@ -34,7 +34,6 @@ public class KMeans extends Job<KMeansModel> {
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
 
     @Override protected void compute2() {
-      assert _parms != null;
       Frame fr = null;
       KMeansModel model = null;
       try {
@@ -57,7 +56,7 @@ public class KMeans extends Job<KMeansModel> {
         _ncats = ncats;
 
         // The model to be built
-        model = new KMeansModel(dest(), fr, _parms);
+        model = new KMeansModel(dest(), fr, _parms, ncats);
         model.delete_and_lock(_key);
 
         // means are used to impute NAs
@@ -141,14 +140,6 @@ public class KMeans extends Job<KMeansModel> {
           System.out.println();
         }
 
-        // Done building model; produce a score column with cluster choices
-        String[] domain = new String[_parms._K];
-        for( int i=0; i<_parms._K; i++ )
-          domain[i] = "cluster"+i;
-        Clusters cc = new Clusters(clusters,means,mults,_ncats).doAll(1, vecs);
-        Frame fr2 = cc.outputFrame(Key.make(_parms._src.toString()+"_clusters"),new String[]{"Cluster ID"}, new String[][] {domain} );
-        fr2.delete_and_lock(_key).unlock(_key);
-
       } catch( Throwable t ) {
         t.printStackTrace();
         cancel2(t);
@@ -159,30 +150,6 @@ public class KMeans extends Job<KMeansModel> {
         done();                 // Job done!
       }
       tryComplete();
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Score - put a cluster choice down for every row
-  private static class Clusters extends MRTask<Clusters> {
-    // IN
-    double[][] _clusters;         // Cluster centers
-    double[] _means, _mults;      // Normalization
-    final int _ncats;
-    Clusters( double[][] clusters, double[] means, double[] mults, int ncats ) {
-      _clusters = clusters;
-      _means = means;
-      _mults = mults;
-      _ncats = ncats;
-    }
-    
-    @Override public void map(Chunk[] cs, NewChunk ncs) {
-      double[] values = new double[_clusters[0].length];
-      ClusterDist cd = new ClusterDist();
-      for (int row = 0; row < cs[0]._len; row++) {
-        data(values, cs, row, _means, _mults);
-        ncs.addEnum(closest(_clusters, values, _ncats, cd)._cluster);
-      }
     }
   }
 
@@ -408,6 +375,20 @@ public class KMeans extends Job<KMeansModel> {
     cd._cluster = min;          // Record nearest cluster
     cd._dist = minSqr;          // Record square-distance
     return cd;                  // Return for flow-coding
+  }
+
+  // For KMeansModel scoring; just the closest cluster
+  static int closest(double[][] clusters, double[] point, int ncats) {
+    int min = -1;
+    double minSqr = Double.MAX_VALUE;
+    for( int cluster = 0; cluster < clusters.length; cluster++ ) {
+      double sqr = distance(clusters[cluster],point,ncats);
+      if( sqr < minSqr ) {      // Record nearest cluster
+        min = cluster;
+        minSqr = sqr;
+      }
+    }
+    return min;
   }
 
   // KMeans++ re-clustering

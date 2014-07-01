@@ -112,7 +112,7 @@ public abstract class SupervisedModel<M extends Model<M,P>, P extends Model.Para
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=_names.length; // Last chunk is for the response
     for( int i=0; i<_names.length-1; i++ ) // Do not include last value since it can contains a response
       tmp[i] = chks[i].at0(row_in_chunk);

@@ -1,9 +1,10 @@
 package hex.kmeans;
 
-import water.*;
-import water.fvec.Frame;
-import water.api.Schema;
 import hex.schemas.KMeansModelV2;
+import water.*;
+import water.api.Schema;
+import water.fvec.Frame;
+import water.fvec.Chunk;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters> {
 
@@ -16,10 +17,9 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
     public KMeans.Initialization _init;
   }
 
-  @Override
-  public ModelCategory getModelCategory() {
-    return Model.ModelCategory.Clustering;
-  }
+  // Number of categorical variables in the training set; they are all moved
+  // up-front and use a different distance metric than numerical variables
+  final int _ncats;
 
   // Iterations executed
   int _iters;
@@ -36,20 +36,38 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   // Sum squared distance between each point and its new cluster center
   public double _total_within_SS;
 
-  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms) {
+  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
     super(selfKey,fr,parms);
+    _ncats = ncats;
   }
 
   // Default publically visible Schema is V2
-  public Schema schema() { return new KMeansModelV2(this); }
+  @Override public Schema schema() { return new KMeansModelV2(this); }
 
-  protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  /** Bulk scoring API for one row.  Chunks are all compatible with the model,
+   *  and expect the last Chunks are for the final distribution and prediction.
+   *  Default method is to just load the data into the tmp array, then call
+   *  subclass scoring logic. */
+  @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+    assert chks.length>=_names.length;
+    for( int i=0; i<_names.length; i++ )
+      tmp[i] = chks[i].at0(row_in_chunk);
+    return score0(tmp,preds);
+  }
+
+  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+    preds[0] = KMeans.closest(_clusters,data,_ncats);
+    return preds;
+  }
+
+  @Override protected String errStr() {
     throw H2O.unimpl();
   }
 
-  protected String errStr() {
-    throw H2O.unimpl();
+  @Override public ModelCategory getModelCategory() {
+    return Model.ModelCategory.Clustering;
   }
+
 //  public static class KMeans2ModelView extends Request2 {
 //    static final int API_WEAVER = 1;
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
