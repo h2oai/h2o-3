@@ -132,12 +132,13 @@ Steam.FrameView = (_, _frame) ->
     rows
 
   createFrameTable = (offset, rowCount, columns) ->
-    hasMissings = hasZeros = hasPinfs = hasNinfs = no
+    hasMissings = hasZeros = hasPinfs = hasNinfs = hasEnums = no
     for column in columns
       hasMissings = yes if not hasMissings and column.missing > 0
       hasZeros = yes if not hasZeros and column.zeros > 0
       hasPinfs = yes if not hasPinfs and column.pinfs > 0
       hasNinfs = yes if not hasNinfs and column.ninfs > 0
+      hasEnums = yes if not hasEnums and column.type is 'enum'
 
     header: createPlainRow 'label', columns
     typeRow: createPlainRow 'type', columns
@@ -145,7 +146,7 @@ Steam.FrameView = (_, _frame) ->
     maxRow: createMinMaxRow 'maxs', columns
     meanRow: createMeanRow columns
     sigmaRow: createSigmaRow columns
-    cardinalityRow: createCardinalityRow columns
+    cardinalityRow: if hasEnums then createCardinalityRow columns else null
     missingsRow: if hasMissings then createMissingsRow columns else null
     zerosRow: if hasZeros then createInfRow 'zeros', columns else null
     pinfsRow: if hasPinfs then createInfRow 'pinfs', columns else null
@@ -156,6 +157,7 @@ Steam.FrameView = (_, _frame) ->
     hasZeros: hasZeros
     hasPinfs: hasPinfs
     hasNinfs: hasNinfs
+    hasEnums: hasEnums
     dataRows: createDataRows offset, rowCount, columns
 
   data: _frame
