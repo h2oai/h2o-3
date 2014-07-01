@@ -4,12 +4,8 @@ apply plugin: 'java'
 
 description = "H2O web client"
 
-def getOsSpecificCommandLine(command, arg) {
-  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    return [ 'cmd', '/c', command, arg ]
-  } else {
-    return [ command, arg ]
-  }
+def getOsSpecificCommandLine(args) {
+  return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
 }
 
 def checkPrerequisite(name, message) {
@@ -55,19 +51,19 @@ Use the official installer at http://nodejs.org/download/
 }
 
 task installNpmPackages(type: Exec) {
-  commandLine = getOsSpecificCommandLine( 'npm', 'install' )
+  commandLine = getOsSpecificCommandLine([ 'npm', 'install' ])
 }
 
 task installBowerPackages(type: Exec) {
-  commandLine = getOsSpecificCommandLine( 'bower', 'install' )
+  commandLine = getOsSpecificCommandLine([ 'bower', 'install' ])
 }
 
 task buildClientWithGulp(type: Exec) {
-  commandLine = getOsSpecificCommandLine( 'gulp', '' )
+  commandLine = getOsSpecificCommandLine([ 'gulp' ])
 }
 
 task cleanClientWithGulp(type: Exec) {
-  commandLine = getOsSpecificCommandLine( 'gulp', 'clean' )
+  commandLine = getOsSpecificCommandLine([ 'gulp', 'clean' ])
 }
 
 installNpmPackages.dependsOn checkClientPrerequisites
