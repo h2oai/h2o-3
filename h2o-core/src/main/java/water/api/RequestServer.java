@@ -111,6 +111,8 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
     register("/3/Frames"                                    ,"GET",FramesHandler.class, "list");
     register("/2/Frames"                                    ,"GET",FramesHandler.class, "list_or_fetch"); // uses ?key=
+    register("/3/Frames/(?<key>.*)"                         ,"DELETE",FramesHandler.class, "delete", new String[] {"key"});
+    register("/3/Frames"                                    ,"DELETE",FramesHandler.class, "deleteAll");
 
     register("/3/Models/(?<key>.*)"                         ,"GET",ModelsHandler.class, "fetch", new String[] {"key"});
     register("/3/Models"                                    ,"GET",ModelsHandler.class, "list");

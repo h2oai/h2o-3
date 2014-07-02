@@ -97,6 +97,25 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     frames[0] = frame;
   }
 
+  protected void delete() {
+    Frame frame = getFromDKV(key);
+    DKV.remove(key);
+  }
+
+  protected void deleteAll() {
+    final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+        @Override public boolean filter(KeySnapshot.KeyInfo k) {
+          return k._type == TypeMap.FRAME;
+        }
+      }).keys();
+
+    Futures fs = new Futures();
+    for( int i = 0; i < frameKeys.length; i++ )
+      DKV.remove(key,fs);
+    fs.blockForPending();
+  }
+
+
   @Override protected FramesBase schema(int version) {
     switch (version) {
     case 2:   return new FramesV2();
