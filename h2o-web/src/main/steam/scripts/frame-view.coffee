@@ -56,6 +56,7 @@ renderHistogram = (histogram, bounds) ->
     .domain [ 0, histogram.maxCount ]
     .range [ height, 0 ]
 
+  ###
   axisX = d3.svg.axis()
     .scale scaleX
     .orient 'bottom'
@@ -64,6 +65,7 @@ renderHistogram = (histogram, bounds) ->
     .scale scaleY
     .orient 'left'
     .ticks 5
+  ###
 
   el = document.createElementNS 'http://www.w3.org/2000/svg', 'svg'
   svg = d3.select el
@@ -187,6 +189,92 @@ renderCharacteristics = (characteristics, bounds) ->
 
   el
 
+computeBoxplot = (percentiles, column) ->
+
+  q1: column.pctiles[percentiles.indexOf 0.25]
+  q2: column.pctiles[percentiles.indexOf 0.5]
+  q3: column.pctiles[percentiles.indexOf 0.75]
+  mean: column.mean
+  min: head column.mins
+  max: head column.maxs
+  mins: column.mins
+  maxs: column.maxs
+
+renderBoxplot = (boxplot, bounds) ->
+  width = bounds.width - bounds.margin.left - bounds.margin.right
+  height = bounds.height - bounds.margin.top - bounds.margin.bottom
+
+  scaleX = d3.scale.linear()
+    .domain [ boxplot.min, boxplot.max ]
+    .range [ 0, width ]
+
+  svg = document.createElementNS 'http://www.w3.org/2000/svg', 'svg'
+  g = d3.select svg
+    .attr 'width', bounds.width
+    .attr 'height', bounds.height
+    .append 'g'
+    .attr 'transform', "translate(#{bounds.margin.left},#{bounds.margin.top})"
+
+  h25 = height / 4
+  h50 = height / 2
+  h75 = height * 0.75
+  q1 = scaleX boxplot.q1
+  q2 = scaleX boxplot.q2
+  q3 = scaleX boxplot.q3
+  mean = scaleX boxplot.mean
+  min = scaleX boxplot.min
+  max = scaleX boxplot.max
+  mins = map boxplot.mins, scaleX
+  maxs = map boxplot.maxs, scaleX
+
+  drawRule = (x1, y1, x2, y2) ->
+    g.append 'line'
+      .attr 'class', 'rule'
+      .attr 'x1', x1
+      .attr 'y1', y1
+      .attr 'x2', x2
+      .attr 'y2', y2
+
+  drawCircle = (x) ->
+    g.append 'circle'
+      .attr 'class', 'rule'
+      .attr 'cx', x
+      .attr 'cy', h50
+      .attr 'r', 3
+
+  # Box from Q1 to Q2
+  g.append 'rect'
+    .attr 'class', 'rule'
+    .attr 'x', q1
+    .attr 'y', 0
+    .attr 'width', q3 - q1
+    .attr 'height', height
+
+  # Lower whisker
+  drawRule 0, h50, q1, h50
+
+  # Upper whisker
+  drawRule q3, h50, width, h50
+
+  # Lower fence
+  drawRule 0, h25, 0, h75
+
+  # Upper fence 
+  drawRule width, h25, width, h75
+
+  # Median (Q2)
+  drawRule q2, 0, q2, height
+    .style 'stroke-dasharray', '3,3'
+
+  # Mean ('+')
+  drawRule mean - 5, h50, mean + 5, h50
+  drawRule mean, h50 - 5, mean, h50 + 5
+
+  # Circles for mins/maxs higher/lower than min/max
+  forEach mins, (value) -> drawCircle value if value isnt min
+  forEach maxs, (value) -> drawCircle value if value isnt max
+
+  svg
 
 computeHistogram = (column, minIntervalCount) ->
   { base, stride, bins } = column
@@ -307,7 +395,6 @@ Steam.FrameView = (_, _frame) ->
     switch column.type
       when 'int', 'real'
         #TODO include jquery.pep for sliders to customize bins
-
         histogram = computeHistogram column, 32
         appendHistogram = ($element) ->
           $element.empty().append renderHistogram histogram,
@@ -319,12 +406,25 @@ Steam.FrameView = (_, _frame) ->
               bottom: 0
               left: 0
         histogramInspection =
-          domain:
-            min: histogram.start
-            max: histogram.end
+          data: histogram
           graphic:
             markup: div()
             behavior: appendHistogram
+
+        boxplot = computeBoxplot frame.default_pctiles, column
+        appendBoxplot = ($element) ->
+          $element.empty().append renderBoxplot boxplot,
+            width: 300
+            height: 70
+            margin:
+              top: 5
+              right: 5
+              bottom: 5
+              left: 5
+        boxplotInspection =
+          graphic:
+            markup: div()
+            behavior: appendBoxplot
       else
         topCounts = computeTopCounts column, frame.rows, 15
         topCountsTable = renderTopCountsTable topCounts
@@ -367,6 +467,7 @@ Steam.FrameView = (_, _frame) ->
     _.inspect
       columnLabel: column.label
       histogram: histogramInspection
+      boxplot: boxplotInspection
       topCounts: topCountsInspection
       characteristics: characteristicsInspection
       template: 'column-summary-view'
@@ -376,7 +477,7 @@ Steam.FrameView = (_, _frame) ->
       displaySummary: ->
         _.requestColumnSummary frameKey, column.label, (error, frames) ->
           if error
-            #TODO
+            _.error 'Error requesting column summary', column, error
           else
             createSummaryInspection head frames
 

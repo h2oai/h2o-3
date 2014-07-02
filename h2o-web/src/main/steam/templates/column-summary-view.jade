@@ -1,23 +1,6 @@
 .y-column-summary-view
   h1(data-bind='text:columnLabel')
 
-  // ko with:histogram
-  h2 Histogram
-  .y-histogram(data-bind='geyser:graphic')
-  // ko with:domain
-  table.y-monospace(style='width:100%')
-    tbody
-      tr
-        td(data-bind='text:min')
-        td(style='text-align:right' data-bind='text:max')
-  // /ko
-  // /ko
-
-  // ko with:topCounts
-  h2(data-bind='text:caption')
-  .y-topcounts(data-bind='geyser:graphic')
-  // /ko
-
   // ko with:characteristics
   h2 Characteristics
   .y-characteristics(style='margin:0 0 16px 0' data-bind='geyser:graphic')
@@ -40,4 +23,25 @@
         // /ko
   // /ko
 
+  // ko with:histogram
+  h2 Histogram
+  .y-histogram(data-bind='geyser:graphic')
+  // ko with:data
+  table.y-monospace(style='width:100%')
+    tbody
+      tr
+        td(data-bind='text:start')
+        td(style='text-align:right' data-bind='text:end')
+  // /ko
+  // /ko
+
+  // ko with:boxplot
+  h2 Box plot
+  .y-boxplot(data-bind='geyser:graphic')
+  // /ko
+
+  // ko with:topCounts
+  h2(data-bind='text:caption')
+  .y-topcounts(data-bind='geyser:graphic')
+  // /ko
 
