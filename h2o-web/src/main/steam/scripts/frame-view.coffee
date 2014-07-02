@@ -1,3 +1,6 @@
+localConfig =
+  chartWidth: 275
+
 significantDigitsBeforeDecimal = (value) -> 1 + Math.floor Math.log(Math.abs value) / Math.LN10
 
 formatToSignificantDigits = (digits, value) ->
@@ -398,7 +401,7 @@ Steam.FrameView = (_, _frame) ->
         histogram = computeHistogram column, 32
         appendHistogram = ($element) ->
           $element.empty().append renderHistogram histogram,
-            width: 300
+            width: localConfig.chartWidth
             height: 100
             margin:
               top: 0
@@ -414,7 +417,7 @@ Steam.FrameView = (_, _frame) ->
         boxplot = computeBoxplot frame.default_pctiles, column
         appendBoxplot = ($element) ->
           $element.empty().append renderBoxplot boxplot,
-            width: 300
+            width: localConfig.chartWidth
             height: 70
             margin:
               top: 5
@@ -450,7 +453,7 @@ Steam.FrameView = (_, _frame) ->
 
     appendCharacteristics = ($element) ->
       $element.empty().append renderCharacteristics characteristics,
-        width: 300
+        width: localConfig.chartWidth
         height: 10
         margin:
           top: 0
