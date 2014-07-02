@@ -97,11 +97,14 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     frames[0] = frame;
   }
 
+  // Remove an unlocked frame.  Fails if frame is in-use
   protected void delete() {
     Frame frame = getFromDKV(key);
-    DKV.remove(key);
+    frame.delete();             // lock & remove
   }
 
+  // Remove ALL an unlocked frames.  Throws IAE for all deletes that failed
+  // (perhaps because the Frames were locked & in-use).
   protected void deleteAll() {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
@@ -109,10 +112,17 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
         }
       }).keys();
 
+    String err=null;
     Futures fs = new Futures();
-    for( int i = 0; i < frameKeys.length; i++ )
-      DKV.remove(key,fs);
+    for( int i = 0; i < frameKeys.length; i++ ) {
+      try { 
+        getFromDKV(key).delete(null,fs);
+      } catch( IllegalArgumentException iae ) {
+        err += iae.getMessage();
+      }
+    }
     fs.blockForPending();
+    if( err != null ) throw new IllegalArgumentException(err);
   }
 
 

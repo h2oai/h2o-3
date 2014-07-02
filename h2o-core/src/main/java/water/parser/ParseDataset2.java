@@ -361,7 +361,7 @@ public class ParseDataset2 extends Job<Frame> {
         if( _delete_on_done ) vec.remove();
       } else {
         Frame fr = (Frame)ice;
-        if( _delete_on_done ) fr.delete(_job_key,0.0f);
+        if( _delete_on_done ) fr.delete(_job_key,new Futures()).blockForPending();
         else if( fr._key != null ) fr.unlock(_job_key);
       }
     }
@@ -513,7 +513,7 @@ public class ParseDataset2 extends Job<Frame> {
           if( _outerMFPT._delete_on_done ) ((ByteVec)ice).remove();
         } else {
           Frame fr = (Frame)ice;
-          if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,0.0f);
+          if( _outerMFPT._delete_on_done ) fr.delete(_outerMFPT._job_key,new Futures()).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
         }
       }

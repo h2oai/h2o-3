@@ -63,14 +63,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     if( val==null ) return;
     ((Lockable)val.get()).delete();
   }
-  public void delete( ) { delete(null,0.0f); }
+  public void delete( ) { delete(null,new Futures()).blockForPending(); }
   // Will fail if locked by anybody other than 'job_key'
-  public void delete( Key job_key, float dummy ) {
+  public Futures delete( Key job_key, Futures fs ) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
     }
-    remove();
+    return remove(fs);
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
