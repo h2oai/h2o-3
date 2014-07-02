@@ -1,7 +1,6 @@
 package water.api;
 
 import water.*;
-import water.api.API;
 import water.fvec.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;

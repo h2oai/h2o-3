@@ -1,7 +1,6 @@
 package water;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
@@ -96,11 +95,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Just an empty shell of a Value, no local data but the Value is "real".
   // Any attempt to look at the Value will require a remote fetch.
   final boolean isEmpty() { return _max > 0 && _mem==null && _pojo == null && !isPersisted(); }
-  private final byte[] getBytes() {
-    assert _type==TypeMap.PRIM_B && _pojo == null;
-    byte[] mem = _mem;          // Read once!
-    return mem != null ? mem : (_mem = loadPersist());
-  }
 
   // The FAST path get-POJO - final method for speed.
   // Will (re)build the POJO from the _mem array.
@@ -130,7 +124,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // ---
   // Time of last access to this value.
   transient long _lastAccessedTime = System.currentTimeMillis();
-  private final void touch() {_lastAccessedTime = System.currentTimeMillis();}
+  private void touch() {_lastAccessedTime = System.currentTimeMillis();}
 
   // ---
   // Backend persistence info.  3 bits are reserved for 8 different flavors of
@@ -157,7 +151,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private final static byte BACKEND_MASK = (8-1);
   private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
   private final static byte ON_dsk = 1<<3;
-  final private void clrdsk() { _persist &= ~ON_dsk; } // note: not atomic
+  private void clrdsk() { _persist &= ~ON_dsk; } // note: not atomic
   public final void setdsk() { _persist |=  ON_dsk; } // note: not atomic
   public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
@@ -222,9 +216,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
   public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Model; }
-  private boolean isByteVec() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof ByteVec; }
 
-  private InputStream openStream() throws IOException {  return openStream(null); }
   /** Creates a Stream for reading bytes */
   private InputStream openStream(Job p) throws IOException {
     if(onNFS() ) return PersistNFS .openStream(_key  );
@@ -254,8 +246,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
   public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
-  private Value(Key k, int max ) { this(k, max, new byte[max], TypeMap.PRIM_B, ICE); }
-  private Value(Key k, int max, byte be ) { this(k, max, null, TypeMap.PRIM_B,  be); }
   public Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {
@@ -378,9 +368,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
   // List of who is replicated where
   private transient NonBlockingSetInt _replicas;
-  private int numReplicas() { return _replicas.size(); }
-  /** True if h2o has a copy of this Value */
-  boolean isReplicatedTo( H2ONode h2o ) { return _replicas.contains(h2o._unique_idx); }
 
   /** Atomically insert h2o into the replica list; reports false if the Value
    *  flagged against future replication with a -1.  Also bumps the active
@@ -437,7 +424,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
         // Active readers: need to block until the GETs (of this very Value!)
         // all complete, before we can invalidate this Value - lest a racing
         // Invalidate bypass a GET.
-        try { ForkJoinPool.managedBlock(this); } catch( InterruptedException e ) { }
+        try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
       } else if( RW_CAS(0,-1,"wlock") )
         break;                  // Got the write-lock!
     }
@@ -467,7 +454,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  remote-PUT ordering on the home node. */
   void startRemotePut() {
     assert !_key.home();
-    int x = 0;
+    int x;
     // assert I am waiting on threads with higher priority?
     while( (x=_rwlock.get()) != -1 ) // Spin until rwlock==-1
       if( x == 1 || RW_CAS(0,1,"remote_need_notify") )
@@ -503,7 +490,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    * return true.  Used by the FJ Pool management to spawn threads to prevent
    * deadlock is otherwise all threads would block on waits. */
   @Override public synchronized boolean block() {
-    while( !isReleasable() ) { try { wait(); } catch( InterruptedException e ) { } }
+    while( !isReleasable() ) { try { wait(); } catch( InterruptedException ignore ) { } }
     return true;
   }
 }

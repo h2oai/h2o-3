@@ -3,6 +3,7 @@ package water.fvec;
 import java.util.Arrays;
 import java.util.Iterator;
 import jsr166y.CountedCompleter;
+import water.Futures;
 import water.H2O;
 import water.Key;
 import water.MRTask;
@@ -60,14 +61,15 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
   @Override public void onCompletion(CountedCompleter caller) {
     assert _out.numRows() == _in.numRows();
-    assert _out.anyVec().nChunks() == _nchunks;
+    Vec vec = _out.anyVec();
+    assert vec.nChunks() == _nchunks;
     _in.unlock(_jobKey);
     _out.update(_jobKey);
     _out.unlock(_jobKey);
   }
   @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
     _in.unlock(_jobKey);
-    if(_out != null)_out.delete(_jobKey,0.0f);
+    if(_out != null)_out.delete(_jobKey,new Futures()).blockForPending();
     return true;
   }
 

@@ -1,7 +1,6 @@
 package water.api;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Properties;
 import water.H2O.H2OCountedCompleter;
 import water.api.RequestServer.Route;
@@ -16,8 +15,6 @@ public abstract class Handler<H extends Handler<H,S>,S extends Schema<H,S>> exte
   abstract protected S schema(int version);
   abstract protected int min_ver();
   abstract protected int max_ver();
-
-  private static final Properties NO_PROPERTIES = new Properties();
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
