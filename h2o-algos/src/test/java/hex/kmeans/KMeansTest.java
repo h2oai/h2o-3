@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import static org.junit.Assert.*;
 import java.io.File;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
@@ -10,6 +11,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
 public class KMeansTest extends TestUtil {
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {

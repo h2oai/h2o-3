@@ -47,7 +47,7 @@ public class KMeans extends Job<KMeansModel> {
         // Sort columns, so the categoricals are all up front.  They use a
         // different distance metric than numeric columns.
         Vec vecs[] = fr.vecs();
-        final int N = vecs.length;
+        final int N = vecs.length; // Feature count
         int ncats=0, len=N;
         while( ncats != len ) {
           while( vecs[ncats].isEnum() ) ncats++;
@@ -98,7 +98,7 @@ public class KMeans extends Job<KMeansModel> {
             // Fill in sample clusters into the model
             if( !isRunning() ) return; // Stopped/cancelled
             model._clusters = denormalize(clusters, ncats, means, mults);
-            model._total_within_SS = sqr._sqr;
+            model._mse = sqr._sqr/fr.numRows();
             model._iters++;     // One iteration done
             update(1);          // One unit of work
             model.update(_key); // Early version of model is visible
@@ -141,10 +141,13 @@ public class KMeans extends Job<KMeansModel> {
           // Fill in the model; denormalized centers
           model._clusters = denormalize(task._cMeans, ncats, means, mults);
           model._rows = task._rows;
-          model._within_cluster_variances = task._cSqr;
-          for( int i=0; i<_parms._K; i++ )
-            model._within_cluster_variances[i]/=model._rows[i];
-          model._total_within_SS = task._sqr;
+          model._mses = task._cSqr;
+          double ssq = 0;       // sum squared error
+          for( int i=0; i<_parms._K; i++ ) {
+            ssq += model._mses[i]; // sum squared error all clusters
+            model._mses[i] /= task._rows[i]; // mse per-cluster
+          }
+          model._mse = ssq/fr.numRows(); // mse total
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
@@ -158,7 +161,7 @@ public class KMeans extends Job<KMeansModel> {
           clusters = task._cMeans; // Update cluster centers
 
           StringBuilder sb = new StringBuilder();
-          sb.append("KMeans: iter: ").append(model._iters).append(", total_within_SS=").append(model._total_within_SS);
+          sb.append("KMeans: iter: ").append(model._iters).append(", MSE=").append(model._mse);
           for( int i=0; i<_parms._K; i++ )
             sb.append(", ").append(task._cSqr[i]).append("/").append(task._rows[i]);
           Log.info(sb);
@@ -276,7 +279,6 @@ public class KMeans extends Job<KMeansModel> {
     long[/*K*/][/*ncats*/][] _cats; // Histogram of cat levels
     double[] _cSqr;             // Sum of squares for each cluster
     long[] _rows;               // Rows per cluster
-    double _sqr;                // Total sqr distance
     long _worse_row;            // Row with max err
     double _worse_err;          // Max-err-row's max-err
 
@@ -309,7 +311,6 @@ public class KMeans extends Job<KMeansModel> {
         closest(_clusters, values, _ncats, cd);
         int clu = cd._cluster;
         assert clu != -1; // No broken rows
-        _sqr += cd._dist;
         _cSqr[clu] += cd._dist;
 
         // Add values and increment counter for chosen cluster
@@ -340,7 +341,6 @@ public class KMeans extends Job<KMeansModel> {
       ArrayUtils.add(_cats, mr._cats);
       ArrayUtils.add(_cSqr, mr._cSqr);
       ArrayUtils.add(_rows, mr._rows);
-      _sqr += mr._sqr;
       // track global worse-row
       if( _worse_err < mr._worse_err ) { _worse_err = mr._worse_err; _worse_row = mr._worse_row; }
     }

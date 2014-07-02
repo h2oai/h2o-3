@@ -3,13 +3,13 @@ package water.api;
 import water.*;
 import water.fvec.Frame;
 
-class InspectHandler extends Handler<InspectHandler,InspectV1> {
+public class InspectHandler extends Handler<InspectHandler,InspectV1> {
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // Inputs
-  Value _val;            // Thing to inspect
+  public Value _val;            // Thing to inspect
   long _off;
   int _len;
 

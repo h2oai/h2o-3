@@ -12,7 +12,7 @@ public class TestUtil {
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
-    H2O.waitForCloudSize(x, 5000);
+    H2O.waitForCloudSize(x, 10000);
   }
 
   @BeforeClass public static void setupCloud() {

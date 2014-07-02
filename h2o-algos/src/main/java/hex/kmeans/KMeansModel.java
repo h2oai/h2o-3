@@ -22,19 +22,20 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   final int _ncats;
 
   // Iterations executed
-  int _iters;
+  public int _iters;
 
   // Cluster centers.  During model init, might be null or might have a "K"
-  // which is oversampled alot.
+  // which is oversampled alot.  Not normalized (although if normalization is
+  // used during the building process, the *builders* clusters are normalized).
   public double[/*K*/][/*features*/] _clusters;
   // Rows per cluster
   public long[/*K*/] _rows;
 
-  // Sum squared distance between each point and its new cluster center
-  public double[/*K*/] _within_cluster_variances;
+  // Sum squared distance between each point and its cluster center, divided by rows
+  public double[/*K*/] _mses;   // Per-cluster MSE, variance
 
-  // Sum squared distance between each point and its new cluster center
-  public double _total_within_SS;
+  // Sum squared distance between each point and its cluster center, divided by rows.
+  public double _mse;           // Total MSE, variance
 
   KMeansModel( Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
     super(selfKey,fr,parms);
@@ -42,7 +43,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   }
 
   // Default publically visible Schema is V2
-  @Override public Schema schema() { return new KMeansModelV2(this); }
+  @Override public Schema schema() { return new KMeansModelV2(); }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

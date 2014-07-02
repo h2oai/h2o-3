@@ -1,12 +1,9 @@
 package hex.schemas;
 
 import hex.kmeans.KMeansModel;
-import water.Key;
-import water.api.API;
-import water.api.Handler;
-import water.api.Schema;
 import water.H2O;
-//import water.util.DocGen.HTML;
+import water.Key;
+import water.api.*;
 
 public class KMeansModelV2 extends Schema {
 
@@ -15,28 +12,40 @@ public class KMeansModelV2 extends Schema {
   Key key;
 
   // Output fields
-  @API(help="KMeans Model")
-  KMeansModel kmeansModel;
+  @API(help="Clusters[K][features]")
+  double[/*K*/][/*features*/] clusters;
 
-  transient KMeansModel _kmm;
-  public KMeansModelV2( KMeansModel kmm ) { _kmm = kmm;  }
+  @API(help="Rows[K]")
+  long[/*K*/] rows;
+
+  @API(help="Mean Square Error per cluster")
+  public double[/*K*/] mses;   // Per-cluster MSE, variance
+
+  @API(help="Mean Square Error")
+  public double mse;           // Total MSE, variance
+
+  @API(help="Iterations executed")
+  public double iters;
+
 
   //==========================
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
   @Override public KMeansModelV2 fillInto( Handler h ) {
-    throw H2O.fail();
+    throw H2O.unimpl();
   }
 
   // Version&Schema-specific filling from the handler
   @Override public KMeansModelV2 fillFrom( Handler h ) {
-    kmeansModel = _kmm;
+    if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
+    InspectHandler ih = (InspectHandler)h;
+    KMeansModel kmm = ih._val.get();
+    clusters = kmm._clusters;
+    rows = kmm._rows;
+    mses = kmm._mses;
+    mse = kmm._mse;
+    iters = kmm._iters;
     return this;
   }
-
-  //@Override public HTML writeHTML_impl( HTML ab ) {
-  //  ab.title("KMeansModel Viewer");
-  //  return ab;
-  //}
 }

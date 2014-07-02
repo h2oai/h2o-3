@@ -1502,7 +1502,7 @@ public final class AutoBuffer {
     putJSONStr(name).put1(':');
     return putJSONA8d(a);
   }
-  AutoBuffer putJSONAA8d( String name, double[][] a ) {
+  public AutoBuffer putJSONAA8d( String name, double[][] a ) {
     putJSONStr(name).put1(':');
     if( a == null ) return putJNULL();
     put1('[');
