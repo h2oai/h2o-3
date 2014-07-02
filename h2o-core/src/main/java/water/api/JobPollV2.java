@@ -70,7 +70,7 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
     ab.title("Job Poll");
     if( "DONE".equals(status) ) {
       Job job = DKV.get(key).get();
-      String url = InspectV2.link(job.dest());
+      String url = InspectV1.link(job.dest());
       ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
     } else {
       String url = link(key);

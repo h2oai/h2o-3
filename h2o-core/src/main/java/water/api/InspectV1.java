@@ -3,11 +3,17 @@ package water.api;
 import water.*;
 import water.util.DocGen.HTML;
 
-class InspectV1 extends Schema {
+class InspectV1 extends Schema<InspectHandler,InspectV1> {
 
   // Input fields
   @API(help="Key to inspect",required=true)
   Key key;
+
+  @API(help="Offset, used to page through large objects",direction=API.Direction.INPUT)
+  long off;
+
+  @API(help="Length, used to page through large objects",direction=API.Direction.INOUT)
+  int len;
 
   // Output
   @API(help="Class")
@@ -21,17 +27,21 @@ class InspectV1 extends Schema {
 
   // Version&Schema-specific filling into the handler
   private transient Value _val; // To avoid a race, cached lookup here
-  @Override protected InspectV1 fillInto( Handler h ) {
+  @Override protected InspectV1 fillInto( InspectHandler h ) {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
-    ((InspectHandler)h)._val = _val;
+    h._val = _val;
+    if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
+    h._off = off;
+    if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
+    h._len = len;
     return this;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected InspectV1 fillFrom( Handler h ) {
+  @Override protected InspectV1 fillFrom( InspectHandler h ) {
     className = _val.className();
-    schema = ((InspectHandler)h)._schema; // Output schema
+    schema = h._schema; // Output schema
     schema.fillFrom(h);                   // Recursively fill in schema
     return this;
   }

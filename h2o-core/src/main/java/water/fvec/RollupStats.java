@@ -57,8 +57,7 @@ public class RollupStats extends DTask<RollupStats> {
     boolean isUUID = c._vec._isUUID;
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i<c._len; i=c.nextNZ(i) ) {
-      double d = c.at0(i);
-      if( Double.isNaN(d) ) {
+      if( c.isNA0(i) ) {
         _naCnt++;  _nzCnt++;
 
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
@@ -66,6 +65,7 @@ public class RollupStats extends DTask<RollupStats> {
 
       } else {                  // All other columns have useful rollups
 
+        double d = c.at0(i);
         if( d == Double.POSITIVE_INFINITY) _pinfs++;
         else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
         else {

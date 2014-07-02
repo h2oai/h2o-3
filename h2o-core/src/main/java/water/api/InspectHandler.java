@@ -3,13 +3,15 @@ package water.api;
 import water.*;
 import water.fvec.Frame;
 
-class InspectHandler extends Handler {
+class InspectHandler extends Handler<InspectHandler,InspectV1> {
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // Inputs
   Value _val;            // Thing to inspect
+  long _off;
+  int _len;
 
   // Outputs
   Schema _schema;        // Schema for viewing
@@ -25,7 +27,7 @@ class InspectHandler extends Handler {
       if( _val == null ) throw new IllegalArgumentException("Key is missing");
     }
 
-    if( _val.isFrame() ) return (_schema = new FrameV2((Frame)_val.get()));
+    if( _val.isFrame() ) return (_schema = new FrameV2((Frame)_val.get(),_off,_len));
 
     if( _val.isModel() ) return (_schema = ((Model)_val.get()).schema());
 
@@ -34,5 +36,5 @@ class InspectHandler extends Handler {
   }
 
   // Inspect Schemas are still at V1, unchanged for V2
-  @Override protected Schema schema(int version) { return version==1 ? new InspectV1() : new InspectV2(); }
+  @Override protected InspectV1 schema(int version) { return new InspectV1(); }
 }

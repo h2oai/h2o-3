@@ -42,7 +42,7 @@ abstract class FramesBase extends Schema<FramesHandler, FramesBase> {
 
       int i = 0;
       for (Frame frame : h.frames) {
-        this.frames[i++] = new FrameV2(frame);
+        this.frames[i++] = new FrameV2(frame,0,100);
       }
     }
     return this;

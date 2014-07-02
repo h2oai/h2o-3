@@ -110,7 +110,7 @@ class FrameV2 extends Schema {
       if( vec.isUUID() ) {
         str_data = new String[len];
         for( int i=0; i<len; i++ )
-          str_data[i] = vec.isNA(i) ? null : PrettyPrint.UUID(vec.at16l(off+i),vec.at16h(off+i));
+          str_data[i] = vec.isNA(off+i) ? null : PrettyPrint.UUID(vec.at16l(off+i),vec.at16h(off+i));
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);
@@ -133,12 +133,13 @@ class FrameV2 extends Schema {
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
 
-  FrameV2( Frame fr ) {
+  FrameV2( Frame fr, long off, int len ) {
     key = fr._key;
     _fr = fr;
-    off = 0;
+    this.off = off;
     rows = fr.numRows();
-    len = (int)Math.min(100,rows);
+    if( len==0 ) len=100;       // Default length if zero passed
+    this.len = (int)Math.min(len,rows);
     byteSize = fr.byteSize();
     columns = new Col[fr.numCols()];
     Vec[] vecs = fr.vecs();
@@ -161,6 +162,7 @@ class FrameV2 extends Schema {
     off = 0;
     rows = _fr.numRows();
     len = (int)Math.min(100,rows);
+    if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
     byteSize = _fr.byteSize();
     columns = new Col[_fr.numCols()];
     Vec[] vecs = _fr.vecs();
@@ -204,7 +206,7 @@ class FrameV2 extends Schema {
     int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
-      formatRow(ab,"",Integer.toString(row+1),new ColOp() { 
+      formatRow(ab,"",Long.toString(off+row+1),new ColOp() { 
           String op(Col c) { 
             return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c,0); }
         } );
