@@ -16,7 +16,7 @@ public class ExampleTest extends TestUtil {
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
       parms._src = fr._key;
-      parms._max_iters = 1000;
+      parms._max_iters = 10;
 
       Example job = new Example(parms);
       kmm = job.get();

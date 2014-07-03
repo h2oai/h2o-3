@@ -1,13 +1,11 @@
 package hex.example;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.Arrays;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.RandomUtils;
 
 /** 
  *  Example model builder... building a trivial ExampleModel
@@ -46,6 +44,8 @@ public class Example extends Job<ExampleModel> {
         for( ; model._iters < _parms._max_iters; model._iters++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
 
+          double[] maxs = new Max().doAll(fr)._maxs;
+
           // Fill in the model; denormalized centers
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -65,6 +65,29 @@ public class Example extends Job<ExampleModel> {
         done();                 // Job done!
       }
       tryComplete();
+    }
+  }
+
+
+  // -------------------------------------------------------------------------
+  // Find max per-column
+  private static class Max extends MRTask<Max> {
+    // IN
+
+    // OUT
+    double[] _maxs;
+
+    @Override public void map(Chunk[] cs) {
+      _maxs = new double[cs.length];
+      Arrays.fill(_maxs,-Double.MAX_VALUE);
+      for( int col = 0; col < cs.length; col++ )
+        for( int row = 0; row < cs[col]._len; row++ )
+          _maxs[col] = Math.max(_maxs[col],cs[col].at0(row));
+    }
+
+    @Override public void reduce(Max that) {
+      for( int col = 0; col < _maxs.length; col++ )
+        _maxs[col] = Math.max(_maxs[col],that._maxs[col]);
     }
   }
 }
