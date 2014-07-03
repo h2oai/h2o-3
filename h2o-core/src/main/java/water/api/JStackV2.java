@@ -2,20 +2,20 @@ package water.api;
 import water.util.DocGen;
 import water.util.JStack;
 
-public class JStackV2 extends Schema<JStackHandler,JStackV2> {
+public class JStackV2 extends Schema<JStack,JStackV2> {
   // No inputs
 
   // Output
   @API(help="Array of Profiles, one per Node in the Cluster")
   public JStack _jstack;
 
-  @Override protected JStackV2 fillInto(JStackHandler jstack) {
+  @Override public JStack createImpl() {
     //No inputs to set
-    return this;
+    return this._jstack;
   }
 
-  @Override public JStackV2 fillFrom(JStackHandler jstack) {
-    _jstack = jstack._jstack;
+  @Override public JStackV2 fillFromImpl(JStack jstack) {
+    this._jstack = jstack;
     return this;
   }
 

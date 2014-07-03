@@ -1,9 +1,10 @@
 package water.api;
 
 import java.util.Arrays;
+import water.api.TypeaheadHandler.Typeahead;
 import water.util.DocGen.HTML;
 
-class TypeaheadV2 extends Schema<TypeaheadHandler,TypeaheadV2> {
+class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
 
   // Input fields
   @API(help="src", required=true)
@@ -20,15 +21,16 @@ class TypeaheadV2 extends Schema<TypeaheadHandler,TypeaheadV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected TypeaheadV2 fillInto( TypeaheadHandler h ) {
-    h._src = src;
-    h._limit = limit<=0 ? 1000 : limit;
-    return this;
+  @Override public Typeahead createImpl() {
+    Typeahead t = new Typeahead();
+    t._src = src;
+    t._limit = limit<=0 ? 1000 : limit;
+    return t;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected TypeaheadV2 fillFrom( TypeaheadHandler h ) {
-    matches = h._matches;
+  @Override public TypeaheadV2 fillFromImpl(Typeahead t) {
+    matches = t._matches;
     return this;
   }
 }

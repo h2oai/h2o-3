@@ -3,8 +3,6 @@ package water.parser;
 import java.io.*;
 import java.util.Arrays;
 import water.util.PrettyPrint;
-import water.fvec.Vec;
-import water.fvec.Vec.VectorGroup;
 
 class SVMLightParser extends Parser {
   private static final byte SKIP_TOKEN = 21;
@@ -17,22 +15,22 @@ class SVMLightParser extends Parser {
   private static final int COL = 2;
   private static final int VAL = 3;
 
-  SVMLightParser( ParseSetupHandler ps ) { super(ps); }
+  SVMLightParser( ParseSetup ps ) { super(ps); }
 
   /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
-  public static ParseSetupHandler guessSetup(byte [] bytes) {
+  public static ParseSetup guessSetup(byte [] bytes) {
     // find the last eof
     int i = bytes.length-1;
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetupHandler(true, 0, null, ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, -1, false, null,null,0));
+    SVMLightParser p = new SVMLightParser(new ParseSetup(true, 0, null, ParserType.SVMLight, ParseSetup.AUTO_SEP, -1, false, null,null,0));
     InspectDataOut2 dout = new InspectDataOut2();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetupHandler.AUTO_SEP, dout._ncols,
+    return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
+                                 dout._invalidLines, dout.errors(), ParserType.SVMLight, ParseSetup.AUTO_SEP, dout._ncols,
                                  false,null,dout._data,-1/*never a header on SVM light*/);
   }
 

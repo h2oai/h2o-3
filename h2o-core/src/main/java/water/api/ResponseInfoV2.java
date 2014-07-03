@@ -1,11 +1,12 @@
 package water.api;
 
 import water.H2O;
+import water.util.IcedHashMap;
 
 /**
  * Schema for the response blob used in /2/*.
  */
-class ResponseInfoV2 extends Schema {
+class ResponseInfoV2 extends Schema<IcedHashMap, ResponseInfoV2> {
   @API(help="h2o")
   String h2o;
 
@@ -18,7 +19,7 @@ class ResponseInfoV2 extends Schema {
   @API(help="time")
   int time;
 
-  @Override protected ResponseInfoV2 fillInto( Handler h ) { throw H2O.fail("fillInto should never be called on ResponseInfoV2"); }
-  @Override protected ResponseInfoV2 fillFrom( Handler h ) { throw H2O.fail("fillFrom should never be called on ResponseInfoV2"); }
+  @Override public IcedHashMap createImpl() { throw H2O.fail("fillInto should never be called on ResponseInfoV2"); }
+  @Override public ResponseInfoV2 fillFromImpl(IcedHashMap i) { throw H2O.fail("fillFromImpl should never be called on ResponseInfoV2"); }
 }
 

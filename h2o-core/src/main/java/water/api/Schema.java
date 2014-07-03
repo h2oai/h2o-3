@@ -20,7 +20,7 @@ import water.fvec.Frame;
  *  requirements on the input (prior field dependencies and other validation
  *  checks).  Transient & Static fields are ignored.
  */
-public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> extends Iced {
+public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private final transient int _version;
   final int getVersion() { return _version; }
   protected Schema() {
@@ -31,12 +31,16 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
     assert 0 <= _version && _version <= 9 : "Schema classname does not contain version";
   }
 
-  // Version&Schema-specific filling into the handler
-  abstract protected S fillInto( H h );
+  // TODO: move the algos schemas into water.api (or vice-versa) and make these protected:
 
-  // Version&Schema-specific filling from the handler
-  abstract protected S fillFrom( H h );
+  // Version&Schema-specific filling into the implementation object
+  abstract public I createImpl();
 
+  // Version&Schema-specific filling from the implementation object
+  abstract public S fillFromImpl(I i);
+
+  // TODO: this really does not belong in the schema layer; it's a hack for the
+  // TODO: old-school-web-UI
   // This Schema accepts a Frame as it's first & main argument, used by the
   // Frame Inspect & Parse pages to give obvious options for Modeling, Summary,
   // export-to-CSV etc options.  Return a URL or null if not appropriate.
@@ -107,7 +111,7 @@ public abstract class Schema<H extends Handler<H,S>,S extends Schema<H,S>> exten
       int mods = f.getModifiers();
       if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
         continue;             // Ignore transient & static
-      API api = (API)f.getAnnotations()[0];
+      API api = (API)f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
       if( api.required() ) {
         if( parms.getProperty(f.getName()) == null )
           throw new IllegalArgumentException("Required field "+f.getName()+" not specified");

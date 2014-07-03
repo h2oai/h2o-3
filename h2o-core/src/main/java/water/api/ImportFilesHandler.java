@@ -6,21 +6,31 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.util.*;
+
+import water.H2O;
+import water.Iced;
+import water.api.ImportFilesHandler.ImportFiles;
 import water.util.FileIntegrityChecker;
 
-class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
+public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  // Input
-  String _path;
+  protected static final class ImportFiles extends Iced {
+    // Input
+    String _path;
 
-  // Outputs
-  String _files[], _keys[], _fails[], _dels[];
+    // Outputs
+    String _files[], _keys[], _fails[], _dels[];
+  }
 
   // Running all in GET, no need for backgrounding on F/J threads
-  @Override public void compute2() { 
-    assert _path != null;
+  @Override public void compute2() {
+    throw H2O.unimpl();
+  }
+
+  public ImportFilesV2 importFiles(int version, ImportFiles importFiles) {
+    assert importFiles._path != null;
 //    String p2 = _path.toLowerCase();
     if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
@@ -29,7 +39,8 @@ class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    else serveLocalDisk();
+    // else
+    return serveLocalDisk(version, importFiles);
   }
 
 //  private void serveHdfs() throws IOException{
@@ -77,18 +88,19 @@ class ImportFilesHandler extends Handler<ImportFilesHandler,ImportFilesV2> {
 //    fails = fail.toArray(new String[fail.size()]);
 //  }
 
-  private void serveLocalDisk() {
-    File f = new File(_path);
-    if( !f.exists() ) throw new IllegalArgumentException("File " + _path + " does not exist!");
+  private ImportFilesV2 serveLocalDisk(int version, ImportFiles importFiles) {
+    File f = new File(importFiles._path);
+    if( !f.exists() ) throw new IllegalArgumentException("File " + importFiles._path + " does not exist!");
     ArrayList<String> afiles = new ArrayList();
     ArrayList<String> akeys  = new ArrayList();
     ArrayList<String> afails = new ArrayList();
     ArrayList<String> adels  = new ArrayList();
     FileIntegrityChecker.check(f).syncDirectory(afiles,akeys,afails,adels);
-    _files = afiles.toArray(new String[afiles.size()]);
-    _keys  = akeys .toArray(new String[akeys .size()]);
-    _fails = afails.toArray(new String[afails.size()]);
-    _dels  = adels .toArray(new String[adels .size()]);
+    importFiles._files = afiles.toArray(new String[afiles.size()]);
+    importFiles._keys  = akeys .toArray(new String[akeys .size()]);
+    importFiles._fails = afails.toArray(new String[afails.size()]);
+    importFiles._dels  = adels .toArray(new String[adels .size()]);
+    return schema(version).fillFromImpl(importFiles);
   }
 
 //  private void serveHttp() {

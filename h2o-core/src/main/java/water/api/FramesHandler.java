@@ -1,35 +1,36 @@
 package water.api;
 
 import water.*;
+import water.api.FramesV2.FrameSummaryV2;
 import water.fvec.Frame;
 import water.fvec.RollupStats;
 import water.fvec.Vec;
 
-class FramesHandler extends Handler<FramesHandler, FramesBase> {
-  // TODO: handlers should return an object that has the result as well as the needed http headers including status code
+class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  Key key;
-  Frame[] frames;
-  String column; // NOTE: this is needed for request handling, but isn't really part of
-                 // state.  We should be able to have verb request params that aren't part
-                 // of the state.  Another example: find_compatible_models is not part of
-                 // the Schema.
+  /** Class which contains the internal representation of the frames list and params. */
+  protected static final class Frames extends Iced {
+    Key key;
+    Frame[] frames;
+    String column;
+  }
 
-  // /2/Frames backward compatibility
-  protected void list_or_fetch() {
+  // /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all.
+  protected Schema list_or_fetch(int version, Frames f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
 
-    if (null != key) {
-      fetch();
+    if (null != f.key) {
+      return fetch(version, f);
     } else {
-      list();
+      return list(version, f);
     }
   }
 
-  protected void list() {
+  /** Return all the frames. */
+  protected Schema list(int version, Frames f) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override
         public boolean filter(KeySnapshot.KeyInfo k) {
@@ -37,17 +38,18 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
         }
       }).keys();
 
-    frames = new Frame[frameKeys.length];
+    f.frames = new Frame[frameKeys.length];
     for (int i = 0; i < frameKeys.length; i++) {
       Frame frame = getFromDKV(frameKeys[i]);
-      frames[i] = frame;
+      f.frames[i] = frame;
     }
+    return this.schema(version).fillFromImpl(f);
   }
 
   /** NOTE: We really want to return a different schema here! */
-  protected void columns() {
-    // TODO: return *only* the columns. . .
-    fetch();
+  protected Schema columns(int version, Frames f) {
+    // TODO: return *only* the columns. . .  This may be a different schema.
+    return fetch(version, f);
   }
 
   // TODO: almost identical to ModelsHandler; refactor
@@ -71,41 +73,48 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     return (Frame)ice;
   }
 
-  protected void column() {
-    Frame frame = getFromDKV(key);
+  /** Return a single column from the frame. */
+  protected Schema column(int version, Frames f) { // TODO: should return a Vec schema
+    Frame frame = getFromDKV(f.key);
 
-    // NOTE: We really want to return a different schema here!
-    Vec vec = frame.vec(column);
+    // TODO: We really want to return a different schema here!
+    Vec vec = frame.vec(f.column);
     if (null == vec)
-      throw new IllegalArgumentException("Did not find column: " + column + " in frame: " + key.toString());
+      throw new IllegalArgumentException("Did not find column: " + f.column + " in frame: " + f.key.toString());
 
     Vec[] vecs = { vec };
-    String[] names = { column };
-    Frame f = new Frame(names, vecs);
-    frames = new Frame[1];
-    frames[0] = f;
+    String[] names = { f.column };
+    Frame new_frame = new Frame(names, vecs);
+    f.frames = new Frame[1];
+    f.frames[0] = new_frame;
+    return this.schema(version).fillFromImpl(f);
   }
 
-  protected void summary() {
-    column();                   // Parse out 1 col
-    RollupStats.computeHisto(frames[0].vecs()[0]);
+  // TODO: test!
+  protected FrameSummaryV2 summary(int version, Frames frames) {
+    column(version, frames);
+    RollupStats.computeHisto(frames.frames[0].vecs()[0]);
+    // TODO:
+    return new FrameSummaryV2(frames.frames[0]);
   }
 
-  protected void fetch() {
-    Frame frame = getFromDKV(key);
-    frames = new Frame[1];
-    frames[0] = frame;
+  /** Return a single frame. */
+  protected Schema fetch(int version, Frames f) {
+    Frame frame = getFromDKV(f.key);
+    f.frames = new Frame[1];
+    f.frames[0] = frame;
+    return this.schema(version).fillFromImpl(f);
   }
 
   // Remove an unlocked frame.  Fails if frame is in-use
-  protected void delete() {
-    Frame frame = getFromDKV(key);
+  protected void delete(int version, Frames frames) {
+    Frame frame = getFromDKV(frames.key);
     frame.delete();             // lock & remove
   }
 
   // Remove ALL an unlocked frames.  Throws IAE for all deletes that failed
   // (perhaps because the Frames were locked & in-use).
-  protected void deleteAll() {
+  protected void deleteAll(int version, Frames frames) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return k._type == TypeMap.FRAME;
@@ -116,7 +125,7 @@ class FramesHandler extends Handler<FramesHandler, FramesBase> {
     Futures fs = new Futures();
     for( int i = 0; i < frameKeys.length; i++ ) {
       try { 
-        getFromDKV(key).delete(null,fs);
+        getFromDKV(frameKeys[i]).delete(null,fs);
       } catch( IllegalArgumentException iae ) {
         err += iae.getMessage();
       }

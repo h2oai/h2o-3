@@ -1,9 +1,11 @@
 package water.api;
 
 import water.H2O;
+import water.Iced;
+import water.api.ProfilerHandler.Profiler;
 import water.util.DocGen;
 
-abstract class ProfilerBase extends Schema<ProfilerHandler,ProfilerBase> {
+abstract class ProfilerBase<S extends Schema<Profiler, S>> extends Schema<Profiler, S> {
   // Input
   @API(help="Stack trace depth", required=true)
   public int depth = 5;
@@ -14,19 +16,20 @@ abstract class ProfilerBase extends Schema<ProfilerHandler,ProfilerBase> {
   @API(help="Array of Profile Counts, one per Node in the Cluster")
   public int[][] counts;
 
-  @Override protected ProfilerBase fillInto(ProfilerHandler profiler) {
+  @Override public Profiler createImpl() {
+    Profiler profiler = new Profiler();
     if (depth < 1) throw new IllegalArgumentException("depth must be >= 1.");
     profiler._depth = depth;
     profiler._stacktraces = stacktraces;
     profiler._counts = counts;
-    return this;
+    return profiler;
   }
 
-  @Override public  ProfilerBase fillFrom(ProfilerHandler profiler) {
+  @Override public S fillFromImpl(Profiler profiler) {
     depth = profiler._depth;
     stacktraces = profiler._stacktraces;
     counts = profiler._counts;
-    return this;
+    return (S)this;
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {

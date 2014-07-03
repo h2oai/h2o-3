@@ -1,0 +1,41 @@
+package hex.schemas;
+
+import hex.deeplearning.DeepLearningModel;
+import water.api.Schema;
+import water.api.API;
+import water.Key;
+import water.fvec.Frame;
+
+public class DeepLearningV2 extends Schema<DeepLearningPojo,DeepLearningV2> {
+
+  protected static final class DeepLearningPojo {
+    // Input fields
+    @API(help = "Input source frame", required = true)
+    public Key src;
+
+    // Output fields
+    @API(help = "Job Key")
+    Key job;
+
+    @API(help = "Model Error")
+    float error;
+  }
+
+  //==========================
+  // Customer adapters Go Here
+
+  // Version&Schema-specific filling into the handler
+  @Override public DeepLearningV2 createImpl( ) {
+    _model._src = src;
+    return _model;
+  }
+
+  // Version&Schema-specific filling from the handler
+  @Override public DeepLearningV2 fillFromImpl(DeepLearningHandler h) {
+    error = h._dlm.error();
+    return this;
+  }
+
+  // Return a URL to invoke DeepLearning on this Frame
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?src="+fr._key; }
+}

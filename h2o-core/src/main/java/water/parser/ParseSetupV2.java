@@ -1,14 +1,12 @@
 package water.parser;
 
-import java.io.File;
 import java.util.Arrays;
 import water.*;
 import water.api.API;
 import water.api.Schema;
-import water.parser.ParserType;
 import water.util.DocGen.HTML;
 
-public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
+public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   // Input fields
   @API(help="Source keys",required=true)
@@ -43,21 +41,23 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected ParseSetupV2 fillInto( ParseSetupHandler h ) {
-    h._srcs = srcs;
-    h._checkHeader = checkHeader;
-    h._singleQuotes = singleQuotes;
-    return this;
+  @Override public ParseSetup createImpl() {
+    ParseSetup p = new ParseSetup();
+    p._srcs = srcs;
+    p._checkHeader = checkHeader;
+    p._singleQuotes = singleQuotes;
+    return p;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected ParseSetupV2 fillFrom( ParseSetupHandler h ) {
-    hexName = h._hexName;
-    pType = h._pType;
-    sep = h._sep;
-    ncols = h._ncols;
-    columnNames = h._columnNames;
-    data = h._data;
+  @Override public ParseSetupV2 fillFromImpl(ParseSetup p) {
+    srcs = p._srcs;
+    hexName = p._hexName;
+    pType = p._pType;
+    sep = p._sep;
+    ncols = p._ncols;
+    columnNames = p._columnNames;
+    data = p._data;
     return this;
   }
 
@@ -70,7 +70,10 @@ public class ParseSetupV2 extends Schema<ParseSetupHandler,ParseSetupV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ParseSetup");
-    ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
+    if (null != srcs && srcs.length > 0)
+      ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
+    else
+      ab.href("Parse","unknown",water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
     ab.putA( "srcs", srcs);
     ab.putStr( "hexName", hexName);
     ab.putEnum("pType",pType);

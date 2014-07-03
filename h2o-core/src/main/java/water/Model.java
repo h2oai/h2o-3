@@ -58,9 +58,12 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
   public abstract static class Parameters<M extends Model<M,P>, P extends Parameters<M,P>> extends Iced {
     /* This class has no fields and no code */
   }
+  // TODO: make this an instance of a parameterized Parameters class. . .
   Parameters _parms;
 
   // Externally visible default schema
+  // TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
+  // This puts a reverse edge into the dependency graph.
   public abstract Schema schema();
 
   /** Constructor from frame: Strips out the Vecs to just the names needed

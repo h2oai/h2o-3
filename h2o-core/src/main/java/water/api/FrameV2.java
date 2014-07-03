@@ -6,7 +6,7 @@ import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
 // Private Schema class for the Inspect handler.  Not a registered Schema.
-class FrameV2 extends Schema {
+class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
   @API(help="Key to inspect",required=true)
@@ -153,14 +153,18 @@ class FrameV2 extends Schema {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected FrameV2 fillInto( Handler h ) {
-    throw H2O.fail();
+  @Override public Frame createImpl( ) {
+    if (null == key)
+      throw H2O.fail("Cannot create a Frame from a null key.");
+    return new Frame(key);
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected FrameV2 fillFrom( Handler h ) {
+  @Override public FrameV2 fillFromImpl(Frame f) {
+    off = 0;
     rows = _fr.numRows();
-    if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
+    // TODO: pass in offset and column from Inspect page
+    // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
     if( off == 0 ) off = 1;     // 1-based row-numbering from REST, so default offset is 1
     if( len == 0 ) len = 100;
     off = off-1;                // 0-based row-numbering
@@ -264,5 +268,4 @@ class FrameV2 extends Schema {
       s = s.substring(0,s.length()-1);
     return s;
   }
-
 }

@@ -1,9 +1,10 @@
 package water.api;
 
 import java.util.Arrays;
+import water.api.ImportFilesHandler.ImportFiles;
 import water.util.DocGen.HTML;
 
-class ImportFilesV2 extends Schema<ImportFilesHandler,ImportFilesV2> {
+class ImportFilesV2 extends Schema<ImportFiles,ImportFilesV2> {
 
   // Input fields
   @API(help="path", required=true)
@@ -26,24 +27,28 @@ class ImportFilesV2 extends Schema<ImportFilesHandler,ImportFilesV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected ImportFilesV2 fillInto( ImportFilesHandler h ) {
-    h._path = path;
-    return this;
+  @Override public ImportFiles createImpl() {
+    ImportFiles i = new ImportFiles();
+    i._path = path;
+    return i;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected ImportFilesV2 fillFrom( ImportFilesHandler h ) {
-    files = h._files;
-    keys  = h._keys ;
-    fails = h._fails;
-    dels  = h._dels ;
+  @Override public ImportFilesV2 fillFromImpl(ImportFiles i) {
+    path  = i._path;
+    files = i._files;
+    keys  = i._keys ;
+    fails = i._fails;
+    dels  = i._dels ;
     return this;
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ImportFiles");
-    if( keys.length==0 ) ab.putStr("path",path);
-    else ab.href("path",path,water.parser.ParseSetupV2.link(keys));
+    if( keys.length == 0 )
+      ab.putStr("path",path);
+    else
+      ab.href("path",path,water.parser.ParseSetupV2.link(keys));
     ab.putAStr("files",files);
     ab.putAStr( "keys", keys);
     ab.putAStr("fails",fails);
