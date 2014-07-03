@@ -50,7 +50,7 @@ public class CBSChunkTest extends TestUtil {
 
   // Test one bit per value compression which is used
   // for data without NAs
-  @Test @Ignore public void test1BPV() {
+  @Test public void test1BPV() {
     // Simple case only compressing into 4bits of one byte
     testImpl(new long[] {0,0,0,1},
              new int [] {0,0,0,0},
