@@ -132,13 +132,14 @@ class FrameV2 extends Schema {
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
 
-  FrameV2( Frame fr, long off, int len ) {
+  FrameV2( Frame fr, long off2, int len2 ) {
+    if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
+    if( len2==0 ) len2=100;     // Default length if zero passed
     key = fr._key;
     _fr = fr;
-    this.off = off;
+    off = off2-1;
     rows = fr.numRows();
-    if( len==0 ) len=100;       // Default length if zero passed
-    this.len = (int)Math.min(len,rows);
+    len = (int)Math.min(len2,rows);
     byteSize = fr.byteSize();
     columns = new Col[fr.numCols()];
     Vec[] vecs = fr.vecs();
@@ -158,10 +159,12 @@ class FrameV2 extends Schema {
 
   // Version&Schema-specific filling from the handler
   @Override protected FrameV2 fillFrom( Handler h ) {
-    off = 0;
     rows = _fr.numRows();
-    len = (int)Math.min(100,rows);
     if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
+    if( off == 0 ) off = 1;     // 1-based row-numbering from REST, so default offset is 1
+    if( len == 0 ) len = 100;
+    off = off-1;                // 0-based row-numbering
+    len = (int)Math.min(len,rows);
     byteSize = _fr.byteSize();
     columns = new Col[_fr.numCols()];
     Vec[] vecs = _fr.vecs();
