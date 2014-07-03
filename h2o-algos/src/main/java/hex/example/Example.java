@@ -1,4 +1,4 @@
-package hex.kmeans;
+package hex.example;
 
 import java.util.ArrayList;
 import java.util.Random;

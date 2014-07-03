@@ -1,7 +1,7 @@
 package hex.schemas;
 
-import hex.kmeans.Example;
-import hex.kmeans.ExampleModel;
+import hex.example.Example;
+import hex.example.ExampleModel;
 import water.H2O;
 import water.api.Handler;
 

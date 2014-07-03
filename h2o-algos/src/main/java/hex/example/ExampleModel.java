@@ -1,4 +1,4 @@
-package hex.kmeans;
+package hex.example;
 
 import hex.schemas.ExampleModelV2;
 import water.*;
