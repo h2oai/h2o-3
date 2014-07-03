@@ -1,11 +1,15 @@
 Steam.ApplicationContext = ->
   context$
 
+    ready: do edges$
+
     error: do edge$
     warn: do edge$
     info: do edge$
     fatal: do edge$
     notify: do edge$
+
+    callout: do edge$
 
     schedule: do edge$
     unschedule: do edge$

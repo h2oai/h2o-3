@@ -47,7 +47,7 @@ renderTopCounts = (topCounts, bounds) ->
     .domain [ 0, histogram.maxCount ]
     .range [ height, 0 ]
 
-renderHistogram = (histogram, bounds) ->
+renderHistogram = (_, histogram, bounds) ->
   width = bounds.width - bounds.margin.left - bounds.margin.right
   height = bounds.height - bounds.margin.top - bounds.margin.bottom
 
@@ -98,7 +98,20 @@ renderHistogram = (histogram, bounds) ->
     .attr 'x', 1
     .attr 'width', intervalWidth - 1
     .attr 'height', (bin) -> height - scaleY bin.count
+    .on 'mousemove', (bin) ->
+      column = histogram.column
+      callout = if column.type is 'real'
+        Start: formatReal column.precision, bin.start
+        End: formatReal column.precision, bin.end
+        Count: bin.count
+      else
+        Start: bin.start
+        End: bin.end
+        Count: bin.count
+      _.callout callout, d3.event.pageX, d3.event.pageY
+    .on 'mouseout', -> _.callout null
 
+  ###
   bar.append 'title'
     .text (bin) ->
       column = histogram.column
@@ -107,7 +120,6 @@ renderHistogram = (histogram, bounds) ->
       else
         "#{bin.count} (#{bin.start} - #{bin.end})"
 
-  ###
   svg.append 'g'
     .attr 'class', 'x axis'
     .attr 'transform', "translate(0,#{height})"
@@ -400,7 +412,7 @@ Steam.FrameView = (_, _frame) ->
         #TODO include jquery.pep for sliders to customize bins
         histogram = computeHistogram column, 32
         appendHistogram = ($element) ->
-          $element.empty().append renderHistogram histogram,
+          $element.empty().append renderHistogram _, histogram,
             width: localConfig.chartWidth
             height: 100
             margin:

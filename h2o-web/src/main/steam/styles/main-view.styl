@@ -177,6 +177,44 @@
   padding 0px 10px
   font-size 12px
 
+.y-overlays
+  dock-top-left(0, 0)
+
+.y-callout
+  position absolute
+  left 0
+  top 0
+  right 0
+  bottom 0
+  display none
+
+.y-callout-text
+  position absolute
+  opacity 0.9
+  min-width 100px
+  max-width 150px
+  font-size 11px
+  background tomato
+  color #fff
+  padding 2px 5px
+  border 1px solid white
+  th
+    font-size 11px
+    color #fff
+    font-weight bold
+    text-transform none
+  th, td
+    padding 0 3px
+
+.y-svg-callout
+  pointer-events none
+  polyline, circle
+    fill none
+    stroke tomato
+    stroke-width 2
+    stroke-linejoin round
+    shape-rendering crispEdges
+
 
 // Adding a .y-main-no-topic class on .y-main hides the inspector area
 //    and docks .y-view-lane to the left

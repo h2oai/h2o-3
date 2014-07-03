@@ -2,6 +2,7 @@ Steam.Application = (_) ->
 
   if window
     Steam.ErrorMonitor _
+    Steam.CalloutManager _
 
   Steam.Timers _
   Steam.EventLog _
