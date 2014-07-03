@@ -7,6 +7,7 @@ import water.nbhm.NonBlockingHashMapLong;
 import water.parser.ParseTime;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
+import water.util.UnsafeUtils;
 
 /**
  * A single distributed vector column.
@@ -321,7 +322,7 @@ public class Vec extends Keyed {
     assert key._kb[0]==Key.DVEC;
     byte [] bits = key._kb.clone();
     bits[0] = Key.VEC;
-    UDP.set4(bits,6,-1); // chunk#
+    UnsafeUtils.set4(bits, 6, -1); // chunk#
     return Key.make(bits);
   }
 
@@ -329,7 +330,7 @@ public class Vec extends Keyed {
   public Key chunkKey(int cidx ) {
     byte [] bits = _key._kb.clone();
     bits[0] = Key.DVEC;
-    UDP.set4(bits,6,cidx); // chunk#
+    UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
   public Key rollupStatsKey() { return chunkKey(-2); }
@@ -369,8 +370,8 @@ public class Vec extends Keyed {
     byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
     bits[1] = -1;         // Not homed
-    UDP.set4(bits,2,0);   // new group, so we're the first vector
-    UDP.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
+    UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
+    UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
     return Key.make(bits);
   }
@@ -379,8 +380,8 @@ public class Vec extends Keyed {
   private Key groupKey(){
     byte [] bits = _key._kb.clone();
     bits[0] = Key.VGROUP;
-    UDP.set4(bits, 2, -1);
-    UDP.set4(bits, 6, -1);
+    UnsafeUtils.set4(bits, 2, -1);
+    UnsafeUtils.set4(bits, 6, -1);
     return Key.make(bits);
   }
   /**
@@ -417,7 +418,7 @@ public class Vec extends Keyed {
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
   public final Chunk chunkForRow(long i) {
     Chunk c = _cache;
-    return (c != null && c._chk2==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
+    return (c != null && c.chk2()==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
   }
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. */
@@ -656,18 +657,18 @@ public class Vec extends Keyed {
       byte[] bits = new byte[26];
       bits[0] = Key.VGROUP;
       bits[1] = -1;
-      UDP.set4(bits, 2, -1);
-      UDP.set4(bits, 6, -1);
+      UnsafeUtils.set4(bits, 2, -1);
+      UnsafeUtils.set4(bits, 6, -1);
       UUID uu = UUID.randomUUID();
-      UDP.set8(bits,10,uu.getLeastSignificantBits());
-      UDP.set8(bits,18,uu. getMostSignificantBits());
+      UnsafeUtils.set8(bits,10,uu.getLeastSignificantBits());
+      UnsafeUtils.set8(bits,18,uu. getMostSignificantBits());
       _key = Key.make(bits);
       _len = 0;
     }
     public Key vecKey(int vecId) {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
-      UDP.set4(bits,2,vecId);//
+      UnsafeUtils.set4(bits,2,vecId);//
       return Key.make(bits);
     }
     /**

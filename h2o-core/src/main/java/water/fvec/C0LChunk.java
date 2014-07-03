@@ -4,17 +4,18 @@ import java.util.Arrays;
 import water.AutoBuffer;
 import water.MemoryManager;
 import water.UDP;
+import water.util.UnsafeUtils;
 
 /**
  * The constant 'long' column.
  */
 public class C0LChunk extends Chunk {
-  static final int OFF=8+4;
-  long _con;
-  public C0LChunk(long con, int len) { _mem=new byte[OFF]; _start = -1; _len = len;
+  private static final int _OFF=8+4;
+  private long _con;
+  public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _start = -1; _len = len;
     _con = con;
-    UDP.set8(_mem,0,con);
-    UDP.set4(_mem,8,len);
+    UnsafeUtils.set8(_mem, 0, con);
+    UnsafeUtils.set4(_mem,8,len);
   }
   @Override protected final long at8_impl( int i ) { return _con; }
   @Override protected final double atd_impl( int i ) {return _con; }
@@ -41,8 +42,8 @@ public class C0LChunk extends Chunk {
   @Override public C0LChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _con = UDP.get8(_mem,0);
-    _len = UDP.get4(_mem,8);
+    _con = UnsafeUtils.get8(_mem,0);
+    _len = UnsafeUtils.get4(_mem,8);
     return this;
   }
 }

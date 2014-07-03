@@ -3,18 +3,16 @@ package water.fvec;
 import water.H2O;
 import water.MemoryManager;
 import water.UDP;
+import water.util.UnsafeUtils;
 
 import java.util.Iterator;
 
-/**
- * Created by tomasnykodym on 3/26/14.
- */
 public class CXDChunk extends CXIChunk {
   protected CXDChunk(int len, int nzs, int valsz, byte [] buf){super(len,nzs,valsz,buf);}
 
   // extract fp value from an (byte)offset
   protected final double getFValue(int off){
-    if(_valsz == 8) return UDP.get8d(_mem, off + _ridsz);
+    if(valsz() == 8) return UnsafeUtils.get8d(_mem, off + ridsz());
     throw H2O.unimpl();
   }
 
@@ -43,8 +41,8 @@ public class CXDChunk extends CXIChunk {
     nc._len = sparseLen();
     nc._ds = MemoryManager.malloc8d(nc._len);
     nc._id = MemoryManager.malloc4 (len);
-    int off = OFF;
-    for( int i = 0; i < len; ++i, off += _ridsz + _valsz) {
+    int off = _OFF;
+    for( int i = 0; i < len; ++i, off += ridsz() + valsz()) {
       nc._id[i] = getId(off);
       nc._ds[i] = getFValue(off);
     }

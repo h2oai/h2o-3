@@ -58,9 +58,9 @@ class FindHandler extends Handler<FindHandler,FindV2> {
     @Override public void map( Chunk cs[] ) {
       for( int col = 0; col<cs.length; col++ ) {
         Chunk C = cs[col];
-        for( int row=0; row<C._len; row++ ) {
+        for( int row=0; row<C.len(); row++ ) {
           if( C.at0(row) == _ds[col] || (C.isNA0(row) && Double.isNaN(_ds[col])) ) {
-            long r = C._start+row;
+            long r = C.start()+row;
             if( r < _row ) { if( r > _prev ) _prev = r; }
             else if( r > _row ) { if( r < _next ) _next = r; }
           }

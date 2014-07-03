@@ -165,7 +165,7 @@ public class TestUtil {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+        for( int rows = 0; rows < chks[0].len(); rows++ ) {
           double d0 = c0.at0(rows), d1 = c1.at0(rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
@@ -185,8 +185,8 @@ public class TestUtil {
         if( _unequal ) return;
         Chunk c0 = chks[cols];
         Vec v1 = _fr.vecs()[cols];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.at0(rows), d1 = v1.at(c0._start + rows);
+        for( int rows = 0; rows < chks[0].len(); rows++ ) {
+          double d0 = c0.at0(rows), d1 = v1.at(c0.start() + rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
           }

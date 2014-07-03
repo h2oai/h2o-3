@@ -21,9 +21,9 @@ import water.util.ArrayUtils;
 public class TransfVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new value. If
    * a value is not included in this array the implementation returns NA. */
-  final int[] _values;
+  private final int[] _values;
   /** The transformed value - i.e. transformed value is: <code>int idx = find(value, _values); return _indexes[idx]; </code> */
-  final int[] _indexes;
+  private final int[] _indexes;
 
   public TransfVec(int[][] mapping, Key masterVecKey, Key key, long[] espc) {
     this(mapping, null, masterVecKey, key, espc);

@@ -4,6 +4,7 @@ import java.util.*;
 import water.*;
 import water.parser.ParseTime;
 import water.util.PrettyPrint;
+import water.util.UnsafeUtils;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
@@ -598,33 +599,33 @@ public class NewChunk extends Chunk {
     if( fpoint ) {
       if( (int)lemin == lemin && (int)lemax == lemax ) {
         if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
-          return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
+          return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
         if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
           long bias = 32767 + lemin;
-          return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),(int)bias,PrettyPrint.pow10(xmin));
+          return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),(int)bias,PrettyPrint.pow10(xmin));
         }
         if(lemax - lemin < Integer.MAX_VALUE)
-          return new C4SChunk(bufX(lemin, xmin,C4SChunk.OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
+          return new C4SChunk(bufX(lemin, xmin,C4SChunk._OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
       }
       return chunkD();
     } // else an integer column
 
     // Compress column into a byte
     if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
-      return new C1NChunk( bufX(0,0,C1NChunk.OFF,0));
+      return new C1NChunk( bufX(0,0,C1NChunk._OFF,0));
     if( lemin < Integer.MIN_VALUE ) return new C8Chunk( bufX(0,0,0,3));
     if( lemax-lemin < 255 ) {    // Span fits in a byte?
       if(0 <= min && max < 255 ) // Span fits in an unbiased byte?
-        return new C1Chunk( bufX(0,0,C1Chunk.OFF,0));
-      return new C1SChunk( bufX(lemin,xmin,C1SChunk.OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
+        return new C1Chunk( bufX(0,0,C1Chunk._OFF,0));
+      return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),(int)lemin,PrettyPrint.pow10i(xmin));
     }
 
     // Compress column into a short
     if( lemax-lemin < 65535 ) {               // Span fits in a biased short?
       if( xmin == 0 && Short.MIN_VALUE < lemin && lemax <= Short.MAX_VALUE ) // Span fits in an unbiased short?
-        return new C2Chunk( bufX(0,0,C2Chunk.OFF,1));
+        return new C2Chunk( bufX(0,0,C2Chunk._OFF,1));
       int bias = (int)(lemin-(Short.MIN_VALUE+1));
-      return new C2SChunk( bufX(bias,xmin,C2SChunk.OFF,1),bias,PrettyPrint.pow10i(xmin));
+      return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),bias,PrettyPrint.pow10i(xmin));
     }
     // Compress column into ints
     if( Integer.MIN_VALUE < min && max <= Integer.MAX_VALUE )
@@ -641,13 +642,13 @@ public class NewChunk extends Chunk {
     assert valsz == 0 || (1 << log) == valsz;
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
-    int off = CXIChunk.OFF;
+    int off = CXIChunk._OFF;
     byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
     for( int i=0; i<_len; i++, off += elmsz ) {
       if(ridsz == 2)
-        UDP.set2(buf,off,(short)_id[i]);
+        UnsafeUtils.set2(buf,off,(short)_id[i]);
       else
-        UDP.set4(buf,off,_id[i]);
+        UnsafeUtils.set4(buf,off,_id[i]);
       if(valsz == 0){
         assert _xs[i] == 0 && _ls[i] == 1;
         continue;
@@ -660,14 +661,14 @@ public class NewChunk extends Chunk {
           break;
         case 2:
           short sval = (short)lval;
-          UDP.set2(buf,off+ridsz,sval);
+          UnsafeUtils.set2(buf,off+ridsz,sval);
           break;
         case 4:
           int ival = (int)lval;
-          UDP.set4(buf, off+ridsz, ival);
+          UnsafeUtils.set4(buf, off+ridsz, ival);
           break;
         case 8:
-          UDP.set8(buf, off+ridsz, lval);
+          UnsafeUtils.set8(buf, off+ridsz, lval);
           break;
         default:
           throw H2O.unimpl();
@@ -684,20 +685,20 @@ public class NewChunk extends Chunk {
     assert (1 << log) == valsz;
     final int ridsz = _len2 >= 65535?4:2;
     final int elmsz = ridsz + valsz;
-    int off = CXDChunk.OFF;
+    int off = CXDChunk._OFF;
     byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
     for( int i=0; i<_len; i++, off += elmsz ) {
       if(ridsz == 2)
-        UDP.set2(buf,off,(short)_id[i]);
+        UnsafeUtils.set2(buf,off,(short)_id[i]);
       else
-        UDP.set4(buf,off,_id[i]);
+        UnsafeUtils.set4(buf,off,_id[i]);
       final double dval = _ds == null?isNA2(i)?Double.NaN:_ls[i]*PrettyPrint.pow10(_xs[i]):_ds[i];
       switch(valsz){
         case 4:
-          UDP.set4f(buf, off + ridsz, (float) dval);
+          UnsafeUtils.set4f(buf, off + ridsz, (float) dval);
           break;
         case 8:
-          UDP.set8d(buf, off + ridsz, dval);
+          UnsafeUtils.set8d(buf, off + ridsz, dval);
           break;
         default:
           throw H2O.unimpl();
@@ -725,9 +726,9 @@ public class NewChunk extends Chunk {
       }
       switch( log ) {
       case 0:          bs [i    +off] = (byte)le ; break;
-      case 1: UDP.set2(bs,(i<<1)+off,  (short)le); break;
-      case 2: UDP.set4(bs,(i<<2)+off,    (int)le); break;
-      case 3: UDP.set8(bs,(i<<3)+off,         le); break;
+      case 1: UnsafeUtils.set2(bs,(i<<1)+off,  (short)le); break;
+      case 2: UnsafeUtils.set4(bs,(i<<2)+off,    (int)le); break;
+      case 3: UnsafeUtils.set8(bs,(i<<3)+off,         le); break;
       default: throw H2O.fail();
       }
     }
@@ -745,7 +746,7 @@ public class NewChunk extends Chunk {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
-      UDP.set8d(bs, 8*i, d);
+      UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == _len:"j = " + j + ", _len = " + _len;
     return new C8DChunk(bs);
@@ -764,8 +765,8 @@ public class NewChunk extends Chunk {
           lo = Long.MIN_VALUE; hi = 0;                  // Canonical NA value
         }
       }
-      UDP.set8(bs, 16*i  , lo);
-      UDP.set8(bs, 16*i+8, hi);
+      UnsafeUtils.set8(bs, 16*i  , lo);
+      UnsafeUtils.set8(bs, 16 * i + 8, hi);
     }
     assert j == _len:"j = " + j + ", _len = " + _len;
     return new C16Chunk(bs);
@@ -774,7 +775,7 @@ public class NewChunk extends Chunk {
   // Compute compressed boolean buffer
   private byte[] bufB(int bpv) {
     assert bpv == 1 || bpv == 2 : "Only bit vectors with/without NA are supported";
-    final int off = CBSChunk.OFF;
+    final int off = CBSChunk._OFF;
     int clen  = off + CBSChunk.clen(_len2, bpv);
     byte bs[] = new byte[clen];
     // Save the gap = number of unfilled bits and bpv value
@@ -784,7 +785,7 @@ public class NewChunk extends Chunk {
     // Dense bitvector
     int  boff = 0;
     byte b    = 0;
-    int  idx  = CBSChunk.OFF;
+    int  idx  = CBSChunk._OFF;
     int j = 0;
     for (int i=0; i<_len2; i++) {
       byte val = 0;

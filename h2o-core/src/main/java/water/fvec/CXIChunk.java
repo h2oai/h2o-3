@@ -4,19 +4,17 @@ import java.util.Iterator;
 import water.AutoBuffer;
 import water.H2O;
 import water.MemoryManager;
-import water.UDP;
+import water.util.UnsafeUtils;
 
-/**
- * Created by tomasnykodym on 3/18/14.
- * Sparse chunk.
- */
+// Sparse chunk.
 public class CXIChunk extends Chunk {
-  protected transient int _valsz; // byte size of stored value
-  protected transient int _valsz_log; //
-  protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
-  protected static final int OFF = 6;
-  protected transient int _lastOff = OFF;
-
+  private transient int _valsz; // byte size of stored value
+  protected final int valsz() { return _valsz; }
+  private transient int _valsz_log; //
+  private transient int _ridsz; // byte size of stored (chunk-relative) row nums
+  protected final int ridsz() { return _ridsz; }
+  protected static final int _OFF = 6;
+  private transient int _lastOff = _OFF;
 
   private static final long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
@@ -30,7 +28,7 @@ public class CXIChunk extends Chunk {
     _valsz_log = log;
 
     _ridsz = (len >= 65535)?4:2;
-    UDP.set4(buf,0,len);
+    UnsafeUtils.set4(buf, 0, len);
     byte b = (byte) _ridsz;
     buf[4] = b;
     buf[5] = (byte) _valsz;
@@ -38,12 +36,12 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public final boolean isSparse() {return true;}
-  @Override public final int sparseLen(){return (_mem.length - OFF) / (_valsz + _ridsz);}
+  @Override public final int sparseLen(){return (_mem.length - _OFF) / (_valsz + _ridsz);}
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
-    int off = OFF;
+    int off = _OFF;
     final int inc = _valsz + 2;
-    for(int i = 0; i < len; ++i, off += inc) arr[i] = UDP.get2(_mem, off)&0xFFFF;
+    for(int i = 0; i < len; ++i, off += inc) arr[i] = UnsafeUtils.get2(_mem, off)&0xFFFF;
     return len;
   }
 
@@ -80,7 +78,7 @@ public class CXIChunk extends Chunk {
     nc._ls = MemoryManager.malloc8 (len);
     nc._xs = MemoryManager.malloc4 (len);
     nc._id = MemoryManager.malloc4 (len);
-    int off = OFF;
+    int off = _OFF;
     for( int i = 0; i < len; ++i, off += _ridsz + _valsz) {
       nc._id[i] = getId(off);
       long v = getIValue(off);
@@ -95,18 +93,18 @@ public class CXIChunk extends Chunk {
   // get id of nth (chunk-relative) stored element
   protected final int getId(int off){
     return _ridsz == 2
-      ?UDP.get2(_mem,off)&0xFFFF
-      :UDP.get4(_mem,off);
+      ?UnsafeUtils.get2(_mem,off)&0xFFFF
+      :UnsafeUtils.get4(_mem,off);
   }
   // get offset of nth (chunk-relative) stored element
-  private final int getOff(int n){return OFF + (_ridsz + _valsz)*n;}
+  private final int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
   // extract integer value from an (byte)offset
   protected final long getIValue(int off){
     switch(_valsz){
       case 1: return _mem[off+ _ridsz]&0xFF;
-      case 2: return UDP.get2(_mem, off + _ridsz);
-      case 4: return UDP.get4(_mem, off + _ridsz);
-      case 8: return UDP.get8(_mem, off + _ridsz);
+      case 2: return UnsafeUtils.get2(_mem, off + _ridsz);
+      case 4: return UnsafeUtils.get4(_mem, off + _ridsz);
+      case 8: return UnsafeUtils.get8(_mem, off + _ridsz);
       default: throw H2O.unimpl();
    } 
   }
@@ -146,7 +144,7 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public final int nextNZ(int rid){
-    final int off = rid == -1?OFF:findOffset(rid);
+    final int off = rid == -1?_OFF:findOffset(rid);
     int x = getId(off);
     if(x > rid)return x;
     if(off < _mem.length - _ridsz - _valsz)
@@ -158,7 +156,7 @@ public class CXIChunk extends Chunk {
   @Override public CXIChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
     _start = -1;
-    _len = UDP.get4(_mem,0);
+    _len = UnsafeUtils.get4(_mem,0);
     _ridsz = _mem[4];
     _valsz = _mem[5];
     int x = _valsz;
@@ -184,7 +182,7 @@ public class CXIChunk extends Chunk {
     public SparseIterator(Value v){_val = v;}
     @Override public final boolean hasNext(){return _val._off < _mem.length - (_ridsz + _valsz);}
     @Override public final Value next(){
-      if(_val._off == 0)_val._off = OFF;
+      if(_val._off == 0)_val._off = _OFF;
       else _val._off += (_ridsz + _valsz);
       return _val;
     }

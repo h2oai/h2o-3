@@ -206,8 +206,8 @@ public class ParseDataset2 extends Job<Frame> {
       for(int i = 0; i < chks.length; ++i) {
         Chunk chk = chks[i];
         if(_gDomain[i] == null) // killed, replace with all NAs
-          DKV.put(chk._vec.chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk._len));
-        else for( int j = 0; j < chk._len; ++j){
+          DKV.put(chk.vec().chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk.len()));
+        else for( int j = 0; j < chk.len(); ++j){
           if( chk.isNA0(j) )continue;
           long l = chk.at80(j);
           assert l >= 0 && l < emap[i].length : "Found OOB index "+l+" pulling from "+chk.getClass().getSimpleName();
@@ -500,7 +500,7 @@ public class ParseDataset2 extends Job<Frame> {
         }
         p.parallelParse(in.cidx(),din,dout);
         (_dout = dout).close(_fs);
-        Job.update(in._len,_job_key); // Record bytes parsed
+        Job.update(in.len(),_job_key); // Record bytes parsed
       }
       @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {
@@ -738,8 +738,8 @@ public class ParseDataset2 extends Job<Frame> {
     public FVecDataIn(Chunk chk){
       _chk = chk;
       _idx = _chk.cidx();
-      _firstLine = _chk._start;
-      _vec = chk._vec;
+      _firstLine = chk.start();
+      _vec = chk.vec();
     }
     @Override public byte[] getChunkData(int cidx) {
       if(cidx != _idx)

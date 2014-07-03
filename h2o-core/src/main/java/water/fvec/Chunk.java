@@ -8,13 +8,16 @@ import water.*;
  *  chunk cache of the total vector.  Subclasses of this abstract class
  *  implement (possibly empty) compression schemes.  */
 public abstract class Chunk extends Iced implements Cloneable {
-  public long _start = -1;    // Start element; filled after AutoBuffer.read
-  public int _len;            // Number of elements in this chunk
-  protected Chunk _chk2;      // Normally==null, changed if chunk is written to
-  public Vec _vec;            // Owning Vec; filled after AutoBuffer.read
-  byte[] _mem; // Short-cut to the embedded memory; WARNING: holds onto a large array
-  public byte[] getBytes() { return _mem; }
+  protected long _start = -1;    // Start element; filled after AutoBuffer.read
+  public final long start() { return _start; } // Number of elements in this chunk
+  protected int _len;            // Number of elements in this chunk
   public final int len() { return _len; } // Number of elements in this chunk
+  private Chunk _chk2;      // Normally==null, changed if chunk is written to
+  public final Chunk chk2() { return _chk2; }
+  protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
+  public final Vec vec() { return _vec; }   // Owning Vec; filled after AutoBuffer.read
+  protected byte[] _mem; // Short-cut to the embedded memory; WARNING: holds onto a large array
+  public final byte[] getBytes() { return _mem; }
 
   /** Load a long value.  Floating point values are silently rounded to an
     * integer.  Throws if the value is missing.

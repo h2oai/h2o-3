@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import water.H2O;
 import water.UDP;
+import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetupHandler ps ) { super(ps); }
@@ -43,9 +44,9 @@ class XlsParser extends Parser {
     }
 
     char get1(int pos ) { assert _off+pos+1<_lim; return (char)_bbuf[_off+pos]; }
-    int get2( int pos ) { assert _off+pos+2<_lim; return UDP.get2(_bbuf,_off+pos); }
-    int get4( int pos ) { assert _off+pos+4<_lim; return UDP.get4(_bbuf,_off+pos); }
-    double get8d( int pos ) { assert _off+pos+8<_lim; return UDP.get8d(_bbuf,_off+pos); }
+    int get2( int pos ) { assert _off+pos+2<_lim; return UnsafeUtils.get2(_bbuf, _off + pos); }
+    int get4( int pos ) { assert _off+pos+4<_lim; return UnsafeUtils.get4(_bbuf,_off+pos); }
+    double get8d( int pos ) { assert _off+pos+8<_lim; return UnsafeUtils.get8d(_bbuf,_off+pos); }
     String getStr( int pos, int len ) { return new String(_bbuf,_off+pos,len); }
   }
 
@@ -69,7 +70,7 @@ class XlsParser extends Parser {
   }
 
   // Wrapper to fetch an int at a random offset
-  private int get4( int pos ) throws IOException { readAtLeast(pos+4); return UDP.get4(_buf,pos); }
+  private int get4( int pos ) throws IOException { readAtLeast(pos+4); return UnsafeUtils.get4(_buf,pos); }
 
 
   /** Try to parse the bytes as XLS format  */

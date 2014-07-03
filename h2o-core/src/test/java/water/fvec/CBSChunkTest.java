@@ -38,9 +38,9 @@ public class CBSChunkTest extends TestUtil {
     cc._vec = av.close(new Futures());
     assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
     assertEquals(nc._len, cc._len);
-    assertEquals(expGap, ((CBSChunk)cc)._gap);
-    assertEquals(expBpv, ((CBSChunk)cc)._bpv);
-    assertEquals(expClen, cc._mem.length - CBSChunk.OFF);
+    assertEquals(expGap, ((CBSChunk)cc).gap());
+    assertEquals(expBpv, ((CBSChunk)cc).bpv());
+    assertEquals(expClen, cc._mem.length - CBSChunk._OFF);
     // Also, we can decompress correctly
     for( int i=0; i<ls.length; i++ )
       if(xs[i]==0)assertEquals(ls[i], cc.at80(i));
