@@ -10,6 +10,9 @@ Steam.ApplicationContext = ->
     notify: do edge$
 
     callout: do edge$
+    tooltip: do edge$
+
+    measureTextSpan: do edge$
 
     schedule: do edge$
     unschedule: do edge$

@@ -98,18 +98,18 @@ renderHistogram = (_, histogram, bounds) ->
     .attr 'x', 1
     .attr 'width', intervalWidth - 1
     .attr 'height', (bin) -> height - scaleY bin.count
-    .on 'mousemove', (bin) ->
+    .on 'mouseover', (bin) ->
       column = histogram.column
-      callout = if column.type is 'real'
-        Start: formatReal column.precision, bin.start
-        End: formatReal column.precision, bin.end
+      tooltip = if column.type is 'real'
+        From: formatReal column.precision, bin.start
+        To: formatReal column.precision, bin.end
         Count: bin.count
       else
-        Start: bin.start
-        End: bin.end
+        From: bin.start
+        To: bin.end
         Count: bin.count
-      _.callout callout, d3.event.pageX, d3.event.pageY
-    .on 'mouseout', -> _.callout null
+      _.tooltip @, tooltip, 'top'
+    .on 'mouseout', -> _.tooltip null
 
   ###
   bar.append 'title'
@@ -389,7 +389,7 @@ Steam.FrameView = (_, _frame) ->
           '-'
 
   renderTopCountsTable = (topCounts) ->
-    [ div, table, tbody, tr, td ] = geyser.generate words 'div table.table.table-condensed.y-monospace tbody tr td'
+    [ div, table, tbody, tr, td ] = geyser.generate words 'div table.table.table-condensed.table-striped.y-monospace tbody tr td'
     [ datacell ] = geyser.generate [ "td.y-chart data-value='$value'" ]
 
     maxCount = d3.max topCounts.levels, (level) -> level.count
