@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import hex.FrameTask;
 import java.util.Random;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.api.ConfusionMatrix;
@@ -19,6 +20,7 @@ public class DeepLearningIrisTest extends TestUtil {
   Frame _train, _test;
 
   // Default run is the short run
+  @Ignore
   @Test public void run() throws Exception { runFraction(0.05f); }
 
   private void compareVal(double a, double b, double abseps, double releps) {

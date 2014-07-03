@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.api.AUC;
@@ -19,6 +20,7 @@ public class DeepLearningProstateTest extends TestUtil {
   }
 
   //Default: run 3%
+  @Ignore
   @Test public void run() throws Exception { runFraction(0.003f); }
 
   public void runFraction(float fraction) {
@@ -315,10 +317,10 @@ public class DeepLearningProstateTest extends TestUtil {
   }
 
   public static class Long extends DeepLearningProstateTest {
-    @Test public void run() throws Exception { runFraction(0.1f); }
+    @Ignore @Test public void run() throws Exception { runFraction(0.1f); }
   }
 
   public static class Short extends DeepLearningProstateTest {
-    @Test public void run() throws Exception { runFraction(0.0003f); }
+    @Ignore @Test public void run() throws Exception { runFraction(0.0003f); }
   }
 }
