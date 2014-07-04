@@ -9,15 +9,15 @@ import water.*;
  *  implement (possibly empty) compression schemes.  */
 public abstract class Chunk extends Iced implements Cloneable {
   protected long _start = -1;    // Start element; filled after AutoBuffer.read
-  public final long start() { return _start; } // Number of elements in this chunk
+  public final long start() { return _start; } // Start element; filled after AutoBuffer.read
   protected int _len;            // Number of elements in this chunk
   public final int len() { return _len; } // Number of elements in this chunk
-  private Chunk _chk2;      // Normally==null, changed if chunk is written to
-  public final Chunk chk2() { return _chk2; }
+  private Chunk _chk2;       // Normally==null, changed if chunk is written to
+  public final Chunk chk2() { return _chk2; } // Normally==null, changed if chunk is written to
   protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
   public final Vec vec() { return _vec; }   // Owning Vec; filled after AutoBuffer.read
-  protected byte[] _mem; // Short-cut to the embedded memory; WARNING: holds onto a large array
-  public final byte[] getBytes() { return _mem; }
+  protected byte[] _mem;  // Short-cut to the embedded memory; WARNING: holds onto a large array
+  public final byte[] getBytes() { return _mem; } // Short-cut to the embedded memory; WARNING: holds onto a large array
 
   /** Load a long value.  Floating point values are silently rounded to an
     * integer.  Throws if the value is missing.
