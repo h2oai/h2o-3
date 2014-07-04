@@ -52,5 +52,5 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
 
   //==========================
   // Helper so ParseV2 can link to InspectV1
-  static String link(Key key) { return "Inspect?key="+key; }
+  static String link(Key key) { return "/Inspect?key="+key; }
 }

@@ -1,12 +1,13 @@
 package water.api;
 
+import water.api.FindHandler.FindPojo;
 import water.DKV;
 import water.Key;
 import water.Value;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-class FindV2 extends Schema<FindHandler,FindV2> {
+class FindV2 extends Schema<FindPojo,FindV2> {
 
   // Input fields
   @API(help="Frame to search",required=true)
@@ -32,7 +33,8 @@ class FindV2 extends Schema<FindHandler,FindV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected FindV2 fillInto( FindHandler h ) {
+  @Override public FindPojo createImpl() {
+    FindPojo f = new FindPojo();
     // Peel out the Frame from the Key
     Value val = DKV.get(key);
     if( val == null ) throw new IllegalArgumentException("Key not found");
@@ -46,16 +48,16 @@ class FindV2 extends Schema<FindHandler,FindV2> {
       fr = new Frame(new String[]{column}, new Vec[]{vec});
     }
     
-    h._fr = fr;
-    h._row = row;
-    h._val = match;
-    return this;
+    f._fr = fr;
+    f._row = row;
+    f._val = match;
+    return f;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected FindV2 fillFrom( FindHandler h ) {
-    prev = h._prev;
-    next = h._next;
+  @Override public FindV2 fillFromImpl( FindPojo f ) {
+    prev = f._prev;
+    next = f._next;
     return this;
   }
 

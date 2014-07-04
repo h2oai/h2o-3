@@ -95,7 +95,7 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"fetch"   ),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"   ),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"fetch"   ),"/JStack"     , "Stack Dump",    "Admin");
-    addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"compute2"),"/UnlockKeys" , "Unlock Keys",   "Admin");
+    addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"  ),"/UnlockKeys" , "Unlock Keys",   "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"/Tutorials"  , "Tutorials Home","Help");

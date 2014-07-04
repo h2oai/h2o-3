@@ -5,7 +5,7 @@ import water.Iced;
 import water.api.ProfilerHandler.Profiler;
 import water.util.JProfile;
 
-public class ProfilerHandler extends Handler { // TODO: recursive generics seem to prevent more specific types here
+public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: recursive generics seem to prevent more specific types here
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -18,7 +18,7 @@ public class ProfilerHandler extends Handler { // TODO: recursive generics seem 
     public int[][] _counts;
   }
 
-  @Override protected ProfilerBase schema(int version) {
+  @Override protected ProfilerV2 schema(int version) {
     switch (version) {
       case 2:
         return new ProfilerV2();

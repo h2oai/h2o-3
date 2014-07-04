@@ -34,8 +34,7 @@ public class InspectHandler extends Handler<InspectPojo,InspectV1> {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  Schema inspect(int version, Iced iced) {
-    InspectPojo i = (InspectPojo)iced;
+  public Schema inspect(int version, InspectPojo i) {
     assert i._val != null : "schema checks null-ness";
 
     if( i._val.isKey() ) {        // Peek thru a Key
