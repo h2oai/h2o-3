@@ -26,25 +26,13 @@
           tr.y-summary-row
             th Min
             // ko foreach:minRow
-            td
-              // ko if:$data
-              a(data-bind='text:value, click:showMore')
-              // /ko
-              // ko ifnot:$data
-              span -
-              // /ko
+            td(data-bind='text:$data')
             // /ko
 
           tr.y-summary-row
             th Max
             // ko foreach:maxRow
-            td
-              // ko if:$data
-              a(data-bind='text:value, click:showMore')
-              // /ko
-              // ko ifnot:$data
-              span -
-              // /ko
+            td(data-bind='text:$data')
             // /ko
 
           tr.y-summary-row

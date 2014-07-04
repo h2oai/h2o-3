@@ -313,37 +313,17 @@ computeHistogram = (column, minIntervalCount) ->
       count: count
 
 Steam.FrameView = (_, _frame) ->
-
-  createMinMaxInspection = (column, attribute) ->
-    [ div, h1, table, tbody, tr, td ] = geyser.generate words 'div h1 table.y-monospace.table.table-condensed tbody tr td'
-    div [
-      h1 "#{column.label} - #{attribute}"
-      table tbody map column[attribute], (value, i) -> tr td formatMinMaxValue column, attribute, i
-    ]
-
-  createMinMaxCell = (column, attribute, value) ->
-    value: value
-    showMore: ->
-      _.inspect
-        content: createMinMaxInspection column, attribute
-        template: 'geyser'
-
-  formatMinMaxValue = (column, attribute, index) ->
-    switch column.type
-      when 'time'
-        formatDateTime column[attribute][index]
-      when 'real'
-        formatReal column.precision, column[attribute][index]
-      when 'int'
-        formatToSignificantDigits 6, column[attribute][index]
-
   createMinMaxRow = (attribute, columns) ->
     map columns, (column) ->
       switch column.type
-        when 'time', 'real', 'int'
-          createMinMaxCell column, attribute, formatMinMaxValue column, attribute, 0
+        when 'time'
+          formatDateTime head column[attribute]
+        when 'real'
+          formatReal column.precision, head column[attribute]
+        when 'int'
+          formatToSignificantDigits 6, head column[attribute]
         else
-          null
+          '-'
 
   createMeanRow = (columns) ->
     map columns, (column) ->
