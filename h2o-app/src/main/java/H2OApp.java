@@ -15,7 +15,7 @@ public class H2OApp {
     // H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
     // TODO: put back: water.H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model");
-    H2O.registerGET("/Summary",hex.schemas.SummaryHandler.class,"work","/Summary","Summary","Model");
+//    H2O.registerGET("/Summary",hex.schemas.SummaryHandler.class,"work","/Summary","Summary","Model");
     H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"work","/Example","Example","Model");
 
     // An empty Job for testing job polling
