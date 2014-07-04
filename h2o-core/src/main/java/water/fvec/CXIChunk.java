@@ -97,7 +97,7 @@ public class CXIChunk extends Chunk {
       :UnsafeUtils.get4(_mem,off);
   }
   // get offset of nth (chunk-relative) stored element
-  private final int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
+  private int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
   // extract integer value from an (byte)offset
   protected final long getIValue(int off){
     switch(_valsz){

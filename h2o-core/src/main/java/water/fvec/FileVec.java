@@ -83,7 +83,7 @@ public abstract class FileVec extends ByteVec {
     Futures fs = dkey.home() ? null : new Futures();
     // Atomically insert: fails on a race, but then return the old version
     Value val3 = DKV.DputIfMatch(dkey,val2,null,fs);
-    if( !dkey.home() ) fs.blockForPending();
+    if( !dkey.home() && fs != null ) fs.blockForPending();
     return val3 == null ? val2 : val3;
   }
 }

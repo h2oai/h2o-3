@@ -46,5 +46,5 @@ public class C16Chunk extends Chunk {
     assert _mem.length == _len<<4;
     return this;
   }
-  @Override protected int pformat_len0() { return 36; }
+//  @Override protected int pformat_len0() { return 36; }
 }

@@ -219,31 +219,31 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   // -----------------
   // Support for fixed-width format printing
-  private String pformat () { return pformat0(); }
-  private int pformat_len() { return pformat_len0(); }
+//  private String pformat () { return pformat0(); }
+//  private int pformat_len() { return pformat_len0(); }
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
-  protected String pformat0() { 
-    long min = (long)_vec.min();
-    if( min < 0 ) return "% "+pformat_len0()+"d";
-    return "%"+pformat_len0()+"d";
-  }
-  protected int pformat_len0() { 
-    int len=0;
-    long min = (long)_vec.min();
-    if( min < 0 ) len++;
-    long max = Math.max(Math.abs(min),Math.abs((long)_vec.max()));
-    throw H2O.unimpl();
-    //for( int i=1; i<DParseTask.powers10i.length; i++ )
-    //  if( max < DParseTask.powers10i[i] )
-    //    return i+len;
-    //return 20;
-  }
-  protected int pformat_len0( double scale, int lg ) {
-    double dx = Math.log10(scale);
-    int x = (int)dx;
-    throw H2O.unimpl();
-    //if( DParseTask.pow10i(x) != scale ) throw H2O.unimpl();
-    //int w=1/*blank/sign*/+lg/*compression limits digits*/+1/*dot*/+1/*e*/+1/*neg exp*/+2/*digits of exp*/;
-    //return w;
-  }
+//  protected String pformat0() {
+//    long min = (long)_vec.min();
+//    if( min < 0 ) return "% "+pformat_len0()+"d";
+//    return "%"+pformat_len0()+"d";
+//  }
+//  protected int pformat_len0() {
+//    int len=0;
+//    long min = (long)_vec.min();
+//    if( min < 0 ) len++;
+//    long max = Math.max(Math.abs(min),Math.abs((long)_vec.max()));
+//    throw H2O.unimpl();
+//    //for( int i=1; i<DParseTask.powers10i.length; i++ )
+//    //  if( max < DParseTask.powers10i[i] )
+//    //    return i+len;
+//    //return 20;
+//  }
+//  protected int pformat_len0( double scale, int lg ) {
+//    double dx = Math.log10(scale);
+//    int x = (int)dx;
+//    throw H2O.unimpl();
+//    //if( DParseTask.pow10i(x) != scale ) throw H2O.unimpl();
+//    //int w=1/*blank/sign*/+lg/*compression limits digits*/+1/*dot*/+1/*e*/+1/*neg exp*/+2/*digits of exp*/;
+//    //return w;
+//  }
 }

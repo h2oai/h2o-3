@@ -3,7 +3,6 @@ package water.fvec;
 import java.util.Arrays;
 import java.util.Comparator;
 import water.*;
-import water.util.ArrayUtils;
 
 /**
  * Dummy vector transforming values of given vector according to given domain mapping.

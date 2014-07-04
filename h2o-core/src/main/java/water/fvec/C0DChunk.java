@@ -3,7 +3,6 @@ package water.fvec;
 import java.util.Arrays;
 import water.AutoBuffer;
 import water.MemoryManager;
-import water.UDP;
 import water.util.UnsafeUtils;
 
 /**

@@ -232,8 +232,7 @@ public class Frame extends Lockable {
   public long byteSize() {
     long sum=0;
     Vec[] vecs = vecs();
-    for( int i=0; i<vecs.length; i++ )
-      sum += vecs[i].byteSize();
+    for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }
 

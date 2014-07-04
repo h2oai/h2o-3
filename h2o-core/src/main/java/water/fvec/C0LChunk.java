@@ -10,7 +10,7 @@ import water.util.UnsafeUtils;
  * The constant 'long' column.
  */
 public class C0LChunk extends Chunk {
-  private static final int _OFF=8+4;
+  protected static final int _OFF=8+4;
   private long _con;
   public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _start = -1; _len = len;
     _con = con;
