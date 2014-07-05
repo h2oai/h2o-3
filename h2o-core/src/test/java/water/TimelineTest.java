@@ -15,6 +15,7 @@ import static junit.framework.TestCase.assertEquals;
 /**
  * Created by tomasnykodym on 6/9/14.
  */
+@Test(groups={"multi-node"})
 public class TimelineTest extends TestUtil{
   @BeforeClass
   public static void stall() { stall_till_cloudsize(5); }
