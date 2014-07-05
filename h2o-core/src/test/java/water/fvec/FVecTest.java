@@ -92,7 +92,7 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = parse_test_file("../smalldata/junit/syn_2659x1049.csv.gz");
+      fr = parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 
