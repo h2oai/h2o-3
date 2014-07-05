@@ -8,7 +8,7 @@ import water.util.UnsafeUtils;
  */
 public class C8Chunk extends Chunk {
   protected static final long _NA = Long.MIN_VALUE;
-  C8Chunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>3; }
+  C8Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get8(_mem,i<<3);
     if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
@@ -25,10 +25,10 @@ public class C8Chunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem,(idx<<3),_NA); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
-    nc._ds = MemoryManager.malloc8d(_len);
-    nc._len = 0;
-    nc._len2 = 0;
-    for( int i=0; i<_len; i++ ) //use unsafe?
+    nc.alloc_doubles(len());
+    nc.set_len(0);
+    nc.set_len2(0);
+    for( int i=0; i< len(); i++ ) //use unsafe?
       if(isNA0(i))nc.addNA();
       else nc.addNum(at80(i),0);
     return nc;
@@ -37,8 +37,8 @@ public class C8Chunk extends Chunk {
   @Override public C8Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>3;
-    assert _mem.length == _len<<3;
+    set_len(_mem.length>>3);
+    assert _mem.length == len() <<3;
     return this;
   }
 }

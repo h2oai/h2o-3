@@ -8,7 +8,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'double's.
  */
 public class C8DChunk extends Chunk {
-  C8DChunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>3; }
+  C8DChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
   @Override protected final long   at8_impl( int i ) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
     if( Double.isNaN(res) ) throw new IllegalArgumentException("at8 but value is missing");
@@ -28,9 +28,9 @@ public class C8DChunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
-    nc._ds = MemoryManager.malloc8d(_len);
-    for( int i=0; i<_len; i++ ) //use unsafe?
-      nc._ds[i] = UnsafeUtils.get8d(_mem,(i<<3));
+    nc.alloc_doubles(len());
+    for( int i=0; i< len(); i++ )
+      nc.doubles()[i] = UnsafeUtils.get8d(_mem,(i<<3));
     return nc;
   }
   // 3.3333333e33
@@ -40,8 +40,8 @@ public class C8DChunk extends Chunk {
   @Override public C8DChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>3;
-    assert _mem.length == _len<<3;
+    set_len(_mem.length>>3);
+    assert _mem.length == len() <<3;
     return this;
   }
 }

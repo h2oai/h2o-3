@@ -10,8 +10,9 @@ import water.*;
 public abstract class Chunk extends Iced implements Cloneable {
   protected long _start = -1;    // Start element; filled after AutoBuffer.read
   public final long start() { return _start; } // Start element; filled after AutoBuffer.read
-  protected int _len;            // Number of elements in this chunk
-  public final int len() { return _len; } // Number of elements in this chunk
+  private int _len;            // Number of elements in this chunk
+  public final int len() { return _len; }
+  public final int set_len(int _len) { return this._len = _len; }
   private Chunk _chk2;       // Normally==null, changed if chunk is written to
   public final Chunk chk2() { return _chk2; } // Normally==null, changed if chunk is written to
   protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
@@ -30,8 +31,8 @@ public abstract class Chunk extends Iced implements Cloneable {
     * Slightly slower than 'at0' since it range checks within a chunk. */
   final long  at8( long i ) { 
     long x = i-_start;
-    if( 0 <= x && x < _len ) return at80((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+    if( 0 <= x && x < len()) return at80((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
 
   /** Load a double value.  Returns Double.NaN if value is missing.
@@ -44,25 +45,25 @@ public abstract class Chunk extends Iced implements Cloneable {
    * Slightly slower than 'at80' since it range checks within a chunk. */
   public final double at( long i ) { 
     long x = i-_start;
-    if( 0 <= x && x < _len ) return at0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+    if( 0 <= x && x < len()) return at0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
 
   /** Fetch the missing-status the slow way. */
   final boolean isNA(long i) {
     long x = i-_start;
-    if( 0 <= x && x < _len ) return isNA0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+    if( 0 <= x && x < len()) return isNA0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
   public final long at16l( long i ) {
     long x = i-_start;
-    if( 0 <= x && x < _len ) return at16l0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+    if( 0 <= x && x < len()) return at16l0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
   public final long at16h( long i ) {
     long x = i-_start;
-    if( 0 <= x && x < _len ) return at16h0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+_len));
+    if( 0 <= x && x < len()) return at16h0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
 
 
@@ -82,15 +83,15 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  if the long does not fit in a double (value is larger magnitude than
    *  2^52), AND float values are stored in Vector.  In this case, there is no
    *  common compatible data representation. */
-  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
+  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,l); else _vec.set(i,l); }
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element. */
-  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
+  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,d); else _vec.set(i,d); }
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element. */
-  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
+  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,f); else _vec.set(i,f); }
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
+  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < len()) setNA0((int)x); else _vec.setNA(i); }
   
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
@@ -169,15 +170,15 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   int nextNZ(int rid){return rid+1;}
   public boolean isSparse() {return false;}
-  public int sparseLen(){return _len;}
+  public int sparseLen(){return len();}
 
   /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
    *  For dense chunks, this will contain indices of all the rows in this chunk.
    *  @return array of chunk-relative indices of values stored in this chunk.
    */
   public int nonzeros(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
+    for( int i = 0; i < len(); ++i) res[i] = i;
+    return len();
   }
 
   /**

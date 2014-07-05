@@ -49,7 +49,7 @@ public class TransfVec extends WrappedVec {
     protected static final long MISSING_VALUE = -1L;
     final Chunk _c;
 
-    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; _len = _c._len; _start = _c._start; _vec = vec; }
+    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c.len()); _start = _c._start; _vec = vec; }
 
     @Override protected double atd_impl(int idx) { double d = 0; return _c.isNA0(idx) ? Double.NaN : ( (d=at8_impl(idx)) == MISSING_VALUE ? Double.NaN : d ) ;  }
     @Override protected boolean isNA_impl(int idx) {
@@ -62,11 +62,11 @@ public class TransfVec extends WrappedVec {
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
     @Override NewChunk inflate_impl(NewChunk nc) {
-      nc._xs = MemoryManager.malloc4(_len);
-      nc._ls = MemoryManager.malloc8(_len);
-      for( int i=0; i<_len; i++ ) {
+      nc.alloc_exponent(len());
+      nc.alloc_mantissa(len());
+      for( int i=0; i< len(); i++ ) {
         if(isNA0(i)) nc.setNA_impl2(i);
-        else nc._ls[i] = at80(i);
+        else nc.mantissa()[i] = at80(i);
       }
       return nc;
     }

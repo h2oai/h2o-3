@@ -9,7 +9,7 @@ import water.util.UnsafeUtils;
 public class C2Chunk extends Chunk {
   static protected final long _NA = Short.MIN_VALUE;
   static protected final int _OFF=0;
-  C2Chunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>1; }
+  C2Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>1); }
   @Override protected final long at8_impl( int i ) {
     int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
@@ -33,12 +33,12 @@ public class C2Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return set_impl(i,(double)f); }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set2(_mem,(idx<<1)+_OFF,(short)_NA); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc._xs = MemoryManager.malloc4(_len);
-    nc._ls = MemoryManager.malloc8(_len);
-    for( int i=0; i<_len; i++ ) {
+    nc.alloc_exponent(len());
+    nc.alloc_mantissa(len());
+    for( int i=0; i< len(); i++ ) {
       int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == _NA ) nc._xs[i] = Integer.MIN_VALUE;
-      else                     nc._ls[i] = res;
+      if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
+      else             nc.mantissa()[i] = res;
     }
     return nc;
   }
@@ -46,8 +46,8 @@ public class C2Chunk extends Chunk {
   @Override public C2Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>1;
-    assert _mem.length == _len<<1;
+    set_len(_mem.length>>1);
+    assert _mem.length == len() <<1;
     return this;
   }
 }

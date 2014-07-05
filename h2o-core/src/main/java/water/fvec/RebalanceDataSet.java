@@ -81,18 +81,19 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
     private void rebalanceChunk(Vec srcVec, Chunk chk){
       NewChunk dst = new NewChunk(chk);
-      dst._len = dst._len2 = 0;
-      int rem = chk._len;
-      while(rem > 0 && dst._len2 < chk._len){
-        Chunk srcRaw = srcVec.chunkForRow(chk._start+dst._len2);
+      dst.set_len2(0);
+      dst.set_len(dst.len2());
+      int rem = chk.len();
+      while(rem > 0 && dst.len2() < chk.len()){
+        Chunk srcRaw = srcVec.chunkForRow(chk._start+ dst.len2());
         NewChunk src = new NewChunk((srcRaw));
         src = srcRaw.inflate_impl(src);
-        assert src._len2 == srcRaw._len;
-        int srcFrom = (int)(chk._start+dst._len2 - src._start);
+        assert src.len2() == srcRaw.len();
+        int srcFrom = (int)(chk._start+ dst.len2() - src._start);
         // check if the result is sparse (not exact since we only take subset of src in general)
-        if((src.sparse() && dst.sparse()) || (src._len + dst._len < NewChunk.MIN_SPARSE_RATIO*(src._len2 + dst._len2))){
-          src.set_sparse(src._len);
-          dst.set_sparse(dst._len);
+        if((src.sparse() && dst.sparse()) || (src.len() + dst.len() < NewChunk.MIN_SPARSE_RATIO*(src.len2() + dst.len2()))){
+          src.set_sparse(src.len());
+          dst.set_sparse(dst.len());
         }
         final int srcTo = srcFrom + rem;
         int off = srcFrom-1;
@@ -108,12 +109,12 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
           rem -= add;
           assert rem >= 0;
         }
-        int trailingZeros = Math.min(rem,src._len2 - off -1);
+        int trailingZeros = Math.min(rem, src.len2() - off -1);
         dst.addZeros(trailingZeros);
         rem -= trailingZeros;
       }
       assert rem == 0:"rem = " + rem;
-      assert dst._len2 == chk._len:"len2 = " + dst._len2 + ", _len = " + chk._len;
+      assert dst.len2() == chk.len() :"len2 = " + dst.len2() + ", _len = " + chk.len();
       dst.close(dst.cidx(),_fs);
     }
     @Override public void map(Chunk [] chks){

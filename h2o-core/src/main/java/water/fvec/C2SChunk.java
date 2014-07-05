@@ -12,7 +12,7 @@ public class C2SChunk extends Chunk {
   private double _scale;
   public double scale() { return _scale; }
   private int _bias;
-  C2SChunk( byte[] bs, int bias, double scale ) { _mem=bs; _start = -1; _len = (_mem.length-_OFF)>>1;
+  C2SChunk( byte[] bs, int bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length-_OFF)>>1);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem, 0, scale);
     UnsafeUtils.set4 (_mem,8,bias );
@@ -48,12 +48,13 @@ public class C2SChunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     double dx = Math.log10(_scale);
     assert water.util.PrettyPrint.fitsIntoInt(dx);
-    Arrays.fill(nc._xs = MemoryManager.malloc4(_len), (int)dx);
-    nc._ls = MemoryManager.malloc8(_len);
-    for( int i=0; i<_len; i++ ) {
+    nc.alloc_exponent(len());
+    Arrays.fill(nc.exponent(), (int)dx);
+    nc.alloc_mantissa(len());
+    for( int i=0; i< len(); i++ ) {
       int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == C2Chunk._NA ) nc._xs[i] = Integer.MIN_VALUE;
-      else                     nc._ls[i] = res+_bias;
+      if( res == C2Chunk._NA ) nc.exponent()[i] = Integer.MIN_VALUE;
+      else                     nc.mantissa()[i] = res+_bias;
     }
     return nc;
   }
@@ -72,7 +73,7 @@ public class C2SChunk extends Chunk {
   @Override public C2SChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = (_mem.length-_OFF)>>1;
+    set_len((_mem.length-_OFF)>>1);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get4 (_mem,8);
     return this;

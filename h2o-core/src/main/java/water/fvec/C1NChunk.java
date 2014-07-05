@@ -8,7 +8,7 @@ import water.*;
  */
 public class C1NChunk extends Chunk {
   protected static final int _OFF=0;
-  public C1NChunk(byte[] bs) { _mem=bs; _start = -1; _len = _mem.length; }
+  public C1NChunk(byte[] bs) { _mem=bs; _start = -1; set_len(_mem.length); }
   @Override protected final long   at8_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final double atd_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final boolean isNA_impl( int i ) { return false; }
@@ -17,10 +17,10 @@ public class C1NChunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc._xs = MemoryManager.malloc4(_len);
-    nc._ls = MemoryManager.malloc8(_len);
-    for( int i=0; i<_len; i++ )
-      nc._ls[i] = 0xFF&_mem[i+_OFF];
+    nc.alloc_exponent(len());
+    nc.alloc_mantissa(len());
+    for( int i=0; i< len(); i++ )
+      nc.mantissa()[i] = 0xFF&_mem[i+_OFF];
     return nc;
   }
   // Custom serializers: the _mem field contains ALL the fields already.
@@ -28,5 +28,5 @@ public class C1NChunk extends Chunk {
   // Leave _vec & _chk2 null, leave _len unknown.
   @Override final public AutoBuffer write_impl(AutoBuffer ab) { return ab.putA1(_mem,_mem.length); }
   @Override final public C1NChunk read_impl(AutoBuffer ab) {
-    _mem = ab.bufClose(); _start = -1; _len = _mem.length; return this; }
+    _mem = ab.bufClose(); _start = -1; set_len(_mem.length); return this; }
 }

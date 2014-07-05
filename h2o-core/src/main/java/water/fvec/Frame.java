@@ -129,7 +129,7 @@ public class Frame extends Lockable {
         for( int col = 0; col < cs.length; col++ ) {
           Chunk c = cs[col];
           NewChunk nc = ncs[col];
-          for( int row = 0; row < c._len; row++ )
+          for( int row = 0; row < c.len(); row++ )
             if( c._vec.isUUID() ) nc.addUUID(c,row);
             else nc.addNum(c.at0(row));
         }

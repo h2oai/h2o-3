@@ -418,7 +418,7 @@ public class Vec extends Keyed {
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
   public final Chunk chunkForRow(long i) {
     Chunk c = _cache;
-    return (c != null && c.chk2()==null && c._start <= i && i < c._start+c._len) ? c : (_cache = chunkForRow_impl(i));
+    return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c.len()) ? c : (_cache = chunkForRow_impl(i));
   }
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. */
@@ -551,7 +551,7 @@ public class Vec extends Keyed {
     new MRTask() {
       @Override public void map(Chunk c0) {
         long srow = c0._start;
-        for (int r = 0; r < c0._len; r++) c0.set0(r, vec.at(srow + r));
+        for (int r = 0; r < c0.len(); r++) c0.set0(r, vec.at(srow + r));
       }
     }.doAll(avec);
     avec._domain = _domain;
@@ -733,7 +733,7 @@ public class Vec extends Keyed {
     transient NonBlockingHashMapLong<Object> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong(); }
     @Override public void map(Chunk ys) {
-      for( int row=0; row<ys._len; row++ )
+      for( int row=0; row< ys.len(); row++ )
         if( !ys.isNA0(row) )
           _uniques.put(ys.at80(row),"");
     }

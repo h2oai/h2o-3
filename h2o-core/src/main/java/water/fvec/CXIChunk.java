@@ -20,7 +20,7 @@ public class CXIChunk extends Chunk {
 
   protected CXIChunk(int len, int nzs, int valsz, byte [] buf){
     assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
-    _len = len;
+    set_len(len);
     int log = 0;
     while((1 << log) < valsz)++log;
     assert valsz == 0 || (1 << log) == valsz;
@@ -73,19 +73,19 @@ public class CXIChunk extends Chunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int len = sparseLen();
-    nc._len2 = _len;
-    nc._len = sparseLen();
-    nc._ls = MemoryManager.malloc8 (len);
-    nc._xs = MemoryManager.malloc4 (len);
-    nc._id = MemoryManager.malloc4 (len);
+    nc.set_len2(len());
+    nc.set_len(sparseLen());
+    nc.alloc_mantissa(len);
+    nc.alloc_exponent(len);
+    nc.alloc_indices(len);
     int off = _OFF;
     for( int i = 0; i < len; ++i, off += _ridsz + _valsz) {
-      nc._id[i] = getId(off);
+      nc.indices()[i] = getId(off);
       long v = getIValue(off);
       if(v == NAS[_valsz_log])
         nc.setNA_impl2(i);
       else
-        nc._ls[i] = v;
+        nc.mantissa()[i] = v;
     }
     return nc;
   }
@@ -111,7 +111,7 @@ public class CXIChunk extends Chunk {
 
   // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
   protected final int findOffset(int idx) {
-    if(idx >= _len)throw new IndexOutOfBoundsException();
+    if(idx >= len())throw new IndexOutOfBoundsException();
     final byte [] mem = _mem;
     int sparseLen = sparseLen();
     if(sparseLen == 0)return 0;
@@ -149,14 +149,14 @@ public class CXIChunk extends Chunk {
     if(x > rid)return x;
     if(off < _mem.length - _ridsz - _valsz)
       return getId(off + _ridsz + _valsz);
-    return _len;
+    return len();
   }
 
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
   @Override public CXIChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
     _start = -1;
-    _len = UnsafeUtils.get4(_mem,0);
+    set_len(UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];
     _valsz = _mem[5];
     int x = _valsz;

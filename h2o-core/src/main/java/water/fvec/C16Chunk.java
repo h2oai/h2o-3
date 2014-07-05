@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
 public class C16Chunk extends Chunk {
   public static final long _LO_NA = Long.MAX_VALUE;
   public static final long _HI_NA = 0;
-  C16Chunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>4; }
+  C16Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>4); }
   @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8 but 16-byte UUID");  }
   @Override protected final double atd_impl( int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
   @Override protected final boolean isNA_impl( int i ) { return UnsafeUtils.get8(_mem,(i<<4))==_LO_NA && UnsafeUtils.get8(_mem,(i<<4)+8)==_HI_NA; }
@@ -28,13 +28,13 @@ public class C16Chunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem, (idx << 4), _LO_NA); UnsafeUtils.set8(_mem,(idx<<4),_HI_NA); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
-    nc._ls = MemoryManager.malloc8 (_len);
-    nc._ds = MemoryManager.malloc8d(_len);
-    nc._len = _len;
-    nc._len2 = _len;
-    for( int i=0; i<_len; i++ ) { //use unsafe?
-      nc._ls[i] =                         UnsafeUtils.get8(_mem,(i<<4)  );
-      nc._ds[i] = Double.longBitsToDouble(UnsafeUtils.get8(_mem, (i << 4) + 8));
+    nc.alloc_mantissa(len());
+    nc.alloc_doubles(len());
+    nc.set_len(len());
+    nc.set_len2(len());
+    for( int i=0; i< len(); i++ ) { //use unsafe?
+      nc.mantissa()[i] =                         UnsafeUtils.get8(_mem,(i<<4)  );
+      nc.doubles()[i]  = Double.longBitsToDouble(UnsafeUtils.get8(_mem, (i << 4) + 8));
     }
     return nc;
   }
@@ -42,8 +42,8 @@ public class C16Chunk extends Chunk {
   @Override public C16Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>4;
-    assert _mem.length == _len<<4;
+    set_len(_mem.length>>4);
+    assert _mem.length == len() <<4;
     return this;
   }
 //  @Override protected int pformat_len0() { return 36; }

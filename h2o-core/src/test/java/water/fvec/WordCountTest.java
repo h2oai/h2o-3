@@ -63,7 +63,7 @@ public class WordCountTest extends TestUtil {
   
     @Override public void map( Chunk bv ) {
       _words = WORDS;
-      final int len = bv._len;
+      final int len = bv.len();
       int i=0;                  // Parse point
       // Skip partial words at the start of chunks, assuming they belong to the
       // trailing end of the prior chunk.

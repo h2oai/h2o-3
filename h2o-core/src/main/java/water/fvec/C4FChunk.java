@@ -7,7 +7,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'float's.
  */
 public class C4FChunk extends Chunk {
-  C4FChunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>2; }
+  C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     float res = UnsafeUtils.get4f(_mem, i << 2);
     if( Float.isNaN(res) ) throw new IllegalArgumentException("at8 but value is missing");
@@ -27,9 +27,9 @@ public class C4FChunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4f(_mem,(idx<<2),Float.NaN); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
-    nc._ds = MemoryManager.malloc8d(_len);
-    for( int i=0; i<_len; i++ ) //use unsafe?
-      nc._ds[i] = UnsafeUtils.get4f(_mem, (i << 2));
+    nc.alloc_doubles(len());
+    for( int i=0; i< len(); i++ )
+      nc.doubles()[i] = UnsafeUtils.get4f(_mem, (i << 2));
     return nc;
   }
   // 3.3333333e33
@@ -39,8 +39,8 @@ public class C4FChunk extends Chunk {
   @Override public C4FChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>2;
-    assert _mem.length == _len<<2;
+    set_len(_mem.length>>2);
+    assert _mem.length == len() <<2;
     return this;
   }
 }

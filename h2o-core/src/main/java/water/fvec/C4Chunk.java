@@ -8,7 +8,7 @@ import water.util.UnsafeUtils;
  */
 public class C4Chunk extends Chunk {
   static protected final long _NA = Integer.MIN_VALUE;
-  C4Chunk( byte[] bs ) { _mem=bs; _start = -1; _len = _mem.length>>2; }
+  C4Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get4(_mem,i<<2);
     if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
@@ -34,8 +34,8 @@ public class C4Chunk extends Chunk {
   @Override public C4Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length>>2;
-    assert _mem.length == _len<<2;
+    set_len(_mem.length>>2);
+    assert _mem.length == len() <<2;
     return this;
   }
 }

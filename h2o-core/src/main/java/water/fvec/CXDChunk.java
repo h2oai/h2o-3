@@ -2,7 +2,6 @@ package water.fvec;
 
 import water.H2O;
 import water.MemoryManager;
-import water.UDP;
 import water.util.UnsafeUtils;
 
 import java.util.Iterator;
@@ -36,15 +35,15 @@ public class CXDChunk extends CXIChunk {
   }
 
   @Override NewChunk inflate_impl(NewChunk nc) {
-    final int len = sparseLen();
-    nc._len2 = _len;
-    nc._len = sparseLen();
-    nc._ds = MemoryManager.malloc8d(nc._len);
-    nc._id = MemoryManager.malloc4 (len);
+    final int slen = sparseLen();
+    nc.set_len2(len());
+    nc.set_len(slen);
+    nc.alloc_doubles(slen);
+    nc.alloc_indices(slen);
     int off = _OFF;
-    for( int i = 0; i < len; ++i, off += ridsz() + valsz()) {
-      nc._id[i] = getId(off);
-      nc._ds[i] = getFValue(off);
+    for( int i = 0; i < slen; ++i, off += ridsz() + valsz()) {
+      nc.indices()[i] = getId(off);
+      nc.doubles()[i] = getFValue(off);
     }
     return nc;
   }

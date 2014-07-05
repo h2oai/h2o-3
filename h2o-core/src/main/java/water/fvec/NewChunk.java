@@ -19,25 +19,53 @@ public class NewChunk extends Chunk {
   // Sparse: if _len != _len2, then _ls/_ds are compressed to non-zero's only,
   // and _xs is the row number.  Still _len2 is count of elements including
   // zeros, and _len is count of non-zeros.
-  transient long   _ls[];       // Mantissa
-  transient int    _xs[];       // Exponent, or if _ls==0, NA or Enum or Rows
-  transient int    _id[];       // Indices (row numbers) of stored values, used for sparse
-  transient double _ds[];       // Doubles, for inflating via doubles
-  int _len2;                    // Actual rows, if the data is sparse
-  int _naCnt=-1;                // Count of NA's   appended
-  int _strCnt;                  // Count of Enum's appended
-  int _nzCnt;                   // Count of non-zero's appended
-  int _uuidCnt;                 // Count of UUIDs
+  private transient long   _ls[];   // Mantissa
+  private transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
+  private transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
+  private transient double _ds[];   // Doubles, for inflating via doubles
+
+  void zero_exp_mant() { _ls=new long[0]; _xs=new int[0]; }
+  void zero_indices() {
+    _id=new int[0];
+  }
+
+  long  [] alloc_mantissa(int l) { return _ls = MemoryManager.malloc8(l); }
+  int   [] alloc_exponent(int l) { return _xs = MemoryManager.malloc4(l); }
+  int   [] alloc_indices(int l)  { return _id = MemoryManager.malloc4(l); }
+  double[] alloc_doubles(int l)  { return _ds = MemoryManager.malloc8d(l); }
+
+  final protected long  [] mantissa() { return _ls; }
+  final protected int   [] exponent() { return _xs; }
+  final protected int   []  indices() { return _id; }
+  final protected double[]  doubles() { return _ds; }
+
+  private int _len2;                    // Actual rows, if the data is sparse
+  public final int len2() { return _len2; }
+  public int set_len2(int _len2) { return this._len2 = _len2; }
+  private int _naCnt=-1;                // Count of NA's   appended
+  protected int naCnt() { return _naCnt; }               // Count of NA's   appended
+  private int _strCnt;                  // Count of Enum's appended
+  protected int strCnt() { return _strCnt; }                 // Count of Enum's appended
+  private int _nzCnt;                   // Count of non-zero's appended
+  private int _uuidCnt;                 // Count of UUIDs
+
   public final int _timCnt[] = new int[ParseTime.TIME_PARSE.length]; // Count of successful time parses
-  public static final int MIN_SPARSE_RATIO = 32;
+  protected static final int MIN_SPARSE_RATIO = 32;
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
+  public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+    _vec = vec; _cidx = cidx;
+    _ls = mantissa;
+    _xs = exponent;
+    _id = indices;
+    _ds = doubles;
+  }
 
   // Constructor used when inflating a Chunk.
   public NewChunk( Chunk C ) {
     this(C._vec, C._vec.elem2ChunkIdx(C._start));
-    _len2 = C._len;
-    _len = C.sparseLen();
+    set_len2(C.len());
+    set_len(C.sparseLen());
     _start = C._start;
   }
 
@@ -45,8 +73,8 @@ public class NewChunk extends Chunk {
   public NewChunk( Vec vec, int cidx, int len ) {
     this(vec,cidx);
     _ds = new double[len];
-    Arrays.fill(_ds,Double.NaN);
-    _len = _len2 = len;
+    Arrays.fill(_ds, Double.NaN);
+    set_len(set_len2(len));
   }
 
   public final class Value {
@@ -66,13 +94,13 @@ public class NewChunk extends Chunk {
 
   public Iterator<Value> values(int fromIdx, int toIdx){
     final int lId, gId;
-    final int to = Math.min(toIdx,_len2);
+    final int to = Math.min(toIdx, len2());
 
     if(sparse()){
-      int x = Arrays.binarySearch(_id,0,_len,fromIdx);
+      int x = Arrays.binarySearch(_id,0, len(),fromIdx);
       if(x < 0) x = -x -1;
       lId = x;
-      gId = x == _len?_len2:_id[x];
+      gId = x == len() ? len2() :_id[x];
     } else
       lId = gId = fromIdx;
     final Value v = new Value(lId,gId);
@@ -83,7 +111,7 @@ public class NewChunk extends Chunk {
         if(!hasNext())throw new NoSuchElementException();
         v._gId = next._gId; v._lId = next._lId;
         next._lId++;
-        if(sparse()) next._gId = next._lId < _len?_id[next._lId]:_len2;
+        if(sparse()) next._gId = next._lId < len() ?_id[next._lId]: len2();
         else next._gId++;
         return v;
       }
@@ -100,16 +128,16 @@ public class NewChunk extends Chunk {
     if( _naCnt == -1 ) {        // No rollups yet?
       int nas=0, ss=0, nzs=0;
       if( _ds != null && _ls != null ) { // UUID?
-        for( int i=0; i<_len; i++ )
+        for( int i=0; i< len(); i++ )
           if( _xs != null && _xs[i]==Integer.MIN_VALUE )  nas++;
           else if( _ds[i] !=0 || _ls[i] != 0 ) nzs++;
-        _uuidCnt = _len2-nas;
+        _uuidCnt = len2() -nas;
       } else if( _ds != null ) { // Doubles?
         assert _xs==null;
-        for( int i = 0; i < _len; ++i) if( Double.isNaN(_ds[i]) ) nas++; else if( _ds[i]!=0 ) nzs++;
+        for( int i = 0; i < len(); ++i) if( Double.isNaN(_ds[i]) ) nas++; else if( _ds[i]!=0 ) nzs++;
       } else {                  // Longs and enums?
         if( _ls != null )
-          for( int i=0; i<_len; i++ )
+          for( int i=0; i< len(); i++ )
             if( isNA2(i) ) nas++;
             else {
               if( isEnum2(i)   ) ss++;
@@ -119,15 +147,15 @@ public class NewChunk extends Chunk {
       _nzCnt=nzs;  _strCnt=ss;  _naCnt=nas;
     }
     // Now run heuristic for type
-    if(_naCnt == _len2)          // All NAs ==> NA Chunk
+    if(_naCnt == len2())          // All NAs ==> NA Chunk
       return AppendableVec.NA;
-    if(_strCnt > 0 && _strCnt + _naCnt == _len2)
+    if(_strCnt > 0 && _strCnt + _naCnt == len2())
       return AppendableVec.ENUM; // All are Strings+NAs ==> Enum Chunk
     // UUIDs?
     if( _uuidCnt > 0 ) return AppendableVec.UUID;
     // Larger of time & numbers
     int timCnt=0; for( int t : _timCnt ) timCnt+=t;
-    int nums = _len2-_naCnt-timCnt;
+    int nums = len2() -_naCnt-timCnt;
     return timCnt >= nums ? AppendableVec.TIME : AppendableVec.NUMBER;
   }
 
@@ -139,7 +167,7 @@ public class NewChunk extends Chunk {
   }
   protected final boolean isEnum(int idx) {
     if(_id == null)return isEnum2(idx);
-    int j = Arrays.binarySearch(_id,0,_len,idx);
+    int j = Arrays.binarySearch(_id,0, len(),idx);
     return j>=0 && isEnum2(j);
   }
 
@@ -165,27 +193,27 @@ public class NewChunk extends Chunk {
     if( isUUID() ) { addNA(); return; }
     if(_id == null || d != 0) {
       if(_ls != null)switch_to_doubles();
-      if( _ds == null || _len >= _ds.length ) {
+      if( _ds == null || len() >= _ds.length ) {
         append2slowd();
         // call addNum again since append2slow might have flipped to sparse
         addNum(d);
-        assert _len <= _len2;
+        assert len() <= len2();
         return;
       }
-      if(_id != null)_id[_len] = _len2;
-      _ds[_len++] = d;
+      if(_id != null)_id[len()] = len2();
+      _ds[set_len(len() + 1)] = d;
     }
-    _len2++;
-    assert _len <= _len2;
+    set_len2(len2() + 1);
+    assert len() <= len2();
   }
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if( _ls==null || _ds== null || _len >= _ls.length )
+    if( _ls==null || _ds== null || len() >= _ls.length )
       append2slowUUID();
-    _ls[_len] = lo;
-    _ds[_len++] = Double.longBitsToDouble(hi);
-    _len2++;
-    assert _len <= _len2;
+    _ls[len()] = lo;
+    _ds[set_len(len() + 1)] = Double.longBitsToDouble(hi);
+    set_len2(len2() + 1);
+    assert len() <= len2();
   }
   public void addUUID( Chunk c, long row ) {
     if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
@@ -201,21 +229,20 @@ public class NewChunk extends Chunk {
 
   public void addZeros(int n){
     if(!sparse()) for(int i = 0; i < n; ++i)addNum(0,0);
-    else _len2 += n;
+    else set_len2(len2() + n);
   }
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
     assert _cidx >= 0;
-    assert _len <= _len2;
-    assert nc._len <= nc._len2:"_len = " + nc._len + ", _len2 = " + nc._len2;
-    if( nc._len2 == 0 ) return;
-    if(_len2 == 0){
+    assert len() <= len2();
+    assert nc.len() <= nc.len2() :"_len = " + nc.len() + ", _len2 = " + nc.len2();
+    if( nc.len2() == 0 ) return;
+    if(len2() == 0){
       _ls = nc._ls; nc._ls = null;
       _xs = nc._xs; nc._xs = null;
       _id = nc._id; nc._id = null;
       _ds = nc._ds; nc._ds = null;
-      _len = nc._len;
-      _len2 = nc._len2;
+      set_len2(set_len(nc.len()));
       return;
     }
     if(nc.sparse() != sparse()){ // for now, just make it dense
@@ -223,108 +250,108 @@ public class NewChunk extends Chunk {
       nc.cancel_sparse();
     }
     if( _ds != null ) throw H2O.unimpl();
-    while( _len+nc._len >= _xs.length )
+    while( len() + nc.len() >= _xs.length )
       _xs = MemoryManager.arrayCopyOf(_xs,_xs.length<<1);
     _ls = MemoryManager.arrayCopyOf(_ls,_xs.length);
-    System.arraycopy(nc._ls,0,_ls,_len,nc._len);
-    System.arraycopy(nc._xs,0,_xs,_len,nc._len);
+    System.arraycopy(nc._ls,0,_ls, len(), nc.len());
+    System.arraycopy(nc._xs,0,_xs, len(), nc.len());
     if(_id != null) {
       assert nc._id != null;
       _id = MemoryManager.arrayCopyOf(_id,_xs.length);
-      System.arraycopy(nc._id,0,_id,_len,nc._len);
-      for(int i = _len; i < _len + nc._len; ++i) _id[i] += _len2;
+      System.arraycopy(nc._id,0,_id, len(), nc.len());
+      for(int i = len(); i < len() + nc.len(); ++i) _id[i] += len2();
     } else assert nc._id == null;
 
-    _len += nc._len;
-    _len2 += nc._len2;
-    nc._ls = null;  nc._xs = null; nc._id = null; nc._len = nc._len2 = 0;
-    assert _len <= _len2;
+    set_len(len() + nc.len());
+    set_len2(len2() + nc.len2());
+    nc._ls = null;  nc._xs = null; nc._id = null; nc.set_len(nc.set_len2(0));
+    assert len() <= len2();
   }
 
   // Fast-path append long data
   void append2( long l, int x ) {
     if(_id == null || l != 0){
-      if(_ls == null || _len == _ls.length) {
+      if(_ls == null || len() == _ls.length) {
         append2slow();
         // again call append2 since calling append2slow might have changed things (eg might have switched to sparse and l could be 0)
         append2(l,x);
         return;
       }
-      _ls[_len] = l;
-      _xs[_len] = x;
-      if(_id  != null)_id[_len] = _len2;
-      _len++;
+      _ls[len()] = l;
+      _xs[len()] = x;
+      if(_id  != null)_id[len()] = len2();
+      set_len(len() + 1);
     }
-    _len2++;
-    assert _len <= _len2;
+    set_len2(len2() + 1);
+    assert len() <= len2();
   }
 
   // Slow-path append data
   private void append2slowd() {
-    if( _len > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException(_len);
+    if( len() > Vec.CHUNK_SZ )
+      throw new ArrayIndexOutOfBoundsException(len());
     assert _ls==null;
     if(_ds != null && _ds.length > 0){
       if(_id == null){ // check for sparseness
         int nzs = 0; // assume one non-zero for the element currently being stored
         for(double d:_ds)if(d != 0)++nzs;
-        if((nzs+1)*MIN_SPARSE_RATIO < _len2)
+        if((nzs+1)*MIN_SPARSE_RATIO < len2())
           set_sparse(nzs);
-      } else _id = MemoryManager.arrayCopyOf(_id, _len << 1);
-      _ds = MemoryManager.arrayCopyOf(_ds,_len<<1);
-    } else _ds = MemoryManager.malloc8d(4);
-    assert _len == 0 || _ds.length > _len:"_ds.length = " + _ds.length + ", _len = " + _len;
+      } else _id = MemoryManager.arrayCopyOf(_id, len() << 1);
+      _ds = MemoryManager.arrayCopyOf(_ds, len() << 1);
+    } else alloc_doubles(4);
+    assert len() == 0 || _ds.length > len() :"_ds.length = " + _ds.length + ", _len = " + len();
   }
   // Slow-path append data
   private void append2slowUUID() {
-    if( _len > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException(_len);
+    if( len() > Vec.CHUNK_SZ )
+      throw new ArrayIndexOutOfBoundsException(len());
     if( _ds==null && _ls!=null ) { // This can happen for columns with all NAs and then a UUID
       _xs=null;
-      _ds = MemoryManager.malloc8d(_len);
+      alloc_doubles(len());
       Arrays.fill(_ls,C16Chunk._LO_NA);
       Arrays.fill(_ds,Double.longBitsToDouble(C16Chunk._HI_NA));
     }
     if( _ls != null && _ls.length > 0 ) {
-      _ls = MemoryManager.arrayCopyOf(_ls,_len<<1);
-      _ds = MemoryManager.arrayCopyOf(_ds,_len<<1);
+      _ls = MemoryManager.arrayCopyOf(_ls, len() <<1);
+      _ds = MemoryManager.arrayCopyOf(_ds, len() <<1);
     } else {
-      _ls = MemoryManager.malloc8 (4);
-      _ds = MemoryManager.malloc8d(4);
+      alloc_mantissa(4);
+      alloc_doubles(4);
     }
-    assert _len == 0 || _ls.length > _len:"_ls.length = " + _ls.length + ", _len = " + _len;
+    assert len() == 0 || _ls.length > len() :"_ls.length = " + _ls.length + ", _len = " + len();
   }
   // Slow-path append data
   private void append2slow( ) {
-    if( _len > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException(_len);
+    if( len() > Vec.CHUNK_SZ )
+      throw new ArrayIndexOutOfBoundsException(len());
     assert _ds==null;
     if(_ls != null && _ls.length > 0){
       if(_id == null){ // check for sparseness
         int nzs = 0;
         for(int i = 0; i < _ls.length; ++i) if(_ls[i] != 0 || _xs[i] != 0)++nzs;
-        if((nzs+1)*MIN_SPARSE_RATIO < _len2){
+        if((nzs+1)*MIN_SPARSE_RATIO < len2()){
           set_sparse(nzs);
-          assert _len == 0 || _len  <= _ls.length:"_len = " + _len + ", _ls.length = " + _ls.length + ", nzs = " + nzs +  ", len2 = " + _len2;
+          assert len() == 0 || len() <= _ls.length:"_len = " + len() + ", _ls.length = " + _ls.length + ", nzs = " + nzs +  ", len2 = " + len2();
           assert _id.length == _ls.length;
-          assert _len <= _len2;
+          assert len() <= len2();
           return;
         }
       } else {
         // verify we're still sufficiently sparse
-        if((MIN_SPARSE_RATIO*(_len) >> 1) > _len2)  cancel_sparse();
-        else _id = MemoryManager.arrayCopyOf(_id,_len<<1);
+        if((MIN_SPARSE_RATIO*(len()) >> 1) > len2())  cancel_sparse();
+        else _id = MemoryManager.arrayCopyOf(_id, len() <<1);
       }
-      _ls = MemoryManager.arrayCopyOf(_ls,_len<<1);
-      _xs = MemoryManager.arrayCopyOf(_xs,_len<<1);
+      _ls = MemoryManager.arrayCopyOf(_ls, len() <<1);
+      _xs = MemoryManager.arrayCopyOf(_xs, len() <<1);
     } else {
-      _ls = MemoryManager.malloc8(4);
-      _xs = MemoryManager.malloc4(4);
-      _id = _id == null?null:MemoryManager.malloc4(4);
+      alloc_mantissa(4);
+      alloc_exponent(4);
+      if (_id != null) alloc_indices(4);
     }
-    assert _len == 0 || _len < _ls.length:"_len = " + _len + ", _ls.length = " + _ls.length;
+    assert len() == 0 || len() < _ls.length:"_len = " + len() + ", _ls.length = " + _ls.length;
     assert _id == null || _id.length == _ls.length;
-    assert _len <= _len2;
+    assert len() <= len2();
   }
 
   // Do any final actions on a completed NewVector.  Mostly: compress it, and
@@ -340,8 +367,8 @@ public class NewChunk extends Chunk {
 
   protected void switch_to_doubles(){
     assert _ds == null;
-    double [] ds = MemoryManager.malloc8d(_len);
-    for(int i = 0; i < _len; ++i)
+    double [] ds = alloc_doubles(len());
+    for(int i = 0; i < len(); ++i)
       if(isNA2(i) || isEnum2(i))ds[i] = Double.NaN;
       else  ds[i] = _ls[i]*PrettyPrint.pow10(_xs[i]);
     _ls = null;
@@ -349,13 +376,13 @@ public class NewChunk extends Chunk {
     _ds = ds;
   }
   protected void set_sparse(int nzeros){
-    if(_len == nzeros)return;
+    if(len() == nzeros)return;
     if(_id != null){ // we have sparse represenation but some 0s in it!
-      int [] id = MemoryManager.malloc4(nzeros);
+      int [] id = alloc_indices(nzeros);
       int j = 0;
       if(_ds != null){
-        double [] ds = MemoryManager.malloc8d(nzeros);
-        for(int i = 0; i < _len; ++i){
+        double [] ds = alloc_doubles(nzeros);
+        for(int i = 0; i < len(); ++i){
           if(_ds[i] != 0){
             ds[j] = _ds[i];
             id[j] = _id[i];
@@ -364,9 +391,9 @@ public class NewChunk extends Chunk {
         }
         _ds = ds;
       } else {
-        long [] ls = MemoryManager.malloc8(nzeros);
-        int [] xs = MemoryManager.malloc4(nzeros);
-        for(int i = 0; i < _len; ++i){
+        long [] ls = alloc_mantissa(nzeros);
+        int [] xs = alloc_exponent(nzeros);
+        for(int i = 0; i < len(); ++i){
           if(_ls[i] != 0){
             ls[j] = _ls[i];
             xs[j] = _xs[i];
@@ -381,12 +408,12 @@ public class NewChunk extends Chunk {
       assert j == nzeros;
       return;
     }
-    assert _len == _len2:"_len = " + _len + ", _len2 = " + _len2 + ", nzeros = " + nzeros;
+    assert len() == len2() :"_len = " + len() + ", _len2 = " + len2() + ", nzeros = " + nzeros;
     int zs = 0;
     if(_ds == null){
       assert nzeros < _ls.length;
-      _id = MemoryManager.malloc4(_ls.length);
-      for(int i = 0; i < _len; ++i){
+      _id = alloc_indices(_ls.length);
+      for(int i = 0; i < len(); ++i){
         if(_ls[i] == 0 && _xs[i] == 0)++zs;
         else {
           _ls[i-zs] = _ls[i];
@@ -396,8 +423,8 @@ public class NewChunk extends Chunk {
       }
     } else {
       assert nzeros < _ds.length;
-      _id = MemoryManager.malloc4(_ds.length);
-      for(int i = 0; i < _len; ++i){
+      _id = alloc_indices(_ds.length);
+      for(int i = 0; i < len(); ++i){
         if(_ds[i] == 0)++zs;
         else {
           _ds[i-zs] = _ds[i];
@@ -405,27 +432,27 @@ public class NewChunk extends Chunk {
         }
       }
     }
-    assert zs == (_len - nzeros);
-    _len = nzeros;
+    assert zs == (len() - nzeros);
+    set_len(nzeros);
   }
   protected void cancel_sparse(){
-    if(_len != _len2){
+    if(len() != len2()){
       if(_ds == null){
-        int []  xs = MemoryManager.malloc4(_len2);
-        long [] ls = MemoryManager.malloc8(_len2);
-        for(int i = 0; i < _len; ++i){
+        int []  xs = alloc_exponent(len2());
+        long [] ls = alloc_mantissa(len2());
+        for(int i = 0; i < len(); ++i){
           xs[_id[i]] = _xs[i];
           ls[_id[i]] = _ls[i];
         }
         _xs = xs;
         _ls = ls;
       } else {
-        double [] ds = MemoryManager.malloc8d(_len2);
-        for(int i = 0; i < _len; ++i) ds[_id[i]] = _ds[i];
+        double [] ds = alloc_doubles(len2());
+        for(int i = 0; i < len(); ++i) ds[_id[i]] = _ds[i];
         _ds = ds;
       }
       _id = null;
-      _len = _len2;
+      set_len(len2());
     }
   }
   // Study this NewVector and determine an appropriate compression scheme.
@@ -445,10 +472,10 @@ public class NewChunk extends Chunk {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
-      return new C0DChunk(Double.NaN,_len);
+      return new C0DChunk(Double.NaN, len());
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
-      for( int i=0; i<_len; i++ )
+      for( int i=0; i< len(); i++ )
         if(isEnum2(i))
           _xs[i] = 0;
         else if(!isNA2(i)){
@@ -457,7 +484,7 @@ public class NewChunk extends Chunk {
         }
         // Smack any mismatched string/numbers
     } else if(mode == AppendableVec.NUMBER){
-      for( int i=0; i<_len; i++ )
+      for( int i=0; i< len(); i++ )
         if(isEnum2(i)) {
           setNA_impl2(i);
           rerun = true;
@@ -466,7 +493,7 @@ public class NewChunk extends Chunk {
     if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/enums
     boolean sparse = false;
     // sparse? treat as sparse iff we have at least MIN_SPARSE_RATIOx more zeros than nonzeros
-    if(MIN_SPARSE_RATIO*(_naCnt + _nzCnt) < _len2) {
+    if(MIN_SPARSE_RATIO*(_naCnt + _nzCnt) < len2()) {
       set_sparse(_naCnt + _nzCnt);
       sparse = true;
     }
@@ -479,16 +506,16 @@ public class NewChunk extends Chunk {
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
       int i=0;
-      for( ; i<_len; i++ ) // Attempt to inject all doubles into longs
+      for( ; i< len(); i++ ) // Attempt to inject all doubles into longs
         if( !Double.isNaN(_ds[i]) && (double)(long)_ds[i] != _ds[i] ) break;
-      if(i < _len)
-        return sparse ? new CXDChunk(_len2,_len,8,bufD(8)) : chunkD();
+      if(i < len())
+        return sparse ? new CXDChunk(len2(), len(),8,bufD(8)) : chunkD();
       _ls = new long[_ds.length]; // Else flip to longs
       _xs = new int [_ds.length];
       double [] ds = _ds;
       _ds = null;
       final int naCnt = _naCnt;
-      for( i=0; i<_len; i++ )   // Inject all doubles into longs
+      for( i=0; i< len(); i++ )   // Inject all doubles into longs
         if( Double.isNaN(ds[i]) )setNA_impl2(i);
         else                     _ls[i] = (long)ds[i];
       // setNA_impl2 will set _naCnt to -1!
@@ -515,7 +542,7 @@ public class NewChunk extends Chunk {
     long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
     int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
 
-    for( int i=0; i<_len; i++ ) {
+    for( int i=0; i< len(); i++ ) {
       if( isNA2(i) ) continue;
       long l = _ls[i];
       int  x = _xs[i];
@@ -532,7 +559,7 @@ public class NewChunk extends Chunk {
       xmin = Math.min(xmin,x);
     }
 
-    if(_len2 != _len){ // sparse?  then compare vs implied 0s
+    if(len2() != len()){ // sparse?  then compare vs implied 0s
       if( min > 0 ) { min = 0; llo=0; xlo=0; }
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
       xmin = Math.min(xmin,0);
@@ -541,8 +568,8 @@ public class NewChunk extends Chunk {
     // Constant column?
     if( _naCnt==0 && min==max ) {
       return ((long)min  == min)
-          ? new C0LChunk((long)min,_len2)
-          : new C0DChunk(      min,_len2);
+          ? new C0LChunk((long)min, len2())
+          : new C0DChunk(      min, len2());
     }
 
     // Compute min & max, as scaled integers in the xmin scale.
@@ -565,8 +592,8 @@ public class NewChunk extends Chunk {
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
       if(sparse) { // Very sparse?
         return  _naCnt==0
-          ? new CX0Chunk(_len2,_len,bufS(0))// No NAs, can store as sparse bitvector
-          : new CXIChunk(_len2,_len,1,bufS(1)); // have NAs, store as sparse 1byte values
+          ? new CX0Chunk(len2(), len(),bufS(0))// No NAs, can store as sparse bitvector
+          : new CXIChunk(len2(), len(),1,bufS(1)); // have NAs, store as sparse 1byte values
       }
 
       int bpv = _strCnt+_naCnt > 0 ? 2 : 1;   // Bit-vector
@@ -577,11 +604,11 @@ public class NewChunk extends Chunk {
     final boolean fpoint = xmin < 0 || min < Long.MIN_VALUE || max > Long.MAX_VALUE;
 
     if( sparse ) {
-      if(fpoint) return new CXDChunk(_len2,_len,8,bufD(8));
+      if(fpoint) return new CXDChunk(len2(), len(),8,bufD(8));
       int sz = 8;
       if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
       else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CXIChunk(_len2,_len,sz,bufS(sz));
+      return new CXIChunk(len2(), len(),sz,bufS(sz));
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -640,11 +667,11 @@ public class NewChunk extends Chunk {
     int log = 0;
     while((1 << log) < valsz)++log;
     assert valsz == 0 || (1 << log) == valsz;
-    final int ridsz = _len2 >= 65535?4:2;
+    final int ridsz = len2() >= 65535?4:2;
     final int elmsz = ridsz + valsz;
     int off = CXIChunk._OFF;
-    byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
-    for( int i=0; i<_len; i++, off += elmsz ) {
+    byte [] buf = MemoryManager.malloc1(off + len() *elmsz,true);
+    for( int i=0; i< len(); i++, off += elmsz ) {
       if(ridsz == 2)
         UnsafeUtils.set2(buf,off,(short)_id[i]);
       else
@@ -683,11 +710,11 @@ public class NewChunk extends Chunk {
     int log = 0;
     while((1 << log) < valsz)++log;
     assert (1 << log) == valsz;
-    final int ridsz = _len2 >= 65535?4:2;
+    final int ridsz = len2() >= 65535?4:2;
     final int elmsz = ridsz + valsz;
     int off = CXDChunk._OFF;
-    byte [] buf = MemoryManager.malloc1(off + _len*elmsz,true);
-    for( int i=0; i<_len; i++, off += elmsz ) {
+    byte [] buf = MemoryManager.malloc1(off + len() *elmsz,true);
+    for( int i=0; i< len(); i++, off += elmsz ) {
       if(ridsz == 2)
         UnsafeUtils.set2(buf,off,(short)_id[i]);
       else
@@ -709,9 +736,9 @@ public class NewChunk extends Chunk {
   }
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {
-    byte[] bs = new byte[(_len2<<log)+off];
+    byte[] bs = new byte[(len2() <<log)+off];
     int j = 0;
-    for( int i=0; i<_len2; i++ ) {
+    for( int i=0; i< len2(); i++ ) {
       long le = -bias;
       if(_id == null || (j < _id.length && _id[j] == i)){
         if( isNA2(j) ) {
@@ -732,15 +759,15 @@ public class NewChunk extends Chunk {
       default: throw H2O.fail();
       }
     }
-    assert j == _len:"j = " + j + ", len = " + _len + ", len2 = " + _len2 + ", id[j] = " + _id[j];
+    assert j == len() :"j = " + j + ", len = " + len() + ", len2 = " + len2() + ", id[j] = " + _id[j];
     return bs;
   }
 
   // Compute a compressed double buffer
   private Chunk chunkD() {
-    final byte [] bs = MemoryManager.malloc1(_len2*8,true);
+    final byte [] bs = MemoryManager.malloc1(len2() *8,true);
     int j = 0;
-    for(int i = 0; i < _len2; ++i){
+    for(int i = 0; i < len2(); ++i){
       double d = 0;
       if(_id == null || (j < _id.length && _id[j] == i)) {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
@@ -748,15 +775,15 @@ public class NewChunk extends Chunk {
       }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
-    assert j == _len:"j = " + j + ", _len = " + _len;
+    assert j == len() :"j = " + j + ", _len = " + len();
     return new C8DChunk(bs);
   }
 
   // Compute a compressed double buffer
   private Chunk chunkUUID() {
-    final byte [] bs = MemoryManager.malloc1(_len2*16,true);
+    final byte [] bs = MemoryManager.malloc1(len2() *16,true);
     int j = 0;
-    for( int i = 0; i < _len2; ++i ) {
+    for( int i = 0; i < len2(); ++i ) {
       long lo = 0, hi=0;
       if( _id == null || (j < _id.length && _id[j] == i ) ) {
         lo = _ls[j];
@@ -768,7 +795,7 @@ public class NewChunk extends Chunk {
       UnsafeUtils.set8(bs, 16*i  , lo);
       UnsafeUtils.set8(bs, 16 * i + 8, hi);
     }
-    assert j == _len:"j = " + j + ", _len = " + _len;
+    assert j == len() :"j = " + j + ", _len = " + len();
     return new C16Chunk(bs);
   }
 
@@ -776,10 +803,10 @@ public class NewChunk extends Chunk {
   private byte[] bufB(int bpv) {
     assert bpv == 1 || bpv == 2 : "Only bit vectors with/without NA are supported";
     final int off = CBSChunk._OFF;
-    int clen  = off + CBSChunk.clen(_len2, bpv);
+    int clen  = off + CBSChunk.clen(len2(), bpv);
     byte bs[] = new byte[clen];
     // Save the gap = number of unfilled bits and bpv value
-    bs[0] = (byte) (((_len2*bpv)&7)==0 ? 0 : (8-((_len2*bpv)&7)));
+    bs[0] = (byte) (((len2() *bpv)&7)==0 ? 0 : (8-((len2() *bpv)&7)));
     bs[1] = (byte) bpv;
 
     // Dense bitvector
@@ -787,7 +814,7 @@ public class NewChunk extends Chunk {
     byte b    = 0;
     int  idx  = CBSChunk._OFF;
     int j = 0;
-    for (int i=0; i<_len2; i++) {
+    for (int i=0; i< len2(); i++) {
       byte val = 0;
       if(_id == null || (j < _id.length && _id[j] == i)) {
         assert bpv == 2 || !isNA2(j);
@@ -801,7 +828,7 @@ public class NewChunk extends Chunk {
       boff += bpv;
       if (boff>8-bpv) { assert boff == 8; bs[idx] = b; boff = 0; b = 0; idx++; }
     }
-    assert j == _len;
+    assert j == len();
     assert bs[0] == (byte) (boff == 0 ? 0 : 8-boff):"b[0] = " + bs[0] + ", boff = " + boff + ", bpv = " + bpv;
     // Flush last byte
     if (boff>0) bs[idx] = b;
@@ -814,8 +841,8 @@ public class NewChunk extends Chunk {
   // in-range and refer to the inflated values of the original Chunk.
   @Override boolean set_impl(int i, long l) {
     if( _ds   != null ) return set_impl(i,(double)l);
-    if(_len != _len2){ // sparse?
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if(len() != len2()){ // sparse?
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
@@ -825,15 +852,15 @@ public class NewChunk extends Chunk {
 
   @Override public boolean set_impl(int i, double d) {
     if(_ds == null){
-      assert _len == 0 || _ls != null;
+      assert len() == 0 || _ls != null;
       switch_to_doubles();
     }
-    if(_len != _len2){ // sparse?
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if(len() != len2()){ // sparse?
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
-    assert i < _len;
+    assert i < len();
     _ds[i] = d;
     return true;
   }
@@ -847,16 +874,16 @@ public class NewChunk extends Chunk {
   }
   @Override boolean setNA_impl(int i) {
     if( isNA_impl(i) ) return true;
-    if(_len != _len2){
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if(len() != len2()){
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0) i = idx;
       else cancel_sparse(); // todo - do not necessarily cancel sparse here
     }
     return setNA_impl2(i);
   }
   @Override public long   at8_impl( int i ) {
-    if( _len2 != _len ) {
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if( len2() != len()) {
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0) i = idx;
       else return 0;
     }
@@ -864,8 +891,8 @@ public class NewChunk extends Chunk {
     return _ls[i]*PrettyPrint.pow10i(_xs[i]);
   }
   @Override public double atd_impl( int i ) {
-    if( _len2 != _len ) {
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if( len2() != len()) {
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0) i = idx;
       else return 0;
     }
@@ -873,8 +900,8 @@ public class NewChunk extends Chunk {
     assert _xs==null; return _ds[i];
   }
   @Override public boolean isNA_impl( int i ) {
-    if( _len2 != _len ) {
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if( len2() != len()) {
+      int idx = Arrays.binarySearch(_id,0, len(),i);
       if(idx >= 0) i = idx;
       else return false;
     }
@@ -883,5 +910,5 @@ public class NewChunk extends Chunk {
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
-  @Override public String toString() { return "NewChunk._len="+_len; }
+  @Override public String toString() { return "NewChunk._len="+ len(); }
 }
