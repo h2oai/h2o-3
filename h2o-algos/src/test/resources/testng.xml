@@ -1,0 +1,37 @@
+<suite name="Algos single-node suite" verbose="1">
+    <test name="hex.example package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="hex.example" />
+        </packages>
+    </test>
+
+    <test name="hex.deeplearning package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="hex.deeplearning" />
+        </packages>
+    </test>
+
+    <test name="hex.kmeans package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="hex.kmeans" />
+        </packages>
+    </test>
+</suite>
