@@ -8,3 +8,9 @@ dependencies {
   testCompile "org.testng:testng:6.8"
   testCompile project(path: ":h2o-core", configuration: 'tests')
 }
+
+test {
+    useTestNG() {
+        suites new File(projectDir, 'src/test/resources/testng.xml')
+    }
+}

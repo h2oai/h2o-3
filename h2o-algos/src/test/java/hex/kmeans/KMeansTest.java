@@ -1,10 +1,9 @@
 package hex.kmeans;
 
-import static org.junit.Assert.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
+
 import java.io.File;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -20,7 +19,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = job.get();
     job.remove();
     for( int i=0; i<parms._K; i++ )
-      assertTrue( "Seed: "+seed, kmm._rows[i] != 0 );
+      AssertJUnit.assertTrue( "Seed: "+seed, kmm._rows[i] != 0 );
     return kmm;
   }
 
@@ -71,7 +70,8 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  @Test @Ignore("datasets directory not always available") public void testCovtype() {
+  // "datasets directory not always available"
+  @Test(enabled=false) public void testCovtype() {
     Frame fr = null;
     try {
       File f = find_test_file("../datasets/UCI/UCI-large/covtype/covtype.data");

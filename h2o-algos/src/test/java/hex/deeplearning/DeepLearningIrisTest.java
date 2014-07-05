@@ -1,13 +1,10 @@
 package hex.deeplearning;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
 import hex.FrameTask;
 import java.util.Random;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 import water.*;
 import water.api.ConfusionMatrix;
 import water.fvec.*;
@@ -20,12 +17,11 @@ public class DeepLearningIrisTest extends TestUtil {
   Frame _train, _test;
 
   // Default run is the short run
-  @Ignore
-  @Test public void run() throws Exception { runFraction(0.05f); }
+  @Test(groups={"NOPASS"}) public void run() throws Exception { runFraction(0.05f); }
 
   private void compareVal(double a, double b, double abseps, double releps) {
     if( !compare(a,b,abseps,releps) ) // Complex test does not fit JUnit Assert very well
-      assertEquals("Not equal: ", a, b, 0.0); // always fails if we get here, and prints nice msg
+      AssertJUnit.assertEquals("Not equal: ", a, b, 0.0); // always fails if we get here, and prints nice msg
   }
 
   void runFraction(float fraction) {
@@ -254,7 +250,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               preds[0] = water.util.ModelUtils.getPrediction(preds, i);
 
                               // compare predicted label
-                              assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
+                              AssertJUnit.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
 //                          // compare predicted probabilities
 //                          for (int j=0; j<ref_preds.length; ++j) {
 //                            compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);
