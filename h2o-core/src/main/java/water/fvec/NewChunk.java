@@ -21,13 +21,11 @@ public class NewChunk extends Chunk {
   // zeros, and _len is count of non-zeros.
   private transient long   _ls[];   // Mantissa
   private transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
-  private transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
+  public transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
   private transient double _ds[];   // Doubles, for inflating via doubles
 
   void zero_exp_mant() { _ls=new long[0]; _xs=new int[0]; }
-  void zero_indices() {
-    _id=new int[0];
-  }
+  void zero_indices() { _id=new int[0]; }
 
   long  [] alloc_mantissa(int l) { return _ls = MemoryManager.malloc8(l); }
   int   [] alloc_exponent(int l) { return _xs = MemoryManager.malloc4(l); }
