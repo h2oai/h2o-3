@@ -1,0 +1,16 @@
+<suite name="Water multi-node suite" verbose="3">
+    <test name="five node cloud">
+        <groups>
+            <run>
+                <include name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="water.testframework.fivenode" />
+            <package name="water.fvec" />
+            <package name="water.parser" />
+            <package name="water" />
+        </packages>
+    </test>
+</suite>
