@@ -1,5 +1,6 @@
 package water;
 
+import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.*;
 
@@ -77,7 +78,7 @@ public class AutoSerialTest extends Iced {
       _float = exp;
       this.write(abw());
       this. read(abr());
-      AssertJUnit.assertEquals(exp, _float, 0.0);
+      AssertJUnit.assertEquals(exp, _float);
     }
   }
 
@@ -90,7 +91,7 @@ public class AutoSerialTest extends Iced {
       _double = exp;
       this.write(abw());
       this. read(abr());
-      AssertJUnit.assertEquals(exp, _double, 0.0);
+      AssertJUnit.assertEquals(exp, _double);
     }
   }
 
