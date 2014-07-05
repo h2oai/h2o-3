@@ -19,10 +19,10 @@ public class NewChunk extends Chunk {
   // Sparse: if _len != _len2, then _ls/_ds are compressed to non-zero's only,
   // and _xs is the row number.  Still _len2 is count of elements including
   // zeros, and _len is count of non-zeros.
-  private transient long   _ls[];   // Mantissa
-  private transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
+  public transient long   _ls[];   // Mantissa
+  public transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
   public transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
-  private transient double _ds[];   // Doubles, for inflating via doubles
+  public transient double _ds[];   // Doubles, for inflating via doubles
 
   void zero_exp_mant() { _ls=new long[0]; _xs=new int[0]; }
   void zero_indices() { _id=new int[0]; }
@@ -37,7 +37,7 @@ public class NewChunk extends Chunk {
   final protected int   []  indices() { return _id; }
   final protected double[]  doubles() { return _ds; }
 
-  private int _len2;                    // Actual rows, if the data is sparse
+  public int _len2;                    // Actual rows, if the data is sparse
   public final int len2() { return _len2; }
   public int set_len2(int _len2) { return this._len2 = _len2; }
   private int _naCnt=-1;                // Count of NA's   appended
@@ -368,7 +368,7 @@ public class NewChunk extends Chunk {
 
   protected void switch_to_doubles(){
     assert _ds == null;
-    double [] ds = alloc_doubles(len());
+    double [] ds = MemoryManager.malloc8d(len());
     for(int i = 0; i < len(); ++i)
       if(isNA2(i) || isEnum2(i))ds[i] = Double.NaN;
       else  ds[i] = _ls[i]*PrettyPrint.pow10(_xs[i]);
@@ -379,10 +379,10 @@ public class NewChunk extends Chunk {
   protected void set_sparse(int nzeros){
     if(len() == nzeros)return;
     if(_id != null){ // we have sparse represenation but some 0s in it!
-      int [] id = alloc_indices(nzeros);
+      int [] id = MemoryManager.malloc4(nzeros);
       int j = 0;
       if(_ds != null){
-        double [] ds = alloc_doubles(nzeros);
+        double [] ds = MemoryManager.malloc8d(nzeros);
         for(int i = 0; i < len(); ++i){
           if(_ds[i] != 0){
             ds[j] = _ds[i];
@@ -392,8 +392,8 @@ public class NewChunk extends Chunk {
         }
         _ds = ds;
       } else {
-        long [] ls = alloc_mantissa(nzeros);
-        int [] xs = alloc_exponent(nzeros);
+        long [] ls = MemoryManager.malloc8(nzeros);
+        int [] xs = MemoryManager.malloc4(nzeros);
         for(int i = 0; i < len(); ++i){
           if(_ls[i] != 0){
             ls[j] = _ls[i];
@@ -439,8 +439,8 @@ public class NewChunk extends Chunk {
   protected void cancel_sparse(){
     if(len() != len2()){
       if(_ds == null){
-        int []  xs = alloc_exponent(len2());
-        long [] ls = alloc_mantissa(len2());
+        int []  xs = MemoryManager.malloc4(_len2);
+        long [] ls = MemoryManager.malloc8(_len2);
         for(int i = 0; i < len(); ++i){
           xs[_id[i]] = _xs[i];
           ls[_id[i]] = _ls[i];
@@ -448,7 +448,7 @@ public class NewChunk extends Chunk {
         _xs = xs;
         _ls = ls;
       } else {
-        double [] ds = alloc_doubles(len2());
+        double [] ds = MemoryManager.malloc8d(_len2);
         for(int i = 0; i < len(); ++i) ds[_id[i]] = _ds[i];
         _ds = ds;
       }
