@@ -72,14 +72,14 @@ public class CXIChunk extends Chunk {
   }
 
   @Override NewChunk inflate_impl(NewChunk nc) {
-    final int len = sparseLen();
+    final int slen = sparseLen();
     nc.set_len2(len());
-    nc.set_len(sparseLen());
-    nc.alloc_mantissa(len);
-    nc.alloc_exponent(len);
-    nc.alloc_indices(len);
+    nc.set_len(slen);
+    nc.alloc_mantissa(slen);
+    nc.alloc_exponent(slen);
+    nc.alloc_indices(slen);
     int off = _OFF;
-    for( int i = 0; i < len; ++i, off += _ridsz + _valsz) {
+    for( int i = 0; i < slen; ++i, off += _ridsz + _valsz) {
       nc.indices()[i] = getId(off);
       long v = getIValue(off);
       if(v == NAS[_valsz_log])
