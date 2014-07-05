@@ -30,6 +30,7 @@ dependencies {
 
 test {
   useTestNG() {
+    suites new File(projectDir, 'src/test/resources/testng-multinode.xml')
     suites new File(projectDir, 'src/test/resources/testng.xml')
   }
 }
