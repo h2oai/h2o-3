@@ -1,7 +1,6 @@
 package water;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.*;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -9,6 +8,7 @@ import java.util.Map;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
+@Test(groups={"multi-node"})
 public class KeySnapshotTest extends TestUtil {
   private static class IcedInt extends Iced {
     public final int value;

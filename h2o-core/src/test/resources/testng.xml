@@ -1,5 +1,4 @@
-<suite name="Water Suite" verbose="1">
-    <!--  Water APITest is broken.  Don't run it for now.  -->
+<suite name="Water single-node suite" verbose="1">
     <test name="water.api package">
         <groups>
             <run>
@@ -24,7 +23,7 @@
         </packages>
     </test>
 
-    <test name="water.parse package">
+    <test name="water.parser package">
         <groups>
             <run>
                 <exclude name="multi-node" />
@@ -32,7 +31,19 @@
             </run>
         </groups>
         <packages>
-            <package name="water.parse" />
+            <package name="water.parser" />
+        </packages>
+    </test>
+
+    <test name="water package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="water" />
         </packages>
     </test>
 </suite>

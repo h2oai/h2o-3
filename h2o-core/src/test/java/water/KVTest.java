@@ -1,12 +1,14 @@
 package water;
 
-import static org.junit.Assert.*;
+import static org.testng.AssertJUnit.*;
+import org.testng.annotations.*;
+
 import java.io.File;
-import org.junit.*;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
 import water.util.UnsafeUtils;
 
+@Test(groups={"multi-node"})
 public class KVTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(2); }

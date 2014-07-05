@@ -1,7 +1,9 @@
 package water;
 
-import org.junit.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
+@Test(groups={"multi-node"})
 public class JStackTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(3); }
@@ -9,9 +11,9 @@ public class JStackTest extends TestUtil {
   @Test public void testJStack() {
     for( int i=0; i<10; i++ ) {
       String traces[] = new water.util.JStackCollectorTask().doAllNodes()._traces;
-      Assert.assertEquals(traces.length,H2O.CLOUD.size());
+      AssertJUnit.assertEquals(traces.length,H2O.CLOUD.size());
       for (int j=0; j<traces.length; ++j) {
-        Assert.assertTrue(traces[j] != null);
+        AssertJUnit.assertTrue(traces[j] != null);
       }
     }
   }

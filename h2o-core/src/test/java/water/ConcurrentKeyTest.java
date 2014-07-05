@@ -1,9 +1,10 @@
 package water;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.*;
+
 import water.fvec.Frame;
 
+@Test(groups={"multi-node"})
 public class ConcurrentKeyTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(2); }

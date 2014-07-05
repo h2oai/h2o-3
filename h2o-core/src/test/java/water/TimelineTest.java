@@ -1,9 +1,8 @@
 package water;
 
+import org.testng.annotations.*;
+
 import jsr166y.CountedCompleter;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import water.api.Schema;
 import water.api.TimelineHandler;
 import water.api.TimelineHandler.Timeline;
 import water.api.TimelineV2;

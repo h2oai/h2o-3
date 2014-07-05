@@ -1,10 +1,11 @@
 package water;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.testng.AssertJUnit.*;
+import org.testng.annotations.*;
+
 import water.util.JProfile;
 
+@Test(groups={"multi-node"})
 public class ProfilerTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(3); }
@@ -13,9 +14,9 @@ public class ProfilerTest extends TestUtil {
     for( int i=0; i<10; i++ ) {
       JProfile jp = new JProfile(5);
       jp.execImpl();
-      Assert.assertEquals(jp.nodes.length,H2O.CLOUD.size());
+      assertEquals(jp.nodes.length,H2O.CLOUD.size());
       for (int j=0; j<H2O.CLOUD.size(); ++j) {
-        Assert.assertTrue(jp.nodes[j].profile != null);
+        assertTrue(jp.nodes[j].profile != null);
       }
     }
   }
