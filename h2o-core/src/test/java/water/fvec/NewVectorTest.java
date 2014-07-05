@@ -1,13 +1,14 @@
 package water.fvec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.*;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 import water.*;
 
+@Test(groups={"multi-node"})
 public class NewVectorTest extends TestUtil {
+  static void assertTrue(String s, boolean b) { org.testng.Assert.assertTrue (b, s); }
+
   static final double EPSILON = 1e-6;
   @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 

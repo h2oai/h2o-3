@@ -1,13 +1,12 @@
 package water.fvec;
 
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import java.util.Iterator;
-import org.junit.Test;
 import water.Futures;
 import water.Key;
 import water.TestUtil;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by tomasnykodym on 3/28/14.

@@ -1,8 +1,8 @@
 package water.parser;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
+
 import water.*;
 import water.fvec.*;
 
@@ -42,16 +42,16 @@ public class ParserTest extends TestUtil {
     testParsed(fr,expected,len);
   }
   static void testParsed(Frame fr, double[][] expected, int len) {
-    Assert.assertEquals(len,fr.numRows());
-    Assert.assertEquals(expected[0].length,fr.numCols());
+    AssertJUnit.assertEquals(len,fr.numRows());
+    AssertJUnit.assertEquals(expected[0].length,fr.numCols());
     for( int j = 0; j < fr.numCols(); ++j ) {
       Vec vec = fr.vecs()[j];
       for( int i = 0; i < expected.length; ++i ) {
         double pval = vec.at(i);
         if( Double.isNaN(expected[i][j]) )
-          Assert.assertTrue(i+" -- "+j, vec.isNA(i));
+          AssertJUnit.assertTrue(i+" -- "+j, vec.isNA(i));
         else
-          Assert.assertTrue(expected[i][j]+" -- "+pval,compareDoubles(expected[i][j],pval,0.0000001));
+          AssertJUnit.assertTrue(expected[i][j]+" -- "+pval,compareDoubles(expected[i][j],pval,0.0000001));
       }
     }
     fr.delete();
@@ -196,10 +196,10 @@ public class ParserTest extends TestUtil {
       ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
-      Assert.assertEquals(" four",cd[0]);
-      Assert.assertEquals("one",cd[1]);
-      Assert.assertEquals("three",cd[2]);
-      Assert.assertEquals("two",cd[3]);
+      AssertJUnit.assertEquals(" four",cd[0]);
+      AssertJUnit.assertEquals("one",cd[1]);
+      AssertJUnit.assertEquals("three",cd[2]);
+      AssertJUnit.assertEquals("two",cd[3]);
       testParsed(r, expDouble);
     }
   }
@@ -246,13 +246,13 @@ public class ParserTest extends TestUtil {
       ParseDataset2.parse(r,key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
-      Assert.assertEquals("one",cd[0]);
-      Assert.assertEquals("three",cd[1]);
-      Assert.assertEquals("two",cd[2]);
+      AssertJUnit.assertEquals("one",cd[0]);
+      AssertJUnit.assertEquals("three",cd[1]);
+      AssertJUnit.assertEquals("two",cd[2]);
       cd = fr.vecs()[0].domain();
-      Assert.assertEquals("bar",cd[0]);
-      Assert.assertEquals("foo",cd[1]);
-      Assert.assertEquals("foobar",cd[2]);
+      AssertJUnit.assertEquals("bar",cd[0]);
+      AssertJUnit.assertEquals("foo",cd[1]);
+      AssertJUnit.assertEquals("foobar",cd[2]);
       testParsed(r, expDouble);
     }
   }
@@ -294,8 +294,8 @@ public class ParserTest extends TestUtil {
     ParseDataset2.parse(r,key);
     Frame fr = DKV.get(r).get();
     String[] cd = fr.vecs()[3].domain();
-    Assert.assertEquals("bar",cd[0]);
-    Assert.assertEquals("foo",cd[1]);
+    AssertJUnit.assertEquals("bar",cd[0]);
+    AssertJUnit.assertEquals("foo",cd[1]);
     testParsed(r, expDouble);
   }
 

@@ -1,0 +1,38 @@
+<suite name="Water Suite" verbose="1">
+    <!--  Water APITest is broken.  Don't run it for now.  -->
+    <test name="water.api package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="water.api" />
+        </packages>
+    </test>
+
+    <test name="water.fvec package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="water.fvec" />
+        </packages>
+    </test>
+
+    <test name="water.parse package">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="water.parse" />
+        </packages>
+    </test>
+</suite>

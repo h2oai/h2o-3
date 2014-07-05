@@ -1,14 +1,15 @@
 package water.fvec;
 
+import org.testng.*;
+import org.testng.annotations.*;
+
 import java.util.Arrays;
-import org.junit.*;
 import water.Model;
 import water.TestUtil;
-import water.util.ArrayUtils;
 
 public class TransfVecTest extends TestUtil {
 
-  @Test @Ignore
+  @Test(enabled = false)
   public void testAdaptTo() {
     Frame v1 = null, v2 = null;
     try {
@@ -35,15 +36,15 @@ public class TransfVecTest extends TestUtil {
 
   private static void testModelMapping(String[] modelDomain, String[] colDomain, int[][] expectedMapping) {
     int[][] mapping = Model.getDomainMapping(modelDomain, colDomain, false);
-    Assert.assertEquals("getDomainMapping should return int[2][]", 2, mapping.length);
-    Assert.assertEquals("getDomainMapping shoudl return two arrays of the same length", mapping[0].length, mapping[1].length);
-    Assert.assertArrayEquals("Values array differs",  expectedMapping[0], mapping[0]);
-    Assert.assertArrayEquals("Indexes array differs", expectedMapping[1], mapping[1]);
+    AssertJUnit.assertEquals("getDomainMapping should return int[2][]", 2, mapping.length);
+    AssertJUnit.assertEquals("getDomainMapping shoudl return two arrays of the same length", mapping[0].length, mapping[1].length);
+    AssertJUnit.assertArrayEquals("Values array differs",  expectedMapping[0], mapping[0]);
+    AssertJUnit.assertArrayEquals("Indexes array differs", expectedMapping[1], mapping[1]);
     // Sanity check if we pass correct indexes
     int[] indexes = mapping[0];
     for (int i=0; i<indexes.length; i++)
       if (indexes[i] < 0 || indexes[i]>=modelDomain.length)
-        Assert.assertTrue("Returned index mapping at " + i + "does not index correctly model domain " + Arrays.toString(modelDomain), false);
+        AssertJUnit.assertTrue("Returned index mapping at " + i + "does not index correctly model domain " + Arrays.toString(modelDomain), false);
   }
 
   @Test public void testMappingComposition() {
@@ -58,7 +59,7 @@ public class TransfVecTest extends TestUtil {
   }
 
   private static void assertEqualMapping(int[][] expectedMapping, int[][] actualMapping) {
-    Assert.assertEquals("Mapping should be composed of two arrays", 2, actualMapping.length);
-    Assert.assertEquals("Mapping should be composed of two arrays of equal length", actualMapping[0].length, actualMapping[1].length);
+    AssertJUnit.assertEquals("Mapping should be composed of two arrays", 2, actualMapping.length);
+    AssertJUnit.assertEquals("Mapping should be composed of two arrays of equal length", actualMapping[0].length, actualMapping[1].length);
   }
 }

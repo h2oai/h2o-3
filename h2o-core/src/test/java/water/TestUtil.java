@@ -1,9 +1,10 @@
 package water;
 
-import static org.junit.Assert.*;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import java.io.File;
 import java.util.ArrayList;
-import org.junit.*;
 import water.fvec.*;
 
 public class TestUtil {
@@ -31,7 +32,7 @@ public class TestUtil {
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }
-    assertTrue("No keys leaked", leaked_keys <= 0);
+    assertTrue(leaked_keys <= 0, "No keys leaked");
     _initial_keycnt = H2O.store_size();
   }
 

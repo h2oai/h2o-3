@@ -1,13 +1,13 @@
 package water.parser;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
+@Test(groups={"multi-node"})
 public class ParseCompressedAndXLSTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 

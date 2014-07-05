@@ -1,7 +1,8 @@
 package water.fvec;
 
-import static org.junit.Assert.assertArrayEquals;
-import org.junit.Test;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
+
 import water.TestUtil;
 
 /** This test tests stability of Vec API. */
@@ -19,7 +20,7 @@ public class VecTest extends TestUtil {
     try {
       ef = f.toEnum();
       String[] actualDomain = ef.domain();
-      assertArrayEquals("toEnum call returns wrong domain!", expectedDomain, actualDomain);
+      AssertJUnit.assertArrayEquals("toEnum call returns wrong domain!", expectedDomain, actualDomain);
     } finally {
       if( f !=null ) f .remove();
       if( ef!=null ) ef.remove();

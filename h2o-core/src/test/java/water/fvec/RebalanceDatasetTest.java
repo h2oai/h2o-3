@@ -1,7 +1,8 @@
 package water.fvec;
 
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import water.*;
 import water.parser.ParseDataset2;
 

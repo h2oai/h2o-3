@@ -1,10 +1,9 @@
 package water.fvec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
 
@@ -31,7 +30,7 @@ public class CBSChunkTest extends TestUtil {
     Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
     cc._vec = av.close(new Futures());
-    assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
+    AssertJUnit.assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
     assertEquals(nc.len(), cc.len());
     assertEquals(expBpv, ((CBSChunk)cc).bpv());
     assertEquals(expGap, ((CBSChunk)cc).gap());

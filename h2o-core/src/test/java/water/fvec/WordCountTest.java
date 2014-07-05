@@ -1,10 +1,11 @@
 package water.fvec;
 
+import org.testng.annotations.*;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.*;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 
@@ -194,7 +195,7 @@ public class WordCountTest extends TestUtil {
     }
   }
 
-  @Test @Ignore public void dummy_test() {
+  @Test(enabled = false) public void dummy_test() {
     /* this is just a dummy test to avoid JUnit complains about missing test */
   }
 }

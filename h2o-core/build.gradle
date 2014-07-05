@@ -25,7 +25,13 @@ dependencies {
   compile "commons-collections:commons-collections:3.0"
   compile "org.javassist:javassist:3.15.0-GA"
 
-  testCompile "junit:junit:4.+"
+  testCompile "org.testng:testng:6.8"
+}
+
+test {
+  useTestNG() {
+    suites new File(projectDir, 'src/test/resources/testng.xml')
+  }
 }
 
 javadoc {
