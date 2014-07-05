@@ -201,7 +201,8 @@ public class NewChunk extends Chunk {
         return;
       }
       if(_id != null)_id[len()] = len2();
-      _ds[set_len(len() + 1)] = d;
+      _ds[len()] = d;
+      set_len(len() + 1);
     }
     set_len2(len2() + 1);
     assert len() <= len2();
@@ -211,7 +212,8 @@ public class NewChunk extends Chunk {
     if( _ls==null || _ds== null || len() >= _ls.length )
       append2slowUUID();
     _ls[len()] = lo;
-    _ds[set_len(len() + 1)] = Double.longBitsToDouble(hi);
+    _ds[len()] = Double.longBitsToDouble(hi);
+    set_len(len() + 1);
     set_len2(len2() + 1);
     assert len() <= len2();
   }
@@ -242,7 +244,8 @@ public class NewChunk extends Chunk {
       _xs = nc._xs; nc._xs = null;
       _id = nc._id; nc._id = null;
       _ds = nc._ds; nc._ds = null;
-      set_len2(set_len(nc.len()));
+      set_len(nc.len());
+      set_len2(nc.len2());
       return;
     }
     if(nc.sparse() != sparse()){ // for now, just make it dense
@@ -324,7 +327,7 @@ public class NewChunk extends Chunk {
   // Slow-path append data
   private void append2slow( ) {
     if( len() > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException(len());
+      throw new ArrayIndexOutOfBoundsException("NewChunk cannot handle more than " + Vec.CHUNK_SZ + " elements.");
     assert _ds==null;
     if(_ls != null && _ls.length > 0){
       if(_id == null){ // check for sparseness
