@@ -42,8 +42,7 @@ public class C4SChunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     double dx = Math.log10(_scale);
     assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.alloc_exponent(len());
-    Arrays.fill(nc.exponent(), (int)dx);
+    Arrays.fill(nc.alloc_exponent(len()), (int)dx);
     nc.alloc_mantissa(len());
     for( int i=0; i< len(); i++ ) {
       int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
