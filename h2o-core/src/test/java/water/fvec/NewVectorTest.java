@@ -31,7 +31,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
-        assertEquals(ls[i]*water.util.PrettyPrint.pow10(xs[i]), bv.at0(i), bv.at0(i)*EPSILON);
+        assertEquals(ls[i]*water.util.PrettyPrint.pow10(xs[i]), bv.at0(i), Math.abs(bv.at0(i))*EPSILON);
     } finally {
       if( vec != null ) vec.remove();
     }
