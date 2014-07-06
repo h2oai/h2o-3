@@ -14,4 +14,8 @@ public class WordCountBigTest extends WordCountTest {
     if( file==null ) throw new FileNotFoundException(best);
     doWordCount(file);
   }
+
+  @Test public void testWordCount() throws IOException {
+    // Do nothing; in particular, don't run inherited testWordCount again.
+  }
 }
