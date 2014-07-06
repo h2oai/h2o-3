@@ -11,6 +11,7 @@ import water.fvec.*;
 import water.util.Log;
 import water.util.RandomUtils;
 
+@Test(groups={"multi-node"})
 public class DeepLearningIrisTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   static final String PATH = "smalldata/iris/iris.csv";
