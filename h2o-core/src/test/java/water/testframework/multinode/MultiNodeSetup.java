@@ -3,7 +3,7 @@ package water.testframework.multinode;
 import org.testng.annotations.BeforeSuite;
 import water.H2O;
 
-public class MultiNodeSetup {
+abstract public class MultiNodeSetup {
   /**
    * Number of total H2O nodes to start.
    *
@@ -28,7 +28,7 @@ public class MultiNodeSetup {
    * The primary node blocks for cloud initialization and runs the test
    * program flow inside TestNG.
    */
-  @BeforeSuite(groups={"multi-node"})
+  @BeforeSuite(groups={"multi-node", "setupCloud"})
   public void setupCloud() {
     System.out.println("MultiNodeSetup creating " + _numNodes + " secondary nodes...");
 

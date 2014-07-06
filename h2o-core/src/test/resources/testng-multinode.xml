@@ -1,4 +1,4 @@
-<suite name="Water multi-node suite" verbose="3">
+<suite name="Water multi-node suite" verbose="2">
     <test name="five node cloud">
         <groups>
             <run>

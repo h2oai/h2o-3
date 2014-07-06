@@ -1,4 +1,7 @@
-<suite name="Water single-node suite" verbose="3">
+<suite name="Water single-node suite" verbose="2">
+    <test name="empty cloud api test">
+
+    </test>
     <test name="one node cloud">
         <groups>
             <run>
@@ -7,6 +10,7 @@
             </run>
         </groups>
         <packages>
+            <package name="water.testframework.onenode" />
             <package name="water.api" />
             <package name="water.fvec" />
             <package name="water.parser" />

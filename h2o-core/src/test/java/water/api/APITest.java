@@ -7,9 +7,14 @@ import java.util.Properties;
 import water.*;
 
 public class APITest extends TestUtil {
+  static boolean testRan = false;
 
-  @BeforeClass public static void stall() { 
-    stall_till_cloudsize(1); 
+  private static void stall() {
+    if (testRan) {
+      return;
+    }
+
+    stall_till_cloudsize(1);
     // Start Nano server; block for starting
     Runnable run = H2O.finalizeRequest();
     if( run != null ) 
@@ -22,8 +27,16 @@ public class APITest extends TestUtil {
 
   // ---
   // Should be able to load basic status pages without locking the cloud.
-  @Test(groups={"NOPASS"})
+  @Test(priority=-100)
   public void testBasicStatusPages() {
+    if (testRan) {
+      return;
+    }
+
+    assertFalse(Paxos._cloudLocked);
+    stall();
+    assertFalse(Paxos._cloudLocked);
+
     // Serve some pages and confirm cloud does not lock
     try {
       TypeMap._check_no_locking=true; // Blow a nice assert if locking
@@ -36,6 +49,7 @@ public class APITest extends TestUtil {
       serve("/Typeahead/files",parms);
     } finally {
       TypeMap._check_no_locking=false;
+      testRan = true;
     }
   }
 
