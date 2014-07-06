@@ -5,6 +5,7 @@ import org.testng.annotations.*;
 
 import java.util.Properties;
 import water.*;
+import water.testframework.priority.Priority;
 
 public class APITest extends TestUtil {
   static boolean testRan = false;
@@ -27,7 +28,7 @@ public class APITest extends TestUtil {
 
   // ---
   // Should be able to load basic status pages without locking the cloud.
-  @Test(priority=-100)
+  @Test(priority=Priority.API_TEST_PRIORITY)
   public void testBasicStatusPages() {
     if (testRan) {
       return;

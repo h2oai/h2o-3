@@ -28,7 +28,7 @@ abstract public class MultiNodeSetup {
    * The primary node blocks for cloud initialization and runs the test
    * program flow inside TestNG.
    */
-  @BeforeSuite(groups={"multi-node", "setupCloud"})
+  @BeforeSuite(groups={"multi-node"})
   public void setupCloud() {
     System.out.println("MultiNodeSetup creating " + _numNodes + " secondary nodes...");
 
