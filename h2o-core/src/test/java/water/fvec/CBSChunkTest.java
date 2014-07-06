@@ -17,8 +17,6 @@ import water.TestUtil;
  * since it is used to avoid DKV call.
  * */
 public class CBSChunkTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
     AppendableVec av = new AppendableVec(Vec.newKey());
     // Create a new chunk

@@ -11,7 +11,7 @@ import water.fvec.NFSFileVec;
 
 @Test(groups={"multi-node"})
 public class MRThrow extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  MRThrow() { super(5); }
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.

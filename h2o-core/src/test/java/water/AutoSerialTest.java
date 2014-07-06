@@ -1,15 +1,14 @@
 package water;
 
-import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.*;
 
 import java.util.Arrays;
 
 public class AutoSerialTest extends Iced {
-  @BeforeClass public static void stall() { 
-    TestUtil.setupCloud();
-    TestUtil.stall_till_cloudsize(1); 
+  @BeforeClass public static void stall() {
+    TestUtil tu = new TestUtil();
+    tu.setupCloud();
   }
   @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 

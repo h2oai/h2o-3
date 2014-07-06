@@ -7,8 +7,7 @@ import water.util.JProfile;
 
 @Test(groups={"multi-node"})
 public class ProfilerTest extends TestUtil {
-
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  ProfilerTest() { super(3); }
 
   @Test public void testProfiler() {
     for( int i=0; i<10; i++ ) {

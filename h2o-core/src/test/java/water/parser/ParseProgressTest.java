@@ -10,9 +10,6 @@ import water.fvec.Frame;
 import water.util.FileIntegrityChecker;
 
 public class ParseProgressTest extends TestUtil {
-
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
   // Attempt a multi-jvm parse of covtype.
   // Silently exits if it cannot find covtype.
   @Test public void testCovtype() {

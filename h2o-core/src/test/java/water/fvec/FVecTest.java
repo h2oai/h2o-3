@@ -11,8 +11,9 @@ import water.util.ArrayUtils;
 
 @Test(groups={"multi-node"})
 public class FVecTest extends TestUtil {
+  FVecTest() { super(3); }
+
   static final double EPSILON = 1e-6;
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   // ==========================================================================
   @Test public void testBasicCRUD() {

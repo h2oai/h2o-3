@@ -9,8 +9,7 @@ import water.util.Log;
 
 @Test(groups={"multi-node"})
 public class UnlockTest extends TestUtil {
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(3); }
+  UnlockTest() { super(3); }
 
   @Test
   public void run() {

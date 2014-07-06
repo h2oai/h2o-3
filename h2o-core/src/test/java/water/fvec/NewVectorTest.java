@@ -7,10 +7,11 @@ import water.*;
 
 @Test(groups={"multi-node"})
 public class NewVectorTest extends TestUtil {
+  NewVectorTest() { super(3); }
+
   static void assertTrue(String s, boolean b) { org.testng.Assert.assertTrue (b, s); }
 
   static final double EPSILON = 1e-6;
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   private void testImpl( long[] ls, int[] xs, Class C, boolean hasFloat ) {
     int [] id = new int[xs.length];

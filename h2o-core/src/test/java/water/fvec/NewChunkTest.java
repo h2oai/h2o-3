@@ -11,9 +11,6 @@ import water.TestUtil;
 import java.util.Random;
 
 public class NewChunkTest extends TestUtil {
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
-
   final int K = 1 + (int)(new Random().nextFloat() * (water.fvec.Vec.CHUNK_SZ >> 4));
   AppendableVec av;
   NewChunk nc;

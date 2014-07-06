@@ -17,8 +17,8 @@ import static junit.framework.TestCase.assertEquals;
  */
 @Test(groups={"multi-node"})
 public class TimelineTest extends TestUtil{
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(5); }
+  TimelineTest() { super(5); }
+
   // simple class to test the timeline
   // we want to send this task around and see that timeline shows this and in correct order
   private static class TestTask extends DTask {

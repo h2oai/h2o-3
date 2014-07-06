@@ -9,7 +9,7 @@ import water.fvec.NFSFileVec;
 
 @Test(groups={"multi-node"})
 public class ParseCompressedAndXLSTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
+  ParseCompressedAndXLSTest() { super(3); }
 
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;

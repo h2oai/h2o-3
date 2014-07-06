@@ -14,10 +14,6 @@ import water.util.Log;
 import java.util.Random;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass public static void stall() {
-    stall_till_cloudsize(1);
-  }
-
   //Default: run 3%
   @Test(groups={"NOPASS"}) public void run() throws Exception { runFraction(0.003f); }
 

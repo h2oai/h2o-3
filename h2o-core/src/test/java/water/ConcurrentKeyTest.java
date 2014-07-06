@@ -6,8 +6,7 @@ import water.fvec.Frame;
 
 @Test(groups={"multi-node"})
 public class ConcurrentKeyTest extends TestUtil {
-
-  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
+  ConcurrentKeyTest() { super(2); }
 
   // Test rapid key create/delete during parse
   @Test public void testParse() {

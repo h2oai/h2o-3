@@ -4,8 +4,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.*;
 
 public class AutoBuffer2JSONTest extends TestUtil {
-  @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
-
   private void assertEqual(Iced test, String expJson) {
     AutoBuffer ab = new AutoBuffer();
     String json = new String(test.writeJSON(ab).buf());

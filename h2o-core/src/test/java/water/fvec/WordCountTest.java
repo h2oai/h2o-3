@@ -10,7 +10,6 @@ import water.*;
 import water.nbhm.NonBlockingHashMap;
 
 public class WordCountTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
     File file = find_test_file("./smalldata/junit/cars.csv");
