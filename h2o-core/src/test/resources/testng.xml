@@ -1,5 +1,5 @@
 <suite name="Water single-node suite" verbose="3">
-    <test name="water.api package">
+    <test name="one node cloud">
         <groups>
             <run>
                 <exclude name="multi-node" />
@@ -8,41 +8,8 @@
         </groups>
         <packages>
             <package name="water.api" />
-        </packages>
-    </test>
-
-    <test name="water.fvec package">
-        <groups>
-            <run>
-                <exclude name="multi-node" />
-                <exclude name="NOPASS" />
-            </run>
-        </groups>
-        <packages>
             <package name="water.fvec" />
-        </packages>
-    </test>
-
-    <test name="water.parser package">
-        <groups>
-            <run>
-                <exclude name="multi-node" />
-                <exclude name="NOPASS" />
-            </run>
-        </groups>
-        <packages>
             <package name="water.parser" />
-        </packages>
-    </test>
-
-    <test name="water package">
-        <groups>
-            <run>
-                <exclude name="multi-node" />
-                <exclude name="NOPASS" />
-            </run>
-        </groups>
-        <packages>
             <package name="water" />
         </packages>
     </test>

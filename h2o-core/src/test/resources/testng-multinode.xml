@@ -8,6 +8,7 @@
         </groups>
         <packages>
             <package name="water.testframework.fivenode" />
+            <package name="water.api" />
             <package name="water.fvec" />
             <package name="water.parser" />
             <package name="water" />
