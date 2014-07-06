@@ -1,7 +1,4 @@
 <suite name="Water single-node suite" verbose="2">
-    <test name="empty cloud api test">
-
-    </test>
     <test name="one node cloud">
         <groups>
             <run>
