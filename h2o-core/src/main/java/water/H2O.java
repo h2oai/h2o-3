@@ -542,6 +542,11 @@ final public class H2O {
       throw new RuntimeException("Cloud size under " + x);
   }
 
+  public static int getCloudSize() {
+    if (! Paxos._commonKnowledge) return -1;
+    return CLOUD.size();
+  }
+
   // - Wait for at least HeartBeatThread.SLEEP msecs and
   //   try to join others, if any. Try 2x just in case.
   // - Assume that we get introduced to everybody else
