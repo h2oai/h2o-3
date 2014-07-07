@@ -11,10 +11,6 @@ public class APITest extends TestUtil {
   static boolean testRan = false;
 
   private static void stall() {
-    if (testRan) {
-      return;
-    }
-
     stall_till_cloudsize(1);
     // Start Nano server; block for starting
     Runnable run = H2O.finalizeRequest();
@@ -30,10 +26,7 @@ public class APITest extends TestUtil {
   // Should be able to load basic status pages without locking the cloud.
   @Test(priority=Priority.API_TEST_PRIORITY)
   public void testBasicStatusPages() {
-    if (testRan) {
-      return;
-    }
-
+    assertFalse(testRan);
     assertFalse(Paxos._cloudLocked);
     stall();
     assertFalse(Paxos._cloudLocked);
