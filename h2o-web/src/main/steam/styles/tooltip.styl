@@ -1,0 +1,46 @@
+.y-tooltip
+  position absolute
+  size(0,0)
+  overflow visible
+  display none
+
+.y-tooltip-arrow-up
+  dock-top-left(0, 0, 0, -5px)
+  border-left 5px solid transparent
+  border-right 5px solid transparent
+  border-bottom 5px solid tomato
+
+.y-tooltip-arrow-right
+  dock-top-right(0, 0, -5px, 0)
+  border-top 5px solid transparent
+  border-bottom 5px solid transparent
+  border-left 5px solid tomato
+
+.y-tooltip-arrow-down
+  dock-bottom-left(0, 0, 0, -5px)
+  border-left 5px solid transparent
+  border-right 5px solid transparent
+  border-top 5px solid tomato
+
+.y-tooltip-arrow-left
+  dock-top-left(0, 0, -5px, 0)
+  border-top 5px solid transparent
+  border-bottom 5px solid transparent
+  border-right 5px solid tomato
+
+.y-tooltip-text
+  position absolute
+  overflow hidden
+  background tomato
+  monospace()
+  color white
+  table
+    max-width 300
+  th, td
+    padding 0 3px
+    font-size 11px
+  th
+    color #ffcfcf
+  
+
+
