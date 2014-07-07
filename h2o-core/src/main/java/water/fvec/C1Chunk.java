@@ -29,12 +29,13 @@ public class C1Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_exponent(len());
-    nc.alloc_mantissa(len());
-    for( int i=0; i< len(); i++ ) {
+    nc.set_len(0);
+    nc.set_len2(0);
+    final int len = len();
+    for( int i=0; i<len; i++ ) {
       int res = 0xFF&_mem[i+_OFF];
-      if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
-      else             nc.mantissa()[i] = res;
+      if( res == _NA ) nc.addNA();
+      else             nc.addNum(res,0);
     }
     return nc;
   }
