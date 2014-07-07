@@ -18,6 +18,9 @@ public class ExampleV2 extends Schema<ExampleHandler,ExampleV2> {
   @API(help="Max Iterations")
   public int max_iters;
 
+  @API(help="")
+  double[] maxs;
+
   // Output fields
   @API(help="Job Key")
   Key job;

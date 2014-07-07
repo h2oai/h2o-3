@@ -16,6 +16,8 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
   // Iterations executed
   public int _iters;
 
+  double[] _maxs;
+
   ExampleModel( Key selfKey, Frame fr, ExampleParameters parms) {
     super(selfKey,fr,parms,null);
   }

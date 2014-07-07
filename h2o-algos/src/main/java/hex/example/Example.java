@@ -47,6 +47,7 @@ public class Example extends Job<ExampleModel> {
           double[] maxs = new Max().doAll(fr)._maxs;
 
           // Fill in the model; denormalized centers
+          model._maxs = maxs;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 

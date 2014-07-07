@@ -14,6 +14,8 @@ public class ExampleHandler extends Handler<ExampleHandler,ExampleV2> {
   // Outputs
   public Example _job;           // The modelling job
 
+  public double[] _maxs;
+
   public ExampleHandler() {}
   public void work() { assert _parms != null; _job = new Example(_parms); }
   @Override protected ExampleV2 schema(int version) { return new ExampleV2(); }
