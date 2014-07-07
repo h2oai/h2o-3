@@ -470,11 +470,11 @@ Steam.FrameView = (_, _frame) ->
   createSummaryRow = (frameKey, columns) ->
     map columns, (column) ->
       displaySummary: ->
-        _.requestColumnSummary frameKey, column.label, (error, frames) ->
+        _.requestColumnSummary frameKey, column.label, (error, result) ->
           if error
             _.error 'Error requesting column summary', column, error
           else
-            createSummaryInspection head frames
+            createSummaryInspection head result.frames
 
   createDataRow = (offset, index, columns) ->
     header: "Row #{offset + index + 1}"
