@@ -18,6 +18,7 @@ syn_datasets
 build/
 lib/
 h2o-web/src/main/resources/www/steam
+h2o*/test-output/
 out/
 .idea/
 h2o-dev.ipr
