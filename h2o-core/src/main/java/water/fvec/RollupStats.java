@@ -54,15 +54,18 @@ public class RollupStats extends DTask<RollupStats> {
     _size = c.byteSize();
     _mins = new double[5];  Arrays.fill(_mins, Double.MAX_VALUE);
     _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
-    boolean isUUID = c._vec._isUUID;
+    boolean isUUID = c._vec.isUUID();
+    boolean isString = c._vec.isString();
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
         _naCnt++;  _nzCnt++;
 
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        if( c.at16l0(i)!=0 || c.at16h0(i)!=0 ) _nzCnt++;
-
+        if (c.at16l0(i) != 0 || c.at16h0(i) != 0) _nzCnt++;
+      } else if ( isString ) { // String columns do not compute min/max/mean/sigma
+        if (c.atStr(i) != null) _nzCnt++;
+        _isInt = false;
       } else {                  // All other columns have useful rollups
 
         double d = c.at0(i);
@@ -85,8 +88,8 @@ public class RollupStats extends DTask<RollupStats> {
       _rows += zeros;
     }
 
-    // UUID columns do not compute min/max/mean/sigma
-    if( isUUID ) {
+    // UUID and String columns do not compute min/max/mean/sigma
+    if( isUUID || isString) {
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;

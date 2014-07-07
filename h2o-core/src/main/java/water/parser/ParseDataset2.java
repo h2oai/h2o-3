@@ -542,6 +542,7 @@ public class ParseDataset2 extends Job<Frame> {
     static final private byte ECOL = 2; // enum    col type
     static final private byte TCOL = 3; // time    col typ
     static final private byte ICOL = 4; // UUID    col typ
+    static final private byte SCOL = 5; // String  col typ
 
     private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
       _vecs = new AppendableVec[ncols];
@@ -554,8 +555,8 @@ public class ParseDataset2 extends Job<Frame> {
       _ctypes = MemoryManager.malloc1(ncols);
       for(int i = 0; i < ncols; ++i)
         _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
-
     }
+
     @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){
       FVecDataOut dout = (FVecDataOut)sdout;
       if( dout == null ) return this;
@@ -624,7 +625,7 @@ public class ParseDataset2 extends Job<Frame> {
     @Override public final void addInvalidCol(int colIdx) {
       if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
     }
-    @Override public final boolean isString(int colIdx) { return false; }
+    @Override public final boolean isString(int colIdx) { return _ctypes[colIdx] == SCOL; }
 
     @Override public final void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _nvs.length){
@@ -654,15 +655,24 @@ public class ParseDataset2 extends Job<Frame> {
         } else if( _ctypes[colIdx] == ICOL ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
-          if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
-          if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
-        } else if(!_enums[_col = colIdx].isKilled()) {
-          // store enum id into exponent, so that it will be interpreted as NA if compressing as numcol.
-          int id = _enums[colIdx].addKey(str);
-          if(_ctypes[colIdx] == UCOL && id > 1)_ctypes[colIdx] = ECOL;
-          _nvs[colIdx].addEnum(id);
-        } else // turn the column into NAs by adding value overflowing Enum.MAX_SIZE
-          _nvs[colIdx].addEnum(Integer.MAX_VALUE);
+          if (str.get_off() == -1) {
+            lo = C16Chunk._LO_NA;
+            hi = C16Chunk._HI_NA;
+          }
+          if (colIdx < _nCols) _nvs[_col = colIdx].addUUID(lo, hi);
+        } else if( _ctypes[colIdx] == SCOL ) {
+          _nvs[colIdx].addStr(str.toString());
+        } else {
+          int id = _enums[_col = colIdx].addKey(str);
+          if(!_enums[colIdx].isMapFull()) {
+            if (_ctypes[colIdx] == UCOL && id > 1) _ctypes[colIdx] = ECOL;
+            _nvs[colIdx].addEnum(id);
+          } else { // maxed out enum map, convert col to st ring chunk
+            _ctypes[_col = colIdx] = SCOL;
+            //TODO convert chunk from Enums to Strings
+            _nvs[colIdx].addStr(str.toString());
+          }
+        }
       }
     }
 
@@ -765,8 +775,9 @@ public class ParseDataset2 extends Job<Frame> {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
+        boolean isString = v.isString();
         String CStr = String.format("C%d:", i+1);
-        String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : "numeric")));
+        String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : "numeric"))));
         String minStr = String.format("%g", v.min());
         String maxStr = String.format("%g", v.max());
         long numNAs = v.naCnt();

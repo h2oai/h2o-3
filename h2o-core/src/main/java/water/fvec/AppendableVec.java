@@ -22,7 +22,7 @@ public class AppendableVec extends Vec {
   public static final byte NUMBER = 4;
   public static final byte TIME   = 8;
   public static final byte UUID   =16;
-  public static final byte STR    =32;
+  public static final byte STRING    =32;
   byte [] _chunkTypes;
   long _naCnt;
   long _strCnt;
@@ -94,12 +94,13 @@ public class AppendableVec extends Vec {
     int nchunk = _espc.length;
     while( nchunk > 0 && _espc[nchunk-1] == 0 ) nchunk--;
     DKV.remove(chunkKey(nchunk)); // remove potential trailing key
-    boolean hasNumber = false, hasEnum = false, hasTime=false, hasUUID=false;
+    boolean hasNumber = false, hasEnum = false, hasTime=false, hasUUID=false, hasString=false;
     for( int i = 0; i < nchunk; ++i ) {
       if( (_chunkTypes[i] & TIME  ) != 0 ) { hasNumber = true; hasTime=true; }
       if( (_chunkTypes[i] & NUMBER) != 0 )   hasNumber = true;
       if( (_chunkTypes[i] & ENUM  ) != 0 )   hasEnum   = true;
       if( (_chunkTypes[i] & UUID  ) != 0 )   hasUUID   = true;
+      if( (_chunkTypes[i] & STRING  ) != 0 )   hasString   = true;
     }
     // number wins, we need to go through the enum chunks and declare them all
     // NAs (chunk is considered enum iff it has only enums + possibly some nas)
@@ -108,9 +109,14 @@ public class AppendableVec extends Vec {
         if(_chunkTypes[i] == ENUM)
           DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
     }
-    // UUID wins over enum & number
-    if( hasUUID && (hasEnum || hasNumber) ) {
-      hasEnum=hasNumber=false;
+
+    if(hasString && hasEnum) {
+        //TODO turn all Enum chunks into strings
+    }
+
+    // UUID wins over enum, string & number
+    if( hasUUID && (hasEnum || hasNumber || hasString) ) {
+      hasEnum=hasNumber=hasString=false;
       for(int i = 0; i < nchunk; ++i)
         if((_chunkTypes[i] & UUID)==0)
           DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
@@ -142,7 +148,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, _domain, hasUUID, (byte)t);
+    Vec vec = new Vec(_key, espc, _domain, hasUUID, hasString, (byte)t);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

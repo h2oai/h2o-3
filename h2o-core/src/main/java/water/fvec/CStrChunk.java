@@ -9,7 +9,7 @@ public class CStrChunk extends Chunk {
   public CStrChunk(byte ssbuf[], byte isbuf[], int len) {
     _mem = isbuf;
     _strbuf = ssbuf;
-    set_len(_strbuf.length >> 2);
+    set_len(_mem.length >> 2);
   }
 
   @Override public boolean setNA_impl(int idx) { throw new IllegalArgumentException("Only Strings allowed");}

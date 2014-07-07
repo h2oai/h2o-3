@@ -27,6 +27,8 @@ final class Enum extends Iced {
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<ValueString, Integer> _map;
+  boolean maxEnumExceeded = false;
+
   Enum() { _map = new NonBlockingHashMap<>(); }
 
   private Enum(int id, NonBlockingHashMap<ValueString,Integer>map) {
@@ -47,10 +49,7 @@ final class Enum extends Iced {
     int newVal = _id.incrementAndGet();
     res = m.putIfAbsent(new ValueString(str), newVal);
     if( res != null ) return res;
-    if( m.size() > MAX_ENUM_SIZE ) {
-      kill();
-      return Integer.MAX_VALUE;
-    }
+    if( m.size() > MAX_ENUM_SIZE ) maxEnumExceeded = true;
     return newVal;
   }
   final boolean containsKey(ValueString key){ return _map.containsKey(key); }
@@ -62,8 +61,8 @@ final class Enum extends Iced {
   
   void merge(Enum other){
     if( this == other ) return;
-    if( isKilled() ) return;
-    if( !other.isKilled() ) {   // do the merge
+    if( isMapFull() ) return;
+    if( !other.isMapFull() ) {   // do the merge
       Map<ValueString, Integer> myMap = _map;
       Map<ValueString, Integer> otMap = other._map;
       if( myMap == otMap ) return;
@@ -71,16 +70,15 @@ final class Enum extends Iced {
         myMap.put(str, 1);
       if( myMap.size() <= MAX_ENUM_SIZE ) return;
     }
-    kill(); // too many values, enum should be killed!
+    maxEnumExceeded = true; // too many values, enum should be killed!
   }
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
-  boolean isKilled() { return _map == null; }
-  private void kill() { _map = null; }
+  boolean isMapFull() { return maxEnumExceeded; }
 
   // assuming single threaded
   ValueString [] computeColumnDomain() {
-    if( isKilled() ) return null;
+    if( isMapFull() ) return null;
     ValueString vs[] = _map.keySet().toArray(new ValueString[_map.size()]);
     Arrays.sort(vs);            // Alpha sort to be nice
     for( int j = 0; j < vs.length; ++j )

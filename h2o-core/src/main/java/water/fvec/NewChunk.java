@@ -153,7 +153,7 @@ public class NewChunk extends Chunk {
     if(_naCnt == len2())          // All NAs ==> NA Chunk
       return AppendableVec.NA;
     if(_is != null)
-      return AppendableVec.STR;
+      return AppendableVec.STRING;
     if(_strCnt > 0 && _strCnt + _naCnt == len2())
       return AppendableVec.ENUM; // All are Strings+NAs ==> Enum Chunk
     // UUIDs?
@@ -228,7 +228,7 @@ public class NewChunk extends Chunk {
   // Append a String, stored in _ss & _is
   public void addStr(String str) {
     if(_id == null || str != null) {
-      if(_is == null || len() > _is.length) {
+      if(_is == null || len() >= _is.length) {
         append2slowstr();
         addStr(str);
         assert len() <= len2();
@@ -386,13 +386,11 @@ public class NewChunk extends Chunk {
       */
       _is = MemoryManager.arrayCopyOf(_is,len()<<1);
       /* initialize the memory extension with -1s */
-      for (int i = 0; i < _is.length; i++)
-        if (_is[i] == 0) _is[i] = -1;
+      for (int i = len(); i < _is.length; i++) _is[i] = -1;
     } else {
       _is = MemoryManager.malloc4 (4);
-      for (int i = 0; i < _is.length; i++)
         /* initialize everything with -1s */
-        _is[i] = -1;
+      for (int i = 0; i < _is.length; i++) _is[i] = -1;
     }
     assert len() == 0 || _is.length > len():"_ls.length = " + _is.length + ", len() = " + len();
 
@@ -445,12 +443,13 @@ public class NewChunk extends Chunk {
     assert _ds == null;
     double [] ds = MemoryManager.malloc8d(len());
     for(int i = 0; i < len(); ++i)
-      if(isNA2(i) || isEnum2(i))ds[i] = Double.NaN;
+      if(isNA2(i) || isEnum2(i)) ds[i] = Double.NaN;
       else  ds[i] = _ls[i]*PrettyPrint.pow10(_xs[i]);
     _ls = null;
     _xs = null;
     _ds = ds;
   }
+
   protected void set_sparse(int nzeros){
     if(len() == nzeros)return;
     if(_id != null){ // we have sparse represenation but some 0s in it!
@@ -564,7 +563,7 @@ public class NewChunk extends Chunk {
     byte mode = type();
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, len());
-    if( mode==AppendableVec.STR )
+    if( mode==AppendableVec.STRING )
       return chunkStr();
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
@@ -1031,8 +1030,10 @@ public class NewChunk extends Chunk {
     }
     */
     int len;
-    for (len = 0; _ss[_is[i]+len] != 0; len++);
-    return new String(_ss,_is[i],len);
+    if (_is[i] != -1) { //check for NAs
+      for (len = 0; _ss[_is[i] + len] != 0; len++) ;
+      return new String(_ss, _is[i], len);
+    } else return null;
   }
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
