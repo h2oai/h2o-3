@@ -1,9 +1,9 @@
 package hex.deeplearning;
 
+import org.testng.annotations.*;
+
 import static hex.deeplearning.Neurons.*;
 import hex.deeplearning.Neurons.*;
-import org.junit.Ignore;
-import org.junit.Test;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -13,8 +13,7 @@ import java.util.Random;
 
 public class NeuronsTest {
 
-  @Test
-  @Ignore
+  @Test(enabled = false)
   public void matrixVecTest() {
     int rows = 2048;
     int cols = 8192;

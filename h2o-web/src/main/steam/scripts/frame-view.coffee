@@ -1,3 +1,6 @@
+localConfig =
+  chartWidth: 275
+
 significantDigitsBeforeDecimal = (value) -> 1 + Math.floor Math.log(Math.abs value) / Math.LN10
 
 formatToSignificantDigits = (digits, value) ->
@@ -44,7 +47,7 @@ renderTopCounts = (topCounts, bounds) ->
     .domain [ 0, histogram.maxCount ]
     .range [ height, 0 ]
 
-renderHistogram = (histogram, bounds) ->
+renderHistogram = (_, histogram, bounds) ->
   width = bounds.width - bounds.margin.left - bounds.margin.right
   height = bounds.height - bounds.margin.top - bounds.margin.bottom
 
@@ -95,7 +98,20 @@ renderHistogram = (histogram, bounds) ->
     .attr 'x', 1
     .attr 'width', intervalWidth - 1
     .attr 'height', (bin) -> height - scaleY bin.count
+    .on 'mouseover', (bin) ->
+      column = histogram.column
+      tooltip = if column.type is 'real'
+        From: formatReal column.precision, bin.start
+        To: formatReal column.precision, bin.end
+        Count: bin.count
+      else
+        From: bin.start
+        To: bin.end
+        Count: bin.count
+      _.tooltip @, tooltip, 'top'
+    .on 'mouseout', -> _.tooltip null
 
+  ###
   bar.append 'title'
     .text (bin) ->
       column = histogram.column
@@ -104,7 +120,6 @@ renderHistogram = (histogram, bounds) ->
       else
         "#{bin.count} (#{bin.start} - #{bin.end})"
 
-  ###
   svg.append 'g'
     .attr 'class', 'x axis'
     .attr 'transform', "translate(0,#{height})"
@@ -298,37 +313,17 @@ computeHistogram = (column, minIntervalCount) ->
       count: count
 
 Steam.FrameView = (_, _frame) ->
-
-  createMinMaxInspection = (column, attribute) ->
-    [ div, h1, table, tbody, tr, td ] = geyser.generate words 'div h1 table.y-monospace.table.table-condensed tbody tr td'
-    div [
-      h1 "#{column.label} - #{attribute}"
-      table tbody map column[attribute], (value, i) -> tr td formatMinMaxValue column, attribute, i
-    ]
-
-  createMinMaxCell = (column, attribute, value) ->
-    value: value
-    showMore: ->
-      _.inspect
-        content: createMinMaxInspection column, attribute
-        template: 'geyser'
-
-  formatMinMaxValue = (column, attribute, index) ->
-    switch column.type
-      when 'time'
-        formatDateTime column[attribute][index]
-      when 'real'
-        formatReal column.precision, column[attribute][index]
-      when 'int'
-        formatToSignificantDigits 6, column[attribute][index]
-
   createMinMaxRow = (attribute, columns) ->
     map columns, (column) ->
       switch column.type
-        when 'time', 'real', 'int'
-          createMinMaxCell column, attribute, formatMinMaxValue column, attribute, 0
+        when 'time'
+          formatDateTime head column[attribute]
+        when 'real'
+          formatReal column.precision, head column[attribute]
+        when 'int'
+          formatToSignificantDigits 6, head column[attribute]
         else
-          null
+          '-'
 
   createMeanRow = (columns) ->
     map columns, (column) ->
@@ -374,7 +369,7 @@ Steam.FrameView = (_, _frame) ->
           '-'
 
   renderTopCountsTable = (topCounts) ->
-    [ div, table, tbody, tr, td ] = geyser.generate words 'div table.table.table-condensed.y-monospace tbody tr td'
+    [ div, table, tbody, tr, td ] = geyser.generate words 'div table.table.table-condensed.table-striped.y-monospace tbody tr td'
     [ datacell ] = geyser.generate [ "td.y-chart data-value='$value'" ]
 
     maxCount = d3.max topCounts.levels, (level) -> level.count
@@ -397,8 +392,8 @@ Steam.FrameView = (_, _frame) ->
         #TODO include jquery.pep for sliders to customize bins
         histogram = computeHistogram column, 32
         appendHistogram = ($element) ->
-          $element.empty().append renderHistogram histogram,
-            width: 300
+          $element.empty().append renderHistogram _, histogram,
+            width: localConfig.chartWidth
             height: 100
             margin:
               top: 0
@@ -414,7 +409,7 @@ Steam.FrameView = (_, _frame) ->
         boxplot = computeBoxplot frame.default_pctiles, column
         appendBoxplot = ($element) ->
           $element.empty().append renderBoxplot boxplot,
-            width: 300
+            width: localConfig.chartWidth
             height: 70
             margin:
               top: 5
@@ -450,7 +445,7 @@ Steam.FrameView = (_, _frame) ->
 
     appendCharacteristics = ($element) ->
       $element.empty().append renderCharacteristics characteristics,
-        width: 300
+        width: localConfig.chartWidth
         height: 10
         margin:
           top: 0
@@ -475,11 +470,11 @@ Steam.FrameView = (_, _frame) ->
   createSummaryRow = (frameKey, columns) ->
     map columns, (column) ->
       displaySummary: ->
-        _.requestColumnSummary frameKey, column.label, (error, frames) ->
+        _.requestColumnSummary frameKey, column.label, (error, result) ->
           if error
             _.error 'Error requesting column summary', column, error
           else
-            createSummaryInspection head frames
+            createSummaryInspection head result.frames
 
   createDataRow = (offset, index, columns) ->
     header: "Row #{offset + index + 1}"

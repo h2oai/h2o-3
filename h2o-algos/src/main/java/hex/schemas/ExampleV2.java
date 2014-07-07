@@ -2,14 +2,13 @@ package hex.schemas;
 
 import hex.example.Example;
 import hex.example.ExampleModel;
+import hex.schemas.ExampleHandler.ExamplePojo;
 import water.Key;
-import water.api.API;
-import water.api.JobPollV2;
-import water.api.Schema;
+import water.api.*;
 import water.fvec.Frame;
 import water.util.DocGen.HTML;
 
-public class ExampleV2 extends Schema<ExampleHandler,ExampleV2> {
+public class ExampleV2 extends Schema<ExamplePojo,ExampleV2> {
 
   // Input fields
   @API(help="Input source frame",required=true)
@@ -29,26 +28,27 @@ public class ExampleV2 extends Schema<ExampleHandler,ExampleV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public ExampleV2 fillInto( ExampleHandler h ) {
-    h._parms = new ExampleModel.ExampleParameters();
-    h._parms._src = src;
+  @Override public ExamplePojo createImpl() {
+    ExamplePojo e = new ExamplePojo();
+    e._parms = new ExampleModel.ExampleParameters();
+    e._parms._src = src;
 
     if( max_iters < 0 || max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
     if( max_iters==0 ) max_iters = 1000; // Default is 1000 max_iters
-    h._parms._max_iters = max_iters;
+    e._parms._max_iters = max_iters;
 
-    return this;
+    return e;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public ExampleV2 fillFrom( ExampleHandler h ) {
-    job = h._job._key;
+  @Override public ExampleV2 fillFromImpl( ExamplePojo e ) {
+    job = e._job._key;
     return this;
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Example Started");
-    String url = JobPollV2.link(job);
+    String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }
 

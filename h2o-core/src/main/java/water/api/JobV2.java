@@ -4,11 +4,18 @@ import water.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
+/** Schema for a single Job */
+public class JobV2 extends Schema<Job, JobV2> {
 
   // Input fields
   @API(help="Job Key",required=true)
   Key key;
+
+  @API(help="Job description")
+  String description;
+
+  @API(help="Job work metric")
+  long work;
 
   // Output fields
   @API(help="job status")
@@ -26,9 +33,11 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
   @API(help="exception")
   String exception;
 
-  JobPollV2( ) {}
-  JobPollV2( Key key, String status, float progress, long msec, Key dest, String exception ) {
+  JobV2() {}
+  JobV2(Key key, String description, long work, String status, float progress, long msec, Key dest, String exception) {
     this.key = key;
+    this.description = description;
+    this.work = work;
     this.status = status;
     this.progress = progress;
     this.msec = msec;
@@ -40,20 +49,16 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected JobPollV2 fillInto( JobPollHandler h ) {
-    assert key != null;         // checked by required-field parsing
-    Value val = DKV.get(key);
-    if( val==null ) throw new IllegalArgumentException("Job is missing");
-    Iced ice = val.get();
-    if( !(ice instanceof Job) ) throw new IllegalArgumentException("Must be a Job not a "+ice.getClass());
-    h._jobkey = key;
-    return this;
+  @Override public Job createImpl( ) {
+    Job j = new Job(key, description, work);
+    return j;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected JobPollV2 fillFrom( JobPollHandler h ) {
+  @Override public JobV2 fillFromImpl(Job job) {
     // Fetch the latest Job status from the K/V store
-    Job job = DKV.get(h._jobkey).get();
+    // Do this in the handler:
+    // Job job = DKV.get(j._key).get();
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
@@ -64,7 +69,7 @@ public class JobPollV2 extends Schema<JobPollHandler,JobPollV2> {
 
   //==========================
   // Helper so Jobs can link to JobPoll
-  public static String link(Key key) { return "JobPoll?key="+key; }
+  public static String link(Key key) { return "Jobs/"+key; }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");

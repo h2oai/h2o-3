@@ -688,7 +688,7 @@ public class AUC extends Iced {
       _cms = new ConfusionMatrix2[_thresh.length];
       for (int i=0;i<_cms.length;++i)
         _cms[i] = new ConfusionMatrix2(2);
-      final int len = Math.min(ca._len, cp._len);
+      final int len = Math.min(ca.len(), cp.len());
       for( int i=0; i < len; i++ ) {
         if (ca.isNA0(i))
           throw new UnsupportedOperationException("Actual class label cannot be a missing value!");

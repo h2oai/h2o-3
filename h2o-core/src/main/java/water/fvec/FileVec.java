@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.UnsafeUtils;
 
 public abstract class FileVec extends ByteVec {
   long _len;                    // File length
@@ -59,7 +60,7 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk-key to a file offset. Size 1 rows, so this is a direct conversion.
   static public long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)<<LOG_CHK; }
   // Reverse: convert a chunk-key into a cidx
-  static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.DVEC; return UDP.get4(ckey._kb,1+1+4); }
+  static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.DVEC; return UnsafeUtils.get4(ckey._kb, 1 + 1 + 4); }
 
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
@@ -82,7 +83,7 @@ public abstract class FileVec extends ByteVec {
     Futures fs = dkey.home() ? null : new Futures();
     // Atomically insert: fails on a race, but then return the old version
     Value val3 = DKV.DputIfMatch(dkey,val2,null,fs);
-    if( !dkey.home() ) fs.blockForPending();
+    if( !dkey.home() && fs != null ) fs.blockForPending();
     return val3 == null ? val2 : val3;
   }
 }

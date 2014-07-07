@@ -1,18 +1,16 @@
 package water.api;
 
+import water.api.FramesHandler.Frames;
 
 class FramesV3 extends FramesBase {
   // Version-  and Schema-specific filling into the handler
-  @Override protected FramesBase fillInto( FramesHandler h ) {
-    super.fillInto(h);
-    return this;
+  @Override public Frames createImpl( ) {
+    return super.createImpl();
   }
 
   // Version-  and Schema-specific filling into the handler
-  @Override protected FramesBase fillFrom( FramesHandler h ) {
-    super.fillFrom(h);
-    return this;
+  @Override public FramesBase fillFromImpl(Frames f) {
+    return super.fillFromImpl(f);
   }
-
 
 }

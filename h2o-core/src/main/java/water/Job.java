@@ -97,7 +97,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @param desc String description
    *  @param work Units of work to be completed
    */
-  protected Job( Key dest, String desc, long work ) { 
+  public Job(Key dest, String desc, long work) {
     super(defaultJobKey()); 
     _description = desc; 
     _dest = dest; 

@@ -4,13 +4,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import water.*;
+import water.api.TimelineHandler.Timeline;
 import water.util.DocGen;
 import water.util.TimelineSnapshot;
 
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.
  */
-public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
+public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   // This schema has no input params
   @API(help="Current time in millis.")
   private long now;
@@ -39,7 +40,7 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     protected abstract String ioType();
     protected abstract String event();
     public    abstract String bytes();
-  }
+  } // Event
 
   private static class HeartBeatEvent extends Event {
     @API(help = "number of sent heartbeats")
@@ -58,7 +59,7 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     @Override public    String bytes() {return sends + " sent " + ", " + recvs + " received";}
     @Override public    DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {ab.cell("haha"); return ab;}
     @Override public    String toString() { return "HeartBeat(" + sends + " sends, " + recvs + " receives)"; }
-  }
+  } // HeartBeatEvent
 
   public static class NetworkEvent extends Event {
     @API(help="Boolean flag distinguishing between sends (true) and receives(false)")
@@ -90,7 +91,7 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     @Override public    String toString() {
       return "NetworkMsg(" + from + " -> " + to + ", protocol = '" + protocol +  "', data = '" + data + "')";
     }
-  }
+  } // NetworkEvent
 
   private static class IOEvent extends Event {
     @API(help="flavor of the recorded io (ice/hdfs/...)")
@@ -110,13 +111,13 @@ public class TimelineV2 extends Schema<TimelineHandler,TimelineV2> {
     @Override protected String event() {return "i_o";}
     @Override public    String bytes() { return data;}
     @Override public    String toString() { return "I_O('" + ioFlavor + "')"; }
+  } // IOEvent
+
+  @Override public Timeline createImpl() {
+    return new Timeline();
   }
 
-  @Override protected TimelineV2 fillInto(TimelineHandler timeline) {
-    return this;
-  }
-
-  @Override public TimelineV2 fillFrom(TimelineHandler timeline) {
+  @Override public TimelineV2 fillFromImpl(Timeline timeline) {
     ArrayList<Event> outputEvents = new ArrayList<>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
     H2O cloud = TimeLine.getCLOUD();

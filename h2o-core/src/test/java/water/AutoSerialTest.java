@@ -1,12 +1,14 @@
 package water;
 
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
+
 import java.util.Arrays;
-import org.junit.*;
 
 public class AutoSerialTest extends Iced {
-  @BeforeClass public static void stall() { 
-    TestUtil.setupCloud();
-    TestUtil.stall_till_cloudsize(1); 
+  @BeforeClass public static void stall() {
+    TestUtil tu = new TestUtil();
+    tu.setupCloud();
   }
   @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 
@@ -30,7 +32,7 @@ public class AutoSerialTest extends Iced {
       _byte = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _byte);
+      AssertJUnit.assertEquals(exp, _byte);
     }
   }
 
@@ -40,7 +42,7 @@ public class AutoSerialTest extends Iced {
       _short = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _short);
+      AssertJUnit.assertEquals(exp, _short);
     }
   }
 
@@ -50,7 +52,7 @@ public class AutoSerialTest extends Iced {
       _int = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _int);
+      AssertJUnit.assertEquals(exp, _int);
     }
   }
 
@@ -62,7 +64,7 @@ public class AutoSerialTest extends Iced {
       _long = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _long);
+      AssertJUnit.assertEquals(exp, _long);
     }
   }
 
@@ -75,7 +77,7 @@ public class AutoSerialTest extends Iced {
       _float = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _float, 0.0);
+      AssertJUnit.assertEquals(exp, _float);
     }
   }
 
@@ -88,7 +90,7 @@ public class AutoSerialTest extends Iced {
       _double = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _double, 0.0);
+      AssertJUnit.assertEquals(exp, _double);
     }
   }
 
@@ -99,7 +101,7 @@ public class AutoSerialTest extends Iced {
       _key = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _key);
+      AssertJUnit.assertEquals(exp, _key);
     }
   }
 
@@ -110,7 +112,7 @@ public class AutoSerialTest extends Iced {
       _string = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertEquals(exp, _string);
+      AssertJUnit.assertEquals(exp, _string);
     }
   }
 
@@ -125,7 +127,7 @@ public class AutoSerialTest extends Iced {
       _bytes = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertArrayEquals(exp, _bytes);
+      AssertJUnit.assertArrayEquals(exp, _bytes);
     }
   }
 
@@ -140,7 +142,7 @@ public class AutoSerialTest extends Iced {
       _shorts = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertArrayEquals(exp, _shorts);
+      AssertJUnit.assertArrayEquals(exp, _shorts);
     }
   }
 
@@ -155,7 +157,7 @@ public class AutoSerialTest extends Iced {
       _ints = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertArrayEquals(exp, _ints);
+      AssertJUnit.assertArrayEquals(exp, _ints);
     }
   }
 
@@ -171,7 +173,7 @@ public class AutoSerialTest extends Iced {
       _longs = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertArrayEquals(exp, _longs);
+      AssertJUnit.assertArrayEquals(exp, _longs);
     }
   }
 
@@ -187,7 +189,7 @@ public class AutoSerialTest extends Iced {
       _floats = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertTrue(Arrays.equals(exp, _floats));
+      AssertJUnit.assertTrue(Arrays.equals(exp, _floats));
     }
   }
 
@@ -203,7 +205,7 @@ public class AutoSerialTest extends Iced {
       _doubles = exp;
       this.write(abw());
       this. read(abr());
-      Assert.assertTrue(Arrays.equals(exp, _doubles));
+      AssertJUnit.assertTrue(Arrays.equals(exp, _doubles));
     }
   }
 
@@ -224,10 +226,10 @@ public class AutoSerialTest extends Iced {
       this.write(abw());
       this. read(abr());
       if( exp != null ) {
-        Assert.assertEquals(_longss.length,exp.length);
+        AssertJUnit.assertEquals(_longss.length,exp.length);
         for( int i=0; i<exp.length; i++ )
-          Assert.assertArrayEquals(_longss[i],exp[i]);
-      } else Assert.assertNull(_longss);
+          AssertJUnit.assertArrayEquals(_longss[i],exp[i]);
+      } else AssertJUnit.assertNull(_longss);
     }
   }
 
@@ -247,10 +249,10 @@ public class AutoSerialTest extends Iced {
       this.write(abw());
       this. read(abr());
       if( exp != null ) {
-        Assert.assertEquals(_doubless.length,exp.length);
+        AssertJUnit.assertEquals(_doubless.length,exp.length);
         for( int i=0; i<exp.length; i++ )
-          Assert.assertTrue(Arrays.equals(_doubless[i],exp[i]));
-      } else Assert.assertNull(_doubless);
+          AssertJUnit.assertTrue(Arrays.equals(_doubless[i],exp[i]));
+      } else AssertJUnit.assertNull(_doubless);
     }
   }
 }

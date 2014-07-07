@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import water.util.DocGen.HTML;
+import water.util.UnsafeUtils;
 
 /**
  * Keys
@@ -95,7 +96,7 @@ final public class Key extends Iced<Key> implements Comparable {
       // exactly, then any stencil calc will double the cached volume of data
       // (every node will have it's own chunk, plus a cached next-chunk).
       // Above 16-chunks-in-a-row we hit diminishing returns.
-      int cidx = UDP.get4(_kb, 1+1+4); // Chunk index
+      int cidx = UnsafeUtils.get4(_kb, 1 + 1 + 4); // Chunk index
       int x = cidx/hsz;
       int log2 = 31 - Integer.numberOfLeadingZeros(x);
       if( log2 > 4 ) log2 = 4;      // (1<<4)==16-in-a-row is enough

@@ -3,7 +3,6 @@ package water.fvec;
 import java.util.Arrays;
 import java.util.Comparator;
 import water.*;
-import water.util.ArrayUtils;
 
 /**
  * Dummy vector transforming values of given vector according to given domain mapping.
@@ -21,9 +20,9 @@ import water.util.ArrayUtils;
 public class TransfVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new value. If
    * a value is not included in this array the implementation returns NA. */
-  final int[] _values;
+  private final int[] _values;
   /** The transformed value - i.e. transformed value is: <code>int idx = find(value, _values); return _indexes[idx]; </code> */
-  final int[] _indexes;
+  private final int[] _indexes;
 
   public TransfVec(int[][] mapping, Key masterVecKey, Key key, long[] espc) {
     this(mapping, null, masterVecKey, key, espc);
@@ -50,7 +49,7 @@ public class TransfVec extends WrappedVec {
     protected static final long MISSING_VALUE = -1L;
     final Chunk _c;
 
-    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; _len = _c._len; _start = _c._start; _vec = vec; }
+    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c.len()); _start = _c._start; _vec = vec; }
 
     @Override protected double atd_impl(int idx) { double d = 0; return _c.isNA0(idx) ? Double.NaN : ( (d=at8_impl(idx)) == MISSING_VALUE ? Double.NaN : d ) ;  }
     @Override protected boolean isNA_impl(int idx) {
@@ -63,11 +62,11 @@ public class TransfVec extends WrappedVec {
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
     @Override NewChunk inflate_impl(NewChunk nc) {
-      nc._xs = MemoryManager.malloc4(_len);
-      nc._ls = MemoryManager.malloc8(_len);
-      for( int i=0; i<_len; i++ ) {
+      nc.alloc_exponent(len());
+      nc.alloc_mantissa(len());
+      for( int i=0; i< len(); i++ ) {
         if(isNA0(i)) nc.setNA_impl2(i);
-        else nc._ls[i] = at80(i);
+        else nc.mantissa()[i] = at80(i);
       }
       return nc;
     }

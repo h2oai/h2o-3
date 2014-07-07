@@ -7,6 +7,7 @@ import water.UDP;
 import water.fvec.ByteVec;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.UnsafeUtils;
 
 abstract class ZipUtil {
 
@@ -21,9 +22,9 @@ abstract class ZipUtil {
 
   static Compression guessCompressionMethod(byte [] bits) {
     // Look for ZIP magic
-    if( bits.length > ZipFile.LOCHDR && UDP.get4(bits,0) == ZipFile.LOCSIG )
+    if( bits.length > ZipFile.LOCHDR && UnsafeUtils.get4(bits, 0) == ZipFile.LOCSIG )
       return Compression.ZIP;
-    if( bits.length > 2 && (UDP.get2(bits,0)&0xffff) == GZIPInputStream.GZIP_MAGIC )
+    if( bits.length > 2 && (UnsafeUtils.get2(bits,0)&0xffff) == GZIPInputStream.GZIP_MAGIC )
       return Compression.GZIP;
     return Compression.NONE;
   }

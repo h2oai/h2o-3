@@ -41,6 +41,7 @@ final public class H2O {
 
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
+  public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }
   public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
 
@@ -539,6 +540,11 @@ final public class H2O {
     }
     if( H2O.CLOUD.size() < x )
       throw new RuntimeException("Cloud size under " + x);
+  }
+
+  public static int getCloudSize() {
+    if (! Paxos._commonKnowledge) return -1;
+    return CLOUD.size();
   }
 
   // - Wait for at least HeartBeatThread.SLEEP msecs and

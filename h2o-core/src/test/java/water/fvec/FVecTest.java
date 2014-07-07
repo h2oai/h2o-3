@@ -1,16 +1,19 @@
 package water.fvec;
 
-import static org.junit.Assert.*;
+import static org.testng.Assert.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
 import java.io.File;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.*;
 import water.util.ArrayUtils;
 
+
+@Test(groups={"multi-node"})
 public class FVecTest extends TestUtil {
+  FVecTest() { super(3); }
+
   static final double EPSILON = 1e-6;
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   // ==========================================================================
   @Test public void testBasicCRUD() {
@@ -27,7 +30,7 @@ public class FVecTest extends TestUtil {
     // Count occurrences of bytes
     @Override public void map( Chunk bv ) {
       _x = new int[256];        // One-time set histogram array
-      for( int i=0; i<bv._len; i++ )
+      for( int i=0; i< bv.len(); i++ )
         _x[(int)bv.at0(i)]++;
     }
     // ADD together all results
@@ -52,11 +55,11 @@ public class FVecTest extends TestUtil {
       for( Chunk x : chks )
         if( x.getClass()==water.fvec.C2Chunk.class )
           { c=x; break; }
-      assertNotNull("Expect to find a C2Chunk",c);
+      AssertJUnit.assertNotNull("Expect to find a C2Chunk", c);
       assertTrue(c._vec.writable());
 
       double d=c._vec.min();
-      for( int i=0; i<c._len; i++ ) {
+      for( int i=0; i< c.len(); i++ ) {
         double e = c.at0(i);
         c.set0(i,d);
         d=e;
@@ -80,7 +83,7 @@ public class FVecTest extends TestUtil {
 
   private static class TestNewVec extends MRTask<TestNewVec> {
     @Override public void map( Chunk in, NewChunk out ) {
-      for( int i=0; i<in._len; i++ )
+      for( int i=0; i< in.len(); i++ )
         out.append2( in.at8(i)+(in.at8(i) >= ' ' ? 1 : 0),0);
     }
   }
@@ -90,7 +93,7 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = parse_test_file("../smalldata/junit/syn_2659x1049.csv.gz");
+      fr = parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 
@@ -123,7 +126,7 @@ public class FVecTest extends TestUtil {
     double _sums[];
     @Override public void map( Chunk[] bvs ) {
       _sums = new double[bvs.length];
-      int len = bvs[0]._len;
+      int len = bvs[0].len();
       for( int i=0; i<len; i++ )
         for( int j=0; j<bvs.length; j++ )
           _sums[j] += bvs[j].at0(i);
@@ -134,7 +137,7 @@ public class FVecTest extends TestUtil {
   // Simple vector sum C=A+B
   private static class PairSum extends MRTask<Sum> {
     @Override public void map( Chunk out, Chunk in1, Chunk in2 ) {
-      for( int i=0; i<out._len; i++ )
+      for( int i=0; i< out.len(); i++ )
         out.set0(i,in1.at80(i)+in2.at80(i));
     }
   }

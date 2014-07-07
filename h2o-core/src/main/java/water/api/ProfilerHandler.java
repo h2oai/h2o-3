@@ -1,20 +1,24 @@
 package water.api;
 
 import water.H2O;
+import water.Iced;
+import water.api.ProfilerHandler.Profiler;
 import water.util.JProfile;
 
-public class ProfilerHandler extends Handler<ProfilerHandler,ProfilerBase> {
+public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: recursive generics seem to prevent more specific types here
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  //Input
-  public int _depth;
+  protected static final class Profiler extends Iced {
+    //Input
+    public int _depth;
 
-  //Output
-  public String[][] _stacktraces;
-  public int[][] _counts;
+    //Output
+    public String[][] _stacktraces;
+    public int[][] _counts;
+  }
 
-  @Override protected ProfilerBase schema(int version) {
+  @Override protected ProfilerV2 schema(int version) {
     switch (version) {
       case 2:
         return new ProfilerV2();
@@ -22,15 +26,20 @@ public class ProfilerHandler extends Handler<ProfilerHandler,ProfilerBase> {
         throw H2O.fail("Bad version for Frames schema: " + version);
     }
   }
-  @Override public void compute2() {
-    JProfile profile = new JProfile(_depth).execImpl();
+  public ProfilerBase fetch(int version, Profiler p) {
+    JProfile profile = new JProfile(p._depth).execImpl();
     int i=0;
-    _stacktraces = new String[profile.nodes.length][];
-    _counts = new int[profile.nodes.length][];
-    for (JProfile.ProfileSummary p : profile.nodes) {
-      _stacktraces[i] = p.profile.stacktraces;
-      _counts[i] = p.profile.counts;
+    p._stacktraces = new String[profile.nodes.length][];
+    p._counts = new int[profile.nodes.length][];
+    for (JProfile.ProfileSummary s : profile.nodes) {
+      p._stacktraces[i] = s.profile.stacktraces;
+      p._counts[i] = s.profile.counts;
       i++;
     }
+    return (ProfilerBase)schema(version).fillFromImpl(p);
+  }
+
+  @Override protected void compute2() {
+    throw H2O.unimpl();
   }
 }

@@ -1,27 +1,48 @@
 package water;
 
-import static org.junit.Assert.*;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import java.io.File;
 import java.util.ArrayList;
-import org.junit.*;
 import water.fvec.*;
+import water.testframework.multinode.MultiNodeSetup;
 
 public class TestUtil {
+  private static boolean _stall_called_before = false;
   private static int _initial_keycnt = 0;
+  private int _minCloudSize;
+
+  public TestUtil() {
+    _minCloudSize = 1;
+  }
+
+  public TestUtil(int minCloudSize) {
+    _minCloudSize = minCloudSize;
+  }
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
+    if (! _stall_called_before) {
+      if (H2O.getCloudSize() < x) {
+        MultiNodeSetup mns = new MultiNodeSetup(x);
+        mns.setupCloud();
+        _stall_called_before = true;
+      }
+    }
+
     H2O.waitForCloudSize(x, 10000);
   }
 
-  @BeforeClass public static void setupCloud() {
-    H2O.main(new String[] {});
-    stall_till_cloudsize(1);
+  @BeforeClass()
+  public void setupCloud() {
+    stall_till_cloudsize(_minCloudSize);
     _initial_keycnt = H2O.store_size();
   }
 
-  @AfterClass public static void checkLeakedKeys() {
+  @AfterClass
+  public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
@@ -31,7 +52,7 @@ public class TestUtil {
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }
-    assertTrue("No keys leaked", leaked_keys <= 0);
+    assertTrue(leaked_keys <= 0, "No keys leaked");
     _initial_keycnt = H2O.store_size();
   }
 
@@ -165,7 +186,7 @@ public class TestUtil {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+        for( int rows = 0; rows < chks[0].len(); rows++ ) {
           double d0 = c0.at0(rows), d1 = c1.at0(rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
@@ -185,8 +206,8 @@ public class TestUtil {
         if( _unequal ) return;
         Chunk c0 = chks[cols];
         Vec v1 = _fr.vecs()[cols];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.at0(rows), d1 = v1.at(c0._start + rows);
+        for( int rows = 0; rows < chks[0].len(); rows++ ) {
+          double d0 = c0.at0(rows), d1 = v1.at(c0.start() + rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
           }

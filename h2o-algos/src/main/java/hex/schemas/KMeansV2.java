@@ -2,14 +2,15 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
+import hex.kmeans.KMeansModel.KMeansParameters;
 import water.Key;
 import water.api.API;
-import water.api.JobPollV2;
+import water.api.JobV2;
 import water.api.Schema;
 import water.fvec.Frame;
 import water.util.DocGen.HTML;
 
-public class KMeansV2 extends Schema<KMeansHandler,KMeansV2> {
+public class KMeansV2 extends Schema<KMeansParameters,KMeansV2> {
 
   // Input fields
   @API(help="Input source frame",required=true)
@@ -38,35 +39,44 @@ public class KMeansV2 extends Schema<KMeansHandler,KMeansV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public KMeansV2 fillInto( KMeansHandler h ) {
-    h._parms = new KMeansModel.KMeansParameters();
-    h._parms._src = src;
+  @Override public KMeansParameters createImpl() {
+    KMeansParameters parms = new KMeansModel.KMeansParameters();
+
+    parms._src = src;
 
     if( K < 2 || K > 9999999 ) throw new IllegalArgumentException("2<= K && K < 10000000");
-    h._parms._K = K;
+    parms._K = K;
 
-    h._parms._normalize = normalize;
+    parms._normalize = normalize;
 
-    h._parms._init = init = KMeans.Initialization.PlusPlus;
+    parms._init = init = KMeans.Initialization.PlusPlus;
 
     if( max_iters < 0 || max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
     if( max_iters==0 ) max_iters = 1000; // Default is 1000 max_iters
-    h._parms._max_iters = max_iters;
+    parms._max_iters = max_iters;
 
     if( seed == 0 ) seed = System.nanoTime();
-    h._parms._seed = seed;
-    return this;
+    parms._seed = seed;
+    return parms;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public KMeansV2 fillFrom( KMeansHandler h ) {
-    job = h._job._key;
+  @Override public KMeansV2 fillFromImpl(KMeansParameters parms) {
+    //    job = h._job._key;  // TODO: what?
+
+    src = parms._src;
+    K = parms._K;
+    normalize = parms._normalize;
+    max_iters = parms._max_iters;
+    seed = parms._seed;
+    init = parms._init = KMeans.Initialization.PlusPlus;
+
     return this;
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("KMeans Started");
-    String url = JobPollV2.link(job);
+    String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }
 

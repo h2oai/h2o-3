@@ -1,11 +1,9 @@
 package water.fvec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
 
@@ -19,40 +17,39 @@ import water.TestUtil;
  * since it is used to avoid DKV call.
  * */
 public class CBSChunkTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
     AppendableVec av = new AppendableVec(Vec.newKey());
-    Futures fs = new Futures();
-    Vec vv = av.close(fs);
     // Create a new chunk
-    NewChunk nc = new NewChunk(av,0);
-    nc._ls = ls;
-    nc._xs = xs;
-    nc._len = nc._len2 = ls.length;
+    NewChunk nc = new NewChunk(av,0, ls, xs, null, null);
+    nc.set_len(nc.set_len2(ls.length));
     nc.type();                  // Compute rollups, including NA
-    assertEquals(expNA, nc._naCnt);
+    assertEquals(expNA, nc.naCnt());
     // Compress chunk
     Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
     cc._vec = av.close(new Futures());
-    assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
-    assertEquals(nc._len, cc._len);
-    assertEquals(expGap, ((CBSChunk)cc)._gap);
-    assertEquals(expBpv, ((CBSChunk)cc)._bpv);
-    assertEquals(expClen, cc._mem.length - CBSChunk.OFF);
+    AssertJUnit.assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
+    assertEquals(nc.len(), cc.len());
+    assertEquals(expBpv, ((CBSChunk)cc).bpv());
+    assertEquals(expGap, ((CBSChunk)cc).gap());
+    assertEquals(expClen, cc._mem.length - CBSChunk._OFF);
     // Also, we can decompress correctly
     for( int i=0; i<ls.length; i++ )
       if(xs[i]==0)assertEquals(ls[i], cc.at80(i));
       else assertTrue(cc.isNA0(i));
+
+    // materialize the vector (prerequisite to free the memory)
+    Futures fs = new Futures();
+    Vec vv = av.close(fs);
+    fs.blockForPending();
     vv.remove();
   }
 
   // Test one bit per value compression which is used
   // for data without NAs
-  @Test @Ignore public void test1BPV() {
+  @Test public void test1BPV() {
     // Simple case only compressing into 4bits of one byte
-    testImpl(new long[] {0,0,0,1},
+    testImpl(new long[] {1,0,1,1},
              new int [] {0,0,0,0},
              1, 4, 1, 0);
     // Filling whole byte

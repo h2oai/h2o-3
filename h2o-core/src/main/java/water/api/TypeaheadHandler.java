@@ -1,19 +1,25 @@
 package water.api;
 
+import water.Iced;
+import water.api.TypeaheadHandler.Typeahead;
+
 import java.io.File;
 import java.util.*;
 
-class TypeaheadHandler extends Handler<TypeaheadHandler,TypeaheadV2> {
+class TypeaheadHandler extends Handler<Typeahead,TypeaheadV2> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  // Input
-  String _src;
-  int _limit;
-  // Outputs
-  String _matches[];
+
+  protected static final class Typeahead extends Iced {
+    // Input
+    String _src;
+    int _limit;
+    // Outputs
+    String _matches[];
+  }
 
   // Find files
-  public void files() {
+  public Schema files(int version, Typeahead t) {
     if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
@@ -21,15 +27,16 @@ class TypeaheadHandler extends Handler<TypeaheadHandler,TypeaheadV2> {
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    else serveLocalDisk();
+    // else
+    return serveLocalDisk(version, t);
   }
 
 
-  private void serveLocalDisk() {
+  private Schema serveLocalDisk(int version, Typeahead t) {
     File base = null;
     String filterPrefix = "";
-    if( !_src.isEmpty() ) {
-      File file = new File(_src);
+    if( !t._src.isEmpty() ) {
+      File file = new File(t._src);
       if( file.isDirectory() ) {
         base = file;
       } else {
@@ -41,14 +48,16 @@ class TypeaheadHandler extends Handler<TypeaheadHandler,TypeaheadV2> {
 
     ArrayList<String> array = new ArrayList<>();
     File[] files = base.listFiles();
-    if( files == null ) return;
-    for( File file : files ) {
-      if( file.isHidden() ) continue;
-      if( file.getName().toLowerCase().startsWith(filterPrefix) )
-        array.add(file.getPath());
-      if( array.size() == _limit) break;
+    if( files != null ) {
+      for (File file : files) {
+        if (file.isHidden()) continue;
+        if (file.getName().toLowerCase().startsWith(filterPrefix))
+          array.add(file.getPath());
+        if (array.size() == t._limit) break;
+      }
+      t._matches = array.toArray(new String[array.size()]);
     }
-    _matches = array.toArray(new String[array.size()]);
+    return schema(version).fillFromImpl(t);
   }
 
   @Override protected TypeaheadV2 schema(int version) { return new TypeaheadV2(); }

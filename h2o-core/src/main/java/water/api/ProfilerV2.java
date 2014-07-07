@@ -1,13 +1,11 @@
 package water.api;
+import water.api.ProfilerHandler.Profiler;
+import water.util.DocGen;
+import water.util.JProfile;
 
-public class ProfilerV2 extends ProfilerBase {
-  @Override protected ProfilerV2 fillInto(ProfilerHandler profiler) {
-    super.fillInto(profiler);
-    return this;
-  }
+import java.util.Arrays;
 
-  @Override public ProfilerV2 fillFrom(ProfilerHandler profiler) {
-    super.fillFrom(profiler);
-    return this;
-  }
+public class ProfilerV2 extends ProfilerBase<ProfilerV2> {
+  // Inputs and Outputs are in ProfilerBase
+
 }

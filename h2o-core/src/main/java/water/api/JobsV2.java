@@ -1,29 +1,42 @@
 package water.api;
 
 import water.*;
+import water.api.JobsHandler.Jobs;
 
-public class JobsV2 extends Schema<JobsHandler,JobsV2> {
+public class JobsV2 extends Schema<Jobs,JobsV2> {
   // Input fields
-  // This Schema has no inputs
+  @API(help="Optional Job key")
+  public Key key;
 
   // Output fields
   @API(help="jobs")
-  JobPollV2[] jobs;
+  JobV2[] jobs;
 
   //==========================
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected JobsV2 fillInto( JobsHandler h ) {
-    return this;                // No inputs
+  @Override public Jobs createImpl( ) {
+    Job[] jobs = null;
+    if (null != this.jobs) {
+      jobs = new Job[this.jobs.length];
+      for (int i = 0; i < this.jobs.length; i++)
+        jobs[i] = this.jobs[i].createImpl();
+    } else {
+      jobs = new Job[0];
+    }
+    return new Jobs(this.key, jobs);
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected JobsV2 fillFrom( JobsHandler h ) {
-    Job[] js = h.jobs;
-    jobs = new JobPollV2[js.length];
-    for( int i=0; i<js.length; i++ )
-      jobs[i] = new JobPollV2(js[i]._key,js[i]._state.toString(),js[i].progress(),js[i].msec(),js[i].dest(),js[i]._exception);
+  @Override public JobsV2 fillFromImpl(Jobs j) {
+    this.key = j.key;
+    Job[] js = j.jobs;
+    jobs = new JobV2[js.length];
+    for( int i=0; i<js.length; i++ ) {
+      Job job = js[i];
+      jobs[i] = new JobV2(job._key, job._description, job._work, job._state.toString(), job.progress(), job.msec(), job.dest(), job._exception);
+    }
     return this;
   }
 }

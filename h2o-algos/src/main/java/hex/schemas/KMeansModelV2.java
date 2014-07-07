@@ -4,9 +4,11 @@ import hex.kmeans.KMeansModel;
 import water.H2O;
 import water.Key;
 import water.api.*;
+import water.api.Handler;
+import water.api.ModelBase;
+//import water.util.DocGen.HTML;
 
-public class KMeansModelV2 extends Schema {
-
+public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModelV2> {
   // Input fields
   @API(help="KMeans Model to inspect",required=true)
   Key key;
@@ -27,20 +29,19 @@ public class KMeansModelV2 extends Schema {
   @API(help="Iterations executed")
   public double iters;
 
-
   //==========================
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override public KMeansModelV2 fillInto( Handler h ) {
-    throw H2O.unimpl();
+  @Override public KMeansModel createImpl() {
+    return (KMeansModel) this._model;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public KMeansModelV2 fillFrom( Handler h ) {
-    if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
-    InspectHandler ih = (InspectHandler)h;
-    KMeansModel kmm = ih._val.get();
+  @Override public KMeansModelV2 fillFromImpl( KMeansModel kmm ) {
+    // if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
+    // InspectHandler ih = (InspectHandler)h;
+    // KMeansModel kmm = ih._val.get();
     clusters = kmm._clusters;
     rows = kmm._rows;
     mses = kmm._mses;

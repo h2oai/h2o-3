@@ -1,19 +1,15 @@
 package water.parser;
 
-import static org.junit.Assert.assertEquals;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
 import java.io.File;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FileIntegrityChecker;
 
 public class ParseProgressTest extends TestUtil {
-
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
   // Attempt a multi-jvm parse of covtype.
   // Silently exits if it cannot find covtype.
   @Test public void testCovtype() {
@@ -30,13 +26,13 @@ public class ParseProgressTest extends TestUtil {
     }
 
     FileIntegrityChecker c = FileIntegrityChecker.check(f);
-    assertEquals(1,c.size());   // Exactly 1 file
+    AssertJUnit.assertEquals(1,c.size());   // Exactly 1 file
     Key k = c.syncDirectory(null,null,null,null);
-    assertEquals(true,k!=null);
+    AssertJUnit.assertEquals(true,k!=null);
 
     Frame fr = ParseDataset2.parse(Key.make(),k);
-    assertEquals( 55, fr.numCols() );
-    assertEquals( 581012, fr.numRows() );
+    AssertJUnit.assertEquals( 55, fr.numCols() );
+    AssertJUnit.assertEquals( 581012, fr.numRows() );
     fr.delete();
   }
 }

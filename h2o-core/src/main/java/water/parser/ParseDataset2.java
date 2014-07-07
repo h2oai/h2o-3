@@ -25,20 +25,20 @@ public class ParseDataset2 extends Job<Frame> {
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, boolean singleQuote, int checkHeader) {
     return parse(okey,keys,delete_on_done,setup(keys[0],singleQuote,checkHeader));
   }
-  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
+  public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
     Frame fr = job.get();
     job.remove();
     return fr;
   }
 
-  public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetupHandler globalSetup) {
+  public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     return forkParseDataset(okey,keys, globalSetup,delete_on_done); 
   }
 
-  private static ParseSetupHandler setup(Key k, boolean singleQuote, int checkHeader) {
+  private static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
-    ParseSetupHandler globalSetup = ParseSetupHandler.guessSetup(bits, singleQuote, checkHeader);
+    ParseSetup globalSetup = ParseSetup.guessSetup(bits, singleQuote, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
     return globalSetup;
   }
@@ -55,7 +55,7 @@ public class ParseDataset2 extends Job<Frame> {
   }
 
   // Same parse, as a backgroundable Job
-  public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParseSetupHandler setup, boolean delete_on_done) {
+  public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean delete_on_done) {
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
@@ -88,10 +88,10 @@ public class ParseDataset2 extends Job<Frame> {
   public static class ParserFJTask extends water.H2O.H2OCountedCompleter {
     final ParseDataset2 _job;
     final Key[] _keys;
-    final ParseSetupHandler _setup;
+    final ParseSetup _setup;
     final boolean _delete_on_done;
 
-    public ParserFJTask( ParseDataset2 job, Key[] keys, ParseSetupHandler setup, boolean delete_on_done) {
+    public ParserFJTask( ParseDataset2 job, Key[] keys, ParseSetup setup, boolean delete_on_done) {
       _job = job;
       _keys = keys;
       _setup = setup;
@@ -115,7 +115,7 @@ public class ParseDataset2 extends Job<Frame> {
 
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParseSetupHandler setup, boolean delete_on_done) {
+  private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._ncols > 0;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
@@ -206,8 +206,8 @@ public class ParseDataset2 extends Job<Frame> {
       for(int i = 0; i < chks.length; ++i) {
         Chunk chk = chks[i];
         if(_gDomain[i] == null) // killed, replace with all NAs
-          DKV.put(chk._vec.chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk._len));
-        else for( int j = 0; j < chk._len; ++j){
+          DKV.put(chk.vec().chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk.len()));
+        else for( int j = 0; j < chk.len(); ++j){
           if( chk.isNA0(j) )continue;
           long l = chk.at80(j);
           assert l >= 0 && l < emap[i].length : "Found OOB index "+l+" pulling from "+chk.getClass().getSimpleName();
@@ -299,7 +299,7 @@ public class ParseDataset2 extends Job<Frame> {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    private final ParseSetupHandler _setup; // The expected column layout
+    private final ParseSetup _setup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
@@ -321,7 +321,7 @@ public class ParseDataset2 extends Job<Frame> {
     FVecDataOut _dout;
     String[] _errors;
 
-    MultiFileParseTask(VectorGroup vg,  ParseSetupHandler setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
+    MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _setup = setup; 
       _vg = vg; 
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
@@ -374,7 +374,7 @@ public class ParseDataset2 extends Job<Frame> {
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
-      ParseSetupHandler localSetup = _setup.guessSetup(bits);
+      ParseSetup localSetup = _setup.guessSetup(bits);
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
@@ -443,7 +443,7 @@ public class ParseDataset2 extends Job<Frame> {
 
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-    private FVecDataOut streamParse( final InputStream is, final ParseSetupHandler localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
+    private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols));
       Parser p = localSetup.parser();
@@ -459,7 +459,7 @@ public class ParseDataset2 extends Job<Frame> {
 
     // ------------------------------------------------------------------------
     private static class DParse extends MRTask<DParse> {
-      private final ParseSetupHandler _setup;
+      private final ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
       private final VectorGroup _vg;
@@ -469,7 +469,7 @@ public class ParseDataset2 extends Job<Frame> {
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
 
-      DParse(VectorGroup vg, ParseSetupHandler setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
+      DParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
         super(mfpt);
         _vg = vg;
         _setup = setup;
@@ -500,7 +500,7 @@ public class ParseDataset2 extends Job<Frame> {
         }
         p.parallelParse(in.cidx(),din,dout);
         (_dout = dout).close(_fs);
-        Job.update(in._len,_job_key); // Record bytes parsed
+        Job.update(in.len(),_job_key); // Record bytes parsed
       }
       @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {
@@ -738,8 +738,8 @@ public class ParseDataset2 extends Job<Frame> {
     public FVecDataIn(Chunk chk){
       _chk = chk;
       _idx = _chk.cidx();
-      _firstLine = _chk._start;
-      _vec = chk._vec;
+      _firstLine = chk.start();
+      _vec = chk.vec();
     }
     @Override public byte[] getChunkData(int cidx) {
       if(cidx != _idx)

@@ -129,7 +129,7 @@ public class Frame extends Lockable {
         for( int col = 0; col < cs.length; col++ ) {
           Chunk c = cs[col];
           NewChunk nc = ncs[col];
-          for( int row = 0; row < c._len; row++ )
+          for( int row = 0; row < c.len(); row++ )
             if( c._vec.isUUID() ) nc.addUUID(c,row);
             else nc.addNum(c.at0(row));
         }
@@ -232,8 +232,7 @@ public class Frame extends Lockable {
   public long byteSize() {
     long sum=0;
     Vec[] vecs = vecs();
-    for( int i=0; i<vecs.length; i++ )
-      sum += vecs[i].byteSize();
+    for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }
 

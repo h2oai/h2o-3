@@ -1,16 +1,17 @@
 package water;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.testng.AssertJUnit.*;
+import org.testng.annotations.*;
+
 import java.io.File;
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
-import org.junit.*;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
 
+@Test(groups={"multi-node"})
 public class MRThrow extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  MRThrow() { super(5); }
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.

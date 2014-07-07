@@ -3,6 +3,7 @@ package water.parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+
 import water.*;
 
 /** A collection of utility classes for parsing.
@@ -57,8 +58,8 @@ public abstract class Parser extends Iced {
 
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
-  protected final ParseSetupHandler _setup;
-  Parser( ParseSetupHandler setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
+  protected final ParseSetup _setup;
+  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);

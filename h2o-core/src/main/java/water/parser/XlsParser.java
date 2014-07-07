@@ -4,11 +4,13 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.ArrayList;
+
 import water.H2O;
 import water.UDP;
+import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
-  XlsParser( ParseSetupHandler ps ) { super(ps); }
+  XlsParser( ParseSetup ps ) { super(ps); }
   @Override DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
 
   // A Stream, might be a Zip stream
@@ -43,9 +45,9 @@ class XlsParser extends Parser {
     }
 
     char get1(int pos ) { assert _off+pos+1<_lim; return (char)_bbuf[_off+pos]; }
-    int get2( int pos ) { assert _off+pos+2<_lim; return UDP.get2(_bbuf,_off+pos); }
-    int get4( int pos ) { assert _off+pos+4<_lim; return UDP.get4(_bbuf,_off+pos); }
-    double get8d( int pos ) { assert _off+pos+8<_lim; return UDP.get8d(_bbuf,_off+pos); }
+    int get2( int pos ) { assert _off+pos+2<_lim; return UnsafeUtils.get2(_bbuf, _off + pos); }
+    int get4( int pos ) { assert _off+pos+4<_lim; return UnsafeUtils.get4(_bbuf,_off+pos); }
+    double get8d( int pos ) { assert _off+pos+8<_lim; return UnsafeUtils.get8d(_bbuf,_off+pos); }
     String getStr( int pos, int len ) { return new String(_bbuf,_off+pos,len); }
   }
 
@@ -69,18 +71,18 @@ class XlsParser extends Parser {
   }
 
   // Wrapper to fetch an int at a random offset
-  private int get4( int pos ) throws IOException { readAtLeast(pos+4); return UDP.get4(_buf,pos); }
+  private int get4( int pos ) throws IOException { readAtLeast(pos+4); return UnsafeUtils.get4(_buf,pos); }
 
 
   /** Try to parse the bytes as XLS format  */
-  public static ParseSetupHandler guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParseSetupHandler(true, 0, null, ParserType.XLS, ParseSetupHandler.AUTO_SEP, -1, false, null, null,0));
+  public static ParseSetup guessSetup( byte[] bytes ) {
+    XlsParser p = new XlsParser(new ParseSetup(true, 0, null, ParserType.XLS, ParseSetup.AUTO_SEP, -1, false, null, null,0));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     InspectDataOut dout = new InspectDataOut();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
-    return new ParseSetupHandler(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetupHandler.AUTO_SEP, dout._ncols,
+    return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
+                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetup.AUTO_SEP, dout._ncols,
                                  false,dout.colNames(), dout._data, dout.colNames()==null?-1:1);
   }
 

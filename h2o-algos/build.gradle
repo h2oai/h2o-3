@@ -5,6 +5,12 @@ description = "H2O Algorithms"
 dependencies {
   compile project(":h2o-core")
 
-  testCompile "junit:junit:4.+"
+  testCompile "org.testng:testng:6.8"
   testCompile project(path: ":h2o-core", configuration: 'tests')
+}
+
+test {
+    useTestNG() {
+        suites new File(projectDir, 'src/test/resources/testng.xml')
+    }
 }

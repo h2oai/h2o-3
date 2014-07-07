@@ -10,13 +10,15 @@ import water.H2O;
  */
 public class CBSChunk extends Chunk {
   static protected final byte _NA  = 0x02; // Internal representation of NA
-  static final int OFF = 2;
-  protected byte _bpv;
-  protected byte _gap;// number of trailing unused bits in the end (== _len % 8, we allocate bytes, but our length i generally not multiple of 8)
+  static protected final int _OFF = 2;
+  private byte _bpv;
+  public byte bpv() { return _bpv; } //bits per value
+  private byte _gap;// number of trailing unused bits in the end (== _len % 8, we allocate bytes, but our length i generally not multiple of 8)
+  public byte gap() { return _gap; } //number of trailing unused bits in the end
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
     _mem = bs; _start = -1; _gap = gap; _bpv = bpv;
-    _len = ((_mem.length - OFF)*8 - _gap) / _bpv; // number of boolean items
+    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
   @Override protected long at8_impl(int idx) {
     byte b = atb(idx);
@@ -29,8 +31,8 @@ public class CBSChunk extends Chunk {
   }
   @Override protected final boolean isNA_impl( int i ) { return atb(i)==_NA; }
   protected byte atb(int idx) {
-    int vpb = 8 / _bpv;  // values per byte
-    int bix = OFF + idx / vpb; // byte index
+    int vpb = 8 / _bpv;  // values per byte (= 8 / bits_per_value)
+    int bix = _OFF + idx / vpb; // byte index
     int off = _bpv * (idx % vpb);
     byte b   = _mem[bix];
     switch( _bpv ) {
@@ -48,12 +50,12 @@ public class CBSChunk extends Chunk {
     throw H2O.unimpl();
   }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc._xs = MemoryManager.malloc4(_len);
-    nc._ls = MemoryManager.malloc8(_len);
-    for (int i=0; i<_len; i++) {
+    nc.alloc_exponent(len());
+    nc.alloc_mantissa(len());
+    for (int i=0; i< len(); i++) {
       int res = atb(i);
-      if (res == _NA) nc._xs[i] = Integer.MIN_VALUE;
-      else            nc._ls[i] = res;
+      if (res == _NA) nc.exponent()[i] = Integer.MIN_VALUE;
+      else            nc.mantissa()[i] = res;
     }
     return nc;
   }
@@ -85,7 +87,7 @@ public class CBSChunk extends Chunk {
     _start = -1;
     _gap   = _mem[0];
     _bpv   = _mem[1];
-    _len = ((_mem.length - OFF)*8 - _gap) / _bpv;
+    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);
     return this;
   }
 }

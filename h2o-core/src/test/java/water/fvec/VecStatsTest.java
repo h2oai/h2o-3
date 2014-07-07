@@ -1,8 +1,10 @@
 package water.fvec;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
+
 import java.util.Random;
-import org.junit.Test;
+
 import water.Futures;
 import water.TestUtil;
 import water.Key;

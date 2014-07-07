@@ -1,15 +1,17 @@
 package water.fvec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.*;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 import water.*;
 
+@Test(groups={"multi-node"})
 public class NewVectorTest extends TestUtil {
+  NewVectorTest() { super(3); }
+
+  static void assertTrue(String s, boolean b) { org.testng.Assert.assertTrue (b, s); }
+
   static final double EPSILON = 1e-6;
-  @BeforeClass public static void stall() { stall_till_cloudsize(3); }
 
   private void testImpl( long[] ls, int[] xs, Class C, boolean hasFloat ) {
     int [] id = new int[xs.length];
@@ -20,11 +22,8 @@ public class NewVectorTest extends TestUtil {
     Vec vec = null;
     try {
       AppendableVec av = new AppendableVec(Vec.newKey());
-      NewChunk nv = new NewChunk(av,0);
-      nv._ls = ls;
-      nv._id = id;
-      nv._xs = xs;
-      nv._len= nv._len2 = ls.length;
+      NewChunk nv = new NewChunk(av,0, ls, xs, id, null);
+      nv.set_len(nv.set_len2(ls.length));
       Chunk bv = nv.compress();
       Futures fs = new Futures();
       vec = bv._vec = av.close(fs);
@@ -33,7 +32,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
-        assertEquals(ls[i]*water.util.PrettyPrint.pow10(xs[i]), bv.at0(i), bv.at0(i)*EPSILON);
+        assertEquals(ls[i]*water.util.PrettyPrint.pow10(xs[i]), bv.at0(i), Math.abs(bv.at0(i))*EPSILON);
     } finally {
       if( vec != null ) vec.remove();
     }
@@ -96,14 +95,14 @@ public class NewVectorTest extends TestUtil {
     try {
       Futures fs = new Futures();
       AppendableVec av = new AppendableVec(Vec.newKey());
-      NewChunk nv = new NewChunk(av,0);
-      long ls[] = nv._ls = new long[]{0,0,0,0}; // A 4-row chunk
-      nv._xs = new int []{0,0,0,0};
-      nv._len= nv._len2 = ls.length;
+      long ls[] = new long[]{0,0,0,0}; // A 4-row chunk
+      int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
+      NewChunk nv = new NewChunk(av,0,ls,xs,null,null);
+      nv.set_len(nv.set_len2(ls.length));
       nv.close(0,fs);
       vec = av.close(fs);
       fs.blockForPending();
-      assertEquals(nv._len2, vec.length());
+      assertEquals(nv.len2(), vec.length());
       // Compression returns the expected constant-compression-type:
       Chunk c0 = vec.chunkForChunkIdx(0);
       assertTrue( "Found chunk class "+c0.getClass()+" but expected C0LChunk", c0 instanceof C0LChunk );

@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 class CsvParser extends Parser {
-  private static final byte AUTO_SEP = ParseSetupHandler.AUTO_SEP;
+  private static final byte AUTO_SEP = ParseSetup.AUTO_SEP;
 
-  CsvParser( ParseSetupHandler ps ) { super(ps); }
+  CsvParser( ParseSetup ps ) { super(ps); }
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
@@ -540,7 +540,7 @@ MAIN_LOOP:
    *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
    *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
-  static ParseSetupHandler CSVguessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  static ParseSetup CSVguessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
 
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
@@ -561,7 +561,7 @@ MAIN_LOOP:
       }
     }
     if( nlines==0 )
-      return new ParseSetupHandler(false,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,checkHeader);
+      return new ParseSetup(false,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,checkHeader);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -573,11 +573,11 @@ MAIN_LOOP:
         if( lines[0].split(",").length > 2 ) sep = (byte)',';
         else if( lines[0].split(" ").length > 2 ) sep = ' ';
         else 
-          return new ParseSetupHandler(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,data,checkHeader);
+          return new ParseSetup(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,data,checkHeader);
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
-      if( checkHeader == 0 ) labels =  ParseSetupHandler.allStrings(data[0]) ? data[0] : null;
+      if( checkHeader == 0 ) labels =  ParseSetup.allStrings(data[0]) ? data[0] : null;
       else if( checkHeader == 1 ) labels = data[0];
       else labels = null;
     } else {                    // 2 or more lines
@@ -600,7 +600,7 @@ MAIN_LOOP:
 
       // Asked to check for a header, so see if 1st line looks header-ish
       if( checkHeader == 0 ) {  // Guess
-        labels = ParseSetupHandler.hasHeader(data[0],data[1]) && (data[0].length == ncols) ? data[0] : null;
+        labels = ParseSetup.hasHeader(data[0],data[1]) && (data[0].length == ncols) ? data[0] : null;
       } else if( checkHeader == 1 ) { // Told: take 1st line
         labels = data[0];
       } else {                  // Told: no headers
@@ -636,6 +636,6 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Return the final setup
-    return new ParseSetupHandler( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels, data, checkHeader );
+    return new ParseSetup( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels, data, checkHeader );
   }
 }

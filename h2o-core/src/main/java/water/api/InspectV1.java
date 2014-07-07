@@ -1,10 +1,10 @@
 package water.api;
 
 import water.*;
+import water.api.InspectHandler.InspectPojo;
 import water.util.DocGen.HTML;
 
-class InspectV1 extends Schema<InspectHandler,InspectV1> {
-
+class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Input fields
   @API(help="Key to inspect",required=true)
   Key key;
@@ -27,22 +27,21 @@ class InspectV1 extends Schema<InspectHandler,InspectV1> {
 
   // Version&Schema-specific filling into the handler
   private transient Value _val; // To avoid a race, cached lookup here
-  @Override protected InspectV1 fillInto( InspectHandler h ) {
+
+  @Override public InspectPojo createImpl() {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
-    h._val = _val;
     if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
-    h._off = off;
     if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
-    h._len = len;
-    return this;
+    InspectPojo i = new InspectPojo(_val, off, len);
+    return i;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected InspectV1 fillFrom( InspectHandler h ) {
+  @Override public InspectV1 fillFromImpl( InspectPojo i) {
     className = _val.className();
-    schema = h._schema; // Output schema
-    schema.fillFrom(h);                   // Recursively fill in schema
+    schema = i._schema; // Output schema
+    schema.fillFromImpl(i);                   // Recursively fill in schema
     return this;
   }
 
@@ -53,5 +52,5 @@ class InspectV1 extends Schema<InspectHandler,InspectV1> {
 
   //==========================
   // Helper so ParseV2 can link to InspectV1
-  static String link(Key key) { return "Inspect?key="+key; }
+  static String link(Key key) { return "/Inspect?key="+key; }
 }

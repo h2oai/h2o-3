@@ -7,34 +7,34 @@ import water.*;
  * Cannot store 0xFF, the value is a marker for N/A.
  */
 public class C1Chunk extends Chunk {
-  static final int OFF=0;
+  static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
-  C1Chunk(byte[] bs) { _mem=bs; _start = -1; _len = _mem.length; }
+  C1Chunk(byte[] bs) { _mem=bs; _start = -1; set_len(_mem.length); }
   @Override protected final long at8_impl( int i ) {
-    long res = 0xFF&_mem[i+OFF];
+    long res = 0xFF&_mem[i+_OFF];
     if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
     return res;
   }
   @Override protected final double atd_impl( int i ) {
-    long res = 0xFF&_mem[i+OFF];
+    long res = 0xFF&_mem[i+_OFF];
     return (res == _NA)?Double.NaN:res;
   }
-  @Override protected final boolean isNA_impl( int i ) { return (0xFF&_mem[i+OFF]) == _NA; }
+  @Override protected final boolean isNA_impl( int i ) { return (0xFF&_mem[i+_OFF]) == _NA; }
   @Override boolean set_impl(int i, long l) {
     if( !(0 <= l && l < 255) ) return false;
-    _mem[i+OFF] = (byte)l;
+    _mem[i+_OFF] = (byte)l;
     return true;
   }
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
-  @Override boolean setNA_impl(int idx) { _mem[idx+OFF] = (byte)_NA; return true; }
+  @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc._xs = MemoryManager.malloc4(_len);
-    nc._ls = MemoryManager.malloc8(_len);
-    for( int i=0; i<_len; i++ ) {
-      int res = 0xFF&_mem[i+OFF];
-      if( res == C1Chunk._NA ) nc._xs[i] = Integer.MIN_VALUE;
-      else                     nc._ls[i] = res;
+    nc.alloc_exponent(len());
+    nc.alloc_mantissa(len());
+    for( int i=0; i< len(); i++ ) {
+      int res = 0xFF&_mem[i+_OFF];
+      if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
+      else             nc.mantissa()[i] = res;
     }
     return nc;
   }
@@ -42,7 +42,7 @@ public class C1Chunk extends Chunk {
   @Override final public C1Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;
-    _len = _mem.length;
+    set_len(_mem.length);
     return this;
   }
 }

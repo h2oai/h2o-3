@@ -1,14 +1,13 @@
 package water;
 
-import org.junit.*;
+import org.testng.AssertJUnit;
+import org.testng.annotations.*;
 
 public class AutoBuffer2JSONTest extends TestUtil {
-  @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
-
   private void assertEqual(Iced test, String expJson) {
     AutoBuffer ab = new AutoBuffer();
     String json = new String(test.writeJSON(ab).buf());
-    Assert.assertEquals(expJson, json);
+    AssertJUnit.assertEquals(expJson, json);
   }
 
   static class A1 extends Iced {

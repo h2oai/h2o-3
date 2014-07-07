@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import water.nbhm.*;
 import water.util.Log;
 import water.util.DocGen.HTML;
+import water.util.UnsafeUtils;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -106,8 +107,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public static H2ONode intern( byte[] bs, int off ) {
     byte[] b = new byte[4];
-    UDP.set4(b,0,UDP.get4(bs,off));
-    int port = UDP.get2(bs,off+4)&0xFFFF;
+    UnsafeUtils.set4(b, 0, UnsafeUtils.get4(bs, off));
+    int port = UnsafeUtils.get2(bs,off+4)&0xFFFF;
     try { return intern(InetAddress.getByAddress(b),port); } 
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }

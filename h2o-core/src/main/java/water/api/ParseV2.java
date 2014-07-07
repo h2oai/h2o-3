@@ -2,10 +2,11 @@ package water.api;
 
 import java.util.Arrays;
 import water.*;
+import water.api.ParseHandler.Parse;
 import water.util.DocGen.HTML;
 import water.parser.ParserType;
 
-public class ParseV2 extends Schema<ParseHandler,ParseV2> {
+public class ParseV2 extends Schema<Parse,ParseV2> {
 
   // Input fields
   @API(help="Final hex key name",required=true)
@@ -46,23 +47,24 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected ParseV2 fillInto( ParseHandler h ) {
-    h._hex = hex;
-    h._srcs = srcs;
-    h._pType = pType;
-    h._sep = sep;
-    h._ncols = ncols;
-    h._checkHeader = checkHeader;
-    h._singleQuotes = singleQuotes;
-    h._columnNames = columnNames;
-    h._delete_on_done = delete_on_done;
-    h._blocking = blocking;
-    return this;
+  @Override public Parse createImpl() {
+    Parse p = new Parse();
+    p._hex = hex;
+    p._srcs = srcs;
+    p._pType = pType;
+    p._sep = sep;
+    p._ncols = ncols;
+    p._checkHeader = checkHeader;
+    p._singleQuotes = singleQuotes;
+    p._columnNames = columnNames;
+    p._delete_on_done = delete_on_done;
+    p._blocking = blocking;
+    return p;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected ParseV2 fillFrom( ParseHandler h ) {
-    job = h._job._key;
+  @Override public ParseV2 fillFromImpl( Parse p ) {
+    job = p._job._key;
     return this;
   }
 
@@ -70,7 +72,7 @@ public class ParseV2 extends Schema<ParseHandler,ParseV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Parse Started");
-    String url = JobPollV2.link(job);
+    String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }
 

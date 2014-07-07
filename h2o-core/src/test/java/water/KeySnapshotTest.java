@@ -1,7 +1,6 @@
 package water;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.*;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -9,7 +8,10 @@ import java.util.Map;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
+@Test(groups={"multi-node"})
 public class KeySnapshotTest extends TestUtil {
+  KeySnapshotTest() { super(5); }
+
   private static class IcedInt extends Iced {
     public final int value;
     public IcedInt(int val){value = val;}
@@ -18,8 +20,6 @@ public class KeySnapshotTest extends TestUtil {
     public final double value;
     public IcedDouble (double v) {value = v;}
   }
-  @BeforeClass
-  public static void stall() { stall_till_cloudsize(5); }
 
   @Test
   public void testGlobalKeySet(){

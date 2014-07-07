@@ -2,6 +2,8 @@ package water.api;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -9,6 +11,7 @@ import java.util.regex.Pattern;
 
 import water.H2O;
 import water.AutoBuffer;
+import water.Iced;
 import water.NanoHTTPD;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
@@ -28,6 +31,7 @@ public class RequestServer extends NanoHTTPD {
   private static volatile String _htmlTemplate = "";
 
   final static class Route {
+    // TODO: handlers are now stateless, so create a single instance and stash it here
     public final String  _http_method;
     public final Pattern _url_pattern;
     public final Class   _handler_class;
@@ -80,7 +84,7 @@ public class RequestServer extends NanoHTTPD {
 
   static {
     // Data
-    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"compute2"),"/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles"), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"   ),"/Parse"      , "Parse",         "Data");
     addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect" ),"/Inspect"    , "Inspect",       "Data");
@@ -88,10 +92,10 @@ public class RequestServer extends NanoHTTPD {
     // Admin
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"  ),"/Cloud"      , "Cloud",         "Admin");
     addToNavbar(register("/Jobs"       ,"GET",JobsHandler       .class,"list"    ),"/Jobs"       , "Jobs",          "Admin");
-    addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"compute2"),"/Profiler"   , "Profiler",      "Admin");
-    addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"compute2"),"/JStack"     , "Stack Dump",    "Admin");
-    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"compute2"),"/Timeline"   , "Timeline",      "Admin");
-    addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"compute2"),"/UnlockKeys" , "Unlock Keys",   "Admin");
+    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"fetch"   ),"/Timeline"   , "Timeline",      "Admin");
+    addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"   ),"/Profiler"   , "Profiler",      "Admin");
+    addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"fetch"   ),"/JStack"     , "Stack Dump",    "Admin");
+    addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"  ),"/UnlockKeys" , "Unlock Keys",   "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"     ),"/Tutorials"  , "Tutorials Home","Help");
@@ -100,8 +104,8 @@ public class RequestServer extends NanoHTTPD {
     initializeNavBar();
 
     // REST only, no html:
-    register("/Typeahead/files" ,"GET",TypeaheadHandler.class, "files");
-    register("/JobPoll"         ,"GET",JobPollHandler  .class, "poll" );
+    register("/Typeahead/files"                             ,"GET",TypeaheadHandler.class, "files");
+    register("/Jobs/(?<key>.*)"                             ,"GET",JobsHandler     .class, "fetch", new String[] {"key"} );
 
     register("/Find","GET",FindHandler.class, "find" );
 
@@ -113,10 +117,12 @@ public class RequestServer extends NanoHTTPD {
     register("/2/Frames"                                    ,"GET",FramesHandler.class, "list_or_fetch"); // uses ?key=
     register("/3/Frames/(?<key>.*)"                         ,"DELETE",FramesHandler.class, "delete", new String[] {"key"});
     register("/3/Frames"                                    ,"DELETE",FramesHandler.class, "deleteAll");
+    // TODO: /3/Frames/(?<key>.*)/summary
+    // TODO?: /3/Frames/summary
 
-    register("/3/Models/(?<key>.*)"                         ,"GET",ModelsHandler.class, "fetch", new String[] {"key"});
-    register("/3/Models"                                    ,"GET",ModelsHandler.class, "list");
-    register("/2/Models"                                    ,"GET",ModelsHandler.class, "list_or_fetch"); // uses ?key=
+    // register("/3/Models/(?<key>.*)"                      ,"GET",ModelsHandler.class, "fetch", new String[] {"key"});
+    // register("/3/Models"                                 ,"GET",ModelsHandler.class, "list");
+    // register("/2/Models"                                 ,"GET",ModelsHandler.class, "list_or_fetch"); // uses ?key=
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
@@ -126,7 +132,26 @@ public class RequestServer extends NanoHTTPD {
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
     assert url_pattern.startsWith("/");
     try {
-      Method meth = handler_class.getDeclaredMethod(handler_method);
+      Class iced_class = null;
+      // Most of the handlers are parameterized on the Iced and Schema classes,
+      // but Inspect isn't, because it can accept any Iced and return any Schema.
+      if (handler_class.getGenericSuperclass() instanceof ParameterizedType) {
+        Type[] handler_type_parms = ((ParameterizedType)(handler_class.getGenericSuperclass())).getActualTypeArguments();
+        iced_class = (Class)handler_type_parms[0];  // [0] is the impl (Iced) type; [1] is the Schema type
+      } else {
+        iced_class = Iced.class; // If the handler isn't parameterized on the Iced class then this has to be Iced.
+      }
+
+      if (null == iced_class)
+        throw H2O.fail("Failed to find an implementation class for handler class: " + handler_class + " for method: " + handler_method);
+
+      Method meth = handler_class.getDeclaredMethod(
+              handler_method,
+              new Class[ ]{int.class, iced_class});
+
+      if (null == meth)
+        throw H2O.fail("Failed to find  method: " + handler_method + " for handler class: " + handler_class);
+
       if (url_pattern.matches("^/v?\\d+/.*")) {
         // register specifies a version
       } else {
@@ -278,10 +303,10 @@ public class RequestServer extends NanoHTTPD {
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     } catch( IllegalArgumentException e ) {
-      return wrap(HTTP_BADREQUEST,new HTTP404V1(e.getMessage(),uri),type);
+      return wrap(HTTP_BADREQUEST,new HttpErrorV1(400, e.getMessage(),uri),type);
     } catch( Exception e ) {
       // make sure that no Exception is ever thrown out from the request
-      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HTTP500V1(e),type);
+      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HttpErrorV1(e),type);
     }
   }
 
@@ -293,7 +318,8 @@ public class RequestServer extends NanoHTTPD {
     case json:
     case xml: {
       Class<Handler> clz = (Class<Handler>)route._handler_class;
-      Handler h = clz.newInstance(); // NOTE: currently h has state, so we must create new instances
+      // TODO: Handler no longer has state, so we can create single instances and put them in the Route
+      Handler h = clz.newInstance();
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
     case query:
@@ -348,7 +374,7 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      return wrap(HTTP_NOTFOUND,new HTTP404V1("Resource "+uri+" not found",uri),RequestType.html);
+      return wrap(HTTP_NOTFOUND,new HttpErrorV1(400, "Resource "+uri+" not found",uri),RequestType.html);
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";
@@ -363,10 +389,11 @@ public class RequestServer extends NanoHTTPD {
 
   private static String loadTemplate(String name) {
     water.H2O.registerResourceRoot(new File("src/main/resources/www"));
+    water.H2O.registerResourceRoot(new File("h2o-core/src/main/resources/www"));
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
-        return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
-      }
+      return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
+    }
     catch( IOException ioe ) { Log.err(ioe); return null; }
   }
 
@@ -437,7 +464,7 @@ public class RequestServer extends NanoHTTPD {
         Method meth = _routes.get(p)._handler_method;
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
-        Handler h = clz.newInstance();
+        Handler h = clz.newInstance(); // TODO: we don't need to create new instances; handler is stateless
         if( version < h.min_ver() || h.max_ver() < version ) continue;
         String url = h.schema(version).acceptsFrame(fr);
         if( url != null ) al.add(url);

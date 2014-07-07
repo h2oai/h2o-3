@@ -1,10 +1,11 @@
 package water.api;
 
 import water.*;
+import water.api.CloudHandler.Cloud;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-class CloudV1 extends Schema<CloudHandler,CloudV1> {
+class CloudV1 extends Schema<Cloud,CloudV1> {
   // This Schema has no inputs
 
   // Output fields
@@ -126,21 +127,21 @@ class CloudV1 extends Schema<CloudHandler,CloudV1> {
   // Customer adapters Go Here
 
   // Version&Schema-specific filling into the handler
-  @Override protected CloudV1 fillInto( CloudHandler h ) {
-    return this;                // No inputs
+  @Override public Cloud createImpl( ) {
+    return new Cloud();                // No inputs
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected CloudV1 fillFrom( CloudHandler h ) {
-    version = h._version;
-    cloud_name = h._cloud_name;
-    cloud_size = h._members.length;
-    cloud_uptime_millis = h._uptime_ms;
-    consensus = h._consensus;
-    locked = h._locked;
-    nodes = new Node[h._members.length];
-    for( int i=0; i<h._members.length; i++ ) {
-      nodes[i] = new Node(h._members[i]);
+  @Override public CloudV1 fillFromImpl(Cloud c) {
+    version = c._version;
+    cloud_name = c._cloud_name;
+    cloud_size = c._members.length;
+    cloud_uptime_millis = c._uptime_ms;
+    consensus = c._consensus;
+    locked = c._locked;
+    nodes = new Node[c._members.length];
+    for( int i=0; i<c._members.length; i++ ) {
+      nodes[i] = new Node(c._members[i]);
       if( !nodes[i].healthy ) bad_nodes++;
     }
     return this;

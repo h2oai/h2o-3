@@ -2,6 +2,7 @@ package water.api;
 
 
 import water.H2O;
+import water.api.FramesHandler.Frames;
 import water.Key;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
@@ -18,8 +19,9 @@ class FramesV2 extends FramesBase {
   @API(help="Map of (string representation of) key to Frame summary.")
   IcedHashMap<String, FrameSummaryV2> frames;
 
-  @API(help="Map of (string representation of) key to Model summary.")
-  IcedHashMap<String, ModelsV2.ModelSummaryV2> models;
+  // TODO:
+  // @API(help="Map of (string representation of) key to Model summary.")
+  // IcedHashMap<String, ModelsV2.ModelSummaryV2> models;
 
   @API(help="General information on the response.")
   ResponseInfoV2 response;
@@ -28,7 +30,7 @@ class FramesV2 extends FramesBase {
    * Schema for the simple Frame summary representation used (only) in /2/Frames and
    * /2/Models.
    */
-  static final class FrameSummaryV2 extends Schema {
+  static final class FrameSummaryV2 extends Schema<Frame, FrameSummaryV2> {
     @API(help="String representation of the Frame's key.")
     String key;
 
@@ -59,41 +61,42 @@ class FramesV2 extends FramesBase {
       this.is_raw_frame = false; // TODO
     }
 
-    @Override protected FrameSummaryV2 fillInto( Handler h ) { throw H2O.fail("fillInto should never be called on FrameSummaryV2"); }
-    @Override protected FrameSummaryV2 fillFrom( Handler h ) { throw H2O.fail("fillFrom should never be called on FrameSummaryV2"); }
+    @Override public Frame createImpl(  ) { throw H2O.fail("fillInto should never be called on FrameSummaryV2"); }
+    @Override public FrameSummaryV2 fillFromImpl(Frame f) { throw H2O.fail("fillFromImpl should never be called on FrameSummaryV2"); }
   }
 
 
   // Version-specific filling into the handler
-  @Override protected FramesBase fillInto( FramesHandler h ) {
-    h.key = this.key;
-    h.column = this.column; // NOTE: this is needed for request handling, but isn't really part of state
+  @Override public Frames createImpl() {
+    Frames f = new Frames();
+    f.key = this.key;
+    f.column = this.column; // NOTE: this is needed for request handling, but isn't really part of state
 
     if (null != frames) {
-      h.frames = new Frame[frames.size()];
+      f.frames = new Frame[frames.size()];
 
       int i = 0;
       for (FrameSummaryV2 frame : this.frames.values()) {
-        h.frames[i++] = FramesHandler.getFromDKV(frame.key);
+        f.frames[i++] = FramesHandler.getFromDKV(frame.key);
       }
     }
-    return this;
+    return f;
   }
 
   // Version&Schema-specific filling from the handler
-  @Override protected FramesBase fillFrom( FramesHandler h ) {
-    this.key = h.key;
-    this.column = h.column; // NOTE: this is needed for request handling, but isn't really part of state
+  @Override public FramesBase fillFromImpl(Frames f) {
+    this.key = f.key;
+    this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state
 
-    this.frames = new IcedHashMap<>();
-    if (null != h.frames) {
-      for (Frame frame : h.frames) {
+    this.frames = new IcedHashMap<String, FrameSummaryV2>();
+    if (null != f.frames) {
+      for (Frame frame : f.frames) {
         this.frames.put(frame._key.toString(), new FrameSummaryV2(frame));
       }
     }
 
     // TODO:
-    this.models = new IcedHashMap<>();
+    // this.models = new IcedHashMap<String, ModelsV2.ModelSummaryV2>();
 
     // TODO:
     this.response = new ResponseInfoV2();

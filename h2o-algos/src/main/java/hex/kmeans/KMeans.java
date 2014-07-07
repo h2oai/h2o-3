@@ -201,7 +201,7 @@ public class KMeans extends Job<KMeansModel> {
     @Override public void map(Chunk[] cs) {
       double[] values = new double[cs.length];
       ClusterDist cd = new ClusterDist();
-      for( int row = 0; row < cs[0]._len; row++ ) {
+      for( int row = 0; row < cs[0].len(); row++ ) {
         data(values, cs, row, _means, _mults);
         _sqr += minSqr(_clusters, values, _ncats, cd);
       }
@@ -240,10 +240,10 @@ public class KMeans extends Job<KMeansModel> {
     @Override public void map(Chunk[] cs) {
       double[] values = new double[cs.length];
       ArrayList<double[]> list = new ArrayList<>();
-      Random rand = RandomUtils.getRNG(_seed + cs[0]._start);
+      Random rand = RandomUtils.getRNG(_seed + cs[0].start());
       ClusterDist cd = new ClusterDist();
 
-      for( int row = 0; row < cs[0]._len; row++ ) {
+      for( int row = 0; row < cs[0].len(); row++ ) {
         data(values, cs, row, _means, _mults);
         double sqr = minSqr(_clusters, values, _ncats, cd);
         if( _probability * sqr > rand.nextDouble() * _sqr )
@@ -300,13 +300,13 @@ public class KMeans extends Job<KMeansModel> {
       _cats = new long[_K][_ncats][];
       for( int clu=0; clu<_K; clu++ )
         for( int col=0; col<_ncats; col++ )
-          _cats[clu][col] = new long[cs[col]._vec.cardinality()];
+          _cats[clu][col] = new long[cs[col].vec().cardinality()];
       _worse_err = 0;
 
       // Find closest cluster for each row
       double[] values = new double[N];
       ClusterDist cd = new ClusterDist();
-      for( int row = 0; row < cs[0]._len; row++ ) {
+      for( int row = 0; row < cs[0].len(); row++ ) {
         data(values, cs, row, _means, _mults);
         closest(_clusters, values, _ncats, cd);
         int clu = cd._cluster;
@@ -320,7 +320,7 @@ public class KMeans extends Job<KMeansModel> {
           _cMeans[clu][col] += values[col];
         _rows[clu]++;
         // Track worse row
-        if( cd._dist > _worse_err ) { _worse_err = cd._dist; _worse_row = cs[0]._start+row; }
+        if( cd._dist > _worse_err ) { _worse_err = cd._dist; _worse_row = cs[0].start()+row; }
       }
       // Scale back down to local mean
       for( int clu = 0; clu < _K; clu++ )
@@ -508,7 +508,7 @@ public class KMeans extends Job<KMeansModel> {
   private static void data(double[] values, Chunk[] chks, int row, double[] means, double[] mults) {
     for( int i = 0; i < values.length; i++ ) {
       double d = chks[i].at0(row);
-      values[i] = data(d, i, means, mults, chks[i]._vec.cardinality());
+      values[i] = data(d, i, means, mults, chks[i].vec().cardinality());
     }
   }
 

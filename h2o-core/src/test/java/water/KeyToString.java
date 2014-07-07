@@ -1,8 +1,9 @@
 package water;
 
-import static org.junit.Assert.*;
+import static org.testng.AssertJUnit.*;
+import org.testng.annotations.*;
+
 import java.util.Arrays;
-import org.junit.Test;
 
 public class KeyToString extends TestUtil {
   @Test public void testKeyToString() {

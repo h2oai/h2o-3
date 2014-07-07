@@ -1,15 +1,15 @@
 package water.fvec;
 
+import org.testng.annotations.*;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.*;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 
 public class WordCountTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
     File file = find_test_file("./smalldata/junit/cars.csv");
@@ -63,7 +63,7 @@ public class WordCountTest extends TestUtil {
   
     @Override public void map( Chunk bv ) {
       _words = WORDS;
-      final int len = bv._len;
+      final int len = bv.len();
       int i=0;                  // Parse point
       // Skip partial words at the start of chunks, assuming they belong to the
       // trailing end of the prior chunk.
@@ -194,7 +194,7 @@ public class WordCountTest extends TestUtil {
     }
   }
 
-  @Test @Ignore public void dummy_test() {
+  @Test(enabled = false) public void dummy_test() {
     /* this is just a dummy test to avoid JUnit complains about missing test */
   }
 }

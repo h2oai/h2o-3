@@ -1,14 +1,16 @@
 package water;
 
-import static org.junit.Assert.*;
+import static org.testng.AssertJUnit.*;
+import org.testng.annotations.*;
+
 import java.io.File;
-import org.junit.*;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
+import water.util.UnsafeUtils;
 
+@Test(groups={"multi-node"})
 public class KVTest extends TestUtil {
-
-  @BeforeClass public static void stall() { stall_till_cloudsize(2); }
+  KVTest() { super(2); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a
@@ -183,13 +185,13 @@ public class KVTest extends TestUtil {
   public static class Atomic2 extends Atomic {
     @Override public Value atomic( Value val ) {
       byte[] bits1 = val.memOrLoad();
-      long l1 = UDP.get8(bits1,0);
-      long l2 = UDP.get8(bits1,8);
+      long l1 = UnsafeUtils.get8(bits1, 0);
+      long l2 = UnsafeUtils.get8(bits1,8);
       l1 += 2;
       l2 += 2;
       byte[] bits2 = new byte[16];
-      UDP.set8(bits2,0,l1);
-      UDP.set8(bits2,8,l2);
+      UnsafeUtils.set8(bits2,0,l1);
+      UnsafeUtils.set8(bits2,8,l2);
       return new Value(_key,bits2);
     }
   }
