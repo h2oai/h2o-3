@@ -57,6 +57,10 @@ public class NewChunk extends Chunk {
     _xs = exponent;
     _id = indices;
     _ds = doubles;
+    if (_ls != null && len()==0) set_len(set_len2(_ls.length));
+    if (_xs != null && len()==0) set_len(set_len2(_xs.length));
+    if (_id != null && len()==0) set_len(set_len2(_id.length));
+    if (_ds != null && len()==0) set_len(set_len2(_ds.length));
   }
 
   // Constructor used when inflating a Chunk.

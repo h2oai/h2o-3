@@ -23,7 +23,6 @@ public class NewVectorTest extends TestUtil {
     try {
       AppendableVec av = new AppendableVec(Vec.newKey());
       NewChunk nv = new NewChunk(av,0, ls, xs, id, null);
-      nv.set_len(nv.set_len2(ls.length));
       Chunk bv = nv.compress();
       Futures fs = new Futures();
       vec = bv._vec = av.close(fs);
@@ -98,7 +97,6 @@ public class NewVectorTest extends TestUtil {
       long ls[] = new long[]{0,0,0,0}; // A 4-row chunk
       int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
       NewChunk nv = new NewChunk(av,0,ls,xs,null,null);
-      nv.set_len(nv.set_len2(ls.length));
       nv.close(0,fs);
       vec = av.close(fs);
       fs.blockForPending();

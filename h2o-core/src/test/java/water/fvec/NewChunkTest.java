@@ -23,9 +23,9 @@ public class NewChunkTest extends TestUtil {
   }
   void post() {
     cc = nc.compress();
-    Futures fs = new Futures();
     av._espc[0] = K; //HACK
     cc._start = 0; //HACK
+    Futures fs = new Futures();
     vec = cc._vec = av.close(fs);
     fs.blockForPending();
     assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
