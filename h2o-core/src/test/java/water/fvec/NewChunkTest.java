@@ -131,9 +131,10 @@ public class NewChunkTest extends TestUtil {
    */
   @Test public void testC0LChunk_zero() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(0,0);
-      assertEquals(K, nc.len());
+      for (int k = 0; k < K; ++k) nc.addNum(0,0); //handled as sparse
+      assertEquals(K, nc.len2()); //sparse length is K
       post();
+      assertEquals(K, cc.len());
       for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(0, cc.at80(k));
       AssertJUnit.assertTrue(cc instanceof C0LChunk);
     } finally { remove(); }
