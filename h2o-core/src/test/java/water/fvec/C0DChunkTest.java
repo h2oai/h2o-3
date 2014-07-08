@@ -15,10 +15,9 @@ public class C0DChunkTest extends TestUtil {
       for (int i=0;i<K;++i) nc.addNum(d);
       Chunk cc = nc.compress();
       AssertJUnit.assertTrue(cc instanceof C0DChunk);
-      NewChunk nc2 = new NewChunk(null, 0);
-      nc2 = cc.inflate_impl(nc2);
-      Chunk cc2 = nc2.compress();
+      Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
       AssertJUnit.assertTrue(cc2 instanceof C0DChunk);
+      AssertJUnit.assertTrue(Arrays.equals(cc._mem, cc2._mem));
       for (int i=0;i<K;++i) AssertJUnit.assertEquals(d, cc2.at0(i));
     }
   }
