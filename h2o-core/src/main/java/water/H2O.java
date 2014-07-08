@@ -247,6 +247,7 @@ final public class H2O {
     public String hdfs_config; // configuration file of the HDFS
     String hdfs_skip = null; // used by hadoop driver to not unpack and load any hdfs jar file at runtime.
     public String aws_credentials; // properties file for aws credentials
+    public boolean md5skip;
   }
 
   public static int H2O_PORT; // Both TCP & UDP cluster ports
@@ -324,6 +325,9 @@ final public class H2O {
     "    -nthreads <#threads>\n" +
     "          Maximum number of threads in the low priority batch-work queue.\n" +
     "          (The default is 99.)\n" +
+    "\n" +
+    "    -md5skip\n" +
+    "          Skip comparing MD5 of jar path while joining cloud.\n" +
     "\n" +
     "Cloud formation behavior:\n" +
     "\n" +
