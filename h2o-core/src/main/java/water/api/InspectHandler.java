@@ -42,10 +42,15 @@ public class InspectHandler extends Handler<InspectPojo,InspectV1> {
       if( i._val == null ) throw new IllegalArgumentException("Key is missing");
     }
 
-    if( i._val.isFrame() ) return (i._schema = new FrameV2((Frame)i._val.get(),i._off,i._len));
+    if( i._val.isFrame() ) {
+      // do paging. . .
+      // TODO: this should call FrameBase.schema(version).. . .
+      i._schema = new FrameV2((Frame)i._val.get(),i._off,i._len);
+    } else {
+      i._schema.fillFromImpl(i._val.get());
+    }
 
-    return i._schema.fillFromImpl(i._val.get());
-
+    return schema(version).fillFromImpl(i);
   }
 
   // Inspect Schemas are still at V1, unchanged for V2
