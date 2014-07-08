@@ -36,7 +36,7 @@ public class KMeansV2 extends Schema<KMeansParameters,KMeansV2> {
   Key job;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public KMeansParameters createImpl() {

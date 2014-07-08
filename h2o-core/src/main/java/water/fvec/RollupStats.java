@@ -8,7 +8,7 @@ import water.util.ArrayUtils;
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
  *  for them if the Vec is actively being written into.  It is common for all
  *  cores to ask for the same Vec rollup at once, so it is crucial that it be
- *  computed once across the cluster.  
+ *  computed once across the cluster.
  *
  *  Rollups are kept in the K/V store, which also controls who manages the
  *  rollup work and final results.  Winner of a DKV CAS/PutIfMatch race gets to
@@ -121,13 +121,13 @@ public class RollupStats extends DTask<RollupStats> {
   private void min( double d ) {
     if( d >= _mins[_mins.length-1] ) return;
     for( int i=0; i<_mins.length; i++ )
-      if( d < _mins[i] ) 
+      if( d < _mins[i] )
         { double tmp = _mins[i];  _mins[i] = d;  d = tmp; }
   }
   private void max( double d ) {
     if( d <= _maxs[_maxs.length-1] ) return;
     for( int i=0; i<_maxs.length; i++ )
-      if( d > _maxs[i] ) 
+      if( d > _maxs[i] )
         { double tmp = _maxs[i];  _maxs[i] = d;  d = tmp; }
   }
 
@@ -163,14 +163,14 @@ public class RollupStats extends DTask<RollupStats> {
     H2ONode h2o = rskey.home_node();
     if( h2o.equals(H2O.SELF) ) {
       if( fs == null ) { rs.compute2(); return rs; } // Block till ready
-      fs.add(H2O.submitTask(rs)); 
+      fs.add(H2O.submitTask(rs));
       throw H2O.unimpl();
       //return null;
     } else {                                   // Run remotely
       RPC<RollupStats> rpc = RPC.call(h2o,rs); // Run remote
       if( fs == null ) return rpc.get();       // Block till ready
       throw H2O.unimpl();
-      //fs.add(comp); 
+      //fs.add(comp);
       //return null;
     }
   }
@@ -188,7 +188,7 @@ public class RollupStats extends DTask<RollupStats> {
     assert _rskey.home();  // Only runs on Home node
     assert isComputing();
     Futures fs = new Futures(); // Just to track invalidates
-    
+
     // Attempt to flip from no-rollups to computing-rollups
     Value nnn = new Value(_rskey,this);
     Value old = DKV.DputIfMatch(_rskey,nnn,null,fs);
@@ -202,7 +202,7 @@ public class RollupStats extends DTask<RollupStats> {
       // need to block on an in-progress roll-up
       throw H2O.unimpl();
     }
-    // This call to DKV "get the lock" on making the Rollups.  
+    // This call to DKV "get the lock" on making the Rollups.
     // Do them Right Here, Right Now.
     Vec vec = DKV.get(Vec.getVecKey(_rskey)).get();
     rs = new Roll(_rskey).doAll(vec)._rs;
@@ -245,7 +245,7 @@ public class RollupStats extends DTask<RollupStats> {
     int nbins=MAX_SIZE;
     if( _isInt && (int)span==span ) {
       nbins = (int)span+1;      // 1 bin per int
-      int lim = vec.isEnum() ? MAX_ENUM_SIZE : MAX_SIZE; 
+      int lim = vec.isEnum() ? MAX_ENUM_SIZE : MAX_SIZE;
       nbins = Math.min(lim,nbins); // Cap nbins at sane levels
     }
     _bins = new Histo(this,nbins).doAll(vec)._bins;

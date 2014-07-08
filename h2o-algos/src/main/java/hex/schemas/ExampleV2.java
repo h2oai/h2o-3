@@ -25,7 +25,7 @@ public class ExampleV2 extends Schema<ExamplePojo,ExampleV2> {
   Key job;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public ExamplePojo createImpl() {

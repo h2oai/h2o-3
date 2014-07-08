@@ -17,7 +17,7 @@ public class ExampleModelV2 extends ModelBase<Model, ExampleModelV2> {
 
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public Model createImpl() {
