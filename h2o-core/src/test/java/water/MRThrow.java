@@ -18,7 +18,7 @@ public class MRThrow extends TestUtil {
   // Run a distributed byte histogram.  Throw an exception in *some* map call,
   // and make sure it's forwarded to the invoke.
   @Test public void testInvokeThrow() {
-    File file = find_test_file("build/h2o-core.jar");
+    File file = find_test_file("h2o-core/build/h2o-core.jar");
     assertTrue( "Missing test file; do a 'make' and retest", file != null);
     // Return a Key mapping to a NFSFileVec over the file
     NFSFileVec nfs = NFSFileVec.make(file);
@@ -41,7 +41,7 @@ public class MRThrow extends TestUtil {
   }
 
   @Test public void testGetThrow() {
-    File file = find_test_file("build/h2o-core.jar");
+    File file = find_test_file("h2o-core/build/h2o-core.jar");
     assertTrue( "Missing test file; do a 'make' and retest", file != null);
     NFSFileVec nfs = NFSFileVec.make(file);
     try {
@@ -63,7 +63,7 @@ public class MRThrow extends TestUtil {
   }
 
   @Test public void testContinuationThrow() throws InterruptedException, ExecutionException {
-    File file = find_test_file("build/h2o-core.jar");
+    File file = find_test_file("h2o-core/build/h2o-core.jar");
     assertTrue( "Missing test file; do a 'make' and retest", file != null);
     NFSFileVec nfs = NFSFileVec.make(file);
     try {

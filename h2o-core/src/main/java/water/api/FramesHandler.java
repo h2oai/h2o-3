@@ -90,12 +90,20 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return this.schema(version).fillFromImpl(f);
   }
 
-  // TODO: test!
-  protected FrameSummaryV2 summary(int version, Frames frames) {
-    column(version, frames);
-    RollupStats.computeHisto(frames.frames[0].vecs()[0]);
-    // TODO:
-    return new FrameSummaryV2(frames.frames[0]);
+  protected FramesBase columnSummary(int version, Frames frames) {
+    Frame frame = getFromDKV(frames.key);
+    Vec vec = frame.vec(frames.column);
+    if (null == vec)
+      throw new IllegalArgumentException("Did not find column: " + frames.column + " in frame: " + frames.key.toString());
+
+    // Compute second pass of rollups: the histograms.  Side-effects the Vec.
+    // TODO: side effects, ugh.
+    RollupStats.computeHisto(vec);
+
+    // Cons up our result
+    frames.frames = new Frame[1];
+    frames.frames[0] = new Frame(new String[] {frames.column }, new Vec[] { vec });
+    return schema(version).fillFromImpl(frames);
   }
 
   /** Return a single frame. */
@@ -124,7 +132,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     String err=null;
     Futures fs = new Futures();
     for( int i = 0; i < frameKeys.length; i++ ) {
-      try { 
+      try {
         getFromDKV(frameKeys[i]).delete(null,fs);
       } catch( IllegalArgumentException iae ) {
         err += iae.getMessage();

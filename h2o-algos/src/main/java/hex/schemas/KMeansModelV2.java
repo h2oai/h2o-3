@@ -30,7 +30,7 @@ public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModelV2> {
   public double iters;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public KMeansModel createImpl() {

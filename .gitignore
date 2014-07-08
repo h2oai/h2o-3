@@ -18,10 +18,11 @@ syn_datasets
 build/
 lib/
 h2o-web/src/main/resources/www/steam
+h2o*/test-output/
 out/
 .idea/
-h2o-dev.ipr
-h2o-dev.iws
+*.ipr
+*.iws
 .settings/*
 .gradle
 src/main/java/water/BuildVersion.java

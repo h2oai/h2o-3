@@ -19,6 +19,8 @@ public class ExampleHandler extends Handler<ExampleHandler.ExamplePojo,ExampleV2
     public Example _job;           // The modelling job
   }
 
+  public double[] _maxs;
+
   public ExampleHandler() {}
   public ExampleV2 work(int version, ExamplePojo e) {
     assert e._parms != null;

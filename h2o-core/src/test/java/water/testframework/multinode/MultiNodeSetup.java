@@ -35,12 +35,10 @@ public class MultiNodeSetup {
     // Leader node, where the tests execute from.
     H2O.main(new String[]{});
 
-    // Secondary nodes.
-    for( int i = 0; i < _numNodes-1; i++ ) {
-      String[] arr = new String[0];
-      NodeContainer n = new NodeContainer(arr);
-      n.start();
-    }
+    // Secondary nodes, skip if expected to be pre-built
+    if( System.getProperty("ai.h2o.skipNodeCreation") == null )
+      for( int i = 0; i < _numNodes-1; i++ )
+        new NodeContainer(new String[0]).start();
 
     H2O.waitForCloudSize(_numNodes, 10000);
 

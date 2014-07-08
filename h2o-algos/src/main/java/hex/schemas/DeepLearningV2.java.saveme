@@ -22,7 +22,7 @@ public class DeepLearningV2 extends Schema<DeepLearningPojo,DeepLearningV2> {
   }
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public DeepLearningV2 createImpl( ) {

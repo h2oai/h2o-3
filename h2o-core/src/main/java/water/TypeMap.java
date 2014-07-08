@@ -27,6 +27,7 @@ public class TypeMap {
     "water.api.CloudV1",
     "water.api.HTTP404V1",
     "water.api.HTTP500V1",
+    "water.api.HttpErrorV1",
     "water.api.Schema",
     "water.api.TutorialsV1",
     "water.api.TypeaheadV2",    // Allow typeahead without locking

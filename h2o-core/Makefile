@@ -3,7 +3,7 @@
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
 main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java)
-test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java)
+test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java src/test/java/water/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/%class,$(test_javas))
 classes = $(main_classes) $(test_classes)
@@ -53,7 +53,7 @@ JUNIT_TESTS_SLOW = water.KVTest water.parser.ParseProgressTest
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
 	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) -Dai.h2o.skipNodeCreation org.testng.TestNG src/test/resources/testng-multinode.xml 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
 	-@(pkill java; echo )
 	@exit `cat sandbox/status.0`
 
