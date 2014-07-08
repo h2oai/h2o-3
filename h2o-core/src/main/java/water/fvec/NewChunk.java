@@ -511,10 +511,20 @@ public class NewChunk extends Chunk {
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
       int i=0;
-      for( ; i< len(); i++ ) // Attempt to inject all doubles into longs
-        if( !Double.isNaN(_ds[i]) && (double)(long)_ds[i] != _ds[i] ) break;
-      if(i < len())
-        return sparse ? new CXDChunk(len2(), len(),8,bufD(8)) : chunkD();
+      boolean isConstant = true;
+      boolean isInteger = true;
+      for( ; i< len(); i++ ) {
+        if (!Double.isNaN(_ds[i])) {
+          isInteger &= (double) (long) _ds[i] == _ds[i];
+          isConstant &= _ds[i] == _ds[0];
+        }
+      }
+      if (!isInteger) {
+        if (isConstant) return new C0DChunk(_ds[0], len());
+        if (sparse) return new CXDChunk(len2(), len(), 8, bufD(8));
+        else return chunkD();
+      }
+
       _ls = new long[_ds.length]; // Else flip to longs
       _xs = new int [_ds.length];
       double [] ds = _ds;
