@@ -63,7 +63,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     @API(help="sigma")
     final double sigma;
 
-    @API(help="datatype: {enum, int, real, time, uuid}")
+    @API(help="datatype: {enum, string, int, real, time, uuid}")
     final String type;
 
     @API(help="domain; not-null for enum columns only")
@@ -103,13 +103,18 @@ class FrameV2 extends Schema<Frame, FrameV2> {
       maxs  = rs._maxs;
       mean  = rs._mean;
       sigma = rs._sigma;
-      type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
         str_data = new String[len];
-        for( int i=0; i<len; i++ )
-          str_data[i] = vec.isNA(off+i) ? null : PrettyPrint.UUID(vec.at16l(off+i),vec.at16h(off+i));
+        for (int i = 0; i < len; i++)
+          str_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
+        data = null;
+      } else if ( vec.isString() ) {
+        str_data = new String[len];
+        for (int i = 0; i < len; i++)
+          str_data[i] = vec.isNA(off + i) ? null : vec.atStr(off + i);
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);
@@ -225,7 +230,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
   private abstract static class ColOp { abstract String op(Col v); }
   private String rollUpStr(Col c, double d) {
-    return formatCell(c.domain!=null || "uuid".equals(c.type) ? Double.NaN : d,null,c,4);
+    return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);
   }
 
   private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
@@ -238,8 +243,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   private String formatCell( double d, String str, Col c, int precision ) {
     if( Double.isNaN(d) ) return "-";
     if( c.domain!=null ) return c.domain[(int)d];
-    if( "uuid".equals(c.type) ) {
-      // UUID handling
+    if( "uuid".equals(c.type) || "string".equals(c.type)) {
+      // UUID and String handling
       if( str==null ) return "-";
       return "<b style=\"font-family:monospace;\">"+str+"</b>";
     }

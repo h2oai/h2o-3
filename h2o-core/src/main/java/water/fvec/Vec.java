@@ -64,6 +64,8 @@ public class Vec extends Keyed {
   protected byte _time;
   /** UUID flag */
   protected boolean _isUUID;    // All UUIDs (or zero or missing)
+  /** String flag */
+  protected boolean _isString;    // All Strings
 
   /** Maximal size of enum domain */
   private static final int MAX_ENUM_SIZE = 10000;
@@ -71,13 +73,14 @@ public class Vec extends Keyed {
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
   public Vec( Key key, long espc[]) { this(key, espc, null); }
-  public Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false,(byte)-1); }
-  public Vec( Key key, long espc[], String[] domain, boolean hasUUID, byte time) {
+  public Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false, false, (byte)-1); }
+  public Vec( Key key, long espc[], String[] domain, boolean hasUUID, boolean hasString, byte time) {
     super(key);
     assert key._kb[0]==Key.VEC;
     _espc = espc;
     _time = time;               // is-a-time, or not (and what flavor used to parse time)
     _isUUID = hasUUID;          // all-or-nothing UUIDs
+    _isString = hasString;
     _domain = domain;
   }
 
@@ -112,7 +115,7 @@ public class Vec extends Keyed {
   }
 
   // Make a bunch of compatible zero Vectors
-  Vec[] makeZeros(int n, String[][] domains, boolean[] uuids, byte[] times) {
+  Vec[] makeZeros(int n, String[][] domains, boolean[] uuids, boolean[] strings, byte[] times) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
@@ -120,6 +123,7 @@ public class Vec extends Keyed {
       vs[i] = new Vec(keys[i],_espc,
                       domains== null ? null    : domains[i],
                       uuids  == null ? false   : uuids  [i],
+                      strings == null ? false  : strings[i],
                       times  == null ? (byte)-1: times  [i]);
     new MRTask() {
       @Override protected void setupLocal() {
@@ -202,6 +206,7 @@ public class Vec extends Keyed {
    *  are are also "isInt()" but not vice-versa. */
   public final boolean isEnum(){return _domain != null;}
   public final boolean isUUID(){return _isUUID;}
+  public final boolean isString(){return _isString;}
 
   /** Whether or not this column parsed as a time, and if so what pattern was used. */
   public final boolean isTime(){ return _time>=0; }
@@ -433,6 +438,8 @@ public class Vec extends Keyed {
   public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
   public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
 
+  public final String atStr( long i ) { return chunkForRow(i).atStr(i); }
+
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
    *  if the long does not fit in a double (value is larger magnitude than
@@ -469,6 +476,12 @@ public class Vec extends Keyed {
   final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
     ck.setNA(i);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set( long i, String str) {
+    Chunk ck = chunkForRow(i);
+    ck.set(i,str);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
