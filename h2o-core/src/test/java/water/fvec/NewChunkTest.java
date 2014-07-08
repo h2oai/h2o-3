@@ -131,7 +131,7 @@ public class NewChunkTest extends TestUtil {
    */
   @Test public void testC0LChunk_zero() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(0);
+      for (int k = 0; k < K; ++k) nc.addNum(0,0);
       assertEquals(K, nc.len());
       post();
       for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(0, cc.at80(k));
@@ -140,7 +140,7 @@ public class NewChunkTest extends TestUtil {
   }
   @Test public void testC0LChunk_regular() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(4);
+      for (int k = 0; k < K; ++k) nc.addNum(4,0);
       assertEquals(K, nc.len());
       post();
       for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(4, cc.at80(k));
@@ -162,7 +162,7 @@ public class NewChunkTest extends TestUtil {
   }
   @Test public void testC0LChunk_inflateToNA() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(4);
+      for (int k = 0; k < K; ++k) nc.addNum(4,0);
       post();
       assertEquals(K, nc.len());
       cc.setNA0(K - 1); //should inflate
@@ -175,7 +175,7 @@ public class NewChunkTest extends TestUtil {
   }
   @Test public void testC0LChunk_inflateRegular() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(12345);
+      for (int k = 0; k < K; ++k) nc.addNum(12345,0);
       assertEquals(K, nc.len());
       post();
       cc.set0(K-1, 0.1); //should inflate
