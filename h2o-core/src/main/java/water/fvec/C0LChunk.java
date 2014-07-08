@@ -27,8 +27,10 @@ public class C0LChunk extends Chunk {
       nc.alloc_mantissa(len());
       Arrays.fill(nc.mantissa(), _con);
       nc.alloc_exponent(len());
+      nc.set_len(nc.set_len2(len()));
+    } else {
+      nc.addZeros(len());
     }
-    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   @Override public int sparseLen(){return _con == 0?0: len();}
