@@ -48,14 +48,14 @@ public class C2SChunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     double dx = Math.log10(_scale);
     assert water.util.PrettyPrint.fitsIntoInt(dx);
-    Arrays.fill(nc.alloc_exponent(len()), (int)dx);
-    nc.alloc_mantissa(len());
-    for( int i=0; i< len(); i++ ) {
+    nc.set_len(0);
+    nc.set_len2(0);
+    final int len = len();
+    for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == C2Chunk._NA ) nc.exponent()[i] = Integer.MIN_VALUE;
-      else                     nc.mantissa()[i] = res+_bias;
+      if( res == C2Chunk._NA ) nc.addNA();
+      else nc.addNum((long)(res+_bias),(int)dx);
     }
-    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   public int pformat_len0() { 
