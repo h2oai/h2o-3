@@ -203,11 +203,19 @@ public class Frame extends Lockable {
     return vecs;
   }
 
-  /** true/false every Vec is a UUID */
+  /** true/false whether each Vec is a UUID */
   public boolean[] uuids() {
     boolean bs[] = new boolean[vecs().length];
     for( int i=0; i<vecs().length; i++ )
       bs[i] = vecs()[i].isUUID();
+    return bs;
+  }
+
+  /** true/false whether each Vec is a string */
+  public boolean[] strings() {
+    boolean bs[] = new boolean[vecs().length];
+    for( int i=0; i<vecs().length; i++ )
+      bs[i] = vecs()[i].isString();
     return bs;
   }
 

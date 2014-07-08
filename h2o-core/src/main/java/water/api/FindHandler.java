@@ -36,6 +36,8 @@ class FindHandler extends Handler<FindPojo,FindV2> {
         ds[i] = idx;
       } else if( vecs[i].isUUID() ) {
         throw H2O.unimpl();
+      } else if( vecs[i].isString() ) {
+        throw H2O.unimpl();
       } else if( vecs[i].isTime() ) {
         throw H2O.unimpl();
       } else {
