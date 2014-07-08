@@ -513,10 +513,8 @@ public class NewChunk extends Chunk {
       boolean isConstant = true;
       boolean isInteger = true;
       for( ; i< len(); i++ ) {
-        if (!Double.isNaN(_ds[i])) {
-          isInteger &= (double) (long) _ds[i] == _ds[i];
-          isConstant &= _ds[i] == _ds[0];
-        }
+        if (!Double.isNaN(_ds[i])) isInteger &= (double) (long) _ds[i] == _ds[i];
+        isConstant &= _ds[i] == _ds[0];
       }
       if (!isInteger) {
         if (isConstant) return new C0DChunk(_ds[0], len());
