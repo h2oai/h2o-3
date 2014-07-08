@@ -55,6 +55,7 @@ public class C2SChunk extends Chunk {
       if( res == C2Chunk._NA ) nc.exponent()[i] = Integer.MIN_VALUE;
       else                     nc.mantissa()[i] = res+_bias;
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   public int pformat_len0() { 

@@ -30,6 +30,7 @@ public class C4FChunk extends Chunk {
     nc.alloc_doubles(len());
     for( int i=0; i< len(); i++ )
       nc.doubles()[i] = UnsafeUtils.get4f(_mem, (i << 2));
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   // 3.3333333e33

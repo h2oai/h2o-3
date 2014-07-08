@@ -57,6 +57,7 @@ public class CBSChunk extends Chunk {
       if (res == _NA) nc.exponent()[i] = Integer.MIN_VALUE;
       else            nc.mantissa()[i] = res;
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
 

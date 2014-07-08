@@ -26,11 +26,10 @@ public class C8Chunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
     nc.alloc_doubles(len());
-    nc.set_len(0);
-    nc.set_len2(0);
     for( int i=0; i< len(); i++ ) //use unsafe?
       if(isNA0(i))nc.addNA();
       else nc.addNum(at80(i),0);
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }

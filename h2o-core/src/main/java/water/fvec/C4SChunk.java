@@ -49,6 +49,7 @@ public class C4SChunk extends Chunk {
       if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
       else             nc.mantissa()[i] = res+_bias;
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
 //  public int pformat_len0() { return pformat_len0(_scale,5); }

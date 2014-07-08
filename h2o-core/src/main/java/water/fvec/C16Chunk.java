@@ -30,12 +30,11 @@ public class C16Chunk extends Chunk {
     //nothing to inflate - just copy
     nc.alloc_mantissa(len());
     nc.alloc_doubles(len());
-    nc.set_len(len());
-    nc.set_len2(len());
     for( int i=0; i< len(); i++ ) { //use unsafe?
       nc.mantissa()[i] =                         UnsafeUtils.get8(_mem,(i<<4)  );
       nc.doubles()[i]  = Double.longBitsToDouble(UnsafeUtils.get8(_mem, (i << 4) + 8));
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }

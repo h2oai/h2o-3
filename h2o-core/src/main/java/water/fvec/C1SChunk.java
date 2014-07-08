@@ -48,6 +48,7 @@ public class C1SChunk extends Chunk {
       if( res == C1Chunk._NA ) nc.exponent()[i] = Integer.MIN_VALUE;
       else                     nc.mantissa()[i] = res+_bias;
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }

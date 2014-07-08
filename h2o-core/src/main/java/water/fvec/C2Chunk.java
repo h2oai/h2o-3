@@ -40,6 +40,7 @@ public class C2Chunk extends Chunk {
       if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
       else             nc.mantissa()[i] = res;
     }
+    nc.set_len(nc.set_len2(len()));
     return nc;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
