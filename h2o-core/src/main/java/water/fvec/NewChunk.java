@@ -415,10 +415,10 @@ public class NewChunk extends Chunk {
     assert len() == len2() :"_len = " + len() + ", _len2 = " + len2() + ", nzeros = " + nzeros;
     int zs = 0;
     if(_ds == null){
-      assert nzeros < _ls.length;
-      _id = alloc_indices(_ls.length);
+      assert nzeros < len();
+      _id = alloc_indices(len());
       for(int i = 0; i < len(); ++i){
-        if(_ls[i] == 0 && _xs[i] == 0)++zs;
+        if((_ls == null || _ls[i] == 0) && (_xs == null || _xs[i] == 0))++zs;
         else {
           _ls[i-zs] = _ls[i];
           _xs[i-zs] = _xs[i];

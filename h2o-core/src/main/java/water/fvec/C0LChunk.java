@@ -23,11 +23,7 @@ public class C0LChunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return f==_con; }
   @Override boolean setNA_impl(int i) { return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    if(_con == 0) {
-      nc.zero_exp_mant();
-      nc.zero_indices();
-    }
-    else {
+    if(_con != 0) {
       nc.alloc_mantissa(len());
       Arrays.fill(nc.mantissa(), _con);
       nc.alloc_exponent(len());
