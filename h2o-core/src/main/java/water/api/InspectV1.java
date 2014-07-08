@@ -16,8 +16,8 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   int len;
 
   // Output
-  @API(help="Class")
-  String className;
+  @API(help="Kind of object (\"frame\", \"model\", etc.)")
+  String kind;
 
   @API(help="Output schema for class")
   Schema schema;
@@ -39,14 +39,24 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
 
   // Version&Schema-specific filling from the handler
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
-    className = _val.className();
-    schema = i._schema; // Output schema
-    schema.fillFromImpl(i);                   // Recursively fill in schema
+    if (i._val.isFrame())
+      kind = "frame";
+    else if (i._val.isModel())
+      kind = "model";
+    else if (i._val.isVec())
+      kind = "vec";
+    else if (i._val.isKey())
+      kind = "key";
+    else
+      kind = "unknown";
+
+    schema = i._schema;       // Output schema (container for the returned Schema).
+    schema.fillFromImpl(i._val.get());   // Recursively fill in contained schema
     return this;
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title(className+" "+key);
+    ab.title(kind + " " + key);
     return schema.writeHTML(ab);
   }
 
