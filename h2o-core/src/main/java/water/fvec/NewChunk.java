@@ -3,6 +3,7 @@ package water.fvec;
 import java.util.*;
 import water.*;
 import water.parser.ParseTime;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -581,10 +582,13 @@ public class NewChunk extends Chunk {
     }
 
     // Constant column?
-    if( _naCnt==0 && min==max ) {
-      return ((long)min  == min)
-          ? new C0LChunk((long)min, len2())
-          : new C0DChunk(      min, len2());
+    if( _naCnt==0 && (min==max)) {
+      if (llo == lhi && xlo == 0 && xhi == 0)
+        return new C0LChunk(llo, len2());
+      else if ((long)min == min)
+        return new C0LChunk((long)min, len2());
+      else
+        return new C0DChunk(min, len2());
     }
 
     // Compute min & max, as scaled integers in the xmin scale.
