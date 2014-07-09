@@ -2,6 +2,7 @@ package water.fvec;
 
 import java.util.Arrays;
 import water.*;
+import water.util.Log;
 import water.util.UnsafeUtils;
 
 /**
@@ -9,14 +10,14 @@ import water.util.UnsafeUtils;
  */
 public class C4SChunk extends Chunk {
   static private final long _NA = Integer.MIN_VALUE;
-  static protected final int _OFF=8+4;
+  static protected final int _OFF=8+8;
   private double _scale;
   public double scale() { return _scale; }
-  private int _bias;
-  C4SChunk( byte[] bs, int bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length-_OFF)>>2);
+  private long _bias;
+  C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length - _OFF) >> 2);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem,0,scale);
-    UnsafeUtils.set4 (_mem,8,bias );
+    UnsafeUtils.set8 (_mem,8,bias );
   }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
@@ -48,7 +49,7 @@ public class C4SChunk extends Chunk {
     for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       if( res == _NA ) nc.addNA();
-      else nc.addNum((long)(res+_bias),(int)dx);
+      else nc.addNum(res+_bias,(int)dx);
     }
     return nc;
   }
@@ -61,7 +62,7 @@ public class C4SChunk extends Chunk {
     _start = -1;
     set_len((_mem.length-_OFF)>>2);
     _scale= UnsafeUtils.get8d(_mem,0);
-    _bias = UnsafeUtils.get4 (_mem,8);
+    _bias = UnsafeUtils.get8 (_mem,8);
     return this;
   }
 }

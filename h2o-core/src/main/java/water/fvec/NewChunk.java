@@ -661,7 +661,7 @@ public class NewChunk extends Chunk {
       double d = l*PrettyPrint.pow10(x);
       if( d < min ) { min = d; llo=l; xlo=x; }
       if( d > max ) { max = d; lhi=l; xhi=x; }
-      floatOverflow = Math.abs(l) > MAX_FLOAT_MANTISSA;
+      floatOverflow = l < Integer.MIN_VALUE+1 && l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
 
@@ -734,14 +734,16 @@ public class NewChunk extends Chunk {
       return chunkD();
     if( fpoint ) {
       if( (int)lemin == lemin && (int)lemax == lemax ) {
-        if(lemax-lemin < 255 && (int)lemin == lemin ) // Fits in scaled biased byte?
+        if(lemax-lemin < 255) // Fits in scaled biased byte?
           return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),(int)lemin,PrettyPrint.pow10(xmin));
-        if(lemax-lemin < 65535 ) { // we use signed 2B short, add -32k to the bias!
+        if(lemax-lemin < 65535) { // we use signed 2B short, add -32k to the bias!
           long bias = 32767 + lemin;
           return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),(int)bias,PrettyPrint.pow10(xmin));
         }
-        if(lemax - lemin < Integer.MAX_VALUE)
-          return new C4SChunk(bufX(lemin, xmin,C4SChunk._OFF,2),(int)lemin,PrettyPrint.pow10(xmin));
+      }
+      if(lemax-lemin < 4294967295l) {
+        long bias = 2147483647l + lemin;
+        return new C4SChunk( bufX(bias,xmin,C4SChunk._OFF,2),bias,PrettyPrint.pow10(xmin));
       }
       return chunkD();
     } // else an integer column
