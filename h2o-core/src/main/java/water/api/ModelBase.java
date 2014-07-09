@@ -18,15 +18,15 @@ import water.api.Schema;
  *
  *
  */
-abstract public class ModelBase<M extends Model, S extends ModelBase<M, S>> extends Schema<M, S> {
+abstract public class ModelBase<M extends Model, P extends Model.Parameters, O extends Model.Output, S extends ModelBase<M, P, O, S>> extends Schema<M, S> {
 
   // Input fields
   @API(help="Model key", required=true)
   Key key;
 
-  // TODO: should contain a ModelParametersSchema
+  // TODO: should contain a ModelParametersBase and ModelOutputBase
   @API(help="A model.")
-  M _model;
+  protected M _model;
 
   public ModelBase() {
   }

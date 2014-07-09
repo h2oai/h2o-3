@@ -15,7 +15,7 @@ import water.api.Schema;
  * same names as used to build the mode and any enum (categorical) columns can
  * be adapted.
  */
-public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P>> extends Lockable<M> {
+public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Lockable<M> {
   Model( Key selfkey ) { super(selfkey); }
 
   /** Columns used in the model and are used to match up with scoring data
@@ -51,32 +51,65 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
             ModelCategory.Regression);
   }
 
-  // Model-specific parameter class.  Each model sub-class also supports a
-  // sub-parameter list with model-specific parameters.  E.g. KMeansModel
-  // extends Model & has a KMeansParameters extending Model.Parameters; sample
-  // parameters include K, whether or not to normalize, max iterations and the
-  // initial random seed.
-  public abstract static class Parameters<M extends Model<M,P>, P extends Parameters<M,P>> extends Iced {
+  /**
+   * Model-specific parameter class.  Each model sub-class contains an instance of one of
+   * these containing its builder parameters, with model-specific parameters.
+   * E.g. KMeansModel extends Model & has a KMeansParameters extending Model.Parameters;
+   * sample parameters include K, whether or not to normalize, max iterations and the
+   * initial random seed.
+   */
+  public abstract static class Parameters<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
     /* This class has no fields and no code */
   }
   // TODO: make this an instance of a *parameterized* Parameters class. . .
-  Parameters _parms;
+  public P _parms; // TODO: move things around so that this can be protected
+  public P getParms() { return _parms; }
+  public void setParms(P parms) { _parms = parms; }
 
-  public Parameters getParms() { return _parms; }
 
-  // Externally visible default schema
-  // TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-  // This puts a reverse edge into the dependency graph.
+  /**
+   * Model-specific output class.  Each model sub-class contains an instance of one of
+   * these containing its "output": the pieces of the model needed for scoring.
+   * E.g. KMeansModel has a KMeansOutput extending Model.Output which contains the
+   * clusters.
+   */
+  public abstract static class Output<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
+    /* This class has no fields and no code */
+  }
+  // TODO: make this an instance of a *parameterized* Output class. . .
+  public O _output; // TODO: move things around so that this can be protected
+  public O getOutput() { return _output; }
+  public void setOutput(O output) { _output = output; }
+
+
+  /**
+   * Model-specific state class.  Each model sub-class contains an instance of one of
+   * these containing its internal state: all the data that's required to, for example,
+   * reload the state of the model to continue training.
+   * TODO: use this!
+  public abstract static class State<M extends Model<M,S>, S extends State<M,S>> extends Iced {
+  }
+  // TODO: make this an instance of a *parameterized* State class. . .
+  State _state;
+  public State getState() { return _state; }
+   */
+
+
+  /**
+   * Externally visible default schema
+   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
+   * This puts a reverse edge into the dependency graph.
+   */
   public abstract Schema schema();
 
   /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */
-  public Model( Key selfKey, Frame fr, Parameters parms ) {
+  public Model( Key selfKey, Frame fr, P parms ) {
     this(selfKey,fr.names(),fr.domains(),parms);
   }
 
   /** Full constructor */
-  public Model( Key selfKey, String names[], String domains[][], Parameters parms ) {
+  public Model( Key selfKey, String names[], String domains[][], P parms ) {
     super(selfKey);
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;

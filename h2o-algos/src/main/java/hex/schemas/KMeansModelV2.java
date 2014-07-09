@@ -8,7 +8,7 @@ import water.api.Handler;
 import water.api.ModelBase;
 //import water.util.DocGen.HTML;
 
-public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModelV2> {
+public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput, KMeansModelV2> {
   // Input fields
   @API(help="KMeans Model to inspect",required=true)
   Key key;
@@ -43,11 +43,11 @@ public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModelV2> {
     // if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
     // InspectHandler ih = (InspectHandler)h;
     // KMeansModel kmm = ih._val.get();
-    clusters = kmm._clusters;
-    rows = kmm._rows;
-    mses = kmm._mses;
-    mse = kmm._mse;
-    iters = kmm._iters;
+    clusters = kmm._output._clusters;
+    rows = kmm._output._rows;
+    mses = kmm._output._mses;
+    mse = kmm._output._mse;
+    iters = kmm._output._iters;
     return this;
   }
 }

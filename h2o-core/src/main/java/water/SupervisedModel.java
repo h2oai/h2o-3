@@ -10,17 +10,17 @@ import water.util.ModelUtils;
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P>, P extends Model.Parameters<M,P>> extends Model<M,P> {
+public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Model<M,P,O> {
 
   protected float[] _priorClassDist;
   protected float[] _modelClassDist;
   public void setModelClassDistribution(float[] classdist) { _modelClassDist = classdist.clone(); }
 
-  public SupervisedModel( Key selfKey, Frame fr, Parameters parms, float[] priorClassDist ) {
+  public SupervisedModel( Key selfKey, Frame fr, P parms, float[] priorClassDist ) {
     this(selfKey,fr.names(),fr.domains(),parms,priorClassDist);
   }
 
-  public SupervisedModel( Key selfKey, String[] names, String[][] domains, Parameters parms, float[] priorClassDist ) {
+  public SupervisedModel( Key selfKey, String[] names, String[][] domains, P parms, float[] priorClassDist ) {
     super(selfKey,names,domains,parms);
     _priorClassDist = priorClassDist;
   }

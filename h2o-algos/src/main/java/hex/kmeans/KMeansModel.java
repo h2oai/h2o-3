@@ -6,9 +6,9 @@ import water.api.Schema;
 import water.fvec.Frame;
 import water.fvec.Chunk;
 
-public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters> {
+public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
-  public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters> {
+  public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
     public Key _src;              // Frame being clustered
     public int _K;                // Number of clusters
     public boolean _normalize;    // Normalize columns
@@ -17,29 +17,32 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
     public KMeans.Initialization _init;
   }
 
-  // Number of categorical variables in the training set; they are all moved
-  // up-front and use a different distance metric than numerical variables
-  final int _ncats;
+  public static class KMeansOutput extends Model.Output<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+    // Number of categorical variables in the training set; they are all moved
+    // up-front and use a different distance metric than numerical variables
+    public int _ncats; // TODO: final?
 
-  // Iterations executed
-  public int _iters;
+    // Iterations executed
+    public int _iters;
 
-  // Cluster centers.  During model init, might be null or might have a "K"
-  // which is oversampled alot.  Not normalized (although if normalization is
-  // used during the building process, the *builders* clusters are normalized).
-  public double[/*K*/][/*features*/] _clusters;
-  // Rows per cluster
-  public long[/*K*/] _rows;
+    // Cluster centers.  During model init, might be null or might have a "K"
+    // which is oversampled alot.  Not normalized (although if normalization is
+    // used during the building process, the *builders* clusters are normalized).
+    public double[/*K*/][/*features*/] _clusters;
+    // Rows per cluster
+    public long[/*K*/] _rows;
 
-  // Sum squared distance between each point and its cluster center, divided by rows
-  public double[/*K*/] _mses;   // Per-cluster MSE, variance
+    // Sum squared distance between each point and its cluster center, divided by rows
+    public double[/*K*/] _mses;   // Per-cluster MSE, variance
 
-  // Sum squared distance between each point and its cluster center, divided by rows.
-  public double _mse;           // Total MSE, variance
+    // Sum squared distance between each point and its cluster center, divided by rows.
+    public double _mse;           // Total MSE, variance
+  }
 
   KMeansModel( Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
     super(selfKey,fr,parms);
-    _ncats = ncats;
+    _output = new KMeansOutput();
+    _output._ncats = ncats;
   }
 
   // Default publically visible Schema is V2
@@ -57,7 +60,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters>
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_clusters,data,_ncats);
+    preds[0] = KMeans.closest(_output._clusters,data,_output._ncats);
     return preds;
   }
 

@@ -82,7 +82,7 @@ public class KMeans extends Job<KMeansModel> {
         double clusters[][];    // Normalized cluster centers
         if( _parms._init == Initialization.None ) {
           // Initialize all clusters to random rows
-          clusters = model._clusters = new double[_parms._K][fr.numCols()];
+          clusters = model._output._clusters = new double[_parms._K][fr.numCols()];
           for( double[] cluster : clusters )
             randomRow(vecs, rand, cluster, means, mults);
         } else {
@@ -90,7 +90,7 @@ public class KMeans extends Job<KMeansModel> {
           // Initialize first cluster to random row
           randomRow(vecs, rand, clusters[0], means, mults);
 
-          while( model._iters < 5 ) {
+          while( model._output._iters < 5 ) {
             // Sum squares distances to clusters
             SumSqr sqr = new SumSqr(clusters,means,mults,_ncats).doAll(vecs);
             
@@ -100,9 +100,9 @@ public class KMeans extends Job<KMeansModel> {
 
             // Fill in sample clusters into the model
             if( !isRunning() ) return; // Stopped/cancelled
-            model._clusters = denormalize(clusters, ncats, means, mults);
-            model._mse = sqr._sqr/fr.numRows();
-            model._iters++;     // One iteration done
+            model._output._clusters = denormalize(clusters, ncats, means, mults);
+            model._output._mse = sqr._sqr/fr.numRows();
+            model._output._iters++;     // One iteration done
             update(1);          // One unit of work
             model.update(_key); // Early version of model is visible
           }
@@ -114,7 +114,7 @@ public class KMeans extends Job<KMeansModel> {
         // Run the main KMeans Clustering loop
         // Stop after enough iterations
         LOOP:
-        for( ; model._iters < _parms._max_iters; model._iters++ ) {
+        for( ; model._output._iters < _parms._max_iters; model._output._iters++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
           Lloyds task = new Lloyds(clusters,means,mults,_ncats, _parms._K).doAll(vecs);
           // Pick the max categorical level for clusters' center
@@ -131,7 +131,7 @@ public class KMeans extends Job<KMeansModel> {
               // some centers *at-all*.
               if( badrow ) {
                 Log.warn("KMeans: Re-running Lloyds to re-init another cluster");
-                model._iters--; // Do not count against iterations
+                model._output._iters--; // Do not count against iterations
                 continue LOOP;  // Rerun Lloyds
               }
               long row = task._worse_row;
@@ -142,15 +142,15 @@ public class KMeans extends Job<KMeansModel> {
             }
 
           // Fill in the model; denormalized centers
-          model._clusters = denormalize(task._cMeans, ncats, means, mults);
-          model._rows = task._rows;
-          model._mses = task._cSqr;
+          model._output._clusters = denormalize(task._cMeans, ncats, means, mults);
+          model._output._rows = task._rows;
+          model._output._mses = task._cSqr;
           double ssq = 0;       // sum squared error
           for( int i=0; i<_parms._K; i++ ) {
-            ssq += model._mses[i]; // sum squared error all clusters
-            model._mses[i] /= task._rows[i]; // mse per-cluster
+            ssq += model._output._mses[i]; // sum squared error all clusters
+            model._output._mses[i] /= task._rows[i]; // mse per-cluster
           }
-          model._mse = ssq/fr.numRows(); // mse total
+          model._output._mse = ssq/fr.numRows(); // mse total
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
@@ -164,7 +164,7 @@ public class KMeans extends Job<KMeansModel> {
           clusters = task._cMeans; // Update cluster centers
 
           StringBuilder sb = new StringBuilder();
-          sb.append("KMeans: iter: ").append(model._iters).append(", MSE=").append(model._mse);
+          sb.append("KMeans: iter: ").append(model._output._iters).append(", MSE=").append(model._output._mse);
           for( int i=0; i<_parms._K; i++ )
             sb.append(", ").append(task._cSqr[i]).append("/").append(task._rows[i]);
           Log.info(sb);
