@@ -26,7 +26,9 @@ public class CBSChunkTest extends TestUtil {
     // Compress chunk
     Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
-    cc._vec = av.close(new Futures());
+    Futures fs = new Futures();
+    cc._vec = av.close(fs);
+    fs.blockForPending();
     AssertJUnit.assertTrue( "Found chunk class "+cc.getClass()+" but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc) );
     assertEquals(nc.len(), cc.len());
     assertEquals(expBpv, ((CBSChunk)cc).bpv());
@@ -38,7 +40,6 @@ public class CBSChunkTest extends TestUtil {
       else assertTrue(cc.isNA0(i));
 
     // materialize the vector (prerequisite to free the memory)
-    Futures fs = new Futures();
     Vec vv = av.close(fs);
     fs.blockForPending();
     vv.remove();
