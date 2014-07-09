@@ -9,6 +9,7 @@
         <packages>
             <package name="water.testframework.onenode" />
             <package name="water.api" />
+            <package name="water.cascade" />
             <package name="water.fvec" />
             <package name="water.parser" />
             <package name="water" />
