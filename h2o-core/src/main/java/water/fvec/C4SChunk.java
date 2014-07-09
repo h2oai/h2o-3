@@ -15,7 +15,7 @@ public class C4SChunk extends Chunk {
   private int _bias;
   C4SChunk( byte[] bs, int bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length-_OFF)>>2);
     _bias = bias; _scale = scale;
-    UnsafeUtils.set8d(_mem, 0, scale);
+    UnsafeUtils.set8d(_mem,0,scale);
     UnsafeUtils.set4 (_mem,8,bias );
   }
   @Override protected final long at8_impl( int i ) {
@@ -42,14 +42,14 @@ public class C4SChunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     double dx = Math.log10(_scale);
     assert water.util.PrettyPrint.fitsIntoInt(dx);
-    Arrays.fill(nc.alloc_exponent(len()), (int)dx);
-    nc.alloc_mantissa(len());
-    for( int i=0; i< len(); i++ ) {
+    nc.set_len(0);
+    nc.set_len2(0);
+    final int len = len();
+    for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      if( res == _NA ) nc.exponent()[i] = Integer.MIN_VALUE;
-      else             nc.mantissa()[i] = res+_bias;
+      if( res == _NA ) nc.addNA();
+      else nc.addNum((long)(res+_bias),(int)dx);
     }
-    nc.set_len(nc.set_len2(len()));
     return nc;
   }
 //  public int pformat_len0() { return pformat_len0(_scale,5); }
