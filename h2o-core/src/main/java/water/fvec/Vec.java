@@ -503,6 +503,7 @@ public class Vec extends Keyed {
     public final void set( long i, double d) { _vec.chunkForRow(i).set(i,d); }
     public final void set( long i, float  f) { _vec.chunkForRow(i).set(i,f); }
     public final void setNA( long i        ) { _vec.chunkForRow(i).setNA(i); }
+    public final void set( long i, String str) { _vec.chunkForRow(i).set(i,str); }
     public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }
