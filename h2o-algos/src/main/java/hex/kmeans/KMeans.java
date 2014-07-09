@@ -19,7 +19,7 @@ public class KMeans extends Job<KMeansModel> {
     None, PlusPlus, Furthest
   }
 
-  final KMeansModel.KMeansParameters _parms; // All the parms
+  final public KMeansModel.KMeansParameters _parms; // All the parms
 
   // Number of categorical columns
   private int _ncats;
@@ -28,7 +28,10 @@ public class KMeans extends Job<KMeansModel> {
   public KMeans( KMeansModel.KMeansParameters parms) {
     super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is max iterations*/);
     _parms = parms;
-    start(new KMeansDriver());
+  }
+
+  public Job train() {
+    return start(new KMeansDriver());
   }
 
   // ----------------------

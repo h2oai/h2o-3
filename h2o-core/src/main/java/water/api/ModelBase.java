@@ -8,9 +8,16 @@ import water.api.Handler;
 import water.api.Schema;
 
 /**
- * TODO: this and its current subclasses include the model directly.  That's great for
- * getting stuff working quickly, but defeats the purpose of having schemas.
- * */
+ * A Model schema contains all the pieces associated with a Model:
+ * <p>
+ * <ul>
+ * <li> an instance of a ModelParameters schema containing the build parameters
+ * <li> an instance of a ModelResults schema containing the f00 b4r b4z
+ * <li> an instance of a ModelMetrics schema
+ * <ul>
+ *
+ *
+ */
 abstract public class ModelBase<M extends Model, S extends ModelBase<M, S>> extends Schema<M, S> {
 
   // Input fields
@@ -19,13 +26,13 @@ abstract public class ModelBase<M extends Model, S extends ModelBase<M, S>> exte
 
   // TODO: should contain a ModelParametersSchema
   @API(help="A model.")
-  protected
   M _model;
 
   public ModelBase() {
   }
 
   public ModelBase(M m) {
+//    this.parameters = m.getParms();
     this._model = m;
   }
 

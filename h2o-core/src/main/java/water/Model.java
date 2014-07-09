@@ -10,9 +10,10 @@ import water.api.Schema;
 
 /**
  * A Model models reality (hopefully).
- * A model can be used to 'score' a row, or a collection of rows on any
- * compatible dataset - meaning the row has all the columns with the same names
- * as used to build the mode.
+ * A model can be used to 'score' a row (make a prediction), or a collection of
+ * rows on any compatible dataset - meaning the row has all the columns with the
+ * same names as used to build the mode and any enum (categorical) columns can
+ * be adapted.
  */
 public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P>> extends Lockable<M> {
   Model( Key selfkey ) { super(selfkey); }
@@ -58,8 +59,10 @@ public abstract class Model<M extends Model<M,P>, P extends Model.Parameters<M,P
   public abstract static class Parameters<M extends Model<M,P>, P extends Parameters<M,P>> extends Iced {
     /* This class has no fields and no code */
   }
-  // TODO: make this an instance of a parameterized Parameters class. . .
+  // TODO: make this an instance of a *parameterized* Parameters class. . .
   Parameters _parms;
+
+  public Parameters getParms() { return _parms; }
 
   // Externally visible default schema
   // TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!

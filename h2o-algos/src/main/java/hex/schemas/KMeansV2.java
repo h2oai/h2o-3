@@ -10,8 +10,8 @@ import water.api.Schema;
 import water.fvec.Frame;
 import water.util.DocGen.HTML;
 
-public class KMeansV2 extends Schema<KMeansParameters,KMeansV2> {
-
+public class KMeansV2 extends Schema<KMeans,KMeansV2> {
+  // TODO: can we put these all into a ModelParametersSchema ?
   // Input fields
   @API(help="Input source frame",required=true)
   public Key src;
@@ -39,7 +39,7 @@ public class KMeansV2 extends Schema<KMeansParameters,KMeansV2> {
   // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
-  @Override public KMeansParameters createImpl() {
+  @Override public KMeans createImpl() {
     KMeansParameters parms = new KMeansModel.KMeansParameters();
 
     parms._src = src;
@@ -57,19 +57,20 @@ public class KMeansV2 extends Schema<KMeansParameters,KMeansV2> {
 
     if( seed == 0 ) seed = System.nanoTime();
     parms._seed = seed;
-    return parms;
+
+    return new KMeans(parms);
   }
 
   // Version&Schema-specific filling from the handler
-  @Override public KMeansV2 fillFromImpl(KMeansParameters parms) {
+  @Override public KMeansV2 fillFromImpl(KMeans builder) {
     //    job = h._job._key;  // TODO: what?
 
-    src = parms._src;
-    K = parms._K;
-    normalize = parms._normalize;
-    max_iters = parms._max_iters;
-    seed = parms._seed;
-    init = parms._init = KMeans.Initialization.PlusPlus;
+    src = builder._parms._src;
+    K = builder._parms._K;
+    normalize = builder._parms._normalize;
+    max_iters = builder._parms._max_iters;
+    seed = builder._parms._seed;
+    init = builder._parms._init = KMeans.Initialization.PlusPlus;
 
     return this;
   }

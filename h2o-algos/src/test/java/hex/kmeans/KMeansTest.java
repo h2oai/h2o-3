@@ -14,6 +14,7 @@ public class KMeansTest extends TestUtil {
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
     KMeans job = new KMeans(parms);
+    job.train();
     KMeansModel kmm = job.get();
     job.remove();
     for( int i=0; i<parms._K; i++ )

@@ -13,12 +13,13 @@ public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModelV2> {
   @API(help="KMeans Model to inspect",required=true)
   Key key;
 
+  // TODO: put these into a ModelOutput class:
   // Output fields
   @API(help="Clusters[K][features]")
   double[/*K*/][/*features*/] clusters;
 
   @API(help="Rows[K]")
-  long[/*K*/] rows;
+  long[/*K*/]  rows;
 
   @API(help="Mean Square Error per cluster")
   public double[/*K*/] mses;   // Per-cluster MSE, variance
