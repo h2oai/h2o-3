@@ -31,7 +31,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
-        assertEquals(ls[i]*water.util.PrettyPrint.pow10(xs[i]), bv.at0(i), Math.abs(bv.at0(i))*EPSILON);
+        assertEquals(bv.at0(i), ls[i]*water.util.PrettyPrint.pow10(xs[i]), Math.abs(bv.at0(i))*EPSILON);
     } finally {
       if( vec != null ) vec.remove();
     }
@@ -110,24 +110,24 @@ public class NewVectorTest extends TestUtil {
 
       // Now write a zero into slot 0
       vec.set(0,0);
-      assertEquals(0,vec.at8(0));
+      assertEquals(vec.at8(0),0);
       Chunk c1 = vec.chunkForChunkIdx(0);
       assertTrue( "Found chunk class "+c1.getClass()+" but expected C0LChunk", c1 instanceof C0LChunk );
 
       // Now write a one into slot 1; chunk should inflate into boolean vector.
       vec.set(1, 1);
-      assertEquals(1, vec.at8(1)); // Immediate visibility in current thread
+      assertEquals(vec.at8(1),1); // Immediate visibility in current thread
       Chunk c2 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
       assertTrue( "Found chunk class "+c2.getClass()+" but expected CBSChunk", c2 instanceof CBSChunk );
 
       // Now write a two into slot 2; chunk should inflate into byte vector
       vec.set(2, 2);
-      assertEquals(2,vec.at8(2)); // Immediate visibility in current thread
+      assertEquals(vec.at8(2),2); // Immediate visibility in current thread
       Chunk c3 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
       assertTrue( "Found chunk class "+c3.getClass()+" but expected C1NChunk", c3 instanceof C1NChunk );
 
       vec.set(3, 3);
-      assertEquals(3,vec.at8(3)); // Immediate visibility in current thread
+      assertEquals(vec.at8(3),3); // Immediate visibility in current thread
       Chunk c4 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
       assertTrue("Found chunk class " + c4.getClass() + " but expected C1NChunk", c4 instanceof C1NChunk);
 
@@ -139,9 +139,9 @@ public class NewVectorTest extends TestUtil {
         // Updates will be immediately visible on the writing node
       }
       // now, after vw.close(), numbers are consistent across the H2O cloud
-      assertEquals(4, vec.at8(1));
-      assertEquals(5, vec.at8(2));
-      assertEquals(6, vec.at8(3));
+      assertEquals(vec.at8(1),4);
+      assertEquals(vec.at8(2),5);
+      assertEquals(vec.at8(3),6);
     } finally {
       if( vec != null ) vec.remove();
     }
