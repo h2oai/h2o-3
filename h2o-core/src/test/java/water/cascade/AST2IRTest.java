@@ -9,22 +9,19 @@ import water.util.Log;
 
 public class AST2IRTest extends Iced {
 
-  @Test
-  public void test1() {
+  @Test public void test1() {
     Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5`");
     JsonObject ast = test1_json();
     printInstructions(ast, new String[]{"push 5.0 (double)\npush Last.value.0 (Key)\n+  \n"});
   }
 
-  @Test
-  public void test2() {
+  @Test public void test2() {
     Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5 + 10`");
     JsonObject ast = test2_json();
     printInstructions(ast, new String[]{"push 10.0 (double)\npush 5.0 (double)\npush Last.value.0 (Key)\n+  \n+  \n"});
   }
 
-  @Test
-  public void test3() {
+  @Test public void test3() {
     Log.info("Checking the expression `hex + 5 - 1 * hex + 15 * (23 / hex)`");
     JsonObject ast = test3_json();
     printInstructions(ast, new String[]{"push Last.value.0 (Key)\npush 23.0 (double)\n/  \npush 15.0 (double)\n*  \npush Last.value.0 (Key)\npush 1.0 (double)\n*  \npush 5.0 (double)\npush Last.value.0 (Key)\n+  \n-  \n+  \n"});
