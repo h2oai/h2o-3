@@ -434,14 +434,9 @@ public class Env extends Iced {
      */
     @Override public Object peekAt(int i) {
 
-      //TODO: Each of these cases needs a java unit test
-
-      // Assert against negative position
-      assert i > 0 : "Trying to peekAt a negative position in the stack: "+i;
-
       // Another check just in case assertions aren't on.
       if (i < 0) {
-        throw new AssertionError("Trying to peekAt a negative position in the stack: "+i);
+        throw new IllegalArgumentException("Trying to peekAt a negative position in the stack: "+i);
       }
 
       // The stack may be empty
