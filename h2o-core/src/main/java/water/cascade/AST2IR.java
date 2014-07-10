@@ -4,7 +4,6 @@ package water.cascade;
 import com.google.gson.JsonObject;
 import water.Iced;
 import water.Key;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,8 +37,7 @@ import java.util.HashMap;
  *  If f(...) is called without assignment, then there is a temporary key created and spit out to the console. The
  *  lifetime of this temporary key is discussed elsewhere.
  */
-public class
-        AST2IR extends Iced {
+public class AST2IR extends Iced {
   private final JsonObject _ast;
   private SymbolTable _global;
   private ArrayList<Program> _program;
@@ -174,20 +172,20 @@ public class
   // Add a push statement to the program list of statements
   private void stringPushStatement(String obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
   private void numPushStatement(   double obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
-  private void keyPushStatement(   Key obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
+  private void keyPushStatement(      Key obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Node getters
   //--------------------------------------------------------------------------------------------------------------------
-  private Double getNum      (JsonObject node) { return node.get("value").getAsDouble();           }
+  private Double  getNum      (JsonObject node) { return node.get("value").getAsDouble();           }
   private Boolean getBoolean  (JsonObject node) { return node.get("value").getAsBoolean();          }
-  private String getString   (JsonObject node) { return node.get("value").getAsString();           }
-  private Key getKey      (JsonObject node) { return Key.make(node.get("value").getAsString()); }
-  private String getArgName  (JsonObject node) { return node.get("arg_name").getAsString();        }
-  private String getArgType  (JsonObject node) { return node.get("arg_type").getAsString();        }
-  private String getArgValue (JsonObject node) { return node.get("arg_value").getAsString();       }
+  private String  getString   (JsonObject node) { return node.get("value").getAsString();           }
+  private Key     getKey      (JsonObject node) { return Key.make(node.get("value").getAsString()); }
+  private String  getArgName  (JsonObject node) { return node.get("arg_name").getAsString();        }
+  private String  getArgType  (JsonObject node) { return node.get("arg_type").getAsString();        }
+  private String  getArgValue (JsonObject node) { return node.get("arg_value").getAsString();       }
   private int     getArgNumber(JsonObject node) { return node.get("arg_number").getAsInt();         }
-  private String getIdValue  (JsonObject node) { return node.get("key").getAsString();             }
+  private String  getIdValue  (JsonObject node) { return node.get("key").getAsString();             }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Tree Walker -- Code Generator
