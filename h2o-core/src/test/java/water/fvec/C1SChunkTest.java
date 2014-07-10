@@ -8,9 +8,8 @@ import java.util.Arrays;
 
 public class C1SChunkTest extends TestUtil {
   @Test void test_inflate_impl() {
-    NewChunk nc = new NewChunk(null, 0);
-
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
+      NewChunk nc = new NewChunk(null, 0);
       // 0, 0.2, 0.3, 2.54, NA for l==0
       // NA, 0, 0.2, 0.3, 2.54, NA for l==1
       long[] man = new long[]{0, 2, 3, 254};
@@ -39,9 +38,8 @@ public class C1SChunkTest extends TestUtil {
     }
   }
   @Test void test_inflate_impl2() {
-    NewChunk nc = new NewChunk(null, 0);
-
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
+      NewChunk nc = new NewChunk(null, 0);
       long[] man = new long[]{-1228, -997, -9740};
       int[] exp = new int[]{-4, -4, -5};
       if (l==1) nc.addNA();

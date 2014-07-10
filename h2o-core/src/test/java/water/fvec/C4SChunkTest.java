@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class C4SChunkTest extends TestUtil {
   @Test void test_inflate_impl() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       // -2.147483647, 0, 0.0000215, 2.147583647, NA for l==0
@@ -39,7 +39,7 @@ public class C4SChunkTest extends TestUtil {
     }
   }
   @Test void test_inflate_impl2() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       // different bias and scale than above, but still using the full 32-bit range (~4.29 billion different integers from -8.1b to -3.8b)

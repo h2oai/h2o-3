@@ -10,7 +10,7 @@ public class C4FChunkTest extends TestUtil {
   //FIXME: We never actually create C4FChunks at this time (the NewChunk doesn't know how to discern floats from doubles)
   @Test (enabled=false)
   void test_inflate_impl() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       float[] vals = new float[]{-234.324f, 0f, Float.NaN, Float.POSITIVE_INFINITY, Float.MIN_VALUE, Float.MAX_VALUE, Float.NEGATIVE_INFINITY };

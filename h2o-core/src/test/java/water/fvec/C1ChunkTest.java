@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class C1ChunkTest extends TestUtil {
   @Test void test_inflate_impl() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       int[] vals = new int[]{0, 1, 3, 254};
@@ -22,7 +22,7 @@ public class C1ChunkTest extends TestUtil {
       AssertJUnit.assertTrue(cc.isNA0(vals.length+l));
 
       Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
-      AssertJUnit.assertEquals(vals.length + 1, cc.len());
+      AssertJUnit.assertEquals(vals.length + 1 + l, cc.len());
       AssertJUnit.assertTrue(cc2 instanceof C1Chunk);
       for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc2.at80(l+i));
       AssertJUnit.assertTrue(cc2.isNA0(vals.length+l));

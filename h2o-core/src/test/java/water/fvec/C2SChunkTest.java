@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class C2SChunkTest extends TestUtil {
   @Test void test_inflate_impl() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       // -32.767, 0.34, 0, 32.767, NA for l==0
@@ -39,7 +39,7 @@ public class C2SChunkTest extends TestUtil {
     }
   }
   @Test void test_inflate_impl2() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       long[] man = new long[]{-12767, 34, 0, 52767};

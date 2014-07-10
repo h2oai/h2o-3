@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class C4ChunkTest extends TestUtil {
   @Test void test_inflate_impl() {
-    for (int l=0; l<1; ++l) {
+    for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
       int[] vals = new int[]{-2147483647, 0, 2147483647};
