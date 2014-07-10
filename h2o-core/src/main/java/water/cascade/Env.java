@@ -1,64 +1,61 @@
-//package water.cascade;
-//
-//import water.Futures;
-//import water.Iced;
-//import water.Key;
-//import water.UKV;
-//import water.exec.ASTFunc;
-//import water.exec.ASTOp;
-//import water.fvec.Frame;
-//import water.fvec.Vec;
-//import water.util.Log;
-//import water.util.Utils;
-//
-//import java.util.ArrayList;
-//import java.util.Arrays;
-//import java.util.HashSet;
-//
-///** Execute a set of instructions in the context of an H2O cloud.
-// *  @author spencer@0xdata.com
-// *
-// *
-// *  An Env (environment) object is a classic stack of values used during the execution of a Program (see Program.java
-// *  for more details on what makes a Program a Program). The Program itself may be a single `main` program or an array
-// *  of programs. In the latter case, additional programs represent a user-defined function that is at some point called
-// *  by the main program.
-// *
-// *  Each Program will have a new instance of Env so as to perserve the functional aspects of the R language (lexical
-// *  scoping, functions are first class, etc.).
-// *
-// *  For efficiency, reference counting is employed to recycle objects already in use rather than creating copies upon
-// *  copies (à la R). When a Vec is `pushed` on to the stack, its referene count is incremented by 1. When a Vec is
-// *  `popped` off of the stack, its reference count is decremented by 1. When the reference count is 0, the Env instance
-// *  will dispose of the object. All objects live and die by the Env's that create them. That means that any object not
-// *  created by an Env instance shalt not be UKV.removed.
-// *
-// *  Therefore, the Env class is a stack of values + an API for reference counting.
-// */
-//public class Env extends Iced {
-//  ExecStack _stack;
-//  int _sp; // Stack pointer
-//
-//  // Ref Counts for each vector
-//  final Utils.IcedHashMap<Vec,Utils.IcedInt> _refcnt;
-//
-//  transient final public StringBuilder _sb; // Holder for print results
-//
-//  transient boolean _allow_tmp;           // Deep-copy allowed to tmp
-//  transient boolean _busy_tmp;            // Assert temp is available for use
-//  transient Frame _tmp;                  // The One Big Active Tmp
-//  transient final ArrayList<Key> _locked; // The original set of locked frames
-//
-//  Env(ArrayList<Key> locked) {
-//    _stack  = new ExecStack(20);
-//    _refcnt = new Utils.IcedHashMap<Vec,Utils.IcedInt>();
-//    _sb     = new StringBuilder();
-//    _locked = locked;
-//  }
-//
-//  public int sp() { return _sp; }
-//
-//  // Push k empty slots
+package water.cascade;
+
+import water.Futures;
+import water.Iced;
+import water.Key;
+
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.Log;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import water.util.IcedHashMap;
+import water.util.IcedInt;
+
+/** Execute a set of instructions in the context of an H2O cloud.
+*  @author spencer@0xdata.com
+*
+*
+*  An Env (environment) object is a classic stack of values used during the execution of a Program (see Program.java
+*  for more details on what makes a Program a Program). The Program itself may be a single `main` program or an array
+*  of programs. In the latter case, additional programs represent a user-defined function that is at some point called
+*  by the main program.
+*
+*  Each Program will have a new instance of Env so as to perserve the functional aspects of the R language (lexical
+*  scoping, functions are first class, etc.).
+*
+*  For efficiency, reference counting is employed to recycle objects already in use rather than creating copies upon
+*  copies (à la R). When a Vec is `pushed` on to the stack, its referene count is incremented by 1. When a Vec is
+*  `popped` off of the stack, its reference count is decremented by 1. When the reference count is 0, the Env instance
+*  will dispose of the object. All objects live and die by the Env's that create them. That means that any object not
+*  created by an Env instance shalt not be UKV.removed.
+*
+*  Therefore, the Env class is a stack of values + an API for reference counting.
+*/
+public class Env extends Iced {
+  ExecStack _stack;                         // The stack
+  int _sp;                                  // Stack pointer
+  final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
+
+  transient final public StringBuilder _sb; // Holder for print results
+
+  transient boolean _allow_tmp;             // Deep-copy allowed to tmp
+  transient boolean _busy_tmp;              // Assert temp is available for use
+  transient Frame _tmp;                     // The One Big Active Tmp
+  transient final ArrayList<Key> _locked;   // The original set of locked frames
+
+  Env(ArrayList<Key> locked) {
+    _stack  = new ExecStack();
+    _refcnt = new IcedHashMap<Vec,IcedInt>();
+    _sb     = new StringBuilder();
+    _locked = locked;
+  }
+
+  public int sp() { return _sp; }
+
+  // Push k empty slots
 //  void push( int slots ) {
 //    assert 0 <= slots && slots < 1000;
 //    int len = _d.length;
@@ -401,51 +398,112 @@
 //    for( int i=0; i<_sp; i++ )   s += toString(i,false)+",";
 //    return s+"}";
 //  }
-//}
-//
-//interface Stack {
-//  Object getTop();
-//  Object pop();
-//  void push(Object t);
-//  boolean isEmpty();
-//  int size();
-//}
-//
-//class ExecStack implements Stack {
-//  private ArrayList<Object> _stack;
-//  private int _head;
-//  private final static int SIZE = 15;
-//
-//  public ExecStack(int size) {
-//    _stack = new ArrayList<Object>();
-//    _head  = -1;
-//  }
-//
-//  @Override
-//  public Object getTop() {
-//    if (_head == -1) {
-//      return null;
-//    }
-//    return _stack[_head];
-//  }
-//
-//  @Override
-//  public boolean isEmpty() { return _head == -1; }
-//
-//  @Override
-//  public int size() {
-//    return 0;
-//  }
-//
-//  @Override
-//  public Object pop() {
-//    if (isEmpty()) return null;
-//    return _stack[--];
-//  }
-//
-//  @Override
-//  public void push(Object t) {
-//
-//  }
-//
-//}
+
+  interface Stack {
+    Object  peek();
+    Object  peekAt(int i);
+    Object  pop();
+    void    push(Object t);
+    boolean isEmpty();
+    int     size();
+  }
+
+  public class ExecStack implements Stack {
+    private final ArrayList<Object> _stack;
+    private int _head;
+    private final static int SIZE = 15;
+
+    public ExecStack() {
+      _stack = new ArrayList<>();
+      _head  = -1;
+    }
+
+    /**
+     * Peek the top of the stack
+     * @return the Object at the `_head` of the stack
+     */
+    @Override public Object peek() {
+      if (isEmpty()) return null;
+      return _stack.get(_head);
+    }
+
+    /**
+     * Peek the stack at position passed in (does error checking on the position)
+     * @param i The position at which to peek the stack
+     * @return the Object at position `i`.
+     */
+    @Override public Object peekAt(int i) {
+
+      //TODO: Each of these cases needs a java unit test
+
+      // Assert against negative position
+      assert i > 0 : "Trying to peekAt a negative position in the stack: "+i;
+
+      // Another check just in case assertions aren't on.
+      if (i < 0) {
+        throw new AssertionError("Trying to peekAt a negative position in the stack: "+i);
+      }
+
+      // The stack may be empty
+      if (isEmpty()) return null;
+
+      // The requested index may be greater than _head (points to the top of the stack)
+      if (i > _head) {
+        Log.warn("peekAt("+i+"): i is greater than the top of the stack: "+_head+"<"+i);
+        return null;
+      }
+
+      // The requested index may be greater than the size of the stack (size() == _head if not empty),
+      // and it's good to check anyways for debugging and extra logging. This will also assert that the _head and
+      // stack sizes are aligned.
+      if (i > size()) {
+        Log.warn("peekAt("+i+"): i is greater than the size of the stack: "+size()+"<"+i);
+        return null;
+      }
+
+      // Return the Object at position i
+      return _stack.get(i);
+    }
+
+    /**
+     * Is the stack empty?
+     * @return true if empty, false otherwise
+     */
+    @Override public boolean isEmpty() {
+      return _head == -1;
+    }
+
+    /**
+     * Get the size of the stack.
+     * @return the number of Objects sitting in the stack. Assert that the number of Objects is aligned with `_head`.
+     */
+    @Override public int size() {
+      if (!isEmpty()) {
+        // Choice to add _head + 1, but when asserts stacksize - 1 because want to know where the _head is at!
+        assert _stack.size() == _head + 1 : "The stack size and the pointer to the top are out of alignment! Stack size: " + (_stack.size() - 1) + ", _head: " + _head;
+        return _stack.size();
+      }
+      return -1;
+    }
+
+    /**
+     * Pop one of the top of the stack.
+     * @return the Object sitting at the top of the stack
+     */
+    @Override public Object pop() {
+      if (isEmpty()) return null;
+      Object o = peek();
+      _stack.remove(_head--);
+      return o;
+    }
+
+    /**
+     * Push an Object onto the stack
+     * @param t is the Object to be pushed onto the stack.
+     */
+    @Override public void push(Object t) {
+      _head++;
+      _stack.add(_head, t);
+    }
+  }
+}
