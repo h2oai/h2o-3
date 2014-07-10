@@ -50,12 +50,10 @@ public class CBSChunk extends Chunk {
     throw H2O.unimpl();
   }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_exponent(len());
-    nc.alloc_mantissa(len());
     for (int i=0; i< len(); i++) {
       int res = atb(i);
-      if (res == _NA) nc.exponent()[i] = Integer.MIN_VALUE;
-      else            nc.mantissa()[i] = res;
+      if (res == _NA) nc.addNA();
+      else            nc.addNum(res,0);
     }
     nc.set_len(nc.set_len2(len()));
     return nc;

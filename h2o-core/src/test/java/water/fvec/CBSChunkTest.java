@@ -7,6 +7,8 @@ import org.testng.annotations.*;
 import water.Futures;
 import water.TestUtil;
 
+import java.util.Arrays;
+
 /** Test for CBSChunk implementation.
  *
  * The objective of the test is to verify compression method, not the H2O environment.
@@ -81,5 +83,29 @@ public class CBSChunkTest extends TestUtil {
    testImpl(new long[] {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,1, 0,Long.MAX_VALUE,1,Long.MAX_VALUE},
             new int [] {Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,0, 0,Integer.MIN_VALUE,0,Integer.MIN_VALUE},
             2, 0, 2, 5);
+  }
+  @Test void test_inflate_impl() {
+    for (int l=0; l<2; ++l) {
+      NewChunk nc = new NewChunk(null, 0);
+
+      int[] vals = new int[]{0, 1, 0, 1, 0, 0, 1};
+      if (l==1) nc.addNA();
+      for (int v : vals) nc.addNum(v);
+      nc.addNA();
+
+      Chunk cc = nc.compress();
+      AssertJUnit.assertEquals(vals.length + 1 + l, cc.len());
+      AssertJUnit.assertTrue(cc instanceof CBSChunk);
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc.at80(l+i));
+      AssertJUnit.assertTrue(cc.isNA0(vals.length+l));
+
+      Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
+      AssertJUnit.assertEquals(vals.length + 1 + l, cc.len());
+      AssertJUnit.assertTrue(cc2 instanceof CBSChunk);
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc2.at80(l+i));
+      AssertJUnit.assertTrue(cc2.isNA0(vals.length+l));
+
+      AssertJUnit.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+    }
   }
 }
