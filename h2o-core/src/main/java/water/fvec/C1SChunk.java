@@ -1,6 +1,5 @@
 package water.fvec;
 
-import java.util.Arrays;
 import water.*;
 import water.util.UnsafeUtils;
 
@@ -47,7 +46,7 @@ public class C1SChunk extends Chunk {
     for( int i=0; i<len; i++ ) {
       int res = 0xFF&_mem[i+_OFF];
       if( res == C1Chunk._NA ) nc.addNA();
-      else             nc.addNum((long)(res+_bias),(int)dx);
+      else nc.addNum((long)(res+_bias),(int)dx);
     }
     return nc;
   }

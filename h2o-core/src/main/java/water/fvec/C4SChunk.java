@@ -1,8 +1,6 @@
 package water.fvec;
 
-import java.util.Arrays;
 import water.*;
-import water.util.Log;
 import water.util.UnsafeUtils;
 
 /**

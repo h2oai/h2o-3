@@ -1,6 +1,5 @@
 package water.fvec;
 
-import java.util.Arrays;
 import water.AutoBuffer;
 import water.util.UnsafeUtils;
 
@@ -40,8 +39,8 @@ public class C0DChunk extends Chunk {
     return nc;
   }
   // 3.3333333e33
-  public int pformat_len0() { return 22; }
-  public String pformat0() { return "% 21.15e"; }
+//  public int pformat_len0() { return 22; }
+//  public String pformat0() { return "% 21.15e"; }
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.

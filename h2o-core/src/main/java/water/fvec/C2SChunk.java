@@ -1,6 +1,5 @@
 package water.fvec;
 
-import java.util.Arrays;
 import water.*;
 import water.util.UnsafeUtils;
 
@@ -58,16 +57,16 @@ public class C2SChunk extends Chunk {
     }
     return nc;
   }
-  public int pformat_len0() { 
-    throw H2O.unimpl();
-    //if( _scale==0.01 ) return 5;
-    //return hasFloat() ? pformat_len0(_scale,5) : super.pformat_len0(); 
-  }
-  public String  pformat0() { 
-    throw H2O.unimpl();
-    //if( _scale==0.01 ) return "%7.2f";
-    //return hasFloat() ? "% 10.4e" : super.pformat0(); 
-  }
+//  public int pformat_len0() {
+//    throw H2O.unimpl();
+//    //if( _scale==0.01 ) return 5;
+//    //return hasFloat() ? pformat_len0(_scale,5) : super.pformat_len0();
+//  }
+//  public String  pformat0() {
+//    throw H2O.unimpl();
+//    //if( _scale==0.01 ) return "%7.2f";
+//    //return hasFloat() ? "% 10.4e" : super.pformat0();
+//  }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C2SChunk read_impl(AutoBuffer bb) {
