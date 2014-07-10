@@ -11,7 +11,7 @@ public class C8ChunkTest extends TestUtil {
     for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
-      long[] vals = new long[]{-9223372036854775807l, 0, 9223372036854775807l};
+      long[] vals = new long[]{Long.MIN_VALUE+1, Integer.MIN_VALUE, 0, Integer.MAX_VALUE, Long.MAX_VALUE};
       if (l==1) nc.addNA();
       for (long v : vals) nc.addNum(v, 0);
       nc.addNA(); //-9223372036854775808l

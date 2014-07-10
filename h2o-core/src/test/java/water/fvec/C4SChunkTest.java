@@ -13,7 +13,7 @@ public class C4SChunkTest extends TestUtil {
 
       // -2.147483647, 0, 0.0000215, 2.147583647, NA for l==0
       // NA, -2.147483647, 0, 0.0000215, 2.147583647, NA for l==1
-      long[] man = new long[]{-2147483647, 0, 215, 188001238, 2147483647};
+      long[] man = new long[]{Integer.MIN_VALUE+1, 0, 215, 188001238, Integer.MAX_VALUE};
       int[] exp = new int[]{-9, 1, -6, -8, -9};
       if (l==1) nc.addNA(); //-2147483648
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
@@ -43,7 +43,7 @@ public class C4SChunkTest extends TestUtil {
       NewChunk nc = new NewChunk(null, 0);
 
       // different bias and scale than above, but still using the full 32-bit range (~4.29 billion different integers from -8.1b to -3.8b)
-      long[] man = new long[]{-814748364700000l, -5999999700000l, -58119987600000l, -385251635300000l};
+      long[] man = new long[]{(long)(Integer.MIN_VALUE+1)*100000l - 613030080700000l, -5999999700000l, -58119987600000l, (long)Integer.MAX_VALUE*100000l - 613030080700000l};
       int[] exp = new int[]{-19, -17, -18, -19};
 
       if (l==1) nc.addNA(); //-2147483648
