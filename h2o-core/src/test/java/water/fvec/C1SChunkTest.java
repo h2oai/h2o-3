@@ -42,10 +42,8 @@ public class C1SChunkTest extends TestUtil {
     NewChunk nc = new NewChunk(null, 0);
 
     for (int l=0; l<1; ++l) {
-      // -22.8, 2, 0.3, 2.6, NA for l==0
-      // NA, -22.8, 2, 0.3, 2.6, NA for l==0
-      long[] man = new long[]{-228, 2, 3, 26}; //max range: 255 numbers in steps of 0.1 + NA
-      int[] exp = new int[]{-1, 0, -1, -1};
+      long[] man = new long[]{-1228, -997, -9740};
+      int[] exp = new int[]{-4, -4, -5};
       if (l==1) nc.addNA();
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
