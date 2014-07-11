@@ -2,6 +2,8 @@ package hex.kmeans;
 
 import java.util.ArrayList;
 import java.util.Random;
+
+import hex.ModelBuilder;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
@@ -14,12 +16,10 @@ import water.util.RandomUtils;
  * http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf<br>
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
-public class KMeans extends Job<KMeansModel> {
+public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
   public enum Initialization {
     None, PlusPlus, Furthest
   }
-
-  final public KMeansModel.KMeansParameters _parms; // All the parms
 
   // Number of categorical columns
   private int _ncats;
@@ -30,7 +30,7 @@ public class KMeans extends Job<KMeansModel> {
     _parms = parms;
   }
 
-  public Job train() {
+  @Override public Job train() {
     return start(new KMeansDriver());
   }
 
@@ -93,7 +93,7 @@ public class KMeans extends Job<KMeansModel> {
           while( model._output._iters < 5 ) {
             // Sum squares distances to clusters
             SumSqr sqr = new SumSqr(clusters,means,mults,_ncats).doAll(vecs);
-            
+
             // Sample with probability inverse to square distance
             Sampler sampler = new Sampler(clusters, means, mults, _ncats, sqr._sqr, _parms._K * 3, _parms._seed).doAll(vecs);
             clusters = ArrayUtils.append(clusters,sampler._sampled);
@@ -122,7 +122,7 @@ public class KMeans extends Job<KMeansModel> {
 
           // Handle the case where some clusters go dry.  Rescue only 1 cluster
           // per iteration ('cause we only tracked the 1 worse row)
-          boolean badrow=false;          
+          boolean badrow=false;
           for( int clu=0; clu<_parms._K; clu++ )
             if( task._rows[clu]==0 ) {
               // If we see 2 or more bad rows, just re-run Lloyds to get the
@@ -138,7 +138,7 @@ public class KMeans extends Job<KMeansModel> {
               Log.warn("KMeans: Re-initing cluster "+clu+" to row "+row);
               data(clusters[clu]=task._cMeans[clu], vecs, row, means, mults);
               task._rows[clu] = 1;
-              badrow = true;              
+              badrow = true;
             }
 
           // Fill in the model; denormalized centers
@@ -265,9 +265,9 @@ public class KMeans extends Job<KMeansModel> {
   }
 
   // ---------------------------------------
-  // A Lloyd's pass: 
-  //   Find nearest cluster for every point; 
-  //   Compute new mean/center & variance & rows for each cluster; 
+  // A Lloyd's pass:
+  //   Find nearest cluster for every point;
+  //   Compute new mean/center & variance & rows for each cluster;
   //   Compute distance between clusters
   //   Compute total sqr distance
 
@@ -438,7 +438,7 @@ public class KMeans extends Job<KMeansModel> {
       while( count < res.length ) {
         double sum = 0;
         for (double[] point1 : points) sum += minSqr(res, point1, _ncats, cd, count);
-        
+
         for (double[] point : points) {
           if (minSqr(res, point, _ncats, cd, count) >= rand.nextDouble() * sum) {
             res[count++] = point;

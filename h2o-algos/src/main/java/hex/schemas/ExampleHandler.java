@@ -25,6 +25,7 @@ public class ExampleHandler extends Handler<ExampleHandler.ExamplePojo,ExampleV2
   public ExampleV2 work(int version, ExamplePojo e) {
     assert e._parms != null;
     e._job = new Example(e._parms);
+    e._job.train();
     return schema(version).fillFromImpl(e);
   }
   @Override protected ExampleV2 schema(int version) { return new ExampleV2(); }

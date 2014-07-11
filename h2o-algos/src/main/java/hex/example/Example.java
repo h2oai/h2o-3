@@ -1,24 +1,27 @@
 package hex.example;
 
 import java.util.Arrays;
+
+import hex.ModelBuilder;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 
-/** 
+/**
  *  Example model builder... building a trivial ExampleModel
  */
-public class Example extends Job<ExampleModel> {
-
-  final ExampleModel.ExampleParameters _parms; // All the parms
+public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms) {
     super(Key.make("ExampleModel"),"Example",parms._max_iters/*work is max iterations*/);
     _parms = parms;
-    start(new ExampleDriver());
+  }
+
+  @Override public Job train() {
+    return start(new ExampleDriver());
   }
 
   // ----------------------
