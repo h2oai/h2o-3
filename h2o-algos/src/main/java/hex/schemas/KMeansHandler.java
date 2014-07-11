@@ -12,15 +12,16 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   public KMeansHandler() {}
+
   // TODO: move this into a new ModelBuilderHandler superclass
   // TODO: also add a score method in the new ModelBuilderHandler superclass
   public KMeansV2 train(int version, KMeans builder) {
     KMeansParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
-    KMeans job = new KMeans(parms);  // TODO: should return a ModelBuilder
-    job.train();
+    builder.train();
     KMeansV2 schema = schema(version); // TODO: superclass!
-    schema.job = job._key;
+    schema.parameters = new KMeansV2.KMeansV2Parameters();
+    schema.parameters.job = builder._key;
     return schema;
   }
   @Override protected KMeansV2 schema(int version) { return new KMeansV2(); }

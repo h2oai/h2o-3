@@ -16,7 +16,7 @@ abstract class FramesBase extends Schema<Frames, FramesBase> {
   @API(help="Frames")
   FrameV2[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
 
-  // Non-version-specific filling into the handler
+  // Non-version-specific filling into the impl
   @Override public Frames createImpl() {
     Frames f = new Frames();
     f.key = this.key;

@@ -66,7 +66,7 @@ class FramesV2 extends FramesBase {
   }
 
 
-  // Version-specific filling into the handler
+  // Version-specific filling into the impl
   @Override public Frames createImpl() {
     Frames f = new Frames();
     f.key = this.key;
@@ -83,7 +83,7 @@ class FramesV2 extends FramesBase {
     return f;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public FramesBase fillFromImpl(Frames f) {
     this.key = f.key;
     this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state

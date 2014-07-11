@@ -32,9 +32,9 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
       throw H2O.fail("Failed to find a schema for version: " + version + " in: " + this.getClass());
 
     // Fill a Schema from the request params
-    schema = schema.fillFrom(parms);
+    schema = schema.fillFromParms(parms);
     if (null == schema)
-      throw H2O.fail("fillFrom returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
+      throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
 
     // Fill an impl object from the schema
     final I i = schema.createImpl();  // NOTE: it's ok to get a null implementation object

@@ -23,21 +23,21 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   Schema schema;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
-  private transient Value _val; // To avoid a race, cached lookup here
+  // Version&Schema-specific filling into the impl
+  transient Value _val; // To avoid a race, cached lookup here
 
   @Override public InspectPojo createImpl() {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
     if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
     if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
-    InspectPojo i = new InspectPojo(_val, off, len);
+    InspectPojo i = new InspectPojo(_val,off, len);
     return i;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
     if (i._val.isFrame())
       kind = "frame";

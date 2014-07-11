@@ -44,7 +44,7 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   Key job;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public Parse createImpl() {
@@ -62,7 +62,7 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
     return p;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public ParseV2 fillFromImpl( Parse p ) {
     job = p._job._key;
     return this;

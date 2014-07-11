@@ -24,16 +24,16 @@ class ImportFilesV2 extends Schema<ImportFiles,ImportFilesV2> {
   String dels[];
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public ImportFiles createImpl() {
     ImportFiles i = new ImportFiles();
     i._path = path;
     return i;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public ImportFilesV2 fillFromImpl(ImportFiles i) {
     path  = i._path;
     files = i._files;

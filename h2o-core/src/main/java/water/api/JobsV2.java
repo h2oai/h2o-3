@@ -13,9 +13,9 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
   JobV2[] jobs;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public Jobs createImpl( ) {
     Job[] jobs = null;
     if (null != this.jobs) {
@@ -28,7 +28,7 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
     return new Jobs(this.key, jobs);
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public JobsV2 fillFromImpl(Jobs j) {
     this.key = j.key;
     Job[] js = j.jobs;

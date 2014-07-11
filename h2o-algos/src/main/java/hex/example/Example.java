@@ -41,18 +41,18 @@ public class Example extends Job<ExampleModel> {
         // ---
         // Run the main Example Loop
         // Stop after enough iterations
-        for( ; model._iters < _parms._max_iters; model._iters++ ) {
+        for( ; model._output._iters < _parms._max_iters; model._output._iters++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
 
           double[] maxs = new Max().doAll(fr)._maxs;
 
           // Fill in the model; denormalized centers
-          model._maxs = maxs;
+          model._output._maxs = maxs;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
           StringBuilder sb = new StringBuilder();
-          sb.append("Example: iter: ").append(model._iters);
+          sb.append("Example: iter: ").append(model._output._iters);
           Log.info(sb);
         }
 

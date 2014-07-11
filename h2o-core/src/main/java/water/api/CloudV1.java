@@ -11,10 +11,10 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   // Output fields
   @API(help="version")
   private String version;
-  
+
   @API(help="cloud_name")
   private String cloud_name;
-  
+
   @API(help="cloud_size")
   private int cloud_size;
 
@@ -32,7 +32,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
 
   @API(help="nodes")
   private Node[] nodes;
-  
+
   // Output fields one-per-JVM
   private static class Node extends Iced {
     @API(help="IP")
@@ -46,7 +46,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
 
     @API(help="System load; average #runnables/#cores")
     final float sys_load;       // Average #runnables/#cores
-         
+
     @API(help="Data on Node (memory or disk)")
     final long total_value_size;
 
@@ -124,14 +124,14 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   }
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public Cloud createImpl( ) {
     return new Cloud();                // No inputs
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public CloudV1 fillFromImpl(Cloud c) {
     version = c._version;
     cloud_name = c._cloud_name;
@@ -214,7 +214,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
 
     // All Node lines
     for( Node n : nodes )
-      formatRow(ab, n.healthy?"":"class=\"error\"", 
+      formatRow(ab, n.healthy?"":"class=\"error\"",
                 n.h2o.toString(), now-n.last_ping, n.sys_load,
                 n.total_value_size, n.mem_value_size,n.num_keys,
                 n.free_mem,n.tot_mem,n.max_mem,
@@ -228,8 +228,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     return ab.bodyTail();
   }
 
-  private HTML formatRow( HTML ab, String color, 
-                          String name, long ping, float load, 
+  private HTML formatRow( HTML ab, String color,
+                          String name, long ping, float load,
                           long total_data, long mem_data, long num_keys,
                           long free_mem, long tot_mem, long max_mem,
                           long free_disk, long max_disk,

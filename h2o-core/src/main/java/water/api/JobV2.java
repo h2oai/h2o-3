@@ -46,15 +46,15 @@ public class JobV2 extends Schema<Job, JobV2> {
   }
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public Job createImpl( ) {
     Job j = new Job(key, description, work);
     return j;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public JobV2 fillFromImpl(Job job) {
     // Fetch the latest Job status from the K/V store
     // Do this in the handler:

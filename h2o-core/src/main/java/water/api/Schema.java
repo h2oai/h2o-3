@@ -55,7 +55,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   // Also does various sanity checks for broken Schemas.  Fields must not be
   // private.  Input fields get filled here, so must not be final.
-  protected S fillFrom( Properties parms ) {
+  public S fillFromParms(Properties parms) {
     // Get passed-in fields, assign into Schema
 
     Map<String, Field> fields = new HashMap<>();

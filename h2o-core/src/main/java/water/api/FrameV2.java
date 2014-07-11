@@ -155,16 +155,16 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   }
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public Frame createImpl( ) {
     if (null == key)
       throw H2O.fail("Cannot create a Frame from a null key.");
     return new Frame(key);
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
     off = 0;
     rows = _fr.numRows();
@@ -217,8 +217,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
-      formatRow(ab,"",Long.toString(off+row+1),new ColOp() { 
-          String op(Col c) { 
+      formatRow(ab,"",Long.toString(off+row+1),new ColOp() {
+          String op(Col c) {
             return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c,0); }
         } );
     }

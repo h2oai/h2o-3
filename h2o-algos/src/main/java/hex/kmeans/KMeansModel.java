@@ -39,7 +39,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public double _mse;           // Total MSE, variance
   }
 
-  KMeansModel( Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
+  public KMeansModel(Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
     super(selfKey,fr,parms);
     _output = new KMeansOutput();
     _output._ncats = ncats;

@@ -6,17 +6,18 @@ import water.api.Schema;
 import water.fvec.Frame;
 import water.fvec.Chunk;
 
-public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters> {
+public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
-  public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleModel.ExampleParameters> {
+  public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleParameters,ExampleOutput> {
     public Key _src;              // Frame being clustered
     public int _max_iters;        // Max iterations
   }
 
-  // Iterations executed
-  public int _iters;
-
-  double[] _maxs;
+  public static class ExampleOutput extends Model.Output<ExampleModel,ExampleParameters,ExampleOutput> {
+    // Iterations executed
+    public int _iters;
+    double[] _maxs;
+  }
 
   ExampleModel( Key selfKey, Frame fr, ExampleParameters parms) {
     super(selfKey,fr,parms,null);

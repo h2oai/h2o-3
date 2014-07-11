@@ -30,9 +30,9 @@ class FindV2 extends Schema<FindPojo,FindV2> {
   long next;
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public FindPojo createImpl() {
     FindPojo f = new FindPojo();
     // Peel out the Frame from the Key
@@ -47,14 +47,14 @@ class FindV2 extends Schema<FindPojo,FindV2> {
       if( vec==null ) throw new IllegalArgumentException("Column "+column+" not found in frame "+key);
       fr = new Frame(new String[]{column}, new Vec[]{vec});
     }
-    
+
     f._fr = fr;
     f._row = row;
     f._val = match;
     return f;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public FindV2 fillFromImpl( FindPojo f ) {
     prev = f._prev;
     next = f._next;
@@ -63,7 +63,7 @@ class FindV2 extends Schema<FindPojo,FindV2> {
 
   //==========================
   // Helper so InspectV2 can link to FindV2
-  static String link(Key key, String column, long row, String match ) { 
+  static String link(Key key, String column, long row, String match ) {
     return "/2/Find?key="+key+(column==null?"":"&column="+column)+"&row="+row+(match==null?"":"&match="+match);
   }
 }

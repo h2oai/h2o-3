@@ -6,6 +6,7 @@ import water.Model;
 import water.api.API;
 import water.api.Handler;
 import water.api.Schema;
+import water.util.BeanUtils;
 
 /**
  * A Model schema contains all the pieces associated with a Model:
@@ -24,35 +25,34 @@ abstract public class ModelBase<M extends Model, P extends Model.Parameters, O e
   @API(help="Model key", required=true)
   Key key;
 
-  // TODO: should contain a ModelParametersBase and ModelOutputBase
-  @API(help="A model.")
-  protected M _model;
+  @API(help="The build parameters for the model (e.g. K for KMeans).")
+  protected ModelParametersBase parameters;
+
+  @API(help="The build output for the model (e.g. the clusters for KMeans).")
+  protected ModelOutputBase output;
 
   public ModelBase() {
   }
 
   public ModelBase(M m) {
-//    this.parameters = m.getParms();
-    this._model = m;
+    BeanUtils.copyProperties(this.parameters, m.getParms(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    BeanUtils.copyProperties(this.output, m.getOutput(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
   }
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public M createImpl() {
-    return (M)this._model; // have to cast because the definition of S doesn't include ModelBase
+// TODO:    M dummy = new M();
+    return null;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
-    this._model = m;
     this.key = m._key;
+    BeanUtils.copyProperties(this.parameters, m.getParms(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    BeanUtils.copyProperties(this.output, m.getOutput(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     return (S)this; // have to cast because the definition of S doesn't include ModelBase
   }
-
-  //@Override public HTML writeHTML_impl( HTML ab ) {
-  //  ab.title("KMeansModel Viewer");
-  //  return ab;
-  //}
 }

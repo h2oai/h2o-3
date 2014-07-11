@@ -18,7 +18,7 @@ class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
   String matches[];
 
   //==========================
-  // Customer adapters Go Here
+  // Custom adapters go here
 
   // Version&Schema-specific filling into the handler
   @Override public Typeahead createImpl() {
@@ -28,7 +28,7 @@ class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
     return t;
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public TypeaheadV2 fillFromImpl(Typeahead t) {
     matches = t._matches;
     return this;

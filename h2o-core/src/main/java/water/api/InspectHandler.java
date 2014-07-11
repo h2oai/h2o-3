@@ -25,7 +25,7 @@ public class InspectHandler extends Handler<InspectPojo,InspectV1> {
       if( _val.isFrame() )
         _schema = new FrameV2((Frame)_val.get(), off, len);
       else if( _val.isModel() )
-        _schema = ((Model)_val.get()).schema(); // TODO: need a way to look up the schema in the API layer, not polluting the back end
+        _schema = ((Model)_val.get()).schema().fillFromImpl(_val.get()); // TODO: need a way to look up the schema in the API layer, not polluting the back end
       else
         throw H2O.unimpl("Unexpected val class for Inspect: " + _val.get().getClass());
     }
@@ -47,7 +47,8 @@ public class InspectHandler extends Handler<InspectPojo,InspectV1> {
       // TODO: this should call FrameBase.schema(version).. . .
       i._schema = new FrameV2((Frame)i._val.get(),i._off,i._len);
     } else {
-      i._schema.fillFromImpl(i._val.get());
+      Model m = (Model)i._val.get();
+      i._schema.fillFromImpl(m);
     }
 
     return schema(version).fillFromImpl(i);
