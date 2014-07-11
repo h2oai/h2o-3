@@ -42,6 +42,14 @@ abstract public class ModelBase<M extends Model, P extends Model.Parameters, O e
   //==========================
   // Custom adapters go here
 
+  // TOOD: I think we can implement the following two here, using reflection on the type parameters.
+
+  /** Factory method to create the model-specific parameters schema. */
+  abstract public ModelParametersBase createParametersSchema();
+
+  /** Factory method to create the model-specific output schema. */
+  abstract public ModelOutputBase createOutputSchema();
+
   // Version&Schema-specific filling into the impl
   @Override public M createImpl() {
 // TODO:    M dummy = new M();
@@ -51,8 +59,13 @@ abstract public class ModelBase<M extends Model, P extends Model.Parameters, O e
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
     this.key = m._key;
-    BeanUtils.copyProperties(this.parameters, m.getParms(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    BeanUtils.copyProperties(this.output, m.getOutput(), BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+
+    parameters = createParametersSchema();
+    parameters.fillFromImpl(m._parms);
+
+    output = createOutputSchema();
+    output.fillFromImpl(m._output);
+
     return (S)this; // have to cast because the definition of S doesn't include ModelBase
   }
 }

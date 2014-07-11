@@ -29,6 +29,8 @@ public class BeanUtils {
    * @param field_naming Are the fields named consistently, or does one side have underscores?
    */
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming) {
+    if (null == dest || null == origin) return;
+
     Map<String, Field> dest_fields = new HashMap<>();
     Map<String, Field> origin_fields = new HashMap<>();
 

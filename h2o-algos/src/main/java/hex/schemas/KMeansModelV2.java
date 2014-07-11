@@ -55,24 +55,22 @@ public class KMeansModelV2 extends ModelBase<KMeansModel, KMeansModel.KMeansPara
 
   } // KMeansModelV2Output
 
+  // TOOD: I think we can implement the following two in ModelBase, using reflection on the type parameters.
+  public KMeansV2.KMeansV2Parameters createParametersSchema() { return new KMeansV2.KMeansV2Parameters(); }
+  public KMeansModelV2Output createOutputSchema() { return new KMeansModelV2Output(); }
 
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public KMeansModel createImpl() {
     KMeansV2.KMeansV2Parameters p = ((KMeansV2.KMeansV2Parameters)this.parameters);
     KMeansModel.KMeansParameters parms = p.createImpl();
     return new KMeansModel( key, (Frame)DKV.get(p.src).get(), parms, 0 );
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public KMeansModelV2 fillFromImpl( KMeansModel kmm ) {
-    parameters = new KMeansV2.KMeansV2Parameters();
-    parameters.fillFromImpl(kmm._parms);
-
-    output = new KMeansModelV2.KMeansModelV2Output();
-    output.fillFromImpl(kmm._output);
-    return this;
+    return super.fillFromImpl(kmm);
   }
 }

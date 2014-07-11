@@ -14,10 +14,14 @@ import water.util.DocGen.HTML;
 import java.util.Properties;
 
 public class KMeansV2 extends Schema<KMeans,KMeansV2> {
-  // TODO: can we put these all into a ModelParametersSchema ?
 
+  // Input fields
   @API(help="Model builder parameters.")
   KMeansV2Parameters parameters;
+
+  // Output fields
+  @API(help = "Job Key")
+    Key job;
 
   public static final class KMeansV2Parameters extends ModelParametersBase<KMeansParameters, KMeansV2Parameters> {
     // Input fields
@@ -38,10 +42,6 @@ public class KMeansV2 extends Schema<KMeans,KMeansV2> {
 
     @API(help = "Initialization mode", values = "random,plusplus,farthest")
     public KMeans.Initialization init;
-
-    // Output fields
-    @API(help = "Job Key")
-    Key job;
 
     public KMeansV2Parameters fillFromImpl(KMeansParameters parms) {
       BeanUtils.copyProperties(this, parms, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
@@ -67,9 +67,7 @@ public class KMeansV2 extends Schema<KMeans,KMeansV2> {
     return this;
   }
 
-
-
-  // Version&Schema-specific filling into the handler
+  // Version&Schema-specific filling into the impl
   @Override public KMeans createImpl() {
     if( parameters.K < 2 || parameters.K > 9999999 ) throw new IllegalArgumentException("2<= K && K < 10000000");
     if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
@@ -80,9 +78,9 @@ public class KMeansV2 extends Schema<KMeans,KMeansV2> {
     return new KMeans(parms);
   }
 
-  // Version&Schema-specific filling from the handler
+  // Version&Schema-specific filling from the impl
   @Override public KMeansV2 fillFromImpl(KMeans builder) {
-    //    job = h._job._key;  // TODO: what?
+    job = builder._key;
 
     parameters = new KMeansV2Parameters();
     parameters.fillFromImpl(builder._parms);
@@ -91,7 +89,7 @@ public class KMeansV2 extends Schema<KMeans,KMeansV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("KMeans Started");
-    String url = JobV2.link(parameters.job);
+    String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }
 
