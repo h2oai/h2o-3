@@ -184,6 +184,8 @@ public class AUC extends Iced {
       throw new IllegalArgumentException("Both arguments must have the same length!");
     if (!vactual.isInt())
       throw new IllegalArgumentException("Actual column must be integer class labels!");
+    if (vpredict.isInt())
+      throw new IllegalArgumentException("Integer type for vactual. Must be a probability.");
   }
 
 //  @Override
