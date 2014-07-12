@@ -29,7 +29,14 @@ public class JProfile extends Iced {
       assert(profiles[i] != null);
       nodes[i] = new ProfileSummary(H2O.CLOUD._memary[i].toString(), profiles[i]);
     }
-    for (ProfileSummary node : nodes) Log.debug(node.name, node.profile);
+    for( int i=0; i<nodes.length; i++ ) {
+      Log.info(nodes[i].name);
+      for (int j = 0; j < nodes[i].profile.counts.length; ++j) {
+        Log.info(nodes[i].profile.counts[j]);
+        Log.info(nodes[i].profile.stacktraces[j]);
+      }
+    }
+
     return this;
   }
 
