@@ -24,12 +24,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   // Number of categorical columns
   private int _ncats;
 
-  // Called from Nano thread; start the KMeans Job on a F/J thread
+  // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms) {
-    super(Key.make("KMeansModel"),"K-means",parms._max_iters/*work is max iterations*/);
-    _parms = parms;
+    super(Key.make("KMeansModel"),"K-means",parms,parms._max_iters/*work is max iterations*/);
   }
 
+  /** Start the KMeans training Job on an F/J thread. */
   @Override public Job train() {
     return start(new KMeansDriver());
   }
@@ -60,7 +60,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         _ncats = ncats;
 
         // The model to be built
-        model = new KMeansModel(dest(), fr, _parms, ncats);
+        model = new KMeansModel(dest(), fr, _parms, new KMeansModel.KMeansOutput(), ncats);
         model.delete_and_lock(_key);
 
         // means are used to impute NAs

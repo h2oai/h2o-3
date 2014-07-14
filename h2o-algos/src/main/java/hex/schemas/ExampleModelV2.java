@@ -3,28 +3,18 @@ package hex.schemas;
 import hex.example.ExampleModel;
 import water.H2O;
 import water.Key;
-import water.Model;
 import water.api.*;
 import water.util.BeanUtils;
 
-public class ExampleModelV2 extends ModelBase<ExampleModel, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput, ExampleModelV2 > {
+public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput, ExampleModelV2 > {
 
-  // TODO: move this?
-  // Input fields
-  @API(help="Example Model to inspect",required=true)
-  Key key;
-
-
-  public static final class ExampleModelV2Output extends ModelOutputBase<ExampleModel.ExampleOutput, ExampleModelV2Output> {
+  public static final class ExampleModelV2Output extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelV2Output> {
     @API(help="Iterations executed")
     public double iters;
 
     // Output fields
     @API(help="")
-    double[] maxs;
-
-    @API(help="Job Key")
-    Key job;
+    public double[] maxs;
 
     @Override public ExampleModel.ExampleOutput createImpl() {
       ExampleModel.ExampleOutput impl = new ExampleModel.ExampleOutput();
@@ -42,7 +32,7 @@ public class ExampleModelV2 extends ModelBase<ExampleModel, ExampleModel.Example
   //==========================
   // Custom adapters go here
 
-  // TOOD: I think we can implement the following two in ModelBase, using reflection on the type parameters.
+  // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
   public ExampleV2.ExampleV2Parameters createParametersSchema() { return new ExampleV2.ExampleV2Parameters(); }
   public ExampleModelV2Output createOutputSchema() { return new ExampleModelV2Output(); }
 

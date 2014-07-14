@@ -59,12 +59,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * initial random seed.
    */
   public abstract static class Parameters<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
-    /* This class has no fields and no code */
+    public Key _src;              // Frame the Model is trained on
   }
-  // TODO: make this an instance of a *parameterized* Parameters class. . .
+
   public P _parms; // TODO: move things around so that this can be protected
-  public P getParms() { return _parms; }
-  public void setParms(P parms) { _parms = parms; }
 
 
   /**
@@ -76,11 +74,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   public abstract static class Output<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
     /* This class has no fields and no code */
   }
-  // TODO: make this an instance of a *parameterized* Output class. . .
-  public O _output; // TODO: move things around so that this can be protected
-  public O getOutput() { return _output; }
-  public void setOutput(O output) { _output = output; }
 
+  public O _output; // TODO: move things around so that this can be protected
 
   /**
    * Model-specific state class.  Each model sub-class contains an instance of one of
@@ -104,12 +99,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
   /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */
-  public Model( Key selfKey, Frame fr, P parms ) {
-    this(selfKey,fr.names(),fr.domains(),parms);
+  public Model( Key selfKey, Frame fr, P parms, O output ) {
+    this(selfKey,fr.names(),fr.domains(),parms,output);
   }
 
   /** Full constructor */
-  public Model( Key selfKey, String names[], String domains[][], P parms ) {
+  public Model( Key selfKey, String names[], String domains[][], P parms, O output) {
     super(selfKey);
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
@@ -119,6 +114,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     _domains = domains;
     assert parms != null;
     _parms = parms;
+    assert output != null;
+    _output = output;
   }
 
   /** Bulk score for given <code>fr</code> frame.

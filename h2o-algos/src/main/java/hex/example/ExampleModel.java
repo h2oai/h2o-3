@@ -9,18 +9,17 @@ import water.fvec.Chunk;
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleParameters,ExampleOutput> {
-    public Key _src;              // Frame being clustered
     public int _max_iters;        // Max iterations
   }
 
   public static class ExampleOutput extends Model.Output<ExampleModel,ExampleParameters,ExampleOutput> {
     // Iterations executed
     public int _iters;
-    double[] _maxs;
+    public double[] _maxs;
   }
 
-  ExampleModel( Key selfKey, Frame fr, ExampleParameters parms) {
-    super(selfKey,fr,parms,null);
+  ExampleModel( Key selfKey, Frame fr, ExampleParameters parms, ExampleOutput output) {
+    super(selfKey,fr,parms,output,null);
   }
 
   // Default publically visible Schema is V2

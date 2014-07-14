@@ -16,12 +16,12 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
   protected float[] _modelClassDist;
   public void setModelClassDistribution(float[] classdist) { _modelClassDist = classdist.clone(); }
 
-  public SupervisedModel( Key selfKey, Frame fr, P parms, float[] priorClassDist ) {
-    this(selfKey,fr.names(),fr.domains(),parms,priorClassDist);
+  public SupervisedModel( Key selfKey, Frame fr, P parms, O output, float[] priorClassDist ) {
+    this(selfKey,fr.names(),fr.domains(),parms,output,priorClassDist);
   }
 
-  public SupervisedModel( Key selfKey, String[] names, String[][] domains, P parms, float[] priorClassDist ) {
-    super(selfKey,names,domains,parms);
+  public SupervisedModel( Key selfKey, String[] names, String[][] domains, P parms, O output, float[] priorClassDist ) {
+    super(selfKey,names,domains,parms,output);
     _priorClassDist = priorClassDist;
   }
 

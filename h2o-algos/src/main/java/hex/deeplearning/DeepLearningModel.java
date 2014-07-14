@@ -627,7 +627,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
    * @param jobKey New job key (job which updates the model)
    */
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
-    super(destKey, /*cp._dataKey, */ dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), null/*Parameters*/, cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
+    super(destKey, /*cp._dataKey, */ dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), null/*Parameters*/, null/*Output*/, cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
     final boolean store_best_model = (jobKey == null);
     this.jobKey = jobKey;
     if (store_best_model) {
@@ -665,7 +665,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
   }
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearning params, final float[] priorDist) {
-    super(destKey, /*dataKey, */dinfo._adaptedFrame, null/*Parameters*/, priorDist);
+    super(destKey, /*dataKey, */dinfo._adaptedFrame, null/*Parameters*/, null/*Output*/, priorDist);
     this.jobKey = jobKey;
     run_time = 0;
     start_time = System.currentTimeMillis();

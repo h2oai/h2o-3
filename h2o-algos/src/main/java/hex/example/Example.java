@@ -16,7 +16,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
 
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms) {
-    super(Key.make("ExampleModel"),"Example",parms._max_iters/*work is max iterations*/);
+    super(Key.make("ExampleModel"),"Example",parms,parms._max_iters/*work is max iterations*/);
     _parms = parms;
   }
 
@@ -38,7 +38,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
         fr.read_lock(_key);
 
         // The model to be built
-        model = new ExampleModel(dest(), fr, _parms);
+        model = new ExampleModel(dest(), fr, _parms, new ExampleModel.ExampleOutput());
         model.delete_and_lock(_key);
 
         // ---
