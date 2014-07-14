@@ -30,8 +30,8 @@ public class AST2IRTest extends Iced {
   static void printInstructions(JsonObject ast, String[] checkInstructions) {
     AST2IR main = new AST2IR(ast);
     main.make();
-    Log.info(main._toString());
-    Log.info(checkInstructions);
+    Log.info((Object)main._toString());
+    Log.info((Object)checkInstructions);
     if (!checkInstructions[0].equals("")) {
       assert checkInstructions[0].equals(main._toString()[0]);
     }
