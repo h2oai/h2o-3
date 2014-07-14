@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import hex.schemas.KMeansModelV2;
 import water.*;
+import water.api.ModelSchema;
 import water.api.Schema;
 import water.fvec.Frame;
 import water.fvec.Chunk;
@@ -44,7 +45,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   }
 
   // Default publically visible Schema is V2
-  @Override public Schema schema() { return new KMeansModelV2(); }
+  @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

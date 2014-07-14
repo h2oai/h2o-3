@@ -23,7 +23,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
   }
 
   // Default publically visible Schema is V2
-  public Schema schema() { throw H2O.unimpl(); }
+  public ModelSchema schema() { throw H2O.unimpl(); }
 
 //  @API(help="Model info", json = true)
   private volatile DeepLearningModelInfo model_info;

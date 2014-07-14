@@ -3,6 +3,8 @@ package water;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+
+import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -95,7 +97,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
    * This puts a reverse edge into the dependency graph.
    */
-  public abstract Schema schema();
+  public abstract ModelSchema schema();
 
   /** Constructor from frame: Strips out the Vecs to just the names needed
    *  to match columns later for future datasets.  */

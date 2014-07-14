@@ -2,6 +2,7 @@ package hex.example;
 
 import hex.schemas.ExampleModelV2;
 import water.*;
+import water.api.ModelSchema;
 import water.api.Schema;
 import water.fvec.Frame;
 import water.fvec.Chunk;
@@ -23,7 +24,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
   }
 
   // Default publically visible Schema is V2
-  @Override public Schema schema() { return new ExampleModelV2(); }
+  @Override public ModelSchema schema() { return new ExampleModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {  
     throw H2O.unimpl();
