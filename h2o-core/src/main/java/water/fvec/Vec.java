@@ -5,6 +5,7 @@ import java.util.UUID;
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.ParseTime;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
@@ -438,7 +439,7 @@ public class Vec extends Keyed {
   public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
   public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
 
-  public final String atStr( long i ) { return chunkForRow(i).atStr(i); }
+  public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr(vstr,i); }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:

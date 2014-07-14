@@ -3,6 +3,7 @@ package water.fvec;
 import java.util.*;
 import water.*;
 import water.parser.ParseTime;
+import water.parser.ValueString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
@@ -913,9 +914,8 @@ public class NewChunk extends Chunk {
   private Chunk chunkStr() {
     final byte [] strbuf = Arrays.copyOf(_ss, _sslen);
     final byte [] idbuf = MemoryManager.malloc1(len2()*4,true);
-    for( int i = 0; i < len2(); ++i ) {
+    for( int i = 0; i < len2(); ++i )
       UnsafeUtils.set4(idbuf, 4*i, _is[i]);
-    }
     return new CStrChunk(strbuf, idbuf, len2());
   }
 
@@ -1038,7 +1038,7 @@ public class NewChunk extends Chunk {
     }
     return isNA2(i);
   }
-  @Override public String atStr_impl( int i ) {
+  @Override public ValueString atStr_impl( ValueString vstr, int i ) {
     /*
       Uncomment this block to support sparse string chunks
 
@@ -1048,11 +1048,10 @@ public class NewChunk extends Chunk {
       else return null;
     }
     */
+    if( _is[i] != CStrChunk.NA ) return null;
     int len;
-    if (_is[i] != -1) { //check for NAs
-      for (len = 0; _ss[_is[i] + len] != 0; len++) ;
-      return new String(_ss, _is[i], len);
-    } else return null;
+    for( len = 0; _ss[_is[i] + len] != 0; len++ ) ;
+    return vstr.set(_ss, _is[i], len);
   }
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }

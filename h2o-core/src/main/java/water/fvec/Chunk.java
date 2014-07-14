@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.parser.ValueString;
 
 /** A compression scheme, over a chunk - a single array of bytes.  The *actual*
  *  vector header info is in the Vec struct - which contains info to find all
@@ -65,9 +66,9 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( 0 <= x && x < len()) return at16h0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
-  public final String atStr( long i ) {
+  public final ValueString atStr( ValueString vstr, long i ) {
     long x = i-_start;
-    if( 0 <= x && x < len()) return atStr0((int)x);
+    if( 0 <= x && x < len()) return atStr0(vstr,(int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
 
@@ -81,7 +82,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
   public final long   at16l0( int i ) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
   public final long   at16h0( int i ) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
-  public final String atStr0( int i ) { return _chk2 == null ? atStr_impl(i) : _chk2.atStr_impl(i); }
+  public final ValueString atStr0( ValueString vstr, int i ) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
 
 
   /** Write element the slow way, as a long.  There is no way to write a
@@ -175,7 +176,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract protected boolean isNA_impl(int idx);
   protected long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   protected long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  protected String atStr_impl(int idx) { throw new IllegalArgumentException("Not a String"); }
+  protected ValueString atStr_impl(ValueString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
   
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */

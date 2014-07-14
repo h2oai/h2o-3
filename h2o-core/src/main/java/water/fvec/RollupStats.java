@@ -2,6 +2,7 @@ package water.fvec;
 
 import java.util.Arrays;
 import water.*;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
@@ -56,6 +57,7 @@ public class RollupStats extends DTask<RollupStats> {
     _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
+    ValueString vstr = new ValueString();
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
@@ -63,8 +65,8 @@ public class RollupStats extends DTask<RollupStats> {
 
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
         if (c.at16l0(i) != 0 || c.at16h0(i) != 0) _nzCnt++;
-      } else if ( isString ) { // String columns do not compute min/max/mean/sigma
-        if (c.atStr(i) != null) _nzCnt++;
+      } else if( isString ) { // String columns do not compute min/max/mean/sigma
+        if( c.atStr(vstr,i) != null ) _nzCnt++;
         _isInt = false;
       } else {                  // All other columns have useful rollups
 

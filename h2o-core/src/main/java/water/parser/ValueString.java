@@ -14,7 +14,7 @@ public final class ValueString extends Iced implements Comparable<ValueString> {
    // Cloning constructing used during collecting unique enums
    ValueString( ValueString from ) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
    // Used to make a temp recycling ValueString in hot loops
-   ValueString() { }
+   public ValueString() { }
 
    @Override public int compareTo( ValueString o ) {
      int len = Math.min(_len,o._len);
@@ -62,10 +62,11 @@ public final class ValueString extends Iced implements Comparable<ValueString> {
     return ss;
   }
 
-  void set(byte [] buf, int off, int len){
+  public ValueString set(byte [] buf, int off, int len) {
     _buf = buf;
     _off = off;
     _len = len;
+    return this;                // Flow coding
   }
 
   public ValueString setTo(String what) {
