@@ -38,20 +38,6 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
     return e;
   }
 
-  // Version&Schema-specific filling from the impl
-  @Override public ExampleV2 fillFromImpl( Example e ) {
-    super.fillFromImpl(e);
-
-    job = e._key;
-    return this;
-  }
-
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("Example Started");
-    String url = JobV2.link(job);
-    return ab.href("Poll",url,url);
-  }
-
   // Return a URL to invoke Example on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/Example?src="+fr._key; }
 }

@@ -62,12 +62,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     return new KMeans(parms);
   }
 
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("KMeans Started");
-    String url = JobV2.link(job);
-    return ab.href("Poll",url,url);
-  }
-
   // Return a URL to invoke KMeans on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?src="+fr._key; }
 }

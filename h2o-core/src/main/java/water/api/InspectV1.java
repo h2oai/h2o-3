@@ -39,6 +39,7 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
 
   // Version&Schema-specific filling from the impl
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
+    key = i._val._key;
     if (i._val.isFrame())
       kind = "frame";
     else if (i._val.isModel())
