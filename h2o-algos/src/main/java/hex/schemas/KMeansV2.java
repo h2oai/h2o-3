@@ -2,16 +2,10 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
-import water.Key;
 import water.api.API;
-import water.api.JobV2;
 import water.api.ModelParametersSchema;
-import water.api.Schema;
 import water.fvec.Frame;
 import water.util.BeanUtils;
-import water.util.DocGen.HTML;
-
-import java.util.Properties;
 
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansV2Parameters> {
 

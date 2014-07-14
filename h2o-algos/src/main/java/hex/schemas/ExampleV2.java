@@ -2,11 +2,9 @@ package hex.schemas;
 
 import hex.example.Example;
 import hex.example.ExampleModel;
-import water.Key;
 import water.api.*;
 import water.fvec.Frame;
 import water.util.BeanUtils;
-import water.util.DocGen.HTML;
 
 public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleV2Parameters> {
 
@@ -34,8 +32,7 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
     if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
     if( parameters.max_iters == 0 ) parameters.max_iters = 1000; // Default is 1000 max_iters
 
-    Example e = new Example(parameters.createImpl());
-    return e;
+    return new Example(parameters.createImpl());
   }
 
   // Return a URL to invoke Example on this Frame

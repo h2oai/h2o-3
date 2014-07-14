@@ -20,7 +20,7 @@ class TypeaheadHandler extends Handler<Typeahead,TypeaheadV2> {
 
   // Find files
   public Schema files(int version, Typeahead t) {
-    if( false ) ;
+    //if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
     //else if( p2.startsWith("maprfs:/") ) serveHdfs();

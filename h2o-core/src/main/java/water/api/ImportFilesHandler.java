@@ -32,7 +32,7 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
   public ImportFilesV2 importFiles(int version, ImportFiles importFiles) {
     assert importFiles._path != null;
 //    String p2 = _path.toLowerCase();
-    if( false ) ;
+    //if( false ) ;
     //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
     //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
     //else if( p2.startsWith("maprfs:/") ) serveHdfs();
