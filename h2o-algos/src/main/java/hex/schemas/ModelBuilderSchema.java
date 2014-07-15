@@ -38,7 +38,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Schem
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.title("KMeans Started");
+    ab.title("Model Building Started");
     String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }

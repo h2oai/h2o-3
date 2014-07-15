@@ -31,5 +31,5 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
   }
 
   @Override protected String errStr() { throw H2O.unimpl(); }
-  @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Clustering; }
+  @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
 }

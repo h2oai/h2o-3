@@ -69,7 +69,7 @@ public abstract class JarHash {
     try {
       // Jar file mode.
       if (JARPATH != null)
-        return ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
+        return ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
       for( File f : RESOURCE_FILES ) {
         File f2 = new File(f,uri);
         if( f2.exists() )
