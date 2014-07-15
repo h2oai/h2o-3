@@ -28,9 +28,6 @@ public class NewChunk extends Chunk {
   public transient byte   _ss[];       // Bytes of appended strings, including trailing 0
   public transient int    _is[];       // _is[] index of strings - holds offsets into _ss[]. _is[i] == -1 means NA/sparse
 
-  void zero_exp_mant() { _ls=new long[0]; _xs=new int[0]; }
-  void zero_indices() { _id=new int[0]; }
-
   long  [] alloc_mantissa(int l) { return _ls = MemoryManager.malloc8(l); }
   int   [] alloc_exponent(int l) { return _xs = MemoryManager.malloc4(l); }
   int   [] alloc_indices(int l)  { return _id = MemoryManager.malloc4(l); }
