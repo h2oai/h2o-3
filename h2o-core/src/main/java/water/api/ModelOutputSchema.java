@@ -1,17 +1,16 @@
 package water.api;
 
 import water.Model;
-import water.api.Schema;
 
 /**
  * An instance of a ModelOutput schema contains the Model build output (e.g., the cluster centers for KMeans).
  */
-abstract public class ModelOutputBase<O extends Model.Output, S extends ModelOutputBase<O, S>> extends Schema<O, S> {
+abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
 
-  public ModelOutputBase() {
+  public ModelOutputSchema() {
   }
 
-  public ModelOutputBase(O p) {
+  public ModelOutputSchema(O p) {
   }
 
   //==========================

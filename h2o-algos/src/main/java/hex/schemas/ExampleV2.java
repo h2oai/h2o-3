@@ -2,54 +2,37 @@ package hex.schemas;
 
 import hex.example.Example;
 import hex.example.ExampleModel;
-import hex.schemas.ExampleHandler.ExamplePojo;
-import water.Key;
 import water.api.*;
 import water.fvec.Frame;
-import water.util.DocGen.HTML;
+import water.util.BeanUtils;
 
-public class ExampleV2 extends Schema<ExamplePojo,ExampleV2> {
+public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleV2Parameters> {
 
-  // Input fields
-  @API(help="Input source frame",required=true)
-  public Key src;
+  public static final class ExampleV2Parameters extends ModelParametersSchema<ExampleModel.ExampleParameters, ExampleV2Parameters> {
+    // Input fields
+    @API(help="Maximum training iterations.")
+    public int max_iters;        // Max iterations
 
-  @API(help="Max Iterations")
-  public int max_iters;
+    // TODO: refactor into ModelParametersSchema
+    @Override public ExampleModel.ExampleParameters createImpl() {
+      ExampleModel.ExampleParameters impl = new ExampleModel.ExampleParameters();
+      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      return impl;
+    }
+  } // ExampleV2Parameters
 
-  @API(help="")
-  double[] maxs;
-
-  // Output fields
-  @API(help="Job Key")
-  Key job;
 
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling into the handler
-  @Override public ExamplePojo createImpl() {
-    ExamplePojo e = new ExamplePojo();
-    e._parms = new ExampleModel.ExampleParameters();
-    e._parms._src = src;
+  @Override public ExampleV2Parameters createParametersSchema() { return new ExampleV2Parameters(); }
 
-    if( max_iters < 0 || max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
-    if( max_iters==0 ) max_iters = 1000; // Default is 1000 max_iters
-    e._parms._max_iters = max_iters;
+  // Version&Schema-specific filling into the impl
+  @Override public Example createImpl() {
+    if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
+    if( parameters.max_iters == 0 ) parameters.max_iters = 1000; // Default is 1000 max_iters
 
-    return e;
-  }
-
-  // Version&Schema-specific filling from the handler
-  @Override public ExampleV2 fillFromImpl( ExamplePojo e ) {
-    job = e._job._key;
-    return this;
-  }
-
-  @Override public HTML writeHTML_impl( HTML ab ) {
-    ab.title("Example Started");
-    String url = JobV2.link(job);
-    return ab.href("Poll",url,url);
+    return new Example(parameters.createImpl());
   }
 
   // Return a URL to invoke Example on this Frame

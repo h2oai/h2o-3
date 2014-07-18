@@ -1,3 +1,5 @@
 
 default:
 	gulp
+
+clean:

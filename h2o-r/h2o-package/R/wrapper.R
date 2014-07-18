@@ -27,7 +27,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   H2Oserver = new("H2OClient", ip = ip, port = port)
   # Sys.sleep(0.5)    # Give cluster time to come up
   h2o.clusterInfo(H2Oserver); cat("\n")
-  
+
   if((verH2O = .h2o.__version(H2Oserver)) != (verPkg = packageVersion("h2o")))
     stop("Version mismatch! H2O is running version ", verH2O, " but R package is version ", toString(verPkg), "\n")
   return(H2Oserver)
@@ -37,24 +37,26 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 h2o.shutdown <- function(client, prompt = TRUE) {
   if(class(client) != "H2OClient") stop("client must be of class H2OClient")
   if(!is.logical(prompt)) stop("prompt must be of class logical")
-  
+
   myURL = paste("http://", client@ip, ":", client@port, sep="")
   if(!url.exists(myURL)) stop(paste("There is no H2O instance running at", myURL))
-  
+
   if(prompt) {
     ans = readline(paste("Are you sure you want to shutdown the H2O instance running at", myURL, "(Y/N)? "))
     temp = substr(ans, 1, 1)
   } else temp = "y"
-  
+
   if(temp == "Y" || temp == "y") {
     res = getURLContent(paste(myURL, .h2o.__PAGE_SHUTDOWN, sep="/"))
     res = fromJSON(res)
     if(!is.null(res$error))
       stop(paste("Unable to shutdown H2O. Server returned the following error:\n", res$error))
   }
-  
-  if((client@ip == "localhost" || client@ip == "127.0.0.1") && exists(".startedH2O") && .startedH2O) 
-    .startedH2O <<- FALSE
+
+  if((client@ip == "localhost" || client@ip == "127.0.0.1") && .h2o.startedH2O()) {
+    pid_file <- .h2o.getTmpFile("pid")
+    if(file.exists(pid_file)) file.remove(pid_file)
+  }
 }
 
 # ----------------------- Diagnostics ----------------------- #
@@ -68,14 +70,14 @@ h2o.clusterStatus <- function(client) {
   myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD, sep = "")
   if(!url.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
   res = fromJSON(postForm(myURL, style = "POST"))
-  
+
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
   cat("Node name:", res$node_name, "\n")
   cat("Cloud size:", res$cloud_size, "\n")
   if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
   if(is.null(res$nodes) || length(res$nodes) == 0) stop("No nodes found!")
-  
+
   # Calculate how many seconds ago we last contacted cloud
   cur_time <- Sys.time()
   for(i in 1:length(res$nodes)) {
@@ -94,7 +96,7 @@ h2o.clusterStatus <- function(client) {
 
 .onLoad <- function(lib, pkg) {
   .h2o.pkg.path <<- paste(lib, pkg, sep = .Platform$file.sep)
-  
+
   # installing RCurl requires curl and curl-config, which is typically separately installed
   rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0
   if(!rcurl_package_is_installed) {
@@ -102,7 +104,7 @@ h2o.clusterStatus <- function(client) {
       # packageStartupMessage("Checking libcurl version...")
       curl_path <- Sys.which("curl-config")
       if(curl_path[[1]] == '' || system2(curl_path, args = "--version") != 0)
-        stop("libcurl not found! Please install libcurl (version 7.14.0 or higher) from http://curl.haxx.se. On Linux systems, 
+        stop("libcurl not found! Please install libcurl (version 7.14.0 or higher) from http://curl.haxx.se. On Linux systems,
               you will often have to explicitly install libcurl-devel to have the header files and the libcurl library.")
     }
   }
@@ -131,16 +133,18 @@ h2o.clusterStatus <- function(client) {
     "----------------------------------------------------------------------\n",
     sep = "")
   packageStartupMessage(msg)
-  
+
   # Shut down local H2O when user exits from R
-  .startedH2O <<- FALSE
+  pid_file <- .h2o.getTmpFile("pid")
+  if(file.exists(pid_file)) file.remove(pid_file)
+
   reg.finalizer(.h2o.jar.env, function(e) {
     ip = "127.0.0.1"; port = 54321
     myURL = paste("http://", ip, ":", port, sep = "")
-            
+
     # require(RCurl); require(rjson)
-    if(exists(".startedH2O") && .startedH2O && url.exists(myURL))
-      h2o.shutdown(new("H2OClient", ip=ip, port=port), FALSE)
+    if(.h2o.startedH2O() && url.exists(myURL))
+      h2o.shutdown(new("H2OClient", ip=ip, port=port), prompt = FALSE)
   }, onexit = TRUE)
 }
 
@@ -154,9 +158,9 @@ h2o.clusterStatus <- function(client) {
 # .onUnload <- function(libpath) {
 #   ip = "127.0.0.1"; port = 54321
 #   myURL = paste("http://", ip, ":", port, sep = "")
-#   
+#
 #   require(RCurl); require(rjson)
-#   if(exists(".startedH2O") && .startedH2O && url.exists(myURL))
+#   if(.h2o.startedH2O() && url.exists(myURL))
 #     h2o.shutdown(new("H2OClient", ip=ip, port=port), FALSE)
 # }
 
@@ -170,26 +174,10 @@ h2o.clusterStatus <- function(client) {
   }
 
   # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
-  if(.Platform$OS.type == "windows") {
-    default_path <- paste("C:", "TMP", sep = .Platform$file.sep)
-    if(file.exists(default_path))
-      tmp_path <- default_path
-    else if(file.exists(paste("C:", "TEMP", sep = .Platform$file.sep)))
-      tmp_path <- paste("C:", "TEMP", sep = .Platform$file.sep)
-    else if(file.exists(Sys.getenv("APPDATA")))
-      tmp_path <- Sys.getenv("APPDATA")
-    else
-      stop("Error: Cannot log Java output. Please create the directory ", default_path, ", ensure it is writable, and re-initialize H2O")
-    
-    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USERNAME"))
-    stdout <- paste(tmp_path, paste("h2o", usr, "started_from_r.out", sep="_"), sep = .Platform$file.sep)
-    stderr <- paste(tmp_path, paste("h2o", usr, "started_from_r.err", sep="_"), sep = .Platform$file.sep)
-  } else {
-    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USER"))
-    stdout <- paste("/tmp/h2o", usr, "started_from_r.out", sep="_")
-    stderr <- paste("/tmp/h2o", usr, "started_from_r.err", sep="_")
-  }
-  
+  stdout <- .h2o.getTmpFile("stdout")
+  stderr <- .h2o.getTmpFile("stderr")
+  write(Sys.getpid(), .h2o.getTmpFile("pid"), append = FALSE)   # Write PID to file to track if R started H2O
+
   # jar_file <- paste(.h2o.pkg.path, "java", "h2o.jar", sep = .Platform$file.sep)
   jar_file <- .h2o.downloadJar(overwrite = forceDL)
   jar_file <- paste('"', jar_file, '"', sep = "")
@@ -218,7 +206,42 @@ h2o.clusterStatus <- function(client) {
   if (rc != 0) {
     stop(sprintf("Failed to exec %s with return code=%s", jar_file, as.character(rc)))
   }
-  .startedH2O <<- TRUE
+}
+
+.h2o.getTmpFile <- function(type) {
+  if(missing(type) || !type %in% c("stdout", "stderr", "pid"))
+    stop("type must be one of 'stdout', 'stderr', or 'pid'")
+
+  if(.Platform$OS.type == "windows") {
+    default_path <- paste("C:", "TMP", sep = .Platform$file.sep)
+    if(file.exists(default_path))
+      tmp_path <- default_path
+    else if(file.exists(paste("C:", "TEMP", sep = .Platform$file.sep)))
+      tmp_path <- paste("C:", "TEMP", sep = .Platform$file.sep)
+    else if(file.exists(Sys.getenv("APPDATA")))
+      tmp_path <- Sys.getenv("APPDATA")
+    else
+      stop("Error: Cannot log Java output. Please create the directory ", default_path, ", ensure it is writable, and re-initialize H2O")
+    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USERNAME"))
+  } else {
+    tmp_path <- paste(.Platform$file.sep, "tmp", sep = "")
+    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USER"))
+  }
+
+  if(type == "stdout")
+    paste(tmp_path, paste("h2o", usr, "started_from_r.out", sep="_"), sep = .Platform$file.sep)
+  else if(type == "stderr")
+    paste(tmp_path, paste("h2o", usr, "started_from_r.err", sep="_"), sep = .Platform$file.sep)
+  else
+    paste(tmp_path, paste("h2o", usr, "started_from_r.pid", sep="_"), sep = .Platform$file.sep)
+}
+
+.h2o.startedH2O <- function() {
+  pid_file <- .h2o.getTmpFile("pid")
+  if(file.exists(pid_file)) {
+    pid_saved <- as.numeric(readLines(pid_file))
+    return(pid_saved == Sys.getpid())
+  } else return(FALSE)
 }
 
 # This function returns the path to the Java executable if it exists
@@ -237,37 +260,39 @@ h2o.clusterStatus <- function(client) {
     for(prog in prog_folder) {
       prog_path <- paste("C:", prog, "Java", sep = .Platform$file.sep)
       jdk_folder <- list.files(prog_path, pattern = "jdk")
-      
+
       for(jdk in jdk_folder) {
         path <- paste(prog_path, jdk, "bin", "java.exe", sep = .Platform$file.sep)
         if(file.exists(path)) return(path)
       }
     }
-    
+
     # Check for existence of JRE and warn user
     for(prog in prog_folder) {
       path <- paste("C:", prog, "Java", "jre7", "bin", "java.exe", sep = .Platform$file.sep)
       if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run.")
     }
   }
-  
+
   stop("Cannot find Java. Please install the latest JDK from http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
 .h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
-  if(missing(branch)) branch <- packageDescription("h2o")$Branch
+  # if(missing(branch)) branch <- packageDescription("h2o")$Branch
+  if(missing(branch))
+    branch <- readLines(paste(.h2o.pkg.path, "branch.txt", sep = .Platform$file.sep))
   if(missing(version)) version <- packageVersion("h2o")[1,4]
   if(!is.logical(overwrite)) stop("overwrite must be TRUE or FALSE")
-  
+
   dest_folder <- paste(.h2o.pkg.path, "java", sep = .Platform$file.sep)
   if(!file.exists(dest_folder)) dir.create(dest_folder)
   dest_file <- paste(dest_folder, "h2o.jar", sep = .Platform$file.sep)
-  
+
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
   if(overwrite || !file.exists(dest_file)) {
     base_url <- paste("https://s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste(base_url, "h2o.jar", sep = "/")
-    
+
     # Get MD5 checksum
     md5_url <- paste(base_url, "h2o.jar.md5", sep = "/")
     # ttt <- getURLContent(md5_url, binary = FALSE)
@@ -279,7 +304,7 @@ h2o.clusterStatus <- function(client) {
     md5_check <- readLines(md5_file, n = 1)
     if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
     unlink(md5_file)
-    
+
     # Save to temporary file first to protect against incomplete downloads
     temp_file <- paste(dest_file, "tmp", sep = ".")
     cat("Performing one-time download of h2o.jar from\n")
@@ -316,19 +341,19 @@ h2o.clusterStatus <- function(client) {
 #       result = paste(result, prefix, items[i], "\n", sep="")
 #     result
 #   }
-#   
+#
 #   temp = postForm(paste(myURL, .h2o.__PAGE_RPACKAGE, sep="/"), style = "POST")
 #   res = fromJSON(temp)
 #   if (!is.null(res$error))
 #     stop(paste(myURL," returned the following error:\n", h2oWrapper.__formatError(res$error)))
-#   
+#
 #   H2OVersion = res$version
 #   myFile = res$filename
-#   
+#
 #   if( grepl('\\.99999$', H2OVersion) ){
 #     H2OVersion <- sub('\\.tar\\.gz$', '', sub('.*_', '', myFile))
 #   }
-#   
+#
 #   # sigh. I so wish people would occasionally listen to me; R expects a version to be %d.%d.%d.%d and will ignore anything after
 #   myPackages <- installed.packages()[,1]
 #   needs_upgrade <- F
@@ -337,7 +362,7 @@ h2o.clusterStatus <- function(client) {
 #     ver <- paste( ver[[1]], collapse='.' )
 #     needs_upgrade <- !(ver == H2OVersion)
 #   }
-#   
+#
 #   if("h2oRClient" %in% myPackages && !needs_upgrade )
 #     cat("H2O R package and server version", H2OVersion, "match\n")
 #   else if(.h2o.shouldUpgrade(silentUpgrade, promptUpgrade, H2OVersion)) {
@@ -351,7 +376,7 @@ h2o.clusterStatus <- function(client) {
 #     install.packages("h2oRClient", repos = c(H2O = paste(myURL, "R", sep = "/"), getOption("repos")))
 #   }
 # }
-# 
+#
 # Check if user wants to install H2O R package matching version on server
 # Note: silentUpgrade supercedes promptUpgrade
 # .h2o.shouldUpgrade <- function(silentUpgrade, promptUpgrade, H2OVersion) {

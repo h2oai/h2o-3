@@ -21,7 +21,7 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
     builder.train();
     KMeansV2 schema = schema(version); // TODO: superclass!
     schema.parameters = new KMeansV2.KMeansV2Parameters();
-    schema.parameters.job = builder._key;
+    schema.job = builder._key;
     return schema;
   }
   @Override protected KMeansV2 schema(int version) { return new KMeansV2(); }

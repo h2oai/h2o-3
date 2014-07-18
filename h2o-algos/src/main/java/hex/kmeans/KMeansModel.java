@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import hex.schemas.KMeansModelV2;
 import water.*;
+import water.api.ModelSchema;
 import water.api.Schema;
 import water.fvec.Frame;
 import water.fvec.Chunk;
@@ -9,10 +10,9 @@ import water.fvec.Chunk;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-    public Key _src;              // Frame being clustered
     public int _K;                // Number of clusters
-    public boolean _normalize;    // Normalize columns
     public int _max_iters;        // Max iterations
+    public boolean _normalize;    // Normalize columns
     public long _seed;            // RNG seed
     public KMeans.Initialization _init;
   }
@@ -39,14 +39,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public double _mse;           // Total MSE, variance
   }
 
-  public KMeansModel(Key selfKey, Frame fr, KMeansParameters parms, int ncats) {
-    super(selfKey,fr,parms);
-    _output = new KMeansOutput();
+  public KMeansModel(Key selfKey, Frame fr, KMeansParameters parms, KMeansOutput output, int ncats) {
+    super(selfKey,fr,parms,output);
     _output._ncats = ncats;
   }
 
   // Default publically visible Schema is V2
-  @Override public Schema schema() { return new KMeansModelV2(); }
+  @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

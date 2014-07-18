@@ -2,6 +2,7 @@ package water.api;
 
 import water.*;
 import water.fvec.*;
+import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
@@ -113,8 +114,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
         data = null;
       } else if ( vec.isString() ) {
         str_data = new String[len];
+        ValueString vstr = new ValueString();
         for (int i = 0; i < len; i++)
-          str_data[i] = vec.isNA(off + i) ? null : vec.atStr(off + i);
+          str_data[i] = vec.isNA(off + i) ? null : vec.atStr(vstr,off + i).toString();
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);

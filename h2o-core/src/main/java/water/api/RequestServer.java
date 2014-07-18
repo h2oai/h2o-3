@@ -109,20 +109,19 @@ public class RequestServer extends NanoHTTPD {
 
     register("/Find","GET",FindHandler.class, "find" );
 
-    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET",FramesHandler.class, "columnSummary", new String[] {"key", "column"});
-    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"   ,"GET",FramesHandler.class, "column", new String[] {"key", "column"});
-    register("/3/Frames/(?<key>.*)/columns"                 ,"GET",FramesHandler.class, "columns", new String[] {"key"});
-    register("/3/Frames/(?<key>.*)"                         ,"GET",FramesHandler.class, "fetch", new String[] {"key"});
-    register("/3/Frames"                                    ,"GET",FramesHandler.class, "list");
-    register("/2/Frames"                                    ,"GET",FramesHandler.class, "list_or_fetch"); // uses ?key=
-    register("/3/Frames/(?<key>.*)"                         ,"DELETE",FramesHandler.class, "delete", new String[] {"key"});
-    register("/3/Frames"                                    ,"DELETE",FramesHandler.class, "deleteAll");
-    // TODO: /3/Frames/(?<key>.*)/summary
-    // TODO?: /3/Frames/summary
+    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", new String[] {"key", "column"});
+    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column", new String[] {"key", "column"});
+    register("/3/Frames/(?<key>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns", new String[] {"key"});
+    register("/3/Frames/(?<key>.*)"                              ,"GET"   ,FramesHandler.class, "fetch", new String[] {"key"});
+    register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list");
+    register("/2/Frames"                                         ,"GET"   ,FramesHandler.class, "list_or_fetch"); // uses ?key=
+    register("/3/Frames/(?<key>.*)"                              ,"DELETE",FramesHandler.class, "delete", new String[] {"key"});
+    register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll");
 
-    // register("/3/Models/(?<key>.*)"                      ,"GET",ModelsHandler.class, "fetch", new String[] {"key"});
-    // register("/3/Models"                                 ,"GET",ModelsHandler.class, "list");
-    // register("/2/Models"                                 ,"GET",ModelsHandler.class, "list_or_fetch"); // uses ?key=
+    register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", new String[] {"key"});
+    register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list");
+    register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
+    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
