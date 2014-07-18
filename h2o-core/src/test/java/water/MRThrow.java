@@ -11,7 +11,7 @@ import water.fvec.NFSFileVec;
 
 @Test(groups={"multi-node"})
 public class MRThrow extends TestUtil {
-  MRThrow() { super(5); }
+  MRThrow() { super(2); }
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
@@ -78,10 +78,17 @@ public class MRThrow extends TestUtil {
                 return super.onExceptionalCompletion(ex,cc);
               }
           });
-          bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
-          assertTrue(ok[0]);
+          bh.asyncExec(nfs);
+          // If the chosen file is too small for the cluster, some nodes will have *no* work
+          // and so no exception is thrown.
+          int MAX_CNT=5;
+          while( !ok[0] && MAX_CNT-- > 0 ) {
+            Thread.sleep(1000);
+          }
         } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));
+//        } catch( ExecutionException e ) { // caught on self
+//          assertTrue(e.getMessage().contains("test"));
         } catch( java.lang.AssertionError ae ) {
           throw ae;             // Standard junit failure reporting assertion
         } catch(Throwable ex) {
@@ -93,23 +100,6 @@ public class MRThrow extends TestUtil {
       if( nfs != null ) nfs.remove(); // remove from DKV
     }
   }
-
-//  @Test public void testDTask(){
-//    for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
-//      try{
-//        RPC.call(H2O.CLOUD._memary[i], new DTask<DTask>() {
-//          @Override public void compute2() {
-//            throw new RuntimeException("test");
-//          }
-//        }).get();
-//        fail("should've thrown");
-//      }catch(RuntimeException rex){
-//       assertTrue(rex.getCause().getMessage().equals("test"));
-//      } catch(Throwable t){
-//        fail("Expected RuntimException");
-//      }
-//    }
-//  }
 
   // Byte-wise histogram
   public static class ByteHistoThrow extends MRTask<ByteHistoThrow> {
@@ -127,5 +117,13 @@ public class MRThrow extends TestUtil {
     }
     // ADD together all results
     @Override public void reduce( ByteHistoThrow bh ) { water.util.ArrayUtils.add(_x,bh._x); }
+  }
+
+  // Run tests when invoked from cmd line
+  public static void main() throws InterruptedException, ExecutionException {
+    MRThrow mrt = new MRThrow();
+
+    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
+    mrt.testContinuationThrow();
   }
 }

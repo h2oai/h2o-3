@@ -5,13 +5,14 @@ import org.testng.annotations.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.lang.reflect.*;
 import water.fvec.*;
 import water.testframework.multinode.MultiNodeSetup;
 
 public class TestUtil {
   private static boolean _stall_called_before = false;
   private static int _initial_keycnt = 0;
-  private int _minCloudSize;
+  protected final int _minCloudSize;
 
   public TestUtil() {
     _minCloudSize = 1;
@@ -215,5 +216,27 @@ public class TestUtil {
       }
     }
     @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
+  }
+
+  // Run tests from cmd-line since testng doesn't seem to be able to it.
+  public static void main( String[] args ) {
+    H2O.main(new String[0]);
+    for( String arg : args ) {
+      try {
+        Class clz = Class.forName(args[0]);
+        Method main = clz.getDeclaredMethod("main");
+        main.invoke(null);
+      } catch( InvocationTargetException ite ) {
+        Throwable e = ite.getCause();
+        e.printStackTrace();
+        try { Thread.sleep(1000); } catch( Exception e2 ) { }
+      } catch( Exception e ) {
+        e.printStackTrace();
+        try { Thread.sleep(1000); } catch( Exception e2 ) { }
+      }
+    }
+    try { Thread.sleep(1000); } catch( Exception e ) { }
+    if( args.length != 0 )
+      UDPRebooted.suicide(UDPRebooted.T.shutdown, H2O.SELF);
   }
 }
