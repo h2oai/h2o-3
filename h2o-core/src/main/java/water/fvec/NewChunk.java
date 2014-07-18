@@ -4,7 +4,6 @@ import java.util.*;
 import water.*;
 import water.parser.ParseTime;
 import water.parser.ValueString;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -552,7 +551,6 @@ public class NewChunk extends Chunk {
   }
   // Study this NewVector and determine an appropriate compression scheme.
   // Return the data so compressed.
-  static final int MAX_FLOAT_MANTISSA = 0x7FFFFF;
 
   Chunk compress() {
     Chunk res = compress2();
