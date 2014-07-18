@@ -1,4 +1,4 @@
-<suite name="Water multi-node suite" verbose="10">
+<suite name="Water multi-node suite" verbose="2">
     <!-- A test which runs before a cloud is formed, and confirms the cloud does not lock and can add more nodes -->
     <test name="pre cloud">
         <packages>
