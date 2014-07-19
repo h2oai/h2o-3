@@ -872,7 +872,7 @@ public class NewChunk extends Chunk {
     int j = 0;
     for( int i=0; i< len(); i++ ) {
       long le = -bias;
-      if(_id == null || (j < _id.length && _id[j] == i)){
+      if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)){
         if( isNA2(j) ) {
           le = NAS[log];
         } else {
@@ -901,7 +901,7 @@ public class NewChunk extends Chunk {
     int j = 0;
     for(int i = 0; i < len(); ++i){
       double d = 0;
-      if(_id == null || (j < _id.length && _id[j] == i)) {
+      if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)) {
         d = _ds != null?_ds[j]:(isNA2(j)||isEnum(j))?Double.NaN:_ls[j]*PrettyPrint.pow10(_xs[j]);
         ++j;
       }
@@ -911,13 +911,13 @@ public class NewChunk extends Chunk {
     return new C8DChunk(bs);
   }
 
-  // Compute a compressed double buffer
+  // Compute a compressed UUID buffer
   private Chunk chunkUUID() {
     final byte [] bs = MemoryManager.malloc1(len() *16,true);
     int j = 0;
     for( int i = 0; i < len(); ++i ) {
       long lo = 0, hi=0;
-      if( _id == null || (j < _id.length && _id[j] == i ) ) {
+      if( _id == null || _id.length == 0 || (j < _id.length && _id[j] == i ) ) {
         lo = _ls[j];
         hi = Double.doubleToRawLongBits(_ds[j++]);
         if( _xs != null && _xs[j] == Integer.MAX_VALUE){// NA?
