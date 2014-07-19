@@ -20,6 +20,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final Vec vec() { return _vec; }   // Owning Vec; filled after AutoBuffer.read
   protected byte[] _mem;  // Short-cut to the embedded memory; WARNING: holds onto a large array
   public final byte[] getBytes() { return _mem; } // Short-cut to the embedded memory; WARNING: holds onto a large array
+  // Used by a ParseExceptionTest to break the Chunk invariants & trigger an NPE
+  public final void crushBytes() { _mem=null; }
 
   /** Load a long value.  Floating point values are silently rounded to an
     * integer.  Throws if the value is missing.

@@ -15,6 +15,7 @@ import water.util.PrettyPrint;
 import water.util.Log;
 
 public class ParseDataset2 extends Job<Frame> {
+  private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false,0/*guess header*/); }
@@ -102,14 +103,24 @@ public class ParseDataset2 extends Job<Frame> {
       tryComplete();
     }
 
+    // Took a crash/NPE somewhere in the parser. Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      if(_job != null) _job.cancel(ex.toString());
-      ex.printStackTrace();
+      Futures fs = new Futures();
+      if( _job != null ) {
+        Keyed.remove(_job._dest,fs);
+        // Find & remove all partially-built output vecs & chunks
+        if( _job._mfpt != null ) _job._mfpt.onExceptionCleanup(fs);
+      }
+      // Assume the input is corrupt - or already partially deleted after
+      // parsing. Nuke it all - no partial Vecs lying around.
+      for( Key k : _keys ) Keyed.remove(k,fs);
+      fs.blockForPending();
+      // As soon as the job is canceled, threads blocking on the job will
+      // wake up. Better have all cleanup done first!
+      if( _job != null ) _job.cancel2(ex);
       return true;
     }
-    @Override public void onCompletion(CountedCompleter caller){
-      _job.done();
-    }
+    @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
 
   }
 
@@ -120,24 +131,25 @@ public class ParseDataset2 extends Job<Frame> {
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
-    MultiFileParseTask uzpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done).doAll(fkeys);
+    MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
+    mfpt.doAll(fkeys);
     EnumUpdateTask eut = null;
     // Calculate enum domain
     int n = 0;
-    int [] ecols = new int[uzpt._dout._nCols];
+    int [] ecols = new int[mfpt._dout._nCols];
     for( int i = 0; i < ecols.length; ++i )
-      if(uzpt._dout._vecs[i].shouldBeEnum())
+      if(mfpt._dout._vecs[i].shouldBeEnum())
         ecols[n++] = i;
     ecols =  Arrays.copyOf(ecols, n);
     if( ecols.length > 0 ) {
-      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), uzpt._eKey, ecols).doAllNodes();
+      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), mfpt._eKey, ecols).doAllNodes();
       Enum[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];
       int j = 0;
-      for( int i : ecols ) uzpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
-      eut = new EnumUpdateTask(ds, eft._lEnums, uzpt._chunk2Enum, ecols);
+      for( int i : ecols ) mfpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
+      eut = new EnumUpdateTask(ds, eft._lEnums, mfpt._chunk2Enum, ecols);
     }
-    Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(uzpt._dout._nCols),uzpt._dout.closeVecs());
+    Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     new SVFTask(fr).doAllNodes();
     // Update enums to the globally agreed numbering
@@ -148,8 +160,8 @@ public class ParseDataset2 extends Job<Frame> {
     }
 
     // Log any errors
-    if( uzpt._errors != null )
-      for( String err : uzpt._errors )
+    if( mfpt._errors != null )
+      for( String err : mfpt._errors )
         Log.warn(err);
     logParseResults(job, fr);
     
@@ -426,19 +438,19 @@ public class ParseDataset2 extends Job<Frame> {
 
     // Reduce: combine errors from across files.
     // Roll-up other meta data
-    @Override public void reduce( MultiFileParseTask uzpt ) {
-      assert this != uzpt;
+    @Override public void reduce( MultiFileParseTask mfpt ) {
+      assert this != mfpt;
       // Collect & combine columns across files
-      if( _dout == null ) _dout = uzpt._dout;
-      else _dout.reduce(uzpt._dout);
-      if( _chunk2Enum == null ) _chunk2Enum = uzpt._chunk2Enum;
-      else if(_chunk2Enum != uzpt._chunk2Enum) { // we're sharing global array!
+      if( _dout == null ) _dout = mfpt._dout;
+      else _dout.reduce(mfpt._dout);
+      if( _chunk2Enum == null ) _chunk2Enum = mfpt._chunk2Enum;
+      else if(_chunk2Enum != mfpt._chunk2Enum) { // we're sharing global array!
         for( int i = 0; i < _chunk2Enum.length; ++i ) {
-          if( _chunk2Enum[i] == -1 ) _chunk2Enum[i] = uzpt._chunk2Enum[i];
-          else assert uzpt._chunk2Enum[i] == -1 : Arrays.toString(_chunk2Enum) + " :: " + Arrays.toString(uzpt._chunk2Enum);
+          if( _chunk2Enum[i] == -1 ) _chunk2Enum[i] = mfpt._chunk2Enum[i];
+          else assert mfpt._chunk2Enum[i] == -1 : Arrays.toString(_chunk2Enum) + " :: " + Arrays.toString(mfpt._chunk2Enum);
         }
       }
-      _errors = ArrayUtils.append(_errors,uzpt._errors);
+      _errors = ArrayUtils.append(_errors,mfpt._errors);
     }
 
     // Zipped file; no parallel decompression; decompress into local chunks,
@@ -517,6 +529,20 @@ public class ParseDataset2 extends Job<Frame> {
           else if( fr._key != null ) fr.unlock(_outerMFPT._job_key);
         }
       }
+    }
+
+    // Find & remove all partially built output chunks & vecs
+    private Futures onExceptionCleanup(Futures fs) {
+      int nchunks = _chunk2Enum.length;
+      int ncols = _setup._ncols;
+      for( int i = 0; i < ncols; ++i ) {
+        Key vkey = _vg.vecKey(_vecIdStart + i);
+        Keyed.remove(vkey,fs);
+        for( int c = 0; c < nchunks; ++c )
+          DKV.remove(Vec.chunkKey(vkey,c),fs);
+      }
+      cancel(true);
+      return fs;
     }
   }
 

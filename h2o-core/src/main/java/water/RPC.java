@@ -215,7 +215,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       try {
         // Wait for local to complete
         if( _target==H2O.SELF ) { _dt.get(); _done=true; }
-        else { wait(); }
+        else { wait(1000); }
       } 
       catch( InterruptedException ignore ) { }
       catch(   ExecutionException e ) { // Only fails for local get()
@@ -319,7 +319,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // exception occurred when processing this task locally, set exception and send it back to the caller
     @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
       if(!_firstException.getAndSet(true)){
-        _dt.setException(ex);
+        DTask dt = _dt;
+        if( dt != null ) dt.setException(ex);
         onCompletion(caller);
       }
       return false;
@@ -507,7 +508,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // ---
   synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
-    if( _fjtasks == null ) _fjtasks = new ArrayList();
+    if( _fjtasks == null ) _fjtasks = new ArrayList(2);
     _fjtasks.add(task);
     return this;
   }
