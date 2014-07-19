@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
+import water.util.Log;
 import water.nbhm.NonBlockingSetInt;
 import water.persist.*;
 
@@ -180,7 +181,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Load some or all of completely persisted Values */
   byte[] loadPersist() {
     assert isPersisted();
-    return Persist.I[backend()].load(this);
+    try { 
+      return Persist.I[backend()].load(this);
+    } catch( IOException ioe ) {
+      throw Log.throwErr(ioe);
+    }
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
