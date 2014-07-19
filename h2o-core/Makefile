@@ -42,11 +42,11 @@ default: build/h2o-core.jar
 classes: $(classes)
 
 
-JVM = java -ea -cp "build/classes$(SEP)$(jars)" 
+JVM = nice java -ea -cp "build/classes$(SEP)$(jars)" 
 # Tests that happen during Cloud startup
 JUNIT_TESTS_BOOT = water.api.APITest
 # Tests
-JUNIT_TESTS = $(JUNIT_TESTS_BOOT) water.AtomicTest water.KeyToString water.AutoBuffer2JSONTest water.fvec.FVecTest water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.TransfVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest 
+JUNIT_TESTS = $(JUNIT_TESTS_BOOT) water.AtomicTest water.KeyToString water.AutoBuffer2JSONTest water.fvec.FVecTest water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.TransfVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest water.TimelineTest
 # Too slow for normal junit runs
 JUNIT_TESTS_SLOW = water.KVTest water.parser.ParseProgressTest
 
