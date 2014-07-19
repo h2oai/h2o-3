@@ -2,7 +2,6 @@ package water.fvec;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import water.MemoryManager;
 
 /** specialized subtype of SPARSE chunk for boolean (bitvector); no NAs.  contains just a list of rows that are non-zero. */
 public final class CX0Chunk extends CXIChunk {
@@ -15,8 +14,8 @@ public final class CX0Chunk extends CXIChunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
-    nc.set_len2(len());
-    nc.set_len(slen);
+    nc.set_len(len());
+    nc.set_sparseLen(slen);
     nc.alloc_mantissa(slen);
     Arrays.fill(nc.mantissa(),1);
     nc.alloc_exponent(slen);

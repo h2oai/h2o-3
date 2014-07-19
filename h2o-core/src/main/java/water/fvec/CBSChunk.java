@@ -1,7 +1,6 @@
 package water.fvec;
 
 import water.AutoBuffer;
-import water.MemoryManager;
 import water.H2O;
 
 /** A simple chunk for boolean values. In fact simple bit vector.
@@ -55,7 +54,7 @@ public class CBSChunk extends Chunk {
       if (res == _NA) nc.addNA();
       else            nc.addNum(res,0);
     }
-    nc.set_len(nc.set_len2(len()));
+    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
 

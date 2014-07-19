@@ -12,8 +12,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   protected long _start = -1;    // Start element; filled after AutoBuffer.read
   public final long start() { return _start; } // Start element; filled after AutoBuffer.read
   private int _len;            // Number of elements in this chunk
-  public final int len() { return _len; }
-  public final int set_len(int _len) { return this._len = _len; }
+  public int len() { return _len; }
+  public int set_len(int _len) { return this._len = _len; }
   private Chunk _chk2;       // Normally==null, changed if chunk is written to
   public final Chunk chk2() { return _chk2; } // Normally==null, changed if chunk is written to
   protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
@@ -30,8 +30,8 @@ public abstract class Chunk extends Iced implements Cloneable {
     * JIT'd code (similar issue to using iterator objects).
     * <p>
     * Slightly slower than 'at0' since it range checks within a chunk. */
-  final long  at8( long i ) { 
-    long x = i-_start;
+  final long  at8( long i ) {
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return at80((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
@@ -44,30 +44,30 @@ public abstract class Chunk extends Iced implements Cloneable {
    * JIT'd code (similar issue to using iterator objects).
    * <p>
    * Slightly slower than 'at80' since it range checks within a chunk. */
-  public final double at( long i ) { 
-    long x = i-_start;
+  public final double at( long i ) {
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return at0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
 
   /** Fetch the missing-status the slow way. */
   final boolean isNA(long i) {
-    long x = i-_start;
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return isNA0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
   public final long at16l( long i ) {
-    long x = i-_start;
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return at16l0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
   public final long at16h( long i ) {
-    long x = i-_start;
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return at16h0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }
   public final ValueString atStr( ValueString vstr, long i ) {
-    long x = i-_start;
+    long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < len()) return atStr0(vstr,(int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
   }

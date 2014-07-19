@@ -7,7 +7,8 @@ import water.TestUtil;
 import java.util.Arrays;
 
 public class C4SChunkTest extends TestUtil {
-  @Test void test_inflate_impl() {
+  @Test
+  public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
@@ -22,23 +23,48 @@ public class C4SChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       AssertJUnit.assertEquals(man.length + 1 + l, cc.len());
       AssertJUnit.assertTrue(cc instanceof C4SChunk);
-      if (l==1) AssertJUnit.assertTrue(cc.isNA0(0));
-      for (int i = 0; i < man.length; ++i)
-        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at0(l+i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at0(l+i)) < 1e-10);
+      if (l==1) {
+        AssertJUnit.assertTrue(cc.isNA0(0));
+        AssertJUnit.assertTrue(cc.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at(l + i)) < 1e-10);
+      }
       AssertJUnit.assertTrue(cc.isNA0(man.length + l));
+      AssertJUnit.assertTrue(cc.isNA(man.length + l));
 
-      Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
+      nc = cc.inflate_impl(new NewChunk(null, 0));
+      AssertJUnit.assertEquals(man.length + 1 + l, nc.len());
+      if (l==1) {
+        AssertJUnit.assertTrue(nc.isNA0(0));
+        AssertJUnit.assertTrue(nc.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + nc.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - nc.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + nc.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - nc.at(l + i)) < 1e-10);
+      }
+      AssertJUnit.assertTrue(nc.isNA0(man.length + l));
+      AssertJUnit.assertTrue(nc.isNA(man.length + l));
+
+      Chunk cc2 = nc.compress();
       AssertJUnit.assertEquals(man.length + 1 + l, cc.len());
-      if (l==1) AssertJUnit.assertTrue(cc2.isNA0(0));
-      for (int i = 0; i < man.length; ++i)
-        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at0(l+i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at0(l+i)) < 1e-10);
+      if (l==1) {
+        AssertJUnit.assertTrue(cc2.isNA0(0));
+        AssertJUnit.assertTrue(cc2.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at(l + i)) < 1e-10);
+      }
       AssertJUnit.assertTrue(cc2.isNA0(man.length + l));
+      AssertJUnit.assertTrue(cc2.isNA(man.length + l));
       AssertJUnit.assertTrue(cc2 instanceof C4SChunk);
 
       AssertJUnit.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }
-  @Test void test_inflate_impl2() {
+  @Test public void test_inflate_impl2() {
     for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
@@ -53,17 +79,42 @@ public class C4SChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       AssertJUnit.assertEquals(man.length + 1 + l, cc.len());
       AssertJUnit.assertTrue(cc instanceof C4SChunk);
-      if (l==1) AssertJUnit.assertTrue(cc.isNA0(0));
-      for (int i = 0; i < man.length; ++i)
-        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at0(l+i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at0(l+i)) < 1e-10);
+      if (l==1) {
+        AssertJUnit.assertTrue(cc.isNA0(0));
+        AssertJUnit.assertTrue(cc.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc.at(l + i)) < 1e-10);
+      }
       AssertJUnit.assertTrue(cc.isNA0(man.length + l));
+      AssertJUnit.assertTrue(cc.isNA(man.length + l));
 
-      Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
+      nc = cc.inflate_impl(new NewChunk(null, 0));
+      AssertJUnit.assertEquals(man.length + 1 + l, nc.len());
+      if (l==1) {
+        AssertJUnit.assertTrue(nc.isNA0(0));
+        AssertJUnit.assertTrue(nc.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + nc.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - nc.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + nc.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - nc.at(l + i)) < 1e-10);
+      }
+      AssertJUnit.assertTrue(nc.isNA0(man.length + l));
+      AssertJUnit.assertTrue(nc.isNA(man.length + l));
+
+      Chunk cc2 = nc.compress();
       AssertJUnit.assertEquals(man.length + 1 + l, cc.len());
-      if (l==1) AssertJUnit.assertTrue(cc2.isNA0(0));
-      for (int i = 0; i < man.length; ++i)
-      AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at0(l+i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at0(l+i)) < 1e-10);
+      if (l==1) {
+        AssertJUnit.assertTrue(cc2.isNA0(0));
+        AssertJUnit.assertTrue(cc2.isNA(0));
+      }
+      for (int i = 0; i < man.length; ++i) {
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at0(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at0(l + i)) < 1e-10);
+        AssertJUnit.assertTrue("Expected: " + man[i] * Math.pow(10, exp[i]) + ", but is " + cc2.at(l + i), Math.abs((man[i] * Math.pow(10, exp[i])) - cc2.at(l + i)) < 1e-10);
+      }
       AssertJUnit.assertTrue(cc2.isNA0(man.length + l));
+      AssertJUnit.assertTrue(cc2.isNA(man.length + l));
       AssertJUnit.assertTrue(cc2 instanceof C4SChunk);
 
       AssertJUnit.assertTrue(Arrays.equals(cc._mem, cc2._mem));
