@@ -11,7 +11,7 @@ import water.testframework.multinode.MultiNodeSetup;
 
 public class TestUtil {
   private static boolean _stall_called_before = false;
-  private static int _initial_keycnt = 0;
+  protected static int _initial_keycnt = 0;
   protected final int _minCloudSize;
 
   public TestUtil() {
@@ -223,20 +223,23 @@ public class TestUtil {
     H2O.main(new String[0]);
     for( String arg : args ) {
       try {
-        Class clz = Class.forName(args[0]);
+        System.out.println("=== Starting "+arg);
+        Class clz = Class.forName(arg);
         Method main = clz.getDeclaredMethod("main");
         main.invoke(null);
       } catch( InvocationTargetException ite ) {
         Throwable e = ite.getCause();
         e.printStackTrace();
-        try { Thread.sleep(1000); } catch( Exception e2 ) { }
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
       } catch( Exception e ) {
         e.printStackTrace();
-        try { Thread.sleep(1000); } catch( Exception e2 ) { }
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } finally {
+        System.out.println("=== Stopping "+arg);
       }
     }
-    try { Thread.sleep(1000); } catch( Exception e ) { }
+    try { Thread.sleep(100); } catch( Exception ignore ) { }
     if( args.length != 0 )
-      UDPRebooted.suicide(UDPRebooted.T.shutdown, H2O.SELF);
+      UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 }
