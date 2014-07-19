@@ -192,7 +192,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     synchronized(this) {
       // Limit myself to the number of open sockets from node-to-node
       while( _socksAvail == 0 )
-        try { wait(); } catch( InterruptedException ignored ) { }
+        try { wait(1000); } catch( InterruptedException ignored ) { }
       // Claim an open socket
       SocketChannel sock = _socks[--_socksAvail];
       if( sock != null ) {
