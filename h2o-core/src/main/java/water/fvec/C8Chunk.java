@@ -27,7 +27,7 @@ public class C8Chunk extends Chunk {
     for( int i=0; i< len(); i++ )
       if(isNA0(i))nc.addNA();
       else nc.addNum(at80(i),0);
-    nc.set_len(nc.set_len2(len()));
+    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }

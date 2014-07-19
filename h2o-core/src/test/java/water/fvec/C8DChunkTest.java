@@ -7,7 +7,8 @@ import water.TestUtil;
 import java.util.Arrays;
 
 public class C8DChunkTest extends TestUtil {
-  @Test void test_inflate_impl() {
+  @Test
+  public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
@@ -20,13 +21,24 @@ public class C8DChunkTest extends TestUtil {
       AssertJUnit.assertEquals(vals.length + 1 + l, cc.len());
       AssertJUnit.assertTrue(cc instanceof C8DChunk);
       for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc.at0(l+i));
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc.at(l+i));
       AssertJUnit.assertTrue(cc.isNA0(vals.length+l));
+      AssertJUnit.assertTrue(cc.isNA(vals.length+l));
 
-      Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
+      nc = cc.inflate_impl(new NewChunk(null, 0));
+      AssertJUnit.assertEquals(vals.length + 1 + l, nc.len());
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], nc.at0(l+i));
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], nc.at(l+i));
+      AssertJUnit.assertTrue(nc.isNA0(vals.length+l));
+      AssertJUnit.assertTrue(nc.isNA(vals.length+l));
+
+      Chunk cc2 = nc.compress();
       AssertJUnit.assertEquals(vals.length + 1 + l, cc.len());
       AssertJUnit.assertTrue(cc2 instanceof C8DChunk);
       for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc2.at0(l+i));
+      for (int i = 0; i < vals.length; ++i) AssertJUnit.assertEquals(vals[i], cc2.at(l+i));
       AssertJUnit.assertTrue(cc2.isNA0(vals.length+l));
+      AssertJUnit.assertTrue(cc2.isNA(vals.length+l));
 
       AssertJUnit.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

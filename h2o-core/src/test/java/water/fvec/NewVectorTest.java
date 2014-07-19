@@ -100,7 +100,7 @@ public class NewVectorTest extends TestUtil {
       nv.close(0,fs);
       vec = av.close(fs);
       fs.blockForPending();
-      assertEquals(nv.len2(), vec.length());
+      assertEquals(nv.len(), vec.length());
       // Compression returns the expected constant-compression-type:
       Chunk c0 = vec.chunkForChunkIdx(0);
       assertTrue( "Found chunk class "+c0.getClass()+" but expected C0LChunk", c0 instanceof C0LChunk );

@@ -3,7 +3,6 @@ package water.fvec;
 import java.util.Iterator;
 import water.AutoBuffer;
 import water.H2O;
-import water.MemoryManager;
 import water.util.UnsafeUtils;
 
 // Sparse chunk.
@@ -73,8 +72,8 @@ public class CXIChunk extends Chunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
-    nc.set_len2(len());
-    nc.set_len(slen);
+    nc.set_len(len());
+    nc.set_sparseLen(slen);
     nc.alloc_mantissa(slen);
     nc.alloc_exponent(slen);
     nc.alloc_indices(slen);

@@ -30,7 +30,7 @@ public class C8DChunk extends Chunk {
     nc.alloc_doubles(len());
     for( int i=0; i< len(); i++ )
       nc.doubles()[i] = UnsafeUtils.get8d(_mem,(i<<3));
-    nc.set_len(nc.set_len2(len()));
+    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
   // 3.3333333e33

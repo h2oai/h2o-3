@@ -26,8 +26,8 @@ public class C4FChunk extends Chunk {
   }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4f(_mem,(idx<<2),Float.NaN); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
+    nc.set_sparseLen(0);
     nc.set_len(0);
-    nc.set_len2(0);
     final int len = len();
     for( int i=0; i<len; i++ ) {
       float res = UnsafeUtils.get4f(_mem,(i<<2));

@@ -21,7 +21,7 @@ public class C1NChunk extends Chunk {
     nc.alloc_mantissa(len());
     for( int i=0; i< len(); i++ )
       nc.mantissa()[i] = 0xFF&_mem[i+_OFF];
-    nc.set_len(nc.set_len2(len()));
+    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
   // Custom serializers: the _mem field contains ALL the fields already.

@@ -28,14 +28,12 @@ public class C0DChunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return f==_con; }
   @Override boolean setNA_impl(int i) { return Double.isNaN(_con); }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(nc.set_len2(0)); //Work-around because NewChunk(Chunk) constructor already set the length from the Chunk
+    nc.set_sparseLen(nc.set_len(0));
     if(_con == 0) {
       nc.addZeros(len());
     } else {
       for (int i=0; i<len(); ++i) nc.addNum(_con);
     }
-    assert(nc.len()==len());
-    assert(nc.len2()==len());
     return nc;
   }
   // 3.3333333e33

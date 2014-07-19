@@ -2,7 +2,6 @@ package water.fvec;
 
 import org.testng.AssertJUnit;
 import static org.testng.AssertJUnit.assertEquals;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import water.DKV;
 import water.Futures;
@@ -132,7 +131,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0LChunk_zero() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(0,0); //handled as sparse
-      assertEquals(K, nc.len2()); //sparse length is K
+      assertEquals(K, nc.len());
       post();
       assertEquals(K, cc.len());
       for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(0, cc.at80(k));

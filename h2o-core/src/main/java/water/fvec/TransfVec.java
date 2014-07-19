@@ -62,12 +62,10 @@ public class TransfVec extends WrappedVec {
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
     @Override NewChunk inflate_impl(NewChunk nc) {
-      nc.alloc_exponent(len());
-      nc.alloc_mantissa(len());
-      for( int i=0; i< len(); i++ ) {
-        if(isNA0(i)) nc.setNA_impl2(i);
-        else nc.mantissa()[i] = at80(i);
-      }
+      for( int i=0; i< len(); i++ )
+        if(isNA0(i))nc.addNA();
+        else nc.addNum(at80(i),0);
+      nc.set_sparseLen(nc.set_len(len()));
       return nc;
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw new UnsupportedOperationException(); }
