@@ -27,7 +27,7 @@ public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: re
     }
   }
   public ProfilerBase fetch(int version, Profiler p) {
-    JProfile profile = new JProfile(p._depth).execImpl();
+    JProfile profile = new JProfile(p._depth).execImpl(true);
     int i=0;
     p._stacktraces = new String[profile.nodes.length][];
     p._counts = new int[profile.nodes.length][];
@@ -36,7 +36,7 @@ public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: re
       p._counts[i] = s.profile.counts;
       i++;
     }
-    return (ProfilerBase)schema(version).fillFromImpl(p);
+    return schema(version).fillFromImpl(p);
   }
 
   @Override protected void compute2() {
