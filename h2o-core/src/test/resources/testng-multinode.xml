@@ -1,4 +1,4 @@
-<suite name="Water multi-node suite" verbose="10">
+<suite name="Water multi-node suite" verbose="2">
     <!-- A test which runs before a cloud is formed, and confirms the cloud does not lock and can add more nodes -->
     <test name="pre cloud">
         <packages>
@@ -8,12 +8,14 @@
     <test name="five node cloud">
         <groups>
             <run>
-                <include name="multi-node" />
+                <exclude name="runOnceAtStart"/>
                 <exclude name="NOPASS" />
             </run>
         </groups>
         <packages>
             <package name="water.testframework.fivenode" />
+            <package name="water.api" />
+            <package name="water.cascade" />
             <package name="water.fvec" />
             <package name="water.parser" />
             <package name="water" />

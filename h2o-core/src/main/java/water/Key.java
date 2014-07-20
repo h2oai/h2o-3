@@ -97,11 +97,14 @@ final public class Key extends Iced<Key> implements Comparable {
       // (every node will have it's own chunk, plus a cached next-chunk).
       // Above 16-chunks-in-a-row we hit diminishing returns.
       int cidx = UnsafeUtils.get4(_kb, 1 + 1 + 4); // Chunk index
-      int x = cidx/hsz;
-      int log2 = 31 - Integer.numberOfLeadingZeros(x);
-      if( log2 > 4 ) log2 = 4;      // (1<<4)==16-in-a-row is enough
-      int lo = (1<<log2)*hsz;       // Start of the log-run
-      int nidx = ((cidx-lo)>>log2); // Node index math
+      int x = cidx/hsz; // Multiples of cluster size
+      // 0 -> 1st trip around the cluster;            nidx= (cidx- 0*hsz)>>0
+      // 1,2 -> 2nd & 3rd trip; allocate in pairs:    nidx= (cidx- 1*hsz)>>1
+      // 3,4,5,6 -> next 4 rounds; allocate in quads: nidx= (cidx- 3*hsz)>>2
+      // 7-14 -> next 8 rounds in octets:             nidx= (cidx- 7*hsz)>>3
+      // 15+ -> remaining rounds in groups of 16:     nidx= (cidx-15*hsz)>>4
+      int z = x==0 ? 0 : (x<=2 ? 1 : (x<=6 ? 2 : (x<=14 ? 3 : 4)));
+      int nidx = (cidx-((1<<z)-1)*hsz)>>z;
       return ((nidx+repl)&0x7FFFFFFF) % hsz;
     }
   
@@ -177,7 +180,7 @@ final public class Key extends Iced<Key> implements Comparable {
     // See if cached for this Cloud. This should be the 99% fast case.
     if( cloud(x) == cloud._idx ) return x;
 
-    // Cache missed! Probaby it just needs (atomic) updating.
+    // Cache missed! Probably it just needs (atomic) updating.
     // But we might be holding the stale cloud...
     // Figure out home Node in this Cloud
     char home = (char)D(0);
@@ -198,7 +201,7 @@ final public class Key extends Iced<Key> implements Comparable {
 
   // Default desired replication factor. Unless specified otherwise, all new
   // k-v pairs start with this replication factor.
-  static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 2;
+  static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
   // Construct a new Key.
   private Key(byte[] kb) {

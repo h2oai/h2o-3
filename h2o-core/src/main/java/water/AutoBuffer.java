@@ -5,7 +5,6 @@ import java.lang.reflect.Array;
 import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -306,7 +305,7 @@ public final class AutoBuffer {
             // Read the writer-handshake-byte.
             int x = sock.socket().getInputStream().read();
             // either TCP con was dropped or other side closed connection without reading/confirming (e.g. task was cancelled).
-            if( x == -1 ) new IOException("Other side closed connection unexpectedly.");
+            if( x == -1 ) throw new IOException("Other side closed connection unexpectedly.");
             assert x == 0xcd : "Handshake; writer expected a 0xcd from reader but got "+x;
           }
         } catch( IOException ioe ) {
@@ -314,7 +313,7 @@ public final class AutoBuffer {
           sock = null;
           throw ioe;            // Rethrow after close
         } finally {
-          if( !_read ) _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
+          if( !_read && !failed) _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
           restorePriority();        // And if we raised priority, lower it back
         }
 
@@ -342,14 +341,18 @@ public final class AutoBuffer {
     _chan = _h2o.getTCPSocket();
     raisePriority();
   }
-  // Just close the channel here without reading anything. Without the task object at hand we do not know what (how many bytes) should
-  // we read from the channel. And since the other side will try to read confirmation from us in before closing the channel,
-  // we can not read till the end. So we just close the channel and let the other side to deal with it and figure out the task has been cancelled
-  // (still sending ack ack back).
+
+  // Just close the channel here without reading anything.  Without the task
+  // object at hand we do not know what (how many bytes) should we read from
+  // the channel.  And since the other side will try to read confirmation from
+  // us before closing the channel, we can not read till the end.  So we just
+  // close the channel and let the other side to deal with it and figure out
+  // the task has been cancelled (still sending ack ack back).
   void drainClose() {
     try {
-      try {              Log.info("drainClose channel to " + ((SocketChannel) _chan).socket().getInetAddress()); }
-      catch(Throwable t){Log.info("drainClose channel to unknown node");}
+      // Appears to work reasonably now; removing noisy printout
+      //try {              Log.info("drainClose channel to " + ((SocketChannel) _chan).socket().getInetAddress()); }
+      //catch(Throwable t){Log.info("drainClose channel to unknown node");}
       _chan.close();
       restorePriority();        // And if we raised priority, lower it back
       bbFree();

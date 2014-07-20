@@ -3,6 +3,7 @@ package water;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.util.Log;
 
@@ -40,7 +41,8 @@ public class Job<T extends Keyed> extends Keyed {
     return jobs;
   }
 
-  transient H2OCountedCompleter _fjtask; // Top-level task you can block on
+  transient H2OCountedCompleter _fjtask; // Top-level task to do
+  transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
   public final Key _dest;       // Key for result
@@ -119,8 +121,21 @@ public class Job<T extends Keyed> extends Keyed {
   public Job start(final H2OCountedCompleter fjtask) {
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
+    assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
     assert _key.home();         // Always starting on same node job was created
     _fjtask = fjtask;
+
+    // Make a wrapper class that only *starts* when the fjtask completes -
+    // especially it only starts even when fjt completes exceptionally... thus
+    // the fjtask onExceptionalCompletion code runs completely before this
+    // empty task starts - providing a simple barrier.  Threads blocking on the
+    // job will block on the "barrier" task, which will block until the fjtask
+    // runs the onCompletion or onExceptionCompletion code.
+    _barrier = new H2OCountedCompleter() {
+        @Override public void compute2() { }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) { return true; }
+      };
+    fjtask.setCompleter(_barrier);
     _start_time = System.currentTimeMillis();
     _state      = JobState.RUNNING;
     // Save the full state of the job
@@ -152,7 +167,7 @@ public class Job<T extends Keyed> extends Keyed {
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     assert _key.home();         // Always blocking on same node job was created
-    _fjtask.join();
+    _barrier.join();            // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
     return DKV.get(_dest).get();
   }
@@ -170,12 +185,12 @@ public class Job<T extends Keyed> extends Keyed {
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
   public void cancel2(Throwable ex) {
-    if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     ex.printStackTrace(pw);
     String stackTrace = sw.toString();
     cancel("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
+    //if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
   }
 
   /** Signal exceptional cancellation of this job.

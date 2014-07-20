@@ -19,6 +19,7 @@ build/
 lib/
 h2o-web/src/main/resources/www/steam
 h2o*/test-output/
+test-output/
 out/
 .idea/
 *.ipr

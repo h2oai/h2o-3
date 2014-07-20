@@ -10,6 +10,8 @@ import water.*;
 import water.nbhm.NonBlockingHashMap;
 
 public class WordCountTest extends TestUtil {
+  WordCountTest() { super(5); }
+
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
     File file = find_test_file("./smalldata/junit/cars.csv");
@@ -52,9 +54,9 @@ public class WordCountTest extends TestUtil {
   private static class WordCount extends MRTask<WordCount> {
     static NonBlockingHashMap<VStr,VStr> WORDS;
     NonBlockingHashMap<VStr,VStr> _words;
-    AtomicLong _progress = new AtomicLong(0);
+    static AtomicLong PROGRESS;
 
-    @Override public void setupLocal() { WORDS = new NonBlockingHashMap<>(); }
+    @Override public void setupLocal() { WORDS = new NonBlockingHashMap<>(); PROGRESS = new AtomicLong(0); }
     private static int isChar( int b ) {
       if( 'A'<=b && b<='Z' ) return b-'A'+'a';
       if( 'a'<=b && b<='z' ) return b;
@@ -80,7 +82,7 @@ public class WordCountTest extends TestUtil {
       while( vs._len > 0 )                // Till word breaks
         vs = doChar(vs,(int)nv.at0(i++)); // Load a char & make words
       // Show some progress
-      long progress = _progress.addAndGet(len);
+      long progress = PROGRESS.addAndGet(len);
       long pre = progress - len;
       final long total = bv._vec.length();
       int perc0 = (int)(100*pre     /total);
@@ -110,14 +112,12 @@ public class WordCountTest extends TestUtil {
     }
   
     @Override public AutoBuffer write_impl(AutoBuffer ab) {
-      super.write(ab);
-      if( /*_res != null &&*/ WORDS != null )
+      if( _words != null ) 
         for( VStr key : WORDS.keySet() )
           ab.put2((char)key._len).putA1(key._cs,key._off,key._off+key._len).put4(key._cnt);
       return ab.put2((char)65535); // End of map marker
     }
     @Override public WordCount read_impl(AutoBuffer ab) {
-      super.read(ab);
       final long start = System.currentTimeMillis();
       int cnt=0;
       _words = WORDS;
@@ -197,4 +197,14 @@ public class WordCountTest extends TestUtil {
   @Test(enabled = false) public void dummy_test() {
     /* this is just a dummy test to avoid JUnit complains about missing test */
   }
+
+  // Run tests when invoked from cmd line
+  public static void main() throws Exception {
+    WordCountTest mrt = new WordCountTest();
+    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
+    _initial_keycnt = H2O.store_size();
+    mrt.testWordCount();
+    checkLeakedKeys();
+  }
+
 }

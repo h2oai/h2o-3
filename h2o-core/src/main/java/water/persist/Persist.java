@@ -51,7 +51,7 @@ abstract public class Persist {
    * null return, but no crash (although one could argue that a racing load and delete is a bug no
    * matter what).
    */
-  abstract public byte[] load(Value v);
+  abstract public byte[] load(Value v) throws IOException;
 
   abstract public void store(Value v);
 

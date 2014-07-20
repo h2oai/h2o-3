@@ -94,14 +94,25 @@ public class Vec extends Keyed {
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to a constant. */
   private Vec makeCon( final long l ) { return makeCon(l, null); }
-  private Vec makeCon( final long l, String[] domain ) {
-    final int nchunks = nChunks();
-    final Vec v0 = new Vec(group().addVec(), _espc, domain);
+  private Vec makeCon( final long l, String[] domain ) { return makeCon(l,domain,group(),_espc); }
+  static public Vec makeCon( final long l, String[] domain, final long len ) {
+    int nchunks = (int)Math.max(1,(len>>LOG_CHK)-1);
+    long[] espc = new long[nchunks+1];
+    for( int i=0; i<nchunks; i++ )
+      espc[i] = ((long)i)<<LOG_CHK;
+    espc[nchunks] = len;
+    return makeCon(l,domain,VectorGroup.VG_LEN1,espc); 
+  }
+
+  static private Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+    final int nchunks = espc.length-1;
+    final Vec v0 = new Vec(group.addVec(), espc, domain);
+
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
           Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0LChunk(l,chunkLen(i)),_fs);
+          if( k.home() ) DKV.put(k,new C0LChunk(l,v0.chunkLen(i)),_fs);
         }
       }
     }.doAllNodes();
@@ -140,22 +151,15 @@ public class Vec extends Keyed {
     return vs;
   }
 
-  private static Vec makeSeq( int len ) {
+  public static Vec makeSeq( int len ) {
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(VectorGroup.VG_LEN1.addVec());
-    NewChunk nc = new NewChunk(av,0);
-    for (int r = 0; r < len; r++) nc.addNum(r+1);
-    nc.close(0,fs);
-    Vec v = av.close(fs);
-    fs.blockForPending();
-    return v;
-  }
-  public static Vec makeConSeq(double x, int len) {
-    Futures fs = new Futures();
-    AppendableVec av = new AppendableVec(VectorGroup.VG_LEN1.addVec());
-    NewChunk nc = new NewChunk(av,0);
-    for (int r = 0; r < len; r++) nc.addNum(x);
-    nc.close(0,fs);
+    int nchunks = Math.max(1,(len>>LOG_CHK)-1);
+    for( int c=0; c<nchunks; c++ ) {
+      NewChunk nc = new NewChunk(av,c);
+      for (int r = 0; r < len; r++) nc.addNum(r+1);
+      nc.close(c,fs);
+    }
     Vec v = av.close(fs);
     fs.blockForPending();
     return v;
@@ -333,8 +337,9 @@ public class Vec extends Keyed {
   }
 
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map. */
-  public Key chunkKey(int cidx ) {
-    byte [] bits = _key._kb.clone();
+  public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
+  static public Key chunkKey(Key veckey, int cidx ) {
+    byte [] bits = veckey._kb.clone();
     bits[0] = Key.DVEC;
     UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);

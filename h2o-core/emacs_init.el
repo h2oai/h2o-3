@@ -2,7 +2,7 @@
 ;;(setq debug-on-error t)
 
 ;; TAGS!!!
-;;rm TAGS; ctags -e --recurse=yes --extra=+q --fields=+fksaiS src
+;;rm TAGS; ctags -e --recurse=yes --extra=+q --fields=+fksaiS h2o-*/src/main/java h2o-*/src/test/java
 (setq confirm-kill-emacs 'yes-or-no-p)
 
 ;; JavaDoc help on F1

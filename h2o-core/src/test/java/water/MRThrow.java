@@ -3,69 +3,44 @@ package water;
 import static org.testng.AssertJUnit.*;
 import org.testng.annotations.*;
 
-import java.io.File;
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
 import water.fvec.Chunk;
-import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 
 @Test(groups={"multi-node"})
 public class MRThrow extends TestUtil {
-  MRThrow() { super(5); }
+  MRThrow() { super(2); }
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
   // Run a distributed byte histogram.  Throw an exception in *some* map call,
   // and make sure it's forwarded to the invoke.
   @Test public void testInvokeThrow() {
-    File file = find_test_file("h2o-core/build/h2o-core.jar");
-    assertTrue( "Missing test file; do a 'make' and retest", file != null);
-    // Return a Key mapping to a NFSFileVec over the file
-    NFSFileVec nfs = NFSFileVec.make(file);
+    int sz = H2O.CLOUD.size();
+    Vec vec = Vec.makeCon(0,null,(sz+1)*Vec.CHUNK_SZ+1);
     try {
-      for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
+      for(int i = 0; i < sz; ++i){
         ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
+        Throwable ex=null;
         try {
-          bh.doAll(nfs); // invoke should throw DistributedException wrapped up in RunTimeException
-          fail("should've thrown");
+          bh.doAll(vec); // invoke should throw DistributedException wrapped up in RunTimeException
         } catch( RuntimeException e ) {
-          assertTrue(e.getMessage().contains("test"));
-        } catch( Throwable ex ) {
-          ex.printStackTrace();
+          assertTrue((ex=e).getMessage().contains("test"));
+        } catch( Throwable e2 ) {
+          (ex=e2).printStackTrace();
           fail("Expected RuntimeException, got " + ex.toString());
         }
+        if( ex == null ) fail("should've thrown");
       }
     } finally {
-      if( nfs != null ) nfs.remove(); // remove from DKV
-    }
-  }
-
-  @Test public void testGetThrow() {
-    File file = find_test_file("h2o-core/build/h2o-core.jar");
-    assertTrue( "Missing test file; do a 'make' and retest", file != null);
-    NFSFileVec nfs = NFSFileVec.make(file);
-    try {
-      for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
-        ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
-        try {
-          bh.doAll(nfs); // invoke should throw DistributedException wrapped up in RunTimeException
-          fail("should've thrown");
-        } catch( DException.DistributedException e ) {
-          assertTrue(e.getMessage().contains("test"));
-        } catch(Throwable ex) {
-          ex.printStackTrace();
-          fail("Expected ExecutionException, got " + ex.toString());
-        }
-      }
-    } finally {
-      if( nfs != null ) nfs.remove(); // remove from DKV
+      if( vec != null ) vec.remove(); // remove from DKV
     }
   }
 
   @Test public void testContinuationThrow() throws InterruptedException, ExecutionException {
-    File file = find_test_file("h2o-core/build/h2o-core.jar");
-    assertTrue( "Missing test file; do a 'make' and retest", file != null);
-    NFSFileVec nfs = NFSFileVec.make(file);
+    int sz = H2O.CLOUD.size();
+    Vec vec = Vec.makeCon(0,null,(sz+1)*Vec.CHUNK_SZ+1);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
         final ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
@@ -78,10 +53,17 @@ public class MRThrow extends TestUtil {
                 return super.onExceptionalCompletion(ex,cc);
               }
           });
-          bh.dfork(nfs).get(); // invoke should throw DistributedException wrapped up in RunTimeException
-          assertTrue(ok[0]);
+          bh.asyncExec(vec);
+          // If the chosen file is too small for the cluster, some nodes will have *no* work
+          // and so no exception is thrown.
+          int MAX_CNT=5;
+          while( !ok[0] && MAX_CNT-- > 0 ) {
+            Thread.sleep(1000);
+          }
         } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));
+//        } catch( ExecutionException e ) { // caught on self
+//          assertTrue(e.getMessage().contains("test"));
         } catch( java.lang.AssertionError ae ) {
           throw ae;             // Standard junit failure reporting assertion
         } catch(Throwable ex) {
@@ -90,26 +72,9 @@ public class MRThrow extends TestUtil {
         }
       }
     } finally {
-      if( nfs != null ) nfs.remove(); // remove from DKV
+      if( vec != null ) vec.remove(); // remove from DKV
     }
   }
-
-//  @Test public void testDTask(){
-//    for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
-//      try{
-//        RPC.call(H2O.CLOUD._memary[i], new DTask<DTask>() {
-//          @Override public void compute2() {
-//            throw new RuntimeException("test");
-//          }
-//        }).get();
-//        fail("should've thrown");
-//      }catch(RuntimeException rex){
-//       assertTrue(rex.getCause().getMessage().equals("test"));
-//      } catch(Throwable t){
-//        fail("Expected RuntimException");
-//      }
-//    }
-//  }
 
   // Byte-wise histogram
   public static class ByteHistoThrow extends MRTask<ByteHistoThrow> {
@@ -127,5 +92,16 @@ public class MRThrow extends TestUtil {
     }
     // ADD together all results
     @Override public void reduce( ByteHistoThrow bh ) { water.util.ArrayUtils.add(_x,bh._x); }
+  }
+
+  // Run tests when invoked from cmd line
+  public static void main() throws InterruptedException, ExecutionException {
+    MRThrow mrt = new MRThrow();
+    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
+    _initial_keycnt = H2O.store_size();
+    mrt.testInvokeThrow();
+    checkLeakedKeys();
+    mrt.testContinuationThrow();
+    checkLeakedKeys();
   }
 }

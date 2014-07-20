@@ -5,13 +5,14 @@ import org.testng.annotations.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.lang.reflect.*;
 import water.fvec.*;
 import water.testframework.multinode.MultiNodeSetup;
 
 public class TestUtil {
   private static boolean _stall_called_before = false;
-  private static int _initial_keycnt = 0;
-  private int _minCloudSize;
+  protected static int _initial_keycnt = 0;
+  protected final int _minCloudSize;
 
   public TestUtil() {
     _minCloudSize = 1;
@@ -215,5 +216,30 @@ public class TestUtil {
       }
     }
     @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
+  }
+
+  // Run tests from cmd-line since testng doesn't seem to be able to it.
+  public static void main( String[] args ) {
+    H2O.main(new String[0]);
+    for( String arg : args ) {
+      try {
+        System.out.println("=== Starting "+arg);
+        Class clz = Class.forName(arg);
+        Method main = clz.getDeclaredMethod("main");
+        main.invoke(null);
+      } catch( InvocationTargetException ite ) {
+        Throwable e = ite.getCause();
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } catch( Exception e ) {
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } finally {
+        System.out.println("=== Stopping "+arg);
+      }
+    }
+    try { Thread.sleep(100); } catch( Exception ignore ) { }
+    if( args.length != 0 )
+      UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 }

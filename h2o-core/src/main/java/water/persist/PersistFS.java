@@ -37,23 +37,19 @@ final class PersistFS extends Persist {
     return new File(_dir, getIceName(v));
   }
 
-  @Override public byte[] load(Value v) {
+  @Override public byte[] load(Value v) throws IOException {
     File f = getFile(v);
     if( f.length() < v._max ) { // Should be fully on disk...
       // or it's a racey delete of a spilled value
       assert !v.isPersisted() : f.length() + " " + v._max + " " + v._key;
       return null; // No value
     }
-    try {
-      try (FileInputStream s = new FileInputStream(f)) {
+    try (FileInputStream s = new FileInputStream(f)) {
         AutoBuffer ab = new AutoBuffer(s.getChannel(), true, Value.ICE);
         byte[] b = ab.getA1(v._max);
         ab.close();
         return b;
       }
-    } catch( IOException e ) {  // Broken disk / short-file???
-      throw Log.throwErr(e);
-    }
   }
 
   // Store Value v to disk.

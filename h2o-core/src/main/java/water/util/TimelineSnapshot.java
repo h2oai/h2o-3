@@ -195,6 +195,7 @@ public final class TimelineSnapshot implements
           // but port# is checked below as part of address
           break;
         case ack:
+        case fetchack:
         case ackack:
         case exec:
         case heartbeat:

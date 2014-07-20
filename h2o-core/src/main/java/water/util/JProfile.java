@@ -22,13 +22,15 @@ public class JProfile extends Iced {
   }
   public ProfileSummary nodes[];
 
-  public JProfile execImpl() {
+  public JProfile execImpl(boolean print) {
     ProfileCollectorTask.NodeProfile profiles[] = new ProfileCollectorTask(depth).doAllNodes()._result;
     nodes = new ProfileSummary[H2O.CLOUD.size()];
     for( int i=0; i<nodes.length; i++ ) {
       assert(profiles[i] != null);
       nodes[i] = new ProfileSummary(H2O.CLOUD._memary[i].toString(), profiles[i]);
     }
+    if( !print ) return this;
+
     for( int i=0; i<nodes.length; i++ ) {
       Log.info(nodes[i].name);
       for (int j = 0; j < nodes[i].profile.counts.length; ++j) {

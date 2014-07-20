@@ -67,14 +67,15 @@ final public class H2O {
   // done, the next lower level jobs get unblocked, etc.
   public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
   public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
-  public static final byte        ACK_PRIORITY = MAX_PRIORITY-1;
-  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-2;
-  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-2;
-  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-3;
-  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-4;
-  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-5;
-  public static final byte        GUI_PRIORITY = MAX_PRIORITY-6;
-  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-6;
+  public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1;
+  public static final byte        ACK_PRIORITY = MAX_PRIORITY-2;
+  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3;
+  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-3;
+  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-4;
+  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-5;
+  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-6;
+  public static final byte        GUI_PRIORITY = MAX_PRIORITY-7;
+  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-7;
   public static final byte        MIN_PRIORITY = 0;
 
   // F/J threads that remember the priority of the last task they started
@@ -158,7 +159,7 @@ final public class H2O {
           h2o = FJPS[p].poll2();
           if( h2o != null ) {     // Got a hi-priority job?
             t._priority = p;      // Set & do it now!
-            Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
+            t.setPriority(Thread.MAX_PRIORITY-1);
             h2o.compute2();       // Do it ahead of normal F/J work
             p++;                  // Check again the same queue
           }
@@ -166,10 +167,11 @@ final public class H2O {
       } catch( Throwable ex ) {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
-        h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        if( h2o != null ) h2o.onExceptionalCompletion(ex, h2o.getCompleter());
+        else ex.printStackTrace();
       } finally {
         t._priority = pp;
-        if( pp == MIN_PRIORITY ) Thread.currentThread().setPriority(Thread.NORM_PRIORITY-1);
+        if( pp == MIN_PRIORITY ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
       compute2();
@@ -630,7 +632,7 @@ final public class H2O {
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
-  static int store_size() { return STORE.size(); }
+  static public int store_size() { return STORE.size(); }
 
 
   // --------------------------------------------------------------------------

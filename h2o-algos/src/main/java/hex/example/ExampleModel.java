@@ -3,9 +3,7 @@ package hex.example;
 import hex.schemas.ExampleModelV2;
 import water.*;
 import water.api.ModelSchema;
-import water.api.Schema;
 import water.fvec.Frame;
-import water.fvec.Chunk;
 
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
