@@ -297,7 +297,13 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       while((dt = _dt) != null ) {   // Retry loop for broken TCP sends
         AutoBuffer ab = null;
         try {
-          ab = new AutoBuffer(_client).putTask(UDP.udp.ack,_tsknum).put1(SERVER_UDP_SEND);
+          // Start the ACK with results back to client.  If the client is
+          // asking for a class/id mapping (or any job running at FETCH_ACK
+          // priority) then return a udp.fetchack byte instead of a udp.ack.
+          // The receiver thread then knows to handle the mapping at the higher
+          // priority.
+          UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
+          ab = new AutoBuffer(_client).putTask(udp,_tsknum).put1(SERVER_UDP_SEND);
           dt.write(ab);      // Write the DTask - could be very large write
           _computed = true;   // After the TCP reply flag set, set computed bit
           boolean t = ab.hasTCP(); // Resends do not need to repeat TCP result
@@ -330,11 +336,14 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       assert _computed : "Found RPCCall not computed "+_tsknum;
       DTask dt = _dt;
       if( dt == null ) return;  // Received ACKACK already
-      AutoBuffer rab = new AutoBuffer(_client).putTask(UDP.udp.ack,_tsknum);
-      if( dt._repliedTcp ) rab.put1(RPC.SERVER_TCP_SEND) ; // Reply sent via TCP
-      else        dt.write(rab.put1(RPC.SERVER_UDP_SEND)); // Reply sent via UDP
+      UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
+      AutoBuffer rab = new AutoBuffer(_client).putTask(udp,_tsknum);
+      boolean wasTCP = dt._repliedTcp;
+      if( wasTCP )  rab.put1(RPC.SERVER_TCP_SEND) ; // Original reply sent via TCP
+      else dt.write(rab.put1(RPC.SERVER_UDP_SEND)); // Original reply sent via UDP
       assert sz_check(rab) : "Resend of "+_dt.getClass()+" changes size from "+_size+" to "+rab.size();
-      rab.close(dt._repliedTcp,false);
+      assert dt._repliedTcp==wasTCP;
+      rab.close(wasTCP,false);
       // Double retry until we exceed existing age.  This is the time to delay
       // until we try again.  Note that we come here immediately on creation,
       // so the first doubling happens before anybody does any waiting.  Also
@@ -411,14 +420,14 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // This packet has not been fully computed.  Hence it's still a work-in-
       // progress locally.  We have no answer to reply but we do not want to
       // re-offer the packet for repeated work.  Just ignore the packet.
-      assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
+      assert !ab.hasTCP():"ERROR: got tcp resend with existing in-progress task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
       // DROP PACKET
     } else {
       // This is an old re-send of the same thing we've answered to before.
       // Send back the same old answer ACK.  If we sent via TCP before, then
       // we know the answer got there so just send a control-ACK back.  If we
       // sent via UDP, resend the whole answer.
-      assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi);      // All the resends should be UDP only
+      assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
       old.resend_ack();
     }
     ab.close();

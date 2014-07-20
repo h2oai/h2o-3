@@ -26,6 +26,12 @@ public abstract class UDP {
       // the same answer every time.  When does the remote know it can quit
       // tracking reply ACKs?  When it recieves an ACKACK.
       ackack(false,new UDPAckAck()),  // a generic ACKACK for a UDP async task
+      // In order to unpack an ACK (which contains an arbitrary returned POJO)
+      // the reciever might need to fetch a id/class mapping from the leader -
+      // while inside an ACK-priority thread holding onto lots of resources
+      // (e.g. TCP channel).  Allow the fetch to complete on a higher priority
+      // thread.
+      fetchack(false,new UDPFetchAck()),  // a class/id fetch ACK
       ack   (false,new UDPAck   ()),  // a generic ACK    for a UDP async task
 
       // These packets all imply some sort of request/response handshake.

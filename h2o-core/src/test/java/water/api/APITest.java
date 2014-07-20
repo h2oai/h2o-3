@@ -7,6 +7,7 @@ import java.util.Properties;
 import water.*;
 import water.testframework.priority.Priority;
 
+@Test(groups="runOnceAtStart")
 public class APITest extends TestUtil {
   static boolean testRan = false;
 

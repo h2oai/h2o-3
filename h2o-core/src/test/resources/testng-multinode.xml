@@ -8,12 +8,14 @@
     <test name="five node cloud">
         <groups>
             <run>
-                <include name="multi-node" />
+                <exclude name="runOnceAtStart"/>
                 <exclude name="NOPASS" />
             </run>
         </groups>
         <packages>
             <package name="water.testframework.fivenode" />
+            <package name="water.api" />
+            <package name="water.cascade" />
             <package name="water.fvec" />
             <package name="water.parser" />
             <package name="water" />
