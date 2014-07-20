@@ -27,14 +27,12 @@ public class C16Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem, (idx << 4), _LO_NA); UnsafeUtils.set8(_mem,(idx<<4),_HI_NA); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    //nothing to inflate - just copy
-    nc.alloc_mantissa(len());
-    nc.alloc_doubles(len());
-    for( int i=0; i< len(); i++ ) { //use unsafe?
-      nc.mantissa()[i] =                         UnsafeUtils.get8(_mem,(i<<4)  );
-      nc.doubles()[i]  = Double.longBitsToDouble(UnsafeUtils.get8(_mem, (i << 4) + 8));
+    nc.set_len(nc.set_sparseLen(0));
+    for( int i=0; i< len(); i++ ) {
+      long lo = UnsafeUtils.get8(_mem,(i<<4)  );
+      long hi = UnsafeUtils.get8(_mem,(i << 4) + 8);
+      nc.addUUID(lo, hi);
     }
-    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
