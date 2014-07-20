@@ -119,9 +119,9 @@ public final class ParseSetup extends Iced {
 
   // Guess a local setup that is compatible to the given global (this) setup.
   // If they are not compatible, there will be _errors set.
-  ParseSetup guessSetup( byte[] bits ) {
+  ParseSetup guessSetup( byte[] bits, int checkHeader ) {
     assert _isValid;
-    ParseSetup ps = guessSetup(bits, _singleQuotes, _checkHeader);
+    ParseSetup ps = guessSetup(bits, _singleQuotes, checkHeader);
     if( !ps._isValid ) return ps; // Already invalid
     if( _pType != ps._pType ||
             (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) )

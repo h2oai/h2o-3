@@ -45,7 +45,7 @@ public abstract class UDP {
     udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
     static udp[] UDPS = values();
   }
-  public static final udp getUdp(int id){return udp.UDPS[id];}
+  public static udp getUdp(int id){return udp.UDPS[id];}
   // Handle an incoming I/O transaction, probably from a UDP packet.  The
   // returned Autobuffer will be closed().  If the returned buffer is not the
   // passed-in buffer, the call() method must close it's AutoBuffer arg.

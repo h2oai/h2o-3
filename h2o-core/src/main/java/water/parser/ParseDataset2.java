@@ -386,7 +386,7 @@ public class ParseDataset2 extends Job<Frame> {
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
-      ParseSetup localSetup = _setup.guessSetup(bits);
+      ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
