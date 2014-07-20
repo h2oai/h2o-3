@@ -169,6 +169,7 @@ public class NewChunk extends Chunk {
   }
 
   protected final boolean isNA2(int idx) {
+    if (isUUID()) return _ls[idx]==C16Chunk._LO_NA && Double.doubleToRawLongBits(_ds[idx])==C16Chunk._HI_NA;
     return (_ds == null) ? (_ls[idx] == Long.MAX_VALUE && _xs[idx] == Integer.MIN_VALUE) : Double.isNaN(_ds[idx]);
   }
   protected final boolean isEnum2(int idx) {
@@ -1054,6 +1055,15 @@ public class NewChunk extends Chunk {
     // negative exponents need to be handled right here
     if( _ds == null ) return isNA2(i) || _xs[i] >= 0 ? at8_impl(i) : _ls[i]*Math.pow(10,_xs[i]);
     assert _xs==null; return _ds[i];
+  }
+  @Override protected long at16l_impl(int idx) {
+    if(_ls[idx] == C16Chunk._LO_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    return _ls[idx];
+  }
+  @Override protected long at16h_impl(int idx) {
+    long hi = Double.doubleToRawLongBits(_ds[idx]);
+    if(hi == C16Chunk._HI_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    return hi;
   }
   @Override public boolean isNA_impl( int i ) {
     if( len() != sparseLen()) {
