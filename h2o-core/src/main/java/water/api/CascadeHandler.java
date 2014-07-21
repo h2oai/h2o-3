@@ -18,7 +18,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1>{
     JsonObject _ast;        // The tree to be walked by AST2IR.
 
     String _expr;           // An R-like expression.
-    String _json_ast;        // An input string of valid JSON.
+    String _json_ast;       // An input string of valid JSON.
 
     //Outputs
     Key _key;
