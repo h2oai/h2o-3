@@ -27,6 +27,8 @@ public class ExecTest extends Iced {
     Frame fr2 = (Frame) e.runMain();
     Log.info(fr2.vecs()[0].at(0));
     assert fr2.vecs()[0].at(0) == 5 + fr.vecs()[0].at(0);
+    fr.delete();
+    fr2.delete();
   }
 
   static JsonObject test1_json() {
@@ -34,7 +36,6 @@ public class ExecTest extends Iced {
     String s = "{\"astop\":{\"type\":\"BinaryOperator\",\"operator\":\"+\",\"infix\":true,\"node_type\":\"ASTOp\",\"operands\":{\"left\":{\"type\":\"Frame\",\"value\":\"Last.value.0\",\"node_type\":\"ASTFrame\"},\"right\":{\"type\":\"Numeric\",\"value\":5,\"node_type\":\"ASTNumeric\"}}}}";
     return (JsonObject)parser.parse(s);
   }
-
 
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename

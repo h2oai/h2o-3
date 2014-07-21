@@ -12,7 +12,7 @@ import water.fvec.Frame;
  * An interpreter.
  *
  * Note the (no longer tacit) assumption that when local is null, execution is assumed to be in the global environment.
- * And when local is not null, execution is assumed to be in the local environment only -- the global environment is
+ * And when local is not null, execution is assumed to be in the local environment *only* -- the global environment is
  * assumed to be read-only (can only peek and peekAt) in this case.
  */
 
@@ -38,17 +38,13 @@ public class Exec extends Iced {
     return fr;
   }
 
-  private void runCall(String call_name, Env global) {
-    throw H2O.unimpl();
-  }
+  private void runCall(String call_name, Env global) { throw H2O.unimpl(); }
 
   // Apply: execute all arguments (including the function argument) yielding
   // the function itself, plus all normal arguments on the stack.  Then execute
   // the function, which is responsible for popping all arguments and pushing
   // the result.
-  private void runOp(String op, Env global, Env local) {
-    ASTOp.get(op).apply(global, local);
-  }
+  private void runOp(String op, Env global, Env local) { ASTOp.get(op).apply(global, local); }
 
   private void processInstruction(Statement s, Env global, Env local) {
     switch(s.kind()) {
