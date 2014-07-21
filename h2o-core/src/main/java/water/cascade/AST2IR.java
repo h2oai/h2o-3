@@ -7,6 +7,7 @@ import water.Key;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 
 /**
@@ -55,6 +56,7 @@ public class AST2IR extends Iced {
   public JsonObject ast() { return _ast; }
   public SymbolTable table() { return _global; }
   public Program[] program() { return _program.toArray(new Program[_program.size()]); }
+  public HashSet<Key> getLocked() { return program()[0].locked(); }
 
   // Walk the ast and fill in the _program and _global components.
   public void make() { treeWalk(_ast, 0, new Program(_global, null, "main")); }
@@ -172,7 +174,9 @@ public class AST2IR extends Iced {
   // Add a push statement to the program list of statements
   private void stringPushStatement(String obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
   private void numPushStatement(   double obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
-  private void keyPushStatement(      Key obj, Program p) { p.addStatement(new Program.Statement("push", obj)); }
+  private void keyPushStatement(      Key obj, Program p) { p.addStatement(new Program.Statement("push", obj));
+    if (p.isMain()) p.addToLocked(obj);
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Node getters
