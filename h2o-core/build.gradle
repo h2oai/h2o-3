@@ -49,6 +49,10 @@ jar {
    }
 }
 
+task testMultiNode(type: Exec) {
+  commandLine './testMultiNode'
+}
+
 // Cliff command-line copy libs.  Not required for standard gradle build.
 task cpLibs(type: Copy) {
   from configurations.compile.files 
