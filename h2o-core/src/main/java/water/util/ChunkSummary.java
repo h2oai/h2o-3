@@ -121,7 +121,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Internal FluidVec compression/distribution summary:\n");
-    sb.append("Chunk type        count     fraction       size     rel. size\n");
+    sb.append("Chunk type      count     fraction       size     rel. size\n");
     for (int j = 0; j < chunkTypes.length; ++j) {
       sb.append(String.format("%10s %10d %10.3f %% %10s %10.3f %%\n",
               chunkTypes[j],
