@@ -21,7 +21,7 @@ import water.util.MathUtils;
  */
 
 // --------------------------------------------------------------------------
-public abstract class ASTOp {
+public abstract class ASTOp extends AST {
   // The order of operator precedence follows R rules.
   // Highest the first
   static final public int OPP_PREFIX   = 100; /* abc() */
@@ -197,6 +197,7 @@ public abstract class ASTOp {
   // All fields are final, because functions are immutable
   final String _vars[];     // Variable names
   ASTOp( String vars[], int form, int prec, int asso) {
+//    super(null);
     _form = form;
     _precedence = prec;
     _association = asso;
@@ -616,6 +617,15 @@ abstract class ASTBinOp extends ASTOp {
   ASTBinOp( int form, int precedence, int association ) {
     super(VARS2, form, precedence, association); // binary ops are infix ops
   }
+
+  AST parse_impl(Exec E) {
+    AST l = E.parse();
+    AST r = E.xpeek(' ').parse();
+    AST res = (AST)clone();
+    res._asts = new AST[]{l,r};
+    return res;
+  }
+
   abstract double op( double d0, double d1 );
   @Override void apply(Env global, Env local) {
     // Expect we can broadcast across all functions as needed.
@@ -686,6 +696,8 @@ abstract class ASTBinOp extends ASTOp {
     }.doAll(ncols,fr).outputFrame((lf ? fr0 : fr1)._names,null);
     env.push(fr2);
   }
+
+  @Override public String toString() { return "("+getClass()+" "+Arrays.toString(_asts)+")"; }
 }
 
 //class ASTUniPlus  extends ASTUniOp { ASTUniPlus()  { super(OPF_INFIX, OPP_UPLUS,  OPA_RIGHT); } @Override String opStr(){ return "+"  ;} @Override ASTOp make() {return new ASTUniPlus(); } @Override double op(double d) { return d;}}

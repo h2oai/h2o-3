@@ -1,7 +1,7 @@
 package water.cascade;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+//import com.google.gson.JsonObject;
+//import com.google.gson.JsonParser;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,24 +18,24 @@ public class ExecTest extends Iced {
   @BeforeClass public static void stall() { TestUtil tu = new TestUtil(); tu.setupCloud(); }
   @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 
-  @Test public void test1() {
-    Frame fr = parse_test_file("smalldata/iris/iris.csv", "Last.value.0");
-    Log.info(fr.vecs()[0].at(0));
-    Log.info("Checking that the JSON AST representing the R expression `hex + 5` is executed");
-    JsonObject ast = test1_json();
-    Exec e = new Exec(ast);
-    Frame fr2 = (Frame) e.runMain();
-    Log.info(fr2.vecs()[0].at(0));
-    assert fr2.vecs()[0].at(0) == 5 + fr.vecs()[0].at(0);
-    fr.delete();
-    fr2.delete();
-  }
+//  @Test public void test1() {
+//    Frame fr = parse_test_file("smalldata/iris/iris.csv", "Last.value.0");
+//    Log.info(fr.vecs()[0].at(0));
+//    Log.info("Checking that the JSON AST representing the R expression `hex + 5` is executed");
+//    JsonObject ast = test1_json();
+//    Exec e = new Exec(ast);
+//    Frame fr2 = (Frame) e.runMain();
+//    Log.info(fr2.vecs()[0].at(0));
+//    assert fr2.vecs()[0].at(0) == 5 + fr.vecs()[0].at(0);
+//    fr.delete();
+//    fr2.delete();
+//  }
 
-  static JsonObject test1_json() {
-    JsonParser parser = new JsonParser();
-    String s = "{\"astop\":{\"type\":\"BinaryOperator\",\"operator\":\"+\",\"infix\":true,\"node_type\":\"ASTOp\",\"operands\":{\"left\":{\"type\":\"Frame\",\"value\":\"Last.value.0\",\"node_type\":\"ASTFrame\"},\"right\":{\"type\":\"Numeric\",\"value\":5,\"node_type\":\"ASTNumeric\"}}}}";
-    return (JsonObject)parser.parse(s);
-  }
+//  static JsonObject test1_json() {
+//    JsonParser parser = new JsonParser();
+//    String s = "{\"astop\":{\"type\":\"BinaryOperator\",\"operator\":\"+\",\"infix\":true,\"node_type\":\"ASTOp\",\"operands\":{\"left\":{\"type\":\"Frame\",\"value\":\"Last.value.0\",\"node_type\":\"ASTFrame\"},\"right\":{\"type\":\"Numeric\",\"value\":5,\"node_type\":\"ASTNumeric\"}}}}";
+//    return (JsonObject)parser.parse(s);
+//  }
 
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
