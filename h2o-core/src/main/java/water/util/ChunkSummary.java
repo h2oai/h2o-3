@@ -12,6 +12,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   final transient static String[] chunkTypes = new String[]{
           "C0LChunk",
           "C0DChunk",
+          "CBSChunk",
           "C1Chunk",
           "C1NChunk",
           "C1SChunk",
@@ -87,13 +88,12 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       total_chunk_count += chunk_counts[j];
     }
 
-    // TODO: Why is this slightly different for some data?
-//    long check = 0;
-//    for (int i=0; i<_fr.numCols(); ++i) {
-//      check += _fr.vecs()[i].nChunks();
-//    }
-//    assert(total_chunk_count == check);
-//    assert(total_chunk_byte_size == _fr.byteSize());
+    long check = 0;
+    for (int i=0; i<_fr.numCols(); ++i) {
+      check += _fr.vecs()[i].nChunks();
+    }
+    assert(total_chunk_count == check);
+    assert(total_chunk_byte_size == _fr.byteSize());
 
     // compute min, max, mean
     byte_size_per_node_min = Float.MAX_VALUE;
