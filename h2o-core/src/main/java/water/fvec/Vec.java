@@ -151,18 +151,24 @@ public class Vec extends Keyed {
     return vs;
   }
 
-  public static Vec makeSeq( int len ) {
-    Futures fs = new Futures();
-    AppendableVec av = new AppendableVec(VectorGroup.VG_LEN1.addVec());
-    int nchunks = Math.max(1,(len>>LOG_CHK)-1);
-    for( int c=0; c<nchunks; c++ ) {
-      NewChunk nc = new NewChunk(av,c);
-      for (int r = 0; r < len; r++) nc.addNum(r+1);
-      nc.close(c,fs);
-    }
-    Vec v = av.close(fs);
-    fs.blockForPending();
-    return v;
+  public static Vec makeSeq( long len) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        for (int i = 0; i < cs.length; i++) {
+          Chunk c = cs[i];
+          for (int r = 0; r < c.len(); r++)
+            c.set0(r, r+1+c._start);
+        }
+      }
+    }.doAll(makeConSeq(0, len))._fr.vecs()[0];
+  }
+  public static Vec makeConSeq(double x, long len) {
+    int chunks = (int)Math.ceil((double)len / Vec.CHUNK_SZ);
+    long[] espc = new long[chunks+1];
+    for (int i = 1; i<=chunks; ++i)
+      espc[i] = Math.min(espc[i-1] + Vec.CHUNK_SZ, len);
+    return new Vec(VectorGroup.VG_LEN1.addVec(), espc).makeCon(x);
   }
 
   /** Create a new 1-element vector in the shared vector group for 1-element vectors. */
