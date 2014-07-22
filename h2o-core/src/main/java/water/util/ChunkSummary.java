@@ -121,13 +121,13 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Internal FluidVec compression/distribution summary:\n");
-    sb.append("Chunk type      count       size     fraction     rel. size\n");
+    sb.append("Chunk type        count     fraction       size     rel. size\n");
     for (int j = 0; j < chunkTypes.length; ++j) {
-      sb.append(String.format("%10s %10d %10s %10.3f %% %10.3f %%\n",
+      sb.append(String.format("%10s %10d %10.3f %% %10s %10.3f %%\n",
               chunkTypes[j],
               chunk_counts[j],
-              display(chunk_byte_sizes[j]),
               (float) chunk_counts[j] / total_chunk_count * 100.,
+              display(chunk_byte_sizes[j]),
               (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.));
     }
     // if more than 50% is double data, inform the user to consider compressing to single precision
