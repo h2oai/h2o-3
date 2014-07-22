@@ -1,13 +1,12 @@
 package water.cascade;
 
-
 import org.testng.AssertJUnit;
 import org.testng.annotations.*;
 import water.Iced;
 
 public class ExecStackTest extends Iced {
 
-  @Test(expectedExceptions = IllegalArgumentException.class)
+  /*@Test(expectedExceptions = IllegalArgumentException.class)*/
   public void test1() {
     Env e = new Env(null);
     e._stack.push(new Double(5.0));

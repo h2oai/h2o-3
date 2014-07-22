@@ -1,7 +1,7 @@
 package water.api;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+//import com.google.gson.Gson;
+//import com.google.gson.JsonElement;
 import water.*;
 import water.api.CascadeHandler.Cascade;
 
@@ -26,9 +26,9 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
 
     if (ast.equals("")) throw H2O.fail("No ast supplied! Nothing to do.");
     // Try to parse the String ast into a JsonObject
-    JsonElement el = (new Gson()).fromJson(ast, JsonElement.class);
-
-    c._ast = el.getAsJsonObject();
+//    JsonElement el = (new Gson()).fromJson(ast, JsonElement.class);
+//
+//    c._ast = el.getAsJsonObject();
     c._expr = expr;
     c._json_ast = ast;
 
