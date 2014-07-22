@@ -5,9 +5,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.testng.annotations.*;
 import water.Iced;
+import water.TestUtil;
 import water.util.Log;
 
-public class AST2IRTest extends Iced {
+import java.util.Arrays;
+
+public class AST2IRTest extends TestUtil {
+
+  @BeforeClass public static void stall() { TestUtil tu = new TestUtil(); tu.setupCloud(); }
+  @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 
   @Test public void test1() {
     Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5`");

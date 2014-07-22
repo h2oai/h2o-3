@@ -95,4 +95,28 @@ public class MathUtils {
     return result;
   }
 
+  /**
+   * Compare two numbers to see if they are within one ulp of the smaller decade.
+   * Order of the arguments does not matter.
+   *
+   * @param a First number
+   * @param b Second number
+   * @return true if a and b are essentially equal, false otherwise.
+   */
+  public static boolean equalsWithinOneSmallUlp(float a, float b) {
+    float ulp_a = Math.ulp(a);
+    float ulp_b = Math.ulp(b);
+    float small_ulp = Math.min(ulp_a, ulp_b);
+    float absdiff_a_b = Math.abs(a - b); // subtraction order does not matter, due to IEEE 754 spec
+    return absdiff_a_b <= small_ulp;
+  }
+
+  public static boolean equalsWithinOneSmallUlp(double a, double b) {
+    double ulp_a = Math.ulp(a);
+    double ulp_b = Math.ulp(b);
+    double small_ulp = Math.min(ulp_a, ulp_b);
+    double absdiff_a_b = Math.abs(a - b); // subtraction order does not matter, due to IEEE 754 spec
+    return absdiff_a_b <= small_ulp;
+  }
+
 }

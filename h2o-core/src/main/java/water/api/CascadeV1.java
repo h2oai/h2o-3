@@ -2,11 +2,8 @@ package water.api;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import water.*;
 import water.api.CascadeHandler.Cascade;
-import water.util.DocGen.HTML;
-import water.util.PrettyPrint;
 
 public class CascadeV1 extends Schema<Cascade, CascadeV1> {
 
