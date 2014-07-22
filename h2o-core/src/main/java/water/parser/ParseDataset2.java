@@ -11,6 +11,7 @@ import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 import water.util.PrettyPrint;
 import water.util.Log;
 
@@ -843,6 +844,7 @@ public class ParseDataset2 extends Job<Frame> {
         if( printColumnToStdout ) Log.info          (s);
         else                      Log.info_no_stdout(s);
       }
+      Log.info(FrameUtils.chunkSummary(fr).toString());
     }
     catch(Exception ignore) {}   // Don't fail due to logging issues.  Just ignore them.
   }

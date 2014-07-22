@@ -25,7 +25,7 @@ public class PrettyPrint {
     if( scale == 0 ) return bytes;
     return bytes / (double)(1L<<((scale-1)*10));
   }
-  static final String[] SCALE = new String[] {"N/A","%3.0f B ","%.1f KB","%.1f MB","%.2f GB","%.3f TB","%.3f PB"};
+  static final String[] SCALE = new String[] {"N/A","%4.0f  B","%.1f KB","%.1f MB","%.2f GB","%.3f TB","%.3f PB"};
   public static String bytes(long bytes) { return bytes(bytes,byteScale(bytes)); }
   static String bytes(long bytes, int scale) { return String.format(SCALE[scale],bytesScaled(bytes,scale)); }
   static String bytesPerSecond(long bytes) {
