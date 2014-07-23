@@ -1,6 +1,7 @@
 package water;
 
-import org.testng.annotations.*;
+import static junit.framework.TestCase.assertEquals;
+import org.junit.*;
 
 import jsr166y.CountedCompleter;
 import water.api.TimelineHandler;
@@ -10,11 +11,8 @@ import water.api.TimelineV2;
 import java.util.HashSet;
 import java.util.Set;
 
-import static junit.framework.TestCase.assertEquals;
-
-@Test(groups={"multi-node"})
 public class TimelineTest extends TestUtil{
-  TimelineTest() { super(5); }
+  public TimelineTest() { super(5); }
 
   // Simple class to test the timeline.  We want to send this task around and
   // see that timeline shows this and in correct order.  An instance is sent
@@ -77,14 +75,5 @@ public class TimelineTest extends TestUtil{
     // crude test for now, just look we got send and recv message for all test dtasks we made
     // we should also test the order and acks/ackacks!
     assertEquals("some msgs are missing from the timeline: " + msgs.toString(),msgs.size(),2*n*(n-1));
-  }
-
-  // Run tests when invoked from cmd line
-  public static void main() throws InterruptedException {
-    TimelineTest mrt = new TimelineTest();
-    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
-    _initial_keycnt = H2O.store_size();
-    mrt.basicTest();
-    checkLeakedKeys();
   }
 }

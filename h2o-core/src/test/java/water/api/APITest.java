@@ -1,18 +1,19 @@
 package water.api;
 
-import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.util.Properties;
 import water.*;
 import water.testframework.priority.Priority;
 
-@Test(groups="runOnceAtStart")
 public class APITest extends TestUtil {
   static boolean testRan = false;
 
+  @BeforeClass() public static void setup() { new TestUtil(2); setupCloud(); }
+
   private static void stall() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(2);
     // Start Nano server; block for starting
     Runnable run = H2O.finalizeRequest();
     if( run != null ) 
@@ -25,8 +26,7 @@ public class APITest extends TestUtil {
 
   // ---
   // Should be able to load basic status pages without locking the cloud.
-  @Test(priority=Priority.API_TEST_PRIORITY)
-  public void testBasicStatusPages() {
+  @Test public void testBasicStatusPages() {
     assertFalse(testRan);
     assertFalse(Paxos._cloudLocked);
     stall();

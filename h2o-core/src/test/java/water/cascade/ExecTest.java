@@ -1,8 +1,7 @@
 package water.cascade;
 
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.*;
+
 import water.Iced;
 import water.Key;
 import water.TestUtil;
@@ -13,7 +12,7 @@ import java.io.File;
 
 public class ExecTest extends TestUtil {
 
-  //@Test public void test1() {
+  @Test public void test1() {
   //  Frame fr = parse_test_file("smalldata/iris/iris.csv", "Last.value.0");
   //  Log.info(fr.vecs()[0].at(0));
   //  Log.info("Checking that the JSON AST representing the R expression `hex + 5` is executed");
@@ -24,7 +23,7 @@ public class ExecTest extends TestUtil {
   //  assert fr2.vecs()[0].at(0) == 5 + fr.vecs()[0].at(0);
   //  fr.delete();
   //  fr2.delete();
-  //}
+  }
   //
   //static JsonObject test1_json() {
   //  JsonParser parser = new JsonParser();

@@ -1,15 +1,13 @@
 package water;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.api.UnlockTask;
 import water.fvec.Frame;
 import water.util.Log;
 
-@Test(groups={"multi-node"})
 public class UnlockTest extends TestUtil {
-  UnlockTest() { super(3); }
+  public UnlockTest() { super(3); }
 
   @Test
   public void run() {
@@ -37,6 +35,6 @@ public class UnlockTest extends TestUtil {
       f.delete();
       Log.info("Able to delete after unlocking.");
     }
-    AssertJUnit.assertTrue(i == 1);
+    Assert.assertTrue(i == 1);
   }
 }

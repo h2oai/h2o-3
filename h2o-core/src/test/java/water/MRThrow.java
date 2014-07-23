@@ -1,16 +1,15 @@
 package water;
 
-import static org.testng.AssertJUnit.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 
-@Test(groups={"multi-node"})
 public class MRThrow extends TestUtil {
-  MRThrow() { super(2); }
+  public MRThrow() { super(5); }
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
@@ -92,16 +91,5 @@ public class MRThrow extends TestUtil {
     }
     // ADD together all results
     @Override public void reduce( ByteHistoThrow bh ) { water.util.ArrayUtils.add(_x,bh._x); }
-  }
-
-  // Run tests when invoked from cmd line
-  public static void main() throws InterruptedException, ExecutionException {
-    MRThrow mrt = new MRThrow();
-    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
-    _initial_keycnt = H2O.store_size();
-    mrt.testInvokeThrow();
-    checkLeakedKeys();
-    mrt.testContinuationThrow();
-    checkLeakedKeys();
   }
 }

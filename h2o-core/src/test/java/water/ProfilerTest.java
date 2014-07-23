@@ -1,13 +1,12 @@
 package water;
 
-import static org.testng.AssertJUnit.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import water.util.JProfile;
 
-@Test(groups={"multi-node"})
 public class ProfilerTest extends TestUtil {
-  ProfilerTest() { super(3); }
+  public ProfilerTest() { super(3); }
 
   @Test public void testProfiler() {
     for( int i=0; i<10; i++ ) {

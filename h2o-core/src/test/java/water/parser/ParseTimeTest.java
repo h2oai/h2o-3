@@ -1,7 +1,6 @@
 package water.parser;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.TestUtil;
 import water.fvec.*;
@@ -74,29 +73,29 @@ public class ParseTimeTest extends TestUtil {
     Frame fr = parse_test_file("smalldata/junit/test_uuid.csv");
     Vec vecs[] = fr.vecs();
     try {
-      AssertJUnit.assertEquals(exp.length,fr.numRows());
+      Assert.assertEquals(exp.length,fr.numRows());
       for( int row = 0; row < exp.length; row++ ) {
         int col2 = 0;
         for( int col = 0; col < fr.numCols(); col++ ) {
           if( vecs[col].isUUID() ) {
             if( exp[row][col2]==C16Chunk._LO_NA && exp[row][col2+1]==C16Chunk._HI_NA ) {
-              AssertJUnit.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=NA",
+              Assert.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=NA",
                          vecs[col].isNA(row));
             } else {
               long lo = vecs[col].at16l(row);
               long hi = vecs[col].at16h(row);
-              AssertJUnit.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=" + Long.toHexString(exp[row][col2]) + ", found=" + lo,
+              Assert.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=" + Long.toHexString(exp[row][col2]) + ", found=" + lo,
                       exp[row][col2] == lo && exp[row][col2 + 1] == hi);
             }
             col2 += 2;
           } else {
             long lo = vecs[col].at8(row);
-            AssertJUnit.assertTrue( "Frame "+fr._key+", row="+row+", col="+col+", expect="+exp[row][col2]+", found="+lo,
+            Assert.assertTrue( "Frame "+fr._key+", row="+row+", col="+col+", expect="+exp[row][col2]+", found="+lo,
                         exp[row][col2]==lo );
             col2 += 1;
           }
         }
-        AssertJUnit.assertEquals(exp[row].length,col2);
+        Assert.assertEquals(exp[row].length,col2);
       }
     } finally {
       fr.delete();

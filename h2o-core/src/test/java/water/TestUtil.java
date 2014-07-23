@@ -1,7 +1,7 @@
 package water;
 
-import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -12,15 +12,10 @@ import water.testframework.multinode.MultiNodeSetup;
 public class TestUtil {
   private static boolean _stall_called_before = false;
   protected static int _initial_keycnt = 0;
-  protected final int _minCloudSize;
+  protected static int MINCLOUDSIZE;
 
-  public TestUtil() {
-    _minCloudSize = 1;
-  }
-
-  public TestUtil(int minCloudSize) {
-    _minCloudSize = minCloudSize;
-  }
+  public TestUtil() { this(1); }
+  public TestUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
@@ -37,8 +32,10 @@ public class TestUtil {
   }
 
   @BeforeClass()
-  public void setupCloud() {
-    stall_till_cloudsize(_minCloudSize);
+  public static void setupCloud() {
+    H2O.main(new String[] {});
+    _stall_called_before = true; // multinode-in-1-jvm launch off by default
+    stall_till_cloudsize(MINCLOUDSIZE);
     _initial_keycnt = H2O.store_size();
   }
 
@@ -53,7 +50,7 @@ public class TestUtil {
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }
-    assertTrue(leaked_keys <= 0, "No keys leaked");
+    assertTrue("No keys leaked", leaked_keys <= 0);
     _initial_keycnt = H2O.store_size();
   }
 

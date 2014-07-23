@@ -1,11 +1,11 @@
 package water.fvec;
 
-import org.testng.annotations.*;
+import org.junit.*;
 
 import java.io.*;
 
 public class WordCountBigTest extends WordCountTest {
-  @Test(groups={"NOPASS"}) public void testWordCountWiki() throws IOException {
+  @Test public void testWordCountWiki() throws IOException {
     String best = "/home/0xdiag/datasets/wiki.xml";
     File file = find_test_file(best);
     if( file==null ) file = find_test_file("../datasets/Wiki_20130805.xml");

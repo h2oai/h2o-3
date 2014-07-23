@@ -1,13 +1,12 @@
 package water;
 
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.fvec.Frame;
 
-@Test(groups={"multi-node"})
 public class ConcurrentKeyTest extends TestUtil {
-  ConcurrentKeyTest() { super(2); }
-
+  public ConcurrentKeyTest() { super(2); }
+  
   // Test rapid key create/delete during parse
   @Test public void testParse() {
     for( int i=0; i<25; i++ ) { // Small data to keep it fast

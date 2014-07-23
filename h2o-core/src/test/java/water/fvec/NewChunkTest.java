@@ -1,12 +1,11 @@
 package water.fvec;
 
-import org.testng.AssertJUnit;
-import static org.testng.AssertJUnit.assertEquals;
-import org.testng.annotations.Test;
+import org.junit.*;
+import static org.junit.Assert.*;
+
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
-
 import java.util.Random;
 
 public class NewChunkTest extends TestUtil {
@@ -44,8 +43,8 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(4.32433);
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(4.32433, cc.at0(k));
-      AssertJUnit.assertTrue(cc instanceof C0DChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(4.32433, cc.at0(k), Math.ulp(4.32433));
+      Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NA() {
@@ -53,8 +52,8 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNA();
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertTrue(cc.isNA0(k));
-      AssertJUnit.assertTrue(cc instanceof C0DChunk);
+      for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA0(k));
+      Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_PosInf() {
@@ -62,8 +61,8 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(Double.POSITIVE_INFINITY);
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(Double.POSITIVE_INFINITY, cc.at0(k));
-      AssertJUnit.assertTrue(cc instanceof C0DChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(Double.POSITIVE_INFINITY, cc.at0(k),0.0001);
+      Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NegInf() {
@@ -71,8 +70,8 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(Double.NEGATIVE_INFINITY);
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(Double.NEGATIVE_INFINITY, cc.at0(k));
-      AssertJUnit.assertTrue(cc instanceof C0DChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NEGATIVE_INFINITY, cc.at0(k),0.0001);
+      Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NaN() {
@@ -80,9 +79,9 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(Double.NaN); //TODO: should this be disallowed?
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(Double.NaN, cc.at0(k));
-      for (int k = 0; k < K; ++k) AssertJUnit.assertTrue(cc.isNA0(k));
-      AssertJUnit.assertTrue(cc instanceof C0DChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NaN, cc.at0(k), 0.0001);
+      for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA0(k));
+      Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateFromNA() {
@@ -93,9 +92,9 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K-1, 342.34); //should inflate
       post_write();
       assertEquals(K, nc.len());
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertTrue(cc.isNA0(k));
-      AssertJUnit.assertEquals(342.34, cc.at0(K - 1));
-      AssertJUnit.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA0(k));
+      Assert.assertEquals(342.34, cc.at0(K - 1),Math.ulp(342.34));
+      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateToNA() {
@@ -106,9 +105,9 @@ public class NewChunkTest extends TestUtil {
       cc.setNA0(K - 1); //should inflate
       post_write();
       assertEquals(K, nc.len());
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertEquals(3.1415, cc.at0(k));
-      AssertJUnit.assertTrue(cc.isNA0(K-1));
-      AssertJUnit.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.at0(k), Math.ulp(3.1415));
+      Assert.assertTrue(cc.isNA0(K-1));
+      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateToLarger() {
@@ -119,9 +118,9 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K-1, 9.9999); //should inflate
       post_write();
       assertEquals(K, nc.len());
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertEquals(3.1415, cc.at0(k));
-      AssertJUnit.assertEquals(9.9999, cc.at0(K-1));
-      AssertJUnit.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.at0(k),Math.ulp(3.1415));
+      Assert.assertEquals(9.9999, cc.at0(K-1), Math.ulp(9.9999));
+      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
 
@@ -134,8 +133,8 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc.len());
       post();
       assertEquals(K, cc.len());
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(0, cc.at80(k));
-      AssertJUnit.assertTrue(cc instanceof C0LChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(0, cc.at80(k));
+      Assert.assertTrue(cc instanceof C0LChunk);
     } finally { remove(); }
   }
   @Test public void testC0LChunk_regular() {
@@ -143,8 +142,8 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(4,0);
       assertEquals(K, nc.len());
       post();
-      for (int k = 0; k < K; ++k) AssertJUnit.assertEquals(4, cc.at80(k));
-      AssertJUnit.assertTrue(cc instanceof C0LChunk);
+      for (int k = 0; k < K; ++k) Assert.assertEquals(4, cc.at80(k));
+      Assert.assertTrue(cc instanceof C0LChunk);
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateFromNA() {
@@ -155,9 +154,9 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K - 1, 342l); //should inflate
       post_write();
       assertEquals(K, nc.len());
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertTrue(cc.isNA0(k));
-      AssertJUnit.assertEquals(342, cc.at80(K - 1));
-      AssertJUnit.assertTrue(! (cc instanceof C0LChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA0(k));
+      Assert.assertEquals(342, cc.at80(K - 1));
+      Assert.assertTrue(! (cc instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateToNA() {
@@ -168,9 +167,9 @@ public class NewChunkTest extends TestUtil {
       cc.setNA0(K - 1); //should inflate
       post_write();
       assertEquals(cc.len(), K);
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertEquals(4, cc.at80(k));
-      AssertJUnit.assertTrue(cc.isNA0(K-1));
-      AssertJUnit.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertEquals(4, cc.at80(k));
+      Assert.assertTrue(cc.isNA0(K-1));
+      Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateRegular() {
@@ -181,9 +180,9 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K-1, 0.1); //should inflate
       post_write();
       assertEquals(K, nc.len());
-      for (int k = 0; k < K-1; ++k) AssertJUnit.assertEquals(12345, cc.at80(k));
-      AssertJUnit.assertEquals(0.1, cc.at0(K - 1));
-      AssertJUnit.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
+      for (int k = 0; k < K-1; ++k) Assert.assertEquals(12345, cc.at80(k));
+      Assert.assertEquals(0.1, cc.at0(K - 1), Math.ulp(0.1));
+      Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
 
@@ -196,9 +195,9 @@ public class NewChunkTest extends TestUtil {
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       assertEquals(K, nc.len());
       post();
-      AssertJUnit.assertTrue(cc.isNA(0));
-      for (int k = 1; k < K; ++k) AssertJUnit.assertEquals(k%254, cc.at80(k));
-      AssertJUnit.assertTrue(cc instanceof C1Chunk);
+      Assert.assertTrue(cc.isNA(0));
+      for (int k = 1; k < K; ++k) Assert.assertEquals(k%254, cc.at80(k));
+      Assert.assertTrue(cc instanceof C1Chunk);
     } finally { remove(); }
   }
   @Test public void testC1Chunk_inflateToLarger() {
@@ -210,10 +209,10 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K - 1, 256); //should inflate (bigger than max. capacity of 255)
       post_write();
       assertEquals(K, nc.len());
-      AssertJUnit.assertTrue(cc.isNA(0));
-      for (int k = 1; k < K-1; ++k) AssertJUnit.assertEquals(k%254, cc.at80(k));
-      AssertJUnit.assertEquals(256, cc.at80(K-1));
-      AssertJUnit.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
+      Assert.assertTrue(cc.isNA(0));
+      for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at80(k));
+      Assert.assertEquals(256, cc.at80(K-1));
+      Assert.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC1Chunk_inflateInternalNA() {
@@ -225,10 +224,10 @@ public class NewChunkTest extends TestUtil {
       cc.set0(K - 1, 255); //255 is internal NA, so it should inflate, since we're not trying to write a NA
       post_write();
       assertEquals(K, nc.len());
-      AssertJUnit.assertTrue(cc.isNA(0));
-      for (int k = 1; k < K-1; ++k) AssertJUnit.assertEquals(k%254, cc.at80(k));
-      AssertJUnit.assertEquals(255, cc.at80(K-1));
-      AssertJUnit.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
+      Assert.assertTrue(cc.isNA(0));
+      for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at80(k));
+      Assert.assertEquals(255, cc.at80(K-1));
+      Assert.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
     } finally { remove(); }
   }
 
