@@ -63,7 +63,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
       auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
       auc.execImpl();
       auc.toASCII(sb);
-      error = auc.err(); //using optimal threshold for F1
+      error = auc.data().err(); //using optimal threshold for F1
     }
     // populate CM
     if (cm != null) {
@@ -77,11 +77,11 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
           //override the CM with the one computed by AUC (using optimal threshold)
           //Note: must still call invoke above to set the domains etc.
           cm.cm = new long[3][3]; // 1 extra layer for NaNs (not populated here, since AUC skips them)
-          cm.cm[0][0] = auc.cm()[0][0];
-          cm.cm[1][0] = auc.cm()[1][0];
-          cm.cm[0][1] = auc.cm()[0][1];
-          cm.cm[1][1] = auc.cm()[1][1];
-          assert(new ConfusionMatrix2(cm.cm).err() == auc.err()); //check consistency with AUC-computed error
+          cm.cm[0][0] = auc.data().cm()[0][0];
+          cm.cm[1][0] = auc.data().cm()[1][0];
+          cm.cm[0][1] = auc.data().cm()[0][1];
+          cm.cm[1][1] = auc.data().cm()[1][1];
+          assert(new ConfusionMatrix2(cm.cm).err() == auc.data().err()); //check consistency with AUC-computed error
         } else {
           error = new ConfusionMatrix2(cm.cm).err(); //only set error if AUC didn't already set the error
         }

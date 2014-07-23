@@ -102,9 +102,9 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
 //    @API(help = "Classification error on validation data")
     public double valid_err = 1;
 //    @API(help = "AUC on training data")
-    public AUC trainAUC;
+    public AUCData trainAUC;
 //    @API(help = "AUC on validation data")
-    public AUC validAUC;
+    public AUCData validAUC;
 //    @API(help = "Hit ratio on training data")
     public HitRatio train_hitratio;
 //    @API(help = "Hit ratio on validation data")
@@ -724,7 +724,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         err.score_training_samples = ftrain.numRows();
         err.train_confusion_matrix = new ConfusionMatrix();
         final int hit_k = Math.min(nclasses(), get_params().max_hit_ratio_k);
-        if (err.classification && nclasses()==2) err.trainAUC = new AUC();
+//        if (err.classification && nclasses()==2) err.trainAUC = new AUC();
         if (err.classification && nclasses() > 2 && hit_k > 0) {
           err.train_hitratio = new HitRatio();
           err.train_hitratio.set_max_k(hit_k);
@@ -733,10 +733,10 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         final String m = model_info().toString();
         if (m.length() > 0) Log.info(m);
         final Frame trainPredict = score(ftrain, false);
-        final double trainErr = calcError(ftrain, ftrain.lastVec(), trainPredict, trainPredict, "training",
-                printme, get_params().max_confusion_matrix_size, err.train_confusion_matrix, err.trainAUC, err.train_hitratio);
-        if (isClassifier()) err.train_err = trainErr;
-        else err.train_mse = trainErr;
+//        final double trainErr = calcError(ftrain, ftrain.lastVec(), trainPredict, trainPredict, "training",
+//                printme, get_params().max_confusion_matrix_size, err.train_confusion_matrix, err.trainAUC, err.train_hitratio);
+//        if (isClassifier()) err.train_err = trainErr;
+//        else err.train_mse = trainErr;
 
         trainPredict.delete();
 
@@ -745,7 +745,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
           assert ftest != null;
           err.score_validation_samples = ftest.numRows();
           err.valid_confusion_matrix = new ConfusionMatrix();
-          if (err.classification && nclasses()==2) err.validAUC = new AUC();
+//          if (err.classification && nclasses()==2) err.validAUC = new AUC();
           if (err.classification && nclasses() > 2 && hit_k > 0) {
             err.valid_hitratio = new HitRatio();
             err.valid_hitratio.set_max_k(hit_k);
@@ -770,10 +770,10 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
             validPredict.replace(0, CMadapted); //replace label
             validPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
           }
-          final double validErr = calcError(ftest, ftest.lastVec(), validPredict, hitratio_validPredict, "validation",
-                  printme, get_params().max_confusion_matrix_size, err.valid_confusion_matrix, err.validAUC, err.valid_hitratio);
-          if (isClassifier()) err.valid_err = validErr;
-          else err.valid_mse = validErr;
+//          final double validErr = calcError(ftest, ftest.lastVec(), validPredict, hitratio_validPredict, "validation",
+//                  printme, get_params().max_confusion_matrix_size, err.valid_confusion_matrix, err.validAUC, err.valid_hitratio);
+//          if (isClassifier()) err.valid_err = validErr;
+//          else err.valid_mse = validErr;
           validPredict.delete();
         }
 

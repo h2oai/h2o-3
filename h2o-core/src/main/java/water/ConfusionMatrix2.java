@@ -169,6 +169,21 @@ public class ConfusionMatrix2 extends Iced {
     return tp / (tp + fp);
   }
   /**
+   * The Matthews Correlation Coefficient, takes true negatives into account in contrast to F-Score
+   * See <a href="http://en.wikipedia.org/wiki/Matthews_correlation_coefficient">MCC</a>
+   * MCC = Correlation between observed and predicted binary classification
+   * @return mcc ranges from -1 (total disagreement) ... 0 (no better than random) ... 1 (perfect)
+   */
+  public double mcc() {
+    if(!isBinary())throw new UnsupportedOperationException("precision is only implemented for 2 class problems.");
+    double tn = _arr[0][0];
+    double fp = _arr[0][1];
+    double tp = _arr[1][1];
+    double fn = _arr[1][0];
+    double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+    return mcc;
+  }
+  /**
    * The maximum per-class error
    * @return max(classErr(i))
    */
@@ -192,6 +207,26 @@ public class ConfusionMatrix2 extends Iced {
     final double precision = precision();
     final double recall = recall();
     return 2. * (precision * recall) / (precision + recall);
+  }
+
+  /**
+   * Returns the F-measure which combines precision and recall and weights recall higher than precision. <br>
+   * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
+   */
+  public double F2() {
+    final double precision = precision();
+    final double recall = recall();
+    return 5. * (precision * recall) / (4. * precision + recall);
+  }
+
+  /**
+   * Returns the F-measure which combines precision and recall and weights precision higher than recall. <br>
+   * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
+   */
+  public double F0point5() {
+    final double precision = precision();
+    final double recall = recall();
+    return 1.25 * (precision * recall) / (.25 * precision + recall);
   }
 
   @Override public String toString() {

@@ -162,11 +162,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                 auc.execImpl();
                                 auc.toASCII(sb);
 //                                threshold = auc.threshold();
-                                double error = auc.err();
+                                double error = auc.data().err();
                                 Log.info(sb);
 
                                 // check that auc.cm() is the right CM
-                                Assert.assertEquals(new ConfusionMatrix2(auc.cm()).err(), error, 1e-15);
+                                Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
 
                                 // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                 Assert.assertEquals(mymodel.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
