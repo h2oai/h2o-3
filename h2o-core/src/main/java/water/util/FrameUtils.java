@@ -19,4 +19,13 @@ public class FrameUtils {
     NFSFileVec nfs = NFSFileVec.make(file);
     return water.parser.ParseDataset2.parse(okey, nfs._key);
   }
+
+  /**
+   * Compute a chunk summary (how many chunks of each type, relative size, total size)
+   * @param fr
+   * @return chunk summary
+   */
+  public static ChunkSummary chunkSummary(Frame fr) {
+    return new ChunkSummary().doAll(fr);
+  }
 }
