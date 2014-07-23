@@ -16,7 +16,7 @@ public class ExampleTest extends TestUtil {
       parms._src = fr._key;
       parms._max_iters = 10;
 
-      Example job = new Example(parms);
+      Example job = new Example(parms).train();
       kmm = job.get();
       job.remove();
 
