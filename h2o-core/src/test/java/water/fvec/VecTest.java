@@ -1,9 +1,8 @@
 package water.fvec;
 
 import static org.junit.Assert.assertTrue;
-import org.testng.AssertJUnit;
+import org.junit.*;
 
-import org.testng.annotations.Test;
 import water.Futures;
 import water.TestUtil;
 import static water.fvec.Vec.makeConSeq;
@@ -24,7 +23,7 @@ public class VecTest extends TestUtil {
     try {
       ef = f.toEnum();
       String[] actualDomain = ef.domain();
-      AssertJUnit.assertArrayEquals("toEnum call returns wrong domain!", expectedDomain, actualDomain);
+      Assert.assertArrayEquals("toEnum call returns wrong domain!", expectedDomain, actualDomain);
     } finally {
       if( f !=null ) f .remove();
       if( ef!=null ) ef.remove();

@@ -1,17 +1,15 @@
 package water;
 
-import org.testng.annotations.*;
-
-import java.util.ArrayList;
-import java.util.Map;
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
-@Test(groups={"multi-node"})
-public class KeySnapshotTest extends TestUtil {
-  KeySnapshotTest() { super(5); }
+import org.junit.*;
+import java.util.ArrayList;
+import java.util.Map;
 
+public class KeySnapshotTest extends TestUtil {
+  public KeySnapshotTest() { super(5); }
+  
   private static class IcedInt extends Iced {
     public final int value;
     public IcedInt(int val){value = val;}

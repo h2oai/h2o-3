@@ -1,18 +1,19 @@
 package water.cascade;
 
+import org.junit.*;
+
 import java.util.Arrays;
-import org.testng.annotations.*;
 import water.Iced;
 import water.TestUtil;
 import water.util.Log;
 
 public class AST2IRTest extends TestUtil {
 
-  //@Test public void test1() {
+  @Test public void test1() {
   //  Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5`");
   //  JsonObject ast = test1_json();
   //  printInstructions(ast, new String[]{"push 5.0 (double)\npush Last.value.0 (Key)\n+  \n"});
-  //}
+  }
   //
   //@Test public void test2() {
   //  Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5 + 10`");

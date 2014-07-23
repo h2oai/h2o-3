@@ -6,6 +6,7 @@ main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java)
 test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java src/test/java/water/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/%class,$(test_javas))
+test_clazzes = $(patsubst src/test/java/%.java,%,$(wildcard src/test/java/water/*java src/test/java/water/*/*java))
 classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
@@ -45,15 +46,24 @@ classes: $(classes)
 JVM = nice java -ea -cp "build/classes$(SEP)$(jars)" 
 # Tests that happen during Cloud startup
 JUNIT_TESTS_BOOT = water.api.APITest
-# Tests
-JUNIT_TESTS = $(JUNIT_TESTS_BOOT) water.AtomicTest water.KeyToString water.AutoBuffer2JSONTest water.fvec.FVecTest water.fvec.CBSChunkTest water.fvec.NewVectorTest water.fvec.VecStatsTest water.fvec.VecTest water.fvec.SparseTest water.fvec.TransfVecTest water.parser.DatasetCornerCasesTest water.parser.ParserTest water.parser.ParserTest2 water.parser.ParseTimeTest water.parser.ParseCompressedAndXLSTest water.TimelineTest
 # Too slow for normal junit runs
-JUNIT_TESTS_SLOW = water.KVTest water.parser.ParseProgressTest
+JUNIT_TESTS_SLOW1 = water.KVTest
+JUNIT_TESTS_SLOW2 = water.parser.ParseProgressTest
+JUNIT_TESTS_SLOW3 = water.fvec.WordCountBigTest
+# All Tests minus the excludes
+JUNIT_TESTS0 = $(subst /,.,$(test_clazzes))
+JUNIT_TESTS1 = $(subst $(JUNIT_TESTS_BOOT) ,,$(JUNIT_TESTS0))
+JUNIT_TESTS2 = $(subst $(JUNIT_TESTS_SLOW1),,$(JUNIT_TESTS1))
+JUNIT_TESTS3 = $(subst $(JUNIT_TESTS_SLOW2),,$(JUNIT_TESTS2))
+JUNIT_TESTS4 = $(subst $(JUNIT_TESTS_SLOW3),,$(JUNIT_TESTS3))
+JUNIT_TESTS5 = $(subst water.TestUtil,,$(JUNIT_TESTS4))
+# Tests
+JUNIT_TESTS  = $(JUNIT_TESTS_BOOT) $(JUNIT_TESTS5)
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
 	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) -Dai.h2o.skipNodeCreation org.testng.TestNG src/test/resources/testng-multinode.xml 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
 	-@(pkill java; echo )
 	@exit `cat sandbox/status.0`
 

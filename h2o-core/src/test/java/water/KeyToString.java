@@ -1,7 +1,7 @@
 package water;
 
-import static org.testng.AssertJUnit.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.util.Arrays;
 

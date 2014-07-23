@@ -1,14 +1,13 @@
 package water;
 
-import static org.testng.AssertJUnit.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.io.File;
 import water.fvec.Chunk;
 import water.fvec.NFSFileVec;
 import water.util.UnsafeUtils;
 
-@Test(groups={"multi-node"})
 public class KVTest extends TestUtil {
   KVTest() { super(2); }
 

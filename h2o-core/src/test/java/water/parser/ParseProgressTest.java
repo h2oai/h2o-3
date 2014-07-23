@@ -1,7 +1,6 @@
 package water.parser;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import java.io.File;
 import water.Key;
@@ -26,13 +25,13 @@ public class ParseProgressTest extends TestUtil {
     }
 
     FileIntegrityChecker c = FileIntegrityChecker.check(f);
-    AssertJUnit.assertEquals(1,c.size());   // Exactly 1 file
+    Assert.assertEquals(1,c.size());   // Exactly 1 file
     Key k = c.syncDirectory(null,null,null,null);
-    AssertJUnit.assertEquals(true,k!=null);
+    Assert.assertEquals(true,k!=null);
 
     Frame fr = ParseDataset2.parse(Key.make(),k);
-    AssertJUnit.assertEquals( 55, fr.numCols() );
-    AssertJUnit.assertEquals( 581012, fr.numRows() );
+    Assert.assertEquals( 55, fr.numCols() );
+    Assert.assertEquals( 581012, fr.numRows() );
     fr.delete();
   }
 }

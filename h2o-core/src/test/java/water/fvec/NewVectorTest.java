@@ -1,15 +1,12 @@
 package water.fvec;
 
-import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import water.*;
 
-@Test(groups={"multi-node"})
 public class NewVectorTest extends TestUtil {
-  NewVectorTest() { super(3); }
-
-  static void assertTrue(String s, boolean b) { org.testng.Assert.assertTrue (b, s); }
+  public NewVectorTest() { super(3); }
 
   static final double EPSILON = 1e-6;
 

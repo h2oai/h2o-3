@@ -1,6 +1,6 @@
 package hex.example;
 
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.TestUtil;
 import water.fvec.Frame;

@@ -1,7 +1,6 @@
 package water.parser;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.*;
 import water.fvec.*;
@@ -10,16 +9,16 @@ public class ParserTest2 extends TestUtil {
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   private static void testParsed(Frame fr, String[][] expected) {
-    AssertJUnit.assertEquals(expected   .length,fr.numRows());
-    AssertJUnit.assertEquals(expected[0].length,fr.numCols());
+    Assert.assertEquals(expected   .length,fr.numRows());
+    Assert.assertEquals(expected[0].length,fr.numCols());
     for( int j = 0; j < fr.numCols(); ++j ) {
       Vec vec = fr.vecs()[j];
       for( int i = 0; i < expected.length; ++i ) {
         if( expected[i][j]==null )
-          AssertJUnit.assertTrue(i+" -- "+j, vec.isNA(i));
+          Assert.assertTrue(i+" -- "+j, vec.isNA(i));
         else {
           String pval = vec.domain()[(int)vec.at8(i)];
-          AssertJUnit.assertTrue(expected[i][j]+" -- "+pval,expected[i][j].equals(pval));
+          Assert.assertTrue(expected[i][j]+" -- "+pval,expected[i][j].equals(pval));
         }
       }
     }
@@ -43,16 +42,16 @@ public class ParserTest2 extends TestUtil {
     Key rkey = ParserTest.makeByteVec(data);
     Frame fr = ParseDataset2.parse(Key.make("na_test.hex"), rkey);
     int nlines = (int)fr.numRows();
-    AssertJUnit.assertEquals(9,nlines);
-    AssertJUnit.assertEquals(9,fr.numCols());
+    Assert.assertEquals(9,nlines);
+    Assert.assertEquals(9,fr.numCols());
     for(int i = 0; i < nlines-2; ++i)
       for( Vec v : fr.vecs() )
-        AssertJUnit.assertTrue("error at line "+i+", vec " + v.chunkForChunkIdx(0).getClass().getSimpleName(),
+        Assert.assertTrue("error at line "+i+", vec " + v.chunkForChunkIdx(0).getClass().getSimpleName(),
                    !Double.isNaN(v.at(i)) && !v.isNA(i) );
     for( int j=0; j<fr.vecs().length; j++ ) {
       Vec v = fr.vecs()[j];
       for( int i = nlines-2; i < nlines; ++i )
-        AssertJUnit.assertTrue(i + ", " + j + ":" + v.at(i) + ", " + v.isNA(i), Double.isNaN(v.at(i)) && v.isNA(i) );
+        Assert.assertTrue(i + ", " + j + ":" + v.at(i) + ", " + v.isNA(i), Double.isNaN(v.at(i)) && v.isNA(i) );
     }
     fr.delete();
   }
@@ -79,8 +78,8 @@ public class ParserTest2 extends TestUtil {
 
   @Test public void testSingleQuotes2() {
     Frame fr = parse_test_file("smalldata/junit/test_quote.csv");
-    AssertJUnit.assertEquals(fr.numCols(),11);
-    AssertJUnit.assertEquals(fr.numRows(), 7);
+    Assert.assertEquals(fr.numCols(),11);
+    Assert.assertEquals(fr.numRows(), 7);
     fr.delete();
   }
   

@@ -1,7 +1,6 @@
 package water.parser;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.TestUtil;
 import water.fvec.Frame;
@@ -44,9 +43,9 @@ public class DatasetCornerCasesTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file(filename);
-      AssertJUnit.assertEquals("Number of chunks == 1", 1, fr.anyVec().nChunks());
-      AssertJUnit.assertEquals("Number of rows   == 2", 2, fr.numRows());
-      AssertJUnit.assertEquals("Number of cols   == 9", 9, fr.numCols());
+      Assert.assertEquals("Number of chunks == 1", 1, fr.anyVec().nChunks());
+      Assert.assertEquals("Number of rows   == 2", 2, fr.numRows());
+      Assert.assertEquals("Number of cols   == 9", 9, fr.numCols());
     } finally {
       if( fr != null ) fr.delete();
     }

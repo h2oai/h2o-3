@@ -1,8 +1,8 @@
-//package water.cascade;
+package water.cascade;
 //
 //
 //import com.google.gson.JsonObject;
-//import water.Iced;
+import water.Iced;
 //import water.Key;
 //import java.util.ArrayList;
 //import java.util.Arrays;
@@ -38,7 +38,7 @@
 // *  If f(...) is called without assignment, then there is a temporary key created and spit out to the console. The
 // *  lifetime of this temporary key is discussed elsewhere.
 // */
-//public class AST2IR extends Iced {
+public class AST2IR extends Iced {
 //  private final JsonObject _ast;
 //  private SymbolTable _global;
 //  private ArrayList<Program> _program;
@@ -356,4 +356,4 @@
 //    public void writeValue(String value) { this._value = value;}
 //
 //  }
-//}
+}

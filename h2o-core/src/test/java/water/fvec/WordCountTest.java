@@ -1,6 +1,6 @@
 package water.fvec;
 
-import org.testng.annotations.*;
+import org.junit.*;
 
 import java.io.*;
 import java.util.Arrays;
@@ -10,7 +10,7 @@ import water.*;
 import water.nbhm.NonBlockingHashMap;
 
 public class WordCountTest extends TestUtil {
-  WordCountTest() { super(5); }
+  public WordCountTest() { super(5); }
 
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
@@ -194,17 +194,7 @@ public class WordCountTest extends TestUtil {
     }
   }
 
-  @Test(enabled = false) public void dummy_test() {
+  @Test public void dummy_test() {
     /* this is just a dummy test to avoid JUnit complains about missing test */
   }
-
-  // Run tests when invoked from cmd line
-  public static void main() throws Exception {
-    WordCountTest mrt = new WordCountTest();
-    H2O.waitForCloudSize(mrt._minCloudSize, 10000);
-    _initial_keycnt = H2O.store_size();
-    mrt.testWordCount();
-    checkLeakedKeys();
-  }
-
 }

@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import water.*;
 import water.api.AUC;
@@ -15,7 +14,7 @@ import java.util.Random;
 
 public class DeepLearningProstateTest extends TestUtil {
   //Default: run 3%
-  @Test(groups={"NOPASS"}) public void run() throws Exception { runFraction(0.003f); }
+  @Test @Ignore public void run() throws Exception { runFraction(0.003f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -167,10 +166,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                 Log.info(sb);
 
                                 // check that auc.cm() is the right CM
-                                AssertJUnit.assertEquals(new ConfusionMatrix2(auc.cm()).err(), error, 1e-15);
+                                Assert.assertEquals(new ConfusionMatrix2(auc.cm()).err(), error, 1e-15);
 
                                 // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                AssertJUnit.assertEquals(mymodel.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
+                                Assert.assertEquals(mymodel.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
                               }
 
                               // Compute CM
@@ -274,11 +273,11 @@ public class DeepLearningProstateTest extends TestUtil {
                               Log.info("Validation: " + validation);
                               Log.info("Best_model's samples : " + bestmodel.model_info().get_processed_total() + ".");
                               Log.info("Best_model's error : " + bestErr + ".");
-                              AssertJUnit.assertEquals(bestmodel.model_info().get_processed_total(), best_samples); //check that the model was saved at the moment with the lowest error
+                              Assert.assertEquals(bestmodel.model_info().get_processed_total(), best_samples); //check that the model was saved at the moment with the lowest error
 
                               if ((!validation || (scorevalidation == 0 && csm == DeepLearning.ClassSamplingMethod.Uniform))
                                       && (validation || (scoretraining == 0 && !balance_classes))) {
-                                AssertJUnit.assertEquals(bestErr, best_err, 1e-5);
+                                Assert.assertEquals(bestErr, best_err, 1e-5);
                               }
 
                               // clean up
@@ -311,10 +310,10 @@ public class DeepLearningProstateTest extends TestUtil {
   }
 
   public static class Long extends DeepLearningProstateTest {
-    @Test(enabled = false) public void run() throws Exception { runFraction(0.1f); }
+    @Test @Ignore public void run() throws Exception { runFraction(0.1f); }
   }
 
   public static class Short extends DeepLearningProstateTest {
-    @Test(enabled = false) public void run() throws Exception { runFraction(0.0003f); }
+    @Test @Ignore public void run() throws Exception { runFraction(0.0003f); }
   }
 }

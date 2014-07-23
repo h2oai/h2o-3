@@ -1,14 +1,12 @@
 package water;
 
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.junit.*;
 
 import java.util.Arrays;
 import java.util.Random;
 
-@Test(groups={"multi-node"})
 public class AtomicTest extends TestUtil {
-  AtomicTest() { super(3); }
+  public AtomicTest() { super(3); }
 
   public Key makeKey(String n, boolean remote) {
     if(!remote) return Key.make(n);
@@ -39,20 +37,20 @@ public class AtomicTest extends TestUtil {
 
   private void doBasic(Key k) {
     Value v = DKV.get(k);
-    AssertJUnit.assertNull(v);
+    Assert.assertNull(v);
 
     Key a1 = Key.make("tatomic 1");
     Append.append(k,a1);
     Key[] ks = new AutoBuffer(DKV.get(k).memOrLoad()).getA(Key.class);
-    AssertJUnit.assertEquals(1, ks.length);
-    AssertJUnit.assertEquals(a1, ks[0]);
+    Assert.assertEquals(1, ks.length);
+    Assert.assertEquals(a1, ks[0]);
 
     Key a2 = Key.make("tatomic 2");
     Append.append(k,a2);
     ks = new AutoBuffer(DKV.get(k).memOrLoad()).getA(Key.class);
-    AssertJUnit.assertEquals(2, ks.length);
-    AssertJUnit.assertEquals(a1, ks[0]);
-    AssertJUnit.assertEquals(a2, ks[1]);
+    Assert.assertEquals(2, ks.length);
+    Assert.assertEquals(a1, ks[0]);
+    Assert.assertEquals(a2, ks[1]);
     DKV.remove(k);
   }
 
@@ -66,7 +64,7 @@ public class AtomicTest extends TestUtil {
 
   private void doLarge(Key k) {
     Value v = DKV.get(k);
-    AssertJUnit.assertNull(v);
+    Assert.assertNull(v);
 
     Random r = new Random(1234567890123456789L);
     int total = 0;
@@ -77,7 +75,7 @@ public class AtomicTest extends TestUtil {
       Append.append(k,nk);
       v = DKV.get(k);
       byte[] vb = v.memOrLoad();
-      AssertJUnit.assertArrayEquals(kb, Arrays.copyOfRange(vb, vb.length-kb.length, vb.length));
+      Assert.assertArrayEquals(kb, Arrays.copyOfRange(vb, vb.length-kb.length, vb.length));
       total = vb.length;
     }
     DKV.remove(k);

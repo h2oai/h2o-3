@@ -1,17 +1,15 @@
 package water.fvec;
 
-import static org.testng.Assert.*;
-import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import java.io.File;
 import water.*;
 import water.util.ArrayUtils;
 
 
-@Test(groups={"multi-node"})
 public class FVecTest extends TestUtil {
-  FVecTest() { super(3); }
+  public FVecTest() { super(3); }
 
   static final double EPSILON = 1e-6;
 
@@ -55,7 +53,7 @@ public class FVecTest extends TestUtil {
       for( Chunk x : chks )
         if( x.getClass()==water.fvec.C2Chunk.class )
           { c=x; break; }
-      AssertJUnit.assertNotNull("Expect to find a C2Chunk", c);
+      Assert.assertNotNull("Expect to find a C2Chunk", c);
       assertTrue(c._vec.writable());
 
       double d=c._vec.min();

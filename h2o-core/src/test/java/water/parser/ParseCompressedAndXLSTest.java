@@ -1,15 +1,14 @@
 package water.parser;
 
-import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import static org.junit.Assert.*;
+import org.junit.*;
 
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
-@Test(groups={"multi-node"})
 public class ParseCompressedAndXLSTest extends TestUtil {
-  ParseCompressedAndXLSTest() { super(3); }
+  public ParseCompressedAndXLSTest() { super(3); }
 
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;
