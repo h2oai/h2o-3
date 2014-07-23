@@ -104,7 +104,7 @@ public class Vec extends Keyed {
     return makeCon(l,domain,VectorGroup.VG_LEN1,espc); 
   }
 
-  static private Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  static public Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
 
