@@ -20,8 +20,8 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
     _parms = parms;
   }
 
-  @Override public Job train() {
-    return start(new ExampleDriver());
+  @Override public Example train() {
+    return (Example)start(new ExampleDriver());
   }
 
   // ----------------------

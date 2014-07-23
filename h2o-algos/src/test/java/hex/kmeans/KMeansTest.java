@@ -9,6 +9,9 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
 public class KMeansTest extends TestUtil {
+  public KMeansTest() { super(5); }
+  @BeforeClass() public static void setup() { new KMeansTest(); setupCloud(); }
+  
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
