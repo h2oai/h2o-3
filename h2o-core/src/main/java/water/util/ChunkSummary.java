@@ -2,6 +2,7 @@ package water.util;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 
 /**
  * Simple summary of how many chunks of each type are in a Frame
@@ -41,14 +42,10 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   private float byte_size_per_node_stddev;
 
   @Override
-  protected void setupLocal() {
+  public void map(Chunk[] cs) {
     chunk_counts = new long[chunkTypes.length];
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
-  }
-
-  @Override
-  public void map(Chunk[] cs) {
     for (Chunk c : cs) {
       boolean found = false;
       for (int j = 0; j < chunkTypes.length; ++j) {
@@ -89,9 +86,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     }
 
     long check = 0;
-    for (int i=0; i<_fr.numCols(); ++i) {
-      check += _fr.vecs()[i].nChunks();
-    }
+    for (Vec v : _fr.vecs())
+      check += v.nChunks();
     assert(total_chunk_count == check);
     assert(total_chunk_byte_size == _fr.byteSize());
 
