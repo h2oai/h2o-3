@@ -11,23 +11,23 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   // static list of chunks for which statistics are to be gathered
   final transient static String[] chunkTypes = new String[]{
-          "C0LChunk",
-          "C0DChunk",
-          "CBSChunk",
-          "C1Chunk",
-          "C1NChunk",
-          "C1SChunk",
-          "C2Chunk",
-          "C2SChunk",
-          "C4Chunk",
-          "C4SChunk",
-          "C4FChunk",
-          "C8Chunk",
-          "C16Chunk",
-          "CXIChunk",
-          "CXDChunk",
-          "CX0Chunk",
-          "C8DChunk", //leave this as last -> no compression
+          "C0L",
+          "C0D",
+          "CBS",
+          "C1",
+          "C1N",
+          "C1S",
+          "C2",
+          "C2S",
+          "C4",
+          "C4S",
+          "C4F",
+          "C8",
+          "C16",
+          "CXI",
+          "CXD",
+          "CX0",
+          "C8D", //leave this as last -> no compression
   };
 
   // OUTPUT
@@ -49,7 +49,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Chunk c : cs) {
       boolean found = false;
       for (int j = 0; j < chunkTypes.length; ++j) {
-        if (c.getClass().getSimpleName().equals(chunkTypes[j])) {
+        if (c.getClass().getSimpleName().equals(chunkTypes[j] + "Chunk")) {
           found = true;
           chunk_counts[j]++;
           chunk_byte_sizes[j] += c.byteSize();
@@ -117,14 +117,15 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Internal FluidVec compression/distribution summary:\n");
-    sb.append("Chunk type      count     fraction       size     rel. size\n");
+    sb.append("Chunk type    count     fraction       size     rel. size\n");
     for (int j = 0; j < chunkTypes.length; ++j) {
-      sb.append(String.format("%10s %10d %10.3f %% %10s %10.3f %%\n",
-              chunkTypes[j],
-              chunk_counts[j],
-              (float) chunk_counts[j] / total_chunk_count * 100.,
-              display(chunk_byte_sizes[j]),
-              (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.));
+      if (chunk_counts[j] > 0)
+        sb.append(String.format("%8s %10d %10.3f %% %10s %10.3f %%\n",
+                chunkTypes[j],
+                chunk_counts[j],
+                (float) chunk_counts[j] / total_chunk_count * 100.,
+                display(chunk_byte_sizes[j]),
+                (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.));
     }
     // if more than 50% is double data, inform the user to consider compressing to single precision
 //    if ((float)chunk_byte_sizes[chunk_byte_sizes.length-1] / total_chunk_byte_size > 0.5 && !H2O.SINGLE_PRECISION) {
