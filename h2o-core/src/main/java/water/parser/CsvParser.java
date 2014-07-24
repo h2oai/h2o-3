@@ -1,5 +1,7 @@
 package water.parser;
 
+import water.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -10,7 +12,7 @@ class CsvParser extends Parser {
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
-  @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
+  @Override public DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
     ValueString str = new ValueString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
@@ -20,10 +22,14 @@ class CsvParser extends Parser {
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
     // Starting state.  Are we skipping the first (partial) line, or not?  Skip
     // a header line, or a partial line if we're in the 2nd and later chunks.
-    int state = (_setup.hasHeaders() || cidx > 0) ? SKIP_LINE : WHITESPACE_BEFORE_TOKEN;
+    int state = (_setup.headerLines() > 0 || cidx > 0) ? SKIP_LINE : WHITESPACE_BEFORE_TOKEN;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
     else offset = 0; // Else start skipping at the start
+
+    // For parsing ARFF
+    if (_setup._pType == ParserType.ARFF && _setup.headerLines() > 0) state = WHITESPACE_BEFORE_TOKEN;
+
     int quotes = 0;
     long number = 0;
     int exp = 0;
@@ -35,10 +41,17 @@ class CsvParser extends Parser {
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
     if( cidx == 0 ) {
-      while (c == '#' || c == '@'/*also treat as comments leading '@' from ARFF format*/) {
-        while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) ++offset;
+      while ( c == '#'
+              || isEOL(c)
+              || c == '@' /*also treat as comments leading '@' from ARFF format*/
+              || c == '%' /*also treat as comments leading '%' from ARFF format*/) {
+        while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
+//          System.out.print(String.format("%c",bits[offset]));
+          ++offset;
+        }
         if    ((offset+1 < bits.length) && (bits[offset] == CHAR_CR) && (bits[offset+1] == CHAR_LF)) ++offset;
         ++offset;
+//        System.out.println();
         if (offset >= bits.length)
           return dout;
         c = bits[offset];
@@ -350,6 +363,7 @@ MAIN_LOOP:
         default:
           assert (false) : " We have wrong state "+state;
       } // end NEXT_CHAR
+//      System.out.print(String.format("%c",bits[offset]));
       ++offset; // do not need to adjust for offset increase here - the offset is set to tokenStart-1!
       if (offset < 0) {         // Offset is negative?
         assert !firstChunk;     // Caused by backing up from 2nd chunk into 1st chunk
@@ -429,7 +443,7 @@ MAIN_LOOP:
   /** Determines the tokens that are inside a line and returns them as strings
    *  in an array.  Assumes the given separator.
    */
-  private static String[] determineTokens(String from, byte separator, int single_quote) {
+  public static String[] determineTokens(String from, byte separator, int single_quote) {
     ArrayList<String> tokens = new ArrayList<>();
     byte[] bits = from.getBytes();
     int offset = 0;
@@ -476,7 +490,7 @@ MAIN_LOOP:
     return tokens.toArray(new String[tokens.size()]);
   }
 
-  private static byte guessSeparator(String l1, String l2, int single_quote) {
+  public static byte guessSeparator(String l1, String l2, int single_quote) {
     int[] s1 = determineSeparatorCounts(l1, single_quote);
     int[] s2 = determineSeparatorCounts(l2, single_quote);
     // Now we have the counts - if both lines have the same number of
@@ -511,7 +525,7 @@ MAIN_LOOP:
   }
 
   // Guess number of columns
-  private static int guessNcols( String[] columnNames, String[][] data ) {
+  public static int guessNcols( String[] columnNames, String[][] data ) {
     if( columnNames != null ) return data[0].length;
     int longest = 0;            // Longest line
     for( String[] s : data ) if( s.length > longest ) longest = s.length;
@@ -554,14 +568,15 @@ MAIN_LOOP:
       // For Windoze, skip a trailing LF after CR
       if( (offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
       if( bits[lineStart] == '#') continue; // Ignore      comment lines
-      if( bits[lineStart] == '@') continue; // Ignore ARFF comment lines
+      if( bits[lineStart] == '%') continue; // Ignore ARFF comment lines
+      if( bits[lineStart] == '@') continue; // Ignore ARFF lines
       if( lineEnd > lineStart ) {
         String str = new String(bits, lineStart,lineEnd-lineStart).trim();
         if( !str.isEmpty() ) lines[nlines++] = str;
       }
     }
     if( nlines==0 )
-      return new ParseSetup(false,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,checkHeader);
+      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -573,7 +588,7 @@ MAIN_LOOP:
         if( lines[0].split(",").length > 2 ) sep = (byte)',';
         else if( lines[0].split(" ").length > 2 ) sep = ' ';
         else 
-          return new ParseSetup(false,1,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,data,checkHeader);
+          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
@@ -636,6 +651,6 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Return the final setup
-    return new ParseSetup( true, ilines, err, ParserType.CSV, sep, ncols, singleQuotes, labels, data, checkHeader );
+    return new ParseSetup( true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
   }
 }

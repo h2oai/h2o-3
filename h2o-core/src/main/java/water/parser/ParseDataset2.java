@@ -458,7 +458,7 @@ public class ParseDataset2 extends Job<Frame> {
     // parse local chunks; distribute chunks later.
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
-      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols));
+      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols), null);
       Parser p = localSetup.parser();
       // assume 2x inflation rate
       if( localSetup._pType._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
@@ -502,7 +502,11 @@ public class ParseDataset2 extends Job<Frame> {
         switch(_setup._pType) {
         case CSV:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums);
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, null);
+          break;
+        case ARFF:
+          p = new CsvParser(_setup);
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, _setup._ctypes); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
@@ -551,11 +555,12 @@ public class ParseDataset2 extends Job<Frame> {
   /** Parsed data output specialized for fluid vecs.
    * @author tomasnykodym
    */
-  private static class FVecDataOut extends Iced implements Parser.StreamDataOut {
+  static class FVecDataOut extends Iced implements Parser.StreamDataOut {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Enum [] _enums;
     protected transient byte [] _ctypes;
+//    protected final boolean have_ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
@@ -564,14 +569,16 @@ public class ParseDataset2 extends Job<Frame> {
     boolean _closedVecs = false;
     private final VectorGroup _vg;
 
-    static final private byte UCOL = 0; // unknown col type
-    static final private byte NCOL = 1; // numeric col type
-    static final private byte ECOL = 2; // enum    col type
-    static final private byte TCOL = 3; // time    col typ
-    static final private byte ICOL = 4; // UUID    col typ
-    static final private byte SCOL = 5; // String  col typ
+    static final public byte UCOL = 0; // unknown col type
+    static final public byte NCOL = 1; // numeric col type
+    static final public byte ECOL = 2; // enum    col type
+    static final public byte TCOL = 3; // time    col typ
+    static final public byte ICOL = 4; // UUID    col typ
+    static final public byte SCOL = 5; // String  col typ
 
-    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum [] enums){
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum[] enums, byte[] ctypes){
+      _ctypes = ctypes;
+//      have_ctypes = (_ctypes != null);
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
       _enums = enums;
@@ -610,7 +617,7 @@ public class ParseDataset2 extends Job<Frame> {
       return this;
     }
     @Override public FVecDataOut nextChunk(){
-      return  new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums);
+      return  new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums, null);
     }
 
     private Vec [] closeVecs(){
@@ -728,7 +735,7 @@ public class ParseDataset2 extends Job<Frame> {
   private static class SVMLightFVecDataOut extends FVecDataOut {
     protected final VectorGroup _vg;
     private SVMLightFVecDataOut(VectorGroup vg, int cidx, Enum [] enums){
-      super(vg,cidx,0,vg.reserveKeys(10000000),enums);
+      super(vg,cidx,0,vg.reserveKeys(10000000),enums, null);
       _nvs = new NewChunk[0];
       _vg = vg;
       _col = 0;

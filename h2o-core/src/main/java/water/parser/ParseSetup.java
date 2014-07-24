@@ -20,32 +20,38 @@ public final class ParseSetup extends Iced {
   // singleQuotes==False ==> 4 columns: 123  and  'Mally  and  456  and  O'Mally
   boolean _singleQuotes;
 
-  String _hexName;                  // Cleaned up result Key suggested name
-  ParserType _pType;                // CSV, XLS, XSLX, SVMLight, Auto
-  byte _sep;          // Field separator, usually comma ',' or TAB or space ' '
-  int _ncols;         // Columns to parse
+  String _hexName;            // Cleaned up result Key suggested name
+  ParserType _pType;          // CSV, XLS, XSLX, SVMLight, Auto, ARFF
+  byte _sep;                  // Field separator, usually comma ',' or TAB or space ' '
+  int _ncols;                 // Columns to parse
   String[] _columnNames;
+  String[][] _domains;        // Domains for each column (null if numeric)
+  byte[] _ctypes;             // Column types using types defined by FVecDataOut (UCOL, NCOL, etc).
   String[][] _data;           // First few rows of parsed/tokenized data
   boolean _isValid;           // The initial parse is sane
   String[] _errors;           // Errors in this parse setup
   long _invalidLines; // Number of broken/invalid lines found
+  long _headerlines; // Number of broken/invalid lines found
 
-  public ParseSetup(boolean isValid, long invalidLines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] data, int checkHeader) {
+  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, byte[] ctypes) {
     _isValid = isValid;
     _invalidLines = invalidLines;
+    _headerlines = headerlines;
     _errors = errors;
     _pType = t;
     _sep = sep;
     _ncols = ncols;
     _singleQuotes = singleQuotes;
     _columnNames = columnNames;
+    _domains = domains;
     _data = data;
     _checkHeader = checkHeader;
+    _ctypes = ctypes;
   }
 
   // Invalid setup based on a prior valid one
   ParseSetup(ParseSetup ps, String err) {
-    this(false, ps._invalidLines, new String[]{err}, ps._pType, ps._sep, ps._ncols, ps._singleQuotes, ps._columnNames, ps._data, ps._checkHeader);
+    this(false, ps._invalidLines, ps._headerlines, new String[]{err}, ps._pType, ps._sep, ps._ncols, ps._singleQuotes, ps._columnNames, ps._domains, ps._data, ps._checkHeader, null);
   }
 
   // Called from Nano request server with a set of Keys, produce a suitable parser setup guess.
@@ -53,12 +59,15 @@ public final class ParseSetup extends Iced {
   }
 
   final boolean hasHeaders() { return _columnNames != null; }
+  final long headerLines() { return _headerlines; }
+  final boolean hasColumnTypes() { return _domains != null; }
 
   public Parser parser() {
     switch( _pType ) {
       case CSV:      return new      CsvParser(this);
       case XLS:      return new      XlsParser(this);
       case SVMLight: return new SVMLightParser(this);
+      case ARFF:     return new     ARFFParser(this);
     }
     throw H2O.fail();
   }
@@ -98,23 +107,26 @@ public final class ParseSetup extends Iced {
   // Guess everything from a single pile-o-bits.  Used in tests, or in initial
   // parser inspections when the user has not told us anything about separators
   // or headers.
-  public static ParseSetup guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) { return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null); }
+  public static ParseSetup guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) {
+    return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null, null);
+  }
 
-  private static final ParserType guessTypeOrder[] = {ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
-  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  private static final ParserType guessTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
+  public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[][] domains ) {
     switch( pType ) {
       case CSV:      return      CsvParser.CSVguessSetup(bits,sep,ncols,singleQuotes,checkHeader,columnNames);
       case SVMLight: return SVMLightParser.   guessSetup(bits);
       case XLS:      return      XlsParser.   guessSetup(bits);
+      case ARFF:     return      ARFFParser.  guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames);
       case AUTO:
         for( ParserType pType2 : guessTypeOrder ) {
           try {
-            ParseSetup ps = guessSetup(bits,pType2,sep,ncols,singleQuotes,checkHeader,columnNames);
+            ParseSetup ps = guessSetup(bits,pType2,sep,ncols,singleQuotes,checkHeader,columnNames,domains);
             if( ps != null && ps._isValid ) return ps;
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
     }
-    return new ParseSetup( false, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, null, checkHeader );
+    return new ParseSetup( false, 0, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, domains, null, checkHeader, null);
   }
 
   // Guess a local setup that is compatible to the given global (this) setup.
