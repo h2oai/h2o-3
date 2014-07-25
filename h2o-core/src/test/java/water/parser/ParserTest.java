@@ -25,7 +25,7 @@ public class ParserTest extends TestUtil {
     return k;
   }
 
-  private static boolean compareDoubles(double a, double b, double threshold) {
+  public static boolean compareDoubles(double a, double b, double threshold) {
     if( a==b ) return true;
     if( ( Double.isNaN(a) && !Double.isNaN(b)) ||
         (!Double.isNaN(a) &&  Double.isNaN(b)) ) return false;
@@ -328,10 +328,10 @@ public class ParserTest extends TestUtil {
     }
   }
 
-  String[] getDataForSeparator(char sep, String[] data) {
+  public static String[] getDataForSeparator(char sep, String[] data) {
     return getDataForSeparator('|', sep, data);
   }
-  String[] getDataForSeparator(char placeholder, char sep, String[] data) {
+  static String[] getDataForSeparator(char placeholder, char sep, String[] data) {
     String[] result = new String[data.length];
     for (int i = 0; i < data.length; i++) {
       result[i] = data[i].replace(placeholder, sep);

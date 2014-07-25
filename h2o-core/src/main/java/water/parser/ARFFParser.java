@@ -60,28 +60,32 @@ class ARFFParser extends CsvParser {
         if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
           return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
         } else {
+          if (data[i].length != 3 ) {
+            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          }
           labels[i] = data[i][1];
+          String type = data[i][2];
           domains[i] = null;
-          if (data[i][2].equalsIgnoreCase("NUMERIC")) {
+          if (type.equalsIgnoreCase("NUMERIC") || type.equalsIgnoreCase("REAL") || type.equalsIgnoreCase("INTEGER")) {
             ctypes[i] = ParseDataset2.FVecDataOut.NCOL;
             continue;
           }
-          else if (data[i][2].equalsIgnoreCase("DATE")) {
+          else if (type.equalsIgnoreCase("DATE")) {
             ctypes[i] = ParseDataset2.FVecDataOut.TCOL;
             continue;
           }
-          else if (data[i][2].equalsIgnoreCase("STRING")) {
+          else if (type.equalsIgnoreCase("STRING")) {
             ctypes[i] = ParseDataset2.FVecDataOut.SCOL;
             continue;
           }
-          else if (data[i][2].equalsIgnoreCase("UUID")) { //extension of ARFF
+          else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
             ctypes[i] = ParseDataset2.FVecDataOut.ICOL;
             continue;
           }
-          else if (data[i][2].equalsIgnoreCase("RELATIONAL")) {
+          else if (type.equalsIgnoreCase("RELATIONAL")) {
             throw new UnsupportedOperationException("Relational ARFF format is not supported.");
           }
-          else if (data[i][2].startsWith("{") && data[i][2].endsWith("}")) {
+          else if (type.startsWith("{") && type.endsWith("}")) {
             domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
             if (domains[i][0].length() > 0) {
               // case of {A,B,C} (valid list of factors)

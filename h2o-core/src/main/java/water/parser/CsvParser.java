@@ -1,7 +1,5 @@
 package water.parser;
 
-import water.util.Log;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -61,6 +59,9 @@ class CsvParser extends Parser {
 
 MAIN_LOOP:
     while (true) {
+      boolean forcedEnum =  dout instanceof ParseDataset2.FVecDataOut && ((ParseDataset2.FVecDataOut)dout).have_ctypes && _setup._ctypes != null && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.ECOL;
+      boolean forcedString =  dout instanceof ParseDataset2.FVecDataOut && ((ParseDataset2.FVecDataOut)dout).have_ctypes &&  _setup._ctypes != null && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.SCOL;
+
       switch (state) {
         // ---------------------------------------------------------------------
         case SKIP_LINE:
@@ -237,6 +238,15 @@ MAIN_LOOP:
           }
           // fallthrough NUMBER_END
         case NUMBER_END:
+
+          // forced
+          if (forcedString || forcedEnum ) {
+            state = STRING;
+            offset = tokenStart - 1;
+            str.set(bits, tokenStart, 0);
+            break; // parse as String token now
+          }
+
           if (c == CHAR_SEPARATOR && quotes == 0) {
             exp = exp - fractionDigits;
             dout.addNumCol(colIdx,number,exp);

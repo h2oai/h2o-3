@@ -560,7 +560,7 @@ public class ParseDataset2 extends Job<Frame> {
     protected AppendableVec []_vecs;
     protected final Enum [] _enums;
     protected transient byte [] _ctypes;
-//    protected final boolean have_ctypes;
+    public final boolean have_ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
@@ -577,8 +577,8 @@ public class ParseDataset2 extends Job<Frame> {
     static final public byte SCOL = 5; // String  col typ
 
     private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum[] enums, byte[] ctypes){
-      _ctypes = ctypes;
-//      have_ctypes = (_ctypes != null);
+      _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
+      have_ctypes = (_ctypes != null);
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
       _enums = enums;
@@ -586,7 +586,6 @@ public class ParseDataset2 extends Job<Frame> {
       _cidx = cidx;
       _vg = vg;
       _vecIdStart = vecIdStart;
-      _ctypes = MemoryManager.malloc1(ncols);
       for(int i = 0; i < ncols; ++i)
         _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
     }

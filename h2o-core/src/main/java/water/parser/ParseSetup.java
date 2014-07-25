@@ -60,7 +60,6 @@ public final class ParseSetup extends Iced {
 
   final boolean hasHeaders() { return _columnNames != null; }
   final long headerLines() { return _headerlines; }
-  final boolean hasColumnTypes() { return _domains != null; }
 
   public Parser parser() {
     switch( _pType ) {
