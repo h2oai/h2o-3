@@ -407,7 +407,7 @@ public class ParserTestARFF extends TestUtil {
 
   // split files into header + csv data
   @Test
-//  @Ignore
+  @Ignore
   public void testFolder1() {
     Frame k1 = null, k2 = null;
     try {
@@ -423,7 +423,7 @@ public class ParserTestARFF extends TestUtil {
 
   // split files into header/data + more data
   @Test
-//  @Ignore
+  @Ignore
   public void testFolder2() {
     Frame k1 = null, k2 = null;
     try {

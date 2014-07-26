@@ -591,7 +591,7 @@ public class ParserTest extends TestUtil {
   }
 
   // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an enum column
-  @Test public void testBinaryWithNA() {
+  @Test @Ignore public void testBinaryWithNA() {
     String[] data = new String[] {
             "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
             "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
