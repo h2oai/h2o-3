@@ -1,15 +1,19 @@
 package hex.kmeans;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 import hex.ModelBuilder;
+import hex.schemas.KMeansV2;
+import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * Scalable K-Means++ (KMeans||)<br>
@@ -28,6 +32,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   public KMeans( KMeansModel.KMeansParameters parms) {
     super(Key.make("KMeansModel"),"K-means",parms,parms._max_iters/*work is max iterations*/);
   }
+
+  public ModelBuilderSchema schema() { return new KMeansV2(); }
+
 
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job train() {

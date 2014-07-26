@@ -1,6 +1,19 @@
 package water.api;
 
-import java.io.*;
+import water.AutoBuffer;
+import water.H2O;
+import water.Iced;
+import water.NanoHTTPD;
+import water.fvec.Frame;
+import water.nbhm.NonBlockingHashMap;
+import water.parser.ParseSetupHandler;
+import water.util.Log;
+import water.util.RString;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -8,16 +21,6 @@ import java.net.ServerSocket;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import water.H2O;
-import water.AutoBuffer;
-import water.Iced;
-import water.NanoHTTPD;
-import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
-import water.parser.ParseSetupHandler;
-import water.util.RString;
-import water.fvec.Frame;
 
 /** This is a simple web server. */
 public class RequestServer extends NanoHTTPD {
@@ -122,6 +125,9 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list");
     register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
+
+    register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
+    register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {

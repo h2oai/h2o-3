@@ -3,3 +3,5 @@ default:
 	gulp
 
 clean:
+
+check:

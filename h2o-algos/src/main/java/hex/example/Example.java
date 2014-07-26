@@ -1,13 +1,15 @@
 package hex.example;
 
-import java.util.Arrays;
-
 import hex.ModelBuilder;
+import hex.schemas.ExampleV2;
+import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.*;
-import water.util.ArrayUtils;
+import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /**
  *  Example model builder... building a trivial ExampleModel
@@ -19,6 +21,8 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
     super(Key.make("ExampleModel"),"Example",parms,parms._max_iters/*work is max iterations*/);
     _parms = parms;
   }
+
+  public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example train() {
     return (Example)start(new ExampleDriver());

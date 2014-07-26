@@ -1,6 +1,9 @@
+import hex.ModelBuilder;
+import hex.example.Example;
+import hex.kmeans.KMeans;
+import water.H2O;
 
 import java.io.File;
-import water.H2O;
 
 public class H2OApp {
   public static void main( String[] args ) {
@@ -20,6 +23,9 @@ public class H2OApp {
     // An empty Job for testing job polling
     // TODO: put back:
     // H2O.registerGET("/SlowJob", SlowJobHandler.class, "work", "/SlowJob", "Slow Job", "Model");
+
+    ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
+    ModelBuilder.registerModelBuilder("example", Example.class);
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();

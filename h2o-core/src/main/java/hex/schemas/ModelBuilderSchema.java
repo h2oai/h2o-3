@@ -10,7 +10,7 @@ import water.util.DocGen;
 
 import java.util.Properties;
 
-abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Schema<B,S>, P extends ModelParametersSchema> extends Schema<B,S> {
+abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S, P>, P extends ModelParametersSchema> extends Schema<B,S> {
   // Input fields
   @API(help="Model builder parameters.")
   P parameters;
@@ -21,6 +21,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Schem
 
   /** Factory method to create the model-specific parameters schema. */
   abstract public P createParametersSchema();
+  abstract public B createImpl();
 
   public S fillFromParms(Properties parms) {
     this.parameters = createParametersSchema();
@@ -38,7 +39,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Schem
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.title("Model Building Started");
+    ab.title("KMeans Started");
     String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }
