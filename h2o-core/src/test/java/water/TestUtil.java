@@ -83,6 +83,14 @@ public class TestUtil {
     return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
   }
 
+  /** Find & parse a CSV file, allowing single quotes to keep strings together.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  protected Frame parse_test_file_single_quotes( String fname ) {
+    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
+    return water.parser.ParseDataset2.parse(Key.make(),new Key[]{nfs._key}, true, true /*single quote*/, 0);
+  }
+
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
@@ -185,9 +193,21 @@ public class TestUtil {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0].len(); rows++ ) {
-          double d0 = c0.at0(rows), d1 = c1.at0(rows);
-          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-            _unequal = true; return;
+          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
+            if (! (c0.isNA0(rows) && c1.isNA0(rows))) {
+              long lo0 = c0.at16l0(rows), lo1 = c1.at16l0(rows);
+              long hi0 = c0.at16h0(rows), hi1 = c1.at16h0(rows);
+              if (lo0 != lo1 || hi0 != hi1) {
+                _unequal = true;
+                return;
+              }
+            }
+          } else {
+            double d0 = c0.at0(rows), d1 = c1.at0(rows);
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
+              _unequal = true;
+              return;
+            }
           }
         }
       }

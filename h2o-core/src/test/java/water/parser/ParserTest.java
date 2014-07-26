@@ -4,6 +4,7 @@ import org.junit.*;
 
 import water.*;
 import water.fvec.*;
+import water.util.Log;
 
 public class ParserTest extends TestUtil {
   private final double NaN = Double.NaN;
@@ -587,5 +588,112 @@ public class ParserTest extends TestUtil {
     Key r1 = Key.make("r1");
     ParseDataset2.parse(r1, k);
     testParsed(r1,pows10_exp);
+  }
+
+  // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an enum column
+  @Test public void testBinaryWithNA() {
+    String[] data = new String[] {
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+            "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "T", "F", "0",
+    };
+
+    double[][] exp = new double[][] {
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN),
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN),
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN),
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN),
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN),
+            ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(Double.NaN), ard(1), ard(0), ard(Double.NaN),
+    };
+
+    for (char separator : SEPARATORS) {
+      String[] dataset = getDataForSeparator(separator, data);
+
+      StringBuilder sb1 = new StringBuilder();
+      for( String ds : dataset ) sb1.append(ds).append("\n");
+      Key k1 = makeByteVec(sb1.toString());
+      Key r1 = Key.make("r1");
+      ParseDataset2.parse(r1, k1);
+      testParsed(r1,exp);
+
+      StringBuilder sb2 = new StringBuilder();
+      for( String ds : dataset ) sb2.append(ds).append("\r\n");
+      Key k2 = makeByteVec(sb2.toString());
+      Key r2 = Key.make("r2");
+      ParseDataset2.parse(r2, k2);
+      testParsed(r2,exp);
+    }
+  }
+
+  @Test public void testParseAll() {
+    String[] files = new String[]{
+            "smalldata/./airlines/allyears2k_headers.zip",
+            "smalldata/./covtype/covtype.20k.data",
+            "smalldata/./iris/iris.csv",
+            "smalldata/./iris/iris_wheader.csv",
+            "smalldata/./junit/40k_categoricals.csv.gz",
+            "smalldata/./junit/arff/folder1/iris.csv",
+            "smalldata/./junit/arff/folder1/iris.header",
+            "smalldata/./junit/arff/folder1/readme",
+            "smalldata/./junit/arff/folder2/iris1.arff",
+            "smalldata/./junit/arff/folder2/iris2.arff",
+            "smalldata/./junit/arff/folder2/readme",
+            "smalldata/./junit/arff/iris.arff",
+            "smalldata/./junit/arff/iris_spacesep.arff",
+            "smalldata/./junit/arff/iris_weirdsep.arff",
+            "smalldata/./junit/arff/iris_weirdsep2.arff",
+            "smalldata/./junit/arff/string.arff",
+            "smalldata/./junit/arff/time.arff",
+            "smalldata/./junit/arff/uuid.arff",
+            "smalldata/./junit/benign.xls",
+            "smalldata/./junit/bestbuy_train_10k.csv.gz",
+            "smalldata/./junit/cars.csv",
+            "smalldata/./junit/iris.csv",
+            "smalldata/./junit/iris.csv.gz",
+            "smalldata/./junit/iris.csv.zip",
+            "smalldata/./junit/iris.xls",
+            "smalldata/./junit/is_NA.csv",
+            "smalldata/./junit/one-line-dataset-0.csv",
+            "smalldata/./junit/one-line-dataset-1dos.csv",
+            "smalldata/./junit/one-line-dataset-1unix.csv",
+            "smalldata/./junit/one-line-dataset-2dos.csv",
+            "smalldata/./junit/one-line-dataset-2unix.csv",
+            "smalldata/./junit/parse_folder/prostate_0.csv",
+            "smalldata/./junit/parse_folder/prostate_1.csv",
+            "smalldata/./junit/parse_folder/prostate_2.csv",
+            "smalldata/./junit/parse_folder/prostate_3.csv",
+            "smalldata/./junit/parse_folder/prostate_4.csv",
+            "smalldata/./junit/parse_folder/prostate_5.csv",
+            "smalldata/./junit/parse_folder/prostate_6.csv",
+            "smalldata/./junit/parse_folder/prostate_7.csv",
+            "smalldata/./junit/parse_folder/prostate_8.csv",
+            "smalldata/./junit/parse_folder/prostate_9.csv",
+            "smalldata/./junit/parse_folder_gold.csv",
+            "smalldata/./junit/pros.xls",
+            "smalldata/./junit/string.csv",
+            "smalldata/./junit/syn_2659x1049.csv.gz",
+            "smalldata/./junit/test_parse_mix.csv",
+            "smalldata/./junit/test_quote.csv",
+            "smalldata/./junit/test_time.csv",
+            "smalldata/./junit/test_uuid.csv",
+            "smalldata/./junit/time.csv",
+            "smalldata/./junit/two-lines-dataset.csv",
+            "smalldata/./junit/uuid.csv",
+            "smalldata/./junit/ven-11.csv",
+            "smalldata/./logreg/prostate.csv",
+    };
+    for (String f : files) {
+      try {
+        Log.info("Trying to parse " + f);
+        Frame fr = parse_test_file_single_quotes(f);
+        fr.delete();
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
   }
 }
