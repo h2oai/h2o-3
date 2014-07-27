@@ -1,4 +1,4 @@
-package water.testframework.onenode;
+package testframework.onenode;
 
 import water.H2O;
 

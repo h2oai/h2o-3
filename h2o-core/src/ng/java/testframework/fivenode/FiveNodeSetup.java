@@ -1,6 +1,6 @@
-package water.testframework.fivenode;
+package testframework.fivenode;
 
-import water.testframework.multinode.MultiNodeSetup;
+import testframework.multinode.MultiNodeSetup;
 
 public class FiveNodeSetup extends MultiNodeSetup {
   public FiveNodeSetup() {

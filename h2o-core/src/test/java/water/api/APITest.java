@@ -5,7 +5,6 @@ import org.junit.*;
 
 import java.util.Properties;
 import water.*;
-import water.testframework.priority.Priority;
 
 public class APITest extends TestUtil {
   static boolean testRan = false;
