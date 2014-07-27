@@ -601,12 +601,13 @@ public class NewChunk extends Chunk {
         }
     }
     if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/enums
-    boolean sparse;
+    boolean sparse = false;
     // sparse? treat as sparse iff we have at least MIN_SPARSE_RATIOx more zeros than nonzeros
     if(MIN_SPARSE_RATIO*(_naCnt + _nzCnt) < len()) {
       set_sparse(_naCnt + _nzCnt);
       sparse = true;
-    } else sparse = (sparseLen() != len());
+    } else if (sparseLen() != len())
+      cancel_sparse();
 
     // If the data is UUIDs there's not much compression going on
     if( _ds != null && _ls != null )
