@@ -1,4 +1,4 @@
-package water.testframework.multinode;
+package testframework.multinode;
 
 import water.H2O;
 

@@ -28,6 +28,28 @@ dependencies {
   compile "org.javassist:javassist:3.15.0-GA"
 
   testCompile "junit:junit:4.+"
+  testCompile "org.testng:testng:6.8"
+}
+
+sourceSets {
+  test {
+    java {
+      // Slam in a new fully specified list of directories.
+      // We don't want to pick up any of the default directories.
+      // Specifically, src/test has a bunch of junit stuff that doesn't run
+      // properly from gradle or the IDE.
+      ArrayList<String> arr = new ArrayList<String>()
+      arr.add('src/ng/java')
+      setSrcDirs(arr)
+    }
+  }
+}
+
+test {
+  useTestNG() {
+    suites new File(projectDir, 'src/ng/resources/testng-multinode.xml')
+    suites new File(projectDir, 'src/ng/resources/testng.xml')
+  }
 }
 
 javadoc {
@@ -36,9 +58,9 @@ javadoc {
 }
 
 jar {
-   manifest {
-      attributes 'Main-Class': 'water.H2O'
-   }
+  manifest {
+    attributes 'Main-Class': 'water.H2O'
+  }
 }
 
 task testMultiNode(type: Exec) {

@@ -1,27 +1,38 @@
 package water;
 
-import static org.junit.Assert.*;
-import org.junit.*;
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.lang.reflect.*;
 import water.fvec.*;
+import testframework.multinode.MultiNodeSetup;
 
-public class TestUtil {
+public class TestNGUtil {
   private static boolean _stall_called_before = false;
   protected static int _initial_keycnt = 0;
-  protected static int MINCLOUDSIZE;
+  protected final int _minCloudSize;
 
-  public TestUtil() { this(1); }
-  public TestUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
+  public TestNGUtil() {
+    _minCloudSize = 1;
+  }
+
+  public TestNGUtil(int minCloudSize) {
+    _minCloudSize = minCloudSize;
+  }
+
+  public int getMinCloudSize() {
+    return _minCloudSize;
+  }
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
     if (! _stall_called_before) {
       if (H2O.getCloudSize() < x) {
-        // Figure out how to build cloud here, if desired.
+        MultiNodeSetup mns = new MultiNodeSetup(x);
+        mns.setupCloud();
         _stall_called_before = true;
       }
     }
@@ -30,10 +41,8 @@ public class TestUtil {
   }
 
   @BeforeClass()
-  public static void setupCloud() {
-    H2O.main(new String[] {});
-    _stall_called_before = true; // multinode-in-1-jvm launch off by default
-    stall_till_cloudsize(MINCLOUDSIZE);
+  public void setupCloud() {
+    stall_till_cloudsize(_minCloudSize);
     _initial_keycnt = H2O.store_size();
   }
 
@@ -48,7 +57,7 @@ public class TestUtil {
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }
-    assertTrue("No keys leaked", leaked_keys <= 0);
+    assertTrue(leaked_keys <= 0, "No keys leaked");
     _initial_keycnt = H2O.store_size();
   }
 
@@ -79,14 +88,6 @@ public class TestUtil {
   protected Frame parse_test_file( String fname ) {
     NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
     return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
-  }
-
-  /** Find & parse a CSV file, allowing single quotes to keep strings together.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
-  protected Frame parse_test_file_single_quotes( String fname ) {
-    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
-    return water.parser.ParseDataset2.parse(Key.make(),new Key[]{nfs._key}, true, true /*single quote*/, 0);
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
@@ -191,21 +192,9 @@ public class TestUtil {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0].len(); rows++ ) {
-          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
-            if (! (c0.isNA0(rows) && c1.isNA0(rows))) {
-              long lo0 = c0.at16l0(rows), lo1 = c1.at16l0(rows);
-              long hi0 = c0.at16h0(rows), hi1 = c1.at16h0(rows);
-              if (lo0 != lo1 || hi0 != hi1) {
-                _unequal = true;
-                return;
-              }
-            }
-          } else {
-            double d0 = c0.at0(rows), d1 = c1.at0(rows);
-            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
-              _unequal = true;
-              return;
-            }
+          double d0 = c0.at0(rows), d1 = c1.at0(rows);
+          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
+            _unequal = true; return;
           }
         }
       }
@@ -231,30 +220,5 @@ public class TestUtil {
       }
     }
     @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
-  }
-
-  // Run tests from cmd-line since testng doesn't seem to be able to it.
-  public static void main( String[] args ) {
-    H2O.main(new String[0]);
-    for( String arg : args ) {
-      try {
-        System.out.println("=== Starting "+arg);
-        Class clz = Class.forName(arg);
-        Method main = clz.getDeclaredMethod("main");
-        main.invoke(null);
-      } catch( InvocationTargetException ite ) {
-        Throwable e = ite.getCause();
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } catch( Exception e ) {
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } finally {
-        System.out.println("=== Stopping "+arg);
-      }
-    }
-    try { Thread.sleep(100); } catch( Exception ignore ) { }
-    if( args.length != 0 )
-      UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 }

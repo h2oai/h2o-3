@@ -1,0 +1,13 @@
+<suite name="Water multi-node suite" verbose="2">
+    <test name="five node cloud">
+        <groups>
+            <run>
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="testframework.fivenode" />
+            <package name="water.*" />
+        </packages>
+    </test>
+</suite>

@@ -1,0 +1,14 @@
+<suite name="Hex single-node suite" verbose="2">
+    <test name="one node cloud">
+        <groups>
+            <run>
+                <exclude name="multi-node" />
+                <exclude name="NOPASS" />
+            </run>
+        </groups>
+        <packages>
+            <package name="testframework.onenode" />
+            <package name="hex.*" />
+        </packages>
+    </test>
+</suite>
