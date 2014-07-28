@@ -1,5 +1,6 @@
 package testframework.onenode;
 
+import org.testng.annotations.BeforeSuite;
 import water.H2O;
 
 public class OneNodeSetup {
@@ -12,6 +13,7 @@ public class OneNodeSetup {
    * The primary node blocks for cloud initialization and runs the test
    * program flow inside TestNG.
    */
+  @BeforeSuite
   public void setupCloud() {
     System.out.println("OneNodeSetup called...");
 

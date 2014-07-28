@@ -1,5 +1,6 @@
 package testframework.multinode;
 
+import org.testng.annotations.BeforeSuite;
 import water.H2O;
 
 public class MultiNodeSetup {
@@ -14,10 +15,17 @@ public class MultiNodeSetup {
    * The H2O nodes communicate with each other using sockets even though
    * they all live in the same process.
    */
-  int _numNodes;
+  final int _numNodes;
+  final boolean _multiJvm;
 
   public MultiNodeSetup(int numNodes) {
     _numNodes = numNodes;
+    _multiJvm = false;
+  }
+
+  public MultiNodeSetup(int numNodes, boolean multiJvm) {
+    _numNodes = numNodes;
+    _multiJvm = multiJvm;
   }
 
   /**
@@ -27,16 +35,22 @@ public class MultiNodeSetup {
    * The primary node blocks for cloud initialization and runs the test
    * program flow inside TestNG.
    */
+  @BeforeSuite
   public void setupCloud() {
-    System.out.println("MultiNodeSetup creating " + _numNodes + " nodes...");
+    System.out.println("MultiNodeSetup creating " + _numNodes + " nodes (multiJvm is " + (_multiJvm ? "true" : "false") + ") ...");
 
     // Leader node, where the tests execute from.
     H2O.main(new String[]{});
 
     // Secondary nodes, skip if expected to be pre-built
-    if( System.getProperty("ai.h2o.skipNodeCreation") == null )
-      for( int i = 0; i < _numNodes-1; i++ )
-        new NodeContainer(new String[0]).start();
+    if( System.getProperty("ai.h2o.skipNodeCreation") == null ) {
+      // Let the leader establish himself before starting the secondary nodes.
+      H2O.waitForCloudSize(1, 10000);
+
+      for (int i = 0; i < _numNodes - 1; i++) {
+        new NodeContainer(i + 1, new String[0], _multiJvm).start();
+      }
+    }
 
     H2O.waitForCloudSize(_numNodes, 10000);
 
