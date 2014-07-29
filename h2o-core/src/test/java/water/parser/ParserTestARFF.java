@@ -172,7 +172,35 @@ public class ParserTestARFF extends TestUtil {
     String[] data = new String[] {
             "@RELATION type",
             "",
-            "@ATTRIBUTE enum  {0,1.324e-13,-2}",
+            "@ATTRIBUTE enum  {0,1.324e-13,-2}", //with dictionary
+            "",
+            "@DATA",
+            "0",
+            "1.324e-13",
+            "-2",
+    };
+    byte[] exp_types = new byte[]{
+            ParseDataset2.FVecDataOut.ECOL
+    };
+    String[] exp_names = new String[]{
+            "enum"
+    };
+    final int len = 3;
+
+    String[] dataset = ParserTest.getDataForSeparator(',', data);
+
+    testTypes(dataset, exp_types, len, "\n");
+    testTypes(dataset, exp_types, len, "\r\n");
+    testColNames(dataset, exp_names, len, "\n");
+    testColNames(dataset, exp_names, len, "\r\n");
+  }
+
+  // force numbers to be enums
+  @Test public void testType3() {
+    String[] data = new String[] {
+            "@RELATION type",
+            "",
+            "@ATTRIBUTE enum ENUM", // no dictionary
             "",
             "@DATA",
             "0",
@@ -198,7 +226,7 @@ public class ParserTestARFF extends TestUtil {
   // force numbers to be strings
   @Test
   @Ignore  //string creation in NewChunk is not yet implemented
-  public void testType3() {
+  public void testType4() {
     String[] data = new String[] {
             "@RELATION type",
             "",
