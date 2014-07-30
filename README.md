@@ -74,7 +74,7 @@ Step 4. Run the top-level gradle build:
 
 If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
-### Setup on Mac (with Homebrew)
+### Setup on OS X
 If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It makes package management for OS X easy.
 
 Step 1. Install JDK
@@ -86,15 +86,15 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
 Step 2. Install Node.js and npm
 
+Using Hombrew:
+
     brew install node
+
+Otherwise install from the [NodeJS website](http://nodejs.org/download/).
 
 Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
-If you don't already have a Git client,
-
-    brew install git
-
-Download and update h2o-dev source codes:
+OS X should have come with Git installed, so just download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
