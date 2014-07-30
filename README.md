@@ -111,7 +111,7 @@ If you encounter errors run again with --stacktrace for more instructions on mis
 Step 1. Install Node.js and npm
 
     sudo apt-get install npm
-    ln -s /usr/bin/nodejs /usr/bin/node
+    sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 
 Step 2. Install JDK
