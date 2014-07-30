@@ -6,7 +6,7 @@
 // The top-level h2o-dev.jar file that gets produced is empty and not usable
 // for anything.  Use the jar file produced by the h2o-web subproject.
 //
-apply from: 'ci/java.gradle'
+apply from: 'gradle/java.gradle'
 
 // The build scrit settings to fetch plugins and put them on 
 // classpath
@@ -44,7 +44,7 @@ subprojects {
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
     // to all projects
-    apply from: "$rootDir/ci/publish.gradle"
+    apply from: "$rootDir/gradle/publish.gradle"
 }
 
 // Cliff command-line 'gradle make'.  Not required for standard gradle build.

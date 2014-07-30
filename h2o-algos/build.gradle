@@ -1,4 +1,4 @@
-apply from: '../ci/java.gradle'
+apply from: '../gradle/java.gradle'
 
 description = "H2O Algorithms"
 

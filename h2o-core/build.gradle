@@ -1,6 +1,6 @@
 description = "H2O Core"
 
-apply from: '../ci/java.gradle'
+apply from: '../gradle/java.gradle'
 
 mainClassName = "water.H2O"
 
@@ -74,4 +74,4 @@ task cpLibs(type: Copy) {
   into '../lib'
 }
 
-apply from: '../ci/javaIgnoreSymbolFile.gradle'
+apply from: '../gradle/javaIgnoreSymbolFile.gradle'
