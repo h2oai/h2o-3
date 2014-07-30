@@ -51,3 +51,8 @@ subprojects {
 task make(dependsOn:":h2o-core:cpLibs", type:Exec) {
   commandLine 'make', '-s'
 }
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.0'
+}
+
