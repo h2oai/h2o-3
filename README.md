@@ -107,7 +107,6 @@ If you encounter errors run again with --stacktrace for more instructions on mis
 
 ### Setup on Ubuntu 14.04
 
-
 Step 1. Install Node.js and npm
 
     sudo apt-get install npm
@@ -136,6 +135,20 @@ Step 4. Run the top-level gradle build:
     ./gradlew build -x test
 
 If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+
+### Setup on Ubuntu 13.10
+
+Step 1. Install Node.js and npm
+
+On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so we use a fresh install from the npm website.
+
+    sudo apt-get install node
+    sudo ln -s /usr/bin/nodejs /usr/bin/node
+    wget http://npmjs.org/install.sh
+    sudo apt-get install curl
+    sudo sh install.sh
+
+Step 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 ### Setting up your preferred build environment
 
