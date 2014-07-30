@@ -49,7 +49,7 @@ Getting started with H2O development requires JDK 1.7+, Node.js, and Gradle.  We
 
 Step 1. Install JDK
 
-Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. Check to make sure the command prompt is detecting the correct Java version by running:
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
@@ -79,7 +79,7 @@ If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It m
 
 Step 1. Install JDK
 
-Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Check to make sure the command prompt is detecting the correct Java version by running:
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
@@ -116,7 +116,7 @@ Step 1. Install Node.js and npm
 
 Step 2. Install JDK
 
-Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). Check to make sure the command prompt is detecting the correct Java version by running:
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
