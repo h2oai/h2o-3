@@ -40,6 +40,118 @@ Extensions
 One of our first powerful extension will be a small tool belt of stats and math legos for Fraud Detection. Dealing with Unbalanced Datasets is a key focus for this.
 Users will use JSON/REST-api via H2O.R through connects the Analytics Engine into R-IDE/RStudio.
 
+Building H2O Dev
+--------------------------------
+
+Getting started with H2O development requires JDK 1.7+, Node.js, and Gradle.  We use the Gradle wrapper ( gradlew ) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
+
+### Setup on Windows
+
+Step 1. Install JDK
+
+Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. Check to make sure the command prompt is detecting the correct Java version by running:
+
+    javac -version
+
+
+Step 2. Install Node.js and npm
+
+Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended.
+
+
+Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+
+If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
+
+Download and update h2o-dev source codes:
+
+    git clone https://github.com/0xdata/h2o-dev
+
+Step 4. Run the top-level gradle build:
+
+    cd /h2o-dev
+    gradlew.bat build -x test
+
+If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+
+### Setup on Mac (with Homebrew)
+If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It makes package management for OS X easy.
+
+Step 1. Install JDK
+
+Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Check to make sure the command prompt is detecting the correct Java version by running:
+
+    javac -version
+
+
+Step 2. Install Node.js and npm
+
+    brew install node
+
+Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+
+If you don't already have a Git client,
+
+    brew install git
+
+Download and update h2o-dev source codes:
+
+    git clone https://github.com/0xdata/h2o-dev
+
+Step 4. Run the top-level gradle build:
+
+    cd /h2o-dev
+    ./gradlew build -x test
+
+If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+
+### Setup on Ubuntu 14.04
+
+
+Step 1. Install Node.js and npm
+
+    sudo apt-get install npm
+    ln -s /usr/bin/nodejs /usr/bin/node
+
+
+Step 2. Install JDK
+
+Install either [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or [Java 1.8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). Check to make sure the command prompt is detecting the correct Java version by running:
+
+    javac -version
+
+Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+
+If you don't already have a Git client,
+
+    sudo apt-get install git
+
+Download and update h2o-dev source codes:
+
+    git clone https://github.com/0xdata/h2o-dev
+
+Step 4. Run the top-level gradle build:
+
+    cd /h2o-dev
+    ./gradlew build -x test
+
+If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+
+### Setting up your preferred build environment
+
+For the command-line developer:
+
+    gradle make
+    make
+    
+For users of Intellij's IDEAJ, project files can be generated with:
+
+    gradle idea
+
+For users of Eclipse, project files can be generated with:
+
+    gradle eclipse
+
 Community
 ---------------------------------
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
