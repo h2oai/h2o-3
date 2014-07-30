@@ -54,7 +54,7 @@ task installNpmPackages(type: Exec) {
 
 task installBowerPackages(type: Exec) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    commandLine 'cmd', '/c'
+    commandLine 'cmd', '/c', 'node_modules\\.bin\\bower', 'install'
   } else {
     commandLine 'node_modules/.bin/bower', 'install'
   }
@@ -62,7 +62,7 @@ task installBowerPackages(type: Exec) {
 
 task buildClientWithGulp(type: Exec) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    commandLine 'cmd', '/c'
+    commandLine 'cmd', '/c', 'node_modules\\.bin\\gulp'
   } else {
     commandLine 'node_modules/.bin/gulp'
   }
@@ -70,10 +70,11 @@ task buildClientWithGulp(type: Exec) {
 
 task cleanClientWithGulp(type: Exec) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    commandLine 'cmd', '/c'
+    commandLine 'cmd', '/c', 'node_modules\\.bin\\gulp', 'clean'
   } else {
     commandLine 'node_modules/.bin/gulp', 'clean'
   }
+  ignoreExitValue = true
 }
 
 installNpmPackages.dependsOn checkClientPrerequisites
