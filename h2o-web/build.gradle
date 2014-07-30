@@ -46,8 +46,6 @@ Use the official installer at http://nodejs.org/download/
 """
   checkPrerequisite( 'node', 'Could not detect a node.js installation on this system.\nInstall node.js and try again.\n' + nodeInstallationInstruction )
   checkPrerequisite( 'npm', "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction )
-  checkPrerequisite( 'bower', "Could not find command 'bower'.\nInstall 'bower' using the command 'npm install -g bower' and try again." )
-  checkPrerequisite( 'gulp', "Could not find command 'gulp'.\nInstall 'gulp' using the command 'npm install -g gulp' and try again." )
 }
 
 task installNpmPackages(type: Exec) {
@@ -55,15 +53,27 @@ task installNpmPackages(type: Exec) {
 }
 
 task installBowerPackages(type: Exec) {
-  commandLine = getOsSpecificCommandLine([ 'bower', 'install' ])
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    commandLine 'cmd', '/c'
+  } else {
+    commandLine 'node_modules/.bin/bower', 'install'
+  }
 }
 
 task buildClientWithGulp(type: Exec) {
-  commandLine = getOsSpecificCommandLine([ 'gulp' ])
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    commandLine 'cmd', '/c'
+  } else {
+    commandLine 'node_modules/.bin/gulp'
+  }
 }
 
 task cleanClientWithGulp(type: Exec) {
-  commandLine = getOsSpecificCommandLine([ 'gulp', 'clean' ])
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    commandLine 'cmd', '/c'
+  } else {
+    commandLine 'node_modules/.bin/gulp', 'clean'
+  }
 }
 
 installNpmPackages.dependsOn checkClientPrerequisites
