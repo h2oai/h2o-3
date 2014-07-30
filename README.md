@@ -69,7 +69,7 @@ Download and update h2o-dev source codes:
 
 Step 4. Run the top-level gradle build:
 
-    cd /h2o-dev
+    cd h2o-dev
     gradlew.bat build -x test
 
 If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
