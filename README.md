@@ -43,7 +43,7 @@ Users will use JSON/REST-api via H2O.R through connects the Analytics Engine int
 Building H2O Dev
 --------------------------------
 
-Getting started with H2O development requires JDK 1.7+, Node.js, and Gradle.  We use the Gradle wrapper ( gradlew ) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper ( gradlew ) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
 ### Setup on Windows
 
