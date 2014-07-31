@@ -1,11 +1,12 @@
 package hex.kmeans;
 
 import hex.schemas.KMeansModelV2;
-import water.*;
+import water.H2O;
+import water.Key;
+import water.Model;
 import water.api.ModelSchema;
-import water.api.Schema;
-import water.fvec.Frame;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 

@@ -10,20 +10,22 @@ import water.util.BeanUtils;
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansV2Parameters> {
 
   public static final class KMeansV2Parameters extends ModelParametersSchema<KMeansParameters, KMeansV2Parameters> {
+    public String[] fields() { return new String[] {"K", "max_iters", "normalize", "seed", "init" }; }
+
     // Input fields
-    @API(help = "Number of clusters", required = true)
+    @API(help = "Number of clusters", required = true, validation = { "K > 0", "K < 100000" })
     public int K;
 
     @API(help="Maximum training iterations.")
     public int max_iters;        // Max iterations
 
-    @API(help = "Normalize columns")
+    @API(help = "Normalize columns", level = API.Level.secondary)
     public boolean normalize;
 
-    @API(help = "RNG Seed")
+    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"K", "max_iters"} */ )
     public long seed;
 
-    @API(help = "Initialization mode", values = "random,plusplus,farthest")
+    @API(help = "Initialization mode", values = { "None", "PlusPlus", "Furthest" }) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
 
     @Override public KMeansV2Parameters fillFromImpl(KMeansParameters parms) {

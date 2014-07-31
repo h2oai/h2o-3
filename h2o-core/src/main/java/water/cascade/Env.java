@@ -3,11 +3,12 @@ package water.cascade;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
-import java.util.ArrayList;
-import java.util.HashSet;
 import water.util.IcedHashMap;
 import water.util.IcedInt;
+import water.util.Log;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 
 /** Execute a set of instructions in the context of an H2O cloud.
 *
@@ -20,7 +21,7 @@ import water.util.IcedInt;
 *  scoping, functions are first class, etc.).
 *
 *  For efficiency, reference counting is employed to recycle objects already in use rather than creating copies upon
-*  copies (à la R). When a Vec is `pushed` on to the stack, its reference count is incremented by 1. When a Vec is
+*  copies (a la R). When a Vec is `pushed` on to the stack, its reference count is incremented by 1. When a Vec is
 *  `popped` off of the stack, its reference count is decremented by 1. When the reference count is 0, the Env instance
 *  will dispose of the object. All objects live and die by the Env's that create them. That means that any object not
 *  created by an Env instance shalt not be DKV.removed. Every Env has a set of these.

@@ -1,16 +1,19 @@
 package water;
 
+import water.util.Log;
+
 import java.io.*;
 import java.lang.reflect.Array;
 import java.net.*;
 import java.nio.*;
-import java.nio.channels.*;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import water.util.Log;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -21,7 +24,8 @@ import water.util.Log;
  *
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  */
-public final class AutoBuffer {
+public final class
+        AutoBuffer {
   // The direct ByteBuffer for schlorping data about
   ByteBuffer _bb;
 
@@ -1350,7 +1354,7 @@ public final class AutoBuffer {
     return put1(']');
   }
   @SuppressWarnings("unused")  public AutoBuffer putJSON  ( String name, Freezable f   ) { return putJSONStr(name).put1(':').putJSON  (f); }
-  @SuppressWarnings("unused")  public AutoBuffer putJSONA ( String name, Freezable f[] ) { return putJSONStr(name).put1(':').putJSONA (f); }
+  public AutoBuffer putJSONA ( String name, Freezable f[] ) { return putJSONStr(name).put1(':').putJSONA (f); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJSONStr("" + value); }

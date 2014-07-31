@@ -14,11 +14,20 @@ public @interface API {
 
   enum Direction {INPUT, OUTPUT, INOUT}
 
-  // A Short help text to appear beside the input
+  enum Level {critical, secondary, expert}
+
+  // A short help text to appear beside the input
   String help();
+
+  // The label that should be displayed for the field if the name is insufficient
+  String label() default "";
+
 
   // Is this field required?
   boolean required() default false;
+
+  // How important is this field?  The web UI uses the level to do a slow reveal of the parameters.
+  Level level() default Level.critical;
 
   // Is this field an input, output or inout?
   Direction direction() default Direction.INPUT; // TODO: should this be INOUT?
@@ -41,12 +50,12 @@ public @interface API {
   // API language is to call out a ?validation URL:
   //       "Cloud?validation=some_java_func"  calls
   //       boolean CloudV1Handler.some_java_func(CloudV1 cv1)
-  String validation() default "";
+  String[] validation() default {};
 
   // A short JS-like expression, same as "validation" above, that returns a
   // selection of valid values.  Used for e.g. drop-down menus where response
   // times are interactive.
-  String values() default "";
+  String[] values() default {};
 
   boolean json() default true;
 }

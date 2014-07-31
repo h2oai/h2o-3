@@ -9,6 +9,8 @@ import water.util.BeanUtils;
 public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleV2Parameters> {
 
   public static final class ExampleV2Parameters extends ModelParametersSchema<ExampleModel.ExampleParameters, ExampleV2Parameters> {
+    public String[] fields() { return new String[] {"max_iters"}; }
+
     // Input fields
     @API(help="Maximum training iterations.")
     public int max_iters;        // Max iterations
