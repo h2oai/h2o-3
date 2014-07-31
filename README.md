@@ -154,16 +154,17 @@ Step 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 For the command-line developer:
 
-    gradle make
+    ./gradlew make
+    make clean
     make
     
 For users of Intellij's IDEAJ, project files can be generated with:
 
-    gradle idea
+    ./gradlew idea
 
 For users of Eclipse, project files can be generated with:
 
-    gradle eclipse
+    ./gradlew eclipse
 
 Community
 ---------------------------------
