@@ -1,14 +1,16 @@
 package water;
 
+import water.api.ModelSchema;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.TransfVec;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
-import water.api.ModelSchema;
-import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.api.Schema;
 
 /**
  * A Model models reality (hopefully).

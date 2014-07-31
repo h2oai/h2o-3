@@ -64,6 +64,8 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
       throw H2O.fail("Caught exception accessing field: " + field_name + " for schema object: " + parameters + ": " + e.toString());
     }
 
+    ab.putJSONStr("job", job.toString());
+    ab.put1(',');
     ab.putJSONA("parameters", metadata);
     return ab;
   }
