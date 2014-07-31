@@ -1,5 +1,6 @@
 package water.api;
 
+import water.AutoBuffer;
 import water.Key;
 import water.Model;
 import water.util.BeanUtils;
@@ -65,4 +66,19 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
     return (S)this; // have to cast because the definition of S doesn't include ModelSchema
   }
+
+  @Override
+  public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    ab.putJSONStr("key", key.toString());
+    ab.put1(',');
+
+    // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
+    ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema());
+    ab.put1(',');
+
+    // Let output render itself:
+    ab.putJSON ("output", output);
+    return ab;
+  }
+
 }
