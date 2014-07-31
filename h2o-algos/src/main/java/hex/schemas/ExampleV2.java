@@ -6,9 +6,9 @@ import water.api.*;
 import water.fvec.Frame;
 import water.util.BeanUtils;
 
-public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleV2Parameters> {
+public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleParametersV2> {
 
-  public static final class ExampleV2Parameters extends ModelParametersSchema<ExampleModel.ExampleParameters, ExampleV2Parameters> {
+  public static final class ExampleParametersV2 extends ModelParametersSchema<ExampleModel.ExampleParameters, ExampleParametersV2> {
     public String[] fields() { return new String[] {"max_iters"}; }
 
     // Input fields
@@ -21,13 +21,13 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
       BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
-  } // ExampleV2Parameters
+  } // ExampleParametersV2
 
 
   //==========================
   // Custom adapters go here
 
-  @Override public ExampleV2Parameters createParametersSchema() { return new ExampleV2Parameters(); }
+  @Override public ExampleParametersV2 createParametersSchema() { return new ExampleParametersV2(); }
 
   // Version&Schema-specific filling into the impl
   @Override public Example createImpl() {

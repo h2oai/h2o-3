@@ -2,13 +2,12 @@ package hex.schemas;
 
 import hex.example.ExampleModel;
 import water.H2O;
-import water.Key;
 import water.api.*;
 import water.util.BeanUtils;
 
 public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput, ExampleModelV2 > {
 
-  public static final class ExampleModelV2Output extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelV2Output> {
+  public static final class ExampleModelOutputV2 extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelOutputV2> {
     @API(help="Iterations executed")
     public double iters;
 
@@ -22,19 +21,19 @@ public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.Examp
       return impl;
     }
 
-    @Override public ExampleModelV2Output fillFromImpl( ExampleModel.ExampleOutput impl) {
+    @Override public ExampleModelOutputV2 fillFromImpl( ExampleModel.ExampleOutput impl) {
       BeanUtils.copyProperties(this, impl, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return this;
     }
-  } // ExampleModelV2Output
+  } // ExampleModelOutputV2
 
 
   //==========================
   // Custom adapters go here
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
-  public ExampleV2.ExampleV2Parameters createParametersSchema() { return new ExampleV2.ExampleV2Parameters(); }
-  public ExampleModelV2Output createOutputSchema() { return new ExampleModelV2Output(); }
+  public ExampleV2.ExampleParametersV2 createParametersSchema() { return new ExampleV2.ExampleParametersV2(); }
+  public ExampleModelOutputV2 createOutputSchema() { return new ExampleModelOutputV2(); }
 
   // Version&Schema-specific filling into the impl
   @Override public ExampleModel createImpl() {

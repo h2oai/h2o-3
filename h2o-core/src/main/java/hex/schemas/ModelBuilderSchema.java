@@ -46,9 +46,9 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    // Build ModelParameterSchema objects for each field, and the call writeJSON on the array
+    // Build ModelParameterSchemaV2 objects for each field, and the call writeJSON on the array
     String[] fields = parameters.fields();
-    ModelParameterSchema[] metadata = new ModelParameterSchema[fields.length];
+    ModelParameterSchemaV2[] metadata = new ModelParameterSchemaV2[fields.length];
 
     String field_name = null;
     try {
@@ -57,7 +57,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
         Field f = parameters.getClass().getField(field_name);
 
         // TODO: cache a default parameters schema
-        ModelParameterSchema schema = new ModelParameterSchema(parameters, createParametersSchema(), f);
+        ModelParameterSchemaV2 schema = new ModelParameterSchemaV2(parameters, createParametersSchema(), f);
         metadata[i] = schema;
       }
     } catch (NoSuchFieldException e) {

@@ -7,9 +7,9 @@ import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 import water.util.BeanUtils;
 
-public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansV2Parameters> {
+public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
-  public static final class KMeansV2Parameters extends ModelParametersSchema<KMeansParameters, KMeansV2Parameters> {
+  public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
     public String[] fields() { return new String[] {"K", "max_iters", "normalize", "seed", "init" }; }
 
     // Input fields
@@ -28,7 +28,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     @API(help = "Initialization mode", values = { "None", "PlusPlus", "Furthest" }) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
 
-    @Override public KMeansV2Parameters fillFromImpl(KMeansParameters parms) {
+    @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
       super.fillFromImpl(parms);
       this.init = KMeans.Initialization.PlusPlus;
       return this;
@@ -45,7 +45,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
   //==========================
   // Custom adapters go here
 
-  @Override public KMeansV2Parameters createParametersSchema() { return new KMeansV2Parameters(); }
+  @Override public KMeansParametersV2 createParametersSchema() { return new KMeansParametersV2(); }
 
   // TODO: refactor ModelBuilder creation
   @Override public KMeans createImpl() {

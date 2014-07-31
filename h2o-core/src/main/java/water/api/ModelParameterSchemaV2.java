@@ -12,7 +12,7 @@ import java.lang.reflect.Field;
 /**
  * An instance of a ModelParameters schema contains the metadata for a single Model build parameter (e.g., K for KMeans).
  */
-public class ModelParameterSchema extends Schema<Iced, ModelParameterSchema> {
+public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
   @API(help="name in the JSON, e.g. \"lambda\"")
   public String name;
 
@@ -52,10 +52,10 @@ public class ModelParameterSchema extends Schema<Iced, ModelParameterSchema> {
   public String[] values;
 
 
-  public ModelParameterSchema() {
+  public ModelParameterSchemaV2() {
   }
 
-  public ModelParameterSchema(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
+  public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     try {
       this.name = f.getName();
       Object o;
@@ -95,13 +95,13 @@ public class ModelParameterSchema extends Schema<Iced, ModelParameterSchema> {
     }
   }
 
-  public ModelParameterSchema fillFromImpl(Iced iced) {
+  public ModelParameterSchemaV2 fillFromImpl(Iced iced) {
     BeanUtils.copyProperties(this, iced, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     return this;
   }
 
   public Iced createImpl() {
     // should never get called
-    throw H2O.fail("createImpl should never get called in ModelParameterSchema!");
+    throw H2O.fail("createImpl should never get called in ModelParameterSchemaV2!");
   }
 }

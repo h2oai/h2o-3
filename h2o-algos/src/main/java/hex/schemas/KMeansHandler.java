@@ -3,8 +3,6 @@ package hex.schemas;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
 import water.H2O;
-import water.Iced;
-import water.Job;
 import water.api.Handler;
 
 public class KMeansHandler extends Handler<KMeans, KMeansV2> {
@@ -20,7 +18,7 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
     assert parms != null; /* impl._job = */
     builder.train();
     KMeansV2 schema = schema(version); // TODO: superclass!
-    schema.parameters = new KMeansV2.KMeansV2Parameters();
+    schema.parameters = new KMeansV2.KMeansParametersV2();
     schema.job = builder._key;
     return schema;
   }

@@ -2,7 +2,6 @@ package hex.schemas;
 
 import hex.kmeans.KMeansModel;
 import water.DKV;
-import water.Key;
 import water.api.*;
 import water.api.ModelSchema;
 import water.fvec.Frame;
@@ -11,7 +10,7 @@ import water.util.BeanUtils;
 
 public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput, KMeansModelV2> {
 
-  public static final class KMeansModelV2Output extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelV2Output> {
+  public static final class KMeansModelOutputV2 extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelOutputV2> {
     // Input fields
     @API(help="Maximum training iterations.")
     public int max_iters;        // Max iterations
@@ -39,7 +38,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     }
 
     // Version&Schema-specific filling from the handler
-    @Override public KMeansModelV2Output fillFromImpl( KMeansModel.KMeansOutput impl) {
+    @Override public KMeansModelOutputV2 fillFromImpl( KMeansModel.KMeansOutput impl) {
       // TODO: Weh?
       // if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
       // InspectHandler ih = (InspectHandler)h;
@@ -49,18 +48,18 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     }
 
 
-  } // KMeansModelV2Output
+  } // KMeansModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
-  public KMeansV2.KMeansV2Parameters createParametersSchema() { return new KMeansV2.KMeansV2Parameters(); }
-  public KMeansModelV2Output createOutputSchema() { return new KMeansModelV2Output(); }
+  public KMeansV2.KMeansParametersV2 createParametersSchema() { return new KMeansV2.KMeansParametersV2(); }
+  public KMeansModelOutputV2 createOutputSchema() { return new KMeansModelOutputV2(); }
 
   //==========================
   // Custom adapters go here
 
   // Version&Schema-specific filling into the impl
   @Override public KMeansModel createImpl() {
-    KMeansV2.KMeansV2Parameters p = ((KMeansV2.KMeansV2Parameters)this.parameters);
+    KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
     KMeansModel.KMeansParameters parms = p.createImpl();
     return new KMeansModel( key, (Frame)DKV.get(p.src).get(), parms, new KMeansModel.KMeansOutput(), 0 );
   }
