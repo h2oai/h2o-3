@@ -68,8 +68,11 @@ public abstract class JarHash {
   public static InputStream getResource2(String uri) {
     try {
       // Jar file mode.
-      if (JARPATH != null)
-        return ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
+      InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
+      if( is != null ) return is;
+      InputStream is2 = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
+      if( is2 != null ) return is2;
+      // That failed, so try all registered locations
       for( File f : RESOURCE_FILES ) {
         File f2 = new File(f,uri);
         if( f2.exists() )

@@ -1,13 +1,19 @@
 package water;
 
 import static org.junit.Assert.*;
-import org.junit.*;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.lang.reflect.*;
+import java.util.ArrayList;
+import org.junit.*;
+import org.junit.rules.*;
+import org.junit.runners.model.Statement;
+import org.junit.runner.Description;
 import water.fvec.*;
+import water.util.Log;
+import water.util.Timer;
 
+@Ignore("Support for tests, but no actual tests here")
 public class TestUtil {
   private static boolean _stall_called_before = false;
   protected static int _initial_keycnt = 0;
@@ -52,6 +58,40 @@ public class TestUtil {
     _initial_keycnt = H2O.store_size();
   }
 
+
+  /** Execute this rule before each test to print test name and test class */
+  @Rule public TestRule logRule = new TestRule() {
+
+    @Override public Statement apply(Statement base, Description description) {
+      Log.info("###########################################################");
+      Log.info("  * Test class name:  " + description.getClassName());
+      Log.info("  * Test method name: " + description.getMethodName());
+      Log.info("###########################################################");
+      return base;
+    }
+  };
+
+  @Rule public TestRule timerRule = new TestRule() {
+    @Override public Statement apply(Statement base, Description description) {
+      return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
+    };
+    class TimerStatement extends Statement {
+      private final Statement _base;
+      private final String _tname;
+      Throwable _ex;
+      public TimerStatement(Statement base, String tname) { _base = base; _tname = tname;}
+      @Override public void evaluate() throws Throwable {
+        Timer t = new Timer();
+        try {
+          _base.evaluate();
+        } catch( Throwable ex ) {
+          _ex=ex;
+        } finally {
+          Log.info("#### TEST "+_tname+" EXECUTION TIME: " + t.toString());
+        }
+      }
+    }
+  };
 
   // ==== Data Frame Creation Utilities ====
 
