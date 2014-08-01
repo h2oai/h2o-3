@@ -1,0 +1,10 @@
+apply from: 'http://tellurianring.com/projects/gradle-plugins/gradle-release/1.2/apply.groovy'
+
+release {
+  tagPrefix = "RELEASE-"
+  // Safe point - do releases only from release branch - can be deleted in future
+  //requireBranch = "release"
+}
+
+// Upload artifacts after release
+createReleaseTag.dependsOn uploadArchives

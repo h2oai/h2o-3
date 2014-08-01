@@ -34,3 +34,6 @@ Rsandbox
 .DS_Store
 .DS_Store?
 h2o-dev.ipr
+node_modules/
+private/
+

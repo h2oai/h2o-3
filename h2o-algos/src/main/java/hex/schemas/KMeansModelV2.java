@@ -11,11 +11,7 @@ import water.util.BeanUtils;
 public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput, KMeansModelV2> {
 
   public static final class KMeansModelOutputV2 extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelOutputV2> {
-    // Input fields
-    @API(help="Maximum training iterations.")
-    public int max_iters;        // Max iterations
-
-    // Output fields
+    // Output fields; input fields are in the parameters list
     @API(help="Clusters[K][features]")
     public double[/*K*/][/*features*/] clusters;
 

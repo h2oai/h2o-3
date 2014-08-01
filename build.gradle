@@ -7,6 +7,8 @@
 // for anything.  Use the jar file produced by the h2o-web subproject.
 //
 apply from: 'gradle/java.gradle'
+// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
+apply from: 'gradle/release.gradle'
 
 // The build scrit settings to fetch plugins and put them on 
 // classpath
