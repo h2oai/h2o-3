@@ -146,14 +146,14 @@ public class DeepLearningProstateTest extends TestUtil {
                             }
                             if (valid == null ) valid = frame;
 //                            double threshold = 0;
-                            if (mymodel.isClassifier()) {
+                            if (mymodel._output.isClassifier()) {
                               Frame pred = mymodel.score(valid);
                               StringBuilder sb = new StringBuilder();
 
                               AUC auc = new AUC();
 //                              double error = 0;
                               // binary
-                              if (mymodel.nclasses()==2) {
+                              if (mymodel._output.nclasses()==2) {
                                 auc.actual = valid;
                                 auc.vactual = valid.vecs()[resp];
                                 auc.predict = pred;
@@ -249,7 +249,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               long best_samples = 0;
                               for (DeepLearningModel.Errors err : mymodel.scoring_history()) {
                                 float e;
-                                if (mymodel.isClassifier()) {
+                                if (mymodel._output.isClassifier()) {
                                   e = (float) (validation ? err.valid_err : err.train_err);
                                 } else {
                                   e = (float) (validation ? err.valid_mse : err.train_mse);
@@ -268,7 +268,7 @@ public class DeepLearningProstateTest extends TestUtil {
                               Frame bestPredict = bestmodel.score(valid);
                               double bestErr = bestmodel.calcError(valid, valid.vecs()[resp], bestPredict, bestPredict, validation ? "validation" : "training",
                                       true, bestmodel.get_params().max_confusion_matrix_size, new ConfusionMatrix(),
-                                      bestmodel.nclasses() == 2 ? new AUC() : null, null); //presence of AUC object allows optimal threshold to be used for bestErr calculation
+                                      bestmodel._output.nclasses() == 2 ? new AUC() : null, null); //presence of AUC object allows optimal threshold to be used for bestErr calculation
 
                               Log.info("Validation: " + validation);
                               Log.info("Best_model's samples : " + bestmodel.model_info().get_processed_total() + ".");

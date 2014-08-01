@@ -54,8 +54,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
     double error = Double.POSITIVE_INFINITY;
     // populate AUC
     if (auc != null) {
-      assert(isClassifier());
-      assert(nclasses() == 2);
+      assert(_output.isClassifier());
+      assert(_output.nclasses() == 2);
       auc.actual = ftest;
       auc.vactual = vactual;
       auc.predict = fpreds;
@@ -72,7 +72,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
       cm.predict = fpreds;
       cm.vpredict = fpreds.vecs()[0]; // prediction (either label or regression target)
       cm.execImpl();
-      if (isClassifier()) {
+      if (_output.isClassifier()) {
         if (auc != null) {
           //override the CM with the one computed by AUC (using optimal threshold)
           //Note: must still call invoke above to set the domains etc.
@@ -94,7 +94,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
     }
     // populate HitRatio
     if (hr != null) {
-      assert(isClassifier());
+      assert(_output.isClassifier());
       hr.actual = ftest;
       hr.vactual = vactual;
       hr.predict = hitratio_fpreds;
@@ -113,14 +113,14 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_names.length; // Last chunk is for the response
-    for( int i=0; i<_names.length-1; i++ ) // Do not include last value since it can contains a response
+    assert chks.length>=_output._names.length; // Last chunk is for the response
+    for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
       tmp[i] = chks[i].at0(row_in_chunk);
     float[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if (isClassifier() && _priorClassDist != null && _modelClassDist != null) {
-      assert(scored.length == nclasses()+1); //1 label + nclasses probs
+    if (_output.isClassifier() && _priorClassDist != null && _modelClassDist != null) {
+      assert(scored.length == _output.nclasses()+1); //1 label + nclasses probs
       double probsum=0;
       for( int c=1; c<scored.length; c++ ) {
         final double original_fraction = _priorClassDist[c-1];
