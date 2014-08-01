@@ -6,6 +6,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class ExampleTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  
   @Test public void testIris() {
     ExampleModel kmm = null;
     Frame fr = null;
