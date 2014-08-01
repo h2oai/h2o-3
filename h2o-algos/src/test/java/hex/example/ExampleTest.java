@@ -10,7 +10,10 @@ public class ExampleTest extends TestUtil {
     ExampleModel kmm = null;
     Frame fr = null;
     try {
+      long start = System.currentTimeMillis();
+      System.out.println("Start Parse");
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
       parms._src = fr._key;

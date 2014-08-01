@@ -1,11 +1,12 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearning;
+import static water.util.ModelUtils.getPrediction;
 
+import org.junit.Ignore;
+import hex.deeplearning.DeepLearning;
 import java.text.DecimalFormat;
 import java.util.Random;
 
-import static water.util.ModelUtils.getPrediction;
 
 /**
  * James McCaffrey's MLP on Iris.
@@ -14,6 +15,7 @@ import static water.util.ModelUtils.getPrediction;
  * <nl>
  * http://channel9.msdn.com/Events/Build/2013/2-401
  */
+@Ignore
 public class DeepLearningMLPReference {
   static final DecimalFormat _format = new DecimalFormat("0.000");
 

@@ -41,12 +41,6 @@ jar {
   }
 }
 
-// Actually run the tests by building a cluster of free-running JVMs first.
-task testMultiNode(type: Exec) {
-  dependsOn compileTestJava
-  commandLine 'bash', './testMultiNode.sh'
-}
-
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -57,7 +51,7 @@ task testMultiNode(type: Exec) {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn testMultiNode
+  dependsOn testMultiNode, testJar
 
   // Defeat task 'test' by running no tests.
   exclude '**'

@@ -11,3 +11,25 @@ compileJava {
     options.debug = true 
 }
 
+// Actually run the tests by building a cluster of free-running JVMs first.
+task testMultiNode(type: Exec) {
+  dependsOn compileTestJava
+  commandLine 'bash', './testMultiNode.sh'
+}
+
+jar {
+  archiveName = "${baseName}.${extension}"
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    baseName = "test-${project.name}"
+    from sourceSets.test.output
+}
+
+configurations {
+    tests
+}
+
+artifacts {
+    tests testJar
+}

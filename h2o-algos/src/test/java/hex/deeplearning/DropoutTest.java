@@ -1,15 +1,19 @@
 package hex.deeplearning;
 
 import static org.junit.Assert.assertTrue;
+
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.util.ArrayUtils;
-
 import java.util.Arrays;
 import java.util.Random;
 
-public class DropoutTest {
+public class DropoutTest extends water.TestUtil {
 
-  @Test
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+
+  @Test @Ignore
   public void test() throws Exception {
     final int units = 1000;
 

@@ -6,5 +6,22 @@ dependencies {
   compile project(":h2o-core")
 
   testCompile "junit:junit:4.+"
-//  testCompile project(path: ":h2o-core", configuration: 'tests')
+  testCompile project(path: ":h2o-core", configuration: 'tests')
+}
+
+// The default 'test' behavior is broken in that it does not grok clusters.
+// For H2O, all tests need to be run on a cluster, where each JVM is
+// "free-running" - it's stdout/stderr are NOT hooked by another process.  If
+// they are hooked (e.g., by the gradle driver process) then the stdout/err get
+// buffered and when all CPUs are maxed out (happens over a large fraction of
+// the test run) no output is visible.  If the JVMs then crash (again, common
+// enough), we get NO output for the test run.  So instead we need to arrange a
+// complete cluster of free-running JVMs and redirect all output (at the OS
+// level) to files - then scrape the files later for test results.
+test {
+  dependsOn ":h2o-core:test"
+  dependsOn testMultiNode, testJar
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
 }

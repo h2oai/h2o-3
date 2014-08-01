@@ -58,12 +58,12 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
   public final DeepLearning get_params() { return model_info.get_params(); }
 //  @Override public final Request2 job() { return get_params(); }
 
-  public float error() { return (float) (isClassifier() ? cm().err() : mse()); }
+  public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
   @Override
   public int compareTo(DeepLearningModel o) {
-    if (o.isClassifier() != isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
-    if (o.nclasses() != nclasses()) throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
+    if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
+    if (o._output.nclasses() != _output.nclasses()) throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
     return (error() < o.error() ? -1 : error() > o.error() ? 1 : 0);
   }
 
@@ -715,7 +715,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         _timeLastScoreStart = now;
         // compute errors
         Errors err = new Errors();
-        err.classification = isClassifier();
+        err.classification = _output.isClassifier();
         assert(err.classification == get_params().classification);
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -723,9 +723,9 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         err.training_samples = model_info().get_processed_total();
         err.score_training_samples = ftrain.numRows();
         err.train_confusion_matrix = new ConfusionMatrix();
-        final int hit_k = Math.min(nclasses(), get_params().max_hit_ratio_k);
+        final int hit_k = Math.min(_output.nclasses(), get_params().max_hit_ratio_k);
 //        if (err.classification && nclasses()==2) err.trainAUC = new AUC();
-        if (err.classification && nclasses() > 2 && hit_k > 0) {
+        if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
           err.train_hitratio = new HitRatio();
           err.train_hitratio.set_max_k(hit_k);
         }
@@ -740,17 +740,17 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
 
         trainPredict.delete();
 
-        final boolean adaptCM = (isClassifier() && vadaptor.needsAdaptation2CM());
+        final boolean adaptCM = (_output.isClassifier() && vadaptor.needsAdaptation2CM());
         if (err.validation) {
           assert ftest != null;
           err.score_validation_samples = ftest.numRows();
           err.valid_confusion_matrix = new ConfusionMatrix();
 //          if (err.classification && nclasses()==2) err.validAUC = new AUC();
-          if (err.classification && nclasses() > 2 && hit_k > 0) {
+          if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
             err.valid_hitratio = new HitRatio();
             err.valid_hitratio.set_max_k(hit_k);
           }
-          final String adaptRespName = vadaptor.adaptedValidationResponse(responseName());
+          final String adaptRespName = vadaptor.adaptedValidationResponse(_output.responseName());
           Vec adaptCMresp = null;
           if (adaptCM) {
             Vec[] v = ftest.vecs();
@@ -852,8 +852,8 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         Log.err("Canceling job since the model is unstable (exponential growth observed).");
         Log.err("Try a bounded activation function or regularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.");
         keep_running = false;
-      } else if ( (isClassifier() && last_scored().train_err <= get_params().classification_stop)
-              || (!isClassifier() && last_scored().train_mse <= get_params().regression_stop) ) {
+      } else if ( (_output.isClassifier() && last_scored().train_err <= get_params().classification_stop)
+              || (!_output.isClassifier() && last_scored().train_mse <= get_params().regression_stop) ) {
         Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
         keep_running = false;
       }
@@ -895,7 +895,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
     ((Neurons.Input)neurons[0]).setInput(-1, data);
     DeepLearningTask.step(-1, neurons, model_info, false, null);
     float[] out = neurons[neurons.length - 1]._a.raw();
-    if (isClassifier()) {
+    if (_output.isClassifier()) {
       assert(preds.length == out.length+1);
       for (int i=0; i<preds.length-1; ++i) {
         preds[i+1] = out[i];

@@ -15,6 +15,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     // Iterations executed
     public int _iters;
     public double[] _maxs;
+    @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
   }
 
   ExampleModel( Key selfKey, Frame fr, ExampleParameters parms, ExampleOutput output) {
@@ -29,5 +30,4 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
   }
 
   @Override protected String errStr() { throw H2O.unimpl(); }
-  @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
 }
