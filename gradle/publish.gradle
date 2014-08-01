@@ -2,6 +2,7 @@ apply plugin: 'nexus'
 
 modifyPom {
     project {
+      name project.name
       // Basic info
       url 'https://github.com/0xdata/h2o'
       inceptionYear '2013'
@@ -32,6 +33,14 @@ modifyPom {
       issueManagement {
         system = 'Jira'
         url    = 'http://jira.0xdata.com'
+      }
+      // Developer information
+      developers {
+        developer {
+          id 'support'
+          name '0xdata Support'
+          email 'support@0xdata.com'
+        }
       }
     }
 }
