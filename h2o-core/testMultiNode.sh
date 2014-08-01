@@ -12,7 +12,7 @@ JVM="nice java -ea -cp build/classes/main;build/classes/test;build;../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
-JUNIT_TESTS_BOOT="water.api.APITest"
+JUNIT_TESTS_BOOT="water.AAA_PreCloudLock"
 # Too slow for normal junit runs
 JUNIT_TESTS_SLOW="water.KVTest\|water.parser.ParseProgressTest\|water.fvec.WordCountBigTest"
 

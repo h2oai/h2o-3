@@ -27,7 +27,7 @@ public class RequestServer extends NanoHTTPD {
 
   private static final int DEFAULT_VERSION = 2;
 
-  static RequestServer SERVER;
+  static public RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
   private static final String _htmlTemplateFromFile = loadTemplate("/page.html");

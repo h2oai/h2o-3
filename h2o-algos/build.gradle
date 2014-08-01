@@ -6,5 +6,5 @@ dependencies {
   compile project(":h2o-core")
 
   testCompile "junit:junit:4.+"
-  testCompile project(path: ":h2o-core", configuration: 'tests')
+//  testCompile project(path: ":h2o-core", configuration: 'tests')
 }

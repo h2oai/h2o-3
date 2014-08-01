@@ -9,7 +9,7 @@ import water.fvec.NFSFileVec;
 import water.util.UnsafeUtils;
 
 public class KVTest extends TestUtil {
-  KVTest() { super(2); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(3); }
 
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a

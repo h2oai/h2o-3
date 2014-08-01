@@ -1,15 +1,16 @@
-package water.api;
+package water;
 
 import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.util.Properties;
 import water.*;
+import water.api.*;
 
-public class APITest extends TestUtil {
+public class AAA_PreCloudLock extends TestUtil {
   static boolean testRan = false;
 
-  @BeforeClass() public static void setup() { new TestUtil(2); setupCloud(); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   private static void stall() {
     stall_till_cloudsize(2);
