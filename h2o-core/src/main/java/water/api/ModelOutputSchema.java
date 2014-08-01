@@ -7,6 +7,13 @@ import water.Model;
  */
 abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
 
+  @API(help="Column names.")
+  public String[] names;
+
+  @API(help="Domains for categorical (enum) columns.")
+  public String[][] domains;
+
+
   public ModelOutputSchema() {
   }
 
