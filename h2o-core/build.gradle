@@ -28,28 +28,6 @@ dependencies {
   compile "org.javassist:javassist:3.15.0-GA"
 
   testCompile "junit:junit:4.+"
-  testCompile "org.testng:testng:6.8"
-}
-
-sourceSets {
-  test {
-    java {
-      // Slam in a new fully specified list of directories.
-      // We don't want to pick up any of the default directories.
-      // Specifically, src/test has a bunch of junit stuff that doesn't run
-      // properly from gradle or the IDE.
-      ArrayList<String> arr = new ArrayList<String>()
-      arr.add('src/ng/java')
-      setSrcDirs(arr)
-    }
-  }
-}
-
-test {
-  useTestNG() {
-    suites new File(projectDir, 'src/ng/resources/testng-multinode.xml')
-    suites new File(projectDir, 'src/ng/resources/testng.xml')
-  }
 }
 
 javadoc {
@@ -63,11 +41,29 @@ jar {
   }
 }
 
+// Actually run the tests by building a cluster of free-running JVMs first.
 task testMultiNode(type: Exec) {
-  commandLine './testMultiNode'
+  dependsOn compileTestJava
+  commandLine 'bash', './testMultiNode.sh'
 }
 
-// Cliff command-line copy libs.  Not required for standard gradle build.
+// The default 'test' behavior is broken in that it does not grok clusters.
+// For H2O, all tests need to be run on a cluster, where each JVM is
+// "free-running" - it's stdout/stderr are NOT hooked by another process.  If
+// they are hooked (e.g., by the gradle driver process) then the stdout/err get
+// buffered and when all CPUs are maxed out (happens over a large fraction of
+// the test run) no output is visible.  If the JVMs then crash (again, common
+// enough), we get NO output for the test run.  So instead we need to arrange a
+// complete cluster of free-running JVMs and redirect all output (at the OS
+// level) to files - then scrape the files later for test results.
+test {
+  dependsOn testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}
+
+// Copy libs for the external cluster shell launcher
 task cpLibs(type: Copy) {
   from configurations.compile.files 
   from configurations.testCompile.files 

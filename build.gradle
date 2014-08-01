@@ -47,11 +47,6 @@ subprojects {
     apply from: "$rootDir/gradle/publish.gradle"
 }
 
-// Cliff command-line 'gradle make'.  Not required for standard gradle build.
-task make(dependsOn:":h2o-core:cpLibs", type:Exec) {
-  commandLine 'make', '-s'
-}
-
 task wrapper(type: Wrapper) {
   gradleVersion = '2.0'
 }
