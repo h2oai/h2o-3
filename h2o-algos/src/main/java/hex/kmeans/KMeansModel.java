@@ -38,6 +38,10 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
     // Sum squared distance between each point and its cluster center, divided by rows.
     public double _mse;           // Total MSE, variance
+
+    @Override public ModelCategory getModelCategory() {
+      return Model.ModelCategory.Clustering;
+    }
   }
 
   public KMeansModel(Key selfKey, Frame fr, KMeansParameters parms, KMeansOutput output, int ncats) {
@@ -53,8 +57,8 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_names.length;
-    for( int i=0; i<_names.length; i++ )
+    assert chks.length>=_output._names.length;
+    for( int i=0; i<_output._names.length; i++ )
       tmp[i] = chks[i].at0(row_in_chunk);
     return score0(tmp,preds);
   }
@@ -66,10 +70,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
   @Override protected String errStr() {
     throw H2O.unimpl();
-  }
-
-  @Override public ModelCategory getModelCategory() {
-    return Model.ModelCategory.Clustering;
   }
 
 //  public static class KMeans2ModelView extends Request2 {

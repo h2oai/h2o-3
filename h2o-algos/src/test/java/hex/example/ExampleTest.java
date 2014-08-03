@@ -6,11 +6,16 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class ExampleTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  
   @Test public void testIris() {
     ExampleModel kmm = null;
     Frame fr = null;
     try {
+      long start = System.currentTimeMillis();
+      System.out.println("Start Parse");
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
       parms._src = fr._key;

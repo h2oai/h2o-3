@@ -7,11 +7,10 @@ import hex.deeplearning.Neurons.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
-
 import java.util.Random;
 
-
-public class NeuronsTest {
+public class NeuronsTest extends water.TestUtil {
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test @Ignore
   public void matrixVecTest() {
@@ -197,7 +196,7 @@ public class NeuronsTest {
     System.out.println("sparse col * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
   }
 
-  @Test
+  @Test @Ignore
   public void sparseTester() {
     DenseVector dv = new DenseVector(20);
     dv.set(3,0.21f);

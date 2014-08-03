@@ -1,10 +1,7 @@
 package water.util;
 
-import water.H2O;
-
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -36,6 +33,7 @@ public class BeanUtils {
 
     for (Field f : dest.getClass().getFields())
       dest_fields.put(f.getName(), f);
+
 
     for (Field f : origin.getClass().getFields())
       origin_fields.put(f.getName(), f);

@@ -7,7 +7,7 @@ import org.joda.time.format.DateTimeFormatter;
 /**
  * Simple Timer class.
  **/
-class Timer {
+public class Timer {
 
   private static final DateTimeFormatter longFormat = DateTimeFormat.forPattern("dd-MMM hh:mm:ss.SSS");
   private static final DateTimeFormatter shortFormat= DateTimeFormat.forPattern(       "hh:mm:ss.SSS");

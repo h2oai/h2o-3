@@ -1,14 +1,16 @@
 package water;
 
+import water.api.ModelSchema;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.TransfVec;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
-import water.api.ModelSchema;
-import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.api.Schema;
 
 /**
  * A Model models reality (hopefully).
@@ -20,25 +22,6 @@ import water.api.Schema;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Lockable<M> {
   Model( Key selfkey ) { super(selfkey); }
 
-  /** Columns used in the model and are used to match up with scoring data
-   *  columns.  The last name is the response column name. */
-  protected String _names[];
-  /** Returns number of input features */
-  public int nfeatures() { return _names.length - 1; }
-
-  /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
-   *  The last column holds the response col enums.  */
-  String _domains[][];
-
-  public String[] allNames() { return _names; }
-  public String responseName() { return   _names[  _names.length-1]; }
-  public String[] classNames() { return _domains[_domains.length-1]; }
-  public boolean isClassifier() { return classNames() != null ; }
-  public int nclasses() {
-    String cns[] = classNames();
-    return cns==null ? 1 : cns.length;
-  }
-
   public enum ModelCategory {
     Unknown,
     Binomial,
@@ -47,11 +30,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Clustering
   }
 
-  public ModelCategory getModelCategory() {
-    return (isClassifier() ?
-            (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
-            ModelCategory.Regression);
-  }
 
   /**
    * Model-specific parameter class.  Each model sub-class contains an instance of one of
@@ -71,11 +49,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * Model-specific output class.  Each model sub-class contains an instance of one of
    * these containing its "output": the pieces of the model needed for scoring.
    * E.g. KMeansModel has a KMeansOutput extending Model.Output which contains the
-   * clusters.
+   * clusters.  The output also includes the names, domains and other fields which are
+   * determined at training time.
    */
   public abstract static class Output<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
-    /* This class has no fields and no code */
-  }
+    /** Columns used in the model and are used to match up with scoring data
+     *  columns.  The last name is the response column name. */
+    public String _names[];
+    /** Returns number of input features */
+    public int nfeatures() { return _names.length - 1; }
+
+    /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
+     *  The last column holds the response col enums.  */
+    public String _domains[][];
+
+    public String[] allNames() { return _names; }
+    public String responseName() { return   _names[  _names.length-1]; }
+    public String[] classNames() { return _domains[_domains.length-1]; }
+    public boolean isClassifier() { return classNames() != null ; }
+    public int nclasses() {
+      String cns[] = classNames();
+      return cns==null ? 1 : cns.length;
+    }
+
+    public ModelCategory getModelCategory() {
+      return (isClassifier() ?
+              (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
+              ModelCategory.Regression);
+    }
+  } // Output
 
   public O _output; // TODO: move things around so that this can be protected
 
@@ -108,16 +110,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   /** Full constructor */
   public Model( Key selfKey, String names[], String domains[][], P parms, O output) {
     super(selfKey);
+
+    assert output != null;
+    _output = output;
+
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
     assert names.length > 1;
     assert names[names.length-1] != null; // Have a valid response-column name?
-    _names   = names;
-    _domains = domains;
+    _output._names   = names;
+    _output._domains = domains;
+
     assert parms != null;
     _parms = parms;
-    assert output != null;
-    _output = output;
   }
 
   /** Bulk score for given <code>fr</code> frame.
@@ -145,7 +150,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *         one column with predicted values.
    */
   public final Frame score(Frame fr, boolean adapt) {
-    int ridx = fr.find(responseName());
+    int ridx = fr.find(_output.responseName());
     if (ridx != -1) { // drop the response for scoring!
       fr = new Frame(fr);
       fr.remove(ridx);
@@ -171,38 +176,38 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * @return
    */
   private Frame scoreImpl(Frame adaptFrm) {
-    int ridx = adaptFrm.find(responseName());
+    int ridx = adaptFrm.find(_output.responseName());
     Vec vecs[] = adaptFrm.vecs();
     assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
-    assert nfeatures() == adaptFrm.numCols() : "Number of model features " + nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
-    assert vecs.length == _names.length-1 : "Scoring data set contains wrong number of columns: " + vecs.length  + " instead of " + (_names.length-1);
+    assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
+    assert vecs.length == _output._names.length-1 : "Scoring data set contains wrong number of columns: " + vecs.length  + " instead of " + (_output._names.length-1);
 
     // Create a new vector for response
     // If the model produces a classification/enum, copy the domain into the
     // result vector.
-    Vec v = adaptFrm.anyVec().makeZero(classNames());
+    Vec v = adaptFrm.anyVec().makeZero(_output.classNames());
     adaptFrm.add("predict",v);
-    if( nclasses() > 1 ) {
+    if( _output.nclasses() > 1 ) {
       String prefix = "";
-      for( int c=0; c<nclasses(); c++ ) // if any class is the same as column name in frame, then prefix all classnames
-        if (ArrayUtils.contains(adaptFrm._names, classNames()[c])) { prefix = "class_"; break; }
-      for( int c=0; c<nclasses(); c++ )
-        adaptFrm.add(prefix+classNames()[c],adaptFrm.anyVec().makeZero());
+      for( int c=0; c<_output.nclasses(); c++ ) // if any class is the same as column name in frame, then prefix all classnames
+        if (ArrayUtils.contains(adaptFrm._names, _output.classNames()[c])) { prefix = "class_"; break; }
+      for( int c=0; c<_output.nclasses(); c++ )
+        adaptFrm.add(prefix+_output.classNames()[c],adaptFrm.anyVec().makeZero());
     }
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        double tmp [] = new double[_names.length];
-        float preds[] = new float [nclasses()==1?1:nclasses()+1];
+        double tmp [] = new double[_output._names.length];
+        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
         int len = chks[0].len();
         for( int row=0; row<len; row++ ) {
           float p[] = score0(chks,row,tmp,preds);
           for( int c=0; c<preds.length; c++ )
-            chks[_names.length-1+c].set0(row,p[c]);
+            chks[_output._names.length-1+c].set0(row,p[c]);
         }
       }
     }.doAll(adaptFrm);
     // Return just the output columns
-    int x=_names.length-1, y=adaptFrm.numCols();
+    int x=_output._names.length-1, y=adaptFrm.numCols();
     return adaptFrm.extractFrame(x, y);
   }
 
@@ -216,13 +221,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
   /** Single row scoring, on a compatible set of data.  Fairly expensive to adapt. */
   public final float[] score( String names[], String domains[][], boolean exact, double row[] ) {
-    return score(adapt(names,domains,exact),row,new float[nclasses()]);
+    return score(adapt(names,domains,exact),row,new float[_output.nclasses()]);
   }
 
   /** Single row scoring, on a compatible set of data, given an adaption vector */
   public final float[] score( int map[][][], double row[], float[] preds ) {
     /*FIXME final int[][] colMap = map[map.length-1]; // Response column mapping is the last array
-    assert colMap.length == _names.length-1 : " "+Arrays.toString(colMap)+" "+Arrays.toString(_names);
+    assert colMap.length == _output._names.length-1 : " "+Arrays.toString(colMap)+" "+Arrays.toString(_output._names);
     double tmp[] = new double[colMap.length]; // The adapted data
     for( int i=0; i<colMap.length; i++ ) {
       // Column mapping, or NaN for missing columns
@@ -259,17 +264,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     // Make sure all are compatible
     for( int c=0; c<names.length;++c) {
             // Now do domain mapping
-      String ms[] = _domains[c];  // Model enum
+      String ms[] = _output._domains[c];  // Model enum
       String ds[] =  domains[c];  // Data  enum
       if( ms == ds ) { // Domains trivially equal?
       } else if( ms == null ) {
-        throw new IllegalArgumentException("Incompatible column: '" + _names[c] + "', expected (trained on) numeric, was passed a categorical");
+        throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) numeric, was passed a categorical");
       } else if( ds == null ) {
         if( exact )
-          throw new IllegalArgumentException("Incompatible column: '" + _names[c] + "', expected (trained on) categorical, was passed a numeric");
+          throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) categorical, was passed a numeric");
         throw H2O.unimpl();     // Attempt an asEnum?
       } else if( !Arrays.deepEquals(ms, ds) ) {
-        map[c] = getDomainMapping(_names[c], ms, ds, exact);
+        map[c] = getDomainMapping(_output._names[c], ms, ds, exact);
       } // null mapping is equal to identity mapping
     }
     return map;
@@ -285,13 +290,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *  frame). */
   public Frame[] adapt( final Frame fr, boolean exact) {
     Frame vfr = new Frame(fr); // To avoid modification of original frame fr
-    int ridx = vfr.find(_names[_names.length-1]);
+    int ridx = vfr.find(_output._names[_output._names.length-1]);
     if(ridx != -1 && ridx != vfr._names.length-1){ // Unify frame - put response to the end
       String n = vfr._names[ridx];
       vfr.add(n,vfr.remove(ridx));
     }
-    int n = ridx == -1?_names.length-1:_names.length;
-    String [] names = Arrays.copyOf(_names, n);
+    int n = ridx == -1?_output._names.length-1:_output._names.length;
+    String [] names = Arrays.copyOf(_output._names, n);
     Frame  [] subVfr;
     // replace missing columns with NaNs (or 0s for DeepLearning with sparse data)
     // subVfr = vfr.subframe(names, (this instanceof DeepLearningModel && ((DeepLearningModel)this).get_params().sparse) ? 0 : Double.NaN);
@@ -300,7 +305,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Vec[] frvecs = vfr.vecs();
     boolean[] toEnum = new boolean[frvecs.length];
     if(!exact) for(int i = 0; i < n;++i)
-      if(_domains[i] != null && !frvecs[i].isEnum()) {// if model expects domain but input frame does not have domain => switch vector to enum
+      if(_output._domains[i] != null && !frvecs[i].isEnum()) {// if model expects domain but input frame does not have domain => switch vector to enum
         frvecs[i] = frvecs[i].toEnum();
         toEnum[i] = true;
       }
@@ -388,5 +393,5 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   protected abstract float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]);
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
-  public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[nclasses()]));  }
+  public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
 }
