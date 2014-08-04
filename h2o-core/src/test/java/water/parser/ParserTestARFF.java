@@ -349,7 +349,7 @@ public class ParserTestARFF extends TestUtil {
   }
 
 
-  // mixed ARFF file with numbers as enums
+  // ARFF file with uuids
   @Test public void testUUID2() {
     String[] data = new String[]{
             "@relation uuid",
@@ -464,4 +464,62 @@ public class ParserTestARFF extends TestUtil {
       if( k2 != null ) k2.delete();
     }
   }
+
+  @Test public void testInt(){
+    String data =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num INT\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    double[][] exp = new double[][] {
+            ard(0),
+            ard(1.324e-13),
+            ard(-2)
+    };
+    Key k = ParserTest.makeByteVec(data);
+    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+  }
+
+  @Test public void testReal(){
+    String data =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num ReAl\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    double[][] exp = new double[][] {
+            ard(0),
+            ard(1.324e-13),
+            ard(-2)
+    };
+    Key k = ParserTest.makeByteVec(data);
+    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+  }
+
+  @Test public void testNum(){
+    String data =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num numeric\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    double[][] exp = new double[][] {
+            ard(0),
+            ard(1.324e-13),
+            ard(-2)
+    };
+    Key k = ParserTest.makeByteVec(data);
+    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+  }
+
 }
