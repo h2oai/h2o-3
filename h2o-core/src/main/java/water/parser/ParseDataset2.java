@@ -159,6 +159,8 @@ public final class ParseDataset2 extends Job<Frame> {
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       eut.doAll(evecs);
     }
+    // unify any vecs with enums and strings to strings only
+    new UnifyStrVecTask().doAll(fr);
 
     // Log any errors
     if( mfpt._errors != null )
@@ -321,6 +323,27 @@ public final class ParseDataset2 extends Job<Frame> {
           Value val = H2O.get(k);   // Local-get only
           if( val == null )         // Missing?  Fill in w/zero chunk
             H2O.putIfMatch(k, new Value(k,new C0DChunk(0, nlines)), null);
+        }
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Run once on all nodes; switch enum chunks over to string chunks
+  private static class UnifyStrVecTask extends MRTask<UnifyStrVecTask> {
+    private UnifyStrVecTask() {}
+
+    @Override public void map(Chunk[] chunks) {
+      for (Chunk c : chunks) {
+        Vec v = c.vec();
+        if (v.isString() && c instanceof C4Chunk) {
+          Key k = v.chunkKey(c.cidx());
+          NewChunk nc = new NewChunk(v, c.cidx());
+          for (int j = 0; j < c.len(); ++j)
+            if (c.isNA0(j)) nc.addNA();
+            else nc.addStr(new ValueString(v.domain()[(int) c.at80(j)]));
+
+          H2O.putIfMatch(k, new Value(k, nc.new_close()), H2O.get(k));
         }
       }
     }
@@ -633,8 +656,17 @@ public final class ParseDataset2 extends Job<Frame> {
         _vecs = dout._vecs;
         dout._vecs = v;
       }
-      for(int i = 0; i < dout._vecs.length; ++i)
+      for(int i = 0; i < dout._vecs.length; ++i) {
+        // unify string and enum chunks
+        if (_vecs[i].isString() && !dout._vecs[i].isString())
+          dout.enumCol2StrCol(i);
+        else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
+          enumCol2StrCol(i);
+          _ctypes[i] = SCOL;
+        }
+
         _vecs[i].reduce(dout._vecs[i]);
+      }
       return this;
     }
     @Override public FVecDataOut close(){
@@ -692,7 +724,7 @@ public final class ParseDataset2 extends Job<Frame> {
     @Override public final void addInvalidCol(int colIdx) {
       if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
     }
-    @Override public final boolean isString(int colIdx) { return _ctypes[colIdx] == SCOL; }
+    @Override public final boolean isString(int colIdx) { return ((colIdx < _nCols) ?  _ctypes[colIdx]==ECOL : false);}
 
     @Override public final void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _nvs.length){
@@ -725,19 +757,33 @@ public final class ParseDataset2 extends Job<Frame> {
           if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
           if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
         } else if( _ctypes[colIdx] == SCOL ) {
-          _nvs[colIdx].addStr(str.toString());
+          _nvs[_col = colIdx].addStr(str);
         } else {
-          int id = _enums[_col = colIdx].addKey(str);
           if(!_enums[colIdx].isMapFull()) {
+            int id = _enums[_col = colIdx].addKey(str);
             if (_ctypes[colIdx] == UCOL && id > 1) _ctypes[colIdx] = ECOL;
             _nvs[colIdx].addEnum(id);
-          } else { // maxed out enum map, convert col to st ring chunk
+          } else { // maxed out enum map, convert col to string chunk
             _ctypes[_col = colIdx] = SCOL;
-            //TODO convert chunk from Enums to Strings
-            _nvs[colIdx].addStr(str.toString());
+            enumCol2StrCol(colIdx);
+            _nvs[colIdx].addStr(str);
           }
         }
       }
+    }
+
+    private void enumCol2StrCol(int colIdx) {
+      //build local value2key map for enums
+      Enum enums = _enums[colIdx].deepCopy();
+      ValueString emap[] = new ValueString[enums.maxId()];
+      ValueString keys[] = enums._map.keySet().toArray(new ValueString[enums.size()]);
+      for (ValueString str:keys)
+        // adjust for enum ids using 1-based indexing
+        emap[enums._map.get(str)-1] = str;
+
+      //swap in string NewChunk in place of enum NewChunk
+      _nvs[colIdx] = _nvs[colIdx].convertEnum2Str(emap);
+      //Log.info("enumCol2StrCol");
     }
 
     /** Adds double value to the column. */
@@ -840,14 +886,14 @@ public final class ParseDataset2 extends Job<Frame> {
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
         boolean isString = v.isString();
-        String CStr = String.format("C%d:", i+1);
+        String CStr = String.format("C%d:", i + 1);
         String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : "numeric"))));
-        String minStr = String.format("%g", v.min());
-        String maxStr = String.format("%g", v.max());
+        String minStr = isString ? "" : String.format("%g", v.min());
+        String maxStr = isString ? "" : String.format("%g", v.max());
         long numNAs = v.naCnt();
         String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
         String isConstantStr = isConstant ? "constant" : "";
-        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
+        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : (isString ? String.format("%d", v.nzCnt()) : "");
 
         boolean printLogSeparatorToStdout = false;
         boolean printColumnToStdout;

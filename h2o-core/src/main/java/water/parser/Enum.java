@@ -22,8 +22,8 @@ import water.util.DocGen.HTML;
  * @author tomasnykodym
  *
  */
-final class Enum extends Iced {
-  static final int MAX_ENUM_SIZE = 1000000;
+public final class Enum extends Iced {
+  public static final int MAX_ENUM_SIZE = 65000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<ValueString, Integer> _map;
@@ -78,7 +78,6 @@ final class Enum extends Iced {
 
   // assuming single threaded
   ValueString [] computeColumnDomain() {
-    if( isMapFull() ) return null;
     ValueString vs[] = _map.keySet().toArray(new ValueString[_map.size()]);
     Arrays.sort(vs);            // Alpha sort to be nice
     for( int j = 0; j < vs.length; ++j )

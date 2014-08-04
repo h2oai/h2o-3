@@ -25,6 +25,7 @@ public class AppendableVec extends Vec {
   public static final byte STRING    =32;
   byte [] _chunkTypes;
   long _naCnt;
+  long _enumCnt;
   long _strCnt;
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
@@ -49,6 +50,7 @@ public class AppendableVec extends Vec {
     _espc[cidx] = chk.len();
     _chunkTypes[cidx] = chk.type();
     _naCnt += chk.naCnt();
+    _enumCnt += chk.enumCnt();
     _strCnt += chk.strCnt();
     for( int i=0; i<_timCnt.length; i++ ) _timCnt[i] += chk._timCnt[i];
     _totalCnt += chk.len();
@@ -57,7 +59,7 @@ public class AppendableVec extends Vec {
   // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?
   public boolean shouldBeEnum() {
     // TODO: we declare column to be string/enum only if it does not have ANY numbers in it.
-    return _strCnt > 0 && (_strCnt + _naCnt) == _totalCnt;
+    return _enumCnt > 0 && (_enumCnt + _strCnt + _naCnt) == _totalCnt;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -81,6 +83,7 @@ public class AppendableVec extends Vec {
       _chunkTypes[i] |= t1[i];
     }
     _naCnt += nv._naCnt;
+    _enumCnt += nv._enumCnt;
     _strCnt += nv._strCnt;
     water.util.ArrayUtils.add(_timCnt,nv._timCnt);
     _totalCnt += nv._totalCnt;
@@ -103,7 +106,7 @@ public class AppendableVec extends Vec {
       if( (_chunkTypes[i] & NUMBER) != 0 )   hasNumber = true;
       if( (_chunkTypes[i] & ENUM  ) != 0 )   hasEnum   = true;
       if( (_chunkTypes[i] & UUID  ) != 0 )   hasUUID   = true;
-      if( (_chunkTypes[i] & STRING  ) != 0 )   hasString   = true;
+      if( (_chunkTypes[i] & STRING) != 0 )   hasString = true;
     }
     // number wins, we need to go through the enum chunks and declare them all
     // NAs (chunk is considered enum iff it has only enums + possibly some nas)
@@ -111,10 +114,6 @@ public class AppendableVec extends Vec {
       for(int i = 0; i < nchunk; ++i)
         if(_chunkTypes[i] == ENUM)
           DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
-    }
-
-    if(hasString && hasEnum) {
-        //TODO turn all Enum chunks into strings
     }
 
     // UUID wins over enum, string & number

@@ -12,6 +12,7 @@ import org.junit.runner.Description;
 import water.fvec.*;
 import water.util.Log;
 import water.util.Timer;
+import water.parser.ValueString;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil {
@@ -241,7 +242,16 @@ public class TestUtil {
                 return;
               }
             }
-          } else {
+          } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
+            if (!(c0.isNA0(rows) && c1.isNA0(rows))) {
+              ValueString v0 = new ValueString(), v1 = new ValueString();
+              c0.atStr0(v0, rows); c1.atStr0(v1, rows);
+              if (v0.compareTo(v1) != 0) {
+                _unequal = true;
+                return;
+              }
+            }
+          }else {
             double d0 = c0.at0(rows), d1 = c1.at0(rows);
             if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
               _unequal = true;

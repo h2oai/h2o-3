@@ -2,8 +2,7 @@ package water.fvec;
 
 import java.util.*;
 import water.*;
-import water.parser.ParseTime;
-import water.parser.ValueString;
+import water.parser.*;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -16,7 +15,7 @@ public class NewChunk extends Chunk {
   // 3- zero: requires _ls==0 && _xs==0
   // 4- NA: either _ls==0 && _xs==Integer.MIN_VALUE, OR _ds=NaN
   // 5- Enum: _xs==(Integer.MIN_VALUE+1) && _ds==null
-  // 6- Str: _ss holds appended string bytes (with trailing 0), _is[] hodls offsets into _ss[]
+  // 6- Str: _ss holds appended string bytes (with trailing 0), _is[] holds offsets into _ss[]
   // Chunk._len is the count of elements appended
   // Sparse: if _sparseLen != _len, then _ls/_ds are compressed to non-zero's only,
   // and _xs is the row number.  Still _len is count of elements including
@@ -25,13 +24,14 @@ public class NewChunk extends Chunk {
   public transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
   public transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
   public transient double _ds[];   // Doubles, for inflating via doubles
-  public transient byte   _ss[];       // Bytes of appended strings, including trailing 0
-  public transient int    _is[];       // _is[] index of strings - holds offsets into _ss[]. _is[i] == -1 means NA/sparse
+  public transient byte   _ss[];   // Bytes of appended strings, including trailing 0
+  public transient int    _is[];   // _is[] index of strings - holds offsets into _ss[]. _is[i] == -1 means NA/sparse
 
   long  [] alloc_mantissa(int l) { return _ls = MemoryManager.malloc8(l); }
   int   [] alloc_exponent(int l) { return _xs = MemoryManager.malloc4(l); }
   int   [] alloc_indices(int l)  { return _id = MemoryManager.malloc4(l); }
   double[] alloc_doubles(int l)  { return _ds = MemoryManager.malloc8d(l); }
+  int   [] alloc_str_indices(int l) { return _is = MemoryManager.malloc4(l); }
 
   final protected long  [] mantissa() { return _ls; }
   final protected int   [] exponent() { return _xs; }
@@ -49,8 +49,10 @@ public class NewChunk extends Chunk {
 
   private int _naCnt=-1;                // Count of NA's   appended
   protected int naCnt() { return _naCnt; }               // Count of NA's   appended
-  private int _strCnt;                  // Count of Enum's appended
-  protected int strCnt() { return _strCnt; }                 // Count of Enum's appended
+  private int _enumCnt;                  // Count of Enum's appended
+  protected int enumCnt() { return _enumCnt; }                 // Count of Enum's appended
+  private int _strCnt;                  // Count of string's appended
+  protected int strCnt() { return _strCnt; }                 // Count of strings's appended
   private int _nzCnt;                   // Count of non-zero's appended
   private int _uuidCnt;                 // Count of UUIDs
 
@@ -82,6 +84,23 @@ public class NewChunk extends Chunk {
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);
     set_sparseLen(set_len(len));
+  }
+
+  public NewChunk convertEnum2Str(ValueString[] emap) {
+    NewChunk strChunk = new NewChunk(_vec, _cidx);
+    int j = 0, l = len();
+    for( int i = 0; i < l; ++i ) {
+      if( _id != null && _id.length > 0 && (j < _id.length && _id[j] == i ) ) // Sparse storage
+        // adjust for enum ids using 1-based indexing
+        strChunk.addStr(emap[(int) _ls[j++] - 1]);
+      else if (_xs[i] != Integer.MIN_VALUE) // Enum value isn't NA
+        strChunk.addStr(emap[(int) _ls[i] - 1]);
+      else
+        strChunk.addNA();
+    }
+    if (_id != null)
+      assert j == sparseLen() :"j = " + j + ", sparseLen = " + sparseLen();
+    return strChunk;
   }
 
   public final class Value {
@@ -127,13 +146,10 @@ public class NewChunk extends Chunk {
     };
   }
 
-
-
-
   // Heuristic to decide the basic type of a column
   public byte type() {
     if( _naCnt == -1 ) {        // No rollups yet?
-      int nas=0, ss=0, nzs=0;
+      int nas=0, es=0, nzs=0, ss=0;
       if( _ds != null && _ls != null ) { // UUID?
         for( int i=0; i< sparseLen(); i++ )
           if( _xs != null && _xs[i]==Integer.MIN_VALUE )  nas++;
@@ -142,23 +158,27 @@ public class NewChunk extends Chunk {
       } else if( _ds != null ) { // Doubles?
         assert _xs==null;
         for( int i = 0; i < sparseLen(); ++i) if( Double.isNaN(_ds[i]) ) nas++; else if( _ds[i]!=0 ) nzs++;
-      } else {                  // Longs and enums?
-        if( _ls != null )
+      } else {
+        if( _ls != null ) // Longs and enums?
           for( int i=0; i< sparseLen(); i++ )
             if( isNA2(i) ) nas++;
             else {
-              if( isEnum2(i)   ) ss++;
+              if( isEnum2(i)   ) es++;
               if( _ls[i] != 0 ) nzs++;
             }
+        if( _is != null )  // Strings
+          for( int i=0; i< sparseLen(); i++ )
+            if( isNA2(i) ) nas++;
+            else ss++;
       }
-      _nzCnt=nzs;  _strCnt=ss;  _naCnt=nas;
+      _nzCnt=nzs;  _enumCnt =es;  _naCnt=nas; _strCnt = ss;
     }
     // Now run heuristic for type
     if(_naCnt == len())          // All NAs ==> NA Chunk
       return AppendableVec.NA;
-    if(_is != null)
+    if(_strCnt > 0)
       return AppendableVec.STRING;
-    if(_strCnt > 0 && _strCnt + _naCnt == len())
+    if(_enumCnt > 0 && _enumCnt + _naCnt == len())
       return AppendableVec.ENUM; // All are Strings+NAs ==> Enum Chunk
     // UUIDs?
     if( _uuidCnt > 0 ) return AppendableVec.UUID;
@@ -168,8 +188,10 @@ public class NewChunk extends Chunk {
     return timCnt >= nums ? AppendableVec.TIME : AppendableVec.NUMBER;
   }
 
+  //what about sparse reps?
   protected final boolean isNA2(int idx) {
     if (isUUID()) return _ls[idx]==C16Chunk._LO_NA && Double.doubleToRawLongBits(_ds[idx])==C16Chunk._HI_NA;
+    if (isString()) return _is[idx] == -1;
     return (_ds == null) ? (_ls[idx] == Long.MAX_VALUE && _xs[idx] == Integer.MIN_VALUE) : Double.isNaN(_ds[idx]);
   }
   protected final boolean isEnum2(int idx) {
@@ -183,13 +205,13 @@ public class NewChunk extends Chunk {
 
   public void addEnum(int e) {append2(e,Integer.MIN_VALUE+1);}
   public void addNA() {
-    if( isUUID() ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else if( isStr() ) addStr(null);
+    if( isUUID() ) addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
+    else if( isString() ) addStr(null);
     else if (_ds != null) addNum(Double.NaN);
     else append2(Long.MAX_VALUE,Integer.MIN_VALUE);
   }
   public void addNum (long val, int exp) {
-    if( isUUID() ) addNA();
+    if( isUUID() || isString() ) addNA();
     else if(_ds != null) {
       assert _ls == null;
       addNum(val*PrettyPrint.pow10(exp));
@@ -202,7 +224,7 @@ public class NewChunk extends Chunk {
   }
   // Fast-path append double data
   public void addNum(double d) {
-    if( isUUID() ) { addNA(); return; }
+    if( isUUID() || isString() ) { addNA(); return; }
     if(_id == null || d != 0) {
       if(_ls != null)switch_to_doubles();
       if( _ds == null || sparseLen() >= _ds.length ) {
@@ -231,8 +253,25 @@ public class NewChunk extends Chunk {
       _ss[_sslen++] = b;
     _ss[_sslen++] = (byte)0; // for trailing 0;
   }
+
+  private void append_ss(ValueString str) {
+    int strlen = str.get_length();
+    int off = str.get_off();
+    byte b[] = str.get_buf();
+
+    if (_ss == null) {
+      _ss = MemoryManager.malloc1((strlen + 1) * 4);
+    }
+    while (_ss.length < (_sslen + strlen + 1)) {
+      _ss = MemoryManager.arrayCopyOf(_ss,_ss.length << 1);
+    }
+    for (int i = off; i < off+strlen; i++)
+      _ss[_sslen++] = b[i];
+    _ss[_sslen++] = (byte)0; // for trailing 0;
+  }
+
   // Append a String, stored in _ss & _is
-  public void addStr(String str) {
+  public void addStr(ValueString str) {
     if(_id == null || str != null) {
       if(_is == null || sparseLen() >= _is.length) {
         append2slowstr();
@@ -245,7 +284,7 @@ public class NewChunk extends Chunk {
         _is[sparseLen()] = _sslen;
         set_sparseLen(sparseLen() + 1);
         append_ss(str);
-      } else {
+      } else if (_id == null) {
         _is[sparseLen()] = -1;
         set_sparseLen(sparseLen() + 1);
       }
@@ -274,7 +313,7 @@ public class NewChunk extends Chunk {
   }
 
   public final boolean isUUID(){return _ls != null && _ds != null; }
-  public final boolean isStr(){return _is != null; }
+  public final boolean isString(){return _is != null; }
   public final boolean sparse(){return _id != null;}
 
   public void addZeros(int n){
@@ -292,6 +331,8 @@ public class NewChunk extends Chunk {
       _xs = nc._xs; nc._xs = null;
       _id = nc._id; nc._id = null;
       _ds = nc._ds; nc._ds = null;
+      _is = nc._is; nc._is = null;
+      _ss = nc._ss; nc._ss = null;
       set_sparseLen(nc.sparseLen());
       set_len(nc.len());
       return;
@@ -379,20 +420,26 @@ public class NewChunk extends Chunk {
   private void append2slowstr() {
     if( sparseLen() > Vec.CHUNK_SZ )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
-    if(_is != null && _is.length > 0){
-      /*
-        Uncomment this block to support sparse string chunks
 
-      if(_id == null){ // check for sparseness
-        int nzs = 1; // assume one non-null for the element currently being stored
-        for( int i=0; i<_is.length; i++ ) if( _is[0] != -1 ) ++nzs;
-        if( nzs*MIN_SPARSE_RATIO < _len2)
+    // In case of all NAs and then a string, convert NAs to string NAs
+    if (_xs != null) {
+      _xs = null; _ls = null;
+      alloc_str_indices(sparseLen());
+      Arrays.fill(_is,-1);
+    }
+
+    if(_is != null && _is.length > 0){
+      // Check for sparseness
+      if(_id == null){
+        int nzs = 0; // assume one non-null for the element currently being stored
+        for( int i:_is) if( i != -1 ) ++nzs;
+        if( (nzs+1)*MIN_SPARSE_RATIO < len())
           set_sparse(nzs);
       } else {
-        if((MIN_SPARSE_RATIO*(_len) >> 1) > _len2)  cancel_sparse();
-        else _id = MemoryManager.arrayCopyOf(_id,_len<<1);
+        if((MIN_SPARSE_RATIO*(_sparseLen) >> 1) > len())  cancel_sparse();
+        else _id = MemoryManager.arrayCopyOf(_id,_sparseLen<<1);
       }
-      */
+
       _is = MemoryManager.arrayCopyOf(_is, sparseLen()<<1);
       /* initialize the memory extension with -1s */
       for (int i = sparseLen(); i < _is.length; i++) _is[i] = -1;
@@ -461,19 +508,28 @@ public class NewChunk extends Chunk {
 
   protected void set_sparse(int nzeros){
     if(sparseLen() == nzeros && len() != 0)return;
-    if(_id != null){ // we have sparse represenation but some 0s in it!
-      int [] id = MemoryManager.malloc4(nzeros);
+    if(_id != null) { // we have sparse representation but some 0s in it!
+      int[] id = MemoryManager.malloc4(nzeros);
       int j = 0;
-      if(_ds != null){
-        double [] ds = MemoryManager.malloc8d(nzeros);
-        for(int i = 0; i < sparseLen(); ++i){
-          if(_ds[i] != 0){
+      if (_ds != null) {
+        double[] ds = MemoryManager.malloc8d(nzeros);
+        for (int i = 0; i < sparseLen(); ++i) {
+          if (_ds[i] != 0) {
             ds[j] = _ds[i];
             id[j] = _id[i];
             ++j;
           }
         }
         _ds = ds;
+      } else if (_is != null) {
+        int [] is = MemoryManager.malloc4(nzeros);
+        for (int i = 0; i < sparseLen(); i++) {
+          if (_is[i] != -1) {
+            is[j] = _is[i];
+            id[j] = id[i];
+            ++j;
+          }
+        }
       } else {
         long [] ls = MemoryManager.malloc8(nzeros);
         int [] xs = MemoryManager.malloc4(nzeros);
@@ -582,7 +638,7 @@ public class NewChunk extends Chunk {
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, sparseLen());
     if( mode==AppendableVec.STRING )
-      return chunkStr();
+      return new CStrChunk(_sslen, _ss, sparseLen(), _is);
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
       for( int i=0; i< sparseLen(); i++ )
@@ -727,7 +783,7 @@ public class NewChunk extends Chunk {
           : new CXIChunk(len(), sparseLen(),1,bufS(1)); // have NAs, store as sparse 1byte values
       }
 
-      int bpv = _strCnt+_naCnt > 0 ? 2 : 1;   // Bit-vector
+      int bpv = _enumCnt +_naCnt > 0 ? 2 : 1;   // Bit-vector
       byte[] cbuf = bufB(bpv);
       return new CBSChunk(cbuf, cbuf[0], cbuf[1]);
     }
@@ -771,7 +827,7 @@ public class NewChunk extends Chunk {
     } // else an integer column
 
     // Compress column into a byte
-    if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _strCnt)==0) )
+    if(xmin == 0 &&  0<=lemin && lemax <= 255 && ((_naCnt + _enumCnt)==0) )
       return new C1NChunk( bufX(0,0,C1NChunk._OFF,0));
     if( lemin < Integer.MIN_VALUE ) return new C8Chunk( bufX(0,0,0,3));
     if( lemax-lemin < 255 ) {    // Span fits in a byte?
@@ -932,14 +988,6 @@ public class NewChunk extends Chunk {
     return new C16Chunk(bs);
   }
 
-  private Chunk chunkStr() {
-    final byte [] strbuf = Arrays.copyOf(_ss, _sslen);
-    final byte [] idbuf = MemoryManager.malloc1(len()*4,true);
-    for( int i = 0; i < len(); ++i )
-      UnsafeUtils.set4(idbuf, 4*i, _is[i]);
-    return new CStrChunk(strbuf, idbuf, len());
-  }
-
   // Compute compressed boolean buffer
   private byte[] bufB(int bpv) {
     assert bpv == 1 || bpv == 2 : "Only bit vectors with/without NA are supported";
@@ -1075,16 +1123,14 @@ public class NewChunk extends Chunk {
     return isNA2(i);
   }
   @Override public ValueString atStr_impl( ValueString vstr, int i ) {
-    /*
-      Uncomment this block to support sparse string chunks
-
-    if( _len2 != _len ) {
-      int idx = Arrays.binarySearch(_id,0,_len,i);
+    if( sparseLen() != len() ) {
+      int idx = Arrays.binarySearch(_id,0,sparseLen(),i);
       if(idx >= 0) i = idx;
       else return null;
     }
-    */
-    if( _is[i] != CStrChunk.NA ) return null;
+
+    if( _is[i] == CStrChunk.NA ) return null;
+
     int len;
     for( len = 0; _ss[_is[i] + len] != 0; len++ ) ;
     return vstr.set(_ss, _is[i], len);

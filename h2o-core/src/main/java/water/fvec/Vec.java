@@ -6,6 +6,7 @@ import water.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.ParseTime;
 import water.parser.ValueString;
+import water.parser.Enum;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
@@ -67,9 +68,6 @@ public class Vec extends Keyed {
   protected boolean _isUUID;    // All UUIDs (or zero or missing)
   /** String flag */
   protected boolean _isString;    // All Strings
-
-  /** Maximal size of enum domain */
-  private static final int MAX_ENUM_SIZE = 10000;
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
@@ -215,7 +213,7 @@ public class Vec extends Keyed {
 
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
-  public final boolean isEnum(){return _domain != null;}
+  public final boolean isEnum(){return _domain != null && !_isString;}
   public final boolean isUUID(){return _isUUID;}
   public final boolean isString(){return _isString;}
 
@@ -596,8 +594,8 @@ public class Vec extends Keyed {
     if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     long[] domain= new CollectDomain().doAll(this).domain();
-    if( domain.length > MAX_ENUM_SIZE ) 
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + MAX_ENUM_SIZE);
+    if( domain.length > Enum.MAX_ENUM_SIZE )
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Enum.MAX_ENUM_SIZE);
     return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
   }
 

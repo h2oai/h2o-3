@@ -2,7 +2,7 @@ package water.fvec;
 
 import java.util.Arrays;
 import water.*;
-import water.parser.ValueString;
+import water.parser.Enum;
 import water.util.ArrayUtils;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
@@ -33,7 +33,6 @@ public class RollupStats extends DTask<RollupStats> {
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
   private final int MAX_SIZE = 1024;
-  private final int MAX_ENUM_SIZE = 1000000;
   volatile public long[] _bins;
   // Approximate data value closest to the Xth percentile
   public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
@@ -57,19 +56,16 @@ public class RollupStats extends DTask<RollupStats> {
     _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
-    ValueString vstr = new ValueString();
+    if (isString) _isInt = false;
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
-        _naCnt++;  _nzCnt++;
-
+        _naCnt++;
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
         if (c.at16l0(i) != 0 || c.at16h0(i) != 0) _nzCnt++;
       } else if( isString ) { // String columns do not compute min/max/mean/sigma
-        if( c.atStr(vstr,i) != null ) _nzCnt++;
-        _isInt = false;
+        _nzCnt++;
       } else {                  // All other columns have useful rollups
-
         double d = c.at0(i);
         if( d == Double.POSITIVE_INFINITY) _pinfs++;
         else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
@@ -250,7 +246,7 @@ public class RollupStats extends DTask<RollupStats> {
     int nbins=MAX_SIZE;
     if( _isInt && (int)span==span ) {
       nbins = (int)span+1;      // 1 bin per int
-      int lim = vec.isEnum() ? MAX_ENUM_SIZE : MAX_SIZE;
+      int lim = vec.isEnum() ? Enum.MAX_ENUM_SIZE : MAX_SIZE;
       nbins = Math.min(lim,nbins); // Cap nbins at sane levels
     }
     _bins = new Histo(this,nbins).doAll(vec)._bins;
