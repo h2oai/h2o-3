@@ -10,12 +10,13 @@ import water.*;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingSetInt;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.PrettyPrint;
 import water.util.Log;
 
-public class ParseDataset2 extends Job<Frame> {
+public final class ParseDataset2 extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
@@ -58,10 +59,10 @@ public class ParseDataset2 extends Job<Frame> {
 
   // Same parse, as a backgroundable Job
   public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean delete_on_done) {
-    // Some quick sanity checks: no overwriting your input key, and a resource check.
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
+    // Some quick sanity checks: no overwriting your input key, and a resource check.
     long sum=0;
     for( Key k : keys ) {
       if( dest.equals(k) )
@@ -104,7 +105,7 @@ public class ParseDataset2 extends Job<Frame> {
       tryComplete();
     }
 
-    // Took a crash/NPE somewhere in the parser. Attempt cleanup.
+    // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
       Futures fs = new Futures();
       if( _job != null ) {
@@ -113,16 +114,15 @@ public class ParseDataset2 extends Job<Frame> {
         if( _job._mfpt != null ) _job._mfpt.onExceptionCleanup(fs);
       }
       // Assume the input is corrupt - or already partially deleted after
-      // parsing. Nuke it all - no partial Vecs lying around.
+      // parsing.  Nuke it all - no partial Vecs lying around.
       for( Key k : _keys ) Keyed.remove(k,fs);
       fs.blockForPending();
       // As soon as the job is canceled, threads blocking on the job will
-      // wake up. Better have all cleanup done first!
+      // wake up.  Better have all cleanup done first!
       if( _job != null ) _job.cancel2(ex);
       return true;
     }
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
-
   }
 
   // --------------------------------------------------------------------------
@@ -165,10 +165,10 @@ public class ParseDataset2 extends Job<Frame> {
       for( String err : mfpt._errors )
         Log.warn(err);
     logParseResults(job, fr);
-    
+
     // Release the frame for overwriting
     fr.unlock(job._key);
-    // CSV files removed from H2O memory
+    // Remove CSV files from H2O memory
     if( delete_on_done )
       for( Key k : fkeys )
         assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
@@ -223,12 +223,31 @@ public class ParseDataset2 extends Job<Frame> {
         else for( int j = 0; j < chk.len(); ++j){
           if( chk.isNA0(j) )continue;
           long l = chk.at80(j);
-          assert l >= 0 && l < emap[i].length : "Found OOB index "+l+" pulling from "+chk.getClass().getSimpleName();
-          assert emap[i][(int)l] >= 0: H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName();
+          if (l < 0 || l >= emap[i].length)
+            reportBrokenEnum(chk, i, j, l, emap);
+          if(emap[i][(int)l] < 0)
+            throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName());
           chk.set0(j, emap[i][(int)l]);
         }
         chk.close(cidx, _fs);
       }
+    }
+    // TODO: Move this into Chunk
+    private void reportBrokenEnum( Chunk chk, int i, int j, long l, int[][] emap ) {
+      Chunk chk2 = chk.chk2();
+      StringBuilder sb = new StringBuilder("Enum renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + _gDomain[i].length + " levels) pulled from " + chk.getClass().getSimpleName() +  "\n");
+      int k = 0;
+      for(; k < Math.min(5,chk.len()); ++k)
+        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
+      k = Math.max(k,j-2);
+      sb.append("...\n");
+      for(; k < Math.min(chk.len(),j+2); ++k)
+        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
+      sb.append("...\n");
+      k = Math.max(k,chk.len()-5);
+      for(; k < chk.len(); ++k)
+        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
+      throw new RuntimeException(sb.toString());
     }
   }
 
@@ -335,8 +354,7 @@ public class ParseDataset2 extends Job<Frame> {
     String[] _errors;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
-      _setup = setup; 
-      _vg = vg; 
+      _vg = vg; _setup = setup; 
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
@@ -454,6 +472,7 @@ public class ParseDataset2 extends Job<Frame> {
       _errors = ArrayUtils.append(_errors,mfpt._errors);
     }
 
+    // ------------------------------------------------------------------------
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
@@ -481,6 +500,7 @@ public class ParseDataset2 extends Job<Frame> {
       private final Key _job_key;
       private transient final MultiFileParseTask _outerMFPT;
       private transient final Key _srckey; // Source/text file to delete on done
+      private transient NonBlockingSetInt _visited;
 
       DParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey) {
         super(mfpt);
@@ -492,6 +512,10 @@ public class ParseDataset2 extends Job<Frame> {
         _eKey = mfpt._eKey;
         _job_key = mfpt._job_key;
         _srckey = srckey;
+      }
+      @Override public void setupLocal(){
+        super.setupLocal();
+        _visited = new NonBlockingSetInt();
       }
       @Override public void map( Chunk in ) {
         Enum [] enums = enums(_eKey,_setup._ncols);
@@ -518,6 +542,18 @@ public class ParseDataset2 extends Job<Frame> {
         p.parallelParse(in.cidx(),din,dout);
         (_dout = dout).close(_fs);
         Job.update(in.len(),_job_key); // Record bytes parsed
+
+        // remove parsed data right away (each chunk is used by 2)
+        freeMem(in,0);
+        freeMem(in,1);
+      }
+      private void freeMem(Chunk in, int off) {
+        final int cidx = in.cidx()+off;
+        if( _visited.add(cidx) ) return; // First visit; expect a 2nd so no freeing yet
+        Value v = H2O.get(in.vec().chunkKey(cidx));
+        if( v == null || !v.isPersisted() ) return; // Not found, or not on disk somewhere
+        v.freePOJO();           // Eagerly toss from memory
+        v.freeMem();
       }
       @Override public void reduce(DParse dp) { _dout.reduce(dp._dout); }
       @Override public void postGlobal() {
@@ -560,7 +596,6 @@ public class ParseDataset2 extends Job<Frame> {
     protected AppendableVec []_vecs;
     protected final Enum [] _enums;
     protected transient byte [] _ctypes;
-    public final boolean have_ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
@@ -569,16 +604,15 @@ public class ParseDataset2 extends Job<Frame> {
     boolean _closedVecs = false;
     private final VectorGroup _vg;
 
-    static final public byte UCOL = 0; // unknown col type
-    static final public byte NCOL = 1; // numeric col type
-    static final public byte ECOL = 2; // enum    col type
-    static final public byte TCOL = 3; // time    col typ
-    static final public byte ICOL = 4; // UUID    col typ
-    static final public byte SCOL = 5; // String  col typ
+    static final byte UCOL = 0; // unknown col type
+    static final byte NCOL = 1; // numeric col type
+    static final byte ECOL = 2; // enum    col type
+    static final byte TCOL = 3; // time    col typ
+    static final byte ICOL = 4; // UUID    col typ
+    static final byte SCOL = 5; // String  col typ
 
     private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum[] enums, byte[] ctypes){
       _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
-      have_ctypes = (_ctypes != null);
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
       _enums = enums;
@@ -688,11 +722,8 @@ public class ParseDataset2 extends Job<Frame> {
         } else if( _ctypes[colIdx] == ICOL ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
-          if (str.get_off() == -1) {
-            lo = C16Chunk._LO_NA;
-            hi = C16Chunk._HI_NA;
-          }
-          if (colIdx < _nCols) _nvs[_col = colIdx].addUUID(lo, hi);
+          if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
+          if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
         } else if( _ctypes[colIdx] == SCOL ) {
           _nvs[colIdx].addStr(str.toString());
         } else {

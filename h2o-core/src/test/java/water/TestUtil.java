@@ -86,6 +86,7 @@ public class TestUtil {
           _base.evaluate();
         } catch( Throwable ex ) {
           _ex=ex;
+          throw _ex;
         } finally {
           Log.info("#### TEST "+_tname+" EXECUTION TIME: " + t.toString());
         }

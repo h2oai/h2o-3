@@ -57,7 +57,7 @@ class CsvParser extends Parser {
     }
     dout.newLine();
 
-    final boolean forceable = dout instanceof ParseDataset2.FVecDataOut && ((ParseDataset2.FVecDataOut)dout).have_ctypes && _setup._ctypes != null;
+    final boolean forceable = dout instanceof ParseDataset2.FVecDataOut && ((ParseDataset2.FVecDataOut)dout)._ctypes != null && _setup._ctypes != null;
 MAIN_LOOP:
     while (true) {
       boolean forcedEnum = forceable && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.ECOL;
