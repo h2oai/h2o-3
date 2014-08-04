@@ -15,9 +15,9 @@ public class ParseExceptionTest extends TestUtil {
     try {
       okey = Key.make("junk.hex");
 
-      fkey0 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_0.csv"))._key;
-      fkey1 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_1.csv"))._key;
-      fkey2 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_2.csv"))._key;
+      fkey0 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_0.csv"))._key;
+      fkey1 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_1.csv"))._key;
+      fkey2 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_2.csv"))._key;
       // Now "break" one of the files.  Globally
       new Break(fkey1).doAllNodes();
 
@@ -44,9 +44,9 @@ public class ParseExceptionTest extends TestUtil {
       // Try again, in the same test, same inputs & outputs but not broken.
       // Should recover completely.
       okey = Key.make("junk.hex");
-      fkey0 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_0.csv"))._key;
-      fkey1 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_1.csv"))._key;
-      fkey2 = NFSFileVec.make(new File("smalldata/parse_folder_test/prostate_2.csv"))._key;
+      fkey0 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_0.csv"))._key;
+      fkey1 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_1.csv"))._key;
+      fkey2 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_2.csv"))._key;
       Frame fr = water.parser.ParseDataset2.parse(okey, fkey0,fkey1,fkey2);
       fr.delete();
       
