@@ -4,11 +4,22 @@
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
 
+# Check for os
+SEP=:
+case "`uname`" in
+    CYGWIN* )
+      SEP=;
+      ;;
+    Darwin* )
+      SEP=:
+      ;;
+esac
+
 # Gradle puts files:
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-core.jar;build/libs/test-h2o-core.jar;../lib/*"
+JVM="nice java -ea -cp build/libs/h2o-core.jar${SEP}build/libs/test-h2o-core.jar${SEP}../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

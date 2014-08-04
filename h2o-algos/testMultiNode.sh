@@ -4,11 +4,22 @@
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
 
+# Check for os
+SEP=:
+case "`uname`" in
+    CYGWIN* )
+      SEP=;
+      ;;
+    Darwin* )
+      SEP=:
+      ;;
+esac
+
 # Gradle puts files:
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-algos.jar;build/libs/test-h2o-algos.jar;../h2o-core/build/libs/h2o-core.jar;../h2o-core/build/libs/test-h2o-core.jar;../lib/*"
+JVM="nice java -ea -cp build/libs/h2o-algos.jar${SEP}build/libs/test-h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/test-h2o-core.jar${SEP}../lib/*"
 
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
