@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Convenience class for easy acces to user-visible keys in the cloud with enabled caching.
+ * Convenience class for easy access to user-visible keys in the cloud with enabled caching.
  *
  * This class represents snapshot of user keys currently stored in the cloud and contains methods to retrieve it.
  * It contains all user keys stored in the cloud at one particular point in time (marked by timestamp member variable).
@@ -172,7 +172,15 @@ public class KeySnapshot {
       Key key = (Key )ok;
       if(!key.user_allowed())continue;
       if(homeOnly && !key.home())continue;
-      if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
+      // Raw array can contain regular and also wrapped values into Prime marker class:
+      //  - if we see Value object, create instance of KeyInfo
+      //  - if we do not see Value object directly (it can be wrapped in Prime marker class),
+      //    try to unwrap it via calling STORE.get (~H2O.get) and then
+      //    look at wrapped value again.
+      if (!(ov instanceof Value)) {
+        ov = H2O.get(key); // H2Oget returns Value object
+        if (ov==null) continue;
+      }
       res.add(new KeyInfo(key,(Value)ov));
     }
     final KeyInfo [] arr = res.toArray(new KeyInfo[res.size()]);
