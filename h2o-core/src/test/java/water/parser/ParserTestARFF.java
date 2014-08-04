@@ -209,7 +209,6 @@ public class ParserTestARFF extends TestUtil {
 
   // force numbers to be strings
   @Test
-  @Ignore  //string creation in NewChunk is not yet implemented
   public void testType4() {
     String[] data = new String[] {
             "@RELATION type",

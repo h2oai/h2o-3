@@ -80,8 +80,7 @@ class ARFFParser extends CsvParser {
             continue;
           }
           else if (type.equalsIgnoreCase("STRING")) {
-//            ctypes[i] = ParseDataset2.FVecDataOut.SCOL; //FIXME: enable this once implemented
-            ctypes[i] = ParseDataset2.FVecDataOut.ECOL;
+            ctypes[i] = ParseDataset2.FVecDataOut.SCOL;
             continue;
           }
           else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
