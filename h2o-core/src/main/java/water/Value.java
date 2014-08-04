@@ -69,12 +69,12 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public Freezable rawPOJO() { return _pojo; }
 
   // Free array (but always be able to rebuild the array)
-  final void freeMem() {
+  public final void freeMem() {
     assert isPersisted() || _pojo != null || _key._kb[0]==Key.DVEC;
     _mem = null;
   }
   // Free POJO (but always be able to rebuild the POJO)
-  final void freePOJO() {
+  public final void freePOJO() {
     assert isPersisted() || _mem != null;
     _pojo = null;
   }
