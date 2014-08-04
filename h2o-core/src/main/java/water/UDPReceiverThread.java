@@ -119,6 +119,6 @@ public class UDPReceiverThread extends Thread {
       _unknown_packets_per_sec = 0;
       _unknown_packet_time = ab._h2o._last_heard_from;
     }
-    ab.close(false,false);
+    ab.close();
   }
 }

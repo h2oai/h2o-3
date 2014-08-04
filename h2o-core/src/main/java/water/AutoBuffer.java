@@ -1,19 +1,16 @@
 package water;
 
-import water.util.Log;
-
 import java.io.*;
 import java.lang.reflect.Array;
 import java.net.*;
 import java.nio.*;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import water.util.Log;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -24,14 +21,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  */
-public final class
-        AutoBuffer {
-  // The direct ByteBuffer for schlorping data about
+public final class AutoBuffer {
+  // The direct ByteBuffer for schlorping data about.
+  // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
+  public boolean isClosed() { return _bb == null ; }
 
-  // The ByteChannel for schlorping more data in or out.  Could be a
-  // SocketChannel (for a TCP connection) or a FileChannel (spill-to-disk) or a
-  // DatagramChannel (for a UDP connection).
+  // The ByteChannel for moving data in or out.  Could be a SocketChannel (for
+  // a TCP connection) or a FileChannel (spill-to-disk) or a DatagramChannel
+  // (for a UDP connection).  Null on closed AutoBuffers.  Null on initial
+  // remote-writing AutoBuffers which are still deciding UDP vs TCP.  Not-null
+  // for open AutoBuffers doing file i/o or reading any TCP/UDP or having
+  // written at least one buffer to TCP/UDP.
   private ByteChannel _chan;
 
   // If we need a SocketChannel, raise the priority so we get the I/O over
@@ -51,7 +52,8 @@ public final class
 
   // TRUE if this AutoBuffer has never advanced past the first "page" of data.
   // The UDP-flavor, port# and task fields are only valid until we read over
-  // them when flipping the ByteBuffer to the next chunk of data.
+  // them when flipping the ByteBuffer to the next chunk of data.  Used in
+  // asserts all over the place.
   private boolean _firstPage;
 
   // Total size written out from 'new' to 'close'.  Only updated when actually
@@ -63,7 +65,7 @@ public final class
   // i/o thread spends doing other stuff (e.g. allocating Java objects or
   // (de)serializing).
   long _time_start_ms, _time_close_ms, _time_io_ns;
-  // I/O persistence flavor: Value.ICE, NFS, HDFS, S3, TCP
+  // I/O persistence flavor: Value.ICE, NFS, HDFS, S3, TCP.  Used to record I/O time.
   final byte _persist;
 
   // The assumed max UDP packetsize
@@ -258,9 +260,9 @@ public final class
   // ByteBuffer write.  It *appears* that the reader is unaware that a writer
   // was told "go ahead and write" by the TCP stack, so all these fails are
   // only on the writer-side.
-  static class TCPIsUnreliableException extends RuntimeException {
+  static class AutoBufferException extends RuntimeException {
     final IOException _ioe;
-    TCPIsUnreliableException( IOException ioe ) { _ioe = ioe; }
+    AutoBufferException( IOException ioe ) { _ioe = ioe; }
   }
 
   // For reads, just assert all was read and close and release resources.
@@ -268,19 +270,10 @@ public final class
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-  public final int close() { return close(true,false); }
-  final int close(boolean expect_tcp, boolean failed) {
+  public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
+    if( isClosed() ) return 0;            // Already closed
     assert _h2o != null || _chan != null; // Byte-array backed should not be closed
-    // Extra asserts on closing TCP channels: we should always know & expect
-    // TCP channels, and read them fully.  If we close a TCP channel that is
-    // not fully read then the writer will assert and we will silently run on.
-    // Note: this assert is essentially redundant with the extra read/write of
-    // 0xab below; closing a TCP read-channel early will read 1 more byte -
-    // which probably will not be 0xab.
-    final boolean tcp = hasTCP();
-    assert !tcp    || expect_tcp; // If we have   TCP, we fully expect it
-    assert !failed || expect_tcp; // If we failed TCP, we expect TCP
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) return 0;
@@ -292,46 +285,47 @@ public final class
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
       // the reader will have to wait for.
-      if( tcp ) {               // TCP connection?
-        SocketChannel sock = (SocketChannel)_chan;
+      if( hasTCP() ) {          // TCP connection?
         try {
-          if( failed ) throw new IOException("failed before tcp close");
           if( _read ) {         // Reader?
             int x = get1U();    // Read 1 more byte
             assert x == 0xab : "AB.close instead of 0xab sentinel got "+x+", "+this;
+            assert _chan != null; // chan set by incoming reader, since we KNOW it is a TCP
             // Write the reader-handshake-byte.
-            sock.socket().getOutputStream().write(0xcd);
+            ((SocketChannel)_chan).socket().getOutputStream().write(0xcd);
             // do not close actually reader socket; recycle it in TCPReader thread
           } else {              // Writer?
-            put1(0xab);         // Write one-more byte
-            sendPartial();      // Finish partial writes
-            sock = (SocketChannel)_chan; // Reload, in-case _chan was null and is not set
+            put1(0xab);         // Write one-more byte  ; might set _chan from null to not-null
+            sendPartial();      // Finish partial writes; might set _chan from null to not-null
+            assert _chan != null; // _chan is set not-null now!
             // Read the writer-handshake-byte.
-            int x = sock.socket().getInputStream().read();
+            int x = ((SocketChannel)_chan).socket().getInputStream().read();
             // either TCP con was dropped or other side closed connection without reading/confirming (e.g. task was cancelled).
-            if( x == -1 ) throw new IOException("Other side closed connection unexpectedly.");
+            if( x == -1 ) throw new IOException("Other side closed connection before handshake byte read");
             assert x == 0xcd : "Handshake; writer expected a 0xcd from reader but got "+x;
           }
         } catch( IOException ioe ) {
           try { _chan.close(); } catch( IOException ignore ) {} // Silently close
-          sock = null;
+          _chan = null;         // No channel now, since i/o error
           throw ioe;            // Rethrow after close
         } finally {
-          if( !_read && !failed) _h2o.freeTCPSocket(sock); // Recycle writable TCP channel
+          if( !_read ) _h2o.freeTCPSocket((SocketChannel)_chan); // Recycle writable TCP channel
           restorePriority();        // And if we raised priority, lower it back
         }
 
       } else {                      // FileChannel
         if( !_read ) sendPartial(); // Finish partial file-system writes
         _chan.close();
+        _chan = null;           // Closed file channel
       }
 
     } catch( IOException e ) {  // Dunno how to handle so crash-n-burn
-      throw new TCPIsUnreliableException(e);
+      throw new AutoBufferException(e);
     } finally {
       bbFree();
       _time_close_ms = System.currentTimeMillis();
       TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+      assert isClosed();
     }
     return 0;
   }
@@ -366,7 +360,7 @@ public final class
   }
 
   // True if we opened a TCP channel, or will open one to close-and-send
-  boolean hasTCP() { return _chan instanceof SocketChannel || (_chan==null && _h2o!=null && _bb != null && _bb.position() >= MTU); }
+  boolean hasTCP() { assert !isClosed(); return _chan instanceof SocketChannel || (_h2o!=null && _bb.position() >= MTU); }
 
   // True if we are in read-mode
   boolean readMode() { return _read; }
@@ -470,16 +464,16 @@ public final class
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
         if( res == -1 )
-          throw new TCPIsUnreliableException(new EOFException("Reading "+sz+" bytes, AB="+this));
+          throw new AutoBufferException(new EOFException("Reading "+sz+" bytes, AB="+this));
         if( res ==  0 ) throw new RuntimeException("Reading zero bytes - so no progress?");
         _size += res;            // What we read
       } catch( IOException e ) { // Dunno how to handle so crash-n-burn
         // Linux/Ubuntu message for a reset-channel
         if( e.getMessage().equals("An existing connection was forcibly closed by the remote host") )
-          throw new TCPIsUnreliableException(e);
+          throw new AutoBufferException(e);
         // Windows message for a reset-channel
         if( e.getMessage().equals("An established connection was aborted by the software in your host machine") )
-          throw new TCPIsUnreliableException(e);
+          throw new AutoBufferException(e);
         throw Log.throwErr(e);
       }
     }
@@ -533,7 +527,7 @@ public final class
       // disk i/o & UDP writes; this exception only happens on a failed TCP
       // write - and we don't want to make the other AutoBuffer users have to
       // declare (and then ignore) this exception.
-      throw new TCPIsUnreliableException(e);
+      throw new AutoBufferException(e);
     }
     if( _bb.capacity() < 16*1024 ) _bb = bbMake();
     _firstPage = false;

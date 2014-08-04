@@ -288,7 +288,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // Recorded here, so if the client misses our ACK response we can resend the
   // same answer back.
   void record_task_answer( RPC.RPCCall rpcall ) {
-    assert rpcall._started == 0;
+    assert rpcall._started == 0 || rpcall._dt.hasException();
     rpcall._started = System.currentTimeMillis();
     rpcall._retry = RPC.RETRY_MS; // Start the timer on when to resend
     AckAckTimeOutThread.PENDING.add(rpcall);

@@ -188,7 +188,7 @@ public class TimeLine extends UDP {
         SNAPSHOT = new long[CLOUD.size()][];
         // Broadcast a UDP packet, with the hopes of getting all SnapShots as close
         // as possible to the same point in time.
-        new AutoBuffer(H2O.SELF).putUdp(udp.timeline).close(false,false);
+        new AutoBuffer(H2O.SELF).putUdp(udp.timeline).close();
       }
       // Spin until all snapshots appear
       while( true ) {
@@ -220,10 +220,10 @@ public class TimeLine extends UDP {
     while( true ) {
       AutoBuffer tab = new AutoBuffer(ab._h2o);
       try {
-        tab.putUdp(UDP.udp.timeline).putA8(a).close(true,false);
+        tab.putUdp(UDP.udp.timeline).putA8(a).close();
         return null;
-      } catch( AutoBuffer.TCPIsUnreliableException tue ) {
-        tab.close(true,true);
+      } catch( AutoBuffer.AutoBufferException tue ) {
+        tab.close();
       }
     }
   }
