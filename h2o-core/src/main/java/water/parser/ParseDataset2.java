@@ -222,14 +222,16 @@ public final class ParseDataset2 extends Job<Frame> {
         Chunk chk = chks[i];
         if(_gDomain[i] == null) // killed, replace with all NAs
           DKV.put(chk.vec().chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk.len()));
-        else for( int j = 0; j < chk.len(); ++j){
-          if( chk.isNA0(j) )continue;
-          long l = chk.at80(j);
-          if (l < 0 || l >= emap[i].length)
-            reportBrokenEnum(chk, i, j, l, emap);
-          if(emap[i][(int)l] < 0)
-            throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName());
-          chk.set0(j, emap[i][(int)l]);
+        else if (!(chk instanceof CStrChunk)) {
+          for( int j = 0; j < chk.len(); ++j){
+            if( chk.isNA0(j) )continue;
+            long l = chk.at80(j);
+            if (l < 0 || l >= emap[i].length)
+              reportBrokenEnum(chk, i, j, l, emap);
+            if(emap[i][(int)l] < 0)
+              throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName());
+            chk.set0(j, emap[i][(int)l]);
+          }
         }
         chk.close(cidx, _fs);
       }
