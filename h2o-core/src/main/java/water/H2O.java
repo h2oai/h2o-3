@@ -161,7 +161,8 @@ final public class H2O {
       try {
         assert  priority() == pp; // Job went to the correct queue?
         assert t._priority <= pp; // Thread attempting the job is only a low-priority?
-        for( int p = MAX_PRIORITY; p > pp; p-- ) {
+        final int p2 = Math.max(pp,MIN_HI_PRIORITY);
+        for( int p = MAX_PRIORITY; p > p2; p-- ) {
           if( FJPS[p] == null ) continue;
           h2o = FJPS[p].poll2();
           if( h2o != null ) {     // Got a hi-priority job?
@@ -186,8 +187,10 @@ final public class H2O {
     // Do the actually intended work
     protected abstract void compute2();
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if(!(ex instanceof RuntimeException) && this.getCompleter() == null)
+      if(!(ex instanceof RuntimeException) && this.getCompleter() == null) {
+        System.err.println("onExCompletion for "+this);
         ex.printStackTrace();
+      }
       return true;
     }
     // In order to prevent deadlock, threads that block waiting for a reply
@@ -228,6 +231,14 @@ final public class H2O {
     @Override       public HTML writeHTML_impl( HTML ab ) { return ab; }
   }
 
+
+  static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
+    public H2OCallback(){}
+    public H2OCallback(H2OCountedCompleter cc){super(cc);}
+    @Override protected void compute2(){throw H2O.fail();}
+    @Override public    void onCompletion(CountedCompleter caller){callback((T) caller);}
+    public abstract void callback(T t);
+  }
 
   // --------------------------------------------------------------------------
   // List of arguments.

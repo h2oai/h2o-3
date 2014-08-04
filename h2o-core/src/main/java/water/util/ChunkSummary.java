@@ -121,7 +121,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     sb.append("Internal FluidVec compression/distribution summary:\n");
     sb.append("Chunk type    count     fraction       size     rel. size\n");
     for (int j = 0; j < chunkTypes.length; ++j) {
-      if (chunk_counts[j] > 0)
+      if (chunk_counts != null && chunk_counts[j] > 0)
         sb.append(String.format("%8s %10d %10.3f %% %10s %10.3f %%\n",
                 chunkTypes[j],
                 chunk_counts[j],
@@ -142,7 +142,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       }
     }
     // display chunk distribution
-    if (byte_size_per_node.length > 1) {
+    if (byte_size_per_node != null && byte_size_per_node.length > 1) {
       sb.append(" mean size per node : " + display((long) byte_size_per_node_mean) + "\n");
       sb.append("  min size per node : " + display((long) byte_size_per_node_min) + "\n");
       sb.append("  max size per node : " + display((long) byte_size_per_node_max) + "\n");

@@ -1,12 +1,9 @@
 package water;
 
-import jsr166y.CountedCompleter;
-import sun.misc.Unsafe;
 import water.DException.DistributedException;
 import water.H2O.H2OCountedCompleter;
-import water.nbhm.UtilUnsafe;
 
-/** Objects which are passed & remotely executed.<p>
+/** Objects which are passed and remotely executed.<p>
  * <p>
  * Efficient serialization methods for subclasses will be automatically
  * generated, but explicit ones can be provided.  Transient fields will
@@ -30,7 +27,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   // Return a distributed-exception
   protected DException _ex;
   public final boolean hasException() { return _ex != null; }
-  public void setException(Throwable ex) { _ex = new DException(ex); }
+  public synchronized void setException(Throwable ex) { if( _ex==null ) _ex = new DException(ex); }
   public DistributedException getDException() { return _ex==null ? null : _ex.toEx(); }
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP
@@ -52,15 +49,10 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   public void onAckAck() {}
 
   /** Override to remove 2 lines of logging per RPC.  0.5M RPC's will lead to
-   *  1M lines of logging at about 50 bytes/line --> 50M of log file, which
-   *  will swamp all other logging output. */
+   *  1M lines of logging at about 50 bytes/line produces 50M of log file,
+   *  which will swamp all other logging output. */
   public boolean logVerbose() { return true; }
 
-  // the exception should be forwarded and handled later, do not do anything
-  // here (mask stack trace printing of H2OCountedCompleter)
-  @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
-    return true;
-  }
   // For MRTasks, we need to copyOver
   protected void copyOver( T src ) { icer().copyOver(this,src); }
 }

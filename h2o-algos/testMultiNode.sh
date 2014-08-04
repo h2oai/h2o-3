@@ -8,10 +8,7 @@ rm -fr $OUTDIR; mkdir -p $OUTDIR
 SEP=:
 case "`uname`" in
     CYGWIN* )
-      SEP=;
-      ;;
-    Darwin* )
-      SEP=:
+      SEP=";"
       ;;
 esac
 
