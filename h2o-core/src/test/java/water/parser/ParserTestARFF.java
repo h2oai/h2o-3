@@ -73,7 +73,7 @@ public class ParserTestARFF extends TestUtil {
     Frame k1 = null, k2 = null;
     try {
       k2 = parse_test_file_single_quotes("smalldata/junit/arff/iris.arff");
-      k1 = parse_test_file_single_quotes("smalldata/junit/string.csv");
+      k1 = parse_test_file_single_quotes("smalldata/junit/cars.csv");
       Assert.assertFalse("parsed values do not match!", isBitIdentical(k1, k2));
     } finally {
       if( k1 != null ) k1.delete();
@@ -89,22 +89,6 @@ public class ParserTestARFF extends TestUtil {
       k1 = parse_test_file("smalldata/junit/iris.csv");
       Assert.assertTrue("parsed values do not match!", isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
-    } finally {
-      if( k1 != null ) k1.delete();
-      if( k2 != null ) k2.delete();
-    }
-  }
-
-  // clean ARFF file for strings
-  @Test
-  @Ignore //not yet implemented
-  public void testSimpleString() {
-    Frame k1 = null, k2 = null;
-    try {
-      k2 = parse_test_file_single_quotes("smalldata/junit/arff/string.arff");
-      k1 = parse_test_file_single_quotes("smalldata/junit/arff/string.csv");
-      Assert.assertTrue("parsed values do not match!", isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
