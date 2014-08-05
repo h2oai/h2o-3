@@ -23,10 +23,11 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
           "C4S",
           "C4F",
           "C8",
-          "C16",
-          "CXI",
-          "CXD",
-          "CX0",
+          "C16",                // UUID
+          "CStr",               // Strings
+          "CX0",                // Sparser bitvector
+          "CXI",                // Sparse ints
+          "CXD",                // Sparse doubles
           "C8D", //leave this as last -> no compression
   };
 
