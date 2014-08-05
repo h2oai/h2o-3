@@ -8,10 +8,13 @@ import water.H2O;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import static water.parser.ParserTest.makeByteVec;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ParserTestARFF extends TestUtil {
 
@@ -30,16 +33,32 @@ public class ParserTestARFF extends TestUtil {
       Assert.assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
         Vec vec = fr.vecs()[j];
-        if (exp[j] == ParseDataset2.FVecDataOut.TCOL) {
+        if (exp[j] == ParseDataset2.FVecDataOut.TCOL) { //Time
           Assert.assertTrue(vec.isTime());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.ECOL) {
+//          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
+          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isString());
+          Assert.assertFalse(vec.isUUID());
+        } else if (exp[j] == ParseDataset2.FVecDataOut.ECOL) { //Enum
           Assert.assertTrue(vec.isEnum());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.SCOL) {
+//          Assert.assertFalse(vec.isInt()); //FIXME enum is encoded as integer, but should isInt() be true?
+          Assert.assertFalse(vec.isString());
+          Assert.assertFalse(vec.isTime());
+          Assert.assertFalse(vec.isUUID());
+        } else if (exp[j] == ParseDataset2.FVecDataOut.SCOL) { //String
           Assert.assertTrue(vec.isString());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.NCOL) {
+          Assert.assertFalse(vec.isInt());
+          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isTime());
+          Assert.assertFalse(vec.isUUID());
+        } else if (exp[j] == ParseDataset2.FVecDataOut.NCOL) { //Numeric (can be Int or not)
           Assert.assertTrue(!vec.isEnum() && !vec.isString() && !vec.isUUID() && !vec.isTime());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.ICOL) {
+        } else if (exp[j] == ParseDataset2.FVecDataOut.ICOL) { //UUID
           Assert.assertTrue(vec.isUUID());
+//          Assert.assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
+          Assert.assertFalse(vec.isEnum());
+          Assert.assertFalse(vec.isString());
+          Assert.assertFalse(vec.isTime());
         } else throw H2O.unimpl();
       }
     } finally {
@@ -531,6 +550,86 @@ public class ParserTestARFF extends TestUtil {
     };
     Key k = ParserTest.makeByteVec(data);
     ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+  }
+
+  @Test public void testNumSplit(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num numeric\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 =
+                    "4\n" +
+                    "5\n" +
+                    "6\n";
+    double[][] exp = new double[][] {
+            ard(0),
+            ard(1.324e-13),
+            ard(-2),
+            ard(4),
+            ard(5),
+            ard(6),
+    };
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,6);
+  }
+
+  @Test public void testEnumSplit(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num ENUM\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 =
+            "4\n" +
+                    "5\n" +
+                    "6\n";
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertTrue(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isString());
+    Assert.assertTrue(fr.anyVec().factors().length == 6);
+    fr.delete();
+  }
+
+  @Test public void testStringSplit(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num STRING\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 =
+            "4\n" +
+                    "5234234234\n" +
+                    "6\n";
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertTrue(fr.anyVec().isString());
+    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isInt());
+    ValueString vs = new ValueString();
+    Assert.assertTrue(fr.anyVec().atStr(vs, 3).toString().equals("4"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 4).toString().equals("5234234234"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 5).toString().equals("6"));
+    fr.delete();
   }
 
 }
