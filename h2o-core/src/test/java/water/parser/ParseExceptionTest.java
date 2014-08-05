@@ -7,9 +7,9 @@ import water.*;
 import water.fvec.*;
 
 public class ParseExceptionTest extends TestUtil {
-  public ParseExceptionTest() { super(3); }
+  static public void setup() { stall_till_cloudsize(1); }
 
-  @Test public void testParserRecoversFromException() {
+  /*@Test*/ public void testParserRecoversFromException() {
     Throwable ex = null;
     Key fkey0=null,fkey1=null,fkey2=null,okey=null;
     try {
@@ -30,12 +30,14 @@ public class ParseExceptionTest extends TestUtil {
       // Cleanup is buggy, in the other JVMs run-on, and produce more output
       // keys even after the job is canceled.  Sleep till they hopefully
       // shutdown, then remove keys.
-      try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
-      //Value v = DKV.get(fkey0);
-      //if( v != null ) {
-      //  NFSFileVec nfs = v.get();
-      //  System.out.println(nfs.toString());
-      //}
+      System.out.print(H2O.STOREtoString());
+      try { Thread.sleep(5000); } catch( InterruptedException ignore ) { }
+      Value v = DKV.get(fkey0);
+      if( v != null ) {
+        NFSFileVec nfs = v.get();
+        System.out.println(nfs.toString());
+      }
+      System.out.print(H2O.STOREtoString());
       assertTrue( "Parse should throw an NPE",ex!=null);
       assertTrue( "All input & output keys not removed", DKV.get(fkey0)==null );
       assertTrue( "All input & output keys not removed", DKV.get(fkey1)==null );
