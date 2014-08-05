@@ -10,7 +10,7 @@ public enum ParserType {
     if( this==AUTO ) return "";
     StringBuilder sb = new StringBuilder(name());
     sb.append(" data with ").append(ncols).append(" columns");
-    if( this==CSV || this==ARFF ) sb.append(" using '").append((char)separator).append("' (\\").append(separator).append("04d) as separator.");
+    if( this==CSV || this==ARFF  && separator != ParseSetup.AUTO_SEP) sb.append(" using '").append((char)separator).append("' (\\").append(separator).append("04d) as separator.");
     return sb.toString();
   }
 }
