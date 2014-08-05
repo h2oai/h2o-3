@@ -1,1 +1,0 @@
-Split data into 2 ARFF files: one has header + part of the data, the other is plain CSV.
