@@ -878,17 +878,17 @@ public final class ParseDataset2 extends Job<Frame> {
     try {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
-
-      String format = " %-7s  %11s %12s %12s %11s %8s %6s";
+      int namelen = 0;
+      for (String s : fr.names()) namelen = Math.max(namelen, s.length());
+      String format = " %"+namelen+"s %11s %12s %12s %11s %8s %6s";
       Log.info(String.format(format, "Col", "type", "min", "max", "NAs", "constant", "numLevels"));
-
       Vec[] vecArr = fr.vecs();
       for( int i = 0; i < vecArr.length; i++ ) {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
         boolean isString = v.isString();
-        String CStr = String.format("C%d:", i + 1);
+        String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
         String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : "numeric"))));
         String minStr = isString ? "" : String.format("%g", v.min());
         String maxStr = isString ? "" : String.format("%g", v.max());
