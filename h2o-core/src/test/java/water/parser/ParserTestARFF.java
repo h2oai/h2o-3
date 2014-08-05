@@ -418,7 +418,6 @@ public class ParserTestARFF extends TestUtil {
 
   // split files into header + csv data
   @Test
-  @Ignore
   public void testFolder1() {
     Frame k1 = null, k2 = null;
     try {
@@ -434,11 +433,40 @@ public class ParserTestARFF extends TestUtil {
 
   // split files into header/data + more data
   @Test
-  @Ignore
   public void testFolder2() {
     Frame k1 = null, k2 = null;
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder2/" );
+      k1 = parse_test_file("smalldata/junit/arff/iris.arff");
+      Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
+      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+    } finally {
+      if( k1 != null ) k1.delete();
+      if( k2 != null ) k2.delete();
+    }
+  }
+
+  // split files into header/data + more data
+  @Test
+  public void testFolder3() {
+    Frame k1 = null, k2 = null;
+    try {
+      k2 = parse_test_folder("smalldata/junit/arff/folder3/" );
+      k1 = parse_test_file("smalldata/junit/arff/iris.arff");
+      Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
+      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+    } finally {
+      if( k1 != null ) k1.delete();
+      if( k2 != null ) k2.delete();
+    }
+  }
+
+  // split files into header/data + many many more files
+  @Test
+  public void testFolder4() {
+    Frame k1 = null, k2 = null;
+    try {
+      k2 = parse_test_folder("smalldata/junit/arff/folder4/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
       Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));

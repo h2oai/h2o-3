@@ -134,8 +134,18 @@ public final class ParseSetup extends Iced {
     assert _isValid;
     ParseSetup ps = guessSetup(bits, _singleQuotes, checkHeader);
     if( !ps._isValid ) return ps; // Already invalid
-    if( _pType != ps._pType ||
-            (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) )
+
+    // ARFF wins over CSV (Note: ARFF might not know separator or ncols yet)
+    if (_pType == ParserType.CSV && ps._pType == ParserType.ARFF) {
+      if (ps._sep == ParseSetup.AUTO_SEP && _sep != ParseSetup.AUTO_SEP) ps._sep = _sep; //use existing separator
+      return ps;
+    }
+    if (_pType == ParserType.ARFF && ps._pType == ParserType.CSV) {
+      if (ps._sep != ParseSetup.AUTO_SEP && _sep == ParseSetup.AUTO_SEP) _sep = ps._sep; //use existing separator
+      return this;
+    }
+
+    if( _pType != ps._pType || ( (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) || (_pType == ParserType.ARFF && (_sep != ps._sep || _ncols != ps._ncols)) ) )
       return new ParseSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
     return ps;
   }
