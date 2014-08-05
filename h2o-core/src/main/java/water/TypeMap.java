@@ -36,7 +36,7 @@ public class TypeMap {
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
-  static private String[] CLAZZES;
+  static String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of IcedImpl
   static private Icer[] GOLD;
   // Unique IDs
