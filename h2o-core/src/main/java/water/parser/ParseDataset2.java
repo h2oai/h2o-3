@@ -42,7 +42,7 @@ public final class ParseDataset2 extends Job<Frame> {
   private static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParseSetup globalSetup = ParseSetup.guessSetup(bits, singleQuote, checkHeader);
-    if( globalSetup._ncols <= 0 ) throw new java.lang.IllegalArgumentException(globalSetup.toString());
+    if( globalSetup._ncols <= 0 ) throw new UnsupportedOperationException(globalSetup.toString());
     return globalSetup;
   }
 

@@ -81,7 +81,14 @@ public final class ParseSetup extends Iced {
     return conflictingNames;
   }
 
-  @Override public String toString() { return _pType.toString( _ncols, _sep ); }
+  @Override public String toString() {
+    if (_errors != null) {
+      StringBuilder sb = new StringBuilder();
+      for (String e : _errors) sb.append(e).append("\n");
+      return sb.toString();
+    }
+    return _pType.toString( _ncols, _sep );
+  }
 
   static boolean allStrings(String [] line){
     ValueString str = new ValueString();
