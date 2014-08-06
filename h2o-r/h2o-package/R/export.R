@@ -1,3 +1,9 @@
+#'
+#' Data Export
+#'
+#' Export data to local disk or HDFS.
+#' Save models to local disk or HDFS.
+
 h2o.exportFile <- function(data, path, force = FALSE) {
     canHandle = FALSE
     if (class(data) == "H2OParsedData") { canHandle = TRUE }
@@ -44,4 +50,22 @@ h2o.downloadCSV <- function(data, filename) {
   val <- system2(cmd, args, wait=T)
   if( val != 0 )
     print(paste('Bad return val', val))
+}
+
+# ------------------- Save H2O Model to Disk ----------------------------------------------------
+h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
+  if(missing(object)) stop('Must specify object')
+  if(!inherits(object,'H2OModel')) stop('object must be an H2O model')
+  if(!is.character(dir)) stop('path must be of class character')
+  if(!is.character(name)) stop('name must be of class character')
+  if(!is.character(filename)) stop('filename must be of class character')
+  if(!is.logical(force)) stop('force must be either TRUE or FALSE')
+  if(nchar(name) == 0) name = object@key
+
+  path <- if(filename != "") filename else paste(dir, name, sep='/')
+  #path <- gsub('//', '/', path)    # I have no idea why this is here, but it breaks HDFS and S3N paths
+
+  force = ifelse(force==TRUE, 1, 0)
+  res = .h2o.__remoteSend(object@data@h2o, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  path
 }

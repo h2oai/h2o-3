@@ -1,5 +1,5 @@
 #'
-#' Class definitions and their `show` methods.
+#' Class definitions and their `show` & `summary` methods.
 #'
 #'
 #' To conveniently and safely pass messages between R and H2O, this package relies
@@ -8,8 +8,8 @@
 #' will typically never have to reason with these objects directly, as there are
 #' S3 accessor methods provided for creating new objects.
 #'
-#' The S4 classes used by the h2o package are grouped into three divisions,
-#' namely the '"FluidVec"' (FV), '"ValueArray"' (VA), and '"AST"' groups.
+#' The S4 classes used by the h2o package are grouped into two divisions,
+#' namely the '"FluidVec"' (FV) and '"AST"' groups.
 #'
 #'      1. Group '"FluidVec"':
 #'          FluidVec (or FV for short) is an H2O specific internal
@@ -21,12 +21,7 @@
 #'          now the dominant data type used by algorithms and analytical
 #'          operations in H2O.
 #'
-#'      2. Group '"ValueArray"':
-#'          ValueArray (or VA for short) is a legacy H2O specific internal
-#'          representation of the data. Data is striped row-wise into chunks,
-#'          which are distributed across the cluster.
-#'
-#'      3. Group '"AST"':
+#'      2. Group '"AST"':
 #'          R expressions involving objects from group '"FluidVec"' or group
 #'          '"ValueArray"' are _lazily evaluated_. Therefore, when assigning
 #'          to a new R variable, the R variable represents a _promise_ to
@@ -94,11 +89,16 @@ setClass("H2OFrame", contains="VIRTUAL")
 #' The slot `key` is a character string _of the same name_ as the key that resides in the H2O cloud.
 #'
 #' This class inherits from H2OFrame.
-setClass("H2OParsedData", representation(h2o="H2OClient", key="character", logic="logical"), prototype(logic=FALSE), contains="H2OFrame")
+setClass("H2OParsedData",
+            representation(h2o="H2OClient", key="character", logic="logical", col_names="vector",
+                           nrows="numeric", ncols="numeric", any_enum="logical"),
+            prototype(logic=FALSE, col_names="", ncols=-1, nrows=-1, any_enum = FALSE),
+            contains="H2OFrame")
 
 setMethod("show", "H2OParsedData", function(object) {
   print(object@h2o)
   cat("Parsed Data Key:", object@key, "\n")
+  # print(head(object)) TODO
 })
 
 #'
@@ -110,21 +110,7 @@ setMethod("show", "H2OParsedData", function(object) {
 #' the data used to build the model (an object of class H2OParsedData).
 setClass("H2OModel", representation(key="character", data="H2OParsedData", model="list", "VIRTUAL"))
 
-#'
-#' The H2OGrid class.
-#'
-#' This virtual class represents a grid search performed by H2O.
-#'
-#' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
-setClass("H2OGrid", representation(key="character",   data="H2OParsedData", model="list", sumtable="list", "VIRTUAL"))
-
-setMethod("show", "H2OGrid", function(object) {
-  print(object@data)
-  cat("Grid Search Model Key:", object@key, "\n")
-
-  temp = data.frame(t(sapply(object@sumtable, c)))
-  cat("\nSummary\n"); print(temp)
-})
+# No show method for this type of object.
 
 #'
 #' The H2OPerfModel class.
@@ -135,7 +121,12 @@ setClass("H2OPerfModel", representation(cutoffs="numeric", measure="numeric", pe
 setMethod("show", "H2OPerfModel", function(object) {
   model = object@model
   tmp = t(data.frame(model[-length(model)]))
-  rownames(tmp) = c("AUC", "Gini", "Best Cutoff", "F1", "Accuracy", "Precision", "Recall", "Specificity", "Max per Class Error")
+
+  if(object@perf == "mcc")
+    criterion = "MCC"
+  else
+    criterion = paste(toupper(substring(object@perf, 1, 1)), substring(object@perf, 2), sep = "")
+  rownames(tmp) = c("AUC", "Gini", paste("Best Cutoff for", criterion), "F1", "Accuracy", "Error", "Precision", "Recall", "Specificity", "MCC", "Max per Class Error")
   colnames(tmp) = "Value"; print(tmp)
   cat("\n\nConfusion matrix:\n"); print(model$confusion)
 })
@@ -147,48 +138,89 @@ setMethod("show", "H2OPerfModel", function(object) {
 setClass("H2OGLMModel", representation(xval="list"), contains="H2OModel")
 
 setMethod("show", "H2OGLMModel", function(object) {
-  print(object@data)
-  cat("GLM2 Model Key:", object@key)
+    print(object@data@h2o)
+    cat("Parsed Data Key:", object@data@key, "\n\n")
+    cat("GLM2 Model Key:", object@key)
 
-  model = object@model
-  cat("\n\nCoefficients:\n"); print(round(model$coefficients,5))
-  if(!is.null(model$normalized_coefficients)) {
-    cat("\nNormalized Coefficients:\n"); print(round(model$normalized_coefficients,5))
-  }
-  cat("\nDegrees of Freedom:", model$df.null, "Total (i.e. Null); ", model$df.residual, "Residual")
-  cat("\nNull Deviance:    ", round(model$null.deviance,1))
-  cat("\nResidual Deviance:", round(model$deviance,1), " AIC:", round(model$aic,1))
-  cat("\nDeviance Explained:", round(1-model$deviance/model$null.deviance,5))
-  cat("\nAvg Training Error Rate:", round(model$train.err,5), "\n")
-
-  family = model$params$family$family
-  if(family == "binomial") {
-    cat("AUC:", round(model$auc,5), " Best Threshold:", round(model$best_threshold,5))
-    cat("\n\nConfusion Matrix:\n"); print(model$confusion)
-  }
-
-  if(length(object@xval) > 0) {
-    cat("\nCross-Validation Models:\n")
-    if(family == "binomial") {
-      modelXval = t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$auc, 1-x@model$deviance/x@model$null.deviance) }))
-      colnames(modelXval) = c("Nonzeros", "AUC", "Deviance Explained")
-    } else {
-      modelXval = t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$aic, 1-x@model$deviance/x@model$null.deviance) }))
-      colnames(modelXval) = c("Nonzeros", "AIC", "Deviance Explained")
+    model <- object@model
+    cat("\n\nCoefficients:\n"); print(round(model$coefficients,5))
+    if(!is.null(model$normalized_coefficients)) {
+        cat("\nNormalized Coefficients:\n"); print(round(model$normalized_coefficients,5))
     }
-    rownames(modelXval) = paste("Model", 1:nrow(modelXval))
-    print(modelXval)
-  }
+    cat("\nDegrees of Freedom:", model$df.null, "Total (i.e. Null); ", model$df.residual, "Residual")
+    cat("\nNull Deviance:    ", round(model$null.deviance,1))
+    cat("\nResidual Deviance:", round(model$deviance,1), " AIC:", round(model$aic,1))
+    cat("\nDeviance Explained:", round(1-model$deviance/model$null.deviance,5), "\n")
+    # cat("\nAvg Training Error Rate:", round(model$train.err,5), "\n")
+
+    family <- model$params$family$family
+    if(family == "binomial") {
+        cat("AUC:", round(model$auc,5), " Best Threshold:", round(model$best_threshold,5))
+        cat("\n\nConfusion Matrix:\n"); print(model$confusion)
+    }
+
+    if(length(object@xval) > 0) {
+        cat("\nCross-Validation Models:\n")
+        if(family == "binomial") {
+            modelXval <- t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$auc, 1-x@model$deviance/x@model$null.deviance) }))
+            colnames(modelXval) = c("Nonzeros", "AUC", "Deviance Explained")
+        } else {
+            modelXval <- t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$aic, 1-x@model$deviance/x@model$null.deviance) }))
+            colnames(modelXval) = c("Nonzeros", "AIC", "Deviance Explained")
+        }
+        rownames(modelXval) <- paste("Model", 1:nrow(modelXval))
+        print(modelXval)
+    }
+})
+
+#'
+#' The H2OGLMModelList class.
+#'
+#' This class represents a list of generalized linear models produced from a lambda search.
+setClass("H2OGLMModelList", representation(models="list", best_model="numeric", lambdas="numeric"))
+
+setMethod("summary","H2OGLMModelList", function(object) {
+    summary <- NULL
+    if(object@models[[1]]@model$params$family$family == 'binomial'){
+        for(m in object@models) {
+            model = m@model
+            if(is.null(summary)) {
+                summary = t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2),round(model$auc,2))))
+            } else {
+                summary = rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2),round(model$auc,2)))
+            }
+        }
+        summary = cbind(1:nrow(summary),summary)
+        colnames(summary) <- c("id","lambda","predictors","dev.ratio"," AUC ")
+    } else {
+        for(m in object@models) {
+            model = m@model
+            if(is.null(summary)) {
+                summary = t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2))))
+            } else {
+                summary = rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2)))
+            }
+        }
+        summary = cbind(1:nrow(summary),summary)
+        colnames(summary) <- c("id","lambda","predictors","explained dev")
+    }
+    summary
+})
+
+setMethod("show", "H2OGLMModelList", function(object) {
+    print(summary(object))
+    cat("best model:",object@best_model, "\n")
 })
 
 #'
 #' The H2ODeepLearningModel class.
 #'
 #' This class represents a deep learning model.
-setClass("H2ODeepLearningModel", representation(valid="H2OParsedData"), contains="H2OModel")
+setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 setMethod("show", "H2ODeepLearningModel", function(object) {
-  print(object@data)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Deep Learning Model Key:", object@key)
 
   model = object@model
@@ -196,8 +228,27 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
   cat("\nTraining mean square error:", model$train_sqr_error)
   cat("\n\nValidation classification error:", model$valid_class_error)
   cat("\nValidation square error:", model$valid_sqr_error)
+
   if(!is.null(model$confusion)) {
-    cat("\n\nConfusion matrix:\n"); cat("Reported on", object@valid@key, "\n"); print(model$confusion)
+    cat("\n\nConfusion matrix:\n")
+    if(is.na(object@valid@key)) {
+      if(model$params$nfolds == 0)
+        cat("Reported on", object@data@key, "\n")
+      else
+        cat("Reported on", paste(model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+    } else
+      cat("Reported on", object@valid@key, "\n")
+    print(model$confusion)
+  }
+
+  if(!is.null(model$hit_ratios)) {
+    cat("\nHit Ratios for Multi-class Classification:\n")
+    print(model$hit_ratios)
+  }
+
+  if(!is.null(object@xval) && length(object@xval) > 0) {
+    cat("\nCross-Validation Models:\n")
+    temp = lapply(object@xval, function(x) { cat(" ", x@key, "\n") })
   }
 })
 
@@ -205,10 +256,11 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
 #' The H2ODRFModel class.
 #'
 #' This class represents a distributed random forest model.
-setClass("H2ODRFModel", representation(valid="H2OParsedData"), contains="H2OModel" )
+setClass("H2ODRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 setMethod("show", "H2ODRFModel", function(object) {
-  print(object@data)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Distributed Random Forest Model Key:", object@key)
 
   model = object@model
@@ -217,8 +269,13 @@ setMethod("show", "H2ODRFModel", function(object) {
   cat("\nTree statistics:\n"); print(model$forest)
 
   if(model$params$classification) {
-    cat("\nConfusion matrix:\n"); cat("Reported on", object@valid@key, "\n")
+    cat("\nConfusion matrix:\n")
+    if(is.na(object@valid@key))
+      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+    else
+      cat("Reported on", object@valid@key, "\n")
     print(model$confusion)
+
     if(!is.null(model$auc) && !is.null(model$gini))
       cat("\nAUC:", model$auc, "\nGini:", model$gini, "\n")
   }
@@ -226,21 +283,30 @@ setMethod("show", "H2ODRFModel", function(object) {
     cat("\nVariable importance:\n"); print(model$varimp)
   }
   cat("\nMean-squared Error by tree:\n"); print(model$mse)
+  if(length(object@xval) > 0) {
+    cat("\nCross-Validation Models:\n")
+    print(sapply(object@xval, function(x) x@key))
+  }
 })
 
 #'
 #' The H2OGBMModel class.
 #'
 #' This class represents a gradient boosted machines model.
-setClass("H2OGBMModel", representation(valid="H2OParsedData"), contains="H2OModel")
+setClass("H2OGBMModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 setMethod("show", "H2OGBMModel", function(object) {
-  print(object@data)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("GBM Model Key:", object@key, "\n")
 
   model = object@model
   if(model$params$distribution %in% c("multinomial", "bernoulli")) {
-    cat("\nConfusion matrix:\nReported on", object@valid@key, "\n");
+    cat("\nConfusion matrix:\n")
+    if(is.na(object@valid@key))
+      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+    else
+      cat("Reported on", object@valid@key, "\n")
     print(model$confusion)
 
     if(!is.null(model$auc) && !is.null(model$gini))
@@ -251,17 +317,23 @@ setMethod("show", "H2OGBMModel", function(object) {
     cat("\nVariable importance:\n"); print(model$varimp)
   }
   cat("\nMean-squared Error by tree:\n"); print(model$err)
+  if(length(object@xval) > 0) {
+    cat("\nCross-Validation Models:\n")
+    print(sapply(object@xval, function(x) x@key))
+  }
 })
 
 #'
 #' The H2OSpeeDRFModel class.
 #'
 #' This class represents a speedrf model. Another random forest model variant.
-setClass("H2OSpeeDRFModel", representation(valid="H2OParsedData"), contains="H2OModel")
+setClass("H2OSpeeDRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 setMethod("show", "H2OSpeeDRFModel", function(object) {
-  print(object@data)
-  cat("SpeeDRF Model Key:", object@key)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
+  cat("Random Forest Model Key:", object@key)
+  cat("\n\nSeed Used: ", object@model$params$seed)
 
   model = object@model
   cat("\n\nClassification:", model$params$classification)
@@ -269,8 +341,16 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 
   if(FALSE){ #model$params$oobee) {
     cat("\nConfusion matrix:\n"); cat("Reported on oobee from", object@valid@key, "\n")
+    if(is.na(object@valid@key))
+      cat("Reported on oobee from", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+    else
+      cat("Reported on oobee from", object@valid@key, "\n")
   } else {
-    cat("\nConfusion matrix:\n"); cat("Reported on", object@valid@key,"\n")
+    cat("\nConfusion matrix:\n");
+    if(is.na(object@valid@key))
+      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+    else
+      cat("Reported on", object@valid@key, "\n")
   }
   print(model$confusion)
 
@@ -280,7 +360,14 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 
   #mse <-model$mse[length(model$mse)] # (model$mse[is.na(model$mse) | model$mse <= 0] <- "")
 
-  cat("\nMean-squared Error from the",model$params$ntree, "trees: "); cat(model$mse, "\n")
+  if (model$mse != -1) {
+    cat("\nMean-squared Error from the",model$params$ntree, "trees: "); cat(model$mse, "\n")
+  }
+
+  if(length(object@xval) > 0) {
+    cat("\nCross-Validation Models:\n")
+    print(sapply(object@xval, function(x) x@key))
+  }
 })
 
 #'
@@ -290,13 +377,15 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 setClass("H2ONBModel", contains="H2OModel")
 
 setMethod("show", "H2ONBModel", function(object) {
-  print(object@data)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Naive Bayes Model Key:", object@key)
 
   model = object@model
   cat("\n\nA-priori probabilities:\n"); print(model$apriori_prob)
   cat("\n\nConditional probabilities:\n"); print(model$tables)
 })
+
 
 #'
 #' The H2OPCAModel class.
@@ -305,7 +394,8 @@ setMethod("show", "H2ONBModel", function(object) {
 setClass("H2OPCAModel", contains="H2OModel")
 
 setMethod("show", "H2OPCAModel", function(object) {
-  print(object@data)
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("PCA Model Key:", object@key)
 
   model = object@model
@@ -320,16 +410,35 @@ setMethod("show", "H2OPCAModel", function(object) {
 setClass("H2OKMeansModel", contains="H2OModel")
 
 setMethod("show", "H2OKMeansModel", function(object) {
-  print(object@data)
-  cat("K-Means Model Key:", object@key)
+    print(object@data@h2o)
+    cat("Parsed Data Key:", object@data@key, "\n\n")
+    cat("K-Means Model Key:", object@key)
 
-  model = object@model
-  cat("\n\nK-means clustering with", length(model$size), "clusters of sizes "); cat(model$size, sep=", ")
-  cat("\n\nCluster means:\n"); print(model$centers)
-  cat("\nClustering vector:\n"); print(summary(model$cluster))
-  cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
-  cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
-  cat("\nAvailable components:\n\n"); print(names(model))
+    model = object@model
+    cat("\n\nK-means clustering with", length(model$size), "clusters of sizes "); cat(model$size, sep=", ")
+    cat("\n\nCluster means:\n"); print(model$centers)
+    cat("\nClustering vector:\n"); print(summary(model$cluster))
+    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
+    cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
+    cat("\nAvailable components:\n\n"); print(names(model))
+})
+
+
+#'
+#' The H2OGrid class.
+#'
+#' This virtual class represents a grid search performed by H2O.
+#'
+#' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
+setClass("H2OGrid", representation(key="character",   data="H2OParsedData", model="list", sumtable="list", "VIRTUAL"))
+
+setMethod("show", "H2OGrid", function(object) {
+  print(object@data@h2o)
+  cat("Parsed Data Key:", object@data@key, "\n\n")
+  cat("Grid Search Model Key:", object@key, "\n")
+
+  temp = data.frame(t(sapply(object@sumtable, c)))
+  cat("\nSummary\n"); print(temp)
 })
 
 #'
@@ -362,139 +471,11 @@ setClass("H2ODRFGrid", contains="H2OGrid")
 #' The grid search for a deep learning model.
 setClass("H2ODeepLearningGrid", contains="H2OGrid")
 
-
-#-----------------------------------------------------------------------------------------------------------------------
-# ValueArray Class Defintions
-#-----------------------------------------------------------------------------------------------------------------------
 #'
-#' The H2ORawDataVA class.
+#' The H2OSpeeDRFGrid class.
 #'
-#' This class represents data in a post-import format.
-#'
-#' The H2ORawData is a representation of the imported, not yet parsed, data.
-setClass("H2ORawDataVA", representation(h2o="H2OClient",  key="character"))
-
-setMethod("show", "H2ORawDataVA", function(object) {
-  print(object@h2o)
-  cat("Raw Data Key:", object@key, "\n")
-})
-
-#'
-#' The H2OParsedDataVA class.
-#'
-#' The H2OParsedDataVA class subclasses the H2OParsedData class.
-setClass("H2OParsedDataVA", contains="H2OParsedData")
-
-setMethod("show", "H2OParsedDataVA", function(object) {
-  print(object@h2o)
-  cat("Parsed Data Key:", object@key, "\n")
-})
-
-#'
-#' The H2OModelVA class.
-#'
-#' A virtual class that refers to legacy ValueArray backed algorithms.
-setClass("H2OModelVA", representation(key="character", data="H2OParsedDataVA", model="list", "VIRTUAL"))
-
-#'
-#' The H2OGridVA class.
-#'
-#' This virtual class represents a grid search performed by H2O over a legacy ValueArray backed algorithm.
-#'
-#' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
-setClass("H2OGridVA", representation(key="character", data="H2OParsedDataVA", model="list", sumtable="list", "VIRTUAL"))
-
-setMethod("show", "H2OGridVA", function(object) {
-  print(object@data)
-  cat("Grid Search Model Key:", object@key, "\n")
-
-  temp = data.frame(t(sapply(object@sumtable, c)))
-  cat("\nSummary\n"); print(temp)
-})
-
-#'
-#' The H2OGLMModelVA class.
-#'
-#' The legacy ValueArray backed generalized linear model.
-setClass("H2OGLMModelVA", representation(xval="list"), contains="H2OModelVA")
-
-setMethod("show", "H2OGLMModelVA", function(object) {
-  print(object@data)
-  cat("GLM Model Key:", object@key, "\n\n")
-
-  model = object@model
-  cat("Coefficients:\n"); print(round(model$coefficients,5))
-  if(!is.null(model$normalized_coefficients)) {
-    cat("\nNormalized Coefficients:\n"); print(round(model$normalized_coefficients,5))
-  }
-  cat("\nDegrees of Freedom:", model$df.null, "Total (i.e. Null); ", model$df.residual, "Residual")
-  cat("\nNull Deviance:    ", round(model$null.deviance,1))
-  cat("\nResidual Deviance:", round(model$deviance,1), " AIC:", round(model$aic,1))
-  cat("\nDeviance Explained:", round(1-model$deviance/model$null.deviance,5))
-  cat("\nAvg Training Error Rate:", round(model$train.err,5), "\n")
-
-  family = model$params$family$family
-  if(family == "binomial") {
-    cat("AUC:", round(model$auc,5), " Best Threshold:", round(model$threshold,5))
-    cat("\n\nConfusion Matrix:\n"); print(model$confusion)
-  }
-
-  if(length(object@xval) > 0) {
-    cat("\nCross-Validation Models:\n")
-    if(family == "binomial") {
-      modelXval = t(sapply(object@xval, function(x) { c(x@model$threshold, x@model$auc, x@model$class.err) }))
-      colnames(modelXval) = c("Best Threshold", "AUC", "Err(0)", "Err(1)")
-    } else {
-      modelXval = sapply(object@xval, function(x) { x@model$train.err })
-      modelXval = data.frame(modelXval)
-      colnames(modelXval) = c("Error")
-    }
-    rownames(modelXval) = paste("Model", 0:(nrow(modelXval)-1))
-    print(modelXval)
-  }
-})
-
-#'
-#' The H2OGLMGridVA class.
-#'
-#' The legacy ValueArray backed grid search of a generalized linear model.
-setClass("H2OGLMGridVA", contains="H2OGridVA")
-
-#'
-#' The H2OKMeansModelVA class.
-#'
-#' The legacy ValueArray backed KMeans model.
-setClass("H2OKMeansModelVA", contains="H2OModelVA")
-
-setMethod("show", "H2OKMeansModelVA", function(object) {
-  print(object@data)
-  cat("K-Means Model Key:", object@key)
-
-  model = object@model
-  cat("\n\nK-means clustering with", length(model$size), "clusters of sizes "); cat(model$size, sep=", ")
-  cat("\n\nCluster means:\n"); print(model$centers)
-  cat("\nClustering vector:\n"); print(summary(model$cluster))
-  cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
-  cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
-  cat("\nAvailable components:\n"); print(names(model))
-})
-
-#'
-#' The H2ORFModelVA class.
-#'
-#' The legacy ValueArray backed Random Forest model. It's directly analagous to the FluidVec backed SpeeDRF rather than DRF.
-setClass("H2ORFModelVA", contains="H2OModelVA")
-
-setMethod("show", "H2ORFModelVA", function(object) {
-  print(object@data)
-  cat("Random Forest Model Key:", object@key)
-
-  model = object@model
-  cat("\n\nClassification Error:", model$classification_error)
-  cat("\nConfusion Matrix:\n"); print(model$confusion)
-  cat("\nTree Stats:\n"); print(model$tree_sum)
-})
-
+#' The grid search object for a speedrf model.
+setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # AST Class Defintions

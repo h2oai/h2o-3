@@ -115,3 +115,4 @@ h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
   # download.file(url, destfile = myPath)
   writeBin(tempfile, myPath)
 }
+

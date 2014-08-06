@@ -8,20 +8,29 @@ import water.Iced;
 /**
  * An interpreter.
  *
- * Note the (no longer tacit) assumption that when local is null, execution is assumed to be in the global environment.
- * And when local is not null, execution is assumed to be in the local environment *only* -- the global environment is
- * assumed to be read-only (can only peek and peekAt) in this case.
+ * Parse an AST and then execute the AST by walking it.
+ *
+ * Parsing:
+ *
+ *   Trees are defined in the following way:
+ *
+ *   '(' begins a tree node
+ *   ')' ends   a tree node
+ *   '#'   signals the parser to parse a double
+ *   '_s_' signals the parser to parse a string
+ *   '$'   signals a named column selection
+ *   '['   signals a column slice by index  -> R shalt replace column names with their indexes!
+ *   '_a_' signals the parser to assign the RHS to the LHS.
+ *   '_f_' signals the parser to a parse a UDF.
  */
 
 public class Exec extends Iced {
+
   //parser
   final byte[] _ast;
   int _x;
 
-//  final ArrayList<Env> _display;  // A list of scopes, idx0 is the global scope.
-//  final AST2IR _ast2ir;           // The set of instructions for each Program.
-
-//  public Exec make(JsonObject ast) { return new Exec(ast); }
+  //  public Exec make(JsonObject ast) { return new Exec(ast); }
   public Exec(String ast) {
     _ast = ast == null ? null : ast.getBytes();
 //    _display = new ArrayList<>();
@@ -30,7 +39,7 @@ public class Exec extends Iced {
   }
 
   protected AST parse() {
-    //take a '('
+    // take a '('
     String tok = xpeek('(').parseID();
     //lookup of the token
     AST ast = AST.SYMBOLS.get(tok); // hash table declared here!
@@ -48,41 +57,11 @@ public class Exec extends Iced {
   }
 
   Exec xpeek(char c) {
-    assert _ast[_x] == c : "Expected '"+c+"'. Got: '"+(char)_ast[_x]+"'"; _x++; return this;
+    assert _ast[_x] == c : "Expected '"+c+"'. Got: '"+(char)_ast[_x]+"'";
+    _x++; return this;
   }
 
-  String rest() {
-    return new String(_ast,_x, _ast.length-_x);
+  String unparsed() {
+    return new String(_ast,_x,_ast.length-_x);
   }
-
-//  public Object runMain() {
-//    Env global = _display.get(0);
-//    Program main = _ast2ir.program()[0];
-//    for (Statement s : main ) {
-//      processInstruction(s, global, null);
-//    }
-//    Frame fr = (Frame) global.pop();
-//    return fr;
-//  }
-
-  private void runCall(String call_name, Env global) { throw H2O.unimpl(); }
-
-  // Apply: execute all arguments (including the function argument) yielding
-  // the function itself, plus all normal arguments on the stack.  Then execute
-  // the function, which is responsible for popping all arguments and pushing
-  // the result.
-  private void runOp(String op, Env global, Env local) { ASTOp.get(op).apply(global, local); }
-
-//  private void processInstruction(Statement s, Env global, Env local) {
-//    switch(s.kind()) {
-//      case Program.OP: runOp(s.op(), global, local); break;
-//      case Program.CALL: runCall(s.name(), global); break;
-//      case Program.PUSH: {
-//        if (local != null) {
-//          // TODO: Here is where to use symbol tables to lookup s.value() (look in local.
-//          local.push(s.value());
-//        } else global.push(s.value()); break;
-//      }
-//    }
-//  }
 }
