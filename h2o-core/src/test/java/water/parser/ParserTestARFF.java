@@ -632,4 +632,121 @@ public class ParserTestARFF extends TestUtil {
     fr.delete();
   }
 
+
+  @Test @Ignore public void testUUIDSplit(){
+    String data1 =
+            "@RELATION uuid\n" +
+                    "\n" +
+                    "@ATTRIBUTE col UUID\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "19281622-47ff-af63-185c-d8b2a244c78e7c6\n";
+    String data2 =
+            "19281622-47ff-af63-185c-d8b2a244c78e7c6\n" +
+                    "7f79c2b5-da56-721f-22f9-fdd726b13daf8e8\n" +
+                    "7f79c2b5-da56-721f-22f9-fdd726b13daf8e8\n";
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertTrue(fr.anyVec().isUUID());
+    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isString());
+    Assert.assertTrue(!fr.anyVec().isNA(0));
+    Assert.assertTrue(!fr.anyVec().isNA(1));
+    fr.delete();
+  }
+
+  @Test public void testMultipleFilesNum(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num numeric\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 = data1;
+
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertFalse(fr.anyVec().isString());
+    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isInt());
+    Assert.assertFalse(fr.anyVec().isUUID());
+
+    Assert.assertTrue(fr.anyVec().at(0) == 0);
+    Assert.assertTrue(fr.anyVec().at(1) == 1.324e-13);
+    Assert.assertTrue(fr.anyVec().at(2) == -2);
+    Assert.assertTrue(fr.anyVec().at(3) == 0);
+    Assert.assertTrue(fr.anyVec().at(4) == 1.324e-13);
+    Assert.assertTrue(fr.anyVec().at(5) == -2);
+    fr.delete();
+  }
+
+  @Test public void testMultipleFilesEnum(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num enum\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 = data1;
+
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key[] k = new Key[]{k1, k2};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertFalse(fr.anyVec().isString());
+    Assert.assertTrue(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isUUID());
+
+    Assert.assertTrue(fr.anyVec().at(0) == 1);
+    Assert.assertTrue(fr.anyVec().at(1) == 2);
+    Assert.assertTrue(fr.anyVec().at(2) == 0);
+    Assert.assertTrue(fr.anyVec().at(3) == 1);
+    Assert.assertTrue(fr.anyVec().at(4) == 2);
+    Assert.assertTrue(fr.anyVec().at(5) == 0);
+    fr.delete();
+  }
+
+  @Test public void testMultipleFilesString(){
+    String data1 =
+            "@RELATION type\n" +
+                    "\n" +
+                    "@ATTRIBUTE num STRING\n" +
+                    "\n" +
+                    "@DATA\n" +
+                    "0\n" +
+                    "1.324e-13\n" +
+                    "-2\n";
+    String data2 = data1;
+    String data3 = data1;
+
+    Key k1 = ParserTest.makeByteVec(data1);
+    Key k2 = ParserTest.makeByteVec(data2);
+    Key k3 = ParserTest.makeByteVec(data3);
+    Key[] k = new Key[]{k1, k2, k3};
+    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Assert.assertTrue(fr.anyVec().isString());
+    Assert.assertFalse(fr.anyVec().isEnum());
+    Assert.assertFalse(fr.anyVec().isInt());
+    ValueString vs = new ValueString();
+    Assert.assertTrue(fr.anyVec().atStr(vs, 0).toString().equals("0"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 1).toString().equals("1.324e-13"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 2).toString().equals("-2"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 3).toString().equals("0"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 4).toString().equals("1.324e-13"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 5).toString().equals("-2"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 6).toString().equals("0"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 7).toString().equals("1.324e-13"));
+    Assert.assertTrue(fr.anyVec().atStr(vs, 8).toString().equals("-2"));
+    fr.delete();
+  }
 }
