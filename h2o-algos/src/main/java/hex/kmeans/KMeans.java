@@ -109,13 +109,18 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             if( !isRunning() ) return; // Stopped/cancelled
             model._output._clusters = denormalize(clusters, ncats, means, mults);
             model._output._mse = sqr._sqr/fr.numRows();
+
             model._output._iters++;     // One iteration done
-            update(1);          // One unit of work
+
+            // This doesn't count towards model building (we didn't account these iterations as work to be done during construction)
+            // update(1);          // One unit of work
+
             model.update(_key); // Early version of model is visible
           }
           // Recluster down to K normalized clusters
           clusters = recluster(clusters, rand);
         }
+        model._output._iters = 0;     // Reset iteration count
 
         // ---
         // Run the main KMeans Clustering loop
