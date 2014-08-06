@@ -30,9 +30,24 @@ public final class ParseDataset2 extends Job<Frame> {
   }
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
-    Frame fr = job.get();
-    job.remove();
-    return fr;
+    try { return job.get(); }
+    catch( Throwable ex ) {
+
+      // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
+      Futures fs = new Futures();
+      if( job != null ) {
+        Keyed.remove(job._dest,fs);
+        // Find & remove all partially-built output vecs & chunks
+        if( job._mfpt != null ) job._mfpt.onExceptionCleanup(fs);
+      }
+      // Assume the input is corrupt - or already partially deleted after
+      // parsing.  Nuke it all - no partial Vecs lying around.
+      for( Key k : keys ) Keyed.remove(k,fs);
+      fs.blockForPending();
+
+      throw ex;
+    } finally {
+      job.remove(); }
   }
 
   public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
@@ -107,18 +122,6 @@ public final class ParseDataset2 extends Job<Frame> {
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      Futures fs = new Futures();
-      if( _job != null ) {
-        Keyed.remove(_job._dest,fs);
-        // Find & remove all partially-built output vecs & chunks
-        if( _job._mfpt != null ) _job._mfpt.onExceptionCleanup(fs);
-      }
-      // Assume the input is corrupt - or already partially deleted after
-      // parsing.  Nuke it all - no partial Vecs lying around.
-      for( Key k : _keys ) Keyed.remove(k,fs);
-      fs.blockForPending();
-      // As soon as the job is canceled, threads blocking on the job will
-      // wake up.  Better have all cleanup done first!
       if( _job != null ) _job.cancel2(ex);
       return true;
     }
@@ -586,7 +589,9 @@ public final class ParseDataset2 extends Job<Frame> {
         _outerMFPT._dout = _dout;
         _dout = null;           // Reclaim GC eagerly
         // For Big Data, must delete data as eagerly as possible.
-        Iced ice = DKV.get(_srckey).get();
+        Value val = DKV.get(_srckey);
+        if( val == null ) return;
+        Iced ice = val.get();
         if( ice instanceof ByteVec ) {
           if( _outerMFPT._delete_on_done ) ((ByteVec)ice).remove();
         } else {

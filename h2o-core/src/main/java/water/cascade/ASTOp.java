@@ -212,6 +212,7 @@ public abstract class ASTOp extends AST {
   double[] map(Env env, double[] in, double[] out) { throw H2O.unimpl(); }
 
 
+  @Override void exec(Env e) { throw H2O.fail(); }
   public boolean leftAssociate( ) {
     return _association == OPA_LEFT;
   }
@@ -697,7 +698,7 @@ abstract class ASTBinOp extends ASTOp {
     env.push(fr2);
   }
 
-  @Override public String toString() { return "("+getClass()+" "+Arrays.toString(_asts)+")"; }
+  @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
 }
 
 //class ASTUniPlus  extends ASTUniOp { ASTUniPlus()  { super(OPF_INFIX, OPP_UPLUS,  OPA_RIGHT); } @Override String opStr(){ return "+"  ;} @Override ASTOp make() {return new ASTUniPlus(); } @Override double op(double d) { return d;}}

@@ -1,19 +1,22 @@
-package water.cascade;
+  //package water.cascade;
+  //
+  //import org.testng.*;
+  //
+  //import java.util.Arrays;
+  //import water.Iced;
+  //import water.TestUtil;
+  //import water.util.Log;
+  //
+  //public class AST2IRTest{
 
-import org.junit.*;
-
-import java.util.Arrays;
-import water.Iced;
-import water.TestUtil;
-import water.util.Log;
-
-public class AST2IRTest extends TestUtil {
-
-  @Test public void test1() {
+//  @Test public static void test1() {
+//    String tree = "(+ (Last.value.0 5))";
+//    Exec e = new Exec(tree);
+//    e.parse();
   //  Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5`");
   //  JsonObject ast = test1_json();
   //  printInstructions(ast, new String[]{"push 5.0 (double)\npush Last.value.0 (Key)\n+  \n"});
-  }
+//  }
   //
   //@Test public void test2() {
   //  Log.info("Checking the instructions produced by the JSON AST representing the R expression `hex + 5 + 10`");
@@ -71,4 +74,4 @@ public class AST2IRTest extends TestUtil {
   //  * Last.value.0   5  1  Last.value.0    23   Last.value.0
   //  */
   //}
-}
+//}

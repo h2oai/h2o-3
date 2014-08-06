@@ -652,6 +652,26 @@ final public class H2O {
   static Collection<Value> values( ) { return STORE.values(); }
   static public int store_size() { return STORE.size(); }
 
+  // Nice local-STORE only debugging summary
+  public static String STOREtoString() {
+    int[] cnts = new int[1];
+    Object[] kvs = H2O.STORE.raw_array();
+    // Start the walk at slot 2, because slots 0,1 hold meta-data
+    for( int i=2; i<kvs.length; i += 2 ) {
+      // In the raw backing array, Keys and Values alternate in slots
+      Object ov = kvs[i+1];
+      if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
+      Value val = (Value)ov;
+      int t = val.type();
+      while( t >= cnts.length ) cnts = Arrays.copyOf(cnts,cnts.length<<1);
+      cnts[t]++;
+    }
+    StringBuilder sb = new StringBuilder();
+    for( int t=0; t<cnts.length; t++ ) 
+      if( cnts[t] != 0 ) 
+        sb.append(String.format("-%30s %5d\n",TypeMap.CLAZZES[t],cnts[t]));
+    return sb.toString();
+  }
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {

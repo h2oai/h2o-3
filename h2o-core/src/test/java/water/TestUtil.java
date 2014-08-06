@@ -75,7 +75,7 @@ public class TestUtil {
   @Rule public TestRule timerRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
-    };
+    }
     class TimerStatement extends Statement {
       private final Statement _base;
       private final String _tname;
