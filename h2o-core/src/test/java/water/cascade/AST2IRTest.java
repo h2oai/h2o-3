@@ -1,3 +1,43 @@
+package water.cascade;
+
+import static org.junit.Assert.*;
+import org.junit.*;
+import water.TestUtil;
+
+class AST2IRTest extends TestUtil {
+  @BeforeClass public void setup() { stall_till_cloudsize(1); }
+
+  @Test static void test1() {
+    // Checking `hex + 5`
+    String tree = "(+ (KEY a.hex) (# 5))";
+    checkTree(tree);
+  }
+
+  private static void test2() {
+    // Checking `hex + 5 + 10`
+    String tree = "(+ (KEY a.hex) (+ (# 5) (# 10)))";
+    checkTree(tree);
+  }
+
+  private static void test3() {
+    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
+    String tree = "(+ (- (+ (KEY a.hex) (# 5) (* (# 1) (KEY a.hex) (* (# 15) (/ (# 23) (KEY a.hex)))))))";
+    checkTree(tree);
+  }
+
+  public static void main(String[] args) {
+    test1();
+    test2();
+    test3();
+  }
+
+  private static void checkTree(String tree) {
+    Exec e = new Exec(tree);
+    AST ast = e.parse();
+    System.out.println(ast.toString());
+  }
+}
+
   //package water.cascade;
   //
   //import org.testng.*;
