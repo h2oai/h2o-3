@@ -377,7 +377,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
     // Categorical columns first.  Only equals/unequals matters (i.e., distance is either 0 or 1).
     for(int column = 0; column < ncats; column++) {
-      double d = point[column];
+        double d = point[column];
       if( Double.isNaN(d) ) pts--;
       else if( d != cluster[column] )
         sqr += 1.0;           // Manhatten distance
