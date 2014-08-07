@@ -680,19 +680,6 @@ public class ParserTest extends TestUtil {
             "smalldata/./iris/iris.csv",
             "smalldata/./iris/iris_wheader.csv",
             "smalldata/./junit/40k_categoricals.csv.gz",
-            "smalldata/./junit/arff/folder1/iris.csv",
-            "smalldata/./junit/arff/folder1/iris.header",
-            "smalldata/./junit/arff/folder1/readme",
-            "smalldata/./junit/arff/folder2/iris1.arff",
-            "smalldata/./junit/arff/folder2/iris2.arff",
-            "smalldata/./junit/arff/folder2/readme",
-            "smalldata/./junit/arff/iris.arff",
-            "smalldata/./junit/arff/iris_spacesep.arff",
-            "smalldata/./junit/arff/iris_weirdsep.arff",
-            "smalldata/./junit/arff/iris_weirdsep2.arff",
-            "smalldata/./junit/arff/string.arff",
-            "smalldata/./junit/arff/time.arff",
-            "smalldata/./junit/arff/uuid.arff",
             "smalldata/./junit/benign.xls",
             "smalldata/./junit/bestbuy_train_10k.csv.gz",
             "smalldata/./junit/cars.csv",
@@ -718,7 +705,6 @@ public class ParserTest extends TestUtil {
             "smalldata/./junit/parse_folder/prostate_9.csv",
             "smalldata/./junit/parse_folder_gold.csv",
             "smalldata/./junit/pros.xls",
-            "smalldata/./junit/string.csv",
             "smalldata/./junit/syn_2659x1049.csv.gz",
             "smalldata/./junit/test_parse_mix.csv",
             "smalldata/./junit/test_quote.csv",
@@ -726,17 +712,28 @@ public class ParserTest extends TestUtil {
             "smalldata/./junit/test_uuid.csv",
             "smalldata/./junit/time.csv",
             "smalldata/./junit/two-lines-dataset.csv",
-            "smalldata/./junit/uuid.csv",
             "smalldata/./junit/ven-11.csv",
             "smalldata/./logreg/prostate.csv",
     };
     for (String f : files) {
-      try {
-        Log.info("Trying to parse " + f);
-        Frame fr = parse_test_file_single_quotes(f);
-        fr.delete();
-      } catch (Throwable t) {
-        t.printStackTrace();
+      for (boolean delete_on_done : new boolean[]{
+              true,
+//              false
+      }) {
+        for (int check_header : new int[]{
+                0,
+//                1
+        }) {
+          try {
+            Log.info("Trying to parse " + f);
+            NFSFileVec nfs = NFSFileVec.make(find_test_file(f));
+            Frame fr = water.parser.ParseDataset2.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
+            fr.delete();
+          } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
+          }
+        }
       }
     }
   }
