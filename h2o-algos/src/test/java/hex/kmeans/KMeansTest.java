@@ -5,11 +5,14 @@ import org.junit.*;
 import java.io.File;
 import water.Key;
 import water.TestUtil;
+import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.parser.ParseDataset2;
+import water.parser.ParserTest;
 
 public class KMeansTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
@@ -93,4 +96,59 @@ public class KMeansTest extends TestUtil {
       if( fr  != null ) fr .remove();
     }
   }
+
+  private double[] d(double... ds) { return ds; }
+
+  boolean close(double[] a, double[] b) {
+    for (int i=0;i<a.length;++i) {
+      if (Math.abs(a[i]-b[i]) > 1e-8) return false;
+    }
+    return true;
+  }
+
+  @Test
+  public void testCentroids(){
+    String data =
+                    "1, 0, 0\n" +
+                    "0, 1, 0\n" +
+                    "0, 0, 1\n";
+    Frame fr = null;
+    try {
+      Key k = ParserTest.makeByteVec(data);
+      fr = ParseDataset2.parse(Key.make(), k);
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._src = fr._key;
+      parms._K = 3;
+      parms._normalize = true;
+      parms._max_iters = 100;
+      parms._init = KMeans.Initialization.None;
+
+      double[][] exp1 = new double[][]{ d(1, 0, 0), d(0, 1, 0), d(0, 0, 1), };
+      double[][] exp2 = new double[][]{ d(0, 1, 0), d(1, 0, 0), d(0, 0, 1), };
+      double[][] exp3 = new double[][]{ d(0, 1, 0), d(0, 0, 1), d(1, 0, 0), };
+      double[][] exp4 = new double[][]{ d(1, 0, 0), d(0, 0, 1), d(0, 1, 0), };
+      double[][] exp5 = new double[][]{ d(0, 0, 1), d(1, 0, 0), d(0, 1, 0), };
+      double[][] exp6 = new double[][]{ d(0, 0, 1), d(0, 1, 0), d(1, 0, 0), };
+
+      for( int i=0; i<10; i++ ) {
+        KMeansModel kmm = doSeed(parms, System.nanoTime());
+        Assert.assertTrue(kmm._output._clusters.length == 3);
+
+        boolean gotit = false;
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp1[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp2[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp3[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp4[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp5[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._K; ++j) gotit |= close(exp6[j], kmm._output._clusters[j]);
+        Assert.assertTrue(gotit);
+
+        kmm.delete();
+      }
+
+    } finally {
+      if( fr  != null ) fr .remove();
+    }
+  }
+
 }

@@ -87,6 +87,14 @@ public class ParserTestARFF extends TestUtil {
     }
   }
 
+  /** Find & parse a CSV file, allowing single quotes to keep strings together.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  private Frame parse_test_file_single_quotes( String fname ) {
+    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
+    return water.parser.ParseDataset2.parse(Key.make(),new Key[]{nfs._key}, true, true /*single quote*/, 0);
+  }
+
   // negative test to check the isBitIdentical
   @Test public void testTester() {
     Frame k1 = null, k2 = null;
