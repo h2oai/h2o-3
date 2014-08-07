@@ -11,7 +11,7 @@ public class ParserTest extends TestUtil {
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   // Make a ByteVec with the specific Chunks
-  static Key makeByteVec(String... data) {
+  public static Key makeByteVec(String... data) {
     Futures fs = new Futures();
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();

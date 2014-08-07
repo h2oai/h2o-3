@@ -1,15 +1,17 @@
 package hex.kmeans;
 
-import org.junit.*;
-
-import java.io.File;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.Key;
 import water.TestUtil;
-import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.parser.ParserTest;
+
+import java.io.File;
 
 public class KMeansTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
