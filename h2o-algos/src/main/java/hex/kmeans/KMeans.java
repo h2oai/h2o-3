@@ -508,7 +508,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       System.arraycopy(clusters[clu],0,value[clu],0,N);
       if( mults!=null )         // Reverse normalization
         for( int col = ncats; col < N; col++ )
-          value[clu][col] = value[clu][col] * mults[col] + means[col];
+          value[clu][col] = value[clu][col] / mults[col] + means[col];
     }
     return value;
   }
