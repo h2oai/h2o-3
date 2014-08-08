@@ -3,6 +3,8 @@ package hex.kmeans;
 import org.junit.*;
 
 import java.io.File;
+
+import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.FVecTest;
@@ -150,5 +152,38 @@ public class KMeansTest extends TestUtil {
       if( fr  != null ) fr .remove();
     }
   }
+
+  @Test public void test1Dimension() {
+    String data =
+            "1,\n" +
+                    "0,\n" +
+                    "-1,\n" +
+                    "4,\n" +
+                    "1,\n" +
+                    "2,\n" +
+                    "0,\n" +
+                    "0,\n";
+    Frame fr = null;
+    try {
+      Key k = ParserTest.makeByteVec(data);
+      fr = ParseDataset2.parse(Key.make(), k);
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._src = fr._key;
+      parms._K = 2;
+      parms._normalize = true;
+      parms._max_iters = 100;
+      parms._init = KMeans.Initialization.Furthest;
+
+      for( int i=0; i<10; i++ ) {
+        KMeansModel kmm = doSeed(parms, System.nanoTime());
+        Assert.assertTrue(kmm._output._clusters.length == 2);
+        kmm.delete();
+      }
+
+    } finally {
+      if( fr  != null ) fr .remove();
+    }
+  }
+
 
 }
