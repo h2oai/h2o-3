@@ -53,6 +53,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         if( val == null ) throw new IllegalArgumentException("Missing frame "+_parms._src);
         fr = val.get();
         fr.read_lock(_key);
+        if ( fr.numRows() < _parms._K) throw new IllegalArgumentException("Cannot make " + _parms._K + " clusters out of " + fr.numRows() + " rows.");
 
         // Sort columns, so the categoricals are all up front.  They use a
         // different distance metric than numeric columns.

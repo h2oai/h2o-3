@@ -19,10 +19,15 @@ public class KMeansTest extends TestUtil {
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
-    KMeans job = new KMeans(parms);
-    job.train();
-    KMeansModel kmm = job.get();
-    job.remove();
+    KMeans job = null;
+    KMeansModel kmm = null;
+    try {
+      job = new KMeans(parms);
+      job.train();
+      kmm = job.get();
+    } finally {
+      job.remove();
+    }
     for( int i=0; i<parms._K; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._rows[i] != 0 );
     return kmm;
@@ -182,6 +187,36 @@ public class KMeansTest extends TestUtil {
 
     } finally {
       if( fr  != null ) fr .remove();
+    }
+  }
+
+  // Negative test - expect to throw IllegalArgumentException
+  @Test (expected = IllegalArgumentException.class) public void testTooManyK() {
+    String data =
+            "1,\n" +
+                    "0,\n" +
+                    "1,\n" +
+                    "2,\n" +
+                    "0,\n" +
+                    "0,\n";
+    Frame fr = null;
+    KMeansModel kmm = null;
+    KMeansModel.KMeansParameters parms = null;
+    try {
+      Key k = ParserTest.makeByteVec(data);
+      fr = ParseDataset2.parse(Key.make(), k);
+
+      parms = new KMeansModel.KMeansParameters();
+      parms._src = fr._key;
+      parms._K = 10; //too high -> will throw
+      parms._normalize = true;
+      parms._max_iters = 100;
+      parms._init = KMeans.Initialization.Furthest;
+      kmm = doSeed(parms, System.nanoTime());
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if (kmm != null) kmm.delete();
     }
   }
 
