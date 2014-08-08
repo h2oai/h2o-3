@@ -1,17 +1,17 @@
 package hex.kmeans;
 
-import org.junit.*;
-
-import java.io.File;
-
-import water.Job;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.Key;
 import water.TestUtil;
-import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.parser.ParserTest;
+
+import java.io.File;
 
 public class KMeansTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -26,7 +26,7 @@ public class KMeansTest extends TestUtil {
       job.train();
       kmm = job.get();
     } finally {
-      job.remove();
+      if (job != null) job.remove();
     }
     for( int i=0; i<parms._K; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._rows[i] != 0 );
@@ -201,7 +201,7 @@ public class KMeansTest extends TestUtil {
                     "0,\n";
     Frame fr = null;
     KMeansModel kmm = null;
-    KMeansModel.KMeansParameters parms = null;
+    KMeansModel.KMeansParameters parms;
     try {
       Key k = ParserTest.makeByteVec(data);
       fr = ParseDataset2.parse(Key.make(), k);
