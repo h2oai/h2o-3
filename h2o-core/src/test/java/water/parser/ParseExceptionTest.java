@@ -2,6 +2,7 @@ package water.parser;
 
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+import org.junit.Ignore;
 import java.io.File;
 import water.*;
 import water.fvec.*;
@@ -9,7 +10,7 @@ import water.fvec.*;
 public class ParseExceptionTest extends TestUtil {
   static public void setup() { stall_till_cloudsize(1); }
 
-  /*@Test*/ public void testParserRecoversFromException() {
+  @Test @Ignore public void testParserRecoversFromException() {
     Throwable ex = null;
     Key fkey0=null,fkey1=null,fkey2=null,okey=null;
     try {

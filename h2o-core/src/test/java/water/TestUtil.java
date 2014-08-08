@@ -160,10 +160,11 @@ public class TestUtil {
   }
 
   /** Create a new frame based on given row data.
-   *  @param names  names of frame columns
+   *  @param key   Key for the frame
+   *  @param names names of frame columns
    *  @param rows  data given in the form of rows
    *  @return new frame which contains columns named according given names and including given data */
-  public static Frame frame(String[] names, double[]... rows) {
+  public static Frame frame(Key key, String[] names, double[]... rows) {
     assert names == null || names.length == rows[0].length;
     Futures fs = new Futures();
     Vec[] vecs = new Vec[rows[0].length];
@@ -176,8 +177,12 @@ public class TestUtil {
       vecs[c] = vec.close(fs);
     }
     fs.blockForPending();
-    return new Frame(names, vecs);
+    Frame fr = new Frame(key, names, vecs);
+    if( key != null ) DKV.put(key,fr);
+    return fr;
   }
+  public static Frame frame(double[]... rows) { return frame(null,rows); }
+  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(),names,rows); }
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
