@@ -28,6 +28,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   // Number of categorical columns
   private int _ncats;
 
+  // Number of reinitialization attempts for preventing empty clusters
+  transient private int reinit_attempts;
+
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms) {
     super(Key.make("KMeansModel"),"K-means",parms,parms._max_iters/*work is max iterations*/);
@@ -134,25 +137,31 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           max_cats(task._cMeans,task._cats);
 
           // Handle the case where some clusters go dry.  Rescue only 1 cluster
-          // per iteration ('cause we only tracked the 1 worse row)
+          // per iteration ('cause we only tracked the 1 worst row)
           boolean badrow=false;
-          for( int clu=0; clu<_parms._K; clu++ )
-            if( task._rows[clu]==0 ) {
+          for( int clu=0; clu<_parms._K; clu++ ) {
+            if (task._rows[clu] == 0) {
               // If we see 2 or more bad rows, just re-run Lloyds to get the
-              // next-worse row.  We don't count this as an iteration, because
+              // next-worst row.  We don't count this as an iteration, because
               // we're not really adjusting the centers, we're trying to get
               // some centers *at-all*.
-              if( badrow ) {
+              if (badrow) {
                 Log.warn("KMeans: Re-running Lloyds to re-init another cluster");
                 model._output._iters--; // Do not count against iterations
-                continue LOOP;  // Rerun Lloyds
+                if (reinit_attempts++ < _parms._K) {
+                  continue LOOP;  // Rerun Lloyds, and assign points to centroids
+                } else {
+                  reinit_attempts = 0;
+                  break; //give up and accept empty cluster
+                }
               }
-              long row = task._worse_row;
-              Log.warn("KMeans: Re-initing cluster "+clu+" to row "+row);
-              data(clusters[clu]=task._cMeans[clu], vecs, row, means, mults);
+              long row = task._worst_row;
+              Log.warn("KMeans: Re-initializing cluster " + clu + " to row " + row);
+              data(clusters[clu] = task._cMeans[clu], vecs, row, means, mults);
               task._rows[clu] = 1;
               badrow = true;
             }
+          }
 
           // Fill in the model; denormalized centers
           model._output._clusters = denormalize(task._cMeans, ncats, means, mults);
@@ -295,8 +304,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     long[/*K*/][/*ncats*/][] _cats; // Histogram of cat levels
     double[] _cSqr;             // Sum of squares for each cluster
     long[] _rows;               // Rows per cluster
-    long _worse_row;            // Row with max err
-    double _worse_err;          // Max-err-row's max-err
+    long _worst_row;            // Row with max err
+    double _worst_err;          // Max-err-row's max-err
 
     Lloyds( double[][] clusters, double[] means, double[] mults, int ncats, int K ) {
       _clusters = clusters;
@@ -317,7 +326,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       for( int clu=0; clu<_K; clu++ )
         for( int col=0; col<_ncats; col++ )
           _cats[clu][col] = new long[cs[col].vec().cardinality()];
-      _worse_err = 0;
+      _worst_err = 0;
 
       // Find closest cluster for each row
       double[] values = new double[N];
@@ -335,8 +344,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         for( int col = _ncats; col < N; col++ )
           _cMeans[clu][col] += values[col];
         _rows[clu]++;
-        // Track worse row
-        if( cd._dist > _worse_err ) { _worse_err = cd._dist; _worse_row = cs[0].start()+row; }
+        // Track worst row
+        if( cd._dist > _worst_err) { _worst_err = cd._dist; _worst_row = cs[0].start()+row; }
       }
       // Scale back down to local mean
       for( int clu = 0; clu < _K; clu++ )
@@ -357,8 +366,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       ArrayUtils.add(_cats, mr._cats);
       ArrayUtils.add(_cSqr, mr._cSqr);
       ArrayUtils.add(_rows, mr._rows);
-      // track global worse-row
-      if( _worse_err < mr._worse_err ) { _worse_err = mr._worse_err; _worse_row = mr._worse_row; }
+      // track global worst-row
+      if( _worst_err < mr._worst_err) { _worst_err = mr._worst_err; _worst_row = mr._worst_row; }
     }
   }
 
