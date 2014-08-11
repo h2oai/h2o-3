@@ -1,17 +1,11 @@
 package hex.kmeans;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import java.io.File;
+import org.junit.*;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.parser.ParseDataset2;
-import water.parser.ParserTest;
-
-import java.io.File;
 
 public class KMeansTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -115,14 +109,8 @@ public class KMeansTest extends TestUtil {
 
   @Test
   public void testCentroids(){
-    String data =
-                    "1, 0, 0\n" +
-                    "0, 1, 0\n" +
-                    "0, 0, 1\n";
-    Frame fr = null;
+    Frame fr = frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
     try {
-      Key k = ParserTest.makeByteVec(data);
-      fr = ParseDataset2.parse(Key.make(), k);
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._src = fr._key;
       parms._K = 3;
@@ -154,24 +142,13 @@ public class KMeansTest extends TestUtil {
       }
 
     } finally {
-      if( fr  != null ) fr .remove();
+      if( fr  != null ) fr.remove();
     }
   }
 
   @Test public void test1Dimension() {
-    String data =
-            "1,\n" +
-                    "0,\n" +
-                    "-1,\n" +
-                    "4,\n" +
-                    "1,\n" +
-                    "2,\n" +
-                    "0,\n" +
-                    "0,\n";
-    Frame fr = null;
+    Frame fr = frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     try {
-      Key k = ParserTest.makeByteVec(data);
-      fr = ParseDataset2.parse(Key.make(), k);
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._src = fr._key;
       parms._K = 2;
@@ -192,19 +169,10 @@ public class KMeansTest extends TestUtil {
 
   // Negative test - expect to throw IllegalArgumentException
   @Test (expected = IllegalArgumentException.class) public void testTooManyK() {
-    String data =
-            "1,\n" +
-                    "0,\n" +
-                    "1,\n" +
-                    "2,\n" +
-                    "0,\n" +
-                    "0,\n";
-    Frame fr = null;
+    Frame fr = frame(ard(d(1,0),d(0,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     KMeansModel kmm = null;
     KMeansModel.KMeansParameters parms;
     try {
-      Key k = ParserTest.makeByteVec(data);
-      fr = ParseDataset2.parse(Key.make(), k);
 
       parms = new KMeansModel.KMeansParameters();
       parms._src = fr._key;
