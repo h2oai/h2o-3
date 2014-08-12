@@ -68,10 +68,14 @@ public abstract class JarHash {
   public static InputStream getResource2(String uri) {
     try {
       // Jar file mode.
-      InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
+      InputStream is = null;
+      is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
       if( is != null ) return is;
-      InputStream is2 = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
-      if( is2 != null ) return is2;
+      is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
+      if( is != null ) return is;
+      // This is the right file location of resource inside jar bundled by gradle
+      is = ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
+      if( is != null ) return is;
       // That failed, so try all registered locations
       for( File f : RESOURCE_FILES ) {
         File f2 = new File(f,uri);
