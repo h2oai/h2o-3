@@ -44,14 +44,7 @@ public class CBSChunk extends Chunk {
   @Override boolean set_impl(int idx, long l)   { return false; }
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f ) { return false; }
-  @Override boolean setNA_impl(int idx) { 
-    if( _bpv == 1 ) return false;
-    int vpb = 8 / _bpv;  // values per byte
-    int bix = _OFF + idx / vpb; // byte index
-    int off = _bpv * (idx % vpb);
-    write2b(_mem[bix], _NA, off);
-    return true;
-  }
+  @Override boolean setNA_impl(int idx) {  return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     for (int i=0; i< len(); i++) {
       int res = atb(i);
