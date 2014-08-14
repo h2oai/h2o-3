@@ -64,7 +64,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         final int N = vecs.length; // Feature count
         int ncats=0, len=N;
         while( ncats != len ) {
-          while( vecs[ncats].isEnum() ) ncats++;
+          while( ncats < len && vecs[ncats].isEnum() ) ncats++;
           while( len > 0 && !vecs[len-1].isEnum() ) len--;
           if( ncats < len-1 ) fr.swap(ncats,len-1);
         }
