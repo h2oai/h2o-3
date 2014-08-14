@@ -46,7 +46,11 @@ public class CBSChunk extends Chunk {
   @Override boolean set_impl(int idx, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { 
     if( _bpv == 1 ) return false;
-    throw H2O.unimpl();
+    int vpb = 8 / _bpv;  // values per byte
+    int bix = _OFF + idx / vpb; // byte index
+    int off = _bpv * (idx % vpb);
+    write2b(_mem[bix], _NA, off);
+    return true;
   }
   @Override NewChunk inflate_impl(NewChunk nc) {
     for (int i=0; i< len(); i++) {
