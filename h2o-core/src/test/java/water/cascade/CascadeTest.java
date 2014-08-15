@@ -13,39 +13,39 @@ import water.parser.ParserTest;
 public class CascadeTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-//  @Test public void test1() {
-//    // Checking `hex + 5`
-//    String tree = "(+ (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//  }
-//
-//  @Test public void test2() {
-//    // Checking `hex + 5 + 10`
-//    String tree = "(+ (KEY a.hex) (+ (# 5) (# 10)))";
-//    checkTree(tree);
-//  }
-//
-//  @Test public void test3() {
-//    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-//    String tree = "(+ (- (+ (KEY a.hex) (# 5) ) (* (# 1) (KEY a.hex))) (* (# 15) (/ (# 23) (KEY a.hex))))";
-//    checkTree(tree);
-//  }
-//
-//  @Test public void test4() {
-//    // Checking `hex == 5`, <=, >=, <, >, !=
-//    String tree = "(== (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//    tree = "(<= (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//    tree = "(>= (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//    tree = "(> (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//    tree = "(< (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//    tree = "(!= (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//  }
+  @Test public void test1() {
+    // Checking `hex + 5`
+    String tree = "(+ (KEY a.hex) (# 5))";
+    checkTree(tree);
+  }
+
+  @Test public void test2() {
+    // Checking `hex + 5 + 10`
+    String tree = "(+ (KEY a.hex) (+ (# 5) (# 10)))";
+    checkTree(tree);
+  }
+
+  @Test public void test3() {
+    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
+    String tree = "(+ (- (+ (KEY a.hex) (# 5) ) (* (# 1) (KEY a.hex))) (* (# 15) (/ (# 23) (KEY a.hex))))";
+    checkTree(tree);
+  }
+
+  @Test public void test4() {
+    // Checking `hex == 5`, <=, >=, <, >, !=
+    String tree = "(== (KEY a.hex) (# 5))";
+    checkTree(tree);
+    tree = "(<= (KEY a.hex) (# 5))";
+    checkTree(tree);
+    tree = "(>= (KEY a.hex) (# 5))";
+    checkTree(tree);
+    tree = "(> (KEY a.hex) (# 5))";
+    checkTree(tree);
+    tree = "(< (KEY a.hex) (# 5))";
+    checkTree(tree);
+    tree = "(!= (KEY a.hex) (# 5))";
+    checkTree(tree);
+  }
 
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
