@@ -20,6 +20,7 @@ public class Frame extends Lockable {
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
+  public Frame( String name ) { this(Key.make(name),null,new Vec[0]); } // Empty frame, lazily filled
   public Frame( Vec... vecs ){ this(null,vecs);}
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   public Frame( Key key ) { this(key,null,new Vec[0]); }
@@ -408,4 +409,14 @@ public class Frame extends Lockable {
     return vec;
   }
 
+  // --------------------------------------------
+  // Utilities to help external Frame constructors, e.g. Spark.
+  public void preparePartialFrame( String[] names ) {
+    // Nuke any prior frame (including freeing storage) & lock this one
+    if( _keys != null ) delete_and_lock(null);
+    else write_lock(null);
+    _names = names;
+    _keys = new Vec.VectorGroup().addVecs(names.length);
+    // No Vectors tho!!! These will be added *after* the import
+  }
 }
