@@ -27,11 +27,11 @@ import java.util.HashSet;
 */
 public class Env extends Iced {
 
-  final static private int ID  =0;
-  final static private int ARY =1;
-  final static private int STR =2;
-  final static private int NUM =3;
-  final static private int NULL=99999;
+  final static int ID  =0;
+  final static int ARY =1;
+  final static int STR =2;
+  final static int NUM =3;
+  final static int NULL=99999;
 
   final ExecStack _stack;                   // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector

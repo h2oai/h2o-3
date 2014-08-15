@@ -14,6 +14,7 @@ abstract public class AST extends Iced {
   //FIXME: Move this somewhere else
   final static HashMap<String, AST> SYMBOLS = new HashMap<>(); // somewhere do the new...
   static {
+    SYMBOLS.put("==",  new ASTEQ());
     SYMBOLS.put("=",   new ASTAssign());
     SYMBOLS.put("<-",  new ASTAssign());
     SYMBOLS.put("+",   new ASTPlus());
