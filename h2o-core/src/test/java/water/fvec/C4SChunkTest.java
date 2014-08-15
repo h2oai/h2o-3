@@ -2,8 +2,10 @@ package water.fvec;
 
 import org.junit.*;
 
+import water.Futures;
 import water.TestUtil;
 import java.util.Arrays;
+import java.util.Iterator;
 
 public class C4SChunkTest extends TestUtil {
   @Test
