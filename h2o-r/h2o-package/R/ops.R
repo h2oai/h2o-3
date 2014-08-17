@@ -32,33 +32,21 @@
 #' unimplemented.
 #'
 #' See also groupGeneric.
-#'
 
+#'
+#' Handle all of the binary infix operations with this simple function!
+#'
+#' Scrape the function call by casting the sys.call() to a list and extracting the root.
+.ops.function <- function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) }
 
 #TODO: Do the returns need to be wrapped by `invisble` ?
-#setMethod("Ops", signature(e1="H2OFrame", e2="missing"),
-#  function(e1, e2) {
-#    .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, 0)
-#  }
-#)
-#
-#setMethod("Ops", signature(e1="H2OFrame", e2="H2OFrame"),
-#  function(e1, e2) {
-#    .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2)
-#  }
-#)
-#
-#setMethod("Ops", signature(e1="numeric", e2="H2OFrame"),
-#  function(e1, e2) {
-#    .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2)
-#  }
-#)
-#
-#setMethod("Ops", signature(e1="H2OFrame", e2="numeric"),
-#  function(e1, e2) {
-#    .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2)
-#  }
-#)
+setMethod("Ops", signature(e1="H2OFrame",  e2="missing"),  function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, 0) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+setMethod("Ops", signature(e1="numeric",   e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"),  function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="character"),function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+setMethod("Ops", signature(e1="character", e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+
 #
 ##TODO: This needs a method .h2o.varop() to handle varargs
 ##setMethod("Math", signature(e1="H2OFrame"),

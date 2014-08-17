@@ -3,14 +3,13 @@
 #'
 #' R expressions convolved with H2O objects evaluate lazily.
 
-
 #'
 #' Retrieve the slot value from the object given its name and return it as a list.
 .slots<-
 function(name, object) {
-    ret <- list(slot(object, name))
-    names(ret) <- name
-    ret
+  ret <- list(slot(object, name))
+  names(ret) <- name
+  ret
 }
 
 #'
@@ -27,8 +26,37 @@ function(object) {
   return( unlist(recursive = FALSE, lapply(slotNames(object), .slots, object)))
 }
 
+
 #'
 #' The AST visitor method.
+#'
+#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON call.
+#'
+#' Given a node, the `visitor` function recursively "Lisp"-ifies the node's S4 slots and then returns the list.
+#'
+#' The returned list has two main pieces: the ast to execute and function defintions:
+#'
+#'  { '_ast' : { ... }, '_funs' : {[ ... ]} }
+#'
+#' All ASTNodes have children. All nodes with the @root slot has a list in the @children slot that represent operands.
+visitor<-
+function(node) {
+  res <- ""
+  if (.hasSlot(node, "root")) {
+    res %<p0-% '('
+    res %<p0-% node@root@op
+    children <- lapply(node@children, visitor)
+    for (child in children) res %<p-% child
+    res %<p0-% ')'
+    list( ast = res)
+  } else {
+    node
+  }
+}
+
+
+#'
+#' The old AST visitor method.
 #'
 #' This method represents a map between an AST S4 object and a regular R list,
 #' which is suitable for the rjson::toJSON method.
@@ -38,7 +66,7 @@ function(object) {
 #' A node that has a "root" slot is an object of type ASTOp. An ASTOp will always have a "children" slot representing
 #' its operands. A root node is the most general type of input, while an object of type ASTFrame or ASTNumeric is the
 #' most specific. This method relies on the private helper function .ASTToList(...) to map the AST S4 object to a list.
-visitor<-
+old.visitor<-
 function(node) {
   if (.hasSlot(node, "root")) {
     root_values <- .ASTToList(node@root)

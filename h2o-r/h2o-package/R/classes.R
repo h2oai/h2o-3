@@ -478,7 +478,7 @@ setClass("H2ODeepLearningGrid", contains="H2OGrid")
 setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 
 #-----------------------------------------------------------------------------------------------------------------------
-# AST Class Defintions
+# AST Class Defintions: Part 1
 #-----------------------------------------------------------------------------------------------------------------------
 #'
 #' The Node class.
@@ -489,7 +489,7 @@ setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 #' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
 #' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
 #' by looking up the tree to the nearest symbol table defining that symbol.
-setClass("Node", representation(node_type="character"), contains="H2OFrame")
+setClass("Node", contains="H2OFrame")
 
 #'
 #' The ASTNode class.
@@ -561,3 +561,10 @@ setClass("ASTArg", representation(arg_name="character", arg_number="numeric", ar
 #' This class represents a symbol table. It is a table of free variables.
 setClass("ASTSymbolTable", representation(symbols="list"), contains="Node",
          prototype(node_type = "ASTOp"))
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# AST Class Defintions: Part 2
+#-----------------------------------------------------------------------------------------------------------------------
+
+setClass("ASTApply", representation(op="character"), contains="Node")
