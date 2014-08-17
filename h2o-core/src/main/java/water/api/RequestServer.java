@@ -128,6 +128,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
+
+    register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {

@@ -13,9 +13,9 @@
 #' Make an HTTP request to the H2O backend.
 .h2o.__remoteSend <- function(client, page, ...) {
   .h2o.__checkClientHealth(client)
-  ip = client@ip
-  port = client@port
-  myURL = paste("http://", ip, ":", port, "/", page, sep="")
+  ip <- client@ip
+  port <- client@port
+  myURL <- paste("http://", ip, ":", port, "/", page, sep="")
 
   # Sends the given arguments as URL arguments to the given page on the specified server
   #
@@ -26,10 +26,10 @@
     # Log list of parameters sent to H2O
     .h2o.__logIt(myURL, list(...), "Command")
 
-    hg = basicHeaderGatherer()
-    tg = basicTextGatherer()
+    hg <- basicHeaderGatherer()
+    tg <- basicTextGatherer()
     postForm(myURL, style = "POST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), ...)
-    temp = tg$value()
+    temp <- tg$value()
 
     # Log HTTP response from H2O
     hh <- hg$value()
@@ -93,15 +93,16 @@
   grabCloudStatus <- function(client) {
     ip <- client@ip
     port <- client@port
-    url <- paste("http://", ip, ":", port, "/", .h2o.__PAGE_CLOUD, sep = "")
-    if(!url.exists(url)) stop(paste("H2O connection has been severed. Instance no longer up at address ", ip, ":", port, "/", sep = "", collapse = ""))
+    url <- paste("http://", ip, ":", port, "/", .h2o.__CLOUD, sep = "")
+    if(!.uri.exists(url)) stop(paste("H2O connection has been severed. Instance no longer up at address ", ip, ":", port, "/", sep = "", collapse = ""))
     fromJSON(getURLContent(url))
   }
   checker <- function(node, client) {
-    status <- node$node_healthy
-    elapsed <- node$elapsed_time
-    nport <- unlist(strsplit(node$name, ":"))[2]
-    if(!status) .h2o.__cloudSick(node_name = node$name, client = client)
+    status <- as.logical(node$healthy)
+    elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
+    nport <- unlist(strsplit(node$h2o$node, ":"))[2]
+    print(elapsed)
+    if(!status) .h2o.__cloudSick(node_name = NULL, client = client)
     if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, client = client)
     if(elapsed > 10000) {
         Sys.sleep(5)
@@ -110,7 +111,7 @@
     return(0)
   }
   cloudStatus <- grabCloudStatus(client)
-  if(!cloudStatus$cloud_healthy) .h2o.__cloudSick(node_name = NULL, client = client)
+  if(cloudStatus$bad_nodes != 0) .h2o.__cloudSick(node_name = NULL, client = client)
   lapply(cloudStatus$nodes, checker, client)
   return(0)
 }
@@ -156,7 +157,7 @@
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_JOBS)
+  res = .h2o.__remoteSend(client, .h2o.__JOBS)
   res = res$jobs
   if(length(res) == 0) stop("No jobs found in queue")
   prog = NULL
@@ -175,7 +176,7 @@
 #'
 #' Cancel a job.
 .h2o.__cancelJob <- function(client, keyName) {
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_JOBS)
+  res = .h2o.__remoteSend(client, .h2o.__JOBS)
   res = res$jobs
   if(length(res) == 0) stop("No jobs found in queue")
   prog = NULL
@@ -194,7 +195,7 @@
 #'
 #' Check if any jobs are still running.
 .h2o.__allDone <- function(client) {
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_JOBS)
+  res = .h2o.__remoteSend(client, .h2o.__JOBS)
   notDone = lapply(res$jobs, function(x) { !(x$progress == -1.0 || x$cancelled) })
   !any(unlist(notDone))
 }
@@ -231,7 +232,7 @@
 }
 
 .h2o.__version <- function(client) {
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_CLOUD)
+  res = .h2o.__remoteSend(client, .h2o.__CLOUD)
   res$version
 }
 
@@ -252,32 +253,38 @@
   return(paste(x1,x2))
 }
 
+.uri.exists <- function(uri) {
+  h <- basicHeaderGatherer()
+  invisible(getURI(uri, headerfunction = h$update))
+  "200" == as.list(h$value())$status
+}
+
 h2o.clusterInfo <- function(client) {
   if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-  myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD, sep = "")
-  if(!url.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
+  myURL <- paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
+  if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
 
   res = NULL
   {
-    res = fromJSON(postForm(myURL, style = "POST"))
+    res <- fromJSON(postForm(myURL, style = "POST"))
 
-    nodeInfo = res$nodes
-    numCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+    nodeInfo <- res$nodes
+    numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
     if (numCPU == 0) {
-      # If the cloud hasn't been up for a few seconds yet, then query again.
-      # Sometimes the heartbeat info with cores and memory hasn't had a chance
-      # to post it's information yet.
+      # If the cloud has not been up for a few seconds yet, then query again.
+      # Sometimes the heartbeat info with cores and memory has not had a chance
+      # to post its information yet.
       threeSeconds = 3
       Sys.sleep(threeSeconds)
-      res = fromJSON(postForm(myURL, style = "POST"))
+      res <- fromJSON(postForm(myURL, style = "POST"))
     }
   }
 
-  nodeInfo = res$nodes
-  maxMem = sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem_bytes']))) / (1024 * 1024 * 1024)
-  numCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
-  clusterHealth =  all(sapply(nodeInfo,function(x) as.logical(x['num_cpus']))==TRUE)
+  nodeInfo <- res$nodes
+  maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
+  numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy']))==TRUE)
 
   cat("R is connected to H2O cluster:\n")
   cat("    H2O cluster uptime:       ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")

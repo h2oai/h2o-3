@@ -144,27 +144,27 @@
 #  new("H2OParsedData", h2o=x@h2o, key=res$dest_key, logic=FALSE)
 #}
 #
-#as.h2o <- function(client, object, key = "", header, sep = "") {
-#  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-#  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
-#  if(!is.character(key)) stop("key must be of class character")
-#  if(missing(key) || nchar(key) == 0) {
-#    key = paste(.TEMP_KEY, ".", .pkg.env$temp_count, sep="")
-#    .pkg.env$temp_count = (.pkg.env$temp_count + 1) %% .RESULT_MAX
-#  }
-#
-#  # TODO: Be careful, there might be a limit on how long a vector you can define in console
-#  if(is.numeric(object) && is.vector(object)) {
-#    res <- .h2o.__exec2_dest_key(client, paste("c(", paste(object, sep=',', collapse=","), ")", collapse=""), key)
-#    return(.h2o.exec2(res$dest_key, h2o = client, res$dest_key))
-#  } else {
-#    tmpf <- tempfile(fileext=".csv")
-#    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep)
-#    unlink(tmpf)
-#    return(h2f)
-#  }
-#}
+as.h2o <- function(client, object, key = "", header, sep = "") {
+  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
+  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
+  if(!is.character(key)) stop("key must be of class character")
+  if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
+  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
+
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  if(is.numeric(object) && is.vector(object)) {
+    res <- .h2o.__exec2_dest_key(client, paste("c(", paste(object, sep=',', collapse=","), ")", collapse=""), key)
+    return(.h2o.exec2(res$dest_key, h2o = client, res$dest_key))
+  } else {
+    tmpf <- tempfile(fileext=".csv")
+    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
+#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFIle yet!
+    h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
+    unlink(tmpf)
+    return(h2f)
+  }
+}
+
 #
 #h2o.cut <- function(x, breaks) {
 #  if(missing(x)) stop("Must specify data set")

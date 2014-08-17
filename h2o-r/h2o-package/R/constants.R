@@ -34,7 +34,7 @@
 
 #'
 #' Import & Parse Endpointss
-.h2o.__IMPORT       <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
+.h2o.__IMPORT       <- "2/ImportFiles.json"   # ImportFiles.json?path=/path/to/data
 .h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://path/to/data]
 .h2o.__PARSE        <- "Parse.json"         # Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
 
@@ -46,12 +46,15 @@
 #'
 #' Administrative Endpoints
 .h2o.__JOBS         <- "Jobs.json"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
+.h2o.__CLOUD        <- "Cloud.json"
 
 #'
 #' Algorithmic Endpoints
 .h2o.__KMEANS       <- "v2/Kmeans.json"
 
-
+#'
+#' Cascade
+.h2o.__CASCADE      <- "/Cascade.json"
 
 #.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"

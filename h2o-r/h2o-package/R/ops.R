@@ -62,7 +62,7 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame"), function(e1,e2) { .h2
 #)
 #
 #
-##setMethod("!",       "H2OParsedData",                function(x) {      .h2o.__unop2("!",     x) })
+#setMethod("!",       "H2OParsedData",                function(x) {      .h2o.__unop2("!",     x) })
 #setMethod("abs",     "H2OParsedData",                function(x) {      .h2o.__unop2("abs",   x) })
 #setMethod("sign",    "H2OParsedData",                function(x) {      .h2o.__unop2("sgn",   x) })
 #setMethod("sqrt",    "H2OParsedData",                function(x) {      .h2o.__unop2("sqrt",  x) })

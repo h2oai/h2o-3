@@ -40,9 +40,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   # Sys.sleep(0.5)    # Give cluster time to come up
   h2o.clusterInfo(H2Oserver); cat("\n")
   
-  if((verH2O = .h2o.__version(H2Oserver)) != (verPkg = packageVersion("h2o")))
-    stop("Version mismatch! H2O is running version ", verH2O, " but R package is version ", toString(verPkg), "\n")
-  assign("SERVER", H2Oserver, .pkg.env)
+#  if((verH2O = .h2o.__version(H2Oserver)) != (verPkg = packageVersion("h2o")))
+#    stop("Version mismatch! H2O is running version ", verH2O, " but R package is version ", toString(verPkg), "\n")
+#  assign("SERVER", H2Oserver, .pkg.env)
   return(H2Oserver)
 }
 
@@ -80,7 +80,7 @@ h2o.shutdown <- function(client, prompt = TRUE) {
 
 h2o.clusterStatus <- function(client) {
   if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-  myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD, sep = "")
+  myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
   if(!url.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
   res = fromJSON(postForm(myURL, style = "POST"))
   

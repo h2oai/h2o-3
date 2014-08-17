@@ -1,6 +1,5 @@
 package water.api;
 
-//import com.google.gson.JsonObject;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -15,13 +14,14 @@ class CascadeHandler extends Handler<Cascade, CascadeV1>{
 
   protected static final class Cascade extends Iced {
     // Inputs
-//    JsonObject _ast;        // The tree to be walked by AST2IR.
-
-    String _expr;           // An R-like expression.
-    String _json_ast;       // An input string of valid JSON.
+    String _ast; // A Lisp-like ast.
 
     //Outputs
     Key _key;
+  }
+
+  CascadeV1 exec(int version, Cascade cascade) {
+    return schema(version).fillFromImpl(cascade);
   }
 
   @Override protected CascadeV1 schema(int version) { return new CascadeV1(); }

@@ -20,7 +20,7 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.logical(parse)) stop("parse must be of class logical")
 
-  res = .h2o.__remoteSend(object, .h2o.__PAGE_IMPORTFILES2, path=path)
+  res <- .h2o.__remoteSend(object, .h2o.__IMPORT, path=path)
   if(length(res$fails) > 0) {
     for(i in 1:length(res$fails))
       cat(res$fails[[i]], "failed to import")
@@ -31,9 +31,9 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
     if(parse) {
       if(substr(path, nchar(path), nchar(path)) == .Platform$file.sep)
         path <- substr(path, 1, nchar(path)-1)
-      regPath = paste(path, pattern, sep=.Platform$file.sep)
-      srcKey = ifelse(length(res$keys) == 1, res$keys[[1]], paste("*", regPath, "*", sep=""))
-      rawData = new("H2ORawData", h2o=object, key=srcKey)
+      regPath <- paste(path, pattern, sep=.Platform$file.sep)
+      srcKey <- ifelse(length(res$keys) == 1, res$keys[[1]], paste("*", regPath, "*", sep=""))
+      rawData <- new("H2ORawData", h2o=object, key=srcKey)
       h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
       myData = lapply(res$keys, function(x) { new("H2ORawData", h2o=object, key=x) })
