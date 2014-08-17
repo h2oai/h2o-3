@@ -22,45 +22,29 @@ import water.util.MathUtils;
 
 // --------------------------------------------------------------------------
 public abstract class ASTOp extends AST {
-  // The order of operator precedence follows R rules.
-  // Highest the first
-  static final public int OPP_PREFIX   = 100; /* abc() */
-  static final public int OPP_POWER    = 13;  /* ^ */
-  static final public int OPP_UPLUS    = 12;  /* + */
-  static final public int OPP_UMINUS   = 12;  /* - */
-  static final public int OPP_MOD      = 11;  /* %xyz% */
-  static final public int OPP_MUL      = 10;  /* * */
-  static final public int OPP_DIV      = 10;  /* / */
-  static final public int OPP_PLUS     = 9;   /* + */
-  static final public int OPP_MINUS    = 9;   /* - */
-  static final public int OPP_GT       = 8;   /* > */
-  static final public int OPP_GE       = 8;   /* >= */
-  static final public int OPP_LT       = 8;   /* < */
-  static final public int OPP_LE       = 8;   /* <= */
-  static final public int OPP_EQ       = 8;   /* == */
-  static final public int OPP_NE       = 8;   /* != */
-  static final public int OPP_NOT      = 7;   /* ! */
-  static final public int OPP_AND      = 6;   /* &, && */
-  static final public int OPP_OR       = 5;   /* |, || */
-  static final public int OPP_DILDA    = 4;   /* ~ */
-  static final public int OPP_RARROW   = 3;   /* ->, ->> */
-  static final public int OPP_ASSN     = 2;   /* = */
-  static final public int OPP_LARROW   = 1;   /* <-, <<- */
-  // Operator assocation order
-  static final public int OPA_LEFT     = 0;
-  static final public int OPA_RIGHT    = 1;
-  // Operation formula notations
-  static final public int OPF_INFIX    = 0;
-  static final public int OPF_PREFIX   = 1;
   // Tables of operators by arity
   static final public HashMap<String,ASTOp> UNI_INFIX_OPS = new HashMap<>();
   static final public HashMap<String,ASTOp> BIN_INFIX_OPS = new HashMap<>();
   static final public HashMap<String,ASTOp> PREFIX_OPS    = new HashMap<>();
   static final public HashMap<String,ASTOp> UDF_OPS       = new HashMap<>();
+  static final public HashMap<String, AST>  SYMBOLS       = new HashMap<>();
   // Too avoid a cyclic class-loading dependency, these are init'd before subclasses.
   static final String VARS1[] = new String[]{ "", "x"};
   static final String VARS2[] = new String[]{ "", "x","y"};
   static {
+    // All of the special chars (see Exec.java)
+    SYMBOLS.put("=", new ASTAssign());
+    SYMBOLS.put("'", new ASTString('\'', ""));
+    SYMBOLS.put("\"",new ASTString('\"', ""));
+    SYMBOLS.put("$", new ASTId('$', ""));
+    SYMBOLS.put("!", new ASTId('!', ""));
+    SYMBOLS.put("#", new ASTNum(0));
+    SYMBOLS.put("g", new ASTGT());
+    SYMBOLS.put("G", new ASTGE());
+    SYMBOLS.put("l", new ASTLT());
+    SYMBOLS.put("L", new ASTLE());
+    SYMBOLS.put("N", new ASTNE());
+    SYMBOLS.put("n", new ASTEQ());
     // Unary infix ops
 //    putUniInfix(new ASTUniPlus());
 //    putUniInfix(new ASTUniMinus());
@@ -198,7 +182,7 @@ public abstract class ASTOp extends AST {
   // Special row-wise 'apply'
   double[] map(Env env, double[] in, double[] out) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.fail(); }
-  @Override String type() { throw H2O.fail(); }
+  @Override int type() { throw H2O.fail(); }
   @Override String value() { throw H2O.fail(); }
 
 //  @Override public String toString() {
@@ -611,8 +595,31 @@ abstract class ASTBinOp extends ASTOp {
     boolean toss_fr = false;
     Frame fr0 = null, fr1 = null;
     double d0=0, d1=0;
-    if( env.isAry() ) fr1 = ((ASTFrame) env.pop())._fr; else d1 = ((ASTNum)env.pop())._d;
-    if( env.isAry() ) fr0 = ((ASTFrame) env.pop())._fr; else d0 = ((ASTNum)env.pop())._d;
+    String s0="", s1="";
+
+    // Must pop ONLY twice off the stack
+    int left_type = env.peekType();
+    Object left = env.pop();
+    int right_type = env.peekType();
+    Object right = env.pop();
+
+    // Cast the LHS of the op
+    switch(left_type) {
+      case Env.NUM: d1  = ((ASTNum)left)._d; break;
+      case Env.ARY: fr1 = ((ASTFrame)left)._fr; break;
+      case Env.STR: s1  = ((ASTString)left)._s; break;
+      default: throw H2O.fail("Got unusable type: "+ left_type +" in binary operator "+ opStr());
+    }
+
+    // Cast the RHS of the op
+    switch(right_type) {
+      case Env.NUM: d0  = ((ASTNum)right)._d; break;
+      case Env.ARY: fr0 = ((ASTFrame)right)._fr; break;
+      case Env.STR: s0  = ((ASTString)right)._s; break;
+      default: throw H2O.fail("Got unusable type: "+ right_type +" in binary operator "+ opStr());
+    }
+
+
     if( fr0==null && fr1==null ) {
       env.push(new ASTNum(op(d0, d1)));
       return;
@@ -654,7 +661,7 @@ abstract class ASTBinOp extends ASTOp {
               double lv; double rv;
               if (lf) {
                 if(chks[i].vec().isUUID() || (chks[i].isNA0(r) && !bin.opStr().equals("|"))) { n.addNum(Double.NaN); continue; }
-                lv = chks[i].at0(r);
+                lv = chks[i].at0(r); //if (chks[i].vec().isEnum()) lv = chks[i].vec().domain()[(int)chks[i].at0(r)]; //TODO: left and right values might be Strings/Enums!
               } else {
                 if (Double.isNaN(df0) && !bin.opStr().equals("|")) { n.addNum(Double.NaN); continue; }
                 lv = df0;
@@ -673,7 +680,7 @@ abstract class ASTBinOp extends ASTOp {
           }
         }
       }
-    }.doAll(ncols,fr).outputFrame(Key.make("tmp"), (lf ? fr0 : fr1)._names,null);
+    }.doAll(ncols,fr).outputFrame(Key.make(), (lf ? fr0 : fr1)._names,null);
     env.push(new ASTFrame(fr2));
     if (toss_fr) env.cleanup(fr0,fr1,fr); else env.cleanup(fr0, fr1);
   }
@@ -697,13 +704,15 @@ class ASTGE       extends ASTBinOp { ASTGE()       { super(); }  @Override Strin
 class ASTEQ       extends ASTBinOp { ASTEQ()       { super(); }  @Override String opStr(){ return "==" ;} @Override ASTOp make() {return new ASTEQ  ();} @Override double op(double d0, double d1) { return MathUtils.equalsWithinOneSmallUlp(d0,d1)?1:0;}}
 class ASTNE       extends ASTBinOp { ASTNE()       { super(); }  @Override String opStr(){ return "!=" ;} @Override ASTOp make() {return new ASTNE  ();} @Override double op(double d0, double d1) { return MathUtils.equalsWithinOneSmallUlp(d0,d1)?0:1;}}
 class ASTLA       extends ASTBinOp { ASTLA()       { super(); }  @Override String opStr(){ return "&"  ;} @Override ASTOp make() {return new ASTLA  ();} @Override double op(double d0, double d1) { return (d0!=0 && d1!=0) ? (Double.isNaN(d0) || Double.isNaN(d1)?Double.NaN:1) :0;}}
-class ASTLO       extends ASTBinOp { ASTLO()       { super(); }  @Override String opStr(){ return "|"  ;} @Override ASTOp make() {return new ASTLO  ();} @Override double op(double d0, double d1) {
-  if (d0 == 0 && Double.isNaN(d1)) { return Double.NaN; }
-  if (d1 == 0 && Double.isNaN(d0)) { return Double.NaN; }
-  if (Double.isNaN(d0) && Double.isNaN(d1)) { return Double.NaN; }
-  if (d0 == 0 && d1 == 0) { return 0; }
-  return 1;
-}}
+class ASTLO       extends ASTBinOp { ASTLO()       { super(); }  @Override String opStr(){ return "|"  ;} @Override ASTOp make() {return new ASTLO  ();}
+  @Override double op(double d0, double d1) {
+    if (d0 == 0 && Double.isNaN(d1)) { return Double.NaN; }
+    if (d1 == 0 && Double.isNaN(d0)) { return Double.NaN; }
+    if (Double.isNaN(d0) && Double.isNaN(d1)) { return Double.NaN; }
+    if (d0 == 0 && d1 == 0) { return 0; }
+    return 1;
+  }
+}
 
 // Variable length; instances will be created of required length
 //abstract class ASTReducerOp extends ASTOp {

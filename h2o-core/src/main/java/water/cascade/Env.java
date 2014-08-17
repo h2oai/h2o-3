@@ -31,6 +31,7 @@ public class Env extends Iced {
   final static int ARY =1;
   final static int STR =2;
   final static int NUM =3;
+  final static int FUN =4;
   final static int NULL=99999;
 
   final ExecStack _stack;                   // The stack
@@ -96,6 +97,7 @@ public class Env extends Iced {
   public boolean isNum() { return peekType() == NUM; }
   public boolean isStr() { return peekType() == STR; }
   public boolean isId () { return peekType() == ID;  }
+  public boolean isFun() { return peekType() == FUN; }
 
   /**
    *  Reference Counting API
@@ -285,6 +287,7 @@ public class Env extends Iced {
       if (o instanceof ASTFrame  ) return ARY;
       if (o instanceof ASTString ) return STR;
       if (o instanceof ASTNum    ) return NUM;
+//      if (o instanceof ASTFunc   ) return FUN;
       throw H2O.fail("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Vec, Frame, String, Double, Float, or Int.");
     }
 
@@ -342,11 +345,11 @@ public class Env extends Iced {
    *
    *  Valid types:
    *
-   *    Usual types: string, int, double, float, boolean,
-   *    unk: An identifier being assigned to
-   *    arg: An argument to a function call
-   *    call: A function call (if UDF, value is the body of the function)
-   *    key: An h2o key
+   *    ID  =0;  // For a !ID (will be set into)
+   *    ARY =1;
+   *    STR =2;
+   *    NUM =3;
+   *    FUN =4;
    *
    *  Symbol Table Permissions:
    *  -------------------------
@@ -360,7 +363,7 @@ public class Env extends Iced {
     HashMap<String, SymbolAttributes> _table;
     SymbolTable() { _table = new HashMap<>(); }
 
-    public void put(String name, String type, String value) {
+    public void put(String name, int type, String value) {
       if (_table.containsKey(name)) {
         writeType(name, type);
         writeValue(name, value);
@@ -369,8 +372,8 @@ public class Env extends Iced {
       _table.put(name, attributes);
     }
 
-    public String typeOf(String name) {
-      if (!_table.containsKey(name)) return null;
+    public int typeOf(String name) {
+      if (!_table.containsKey(name)) return NULL;
       return _table.get(name).typeOf();
     }
 
@@ -379,7 +382,7 @@ public class Env extends Iced {
       return _table.get(name).valueOf();
     }
 
-    public void writeType(String name, String type) {
+    public void writeType(String name, int type) {
       assert _table.containsKey(name) : "No such identifier in the symbol table: " + name;
       SymbolAttributes attrs = _table.get(name);
       attrs.writeType(type);
@@ -394,15 +397,15 @@ public class Env extends Iced {
     }
 
     private class SymbolAttributes {
-      private String _type;
+      private int _type;
       private String _value;
 
-      SymbolAttributes(String type, String value) { _type = type; _value = value; }
+      SymbolAttributes(int type, String value) { _type = type; _value = value; }
 
-      public String typeOf ()  { return  _type;  }
+      public int typeOf ()  { return  _type;  }
       public String valueOf()  { return  _value; }
 
-      public void writeType(String type)   { this._type  = type; }
+      public void writeType(int type)      { this._type  = type; }
       public void writeValue(String value) { this._value = value;}
     }
   }
@@ -412,29 +415,36 @@ public class Env extends Iced {
    *
    *  Overwrite existing values in writable tables.
    */
-  public void put(String name, String type, String value) {
+  void put(String name, int type, String value) {
     if (isGlobal()) _global.put(name, type, value);
     else _local.put(name, type, value);
   }
 
-  public String getType(String name, boolean search_global) {
-    String res = null;
+  int getType(String name, boolean search_global) {
+    int res = NULL;
 
     // Check the local scope first if not null
     if (_local != null) res = _local.typeOf(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
-    if (res == null && search_global) res = _global.typeOf(name);
+    if (res == NULL && search_global) res = _global.typeOf(name);
+
+    // Still didn't find it? Try the KV store next, if we haven't already
+    if (res == NULL && search_global) res = kvLookup(name);
 
     // Still didn't find it? Start looking up the parent scopes.
-    if (res == null) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
+    if (res == NULL) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
+    if (res == NULL) throw H2O.fail("Failed lookup of variable: "+name);
     return res;
   }
 
-  public String getValue(String name, boolean search_global) {
+  private int kvLookup(String name) {
+    if (DKV.get(Key.make(name)) != null) return ARY; else return NULL;
+  }
+
+  String getValue(String name, boolean search_global) {
     String res = null;
 
     // Check the local scope first if not null
@@ -449,5 +459,15 @@ public class Env extends Iced {
     // Fail if the variable does not exist in any table!
     if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
     return res;
+  }
+
+  AST lookup(ASTId id) {
+    switch(getType(id.value(), true)) {
+      case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
+      case ARY: return new ASTFrame(id.value());
+      case STR: return new ASTString('\"', id.value());
+      // case for FUN
+      default: throw H2O.fail("Could not find appropriate node for identifier "+id);
+    }
   }
 }

@@ -1,48 +1,22 @@
 package water.cascade;
 
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
  */
 abstract public class AST extends Iced {
-
-  //FIXME: Move this somewhere else
-  final static HashMap<String, AST> SYMBOLS = new HashMap<>(); // somewhere do the new...
-  static {
-    SYMBOLS.put("==",  new ASTEQ());
-    SYMBOLS.put("=",   new ASTAssign());
-    SYMBOLS.put("<-",  new ASTAssign());
-    SYMBOLS.put("+",   new ASTPlus());
-    SYMBOLS.put("/",   new ASTDiv());
-    SYMBOLS.put("*",   new ASTMul());
-    SYMBOLS.put("-",   new ASTSub());
-    SYMBOLS.put("ID",  new ASTId(""));
-    SYMBOLS.put("KEY", new ASTKey(""));
-    SYMBOLS.put("#",   new ASTNum(0));
-  }
-
-  //execution
   AST[] _asts;
-  AST parse_impl(Exec e) { throw H2O.fail("No parse_impl for class "+this.getClass()); }
+  AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for class "+this.getClass()); }
   abstract void exec(Env e);
   abstract String value();
-  abstract String type();
+  abstract int type();
   public int numChildren() { return _asts.length; } // Must "apply" each arg, then put the results into ASTOp/UDF
+
   /**
    * Walk an AST and execute.
-   *
-   * A root node in the AST has a few different possible key names:
-   *  a. "astop"   : Has operands list of nodes that must be recursed
-   *  b. "astcall" : Must create a new Program object
-   *  c. "left"    : Recurse down this guy, should not need to be checked. ever.
-   *  d. "right"   : Same as 'c'.           should not need to be checked. ever.
-   *
-   * Inspect the tree node and append a statement to the Program p.
    */
   Env treeWalk(Env e) {
 
@@ -79,8 +53,19 @@ abstract public class AST extends Iced {
 
       // Check if we have an ID node (can be an argument, or part of an assignment).
     } else if (this instanceof ASTId) {
-      e.put(((ASTId)this)._id, "", "");
-      this.exec(e);
+      ASTId id = (ASTId)this;
+      assert id.isValid();
+      if (id.isLookup()) {
+        // lookup the ID and return an AST
+        AST ast = e.lookup(id);
+        e.put(id._id, ast.type(), id._id);
+        ast.exec(e);
+      } else if (id.isSet()) {
+        e.put(((ASTId) this)._id, Env.ID, "");
+        id.exec(e);
+      } else {
+        throw H2O.fail("Got a bad identifier: '"+ id.value() +"'. It has no type '!' or '$'.");
+      }
 
       // Check if String, Num, Key, or Frame
     } else if (this instanceof ASTString || this instanceof ASTNum ||
@@ -93,14 +78,16 @@ abstract public class AST extends Iced {
 
 class ASTId extends AST {
   final String _id;
-  ASTId(String id) { _id = id; }
-  ASTId parse_impl(Exec E) { return new ASTId(E.parseID()); }
-  @Override public String toString() { return _id; }
-  @Override void exec(Env e) {
-    e.push(this);
-  }
-  @Override String type() { return "ID"; }
+  final char _type; // either '$' or '!'
+  ASTId(char type, String id) { _type = type; _id = id; }
+  ASTId parse_impl(Exec E) { return new ASTId(_type, E.parseID()); }
+  @Override public String toString() { return _type+_id; }
+  @Override void exec(Env e) { e.push(this); } // should this be H2O.fail() ??
+  @Override int type() { return Env.ID; }
   @Override String value() { return _id; }
+  boolean isSet() { return _type == '!'; }
+  boolean isLookup() { return _type == '$'; }
+  boolean isValid() { return isSet() || isLookup(); }
 }
 
 class ASTKey extends AST {
@@ -108,8 +95,8 @@ class ASTKey extends AST {
   ASTKey(String key) { _key = key; }
   ASTKey parse_impl(Exec E) { return new ASTKey(E.parseID()); }
   @Override public String toString() { return _key; }
-  @Override void exec(Env e) { (new ASTFrame(_key)).exec(e); e._locked.add(Key.make(_key)); }
-  @Override String type() { return "KEY"; }
+  @Override void exec(Env e) { (new ASTFrame(_key)).exec(e); }
+  @Override int type () { return Env.NULL; }
   @Override String value() { return _key; }
 }
 
@@ -117,10 +104,14 @@ class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
   ASTFrame(Frame fr) { _key = null; _fr = fr; }
-  ASTFrame(String key) { _key = key; _fr = DKV.get(Key.make(_key)).get(); }
+  ASTFrame(String key) {
+    if (DKV.get(Key.make(key)) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    _key = key;
+    _fr = DKV.get(Key.make(_key)).get();
+  }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
-  @Override void exec(Env e) { e.push(this); }
-  @Override String type() { return "Frame"; }
+  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.push(this); }
+  @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
 }
 
@@ -130,17 +121,18 @@ class ASTNum extends AST {
   ASTNum parse_impl(Exec E) { return new ASTNum(Double.valueOf(E.parseID())); }
   @Override public String toString() { return Double.toString(_d); }
   @Override void exec(Env e) { e.push(this); }
-  @Override String type() { return "double"; }
+  @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
 }
 
 class ASTString extends AST {
   final String _s;
-  ASTString(String s) { _s = s; }
-  ASTString parse_impl(Exec E) { return new ASTString(E.parseID()); }
+  final char _eq;
+  ASTString(char eq, String s) { _eq = eq; _s = s; }
+  ASTString parse_impl(Exec E) { return new ASTString(_eq, E.parseString(_eq)); }
   @Override public String toString() { return _s; }
   @Override void exec(Env e) { e.push(this); }
-  @Override String type() { return "String"; }
+  @Override int type () { return Env.STR; }
   @Override String value() { return _s; }
 }
 
@@ -153,7 +145,7 @@ class ASTAssign extends AST {
     return res;
   }
 
-  @Override String type() { throw H2O.fail(); }
+  @Override int type () { throw H2O.fail(); }
   @Override String value() { throw H2O.fail(); }
 
   @Override void exec(Env e) {

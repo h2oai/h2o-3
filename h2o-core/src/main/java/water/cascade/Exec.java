@@ -7,23 +7,32 @@ import water.util.Log;
 import java.util.ArrayList;
 
 /**
- * An interpreter.
+ * Exec is an interpreter of abstract syntax trees.
  *
- * Parse an AST and then execute the AST by walking it.
+ * Trees have a Lisp-like structure with the following "reserved" special characters:
  *
- * Parsing:
+ *     '('  signals the parser to begin a function application, next token is an identifier or a (single char) flag
+ *     '#'  signals the parser to parse a double: attached_token
+ *     '"'  signals the parser to parse a String (double quote): attached_token
+ *     "'"  signals the parser to parse a String (single quote): attached_token
+ *     '$'  signals a variable lookup: attached_token
+ *     '!'  signals a variable set: attached_token
+ *     '['  signals a column slice by index -> R handles all named to int conversions (as well as 1-based to 0-based)
+ *     'f'  signals the parser to a parse a function: (f ( args ) ( body ).
+ *     '='  signals the parser to assign the RHS to the LHS.
+ *     'g'  signals >
+ *     'G'  signals >=
+ *     'l'  signals >
+ *     'L'  signals >=
+ *     'n'  signals ==
+ *     'N'  signals !=
+ *     '_'  signals negation (!)
  *
- *   Trees are defined in the following way:
- *     '(' begins a tree node
- *     ')' ends   a tree node
- *     '#' signals the parser to parse a double
- *     's' signals the parser to parse a string
- *     '$' signals a named column selection
- *     '[' signals a column slice by index  -> R shalt replace column names with their indexes!
- *     '=' signals the parser to assign the RHS to the LHS. (So does '<-')
- *     'f' signals the parser to a parse a UDF.
+ * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
+ * variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
+ *
+ * Everything else is a function call (prefix/infix/func) and has a leading char of '('.
  */
-
 public class Exec extends Iced {
 
   //parser
@@ -36,54 +45,32 @@ public class Exec extends Iced {
   public Exec(String ast, Env env) {
     _ast = ast == null ? null : ast.getBytes();
     _env = env;
-
-//    _display = new ArrayList<>();
-//    _ast2ir = new AST2IR(ast); _ast2ir.make();
-//    _display.add(new Env(_ast2ir.getLocked()));
   }
 
   public static Env exec( String str ) throws IllegalArgumentException {
-//    cluster_init();
+    cluster_init();
     // Preload the global environment from existing Frames
     ArrayList<Key> locked = new ArrayList<>();
     Env env = new Env(locked);
 
-    //TODO: frame keys snapshot
-//    final Key [] frameKeys = H2O.KeySnapshot.globalSnapshot().filter(new H2O.KVFilter() {
-//      @Override public boolean filter(H2O.KeyInfo k) { return k._type == TypeMap.FRAME; }
-//    }).keys();
-//    for( Key k : frameKeys ) {      // Convert all VAs to Frames
-//      Value val = DKV.get(k);
-//      if( val == null || !val.isFrame()) continue;
-//      // Bad if it's already locked by 'null', because lock by 'null' is removed when you leave Exec.
-//      // Before was adding all frames with read-shared lock here.
-//      // Should be illegal to add any keys locked by "null' to exec? (is it only unparsed keys?)
-//      // undoing. this doesn't always work (gets stack trace)
-//      Frame fr = val.get();
-//      String kstr = k.toString();
-//      try {
-//        env.push(fr,kstr);
-//        global.add(new ASTId(Type.ARY,kstr,0,global.size()));
-//        fr.read_lock(null);
-//        locked.add(fr._key);
-//      } catch( Exception e ) {
-//        Log.err("Exception while adding frame " + k + " to Exec env");
-//      }
-//    }
-
     // Some global constants
-    env.put("TRUE", "double", "1");   env.put("T", "double", "1");
-    env.put("FALSE", "doudble", "0"); env.put("F", "double", "0");
-    env.put("NA", "double", Double.toString(Double.NaN));
-    env.put("Inf", "double", Double.toString(Double.POSITIVE_INFINITY));
+    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
 
-    // Parse.  Type-errors get caught here and throw IAE
     try {
       Exec ex = new Exec(str, env);
+
+      // Parse
       AST ast = ex.parse();
 
+      // Execute
       env = ast.treeWalk(env);
-//      env.postWrite();
+
+      // Write back to DKV (if needed) and return
+      // env.postWrite();
+
     } catch( RuntimeException t ) {
       env.remove_and_unlock();
       throw t;
@@ -92,17 +79,28 @@ public class Exec extends Iced {
   }
 
   protected AST parse() {
-    // take a '('
-    String tok = xpeek('(').parseID();
+    // Parse a token --> look for a function or a special char.
+    String tok = parseID();
     //lookup of the token
-    AST ast = AST.SYMBOLS.get(tok); // hash table declared here!
+    AST ast = ASTOp.SYMBOLS.get(tok);
     assert ast != null : "Failed lookup on token: "+tok;
     return ast.parse_impl(this);
   }
 
   String parseID() {
     StringBuilder sb = new StringBuilder();
-    while(_ast[_x] != ' ' && _ast[_x] != ')') { // isWhiteSpace...
+    if (peek() == '(') {_x++; return parseID(); } // eat the '('
+    if ( isSpecial(peek())) { return sb.append((char)_ast[_x++]).toString(); } // if attached_token, then use parse_impl
+    while(_ast[_x] != ' ' && _ast[_x] != ')') {  // while not WS...
+      sb.append((char)_ast[_x++]);
+    }
+    _x++;
+    return sb.toString();
+  }
+
+  String parseString(char eq) {
+    StringBuilder sb = new StringBuilder();
+    while(_ast[_x] != eq) {
       sb.append((char)_ast[_x++]);
     }
     _x++;
@@ -114,9 +112,7 @@ public class Exec extends Iced {
     _x++; return this;
   }
 
-  char peek() {
-    return (char)_ast[_x];
-  }
+  char peek() { return (char)_ast[_x]; }
 
   Exec skipWS() {
     while (true) {
@@ -130,6 +126,8 @@ public class Exec extends Iced {
     return this;
   }
 
+  private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$'; }
+
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 
   // To avoid a class-circularity hang, we need to force other members of the
@@ -138,12 +136,13 @@ public class Exec extends Iced {
   private static boolean _inited;       // One-shot init
   private static void cluster_init() {
     if( _inited ) return;
-    new DTask() {
-      @Override public void compute2() {
-        new ASTPlus();          // Touch a common class to force loading
-        tryComplete();
-      }
-    }.invoke();
+    new ASTPlus();
+//    new DTask() {
+//      @Override public void compute2() {
+//        new ASTPlus(); // Touch a common class to force loading
+//        tryComplete();
+//      }
+//    }.invoke();
     _inited = true;
   }
 }

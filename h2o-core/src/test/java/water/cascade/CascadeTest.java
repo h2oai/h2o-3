@@ -6,80 +6,67 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.parser.ParseDataset2;
-import water.parser.ParserTest;
-
 
 public class CascadeTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void test1() {
     // Checking `hex + 5`
-    String tree = "(+ (KEY a.hex) (# 5))";
+    String tree = "(+ $a.hex #5)";
     checkTree(tree);
   }
 
   @Test public void test2() {
     // Checking `hex + 5 + 10`
-    String tree = "(+ (KEY a.hex) (+ (# 5) (# 10)))";
+    String tree = "(+ $a.hex (+ #5 #10))";
     checkTree(tree);
   }
 
   @Test public void test3() {
     // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-    String tree = "(+ (- (+ (KEY a.hex) (# 5) ) (* (# 1) (KEY a.hex))) (* (# 15) (/ (# 23) (KEY a.hex))))";
+    String tree = "(+ (- (+ $a.hex #5) (* #1 $a.hex)) (* #15 (/ #23 $a.hex)))";
     checkTree(tree);
   }
 
   @Test public void test4() {
-    // Checking `hex == 5`, <=, >=, <, >, !=
-    String tree = "(== (KEY a.hex) (# 5))";
+    //Checking `hex == 5`, <=, >=, <, >, !=
+    String tree = "(n $a.hex #5)";
     checkTree(tree);
-    tree = "(<= (KEY a.hex) (# 5))";
+    tree = "(L $a.hex #5)";
     checkTree(tree);
-    tree = "(>= (KEY a.hex) (# 5))";
+    tree = "(G $a.hex #1.25132)";
     checkTree(tree);
-    tree = "(> (KEY a.hex) (# 5))";
+    tree = "(g $a.hex #112.341e-5)";
     checkTree(tree);
-    tree = "(< (KEY a.hex) (# 5))";
+    tree = "(l $a.hex #0.0123)";
     checkTree(tree);
-    tree = "(!= (KEY a.hex) (# 5))";
+    tree = "(N $a.hex #0)";
+    checkTree(tree);
+//    tree = "(n $a.hex \"hello\")";
     checkTree(tree);
   }
 
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
-    String tree = "(&& (KEY a.hex) (KEY a.hex))";
+    String tree = "(&& $a.hex $a.hex)";
     checkTree(tree);
-    tree = "(|| (KEY a.hex) (KEY a.hex))";
+    tree = "(|| $a.hex $a.hex)";
     checkTree(tree);
-    tree = "(& (KEY a.hex) (KEY a.hex))";
+    tree = "(& $a.hex $a.hex)";
     checkTree(tree);
-    tree = "(| (KEY a.hex) (KEY a.hex))";
+    tree = "(| $a.hex $a.hex)";
     checkTree(tree);
   }
 
   private static void checkTree(String tree) {
-    String [] data = new String[] {
-            "Col1\n"  +
-            "-1\n",
-            "1\n" ,
-            "2\n" ,
-            "3\n" ,
-            "4\n" ,
-            "5\n" ,
-            "6\n" ,
-            "254\n" ,
-    };
-
-    Key rkey = ParserTest.makeByteVec(data);
-    Frame fr = ParseDataset2.parse(Key.make("a.hex"), rkey);
+    Frame r = frame(new double[]{-1,1,2,3,4,5,6,254});
+    Frame fr = new Frame(Key.make("a.hex"), null, r.vecs());
+    DKV.put(fr._key, fr);
     Env env = Exec.exec(tree);
-//    System.out.println(env.toString()); //TODO
     Object result = env.pop();
     if (result instanceof ASTFrame) {
       Frame f2 = ((ASTFrame)result)._fr;
-      for (int i = 0; i < f2.anyVec().length(); ++i) System.out.println(f2.anyVec().at(i));
+      for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
       f2.delete();
     }
     if (result instanceof ASTNum) {
@@ -87,6 +74,7 @@ public class CascadeTest extends TestUtil {
       System.out.println(d);
     }
     fr.delete();
+    r.delete();
     DKV.remove(Key.make("a.hex"));
   }
 }
