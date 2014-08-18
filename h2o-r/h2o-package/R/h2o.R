@@ -11,7 +11,7 @@
 
 #'
 #' Make an HTTP request to the H2O backend.
-.h2o.__remoteSend <- function(client, page, ...) {
+.h2o.__remoteSend <- function(client, page, method = "GET", ..., .params = list()) {
   .h2o.__checkClientHealth(client)
   ip <- client@ip
   port <- client@port
@@ -24,40 +24,48 @@
   #
   if(.pkg.env$IS_LOGGING) {
     # Log list of parameters sent to H2O
-    .h2o.__logIt(myURL, list(...), "Command")
+#    .h2o.__logIt(myURL, list(...), "Command")
+#
+#    hg <- basicHeaderGatherer()
+#    tg <- basicTextGatherer()
+#    postForm(myURL, style = "POST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), ...)
+#    temp <- tg$value()
+#
+#    # Log HTTP response from H2O
+#    hh <- hg$value()
+#    s <- paste(hh["Date"], "\nHTTP status code: ", hh["status"], "\n ", temp, sep = "")
+#    s <- paste(s, "\n\n------------------------------------------------------------------\n")
+#
+#    cmdDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_COMMAND))
+#    if(!file.exists(cmdDir)) stop(cmdDir, " directory does not exist")
+#    write(s, file = .pkg.env$h2o.__LOG_COMMAND, append = TRUE)
+  } else {
 
-    hg <- basicHeaderGatherer()
-    tg <- basicTextGatherer()
-    postForm(myURL, style = "POST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), ...)
-    temp <- tg$value()
+    temp <- list()
 
-    # Log HTTP response from H2O
-    hh <- hg$value()
-    s <- paste(hh["Date"], "\nHTTP status code: ", hh["status"], "\n ", temp, sep = "")
-    s <- paste(s, "\n\n------------------------------------------------------------------\n")
+    if (length(.params) == 0) .params <- list(...)
 
-    cmdDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_COMMAND))
-    if(!file.exists(cmdDir)) stop(cmdDir, " directory does not exist")
-    write(s, file = .pkg.env$h2o.__LOG_COMMAND, append = TRUE)
-  } else
-    temp = postForm(myURL, style = "POST", ...)
+    # GET
+    if (method == "GET") {
+      if(length(list(...)) == 0 && length(.params) == 0)
+        temp <- invisible(getURLContent(myURL))
+      else
+        temp = invisible(getForm(myURL, .params = .params, .checkParams = FALSE))  # Some H2O params overlap with Curl params
 
-  # The GET code that we used temporarily while NanoHTTPD POST was known to be busted.
-  #
-  #if(length(list(...)) == 0)
-  #  temp = getURLContent(myURL)
-  #else
-  #  temp = getForm(myURL, ..., .checkParams = FALSE)   # Some H2O params overlap with Curl params
+    # POST
+    } else {
+      temp <- postForm(myURL, .params = list(...),  style = "POST")
+    }
 
-  # after = gsub("\\\\\\\"NaN\\\\\\\"", "NaN", temp[1])
-  # after = gsub("NaN", '"NaN"', after)
-  after = gsub('"Infinity"', '"Inf"', temp[1])
-  after = gsub('"-Infinity"', '"-Inf"', after)
-  res = fromJSON(after)
+    # post-processing
+    after <- gsub('"Infinity"', '"Inf"', temp[1])
+    after <- gsub('"-Infinity"', '"-Inf"', after)
+    res <- fromJSON(after)
 
-  if(!is.null(res$error)) {
-    if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
-    stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
+    if(!is.null(res$error)) {
+      if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
+      stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
+    }
   }
   res
 }
@@ -101,12 +109,11 @@
     status <- as.logical(node$healthy)
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
     nport <- unlist(strsplit(node$h2o$node, ":"))[2]
-    print(elapsed)
     if(!status) .h2o.__cloudSick(node_name = NULL, client = client)
     if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, client = client)
     if(elapsed > 10000) {
         Sys.sleep(5)
-        lapply(grabCloudStatus(client)$nodes, checker, client)
+        invisible(lapply(grabCloudStatus(client)$nodes, checker, client))
     }
     return(0)
   }
@@ -139,13 +146,13 @@
 .h2o.__waitOnJob <- function(client, job_key, pollInterval = 1, progressBar = TRUE) {
   if(!is.character(job_key) || nchar(job_key) == 0) stop("job_key must be a non-empty string")
   if(progressBar) {
-    pb = txtProgressBar(style = 3)
-    tryCatch(while((prog = .h2o.__poll(client, job_key)) != -1) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog) },
+    pb <- txtProgressBar(style = 3)
+    tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog$prog) },
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
-             finally = .h2o.__cancelJob(client, job_key))
-    setTxtProgressBar(pb, 1.0); close(pb)
+             finally = setTxtProgressBar(pb, 1.0))
+    close(pb)
   } else
-    tryCatch(while(.h2o.__poll(client, job_key) != -1) { Sys.sleep(pollInterval) },
+    tryCatch(while(prog<- .h2o.__poll(client, job_key) != -1 && !prog$DONE) { Sys.sleep(pollInterval) },
              finally = .h2o.__cancelJob(client, job_key))
 }
 
@@ -157,20 +164,24 @@
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
-  res = .h2o.__remoteSend(client, .h2o.__JOBS)
-  res = res$jobs
+  page <- 'Jobs.json/' %<p0-% keyName
+  res <- .h2o.__remoteSend(client, page)
+
+  res <- res$jobs
   if(length(res) == 0) stop("No jobs found in queue")
-  prog = NULL
+  prog <- list(prog = numeric(0), DONE = FALSE)
+  jobRes <- NULL
   for(i in 1:length(res)) {
-    if(res[[i]]$key == keyName)
-      prog = res[[i]]
+    if(res[[i]]$key$name == keyName)
+      jobRes <- res[[i]]
   }
-  if(is.null(prog)) stop("Job key ", keyName, " not found in job queue")
-  # if(prog$end_time == -1 || prog$progress == -2.0) stop("Job key ", keyName, " has been cancelled")
-  if(!is.null(prog$result$val) && prog$result$val == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
-  else if(!is.null(prog$result$exception) && prog$result$exception == 1) stop(prog$result$val)
-  if (prog$progress < 0 && (prog$end_time == "" || is.null(prog$end_time))) return(abs(prog$progress)/100)
-  else return(prog$progress)
+  if(is.null(jobRes)) stop("Job key ", keyName, " not found in job queue")
+  if(!is.null(jobRes$status) && jobRes$status == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
+  else if(!is.null(jobRes$exception) && jobRes$exception == 1) stop(jobRes$status)
+#  if (jobRes$progress < 0 && (jobRes$end_time == "" || is.null(prog$end_time))) return(abs(prog$progress)/100)
+  prog$prog <- jobRes$progress
+  if (jobRes$status == "DONE") prog$DONE <- TRUE
+  prog
 }
 
 #'
@@ -181,15 +192,16 @@
   if(length(res) == 0) stop("No jobs found in queue")
   prog = NULL
   for(i in 1:length(res)) {
-    if(res[[i]]$key == keyName) {
+    if(res[[i]]$key$name == keyName) {
       prog = res[[i]]; break
     }
   }
   if(is.null(prog)) stop("Job key ", keyName, " not found in job queue")
-  if(!(prog$cancelled || prog$progress == -1.0 || prog$progress == -2.0 || prog$end_time == -1)) {
-    .h2o.__remoteSend(client, .h2o.__PAGE_CANCEL, key=keyName)
-    cat("Job key", keyName, "was cancelled by user\n")
-  }
+#  if(!(prog$cancelled || prog$progress == -1.0 || prog$progress == -2.0 || prog$end_time == -1)) {
+##    .h2o.__remoteSend(client, .h2o.__PAGE_CANCEL, key=keyName)
+#    cat("Job key", keyName, "was cancelled by user\n")
+#  }
+  cat("Job key", keyName, "was cancelled by user\n")
 }
 
 #'

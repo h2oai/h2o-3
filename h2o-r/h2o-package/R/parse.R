@@ -14,21 +14,60 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   if(!is.character(sep)) stop("sep must be of class character")
   if(!(missing(col.names) || class(col.names) == "H2OParsedData")) stop(paste("col.names cannot be of class", class(col.names)))
 
-  # If both header and column names missing, then let H2O guess if header exists
-  sepAscii = ifelse(sep == "", sep, strtoi(charToRaw(sep), 16L))
-  if(missing(header) && missing(col.names))
-    res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_PARSE2, source_key=data@key, destination_key=key, separator=sepAscii)
-  else if(missing(header) && !missing(col.names))
-    res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_PARSE2, source_key=data@key, destination_key=key, separator=sepAscii, header=1, header_from_file=col.names@key)
-  else if(!missing(header) && missing(col.names))
-    res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_PARSE2, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header))
-  else
-    res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_PARSE2, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header), header_from_file=col.names@key)
+  # Prep srcs: must be of the form [src1,src2,src3,...]
+  srcs <- c(data@key)
+  srcs <- .collapse(srcs)
 
-  .h2o.__waitOnJob(data@h2o, res$job_key)
-  .h2o.exec2(expr = res$destination_key, h2o = data@h2o, dest_key = res$destination_key)
+  # First go through ParseSetup
+  parseSetup <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE_SETUP, srcs = srcs)
+  col.names <- parseSetup$columnNames
+  ncols <- parseSetup$ncols
+  parseSetup$hex <- ifelse(key != "", key %<p0-% ".hex", parseSetup$hexName)
+  parseSetup$srcs <- srcs
+  parseSetup$columnNames <- .collapse(parseSetup$columnNames)
+
+  # remove the following from the parseSetup list: not passed to PARSE page
+  parseSetup$hexName <- NULL
+  parseSetup$data <- NULL
+
+  # Perform the parse
+  res <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE, method = "GET", .params = parseSetup)
+
+  # Poll on job
+  .h2o.__waitOnJob(data@h2o, res$job$name)
+
+  # Return a new H2OParsedData object
+  nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
+  .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
+
+  # If both header and column names missing, then let H2O guess if header exists
+#  sepAscii <- ifelse(sep == "", sep, strtoi(charToRaw(sep), 16L))
+#  if(missing(header) && missing(col.names))
+#  else if(missing(header) && !missing(col.names))
+#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=1, header_from_file=col.names@key)
+#  else if(!missing(header) && missing(col.names))
+#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header))
+#  else
+#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header), header_from_file=col.names@key)
+
+#  .h2o.parsedData(data@h2o,
+#  .h2o.exec2(expr = res$destination_key, h2o = data@h2o, dest_key = res$destination_key)
 }
 
+#'
+#' Helper Collapse Function
+#'
+#' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
+.collapse<-
+function(v) {
+  v <- paste(v, collapse=",", sep =" ")
+  v <- '['%<p0-% v %<p0-%']'
+  v
+}
+
+#'
+#' Inspect /3/Frames for nrows.
+.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, '3/Frames.json/' %<p0-% key)$frames[[1]]$rows }
 
 #'
 #' Load H2O Model from HDFS or Local Disk
@@ -40,4 +79,11 @@ h2o.loadModel <- function(object, path="") {
   if(!is.character(path)) stop('path must be of class character')
   res = .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
   h2o.getModel(object, res$model$'_key')
+}
+
+#'
+#' The H2OParsedData Constructor
+.h2o.parsedData<-
+function(h2o, key, nrow, ncol, col_names) {
+  new("H2OParsedData", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 }

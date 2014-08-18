@@ -6,9 +6,10 @@
 #' Together, these three methods handle all of the available operations that can
 #' be done with H2OFrame objects (this includes H2OParsedData objects and ASTNode objects).
 
-"%<i-%"  <- function(x, cls) { inherits(x, cls) }
-"%<p0-%" <- function(x, y) { assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame()) }
-"%<p-%"  <- function(x, y) { assign(deparse(substitute(x)), paste(x, y), parent.frame()) }
+"%<i-%"  <- function(x, cls) inherits(x, cls)
+"%<p0-%" <- function(x, y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
+"%<p-%"  <- function(x, y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
+"%<-%"   <- function(x, y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
 
 .h2o.__exec2 <- function(client, expr) {
   destKey = paste(.TEMP_KEY, ".", .pkg.env$temp_count, sep="")
@@ -157,14 +158,30 @@ function(op, ...) {
   new("ASTNode", root=op, children=ASTargs)
 }
 
+#'
+#' Force the evaluation of an AST
+#'
+#' This function is never called directly. The object shall never be a phrase!
 .force.eval<-
-function(client, object) {
-  expr <- as.character(toJSON(visitor(object)))
-  res <- .h2o.__remoteSend(client, .h2o.__PAGE_EXEC3, ast=expr)
-  if(!is.null(res$response$status) && res$response$status == "error") stop("H2O returned an error!")
-  res$dest_key <- destKey
-  return(res)
+function(client, object, ID, rID = NULL, env = parent.frame()) {
+
+  if(length(as.list(substitute(object))) > 1) stop(paste("Found phrase: ", substitute(object), ". Illegal usage.", sep = ""))
+
+  object <- ID %<-% object
+  expr   <- visitor(object)
+
+  # Have H2O evaluate the AST
+  res <- .h2o.__remoteSend(client, .h2o.__CASCADE, ast=expr$ast)
+
+  # Return the frame
+  ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$object))
+  if (!is.null(rID)) ID <- rID
+  assign(ID, .h2o.parsedData(client, res$key$name, res$num_rows, res$num_cols, res$col_names), env = env)
+
+#  if(!is.null(res$response$status) && res$response$status == "error") stop("H2O returned an error!")
 }
+
+
 
 
 #cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")

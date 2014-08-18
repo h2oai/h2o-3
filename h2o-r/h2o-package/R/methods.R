@@ -373,42 +373,83 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
   # Inspection/Summary Operations
   #---------------------------------------------------------------------------------------------------------------------
 
-#setMethod("names", "H2OParsedData", function(x) { colnames(x) })
-#
-#setMethod("nrow", "H2OParsedData", function(x) {
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__PAGE_INSPECT2, src_key=x@key); as.numeric(res$numRows) })
-#
-#setMethod("ncol", "H2OParsedData", function(x) {
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__PAGE_INSPECT2, src_key=x@key); as.numeric(res$numCols) })
-#
+# TODO: Will want to have a different method dispatch for H2OParsedData and H2OFrame objects, H2OFrames are "lazy"
+
+nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow")     else base::nrow(x)
+ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol")     else base::ncol(x)
+colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
+names    <- function(x) if (.isH2O(x)) UseMethod("names")    else base::names(x)
+length   <- function(x) if (.isH2O(x)) UseMethod("length")   else base::length(x)
+dim      <- function(x) if (.isH2O(x)) UseMethod("dim")      else base::dim(x)
+
+nrow.H2OParsedData     <- function(x) x@nrows
+ncol.H2OParsedData     <- function(x) x@ncols
+colnames.H2OParsedData <- function(x) x@col_names
+names.H2OParsedData    <- function(x) colnames(x)
+length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrows else ncol(x)
+dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
+
+nrow.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  nrow(get(ID, parent.frame()))
+}
+
+ncol.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  ncol(get(ID, parent.frame()))
+}
+
+colnames.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  colnames(get(ID, parent.frame()))
+}
+
+names.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  names(get(ID, parent.frame()))
+}
+
+length.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  length(get(ID, parent.frame()))
+}
+
+dim.H2OFrame <- function(x) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  dim(get(ID, parent.frame()))
+}
+
 #setMethod("levels", "H2OParsedData", function(x) {
 #  if(ncol(x) != 1) return(NULL)
 #  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
 #  res$levels[[1]]
 #})
 #
-#setMethod("colnames", "H2OParsedData", function(x, do.NULL = TRUE, prefix = "col") {
-#  if(!do.NULL) stop("Unimplemented: Auto-generated colnames are C1, C2, ...")
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__PAGE_INSPECT2, src_key=x@key)
-#  unlist(lapply(res$cols, function(y) y$name))
-#})
-#
-#setMethod("length", "H2OParsedData", function(x) {
-#  numCols = ncol(x)
-#  if (numCols == 1) {
-#    numRows = nrow(x)
-#    return (numRows)
-#  }
-#  return (numCols)
-#})
-#
-#setMethod("dim", "H2OParsedData", function(x) {
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__PAGE_INSPECT2, src_key=x@key)
-#  as.numeric(c(res$numRows, res$numCols))
-#})
-#
-#setMethod("dim<-", "H2OParsedData", function(x, value) { stop("Unimplemented") })
-#
+
 #head.H2OFrame <- function(x, n = 6L, ...) {
 #  numRows = nrow(x)
 #  stopifnot(length(n) == 1L)
@@ -531,12 +572,12 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  colnames(result) <- sapply(res$summaries, function(col) col$colname)
 #  result
 #}
-#
-#
-#  #---------------------------------------------------------------------------------------------------------------------
-#  # Summary Functions
-#  #---------------------------------------------------------------------------------------------------------------------
-#
+
+
+  #---------------------------------------------------------------------------------------------------------------------
+  # Summary Functions
+  #---------------------------------------------------------------------------------------------------------------------
+
 #.min_internal <- min
 #min <- function(..., na.rm = FALSE) {
 #  # idx = sapply(c(...), function(y) { class(y) == "H2OParsedData" })
@@ -590,11 +631,11 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  temp = sapply(res$cols, function(x) { c(x$min, x$max) })
 #  c(min(temp[1,]), max(temp[2,]))
 #})
-#
-#  #---------------------------------------------------------------------------------------------------------------------
-#  # Math Operations
-#  #---------------------------------------------------------------------------------------------------------------------
-#
+
+  #---------------------------------------------------------------------------------------------------------------------
+  # Math Operations
+  #---------------------------------------------------------------------------------------------------------------------
+
 #mean.H2OFrame <- function(x, trim = 0, na.rm = FALSE, ...) {
 #  if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
 #  if(h2o.anyFactor(x) || dim(x)[2] != 1) {
@@ -618,12 +659,12 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
 #  .h2o.unop("var", x)
 #})
-#
-#
-#  #---------------------------------------------------------------------------------------------------------------------
-#  # Assignment Operations: [<-, $<-, [[<-,
-#  #---------------------------------------------------------------------------------------------------------------------
-#
+
+
+  #---------------------------------------------------------------------------------------------------------------------
+  # Assignment Operations: [<-, $<-, [[<-,
+  #---------------------------------------------------------------------------------------------------------------------
+
 #setMethod("[<-", "H2OParsedData", function(x, i, j, ..., value) {
 #  numRows = nrow(x); numCols = ncol(x)
 #  # if((!missing(i) && is.numeric(i) && any(abs(i) < 1 || abs(i) > numRows)) ||
@@ -809,11 +850,11 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #as.matrix.H2OFrame <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 #
 #setMethod("as.factor", "H2OParsedData", function(x) { .h2o.__unop2("factor", x) })
-#
-#  #---------------------------------------------------------------------------------------------------------------------
-#  # Model Plot/Summary Operations: PCA model summary and screeplot
-#  #---------------------------------------------------------------------------------------------------------------------
-#
+
+  #---------------------------------------------------------------------------------------------------------------------
+  # Model Plot/Summary Operations: PCA model summary and screeplot
+  #---------------------------------------------------------------------------------------------------------------------
+
 #summary.H2OPCAModel <- function(object, ...) {
 #  # TODO: Save propVar and cumVar from the Java output instead of computing here
 #  myVar = object@model$sdev^2
@@ -834,11 +875,11 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  else
 #    stop("type must be either 'barplot' or 'lines'")
 #}
-#
-#  #---------------------------------------------------------------------------------------------------------------------
-#  # Merge Operations: ifelse, cbind
-#  #---------------------------------------------------------------------------------------------------------------------
-#
+
+  #---------------------------------------------------------------------------------------------------------------------
+  # Merge Operations: ifelse, cbind
+  #---------------------------------------------------------------------------------------------------------------------
+
 #.canBeCoercedToLogical<-
 #function(vec) {
 #  if (!(inherits(vec, "H2OParsedData"))) stop("Object must be a H2OParsedData object. Input was: ", vec)
@@ -889,11 +930,11 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  res <- .h2o.__exec2(h2o, exec_cmd)
 #  new('H2OParsedData', h2o=h2o, key=res$dest_key)
 #}
-#
-##-----------------------------------------------------------------------------------------------------------------------
-## Work in Progress
-##-----------------------------------------------------------------------------------------------------------------------
-#
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Work in Progress
+#-----------------------------------------------------------------------------------------------------------------------
+
 ## TODO: Need to change ... to environment variables and pass to substitute method,
 ##       Can't figure out how to access outside environment from within lapply
 #setMethod("apply", "H2OParsedData", function(X, MARGIN, FUN, ...) {

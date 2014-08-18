@@ -34,6 +34,7 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
       regPath <- paste(path, pattern, sep=.Platform$file.sep)
       srcKey <- ifelse(length(res$keys) == 1, res$keys[[1]], paste("*", regPath, "*", sep=""))
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
+      assign("dd", rawData, globalenv())
       h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
       myData = lapply(res$keys, function(x) { new("H2ORawData", h2o=object, key=x) })

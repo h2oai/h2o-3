@@ -34,14 +34,15 @@
 
 #'
 #' Import & Parse Endpointss
-.h2o.__IMPORT       <- "2/ImportFiles.json"   # ImportFiles.json?path=/path/to/data
+.h2o.__IMPORT       <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
 .h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://path/to/data]
 .h2o.__PARSE        <- "Parse.json"         # Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
-
+.h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
 
 #'
 #' Summary and Inspect Endpoints
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
+.h2o.__FRAMES       <- "3/Frames.json"      # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
 #'
 #' Administrative Endpoints
@@ -54,7 +55,7 @@
 
 #'
 #' Cascade
-.h2o.__CASCADE      <- "/Cascade.json"
+.h2o.__CASCADE      <- "Cascade.json"
 
 #.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"

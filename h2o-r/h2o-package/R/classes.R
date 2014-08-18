@@ -498,6 +498,10 @@ setClass("Node", contains="H2OFrame")
 #' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
 setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
 
+setMethod("show", "ASTNode", function(object) {
+  cat(visitor(object)$ast, "\n")
+})
+
 #'
 #' The ASTOp class.
 #'
@@ -568,3 +572,17 @@ setClass("ASTSymbolTable", representation(symbols="list"), contains="Node",
 #-----------------------------------------------------------------------------------------------------------------------
 
 setClass("ASTApply", representation(op="character"), contains="Node")
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Class Utils
+#-----------------------------------------------------------------------------------------------------------------------
+
+.isH2O <- function(x) { x %<i-% "H2OFrame" || x%<i-% "H2OClient" || x %<i-% "H2ORawData" }
+.retrieveH2O<-
+function(env) {
+  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %<i-% "H2OClient"))
+  e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) %<i-% "H2OClient"))
+  if (any(g_list)) return(get(ls(globalenv())[which(g_list)[1]], envir=globalenv()))
+  if (any(e_list)) return(get(ls(env)[which(e_list)[1]], envir=env))
+  stop("Could not find any H2OClient. Do you have an active connection to H2O from R?")
+}
