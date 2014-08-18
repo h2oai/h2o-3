@@ -318,12 +318,14 @@ public class NonBlockingHashMapLong<TypeV>
   private final TypeV putIfMatch( long key, Object newVal, Object oldVal ) {
     if (oldVal == null || newVal == null)  throw new NullPointerException();
     if( key == NO_KEY ) {
-      final Object curVal = _val_1;
+      Object curVal = _val_1;
       if( oldVal == NO_MATCH_OLD || // Do we care about expected-Value at all?
           curVal == oldVal ||       // No instant match already?
           (oldVal == MATCH_ANY && curVal != TOMBSTONE) ||
-          oldVal.equals(curVal) )   // Expensive equals check
-        CAS(_val_1_offset,curVal,newVal); // One shot CAS update attempt
+          oldVal.equals(curVal) ) { // Expensive equals check
+        if( !CAS(_val_1_offset,curVal,newVal) ) // One shot CAS update attempt
+          curVal = _val_1;                      // Failed; get failing witness
+      }
       return curVal == TOMBSTONE ? null : (TypeV)curVal; // Return the last value present
     }
     final Object res = _chm.putIfMatch( key, newVal, oldVal );
