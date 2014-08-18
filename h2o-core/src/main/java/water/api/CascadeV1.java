@@ -28,7 +28,6 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
   @Override public Cascade createImpl() {
     Cascade c = new Cascade();
     if (ast.equals("")) throw H2O.fail("No ast supplied! Nothing to do.");
-    Log.info("THIS AST: "+ast);
     c._ast = ast;
     return c;
   }
