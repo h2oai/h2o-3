@@ -45,8 +45,8 @@ abstract public class AST extends Iced {
       // Exec the right branch
       _asts[1].treeWalk(e);
 
-      // Exec the left branch
-      _asts[0].treeWalk(e);
+//      // Exec the left branch
+//      _asts[0].treeWalk(e);
 
       // Do the assignment
       this.exec(e);  // Special case exec == apply for assignment
@@ -103,6 +103,7 @@ class ASTKey extends AST {
 class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
+//  public Frame  fr() { return _fr; }
   ASTFrame(Frame fr) { _key = null; _fr = fr; }
   ASTFrame(String key) {
     if (DKV.get(Key.make(key)) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
@@ -153,8 +154,16 @@ class ASTAssign extends AST {
     // Check if lhs is ID, update the symbol table; Otherwise it's a slice!
     if( this._asts[0] instanceof ASTId ) {
       ASTId id = (ASTId)this._asts[0];
-      e.put(id._id, this._asts[1].type(), this._asts[1].value());
-      return;
+      assert id.isSet() : "Expected to set result into the LHS!.";
+      if (e.isAry()) {
+        Frame f = e.popAry();
+        Frame fr = new Frame(Key.make(id._id), f.names(), f.vecs());
+        DKV.put(fr._key, fr);
+        e._locked.add(fr._key);
+        e.push(new ASTFrame(fr));
+        // f.delete() ??
+        e.put(id._id, Env.ARY, id._id);
+      }
     }
 
 
