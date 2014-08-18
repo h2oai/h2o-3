@@ -411,6 +411,8 @@ public class Frame extends Lockable {
 
   // --------------------------------------------
   // Utilities to help external Frame constructors, e.g. Spark.
+
+  // Make an initial Frame & lock it for writing.  Build Vec Keys.
   public void preparePartialFrame( String[] names ) {
     // Nuke any prior frame (including freeing storage) & lock this one
     if( _keys != null ) delete_and_lock(null);
@@ -419,4 +421,23 @@ public class Frame extends Lockable {
     _keys = new Vec.VectorGroup().addVecs(names.length);
     // No Vectors tho!!! These will be added *after* the import
   }
+
+  // Only serialize strings, not H2O internal structures
+
+  // Make NewChunks to for holding data from e.g. Spark
+  public static NewChunk[] createNewChunks( String name, int cidx ) {
+    Frame fr = DKV.get(Key.make(name)).get();
+    NewChunk[] nchks = new NewChunk[fr.numCols()];
+    for( int i=0; i<nchks.length; i++ )
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i]),cidx);
+    return nchks;
+  }
+
+  // Compress & DKV.put NewChunks
+  public static void closeNewChunks( NewChunk[] nchks ) {
+    Futures fs = new Futures();
+    for( NewChunk nchk : nchks ) nchk.close(fs);
+    fs.blockForPending();
+  }
+  
 }
