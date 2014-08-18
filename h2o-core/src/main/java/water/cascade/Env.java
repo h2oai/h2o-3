@@ -99,6 +99,11 @@ public class Env extends Iced {
   public boolean isId () { return peekType() == ID;  }
   public boolean isFun() { return peekType() == FUN; }
 
+  public Frame popAry () { return ((ASTFrame)pop())._fr; }
+  public double popDbl() { return ((ASTNum)pop())._d; }
+  public String popStr() { return ((ASTString)pop())._s; }
+  //TODO: func
+
   /**
    *  Reference Counting API
    *
