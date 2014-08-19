@@ -22,11 +22,11 @@ public class CascadeTest extends TestUtil {
     checkTree(tree);
   }
 
-//  @Test public void test3() {
-//    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-//    String tree = "(+ (- (+ $a.hex #5) (* #1 $a.hex)) (* #15 (/ #23 $a.hex)))";
-//    checkTree(tree);
-//  }
+  @Test public void test3() {
+    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
+    String tree = "(+ (- (+ $a.hex #5) (* #1 $a.hex)) (* #15 (/ #23 $a.hex)))";
+    checkTree(tree);
+  }
 
   @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
