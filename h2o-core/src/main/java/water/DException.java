@@ -7,17 +7,19 @@ package water;
 public class DException extends Iced {
   final H2ONode _h2o;           // Original throwing node
   final String _exClass;        // Structural breakdown of the original exception
+  final String _throwerClass;   // Class of thrower (probably subclass of MRTask)
   final DException _cause;
   final String _msg;
   final Stk[] _stk;
 
-  DException( Throwable ex ) {
+  DException( Throwable ex, Class thrower_clz ) {
     _h2o = H2O.SELF;
     Throwable cex = ex.getCause();
     while( ex instanceof DistributedException && cex != null )
       { ex = cex; cex = ex.getCause(); }
+    _throwerClass = thrower_clz.toString();
     _exClass = ex.getClass().toString();
-    _cause = cex==null ? null : new DException(cex);
+    _cause = cex==null ? null : new DException(cex,thrower_clz);
     _msg = ex.getMessage();
     StackTraceElement stk[] = ex.getStackTrace();
     _stk = new Stk[stk.length];
@@ -26,7 +28,7 @@ public class DException extends Iced {
   }
 
   DistributedException toEx() {
-    String msg = "from "+_h2o+"; "+_exClass+": "+_msg;
+    String msg = "from "+_h2o+"; by "+_throwerClass+"; "+_exClass+": "+_msg;
     DistributedException e = new DistributedException(msg,_cause==null ? null : _cause.toEx());
     StackTraceElement stk[] = new StackTraceElement[_stk.length];
     for( int i=0; i<_stk.length; i++ )

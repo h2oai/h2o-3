@@ -27,7 +27,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   // Return a distributed-exception
   protected DException _ex;
   public final boolean hasException() { return _ex != null; }
-  public synchronized void setException(Throwable ex) { if( _ex==null ) _ex = new DException(ex); }
+  public synchronized void setException(Throwable ex) { if( _ex==null ) _ex = new DException(ex,getClass()); }
   public DistributedException getDException() { return _ex==null ? null : _ex.toEx(); }
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP

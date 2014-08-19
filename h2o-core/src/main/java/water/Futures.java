@@ -66,7 +66,9 @@ public class Futures {
         }
         f.get();
       }
-    } 
-    catch( InterruptedException | ExecutionException e ) { throw Log.throwErr(e); }
+    } catch( ExecutionException e ) {
+      // Replace ExEx with RunEx
+      throw Log.throwErr(new RuntimeException(e.getCause()));
+    } catch( InterruptedException e ) { throw Log.throwErr(e); }
   }
 }

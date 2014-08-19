@@ -255,9 +255,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T getResult() {
     try { ForkJoinPool.managedBlock(this); }
     catch( InterruptedException ignore ) { }
-    catch( RuntimeException re ) { if( !hasException() ) setException(re);  }
+    catch( RuntimeException re ) { setException(re);  }
     DException.DistributedException de = getDException();
-    if( de != null ) throw de;
+    if( de != null ) throw new RuntimeException(de);
     return self();
   }
 
