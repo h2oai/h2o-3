@@ -41,6 +41,13 @@ jar {
   }
 }
 
+// Copy libs for the external cluster shell launcher
+task cpLibs(type: Copy) {
+  from configurations.compile.files 
+  from configurations.testCompile.files 
+  into '../lib'
+}
+
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -51,17 +58,10 @@ jar {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn testMultiNode, testJar
+  dependsOn cpLibs, testMultiNode, testJar
 
   // Defeat task 'test' by running no tests.
   exclude '**'
-}
-
-// Copy libs for the external cluster shell launcher
-task cpLibs(type: Copy) {
-  from configurations.compile.files 
-  from configurations.testCompile.files 
-  into '../lib'
 }
 
 apply from: '../gradle/javaIgnoreSymbolFile.gradle'
