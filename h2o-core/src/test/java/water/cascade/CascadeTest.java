@@ -42,7 +42,7 @@ public class CascadeTest extends TestUtil {
     checkTree(tree);
     tree = "(N $a.hex #0)";
     checkTree(tree);
-//    tree = "(n $a.hex \"hello\")";
+    tree = "(n $a.hex \"hello\")";
     checkTree(tree);
   }
 
@@ -58,11 +58,26 @@ public class CascadeTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void test6() {
+    // Checking `hex[,1]`
+    String tree = "([ $a.hex \"null\" #1)";
+    checkTree(tree);
+    // Checking `hex[1,5]`
+    tree = "([ $a.hex #0 #5)";
+    checkTree(tree);
+    tree = "([ $a.hex {(: #0 #4);6;8} #5)";
+    checkTree(tree);
+    tree = "([ $a.hex #0 {(: #0 #4);6;7})";
+    checkTree(tree);
+  }
+
   private static void checkTree(String tree) {
     Frame r = frame(new double[]{-1,1,2,3,4,5,6,254});
     Frame fr = new Frame(Key.make("a.hex"), null, r.vecs());
+    fr.vecs()[0].rollupStats();
     DKV.put(fr._key, fr);
     Env env = Exec.exec(tree);
+    System.out.println(env.toString());
     Object result = env.pop();
     if (result instanceof ASTFrame) {
       Frame f2 = ((ASTFrame)result)._fr;
