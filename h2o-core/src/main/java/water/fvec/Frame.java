@@ -439,5 +439,32 @@ public class Frame extends Lockable {
     for( NewChunk nchk : nchks ) nchk.close(fs);
     fs.blockForPending();
   }
+
+  // Build real Vecs from loose Chunks, and finalize this Frame
+  public void finalizePartialFrame( long[] espc ) {
+    // Compute elems-per-chunk.
+    // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
+    int nchunk = espc.length;
+    long espc2[] = new long[nchunk+1]; // Shorter array
+    long x=0;                   // Total row count so far
+    for( int i=0; i<nchunk; i++ ) {
+      espc2[i] = x;             // Start elem# for chunk i
+      x += espc[i];             // Raise total elem count
+    }
+    espc2[nchunk]=x;            // Total element count in last
+
+    // For all Key/Vecs - insert Vec header
+    System.out.println("GROINK!");
+    Futures fs = new Futures();
+    _vecs = new Vec[_keys.length];
+    for( int i=0; i<_keys.length; i++ ) {
+      // Insert Vec header
+      Vec vec = _vecs[i] = new Vec(_keys[i], espc2, null/*no enum*/, false/*not UUID*/, false/*not String*/, (byte)-1/*not Time*/);
+      DKV.put(_keys[i],vec,fs);             // Inject the header
+      System.out.println(vec.toString());
+    }
+    fs.blockForPending();
+    System.out.println("GROK!");
+  }
   
 }

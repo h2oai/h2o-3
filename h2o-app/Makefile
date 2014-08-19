@@ -1,6 +1,6 @@
 
 # Source code
-main_javas = src/main/java/H2OApp.java
+main_javas = src/main/java/water/H2OApp.java
 main_classes = $(patsubst src/main/java/%java,build/classes/%class,$(main_javas))
 classes = $(main_classes)
 
