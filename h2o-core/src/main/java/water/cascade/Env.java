@@ -123,6 +123,7 @@ public class Env extends Iced {
 
   private void subRef(Object o) {
     assert o instanceof ASTFrame;
+    if (((ASTFrame) o)._fr != null && _locked.contains(((ASTFrame) o)._fr._key)) return;
     for(Vec v: ((ASTFrame) o)._fr.vecs()) subRef(v);
   }
 

@@ -628,10 +628,11 @@ abstract class ASTBinOp extends ASTOp {
     }
 
     // If both are doubles on the stack
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.push(new ASTNum(op(d0, d1))); return; }
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.pop(); env.pop(); env.push(new ASTNum(op(d0, d1))); return; }
 
     // One or both of the items on top of stack are Strings and neither are frames
     if( fr0==null && fr1==null) {
+      env.pop(); env.pop();
       // s0 == null -> op(d0, s1)
       if (s0 == null) {
         // cast result of op if doing comparison, else combine the Strings if defined for op
@@ -642,7 +643,7 @@ abstract class ASTBinOp extends ASTOp {
       else if (s1 == null) {
         // cast result of op if doing comparison, else combine the Strings if defined for op
         if (opStr().equals("==") || opStr().equals("!=")) env.push(new ASTNum(Double.valueOf(op(s0,d1))));
-      else env.push(new ASTString('\"', op(s0,d1)));
+        else env.push(new ASTString('\"', op(s0,d1)));
       // s0 != null, s1 != null
       } else env.push(new ASTString('\"', op(s0,s1)));
       return;
