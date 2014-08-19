@@ -275,10 +275,12 @@ class ASTAssign extends AST {
       ASTId id = (ASTId)this._asts[0];
       assert id.isSet() : "Expected to set result into the LHS!.";
       if (e.isAry()) {
-        Frame f = e.popAry();
+        Frame f = e.peekAry();
         Frame fr = new Frame(Key.make(id._id), f.names(), f.vecs());
         DKV.put(fr._key, fr);
         e._locked.add(fr._key);
+//        fr.write_lock(null);
+//        e.pop();
         e.push(new ASTFrame(fr));
         // f.delete() ??
         e.put(id._id, Env.ARY, id._id);
@@ -483,8 +485,10 @@ class ASTSlice extends AST {
       cols = select(ary.numCols(),(AST)cols, env);
       rows = select(ary.numRows(),(AST)rows,env);
       Frame fr2 = ary.deepSlice(rows,cols);
+      if (cols instanceof Frame) for (Vec v : ((Frame)cols).vecs()) DKV.remove(v._key);
+      if (rows instanceof Frame) for (Vec v : ((Frame)rows).vecs()) DKV.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.popAry(), (rows instanceof Frame) ? (Frame)rows : null);
+      env.cleanup(ary, env.popAry());
       env.push(new ASTFrame(fr2));
     }
   }
@@ -500,7 +504,7 @@ class ASTSlice extends AST {
     if( env.isNum() ) {
       int col = (int)((ASTNum)env.pop())._d; // Peek double; Silent truncation (R semantics)
       if( col < 0 && col < -len ) col=0; // Ignore a non-existent column
-      if( col == 0 ) return new long[0];
+//      if( col == 0 ) return new long[0];
       return new long[]{col};
     }
     if (env.isSeries()) {
@@ -510,6 +514,7 @@ class ASTSlice extends AST {
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
+      Vec v0 = ary.anyVec().makeZero();
       final ASTSeries a0 = a;
       Frame fr = new MRTask() {
         @Override public void map(Chunk cs) {
@@ -517,7 +522,8 @@ class ASTSlice extends AST {
             if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
           }
         }
-      }.doAll(ary.anyVec().makeZero()).getResult()._fr;
+      }.doAll(v0).getResult()._fr;
+//      DKV.remove(v0._key);
       return fr;
     }
     if (env.isSpan()) {
