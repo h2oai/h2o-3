@@ -22,11 +22,11 @@ public class CascadeTest extends TestUtil {
     checkTree(tree);
   }
 
-  @Test public void test3() {
-    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-    String tree = "(+ (- (+ $a.hex #5) (* #1 $a.hex)) (* #15 (/ #23 $a.hex)))";
-    checkTree(tree);
-  }
+//  @Test public void test3() {
+//    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
+//    String tree = "(+ (- (+ $a.hex #5) (* #1 $a.hex)) (* #15 (/ #23 $a.hex)))";
+//    checkTree(tree);
+//  }
 
   @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
@@ -59,14 +59,16 @@ public class CascadeTest extends TestUtil {
   }
 
   @Test public void test6() {
-    // Checking `hex[,1]`
+//    Checking `hex[,1]`
     String tree = "([ $a.hex \"null\" #1)";
     checkTree(tree);
     // Checking `hex[1,5]`
     tree = "([ $a.hex #0 #5)";
     checkTree(tree);
+    // Checking `hex[c(1:5,7,9),6]`
     tree = "([ $a.hex {(: #0 #4);6;8} #5)";
     checkTree(tree);
+    // Checking `hex[1,c(1:5,7,8)]`
     tree = "([ $a.hex #0 {(: #0 #4);6;7})";
     checkTree(tree);
   }
@@ -76,7 +78,7 @@ public class CascadeTest extends TestUtil {
     Key ahex = Key.make("a.hex");
     Frame fr = new Frame(ahex, null, r.vecs());
     DKV.put(ahex, fr);
-    fr.vecs()[0].rollupStats();
+//    fr.vecs()[0].rollupStats();
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
     Object result = env.pop();

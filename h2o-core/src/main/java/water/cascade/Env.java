@@ -135,6 +135,7 @@ public class Env extends Iced {
   }
 
   private void subRef(Vec v) {
+    if (_refcnt.get(v) == null) return;
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0) {
       removeVec(v);
@@ -149,8 +150,8 @@ public class Env extends Iced {
   }
 
   void cleanup(Frame ... frames) {
-    for (Frame f : frames)
-      if (f != null && f._key != null && !_locked.contains(f._key)) f.delete();
+    for (Frame f : frames) remove(f,true);
+//      if (f != null && f._key != null && !_locked.contains(f._key)) f.delete();
   }
 
   private void extinguishCounts(Object o) {
@@ -174,20 +175,25 @@ public class Env extends Iced {
     while(!_stack.isEmpty()) {
       int type = peekType();
       switch(type) {
-        case ARY: remove(pop()); break;
+        case ARY: remove(peek(), false); break;
         default : pop(); break;
       }
     }
   }
 
-  private void remove(Object o) {
-    assert o instanceof ASTFrame;
-    remove_and_unlock(((ASTFrame)o)._fr);
+  private void remove(Object o, boolean popped) {
+    assert o instanceof ASTFrame || o instanceof Frame || o == null;
+    if (o == null) return;
+    if (o instanceof ASTFrame) remove_and_unlock(((ASTFrame)o)._fr);
+    else remove_and_unlock((Frame)o);
+    if(!popped) pop();
   }
 
   private void remove_and_unlock(Frame fr) {
     extinguishCounts(fr);
-    if(!_locked.contains(fr._key)) fr.unlock_all(); fr.delete(); DKV.remove(fr._key);
+    if (fr._lockers != null) fr.unlock_all();
+    if (_locked.contains(fr._key)) return;
+    fr.delete();
   }
 
   public String toString(int i) {
@@ -258,7 +264,8 @@ public class Env extends Iced {
 
       // Another check just in case assertions aren't on.
       if (i < 0) {
-        throw new IllegalArgumentException("Trying to peekAt a negative position in the stack: "+i);
+        i = _head + i;
+        if (i < 0) throw new IllegalArgumentException("Trying to peekAt a negative position in the stack: "+i);
       }
 
       // The stack may be empty

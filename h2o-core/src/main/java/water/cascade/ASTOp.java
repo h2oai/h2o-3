@@ -607,9 +607,9 @@ abstract class ASTBinOp extends ASTOp {
 
     // Must pop ONLY twice off the stack
     int left_type = env.peekType();
-    Object left = env.pop();
-    int right_type = env.peekType();
-    Object right = env.pop();
+    Object left = env.peek();
+    int right_type = env.peekTypeAt(-1);
+    Object right = env.peekAt(-1);
 
     // Cast the LHS of the op
     switch(left_type) {
@@ -671,6 +671,7 @@ abstract class ASTBinOp extends ASTOp {
     }
     final ASTBinOp bin = this;  // Final 'this' so can use in closure
 
+    Key tmp_key = Key.make();
     // Run an arbitrary binary op on one or two frames & scalars
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -723,10 +724,13 @@ abstract class ASTBinOp extends ASTOp {
           }
         }
       }
-    }.doAll(ncols,fr).outputFrame(Key.make(), (lf ? fr0 : fr1)._names,null);
+    }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
+    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
+    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
+//    env.pop(); env.pop();
     env.push(new ASTFrame(fr2));
-//    env.cleanup(fr0,fr1,fr);
-    if (toss_fr) env.cleanup(fr0,fr1,fr); else env.cleanup(fr0, fr1);
+//    env.pop(); env.pop();
+//    if (toss_fr) env.cleanup(fr0,fr1,fr); else env.cleanup(fr0, fr1);
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
 }

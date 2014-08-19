@@ -45,7 +45,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1>{
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
-        Frame fr = env.popAry();
+        Frame fr = env.peekAry();
         cascade._key = fr._key;
         cascade._num_rows = fr.numRows();
         cascade._num_cols = fr.numCols();

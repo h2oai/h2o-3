@@ -135,7 +135,7 @@ public class Exec extends Iced {
   // cluster to load the Exec & AST classes BEFORE trying to execute code
   // remotely, because e.g. ddply runs functions on all nodes.
   private static boolean _inited;       // One-shot init
-  private static void cluster_init() {
+  static void cluster_init() {
     if( _inited ) return;
     new ASTPlus();
     new MRTask() {
