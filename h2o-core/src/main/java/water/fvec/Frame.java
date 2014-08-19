@@ -236,6 +236,22 @@ public class Frame extends Lockable {
     return ds;
   }
 
+  public String[][] domains(int [] cols){
+    Vec [] vecs = vecs();
+    String [][] res = new String[cols.length][];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = vecs[cols[i]]._domain;
+    return res;
+  }
+
+  public String [] names(int [] cols){
+    if(_names == null)return null;
+    String [] res = new String[cols.length];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = _names[cols[i]];
+    return res;
+  }
+
   public String[] names() { return _names; }
 
   public long byteSize() {
@@ -466,5 +482,273 @@ public class Frame extends Lockable {
     fs.blockForPending();
     System.out.println("GROK!");
   }
-  
+
+  // --------------------------------------------------------------------------
+  // In support of R, a generic Deep Copy & Slice.
+  // Semantics are a little odd, to match R's.
+  // Each dimension spec can be:
+  //   null - all of them
+  //   a sorted list of negative numbers (no dups) - all BUT these
+  //   an unordered list of positive - just these, allowing dups
+  // The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range.
+  final int MAX_EQ2_COLS = 100000;      // FIXME.  Put this in a better spot.
+  public Frame deepSlice( Object orows, Object ocols ) {
+    // ocols is either a long[] or a Frame-of-1-Vec
+    long[] cols;
+    if( ocols == null ) cols = null;
+    else if (ocols instanceof long[]) cols = (long[])ocols;
+    else if (ocols instanceof Frame) {
+      Frame fr = (Frame) ocols;
+      if (fr.numCols() != 1)
+        throw new IllegalArgumentException("Columns Frame must have only one column (actually has " + fr.numCols() + " columns)");
+      long n = fr.anyVec().length();
+      if (n > MAX_EQ2_COLS)
+        throw new IllegalArgumentException("Too many requested columns (requested " + n +", max " + MAX_EQ2_COLS + ")");
+      cols = new long[(int)n];
+      Vec v = fr.anyVec();
+      for (long i = 0; i < v.length(); i++)
+        cols[(int)i] = v.at8(i);
+    } else
+      throw new IllegalArgumentException("Columns is specified by an unsupported data type (" + ocols.getClass().getName() + ")");
+
+    // Since cols is probably short convert to a positive list.
+    int c2[];
+    if( cols==null ) {
+      c2 = new int[numCols()];
+      for( int i=0; i<c2.length; i++ ) c2[i]=i;
+    } else if( cols.length==0 ) {
+      c2 = new int[0];
+    } else if( cols[0] >= 0 ) {
+      c2 = new int[cols.length];
+      for( int i=0; i<cols.length; i++ )
+        c2[i] = (int)cols[i]; // Conversion of 1-based cols to 0-based is handled by a 1-based front-end!
+    } else {
+      c2 = new int[numCols()-cols.length];
+      int j=0;
+      for( int i=0; i<numCols(); i++ ) {
+        if( j >= cols.length || i < (-cols[j]) ) c2[i-j] = i;
+        else j++;
+      }
+    }
+    for (int aC2 : c2)
+      if (aC2 >= numCols())
+        throw new IllegalArgumentException("Trying to select column " + (aC2 + 1) + " but only " + numCols() + " present.");
+    if( c2.length==0 )
+      throw new IllegalArgumentException("No columns selected (did you try to select column 0 instead of column 1?)");
+
+    // Do Da Slice
+    // orows is either a long[] or a Vec
+    if (orows == null)
+      return new DeepSlice(null,c2,vecs()).doAll(c2.length,this).outputFrame(names(c2),domains(c2));
+    else if (orows instanceof long[]) {
+      final long CHK_ROWS=1000000;
+      final long[] rows = (long[])orows;
+      if (this.numRows() == 0) {
+        return this;
+      }
+      if( rows.length==0 || rows[0] < 0 ) {
+        if (rows.length != 0 && rows[0] < 0) {
+          Vec v = new MRTask() {
+            @Override public void map(Chunk cs) {
+              for (long er : rows) {
+                if (er >= 0) continue;
+                er = Math.abs(er);
+                if (er < cs._start || er > (cs.len() + cs._start - 1)) continue;
+                cs.set0((int) (er - cs._start), 1);
+              }
+            }
+          }.doAll(this.anyVec().makeZero()).getResult()._fr.anyVec();
+          Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(c2.length, this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
+          DKV.remove(v._key);
+          DKV.remove(this.remove(this.numCols()-1)._key);
+          return slicedFrame;
+        } else {
+          return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(c2.length, this).outputFrame(names(c2), domains(c2));
+        }
+      }
+      // Vec'ize the index array
+      Futures fs = new Futures();
+      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames")));
+      int r = 0;
+      int c = 0;
+      while (r < rows.length) {
+        NewChunk nc = new NewChunk(av, c);
+        long end = Math.min(r+CHK_ROWS, rows.length);
+        for (; r < end; r++) {
+          nc.addNum(rows[r]);
+        }
+        nc.close(c++, fs);
+      }
+      Vec c0 = av.close(fs);   // c0 is the row index vec
+      fs.blockForPending();
+      Frame fr2 = new Slice(c2, this).doAll(c2.length,new Frame(new String[]{"rownames"}, new Vec[]{c0}))
+              .outputFrame(names(c2), domains(c2));
+      DKV.remove(c0._key);      // Remove hidden vector
+      return fr2;
+    }
+    Frame frows = (Frame)orows;
+    Vec vrows = frows.anyVec();
+    // It's a compatible Vec; use it as boolean selector.
+    // Build column names for the result.
+    Vec [] vecs = new Vec[c2.length+1];
+    String [] names = new String[c2.length+1];
+    for(int i = 0; i < c2.length; ++i){
+      vecs[i] = _vecs[c2[i]];
+      names[i] = _names[c2[i]];
+    }
+    vecs[c2.length] = vrows;
+    names[c2.length] = "predicate";
+    Frame ff = new Frame(names, vecs);
+    Frame sliced = new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
+    ff.delete(); DKV.remove(vrows._key); frows.delete();
+    return sliced;
+  }
+
+  // Slice and return in the form of new chunks.
+  private static class Slice extends MRTask<Slice> {
+    final Frame  _base;   // the base frame to slice from
+    final int[]  _cols;
+    Slice(int[] cols, Frame base) { _cols = cols; _base = base; }
+    @Override public void map(Chunk[] ix, NewChunk[] ncs) {
+      final Vec[] vecs = new Vec[_cols.length];
+      final Vec   anyv = _base.anyVec();
+      final long  nrow = anyv.length();
+      long  r    = ix[0].at80(0);
+      int   last_ci = anyv.elem2ChunkIdx(r<nrow?r:0); // memoize the last chunk index
+      long  last_c0 = anyv._espc[last_ci];            // ...         last chunk start
+      long  last_c1 = anyv._espc[last_ci + 1];        // ...         last chunk end
+      Chunk[] last_cs = new Chunk[vecs.length];       // ...         last chunks
+      for (int c = 0; c < _cols.length; c++) {
+        vecs[c] = _base.vecs()[_cols[c]];
+        last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
+      }
+      for (int i = 0; i < ix[0].len(); i++) {
+        // select one row
+        r = ix[0].at80(i) - 1;   // next row to select
+        if (r < 0) continue;
+        if (r >= nrow) {
+          for (int c = 0; c < vecs.length; c++) ncs[c].addNum(Double.NaN);
+        } else {
+          if (r < last_c0 || r >= last_c1) {
+            last_ci = anyv.elem2ChunkIdx(r);
+            last_c0 = anyv._espc[last_ci];
+            last_c1 = anyv._espc[last_ci + 1];
+            for (int c = 0; c < vecs.length; c++)
+              last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
+          }
+          for (int c = 0; c < vecs.length; c++)
+            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c],r);
+            else                   ncs[c].addNum (last_cs[c].at(r));
+        }
+      }
+    }
+  }
+
+  // Bulk (expensive) copy from 2nd cols into 1st cols.
+  // Sliced by the given cols & rows
+  private static class DeepSlice extends MRTask<DeepSlice> {
+    final int  _cols[];
+    final long _rows[];
+    final byte _isInt[];
+    DeepSlice( long rows[], int cols[], Vec vecs[] ) {
+      _cols=cols;
+      _rows=rows;
+      _isInt = new byte[cols.length];
+      for( int i=0; i<cols.length; i++ )
+        _isInt[i] = (byte)(vecs[cols[i]].isInt() ? 1 : 0);
+    }
+
+    @Override public boolean logVerbose() { return false; }
+
+    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+      long rstart = chks[0]._start;
+      int rlen = chks[0].len();  // Total row count
+      int rx = 0;               // Which row to in/ex-clude
+      int rlo = 0;              // Lo/Hi for this block of rows
+      int rhi = rlen;
+      if (_rows != null && _rows[0] < 0) {
+        // Skip any rows that have 1 in the last column!
+        Chunk select_vec = chks[chks.length-1];
+        for (int i = 0; i < _cols.length; i++) {
+          Chunk oc = chks[_cols[i]];
+          NewChunk nc = nchks[i];
+          if (_isInt[i] == 1) { // Slice on integer columns
+            for (int j = 0; j < oc.len(); j++) {
+              if (select_vec.at80(j) == 1) continue;
+              if (oc._vec.isUUID()) nc.addUUID(oc, j);
+              else if (oc.isNA0(j)) nc.addNA();
+              else nc.addNum(oc.at80(j), 0);
+            }
+          } else {                // Slice on double columns
+            for (int j = 0; j < oc.len(); j++) {
+              if (select_vec.at80(j) == 1) continue;
+              nc.addNum(oc.at0(j));
+            }
+          }
+        }
+      } else {
+        while (true) {           // Still got rows to include?
+          if (_rows != null) {   // Got a row selector?
+            if (rx >= _rows.length) break; // All done with row selections
+            long r = _rows[rx++];// Next row selector
+            if (r < rstart) continue;
+            rlo = (int) (r - rstart);
+            rhi = rlo + 1;        // Stop at the next row
+            while (rx < _rows.length && (_rows[rx] - rstart) == rhi && rhi < rlen) {
+              rx++;
+              rhi++;      // Grab sequential rows
+            }
+          }
+          // Process this next set of rows
+          // For all cols in the new set
+          for (int i = 0; i < _cols.length; i++) {
+            Chunk oc = chks[_cols[i]];
+            NewChunk nc = nchks[i];
+            if (_isInt[i] == 1) { // Slice on integer columns
+              for (int j = rlo; j < rhi; j++)
+                if (oc._vec.isUUID()) nc.addUUID(oc, j);
+                else if (oc.isNA0(j)) nc.addNA();
+                else nc.addNum(oc.at80(j), 0);
+            } else {                // Slice on double columns
+              for (int j = rlo; j < rhi; j++)
+                nc.addNum(oc.at0(j));
+            }
+          }
+          rlo = rhi;
+          if (_rows == null) break;
+        }
+      }
+    }
+  }
+
+  /**
+   *  Last column is a bit vec indicating whether or not to take the row.
+   */
+  private static class DeepSelect extends MRTask<DeepSelect> {
+    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+      Chunk pred = chks[chks.length-1];
+      for(int i = 0; i < pred.len(); ++i) {
+        if(pred.at0(i) != 0) {
+          for( int j = 0; j < chks.length - 1; j++ ) {
+            Chunk chk = chks[j];
+            if( chk._vec.isUUID() ) nchks[j].addUUID(chk,i);
+            else nchks[j].addNum(chk.at0(i));
+          }
+        }
+      }
+    }
+  }
+
+  private Frame copyRollups( Frame fr, boolean isACopy ) {
+    if( !isACopy ) return fr; // Not a clean copy, do not copy rollups (will do rollups "the hard way" on first ask)
+    Vec vecs0[] = vecs();
+    Vec vecs1[] = fr.vecs();
+    for( int i=0; i<fr._names.length; i++ ) {
+      assert vecs1[i].naCnt()== -1; // not computed yet, right after slice
+      Vec v0 = vecs0[find(fr._names[i])];
+      Vec v1 = vecs1[i];
+//      v1.setRollupStats(v0);
+    }
+    return fr;
+  }
 }
