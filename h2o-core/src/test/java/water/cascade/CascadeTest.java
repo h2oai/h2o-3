@@ -73,9 +73,10 @@ public class CascadeTest extends TestUtil {
 
   private static void checkTree(String tree) {
     Frame r = frame(new double[]{-1,1,2,3,4,5,6,254});
-    Frame fr = new Frame(Key.make("a.hex"), null, r.vecs());
+    Key ahex = Key.make("a.hex");
+    Frame fr = new Frame(ahex, null, r.vecs());
+    DKV.put(ahex, fr);
     fr.vecs()[0].rollupStats();
-    DKV.put(fr._key, fr);
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
     Object result = env.pop();
@@ -90,6 +91,5 @@ public class CascadeTest extends TestUtil {
     }
     fr.delete();
     r.delete();
-    DKV.remove(Key.make("a.hex"));
   }
 }
