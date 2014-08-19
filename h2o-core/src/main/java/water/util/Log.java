@@ -123,7 +123,7 @@ abstract public class Log {
       
     // If a log4j properties file was specified on the command-line, use it.
     // Otherwise, create some default properties on the fly.
-    String log4jProperties = System.getProperty ("log4j.properties");
+    String log4jProperties = System.getProperty ("log4j.configuration");
     if (log4jProperties != null) {
       PropertyConfigurator.configure(log4jProperties);
     } else {
