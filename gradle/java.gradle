@@ -8,7 +8,7 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 compileJava { 
-    options.debug = true 
+  options.debug = true 
 }
 
 // Actually run the tests by building a cluster of free-running JVMs first.
