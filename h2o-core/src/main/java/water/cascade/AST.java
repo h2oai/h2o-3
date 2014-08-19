@@ -1,8 +1,8 @@
 package water.cascade;
 
 import water.*;
-import water.fvec.Frame;
-import java.util.HashMap;
+import water.fvec.*;
+import java.util.ArrayList;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
@@ -39,21 +39,18 @@ abstract public class AST extends Iced {
         // TODO: do the udf op thing: capture env...
       }
 
-      // Check if there's an assignment
+    // Check if there's an assignment
     } else if (this instanceof ASTAssign) {
 
       // Exec the right branch
       _asts[1].treeWalk(e);
 
-//      // Exec the left branch
-//      _asts[0].treeWalk(e);
-
       // Do the assignment
-      this.exec(e);  // Special case exec == apply for assignment
+      this.exec(e);  // Special case exec => apply for assignment
 
-      // Check if we have an ID node (can be an argument, or part of an assignment).
+    // Check if we have an ID node (can be an argument, or part of an assignment).
     } else if (this instanceof ASTId) {
-      ASTId id = (ASTId)this;
+      ASTId id = (ASTId) this;
       assert id.isValid();
       if (id.isLookup()) {
         // lookup the ID and return an AST
@@ -64,16 +61,31 @@ abstract public class AST extends Iced {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
-        throw H2O.fail("Got a bad identifier: '"+ id.value() +"'. It has no type '!' or '$'.");
+        throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
       }
 
+    // Check if we have just a plain-old slice
+    } else if(this instanceof ASTSlice) {
+      _asts[0].treeWalk(e);
+      _asts[1].treeWalk(e);
+      _asts[2].treeWalk(e);
+      this.exec(e);
+
       // Check if String, Num, Key, or Frame
-    } else if (this instanceof ASTString || this instanceof ASTNum ||
-            this instanceof ASTKey    || this._asts[0] instanceof ASTFrame) { this.exec(e); }
+    } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
+            this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
+            this._asts[0] instanceof ASTFrame) { this.exec(e); }
 
     else { throw H2O.fail("Unknown AST node. Don't know what to do with: " + this.toString());}
     return e;
   }
+
+  protected StringBuilder indent( StringBuilder sb, int d ) {
+    for( int i=0; i<d; i++ ) sb.append("  ");
+    return sb.append(' ');
+  }
+
+  StringBuilder toString( StringBuilder sb, int d ) { return indent(sb,d).append(this); }
 }
 
 class ASTId extends AST {
@@ -126,6 +138,106 @@ class ASTNum extends AST {
   @Override String value() { return Double.toString(_d); }
 }
 
+/**
+ *  ASTSpan parses phrases like 1:10.
+ */
+class ASTSpan extends AST {
+  final long _min;       final long _max;
+  final ASTNum _ast_min; final ASTNum _ast_max;
+  boolean _isCol; boolean _isRow;
+  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
+  ASTSpan parse_impl(Exec E) {
+    AST l = E.parse();
+    AST r = E.skipWS().parse();
+    return new ASTSpan((ASTNum)l, (ASTNum)r);
+  }
+  boolean contains(long a) { return _min <= a && a <= _max; }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  @Override void exec(Env e) { e.push(this); }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+  @Override public String toString() { return _min + ":" + _max; }
+
+  long[] toArray() {
+    long[] res = new long[(int)_max - (int)_min + 1];
+    long min = _min;
+    for (int i = 0; i < res.length; ++i) res[i] = min++;
+    return res;
+  }
+}
+
+class ASTSeries extends AST {
+  final long[] _idxs;
+  final ASTSpan[] _spans;
+  boolean _isCol; boolean _isRow;
+  ASTSeries(long[] idxs, ASTSpan[] spans) { _idxs = idxs; _spans = spans;}
+  ASTSeries parse_impl(Exec E) {
+    ArrayList<Long> l_idxs = new ArrayList<>();
+    ArrayList<ASTSpan> s_spans = new ArrayList<>();
+    String[] strs = E.parseString('}').split(";");
+    for (String s : strs) {
+      if (s.charAt(0) == '(') {
+        s_spans.add( (ASTSpan)(new Exec(s,null)).parse());
+      } else l_idxs.add(Long.valueOf(s));
+    }
+    long[] idxs = new long[l_idxs.size()]; ASTSpan[] spans = new ASTSpan[s_spans.size()];
+    for (int i = 0; i < idxs.length; ++i) idxs[i] = l_idxs.get(i);
+    for (int i = 0; i < spans.length; ++i) spans[i] = s_spans.get(i);
+    return new ASTSeries(idxs, spans);
+  }
+
+  boolean contains(long a) {
+    if (_spans != null)
+      for (ASTSpan s:_spans) if(s.contains(a)) return true;
+    if (_idxs != null)
+      for (long l : _idxs) if (l == a) return true;
+    return false;
+  }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  @Override void exec(Env e) { e.push(this); }
+  @Override String value() { return null; }
+  @Override int type() { return Env.SERIES; }
+  @Override public String toString() {
+    String res = "c(";
+    if (_spans != null) {
+      for (ASTSpan s : _spans) {
+        res += s.toString(); res += ",";
+      }
+      if (_idxs == null) res = res.substring(0, res.length()-1); // remove last comma?
+    }
+    if (_idxs != null) {
+      for (long l : _idxs) {
+        res += l; res += ",";
+      }
+      res = res.substring(0, res.length()-1); // remove last comma.
+    }
+    res += ")";
+    return res;
+  }
+
+  long[] toArray() {
+    int res_length = 0;
+    if (_spans != null) for (ASTSpan s : _spans) res_length += (int)s._max - (int)s._min + 1;
+    if ( _idxs != null) res_length += _idxs.length;
+    long[] res = new long[res_length];
+    int cur = 0;
+    if (_spans != null) {
+      for (ASTSpan s : _spans) {
+        long[] l = s.toArray();
+        for (int i = 0; i < l.length; ++i) res[cur++] = l[i];
+      }
+    }
+    if (_idxs != null) {
+      for (int i = 0; i < _idxs.length; ++i) res[cur++] = _idxs[i];
+    }
+    return res;
+  }
+}
+
 class ASTString extends AST {
   final String _s;
   final char _eq;
@@ -135,6 +247,13 @@ class ASTString extends AST {
   @Override void exec(Env e) { e.push(this); }
   @Override int type () { return Env.STR; }
   @Override String value() { return _s; }
+}
+
+class ASTNull extends AST {
+  ASTNull() {}
+  @Override void exec(Env e) { e.push(this);}
+  @Override String value() { return null; }
+  @Override int type() { return Env.NULL; }
 }
 
 class ASTAssign extends AST {
@@ -165,7 +284,6 @@ class ASTAssign extends AST {
         e.put(id._id, Env.ARY, id._id);
       }
     }
-
 
     // Peel apart a slice assignment
 //    ASTSlice slice = (ASTSlice)_lhs;
@@ -307,7 +425,7 @@ class ASTAssign extends AST {
 //    env.pop(narg);
   }
 
-  String argName() { return this._asts[0] instanceof ASTId ? ((ASTId)this._asts[0])._id : null; }
+//  String argName() { return this._asts[0] instanceof ASTId ? ((ASTId)this._asts[0])._id : null; }
   @Override public String toString() { return "="; }
 //  @Override public StringBuilder toString( StringBuilder sb, int d ) {
 //    indent(sb,d).append(this).append('\n');
@@ -318,149 +436,133 @@ class ASTAssign extends AST {
 }
 
 // AST SLICE
+class ASTSlice extends AST {
+  ASTSlice() {}
 
-//class ASTSlice extends AST {
-//  final AST _ast, _cols, _rows; // 2-D slice of an expression
-//  ASTSlice( Type t, AST ast, AST cols, AST rows ) {
-//    super(t); _ast = ast; _cols = cols; _rows = rows;
-//  }
-//  static AST parse(Exec2 E, boolean EOS ) {
-//    int x = E._x;
-//    AST ast = ASTApply.parsePrefix(E, EOS);
-//    if( ast == null ) return null;
-//    if( !E.peek('[',EOS) )      // Not start of slice?
-//      return ASTNamedCol.parse(E,ast,EOS); // Also try named col slice
-//    if( !Type.ARY.union(ast._t) ) E.throwErr("Not an ary",x);
-//    if(  E.peek(']',false) ) return ast; // [] ===> same as no slice
-//    AST rows=E.xpeek(',',(x=E._x),parseCXExpr(E, false));
-//    if( rows != null && !rows._t.union(Type.dblary()) ) E.throwErr("Must be scalar or array",x);
-//    AST cols=E.xpeek(']',(x=E._x),parseCXExpr(E, false));
-//    if( cols != null && !cols._t.union(Type.dblary()) ) E.throwErr("Must be scalar or array",x);
-//    Type t =                    // Provable scalars will type as a scalar
-//            rows != null && rows.isPosConstant() &&
-//                    cols != null && cols.isPosConstant() ? Type.DBL : Type.ARY;
-//    return new ASTSlice(t,ast,cols,rows);
-//  }
-//
-//  @Override void exec(Env env) {
-//    int sp = env._sp;  _ast.exec(env);  assert sp+1==env._sp;
-//
-//    // Scalar load?  Throws AIIOOB if out-of-bounds
-//    if( _t.isDbl() ) {
-//      // Known that rows & cols are simple positive constants.
-//      // Use them directly, throwing a runtime error if OOB.
-//      long row = (long)((ASTNum)_rows)._d;
-//      int  col = (int )((ASTNum)_cols)._d;
-//      Frame ary=env.popAry();
-//      String skey = env.key();
-//      double d = ary.vecs()[col-1].at(row-1);
-//      env.subRef(ary,skey);     // Toss away after loading from it
-//      env.push(d);
-//    } else {
-//      // Else It's A Big Copy.  Some Day look at proper memory sharing,
-//      // disallowing unless an active-temp is available, etc.
-//      // Eval cols before rows (R's eval order).
-//      Frame ary=env._ary[env._sp-1];  // Get without popping
-//      Object cols = select(ary.numCols(),_cols,env);
-//      Object rows = select(ary.numRows(),_rows,env);
-//      Frame fr2 = ary.deepSlice(rows,cols);
-//      // After slicing, pop all expressions (cannot lower refcnt till after all uses)
-//      if( rows!= null ) env.pop();
-//      if( cols!= null ) env.pop();
-//      if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-//      env.pop();                // Pop sliced frame, lower ref
-//      env.push(fr2);
-//    }
-//  }
-//
-//  // Execute a col/row selection & return the selection.  NULL means "all".
-//  // Error to mix negatives & positive.  Negative list is sorted, with dups
-//  // removed.  Positive list can have dups (which replicates cols) and is
-//  // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-//  static Object select( long len, AST ast, Env env ) {
-//    if( ast == null ) return null; // Trivial "all"
-//    ast.exec(env);
-//    long cols[];
-//    if( !env.isAry() ) {
-//      int col = (int)env._d[env._sp-1]; // Peek double; Silent truncation (R semantics)
-//      if( col < 0 && col < -len ) col=0; // Ignore a non-existent column
-//      if( col == 0 ) return new long[0];
-//      return new long[]{col};
-//    }
-//    // Got a frame/list of results.
-//    // Decide if we're a toss-out or toss-in list
-//    Frame ary = env._ary[env._sp-1];  // Peek-frame
-//    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.toStringNames());
-//    Vec vec = ary.anyVec();
-//    // Check for a matching column of bools.
-//    if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
-//      return ary;    // Boolean vector selection.
-//    // Convert single vector to a list of longs selecting rows
-//    if(ary.numRows() > 10000000) throw H2O.fail("Unimplemented: Cannot explicitly select > 100000 rows in slice.");
-//    cols = MemoryManager.malloc8((int)ary.numRows());
-//    for(int i = 0; i < cols.length; ++i){
-//      if(vec.isNA(i))throw new IllegalArgumentException("Can not use NA as index!");
-//      cols[i] = vec.at8(i);
-//    }
-//    return cols;
-//  }
-//
-//  @Override public String toString() { return "[,]"; }
-//  @Override public StringBuilder toString( StringBuilder sb, int d ) {
-//    indent(sb,d).append(this).append('\n');
-//    _ast.toString(sb,d+1).append("\n");
-//    if( _cols==null ) indent(sb,d+1).append("all\n");
-//    else      _cols.toString(sb,d+1).append("\n");
-//    if( _rows==null ) indent(sb,d+1).append("all");
-//    else      _rows.toString(sb,d+1);
-//    return sb;
-//  }
-//}
+  ASTSlice parse_impl(Exec E) {
+    AST hex = E.parse();
+    AST rows = E.skipWS().parse();
+    if (rows instanceof ASTString) rows = new ASTNull();
+    if (rows instanceof ASTSpan) ((ASTSpan) rows).setSlice(true, false);
+    if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
+    AST cols = E.skipWS().parse();
+    if (cols instanceof ASTString) cols = new ASTNull();
+    if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);
+    if (cols instanceof ASTSeries) ((ASTSeries) cols).setSlice(false, true);
+    ASTSlice res = (ASTSlice) clone();
+    res._asts = new AST[]{hex,rows,cols};
+    return res;
+  }
 
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
 
+  @Override void exec(Env env) {
 
-//class ASTParseTest {
-//  private static void test1() {
-//    // Checking `hex + 5`
-//    String tree = "(+ (KEY a.hex) (# 5))";
-//    checkTree(tree);
-//  }
-//
-//  private static void test2() {
-//    // Checking `hex + 5 + 10`
-//    String tree = "(+ (KEY a.hex) (+ (# 5) (# 10))";
-//    checkTree(tree);
-//  }
-//
-//  private static void test3() {
-//    // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-//    String tree = "(+ (- (+ (KEY a.hex) (# 5) (* (# 1) (KEY a.hex) (* (# 15) (/ (# 23) (KEY a.hex)";
-//    checkTree(tree);
-//  }
-//
-//  public static void main(String[] args) {
-//    test1();
-//    test2();
-//    test3();
-//  }
-//
-//  private static void checkTree(String tree) {
-//    String [] data = new String[]{
-//            "'Col1\n"  +
-//            "1\n" ,
-//            "2\n" ,
-//            "3\n" ,
-//            "4\n" ,
-//            "5\n" ,
-//            "6\n" ,
-//            "254\n" ,
-//    };
-//
-//    Key rkey = ParserTest.makeByteVec(data);
-//    Frame fr = ParseDataset2.parse(Key.make("a.hex"), rkey);
-//    Exec e = new Exec(tree, new Env(new ArrayList<Key>()));
-//    Env env = Exec.asdf(tree);
-////    System.out.println(ast.toString());
-//    System.out.println(env.toString());
-//  }
-//}
+    // stack looks like:  [....,hex,rows,cols], so pop, pop !
+    int cols_type = env.peekType();
+    Object cols = env.pop();
+    int rows_type = env.peekType();
+    Object rows = env.pop();
+
+    // Scalar load?  Throws AIIOOB if out-of-bounds
+    if(cols_type == Env.NUM && rows_type == Env.NUM) {
+      // Known that rows & cols are simple positive constants.
+      // Use them directly, throwing a runtime error if OOB.
+      long row = (long)((ASTNum)rows)._d;
+      int  col = (int )((ASTNum)cols)._d;
+      Frame ary=env.popAry();
+      if (ary.vecs()[col].isEnum()) { env.push(new ASTString('\"', ary.vecs()[col].domain()[(int)ary.vecs()[col].at(row)])); }
+      else env.push( new ASTNum(ary.vecs()[col].at(row)));
+      env.cleanup(ary);
+    } else {
+      // Else It's A Big Copy.  Some Day look at proper memory sharing,
+      // disallowing unless an active-temp is available, etc.
+      // Eval cols before rows (R's eval order).
+      Frame ary= env.peekAry(); // Get without popping
+      cols = select(ary.numCols(),(AST)cols, env);
+      rows = select(ary.numRows(),(AST)rows,env);
+      Frame fr2 = ary.deepSlice(rows,cols);
+      if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
+      env.cleanup(ary, env.popAry(), (rows instanceof Frame) ? (Frame)rows : null);
+      env.push(new ASTFrame(fr2));
+    }
+  }
+
+  // Execute a col/row selection & return the selection.  NULL means "all".
+  // Error to mix negatives & positive.  Negative list is sorted, with dups
+  // removed.  Positive list can have dups (which replicates cols) and is
+  // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
+  static Object select( long len, AST ast, Env env ) {
+    if( ast.type() == Env.NULL ) return null; // Trivial "all"
+    ast.exec(env); // this pushes the object back onto the stack
+    long cols[];
+    if( env.isNum() ) {
+      int col = (int)((ASTNum)env.pop())._d; // Peek double; Silent truncation (R semantics)
+      if( col < 0 && col < -len ) col=0; // Ignore a non-existent column
+      if( col == 0 ) return new long[0];
+      return new long[]{col};
+    }
+    if (env.isSeries()) {
+      ASTSeries a = env.popSeries();
+      // if selecting out columns, build a long[] cols and return that.
+      if (a.isColSelector()) return a.toArray();
+
+      // Otherwise, we have rows selected: Construct a compatible "predicate" vec
+      Frame ary = env.peekAry();
+      final ASTSeries a0 = a;
+      Frame fr = new MRTask() {
+        @Override public void map(Chunk cs) {
+          for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
+            if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+          }
+        }
+      }.doAll(ary.anyVec().makeZero()).getResult()._fr;
+      return fr;
+    }
+    if (env.isSpan()) {
+      ASTSpan a = env.popSpan();
+      // if selecting out columns, build a long[] cols and return that.
+      if (a.isColSelector()) return a.toArray();
+
+      // Otherwise, we have rows selected: Construct a compatible "predicate" vec
+      Frame ary = env.peekAry();
+      final ASTSpan a0 = a;
+      Frame fr = new MRTask() {
+        @Override public void map(Chunk cs) {
+          for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
+            if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+          }
+        }
+      }.doAll(ary.anyVec().makeZero()).getResult()._fr;
+      return fr;
+    }
+    // Got a frame/list of results.
+    // Decide if we're a toss-out or toss-in list
+    Frame ary = env.peekAry();  // Peek-frame
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
+    Vec vec = ary.anyVec();
+    // Check for a matching column of bools.
+    if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
+      return ary;    // Boolean vector selection.
+    // Convert single vector to a list of longs selecting rows
+    if(ary.numRows() > 10000000) throw H2O.fail("Unimplemented: Cannot explicitly select > 10000000 rows in slice.");
+    cols = MemoryManager.malloc8((int)ary.numRows());
+    for(int i = 0; i < cols.length; ++i){
+      if(vec.isNA(i))throw new IllegalArgumentException("Can not use NA as index!");
+      cols[i] = vec.at8(i);
+    }
+    return cols;
+  }
+
+  @Override public String toString() { return "[,]"; }
+  @Override public StringBuilder toString( StringBuilder sb, int d ) {
+    indent(sb,d).append(this).append('\n');
+    _asts[0].toString(sb,d+1).append("\n");
+    if( _asts[2]==null ) indent(sb,d+1).append("all\n");
+    else      _asts[2].toString(sb,d+1).append("\n");
+    if( _asts[1]==null ) indent(sb,d+1).append("all");
+    else      _asts[1].toString(sb,d+1);
+    return sb;
+  }
+}

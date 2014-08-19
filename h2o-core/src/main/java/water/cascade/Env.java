@@ -27,11 +27,13 @@ import java.util.HashSet;
 */
 public class Env extends Iced {
 
-  final static int ID  =0;
-  final static int ARY =1;
-  final static int STR =2;
-  final static int NUM =3;
-  final static int FUN =4;
+  final static int ID    =0;
+  final static int ARY   =1;
+  final static int STR   =2;
+  final static int NUM   =3;
+  final static int FUN   =4;
+  final static int SPAN  =5;
+  final static int SERIES=6;
   final static int NULL=99999;
 
   final ExecStack _stack;                   // The stack
@@ -76,7 +78,7 @@ public class Env extends Iced {
   /**
    * The stack API
    */
-  public int sp() { return _stack._head; }
+  public int sp() { return _stack._head + 1; }
 
   public void push(Object o) {
     if (o instanceof ASTFrame) { addRef(o); }
@@ -98,10 +100,15 @@ public class Env extends Iced {
   public boolean isStr() { return peekType() == STR; }
   public boolean isId () { return peekType() == ID;  }
   public boolean isFun() { return peekType() == FUN; }
+  public boolean isSpan(){ return peekType() == SPAN;}
+  public boolean isSeries(){ return peekType() == SERIES;}
 
   public Frame popAry () { return ((ASTFrame)pop())._fr; }
-  public double popDbl() { return ((ASTNum)pop())._d; }
+  public double popDbl() { return ((ASTNum)pop())._d;    }
   public String popStr() { return ((ASTString)pop())._s; }
+  public ASTSeries popSeries() {return (ASTSeries)pop(); }
+  public ASTSpan popSpan() { return (ASTSpan)pop();      }
+  public Frame peekAry() {return ((ASTFrame)peek())._fr; }
   //TODO: func
 
   /**
@@ -191,6 +198,8 @@ public class Env extends Iced {
       case NUM:  return Double.toString(((ASTNum)o)._d);
       case STR:  return ((ASTString)o)._s;
       case ID :  return ((ASTId)o)._id;
+      case SERIES: return o.toString();
+      case SPAN: return o.toString();
       case NULL: return "null";
       default: throw H2O.fail("Bad value on the stack");
     }
@@ -199,7 +208,7 @@ public class Env extends Iced {
   @Override public String toString() {
     int sp = sp();
     String s="{";
-    for( int i=0; i<sp; i++ ) s += toString()+",";
+    for( int i=0; i<sp; i++ ) s += toString(i)+",";
     return s+"}";
   }
 
@@ -287,13 +296,15 @@ public class Env extends Iced {
     @Override public int peekTypeAt(int i) { return getType(peekAt(i)); }
 
     private int getType(Object o) {
-      if (o == NULL) return NULL;
+      if (o instanceof ASTNull   ) return NULL;
       if (o instanceof ASTId     ) return ID;
       if (o instanceof ASTFrame  ) return ARY;
       if (o instanceof ASTString ) return STR;
       if (o instanceof ASTNum    ) return NUM;
+      if (o instanceof ASTSpan   ) return SPAN;
+      if (o instanceof ASTSeries ) return SERIES;
 //      if (o instanceof ASTFunc   ) return FUN;
-      throw H2O.fail("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Vec, Frame, String, Double, Float, or Int.");
+      throw H2O.fail("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Frame, String, Double, Fun, Span, or Series");
     }
 
     /**

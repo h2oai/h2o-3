@@ -2,7 +2,6 @@ package water.api;
 
 import water.*;
 import water.api.CascadeHandler.Cascade;
-import water.util.Log;
 
 public class CascadeV1 extends Schema<Cascade, CascadeV1> {
 

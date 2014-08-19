@@ -27,6 +27,7 @@ import java.util.ArrayList;
  *     'n'  signals ==
  *     'N'  signals !=
  *     '_'  signals negation (!)
+ *     '{'  signals the parser to begin parsing a ';'-separated array of things (ASTSeries is the resulting AST)
  *
  * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
  * variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
@@ -126,7 +127,7 @@ public class Exec extends Iced {
     return this;
   }
 
-  private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$'; }
+  private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
 
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 
@@ -137,12 +138,12 @@ public class Exec extends Iced {
   private static void cluster_init() {
     if( _inited ) return;
     new ASTPlus();
-//    new DTask() {
-//      @Override public void compute2() {
-//        new ASTPlus(); // Touch a common class to force loading
-//        tryComplete();
-//      }
-//    }.invoke();
+    new MRTask() {
+      @Override public void setupLocal() {
+        new ASTPlus(); // Touch a common class to force loading
+        tryComplete();
+      }
+    }.doAllNodes();
     _inited = true;
   }
 }
