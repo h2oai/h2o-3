@@ -561,10 +561,10 @@ public class Frame extends Lockable {
               }
             }
           }.doAll(v0).getResult()._fr.anyVec();
-          DKV.remove(v0._key);
+          Keyed.remove(v0._key);
           Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(c2.length, this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
-          DKV.remove(v._key);
-          DKV.remove(this.remove(this.numCols()-1)._key);
+          Keyed.remove(v._key);
+          Keyed.remove(this.remove(this.numCols()-1)._key);
           return slicedFrame;
         } else {
           return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(c2.length, this).outputFrame(names(c2), domains(c2));
@@ -589,8 +589,8 @@ public class Frame extends Lockable {
       Frame fr2 = new Slice(c2, this).doAll(c2.length,ff)
               .outputFrame(names(c2), domains(c2));
       ff.delete();
-      DKV.remove(c0._key);      // Remove hidden vector
-      DKV.remove(av._key);
+      Keyed.remove(c0._key);  // Remove hidden vector
+      Keyed.remove(av._key);
       return fr2;
     }
     Frame frows = (Frame)orows;
@@ -607,8 +607,8 @@ public class Frame extends Lockable {
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
     Frame sliced = new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
-    ff.delete(); DKV.remove(vrows._key); frows.delete();
-    for (Vec v : vecs) DKV.remove(v._key);
+    ff.delete(); Keyed.remove(vrows._key); frows.delete();
+    for (Vec v : vecs) Keyed.remove(v._key);
     return sliced;
   }
 

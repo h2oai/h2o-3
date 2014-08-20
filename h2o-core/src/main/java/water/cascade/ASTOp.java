@@ -215,7 +215,7 @@ abstract class ASTUniOp extends ASTOp {
   protected ASTUniOp( String[] vars) { super(vars); }
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
-    if( env.isNum() ) { env.push(new ASTNum(op(env.popDbl()))); return; }
+    if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
 //    if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
     Frame fr = env.popAry();
     final ASTUniOp uni = this;  // Final 'this' so can use in closure
@@ -230,7 +230,7 @@ abstract class ASTUniOp extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.push(new ASTFrame(fr2));
+    env.push(new ValFrame(fr2));
     env.cleanup(fr);
   }
 }
@@ -261,7 +261,7 @@ class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  
 class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";} @Override ASTOp make() { return new ASTIsNA();} @Override double op(double d) { return Double.isNaN(d)?1:0;}
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
-    if( env.isNum() ) { env.push(new ASTNum(op(env.popDbl()))); return; }
+    if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
     //if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
     Frame fr = env.popAry();
     final ASTUniOp uni = this;  // Final 'this' so can use in closure
@@ -276,7 +276,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.push(new ASTFrame(fr2));
+    env.push(new ValFrame(fr2));
     env.cleanup(fr);
   }
 }
@@ -613,22 +613,22 @@ abstract class ASTBinOp extends ASTOp {
 
     // Cast the LHS of the op
     switch(left_type) {
-      case Env.NUM: d1  = ((ASTNum)left)._d; break;
-      case Env.ARY: fr1 = ((ASTFrame)left)._fr; break;
-      case Env.STR: s1  = ((ASTString)left)._s; break;
+      case Env.NUM: d1  = ((ValNum)left)._d; break;
+      case Env.ARY: fr1 = ((ValFrame)left)._fr; break;
+      case Env.STR: s1  = ((ValStr)left)._s; break;
       default: throw H2O.fail("Got unusable type: "+ left_type +" in binary operator "+ opStr());
     }
 
     // Cast the RHS of the op
     switch(right_type) {
-      case Env.NUM: d0  = ((ASTNum)right)._d; break;
-      case Env.ARY: fr0 = ((ASTFrame)right)._fr; break;
-      case Env.STR: s0  = ((ASTString)right)._s; break;
+      case Env.NUM: d0  = ((ValNum)right)._d; break;
+      case Env.ARY: fr0 = ((ValFrame)right)._fr; break;
+      case Env.STR: s0  = ((ValStr)right)._s; break;
       default: throw H2O.fail("Got unusable type: "+ right_type +" in binary operator "+ opStr());
     }
 
     // If both are doubles on the stack
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.pop(); env.pop(); env.push(new ASTNum(op(d0, d1))); return; }
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.pop(); env.pop(); env.push(new ValNum(op(d0, d1))); return; }
 
     // One or both of the items on top of stack are Strings and neither are frames
     if( fr0==null && fr1==null) {
@@ -636,16 +636,16 @@ abstract class ASTBinOp extends ASTOp {
       // s0 == null -> op(d0, s1)
       if (s0 == null) {
         // cast result of op if doing comparison, else combine the Strings if defined for op
-        if (opStr().equals("==") || opStr().equals("!=")) env.push(new ASTNum(Double.valueOf(op(d0,s1))));
-        else env.push(new ASTString('\"', op(d0,s1)));
+        if (opStr().equals("==") || opStr().equals("!=")) env.push(new ValNum(Double.valueOf(op(d0,s1))));
+        else env.push(new ValStr(op(d0,s1)));
       }
       // s1 == null -> op(s0, d1)
       else if (s1 == null) {
         // cast result of op if doing comparison, else combine the Strings if defined for op
-        if (opStr().equals("==") || opStr().equals("!=")) env.push(new ASTNum(Double.valueOf(op(s0,d1))));
-        else env.push(new ASTString('\"', op(s0,d1)));
+        if (opStr().equals("==") || opStr().equals("!=")) env.push(new ValNum(Double.valueOf(op(s0,d1))));
+        else env.push(new ValStr(op(s0,d1)));
       // s0 != null, s1 != null
-      } else env.push(new ASTString('\"', op(s0,s1)));
+      } else env.push(new ValStr(op(s0,s1)));
       return;
     }
 
@@ -728,10 +728,7 @@ abstract class ASTBinOp extends ASTOp {
     }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
     if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
     if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
-//    env.pop(); env.pop();
-    env.push(new ASTFrame(fr2));
-//    env.pop(); env.pop();
-//    if (toss_fr) env.cleanup(fr0,fr1,fr); else env.cleanup(fr0, fr1);
+    env.push(new ValFrame(fr2));
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
 }
@@ -1066,31 +1063,33 @@ class ASTAND extends ASTBinOp {
 
   @Override ASTOp make() { return new ASTAND(); }
   @Override void apply(Env env) {
-    double op1 = (env.isNum()) ? ((ASTNum)env.pop())._d
-            : (env.isAry() ? ((ASTFrame)env.pop())._fr.vecs()[0].at(0) : Double.NaN);
-    double op2 = (env.isNum()) ? ((ASTNum)env.pop())._d
-            : (env.isAry() ? ((ASTFrame)env.pop())._fr.vecs()[0].at(0) : Double.NaN);
+    double op1 = (env.isNum()) ? env.peekDbl()
+            : (env.isAry() ? env.peekAry().vecs()[0].at(0) : Double.NaN);
+    env.pop();
+    double op2 = (env.isNum()) ? env.peekDbl()
+            : (env.isAry() ? env.peekAry().vecs()[0].at(0) : Double.NaN);
+    env.pop();
 
     // Both NAN ? push NaN
     if (Double.isNaN(op1) && Double.isNaN(op2)) {
-      env.push(new ASTNum(Double.NaN));
+      env.push(new ValNum(Double.NaN));
       return;
     }
 
     // Either 0 ? push False
     if (op1 == 0 || op2 == 0) {
-      env.push(new ASTNum(0.0));
+      env.push(new ValNum(0.0));
       return;
     }
 
     // Either NA ? push NA (no need to worry about 0s, taken care of in case above)
     if (Double.isNaN(op1) || Double.isNaN(op2)) {
-      env.push(new ASTNum(Double.NaN));
+      env.push(new ValNum(Double.NaN));
       return;
     }
 
     // Otherwise, push True
-    env.push(new ASTNum(1.0));
+    env.push(new ValNum(1.0));
   }
 }
 
@@ -1105,32 +1104,33 @@ class ASTOR extends ASTBinOp {
 
   @Override ASTOp make() { return new ASTOR(); }
   @Override void apply(Env env) {
-    double op1 = (env.isNum()) ? ((ASTNum)env.pop())._d
-            : (env.isAry() ? ((ASTFrame)env.pop())._fr.vecs()[0].at(0) : Double.NaN);
-
+    double op1 = (env.isNum()) ? env.peekDbl()
+            : (env.isAry() ? env.peekAry().vecs()[0].at(0) : Double.NaN);
+    env.pop();
     // op1 is NaN ? push NaN
     if (Double.isNaN(op1)) {
       env.pop();
-      env.push(new ASTNum(Double.NaN));
+      env.push(new ValNum(Double.NaN));
       return;
     }
-    double op2 = !Double.isNaN(op1) && op1!=0 ? 1 : (env.isNum()) ? ((ASTNum)env.pop())._d
-                    : (env.isAry()) ? ((ASTFrame)env.pop())._fr.vecs()[0].at(0) : Double.NaN;
+    double op2 = !Double.isNaN(op1) && op1!=0 ? 1 : (env.isNum()) ? env.peekDbl()
+                    : (env.isAry()) ? env.peekAry().vecs()[0].at(0) : Double.NaN;
+    env.pop();
 
     // op2 is NaN ? push NaN
     if (Double.isNaN(op2)) {
-      env.push(new ASTNum(op2));
+      env.push(new ValNum(op2));
       return;
     }
 
     // both 0 ? push False
     if (op1 == 0 && op2 == 0) {
-      env.push(new ASTNum(0.0));
+      env.push(new ValNum(0.0));
       return;
     }
 
     // else push True
-    env.push(new ASTNum(1.0));
+    env.push(new ValNum(1.0));
   }
 }
 

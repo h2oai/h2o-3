@@ -78,17 +78,16 @@ public class CascadeTest extends TestUtil {
     Key ahex = Key.make("a.hex");
     Frame fr = new Frame(ahex, null, r.vecs());
     DKV.put(ahex, fr);
-//    fr.vecs()[0].rollupStats();
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
     Object result = env.pop();
-    if (result instanceof ASTFrame) {
-      Frame f2 = ((ASTFrame)result)._fr;
+    if (result instanceof ValFrame) {
+      Frame f2 = ((ValFrame)result)._fr;
       for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
       f2.delete();
     }
-    if (result instanceof ASTNum) {
-      double d = ((ASTNum)result)._d;
+    if (result instanceof ValNum) {
+      double d = ((ValNum)result)._d;
       System.out.println(d);
     }
     fr.delete();
