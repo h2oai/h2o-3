@@ -17,7 +17,7 @@ public class Timer {
 
   /**Return the difference between when the timer was created and the current time. */
   long time() { return System.currentTimeMillis() - _start; }
-  long nanos(){ return System.nanoTime() - _nanos; }
+  public long nanos(){ return System.nanoTime() - _nanos; }
 
   /** Return the difference between when the timer was created and the current
    *  time as a string along with the time of creation in date format. */
