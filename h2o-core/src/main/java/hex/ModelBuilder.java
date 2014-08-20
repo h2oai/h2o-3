@@ -49,5 +49,5 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Method to launch training of a Model, based on its parameters. */
-  abstract public Job train();
+  abstract public Job<M> train();
 }

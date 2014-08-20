@@ -440,7 +440,9 @@ public class Frame extends Lockable {
 
   // Only serialize strings, not H2O internal structures
 
-  // Make NewChunks to for holding data from e.g. Spark
+  // Make NewChunks to for holding data from e.g. Spark.  Once per set of
+  // Chunks in a Frame, before filling them.  This can be called in parallel
+  // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   public static NewChunk[] createNewChunks( String name, int cidx ) {
     Frame fr = DKV.get(Key.make(name)).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
@@ -449,14 +451,16 @@ public class Frame extends Lockable {
     return nchks;
   }
 
-  // Compress & DKV.put NewChunks
+  // Compress & DKV.put NewChunks.  Once per set of Chunks in a Frame, after
+  // filling them.  Can be called in parallel for different sets of Chunks.
   public static void closeNewChunks( NewChunk[] nchks ) {
     Futures fs = new Futures();
     for( NewChunk nchk : nchks ) nchk.close(fs);
     fs.blockForPending();
   }
 
-  // Build real Vecs from loose Chunks, and finalize this Frame
+  // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
+  // after any number of [create,close]NewChunks.
   public void finalizePartialFrame( long[] espc ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -470,17 +474,15 @@ public class Frame extends Lockable {
     espc2[nchunk]=x;            // Total element count in last
 
     // For all Key/Vecs - insert Vec header
-    System.out.println("GROINK!");
     Futures fs = new Futures();
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
       Vec vec = _vecs[i] = new Vec(_keys[i], espc2, null/*no enum*/, false/*not UUID*/, false/*not String*/, (byte)-1/*not Time*/);
       DKV.put(_keys[i],vec,fs);             // Inject the header
-      System.out.println(vec.toString());
     }
     fs.blockForPending();
-    System.out.println("GROK!");
+    unlock(null);
   }
 
   // --------------------------------------------------------------------------

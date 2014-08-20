@@ -40,7 +40,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
 
   /** Start the KMeans training Job on an F/J thread. */
-  @Override public Job train() {
+  @Override public Job<KMeansModel> train() {
     return start(new KMeansDriver());
   }
 
