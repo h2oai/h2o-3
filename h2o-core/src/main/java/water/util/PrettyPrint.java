@@ -13,6 +13,17 @@ public class PrettyPrint {
     if( min != 0 ) return String.format("%2d min %2d.%03d sec", min, sec, ms);
     return String.format("%2d.%03d sec", sec, ms);
   }
+  public static String usecs(long usecs) {
+    final long hr = TimeUnit.MICROSECONDS.toHours (usecs); usecs -= TimeUnit.HOURS .toMicros(hr);
+    final long min = TimeUnit.MICROSECONDS.toMinutes(usecs); usecs -= TimeUnit.MINUTES.toMicros(min);
+    final long sec = TimeUnit.MICROSECONDS.toSeconds(usecs); usecs -= TimeUnit.SECONDS.toMicros(sec);
+    final long ms = TimeUnit.MICROSECONDS.toMillis(usecs); usecs -= TimeUnit.MILLISECONDS.toMicros(ms);
+    if( hr != 0 ) return String.format("%2d:%02d:%02d.%03d", hr, min, sec, ms);
+    if( min != 0 ) return String.format("%2d min %2d.%03d sec", min, sec, ms);
+    if( sec != 0 ) return String.format("%2d.%03d sec", sec, ms);
+    if( ms != 0 ) return String.format("%3d.%03d msec", ms, usecs);
+    return String.format("%3d usec", usecs);
+  }
 
   // Return X such that (bytes < 1L<<(X*10))
   static int byteScale(long bytes) {
@@ -28,7 +39,7 @@ public class PrettyPrint {
   static final String[] SCALE = new String[] {"N/A","%4.0f  B","%.1f KB","%.1f MB","%.2f GB","%.3f TB","%.3f PB"};
   public static String bytes(long bytes) { return bytes(bytes,byteScale(bytes)); }
   static String bytes(long bytes, int scale) { return String.format(SCALE[scale],bytesScaled(bytes,scale)); }
-  static String bytesPerSecond(long bytes) {
+  public static String bytesPerSecond(long bytes) {
     if( bytes < 0 ) return "N/A";
     return bytes(bytes)+"/S";
   }
