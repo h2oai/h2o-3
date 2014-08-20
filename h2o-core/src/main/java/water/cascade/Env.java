@@ -80,19 +80,19 @@ public class Env extends Iced {
    */
   public int sp() { return _stack._head + 1; }
 
-  public void push(Object o) {
-    if (o instanceof ASTFrame) { addRef(o); }
+  public void push(Val o) {
+    if (o instanceof ValFrame) { addRef(o); }
     _stack.push(o);
   }
 
-  public Object pop() {
-    Object o = _stack.pop();
-    if (o instanceof ASTFrame) { subRef(o); }
+  public Val pop() {
+    Val o = _stack.pop();
+    if (o instanceof ValFrame) { subRef(o); }
     return o;
   }
 
-  public Object peek() { return _stack.peek(); }
-  public Object peekAt(int i) { return _stack.peekAt(i); }
+  public Val peek() { return _stack.peek(); }
+  public Val peekAt(int i) { return _stack.peekAt(i); }
   public int peekType() {return _stack.peekType(); }
   public int peekTypeAt(int i) { return _stack.peekTypeAt(i); }
   public boolean isAry() { return peekType() == ARY; }
@@ -103,12 +103,13 @@ public class Env extends Iced {
   public boolean isSpan(){ return peekType() == SPAN;}
   public boolean isSeries(){ return peekType() == SERIES;}
 
-  public Frame popAry () { return ((ASTFrame)pop())._fr; }
-  public double popDbl() { return ((ASTNum)pop())._d;    }
-  public String popStr() { return ((ASTString)pop())._s; }
-  public ASTSeries popSeries() {return (ASTSeries)pop(); }
-  public ASTSpan popSpan() { return (ASTSpan)pop();      }
-  public Frame peekAry() {return ((ASTFrame)peek())._fr; }
+  public Frame popAry () { return ((ValFrame)pop())._fr; }
+  public double popDbl() { return ((ValNum)pop())._d;    }
+  public String popStr() { return ((ValStr)pop())._s;    }
+  public ValSeries popSeries() {return (ValSeries)pop(); }
+  public ValSpan popSpan() { return (ValSpan)pop();      }
+  public Frame peekAry() {return ((ValFrame)peek())._fr; }
+  public double peekDbl() {return ((ValNum)peek())._d;   }
   //TODO: func
 
   /**
@@ -116,15 +117,15 @@ public class Env extends Iced {
    *
    *  All of these methods should be private and void.
    */
-  private void addRef(Object o) {
-    assert o instanceof ASTFrame;
-    for (Vec v : ((ASTFrame) o)._fr.vecs()) addRef(v);
+  private void addRef(Val o) {
+    assert o instanceof ValFrame;
+    for (Vec v : ((ValFrame) o)._fr.vecs()) addRef(v);
   }
 
-  private void subRef(Object o) {
-    assert o instanceof ASTFrame;
-    if (((ASTFrame) o)._fr != null && _locked.contains(((ASTFrame) o)._fr._key)) return;
-    for(Vec v: ((ASTFrame) o)._fr.vecs()) subRef(v);
+  private void subRef(Val o) {
+    assert o instanceof ValFrame;
+    if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr._key)) return;
+    for(Vec v: ((ValFrame) o)._fr.vecs()) subRef(v);
   }
 
   private void addRef(Vec v) {
@@ -183,9 +184,9 @@ public class Env extends Iced {
   }
 
   private void remove(Object o, boolean popped) {
-    assert o instanceof ASTFrame || o instanceof Frame || o == null;
+    assert o instanceof ValFrame || o instanceof Frame || o == null;
     if (o == null) return;
-    if (o instanceof ASTFrame) remove_and_unlock(((ASTFrame)o)._fr);
+    if (o instanceof ValFrame) remove_and_unlock(((ValFrame)o)._fr);
     else remove_and_unlock((Frame)o);
     if(!popped) pop();
   }
@@ -201,10 +202,10 @@ public class Env extends Iced {
     int type = peekTypeAt(i);
     Object o = peekAt(i);
     switch(type) {
-      case ARY:  return ((ASTFrame)o)._fr.numRows()+"x"+((ASTFrame)o)._fr.numCols();
-      case NUM:  return Double.toString(((ASTNum)o)._d);
-      case STR:  return ((ASTString)o)._s;
-      case ID :  return ((ASTId)o)._id;
+      case ARY:  return ((ValFrame)o)._fr.numRows()+"x"+((ValFrame)o)._fr.numCols();
+      case NUM:  return Double.toString(((ValNum)o)._d);
+      case STR:  return ((ValStr)o)._s;
+      case ID :  return ((ValId)o)._id;
       case SERIES: return o.toString();
       case SPAN: return o.toString();
       case NULL: return "null";
@@ -228,10 +229,10 @@ public class Env extends Iced {
    *   -doubles, ints, floats, etc.
    */
   private interface Stack {
-    Object  peek();
-    Object  peekAt(int i);
-    Object  pop();
-    void    push(Object t);
+    Val     peek();
+    Val     peekAt(int i);
+    Val     pop();
+    void    push(Val t);
     boolean isEmpty();
     int     size();
     int     peekType();
@@ -239,7 +240,7 @@ public class Env extends Iced {
   }
 
   private class ExecStack implements Stack {
-    private final ArrayList<Object> _stack;
+    private final ArrayList<Val> _stack;
     private int _head;
 
     private ExecStack() {
@@ -251,7 +252,7 @@ public class Env extends Iced {
      * Peek the top of the stack
      * @return the Object at the `_head` of the stack
      */
-    @Override public Object peek() {
+    @Override public Val peek() {
       if (isEmpty()) return null;
       return _stack.get(_head);
     }
@@ -261,7 +262,7 @@ public class Env extends Iced {
      * @param i The position at which to peek the stack
      * @return the Object at position `i`.
      */
-    @Override public Object peekAt(int i) {
+    @Override public Val peekAt(int i) {
 
       // Another check just in case assertions aren't on.
       if (i < 0) {
@@ -286,7 +287,7 @@ public class Env extends Iced {
         return null;
       }
 
-      // Return the Object at position i
+      // Return the Val at position i
       return _stack.get(i);
     }
 
@@ -303,14 +304,14 @@ public class Env extends Iced {
      */
     @Override public int peekTypeAt(int i) { return getType(peekAt(i)); }
 
-    private int getType(Object o) {
-      if (o instanceof ASTNull   ) return NULL;
-      if (o instanceof ASTId     ) return ID;
-      if (o instanceof ASTFrame  ) return ARY;
-      if (o instanceof ASTString ) return STR;
-      if (o instanceof ASTNum    ) return NUM;
-      if (o instanceof ASTSpan   ) return SPAN;
-      if (o instanceof ASTSeries ) return SERIES;
+    private int getType(Val o) {
+      if (o instanceof ValNull   ) return NULL;
+      if (o instanceof ValId     ) return ID;
+      if (o instanceof ValFrame  ) return ARY;
+      if (o instanceof ValStr    ) return STR;
+      if (o instanceof ValNum    ) return NUM;
+      if (o instanceof ValSpan   ) return SPAN;
+      if (o instanceof ValSeries ) return SERIES;
 //      if (o instanceof ASTFunc   ) return FUN;
       throw H2O.fail("Got a bad type on the ExecStack: Object class: "+ o.getClass()+". Not a Frame, String, Double, Fun, Span, or Series");
     }
@@ -338,18 +339,18 @@ public class Env extends Iced {
      * Pop one of the top of the stack.
      * @return the Object sitting at the top of the stack
      */
-    @Override public Object pop() {
+    @Override public Val pop() {
       if (isEmpty()) return null;
-      Object o = peek();
+      Val o = peek();
       _stack.remove(_head--);
       return o;
     }
 
     /**
      * Push an Object onto the stack
-     * @param t is the Object to be pushed onto the stack.
+     * @param t is the Val to be pushed onto the stack.
      */
-    @Override public void push(Object t) {
+    @Override public void push(Val t) {
       _head++;
       _stack.add(_head, t);
     }
@@ -494,4 +495,132 @@ public class Env extends Iced {
       default: throw H2O.fail("Could not find appropriate node for identifier "+id);
     }
   }
+}
+
+abstract class Val extends Iced {
+  abstract String value();
+  abstract int type();
+}
+
+class ValFrame extends Val {
+  final String _key;
+  final Frame _fr;
+  ValFrame(Frame fr) { _key = null; _fr = fr; }
+  ValFrame(String key) {
+    if (DKV.get(Key.make(key)) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    _key = key;
+    _fr = DKV.get(Key.make(_key)).get();
+  }
+  @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
+  @Override int type () { return Env.ARY; }
+  @Override String value() { return _key; }
+}
+
+class ValNum extends Val {
+  final double _d;
+  ValNum(double d) { _d = d; }
+  @Override public String toString() { return ""+_d; }
+  @Override int type () { return Env.NUM; }
+  @Override String value() { return ""+_d; }
+}
+
+class ValStr extends Val {
+  final String _s;
+  ValStr(String s) { _s = s; }
+  @Override public String toString() { return _s; }
+  @Override int type () { return Env.STR; }
+  @Override String value() { return _s; }
+}
+
+class ValSpan extends Val {
+  final long _min;       final long _max;
+  final ASTNum _ast_min; final ASTNum _ast_max;
+  boolean _isCol; boolean _isRow;
+  ValSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
+  boolean contains(long a) { return _min <= a && a <= _max; }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  @Override String value() { return null; }
+  @Override int type() { return Env.SPAN; }
+  @Override public String toString() { return _min + ":" + _max; }
+
+  long[] toArray() {
+    long[] res = new long[(int)_max - (int)_min + 1];
+    long min = _min;
+    for (int i = 0; i < res.length; ++i) res[i] = min++;
+    return res;
+  }
+}
+
+class ValSeries extends Val {
+  final long[] _idxs;
+  final ASTSpan[] _spans;
+  boolean _isCol; boolean _isRow;
+  ValSeries(long[] idxs, ASTSpan[] spans) { _idxs = idxs; _spans = spans;}
+  boolean contains(long a) {
+    if (_spans != null)
+      for (ASTSpan s:_spans) if(s.contains(a)) return true;
+    if (_idxs != null)
+      for (long l : _idxs) if (l == a) return true;
+    return false;
+  }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
+  @Override String value() { return null; }
+  @Override int type() { return Env.SERIES; }
+  @Override public String toString() {
+    String res = "c(";
+    if (_spans != null) {
+      for (ASTSpan s : _spans) {
+        res += s.toString(); res += ",";
+      }
+      if (_idxs == null) res = res.substring(0, res.length()-1); // remove last comma?
+    }
+    if (_idxs != null) {
+      for (long l : _idxs) {
+        res += l; res += ",";
+      }
+      res = res.substring(0, res.length()-1); // remove last comma.
+    }
+    res += ")";
+    return res;
+  }
+
+  long[] toArray() {
+    int res_length = 0;
+    if (_spans != null) for (ASTSpan s : _spans) res_length += (int)s._max - (int)s._min + 1;
+    if ( _idxs != null) res_length += _idxs.length;
+    long[] res = new long[res_length];
+    int cur = 0;
+    if (_spans != null) {
+      for (ASTSpan s : _spans) {
+        long[] l = s.toArray();
+        for (long aL : l) res[cur++] = aL;
+      }
+    }
+    if (_idxs != null) {
+      for (long _idx : _idxs) res[cur++] = _idx;
+    }
+    return res;
+  }
+}
+
+class ValNull extends Val {
+  ValNull() {}
+  @Override String value() { return null; }
+  @Override int type() { return Env.NULL; }
+}
+
+class ValId extends Val {
+  final String _id;
+  final char _type; // either '$' or '!'
+  ValId(char type, String id) { _type = type; _id = id; }
+  @Override public String toString() { return _type+_id; }
+  @Override int type() { return Env.ID; }
+  @Override String value() { return _id; }
+  boolean isSet() { return _type == '!'; }
+  boolean isLookup() { return _type == '$'; }
+  boolean isValid() { return isSet() || isLookup(); }
 }

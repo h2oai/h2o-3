@@ -94,7 +94,7 @@ class ASTId extends AST {
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) { return new ASTId(_type, E.parseID()); }
   @Override public String toString() { return _type+_id; }
-  @Override void exec(Env e) { e.push(this); } // should this be H2O.fail() ??
+  @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
   @Override int type() { return Env.ID; }
   @Override String value() { return _id; }
   boolean isSet() { return _type == '!'; }
@@ -123,7 +123,7 @@ class ASTFrame extends AST {
     _fr = DKV.get(Key.make(_key)).get();
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
-  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.push(this); }
+  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.push(new ValFrame(_fr)); }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
 }
@@ -133,7 +133,7 @@ class ASTNum extends AST {
   ASTNum(double d) { _d = d; }
   ASTNum parse_impl(Exec E) { return new ASTNum(Double.valueOf(E.parseID())); }
   @Override public String toString() { return Double.toString(_d); }
-  @Override void exec(Env e) { e.push(this); }
+  @Override void exec(Env e) { e.push(new ValNum(_d)); }
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
 }
@@ -155,9 +155,9 @@ class ASTSpan extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override void exec(Env e) { e.push(this); }
+  @Override void exec(Env e) { e.push(new ValSpan(_ast_min, _ast_max)); }
   @Override String value() { return null; }
-  @Override int type() { return 0; }
+  @Override int type() { return Env.SPAN; }
   @Override public String toString() { return _min + ":" + _max; }
 
   long[] toArray() {
@@ -198,7 +198,7 @@ class ASTSeries extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override void exec(Env e) { e.push(this); }
+  @Override void exec(Env e) { e.push(new ValSeries(_idxs, _spans)); }
   @Override String value() { return null; }
   @Override int type() { return Env.SERIES; }
   @Override public String toString() {
@@ -244,14 +244,14 @@ class ASTString extends AST {
   ASTString(char eq, String s) { _eq = eq; _s = s; }
   ASTString parse_impl(Exec E) { return new ASTString(_eq, E.parseString(_eq)); }
   @Override public String toString() { return _s; }
-  @Override void exec(Env e) { e.push(this); }
+  @Override void exec(Env e) { e.push(new ValStr(_s)); }
   @Override int type () { return Env.STR; }
   @Override String value() { return _s; }
 }
 
 class ASTNull extends AST {
   ASTNull() {}
-  @Override void exec(Env e) { e.push(this);}
+  @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
   @Override int type() { return Env.NULL; }
 }
@@ -281,7 +281,7 @@ class ASTAssign extends AST {
         e._locked.add(fr._key);
 //        fr.write_lock(null);
 //        e.pop();
-        e.push(new ASTFrame(fr));
+        e.push(new ValFrame(fr));
         // f.delete() ??
         e.put(id._id, Env.ARY, id._id);
       }
@@ -463,33 +463,33 @@ class ASTSlice extends AST {
 
     // stack looks like:  [....,hex,rows,cols], so pop, pop !
     int cols_type = env.peekType();
-    Object cols = env.pop();
+    Val cols = env.pop();
     int rows_type = env.peekType();
-    Object rows = env.pop();
+    Val rows = env.pop();
 
     // Scalar load?  Throws AIIOOB if out-of-bounds
     if(cols_type == Env.NUM && rows_type == Env.NUM) {
       // Known that rows & cols are simple positive constants.
       // Use them directly, throwing a runtime error if OOB.
-      long row = (long)((ASTNum)rows)._d;
-      int  col = (int )((ASTNum)cols)._d;
+      long row = (long)((ValNum)rows)._d;
+      int  col = (int )((ValNum)cols)._d;
       Frame ary=env.popAry();
-      if (ary.vecs()[col].isEnum()) { env.push(new ASTString('\"', ary.vecs()[col].domain()[(int)ary.vecs()[col].at(row)])); }
-      else env.push( new ASTNum(ary.vecs()[col].at(row)));
+      if (ary.vecs()[col].isEnum()) { env.push(new ValStr(ary.vecs()[col].domain()[(int)ary.vecs()[col].at(row)])); }
+      else env.push( new ValNum(ary.vecs()[col].at(row)));
       env.cleanup(ary);
     } else {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
       Frame ary= env.peekAry(); // Get without popping
-      cols = select(ary.numCols(),(AST)cols, env);
-      rows = select(ary.numRows(),(AST)rows,env);
-      Frame fr2 = ary.deepSlice(rows,cols);
-      if (cols instanceof Frame) for (Vec v : ((Frame)cols).vecs()) DKV.remove(v._key);
-      if (rows instanceof Frame) for (Vec v : ((Frame)rows).vecs()) DKV.remove(v._key);
+      Object colSelect = select(ary.numCols(),cols,env);
+      Object rowSelect = select(ary.numRows(),rows,env);
+      Frame fr2 = ary.deepSlice(rowSelect,colSelect);
+      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
+      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
       env.cleanup(ary, env.popAry());
-      env.push(new ASTFrame(fr2));
+      env.push(new ValFrame(fr2));
     }
   }
 
@@ -497,25 +497,25 @@ class ASTSlice extends AST {
   // Error to mix negatives & positive.  Negative list is sorted, with dups
   // removed.  Positive list can have dups (which replicates cols) and is
   // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-  static Object select( long len, AST ast, Env env ) {
-    if( ast.type() == Env.NULL ) return null; // Trivial "all"
-    ast.exec(env); // this pushes the object back onto the stack
+  static Object select( long len, Val v, Env env ) {
+    if( v.type() == Env.NULL ) return null; // Trivial "all"
+    env.push(v);
     long cols[];
-    if( env.isNum() ) {
-      int col = (int)((ASTNum)env.pop())._d; // Peek double; Silent truncation (R semantics)
+    if( env.isNum()) {
+      int col = (int)env.popDbl(); // Pop double; Silent truncation (R semantics)
       if( col < 0 && col < -len ) col=0; // Ignore a non-existent column
 //      if( col == 0 ) return new long[0];
       return new long[]{col};
     }
     if (env.isSeries()) {
-      ASTSeries a = env.popSeries();
+      ValSeries a = env.popSeries();
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
       Vec v0 = ary.anyVec().makeZero();
-      final ASTSeries a0 = a;
+      final ValSeries a0 = a;
       Frame fr = new MRTask() {
         @Override public void map(Chunk cs) {
           for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
@@ -523,17 +523,16 @@ class ASTSlice extends AST {
           }
         }
       }.doAll(v0).getResult()._fr;
-//      DKV.remove(v0._key);
       return fr;
     }
     if (env.isSpan()) {
-      ASTSpan a = env.popSpan();
+      ValSpan a = env.popSpan();
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
-      final ASTSpan a0 = a;
+      final ValSpan a0 = a;
       Frame fr = new MRTask() {
         @Override public void map(Chunk cs) {
           for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
