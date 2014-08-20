@@ -1,5 +1,6 @@
 # Change this global variable to match your own system's path
 ROOT.PATH <- "/Users/spencer/0xdata/h2o-dev/h2o-r/h2o-package/R/"
+
 src <-
 function() {
   warning("MAY NOT WORK ON YOUR SYSTEM -- **TRY TO CHANGE `ROOT.PATH`!**")
@@ -8,3 +9,6 @@ function() {
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 src()
+
+h <- h2o.init()
+hex <- as.h2o(h, iris)
