@@ -491,7 +491,8 @@ head.H2OFrame <- function(x, n = 6L, ...) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
+  if (.isH2O(x)) ID <- ifelse(ID == "Last.value", ID, x@key)
+  else ID <- "Last.value"
   assign(ID, x, parent.frame())
   head(get(ID, parent.frame()))
 }
@@ -518,7 +519,7 @@ tail.H2OParsedData <- function(x, n = 6L, ...) {
 #' Tailof an AST.
 #'
 #' Evaluate the AST and produce the tail of the eval'ed AST.
-tails.H2OFrame <- function(x, n = 6L, ...) {
+tail.H2OFrame <- function(x, n = 6L, ...) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
