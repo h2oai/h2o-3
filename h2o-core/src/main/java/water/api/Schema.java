@@ -39,6 +39,9 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   // Version&Schema-specific filling from the implementation object
   abstract public S fillFromImpl(I i);
 
+  // Version&Schema-specific filling of an already filled object from this schema
+  public I fillFromSchema() { return (I)this; }
+
   // TODO: this really does not belong in the schema layer; it's a hack for the
   // TODO: old-school-web-UI
   // This Schema accepts a Frame as it's first & main argument, used by the
