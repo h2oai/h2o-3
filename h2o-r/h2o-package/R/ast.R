@@ -49,6 +49,14 @@ function(node) {
     for (child in children) res %<p-% child
     res %<p0-% ')'
     list( ast = res)
+
+  } else if (node %<i-% "ASTSeries") {
+    res %<p-% node@op
+    children <- unlist(lapply(node@children, visitor))
+    children <- paste(children, collapse=";",sep="")
+    res %<p0-% children
+    res %<p0-% "}"
+    res
   } else {
     node
   }
@@ -122,12 +130,39 @@ function(o) {
 }
 
 #'
-#' Return the class of the eval-ed expression.
+#' Get the class of the object from the envir.
 #'
-#' A convenience method for lapply. Used by .exprToAST
-.evalClass<-
-function(i) {
-  val <- tryCatch(class(eval(i)), error = function(e) {return(NA)})
+#' The environment is the parent frame
+.eval_class<-
+function(i, envir) {
+  val <- tryCatch(class(get(as.character(i), envir)), error = function(e) {
+    tryCatch(class(i), error = function(e) {
+      return(NA)
+    })
+  })
+}
+
+#'
+#' Helper function to recursively unfurl an expression into a list of statements/exprs/calls/names.
+#'
+.as_list<-
+function(expr) {
+  if (is.call(expr)) {
+    return(lapply(as.list(expr), .as_list))
+  }
+  return(expr)
+}
+
+#'
+#' Check if any item in the expression is an H2OParsedData object.
+#'
+#' Useful when trying to unravel an expression
+.anyH2O<-
+function(expr, envir) {
+ l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
+ a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
+ b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
+ any(a | b)
 }
 
 #'
@@ -139,6 +174,31 @@ function(i) {
 function(expr) {
   formals_vec <- function(fun) { names(formals(fun)) }
   expr %in% unlist(lapply(.pkg.env$call_list, formals_vec))
+}
+
+#'
+#' Walk the R AST directly
+#'
+.ast.walker<-
+function(expr, envir) {
+  if (length(expr) == 1) {
+    if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - 1))
+  }
+  if (isGeneric(deparse(expr[[1]]))) {
+
+    # Have a vector => ASTSeries
+    if ((expr[[1]]) == quote(`c`)) {
+    children <- lapply(expr[-1], .ast.walker, envir)
+    # ASTSeries single numbers should have no leading '#', so strip it.
+    children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', x) else x)
+    return(new("ASTSeries", op="{", children = children))
+    }
+  }
+
+  # Create a new ASTSpan
+  if (identical(expr[[1]], quote(`:`))) {
+    return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %<p0-% (eval(expr[[2]],envir=envir) - 1), '#' %<p0-% (eval(expr[[3]],envir=envir) - 1))))
+  }
 }
 
 #'

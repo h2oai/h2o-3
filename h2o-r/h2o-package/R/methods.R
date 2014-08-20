@@ -34,14 +34,20 @@
 #  temp$Bytesize = as.numeric(as.character(temp$Bytesize))
 #  return(temp)
 #}
-#
-#h2o.rm <- function(object, keys) {
-#  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
-#  if(!is.character(keys)) stop("keys must be of class character")
-#
-#  for(i in 1:length(keys))
-#    .h2o.__remoteSend(object, .h2o.__PAGE_REMOVE, key=keys[[i]])
-#}
+
+h2o.rm <- function(object, keys) {
+
+  # If only object is supplied, then assume this is keys vector.
+  if(missing(keys) && !missing(object)) {
+    keys <- object
+    object <- .retrieveH2O(parent.frame())
+  }
+  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+  if(!is.character(keys)) stop("keys must be of class character")
+
+  for(i in 1:length(keys))
+    .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
+}
 
 #h2o.assign <- function(data, key) {
 #  if(class(data) != "H2OParsedData") stop("data must be of class H2OParsedData")
@@ -143,7 +149,7 @@
 #  res = .h2o.__exec2(x@h2o, expr)
 #  new("H2OParsedData", h2o=x@h2o, key=res$dest_key, logic=FALSE)
 #}
-#
+
 as.h2o <- function(client, object, key = "", header, sep = "") {
   if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
   if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
@@ -158,14 +164,14 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
   } else {
     tmpf <- tempfile(fileext=".csv")
     write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFIle yet!
+#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFile yet!
     h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
     unlink(tmpf)
     return(h2f)
   }
 }
 
-#
+
 #h2o.cut <- function(x, breaks) {
 #  if(missing(x)) stop("Must specify data set")
 #  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
@@ -284,21 +290,31 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
   #---------------------------------------------------------------------------------------------------------------------
 
 # i are the rows, j are the columns. These can be vectors of integers or character strings, or a single logical data object
-#setMethod("[", "H2OParsedData", function(x, i, j, ..., drop = TRUE) {
-#  numRows = nrow(x); numCols = ncol(x)
-#  if (!missing(j) && is.numeric(j) && any(abs(j) < 1 || abs(j) > numCols))
-#    stop("Array index out of bounds")
-#
+setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
+  if (missing(i) && missing(j)) return(x)
+
+  if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+  op <- new("ASTApply", op='[')
+  rows <- if(missing(i)) deparse("null") else .eval(substitute(i), parent.frame())
+  cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
+  new("ASTNode", root=op, children=list(x, rows, cols))
+})
+
+.eval<-
+function(x, envir) {
+  if (.anyH2O(x, envir)) return(eval(x),envir)
+  .ast.walker(x,envir)
+}
 #  if(missing(i) && missing(j)) return(x)
 #  if(missing(i) && !missing(j)) {
 #    if(is.character(j)) {
 #      # return(do.call("$", c(x, j)))
-#      myCol = colnames(x)
+#      myCol <- colnames(x)
 #      if(any(!(j %in% myCol))) stop("Undefined columns selected")
 #      j = match(j, myCol)
 #    }
 #    # if(is.logical(j)) j = -which(!j)
-#    if(is.logical(j)) j = which(j)
+#    if(is.logical(j)) j <- which(j)
 #
 #    # if(class(j) == "H2OLogicalData")
 #    # if(class(j) == "H2OParsedData" && j@logic)
@@ -348,8 +364,8 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #    res$scalar
 #  else
 #    new("H2OParsedData", h2o=x@h2o, key=res$dest_key)
-#})
-#
+
+
 #setMethod("$", "H2OParsedData", function(x, name) {
 #  myNames = colnames(x)
 #  if(!(name %in% myNames)) return(NULL)
@@ -450,43 +466,67 @@ dim.H2OFrame <- function(x) {
 #})
 #
 
-#head.H2OFrame <- function(x, n = 6L, ...) {
-#  numRows = nrow(x)
-#  stopifnot(length(n) == 1L)
-#  n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
-#  if(n == 0) return(data.frame())
-#
-#  x.slice = as.data.frame(x[seq_len(n),])
-##   if(ncol(x) > .MAX_INSPECT_COL_VIEW)
-##     warning(x@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-##   res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
-##   for(i in 1:ncol(x)) {
-##     if(!is.null(res$levels[[i]]))
-##       x.slice[,i] <- factor(x.slice[,i], levels = res$levels[[i]])
-##   }
-#  return(x.slice)
-#}
-#
-#tail.H2OFrame <- function(x, n = 6L, ...) {
-#  stopifnot(length(n) == 1L)
-#  nrx <- nrow(x)
-#  n <- ifelse(n < 0L, max(nrx + n, 0L), min(n, nrx))
-#  if(n == 0) return(data.frame())
-#
-#  idx = seq.int(to = nrx, length.out = n)
-#  x.slice = as.data.frame(x[idx,])
-#  rownames(x.slice) = idx
-#
-##   if(ncol(x) > .MAX_INSPECT_COL_VIEW)
-##     warning(x@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-##   res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
-##   for(i in 1:ncol(x)) {
-##     if(!is.null(res$levels[[i]]))
-##       x.slice[,i] <- factor(x.slice[,i], levels = res$levels[[i]])
-##   }
-#  return(x.slice)
-#}
-#
+
+#'
+#' Head of an H2O Data Frame
+#'
+#' Returns as an R data frame.
+head.H2OParsedData <- function(x, n = 6L, ...) {
+  numRows <- nrow(x)
+  stopifnot(length(n) == 1L)
+  n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
+  if(n == 0) return(data.frame())
+
+  tmp_head <- x[1:n,]
+  x.slice <- as.data.frame(tmp_head)
+  h2o.rm(tmp_head@key)
+  return(x.slice)
+}
+
+#'
+#' Head of an AST.
+#'
+#' Evaluate the AST and produce the head of the eval'ed AST.
+head.H2OFrame <- function(x, n = 6L, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  head(get(ID, parent.frame()))
+}
+
+#'
+#' Tail of an H2O Data Frame
+#'
+#' Returns as an R data frame.
+tail.H2OParsedData <- function(x, n = 6L, ...) {
+  stopifnot(length(n) == 1L)
+  nrx <- nrow(x)
+  n <- ifelse(n < 0L, max(nrx + n, 0L), min(n, nrx))
+  if(n == 0) return(data.frame())
+
+  idx <- seq.int(to = nrx, length.out = n)
+  tmp_tail <- x[idx,]
+  x.slice <- as.data.frame(tmp_tail)
+  h2o.rm(tmp_tail@h2o, tmp_tail@key)
+  rownames(x.slice) <- idx
+  return(x.slice)
+}
+
+#'
+#' Tailof an AST.
+#'
+#' Evaluate the AST and produce the tail of the eval'ed AST.
+tails.H2OFrame <- function(x, n = 6L, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  tail(get(ID, parent.frame()))
+}
+
 #setMethod("is.factor", "H2OFrame", function(x) { as.logical(.h2o.unop("is.factor", x)) })
 #
 #quantile.H2OFrame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
@@ -788,65 +828,83 @@ dim.H2OFrame <- function(x) {
 #
 #setMethod("names<-", "H2OParsedData", function(x, value) { colnames(x) <- value; return(x) })
 #
-#as.data.frame.H2OFrame <- function(x, ...) {
-#  # Versions of R prior to 3.1 should not use hex string.
-#  # Versions of R including 3.1 and later should use hex string.
-#  use_hex_string = FALSE
-#  if (as.numeric(R.Version()$major) >= 3) {
-#    if (as.numeric(R.Version()$minor) >= 1) {
-#      use_hex_string = TRUE
-#    }
-#  }
-#
-#  url <- paste('http://', x@h2o@ip, ':', x@h2o@port,
-#               '/2/DownloadDataset',
-#               '?src_key=', URLencode(x@key),
-#               '&hex_string=', as.numeric(use_hex_string),
-#               sep='')
-#  ttt <- getURL(url)
-#  n = nchar(ttt)
-#
-#  # Delete last 1 or 2 characters if it's a newline.
-#  # Handle \r\n (for windows) or just \n (for not windows).
-#  chars_to_trim = 0
-#  if (n >= 2) {
-#      c = substr(ttt, n, n)
-#      if (c == "\n") {
-#          chars_to_trim = chars_to_trim + 1
-#      }
-#      if (chars_to_trim > 0) {
-#          c = substr(ttt, n-1, n-1)
-#          if (c == "\r") {
-#              chars_to_trim = chars_to_trim + 1
-#          }
-#      }
-#  }
-#
-#  if (chars_to_trim > 0) {
-#      ttt2 = substr(ttt, 1, n-chars_to_trim)
-#      # Is this going to use an extra copy?  Or should we assign directly to ttt?
-#      ttt = ttt2
-#  }
-#
-#  # if((df.ncol = ncol(df)) != (x.ncol = ncol(x)))
-#  #  stop("Stopping conversion: Expected ", x.ncol, " columns, but data frame imported with ", df.ncol)
-#  # if(x.ncol > .MAX_INSPECT_COL_VIEW)
-#  #  warning(x@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#
-#  # Obtain the correct factor levels for each column
-#  # if(class(x) == "H2OParsedDataVA")
-#  #  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS, key=x@key, max_column_display=.Machine$integer.max)
-#  # else
-#  #  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source=x@key, max_ncols=.Machine$integer.max)
-#  # colClasses = sapply(res$levels, function(x) { ifelse(is.null(x), "numeric", "factor") })
-#
-#  # Substitute NAs for blank cells rather than skipping
-#  df = read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
-#  # df = read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
-#  close(tcon)
-#  return(df)
-#}
-#
+
+#'
+#' AST -> R data.frame
+#'
+#' Evaluate the lazy expression, stash the lazy expression into Last.value, or the global variable, then return the R
+#' data.frame.
+as.data.frame.H2OFrame <- function(x, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  as.data.frame(get(ID, parent.frame()))
+}
+
+#'
+#' H2O Data -> R data.frame
+#'
+#' Download the H2O data and then scan it in to R
+as.data.frame.H2OParsedData <- function(x, ...) {
+  if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
+  # Versions of R prior to 3.1 should not use hex string.
+  # Versions of R including 3.1 and later should use hex string.
+  use_hex_string <- FALSE
+  if (as.numeric(R.Version()$major) >= 3) {
+    if (as.numeric(R.Version()$minor) >= 1) {
+      use_hex_string = TRUE
+    }
+  }
+
+  url <- paste('http://', x@h2o@ip, ':', x@h2o@port,
+               '/2/DownloadDataset',
+               '?key=', URLencode(x@key),
+               '&hex_string=', as.numeric(use_hex_string),
+               sep='')
+
+  ttt <- getURL(url)
+  n <- nchar(ttt)
+
+  # Delete last 1 or 2 characters if it's a newline.
+  # Handle \r\n (for windows) or just \n (for not windows).
+  chars_to_trim = 0
+  if (n >= 2) {
+      c = substr(ttt, n, n)
+      if (c == "\n") {
+          chars_to_trim = chars_to_trim + 1
+      }
+      if (chars_to_trim > 0) {
+          c = substr(ttt, n-1, n-1)
+          if (c == "\r") {
+              chars_to_trim = chars_to_trim + 1
+          }
+      }
+  }
+
+  if (chars_to_trim > 0) {
+      ttt2 <- substr(ttt, 1, n-chars_to_trim)
+      # Is this going to use an extra copy?  Or should we assign directly to ttt?
+      ttt <- ttt2
+  }
+
+  # if((df.ncol = ncol(df)) != (x.ncol = ncol(x)))
+  #  stop("Stopping conversion: Expected ", x.ncol, " columns, but data frame imported with ", df.ncol)
+  # if(x.ncol > .MAX_INSPECT_COL_VIEW)
+  #  warning(x@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
+
+  # Obtain the correct factor levels for each column
+  # res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source=x@key, max_ncols=.Machine$integer.max)
+  # colClasses = sapply(res$levels, function(x) { ifelse(is.null(x), "numeric", "factor") })
+
+  # Substitute NAs for blank cells rather than skipping
+  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, ...)
+  # df = read.csv(textConnection(ttt), blank.lines.skip = FALSE, colClasses = colClasses, ...)
+  close(tcon)
+  return(df)
+}
+
 #as.matrix.H2OFrame <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 #
 #setMethod("as.factor", "H2OParsedData", function(x) { .h2o.__unop2("factor", x) })

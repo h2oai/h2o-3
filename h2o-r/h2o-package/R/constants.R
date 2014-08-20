@@ -57,6 +57,10 @@
 #' Cascade
 .h2o.__CASCADE      <- "Cascade.json"
 
+#'
+#' Removal
+.h2o.__REMOVE       <- "Remove.json"
+
 #.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"
 #.h2o.__PAGE_CLOUD                 <- "Cloud.json"

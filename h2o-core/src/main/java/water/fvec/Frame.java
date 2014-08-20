@@ -610,8 +610,8 @@ public class Frame extends Lockable {
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
     Frame sliced = new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
-    ff.delete(); Keyed.remove(vrows._key); frows.delete();
-    for (Vec v : vecs) Keyed.remove(v._key);
+//    ff.delete(); Keyed.remove(vrows._key); frows.delete();
+//    for (Vec v : vecs) Keyed.remove(v._key);
     return sliced;
   }
 

@@ -98,7 +98,7 @@ setClass("H2OParsedData",
 setMethod("show", "H2OParsedData", function(object) {
   print(object@h2o)
   cat("Parsed Data Key:", object@key, "\n")
-  # print(head(object)) TODO
+  print(head(object))
 })
 
 #'
@@ -499,7 +499,8 @@ setClass("Node", contains="H2OFrame")
 setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
 
 setMethod("show", "ASTNode", function(object) {
-  cat(visitor(object)$ast, "\n")
+   cat(visitor(object)$ast, "\n")
+   print(head(object))
 })
 
 #'
@@ -572,6 +573,10 @@ setClass("ASTSymbolTable", representation(symbols="list"), contains="Node",
 #-----------------------------------------------------------------------------------------------------------------------
 
 setClass("ASTApply", representation(op="character"), contains="Node")
+
+setClass("ASTSpan", representation(root="Node", children = "list"), contains="Node")
+
+setClass("ASTSeries", representation(op="character", children = "list"), contains="Node")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Utils
