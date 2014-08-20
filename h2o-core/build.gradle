@@ -1,6 +1,7 @@
 description = "H2O Core"
 
 apply from: '../gradle/java.gradle'
+apply from: '../gradle/cp.gradle'
 
 mainClassName = "water.H2O"
 
@@ -39,13 +40,6 @@ jar {
   manifest {
     attributes 'Main-Class': 'water.H2O'
   }
-}
-
-// Copy libs for the external cluster shell launcher
-task cpLibs(type: Copy) {
-  from configurations.compile.files 
-  from configurations.testCompile.files 
-  into '../lib'
 }
 
 // The default 'test' behavior is broken in that it does not grok clusters.

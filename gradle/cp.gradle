@@ -1,0 +1,7 @@
+task cpLibs(type:Copy) { 
+    from { project.configurations.runtime }
+    from { project.configurations.testRuntime }
+    into "$rootDir/lib"
+}
+
+//processResources.dependsOn(xxJars)

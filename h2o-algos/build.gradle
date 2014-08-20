@@ -1,4 +1,5 @@
 apply from: '../gradle/java.gradle'
+apply from: '../gradle/cp.gradle'
 
 description = "H2O Algorithms"
 
@@ -7,13 +8,6 @@ dependencies {
 
   testCompile "junit:junit:4.+"
   testCompile project(path: ":h2o-core", configuration: 'tests')
-}
-
-// Copy libs for the external cluster shell launcher
-task cpLibs(type: Copy) {
-  from configurations.compile.files 
-  from configurations.testCompile.files 
-  into '../lib'
 }
 
 // The default 'test' behavior is broken in that it does not grok clusters.
@@ -27,7 +21,7 @@ task cpLibs(type: Copy) {
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn cpLibs, testMultiNode, testJar
+  dependsOn cpLibs, jar, testJar, testMultiNode
 
   // Defeat task 'test' by running no tests.
   exclude '**'
