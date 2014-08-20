@@ -70,7 +70,7 @@ public class Exec extends Iced {
       env = ast.treeWalk(env);
 
       // Write back to DKV (if needed) and return
-      // env.postWrite();
+      env.postWrite();
 
     } catch( RuntimeException t ) {
       env.remove_and_unlock();

@@ -16,7 +16,8 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
   @API(help="Columns in Frame result" ) int  num_cols;
   @API(help="Scalar result"        ) double scalar;
   @API(help="Function result"      ) String funstr;
-  @API(help="Column Names")          String[] col_names;
+  @API(help="Column Names"         ) String[] col_names;
+  @API(help="String result"        ) String string;
   // Pretty-print of result.  For Frames, first 10 rows.  For scalars, just the
   // value.  For functions, the pretty-printed AST.
   @API(help="String result"        ) String result;
@@ -40,6 +41,7 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
     funstr = cascade._funstr;
     result = cascade._result;
     col_names = cascade._col_names;
+    string = cascade._string;
     return this;
   }
 }

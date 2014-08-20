@@ -163,22 +163,25 @@ function(op, ...) {
 #'
 #' This function is never called directly. The object shall never be a phrase!
 .force.eval<-
-function(client, object, ID, rID = NULL, env = parent.frame()) {
+function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
+  ret <- ""
+  if(length(as.list(substitute(Last.value))) > 1) stop(paste("Found phrase: ", substitute(Last.value), ". Illegal usage.", sep = ""))
+  ID <- if(ID == "object") "Last.value" else ID
 
-  if(length(as.list(substitute(object))) > 1) stop(paste("Found phrase: ", substitute(object), ". Illegal usage.", sep = ""))
-
-  object <- ID %<-% object
-  expr   <- visitor(object)
+  Last.value <- ID %<-% Last.value
+  expr   <- visitor(Last.value)
 
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__CASCADE, ast=expr$ast)
-
-  # Return the frame
-  ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$object))
+  ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$Last.value))
   if (!is.null(rID)) ID <- rID
-  assign(ID, .h2o.parsedData(client, res$key$name, res$num_rows, res$num_cols, res$col_names), env = env)
-
-#  if(!is.null(res$response$status) && res$response$status == "error") stop("H2O returned an error!")
+  if (!is.null(res$string)) ret <- res$string
+  else if (res$result == "") {
+    ret <- .h2o.parsedData(client, res$key$name, res$num_rows, res$num_cols, res$col_names)
+  } else {
+    ret <- res$scalar
+  }
+  assign(ID, ret, env = env)
 }
 
 

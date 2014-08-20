@@ -45,15 +45,17 @@ class CascadeHandler extends Handler<Cascade, CascadeV1>{
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
-        Frame fr = env.peekAry();
+        Frame fr = env.popAry();
         cascade._key = fr._key;
         cascade._num_rows = fr.numRows();
         cascade._num_cols = fr.numCols();
         cascade._col_names = fr.names();
+        cascade._string = null;
         //TODO: colSummary  cols = new Inspect2.ColSummary[num_cols];
       } else if (env.isNum()) {
         cascade._scalar = env.popDbl();
         sb.append(Double.toString(cascade._scalar));
+        cascade._string = null;
       } else if (env.isStr()) {
         cascade._string = env.popStr();
         sb.append(cascade._string);

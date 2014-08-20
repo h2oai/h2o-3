@@ -1,6 +1,7 @@
 package water.cascade;
 
 import water.*;
+import water.api.UnlockTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMap;
@@ -91,6 +92,10 @@ public class Env extends Iced {
     return o;
   }
 
+  public Val pop0() { return _stack.pop(); }
+
+  public boolean isEmpty() { return _stack.isEmpty(); }
+
   public Val peek() { return _stack.peek(); }
   public Val peekAt(int i) { return _stack.peekAt(i); }
   public int peekType() {return _stack.peekType(); }
@@ -110,6 +115,7 @@ public class Env extends Iced {
   public ValSpan popSpan() { return (ValSpan)pop();      }
   public Frame peekAry() {return ((ValFrame)peek())._fr; }
   public double peekDbl() {return ((ValNum)peek())._d;   }
+  public Frame pop0Ary() { return ((ValFrame)pop0())._fr;  }
   //TODO: func
 
   /**
@@ -173,7 +179,17 @@ public class Env extends Iced {
   /**
    * Utility & Cleanup
    */
+
+  // Done writing into all things.  Allow rollups.
+  public void postWrite() {
+    for( Vec vec : _refcnt.keySet() )
+      vec.postWrite(new Futures());
+  }
+
   public void remove_and_unlock() {
+    // Unlock everything
+    new UnlockTask().doAllNodes();
+
     while(!_stack.isEmpty()) {
       int type = peekType();
       switch(type) {
