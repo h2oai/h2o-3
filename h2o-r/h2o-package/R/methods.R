@@ -1,6 +1,18 @@
 #'
 #' A Mix of H2O-specific and Overloaded R methods.
 #'
+#' Below we have a mix of h2o and overloaded R methods according to the following ToC:
+#'
+#'  H2O Methods:
+#'  ------------
+#'
+#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.cut, h2o.table
+#'
+#'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
+#'  ------------
+#'
+#'      year.H2O*, month.H2O*, diff.H2O*
+#'
 #'
 #'
 #' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
@@ -40,7 +52,7 @@
 #'
 #' Delete Objects In H2O
 #'
-#' Attempt to
+#' Remove the h2o Big Data object(s) having the key name(s) from keys.
 h2o.rm <- function(object, keys) {
 
   # If only object is supplied, then assume this is keys vector.
@@ -53,6 +65,31 @@ h2o.rm <- function(object, keys) {
 
   for(i in 1:length(keys))
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
+}
+
+#'
+#' Import a local R data frame to the H2O cloud.
+#'
+as.h2o <- function(client, object, key = "", header, sep = "") {
+  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
+  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
+  if(!is.character(key)) stop("key must be of class character")
+  if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
+  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
+
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  if(is.numeric(object) && is.vector(object)) {
+    stop("Unimplemented")
+#    res <- .h2o.__exec2_dest_key(client, paste("c(", paste(object, sep=',', collapse=","), ")", collapse=""), key)
+#    return(.h2o.exec2(res$dest_key, h2o = client, res$dest_key))
+  } else {
+    tmpf <- tempfile(fileext=".csv")
+    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
+#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFile yet!
+    h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
+    unlink(tmpf)
+    return(h2f)
+  }
 }
 
 #h2o.assign <- function(data, key) {
@@ -124,9 +161,29 @@ h2o.rm <- function(object, keys) {
 #  unlist(ignore)
 #}
 
-  #---------------------------------------------------------------------------------------------------------------------
-  # Time & Date
-  #---------------------------------------------------------------------------------------------------------------------
+
+# TODO: Should these be in the Overlaoded section h2o.cut, h2o.table
+
+
+#h2o.cut <- function(x, breaks) {
+#  if(missing(x)) stop("Must specify data set")
+#  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+#  if(missing(breaks) || !is.numeric(breaks)) stop("breaks must be a numeric vector")
+#
+#  .h2o.varop("cut", x, breaks)
+#}
+#
+## TODO: H2O doesn't support any arguments beyond the single H2OParsedData object (with <= 2 cols)
+#h2o.table <- function(x) {
+#  if(missing(x)) stop("Must specify data set")
+#  if(!inherits(x, "H2OParsedData")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+#  if(ncol(x) > 2) stop("Unimplemented")
+#  .h2o.unop("table", x)
+#}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Time & Date
+#-----------------------------------------------------------------------------------------------------------------------
 
 # TODO: s4 year, month impls as well?
 #h2o.year <- function(x){
@@ -156,44 +213,7 @@ h2o.rm <- function(object, keys) {
 #  new("H2OParsedData", h2o=x@h2o, key=res$dest_key, logic=FALSE)
 #}
 
-as.h2o <- function(client, object, key = "", header, sep = "") {
-  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
-  if(!is.character(key)) stop("key must be of class character")
-  if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
-  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
 
-  # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(is.numeric(object) && is.vector(object)) {
-    stop("Unimplemented")
-#    res <- .h2o.__exec2_dest_key(client, paste("c(", paste(object, sep=',', collapse=","), ")", collapse=""), key)
-#    return(.h2o.exec2(res$dest_key, h2o = client, res$dest_key))
-  } else {
-    tmpf <- tempfile(fileext=".csv")
-    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFile yet!
-    h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
-    unlink(tmpf)
-    return(h2f)
-  }
-}
-
-
-#h2o.cut <- function(x, breaks) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
-#  if(missing(breaks) || !is.numeric(breaks)) stop("breaks must be a numeric vector")
-#
-#  .h2o.varop("cut", x, breaks)
-#}
-#
-## TODO: H2O doesn't support any arguments beyond the single H2OParsedData object (with <= 2 cols)
-#h2o.table <- function(x) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OParsedData")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
-#  if(ncol(x) > 2) stop("Unimplemented")
-#  .h2o.unop("table", x)
-#}
 #
 #h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
 #  if( missing(.data) ) stop('must specify .data')
@@ -289,7 +309,7 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #}
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Overloaded R Methods
+# Overloaded Base R Methods
 #-----------------------------------------------------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -324,12 +344,12 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
 # Inspection/Summary Operations
 #-----------------------------------------------------------------------------------------------------------------------
 
-nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow")     else base::nrow(x)
-ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol")     else base::ncol(x)
+nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
+ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
 colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
-names    <- function(x) if (.isH2O(x)) UseMethod("names")    else base::names(x)
-length   <- function(x) if (.isH2O(x)) UseMethod("length")   else base::length(x)
-dim      <- function(x) if (.isH2O(x)) UseMethod("dim")      else base::dim(x)
+names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
+length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
+dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
 nrow.H2OParsedData     <- function(x) x@nrows
 ncol.H2OParsedData     <- function(x) x@ncols
@@ -338,9 +358,16 @@ names.H2OParsedData    <- function(x) colnames(x)
 length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrows else ncol(x)
 dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
 
+#'
+#' The H2OFrame "lazy" evaluators
+#'
+#' The pattern below is necessary in order to swap out S4 objects,
+#' and the code re-use is necessary in order to safely assign back to the correct environment.
+
 nrow.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  ID <- .eval.assign(x, ID, parent.frame(), environment())
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())

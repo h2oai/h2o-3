@@ -160,11 +160,11 @@ function(op, ...) {
 .force.eval<-
 function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   ret <- ""
-  if(length(as.list(substitute(Last.value))) > 1) stop(paste("Found phrase: ", substitute(Last.value), ". Illegal usage.", sep = ""))
-#  ID <- if(ID == "object") "Last.value" else ID
+  if(length(as.list(substitute(Last.value))) > 1)
+    stop(paste("Found phrase: ", substitute(Last.value), ". Illegal usage.", sep = ""))
 
   Last.value <- ID .%<-% Last.value
-  expr   <- visitor(Last.value)
+  expr <- visitor(Last.value)
 
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__CASCADE, ast=expr$ast)
