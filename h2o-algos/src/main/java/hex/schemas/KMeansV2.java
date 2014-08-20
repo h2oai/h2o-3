@@ -20,7 +20,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     public int max_iters;        // Max iterations
 
     @API(help = "Normalize columns", level = API.Level.secondary)
-    public boolean normalize;
+    public boolean normalize = true;
 
     @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"K", "max_iters"} */ )
     public long seed;
@@ -57,6 +57,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     KMeansParameters parms = parameters.createImpl();
     return new KMeans(parms);
   }
+  public KMeans createImpl(Frame fr) { parameters.src = fr._key; return createImpl(); }
 
   // Return a URL to invoke KMeans on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?src="+fr._key; }
