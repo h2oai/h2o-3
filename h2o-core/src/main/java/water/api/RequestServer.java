@@ -9,6 +9,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
 import water.util.Log;
 import water.util.RString;
+import water.api.DownloadDataHandler.DownloadData;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -130,6 +131,7 @@ public class RequestServer extends NanoHTTPD {
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
 
     register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
+    register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
@@ -304,7 +306,9 @@ public class RequestServer extends NanoHTTPD {
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
         return getResource(uri);
-      else {
+      else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
+        return wrap2(HTTP_OK, handle(type,route,version,parms));
+      } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
@@ -351,6 +355,13 @@ public class RequestServer extends NanoHTTPD {
     default:
       throw H2O.fail();
     }
+  }
+
+  private Response wrap2(String http_code, Schema s) {
+    DownloadData dd = (DownloadData) s.fillFromSchema();
+    Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
+    res.addHeader("Content-Disposition", "filename=" + dd.filename);
+    return res;
   }
 
 
