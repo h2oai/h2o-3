@@ -275,14 +275,12 @@ class ASTAssign extends AST {
       ASTId id = (ASTId)this._asts[0];
       assert id.isSet() : "Expected to set result into the LHS!.";
       if (e.isAry()) {
-        Frame f = e.peekAry();
-        Frame fr = new Frame(Key.make(id._id), f.names(), f.vecs());
-        DKV.put(fr._key, fr);
+        Frame f = e.pop0Ary();  // pop without lowering counts
+        Key k = Key.make(id._id);
+        Frame fr = new Frame(k, f.names(), f.vecs());
+        DKV.put(k, fr);
         e._locked.add(fr._key);
-//        fr.write_lock(null);
-//        e.pop();
         e.push(new ValFrame(fr));
-        // f.delete() ??
         e.put(id._id, Env.ARY, id._id);
       }
     }
