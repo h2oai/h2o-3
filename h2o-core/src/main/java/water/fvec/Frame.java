@@ -1,11 +1,14 @@
 package water.fvec;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import water.*;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
@@ -564,7 +567,7 @@ public class Frame extends Lockable {
           Keyed.remove(v0._key);
           Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(c2.length, this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
           Keyed.remove(v._key);
-          Keyed.remove(this.remove(this.numCols()-1)._key);
+          Keyed.remove(this.remove(this.numCols() - 1)._key);
           return slicedFrame;
         } else {
           return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(c2.length, this).outputFrame(names(c2), domains(c2));
@@ -737,4 +740,102 @@ public class Frame extends Lockable {
     }
     return fr;
   }
+
+  // Return the entire Frame as a CSV stream
+  public InputStream toCSV(boolean headers) {
+    return new CSVStream(headers, false);
+  }
+
+  public InputStream toCSV(boolean headers, boolean hex_string) {
+    return new CSVStream(headers, hex_string);
+  }
+
+  private class CSVStream extends InputStream {
+    private final boolean _hex_string;
+    byte[] _line;
+    int _position;
+    long _row;
+
+    CSVStream(boolean headers, boolean hex_string) {
+      _hex_string = hex_string;
+      StringBuilder sb = new StringBuilder();
+      Vec vs[] = vecs();
+      if( headers ) {
+        sb.append('"').append(_names[0]).append('"');
+        for(int i = 1; i < vs.length; i++)
+          sb.append(',').append('"').append(_names[i]).append('"');
+        sb.append('\n');
+      }
+      _line = sb.toString().getBytes();
+    }
+
+    @Override public int available() throws IOException {
+      if(_position == _line.length) {
+        if(_row == numRows())
+          return 0;
+        StringBuilder sb = new StringBuilder();
+        Vec vs[] = vecs();
+        for( int i = 0; i < vs.length; i++ ) {
+          if(i > 0) sb.append(',');
+          if(!vs[i].isNA(_row)) {
+            if( vs[i].isEnum() ) sb.append('"').append(vs[i]._domain[(int) vs[i].at8(_row)]).append('"');
+            else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
+            else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
+            else {
+              // R 3.1 unfortunately changed the behavior of read.csv().
+              // (Really type.convert()).
+              //
+              // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
+              //
+              // See these discussions:
+              //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
+              //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
+              //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
+
+              double d = vs[i].at(_row);
+
+              String s;
+              if (_hex_string) {
+                // Used by R's as.data.frame().
+                s = Double.toHexString(d);
+              }
+              else {
+                // To emit CSV files that can be read by R 3.1, limit the number of significant digits.
+                // s = String.format("%.15g", d);
+
+                s = Double.toString(d);
+              }
+
+              sb.append(s);
+            }
+          }
+        }
+        sb.append('\n');
+        _line = sb.toString().getBytes();
+        _position = 0;
+        _row++;
+      }
+      return _line.length - _position;
+    }
+
+    @Override public void close() throws IOException {
+      super.close();
+      _line = null;
+    }
+
+    @Override public int read() throws IOException {
+      return available() == 0 ? -1 : _line[_position++];
+    }
+
+    @Override public int read(byte[] b, int off, int len) throws IOException {
+      int n = available();
+      if(n > 0) {
+        n = Math.min(n, len);
+        System.arraycopy(_line, _position, b, off, n);
+        _position += n;
+      }
+      return n;
+    }
+  }
+
 }
