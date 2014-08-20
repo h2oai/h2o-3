@@ -18,6 +18,11 @@
 #    invisible(r)
 #}
 
+".%<i-%"  <- function(x, cls) inherits(x, cls)
+".%<p0-%" <- function(x, y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
+".%<p-%"  <- function(x, y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
+".%<-%"   <- function(x, y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
+
 .TEMP_KEY <- "Last.value"
 .RESULT_MAX <- 1000
 .MAX_INSPECT_ROW_VIEW <- 10000

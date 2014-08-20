@@ -32,30 +32,30 @@ function(object) {
 #'
 #' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON call.
 #'
-#' Given a node, the `visitor` function recursively "Lisp"-ifies the node's S4 slots and then returns the list.
+#' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'
 #' The returned list has two main pieces: the ast to execute and function defintions:
 #'
-#'  { '_ast' : { ... }, '_funs' : {[ ... ]} }
+#'  { 'ast' : { ... }, 'funs' : {[ ... ]} }
 #'
 #' All ASTNodes have children. All nodes with the @root slot has a list in the @children slot that represent operands.
 visitor<-
 function(node) {
   res <- ""
   if (.hasSlot(node, "root")) {
-    res %<p0-% '('
-    res %<p0-% node@root@op
+    res .%<p0-% '('
+    res .%<p0-% node@root@op
     children <- lapply(node@children, visitor)
     for (child in children) res %<p-% child
-    res %<p0-% ')'
+    res .%<p0-% ')'
     list( ast = res)
 
-  } else if (node %<i-% "ASTSeries") {
-    res %<p-% node@op
+  } else if (node .%<i-% "ASTSeries") {
+    res .%<p-% node@op
     children <- unlist(lapply(node@children, visitor))
     children <- paste(children, collapse=";",sep="")
-    res %<p0-% children
-    res %<p0-% "}"
+    res .%<p0-% children
+    res .%<p0-% "}"
     res
   } else {
     node
@@ -177,12 +177,19 @@ function(expr) {
 }
 
 #'
-#' Walk the R AST directly
+#' Convert R expression to an AST.
+.eval<-
+function(x, envir) {
+  if (.anyH2O(x, envir)) return(eval(x),envir)
+  .ast.walker(x,envir)
+}
+
 #'
+#' Walk the R AST directly
 .ast.walker<-
 function(expr, envir) {
   if (length(expr) == 1) {
-    if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - 1))
+    if (is.numeric(expr[[1]])) return('#' .%<p0-% (eval(expr[[1]], envir=envir) - 1))
   }
   if (isGeneric(deparse(expr[[1]]))) {
 
@@ -197,14 +204,14 @@ function(expr, envir) {
 
   # Create a new ASTSpan
   if (identical(expr[[1]], quote(`:`))) {
-    return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %<p0-% (eval(expr[[2]],envir=envir) - 1), '#' %<p0-% (eval(expr[[3]],envir=envir) - 1))))
+    return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' .%<p0-% (eval(expr[[2]],envir=envir) - 1), '#' .%<p0-% (eval(expr[[3]],envir=envir) - 1))))
   }
 }
 
 #'
 #' Walk the R AST directly.
 #'
-#' This walks the AST for some arbitrary R expression and produces an "S4"-ified AST.
+#' This walks the AST for some arbitrary R expression and produces an "S4"ified AST.
 #'
 #' This function has lots of twists and turns mainly for involving h2o S4 objects.
 #' We have to "prove" that we can safely eval an expression by showing that the

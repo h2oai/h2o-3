@@ -64,14 +64,14 @@ abstract public class AST extends Iced {
         throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
       }
 
-    // Check if we have just a plain-old slice
+    // Check if we have a slice.
     } else if(this instanceof ASTSlice) {
-      _asts[0].treeWalk(e);
-      _asts[1].treeWalk(e);
-      _asts[2].treeWalk(e);
-      this.exec(e);
+      _asts[0].treeWalk(e); // push hex
+      _asts[1].treeWalk(e); // push rows
+      _asts[2].treeWalk(e); // push cols
+      this.exec(e);         // do the slice
 
-      // Check if String, Num, Key, or Frame
+    // Check if String, Num, Null, Series, Key, Span, or Frame
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
             this._asts[0] instanceof ASTFrame) { this.exec(e); }
@@ -115,7 +115,6 @@ class ASTKey extends AST {
 class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
-//  public Frame  fr() { return _fr; }
   ASTFrame(Frame fr) { _key = null; _fr = fr; }
   ASTFrame(String key) {
     if (DKV.get(Key.make(key)) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");

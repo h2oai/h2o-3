@@ -17,16 +17,15 @@
 #'          and vectors are sliced into chunks, distributed around the cluster.
 #'
 #'          FluidVec replaced the row-based representation known as ValueArray
-#'          (another H2O specific data format that is described below), and is
+#'          (another H2O specific data format that no longer exists), and is
 #'          now the dominant data type used by algorithms and analytical
 #'          operations in H2O.
 #'
 #'      2. Group '"AST"':
 #'          R expressions involving objects from group '"FluidVec"' or group
-#'          '"ValueArray"' are _lazily evaluated_. Therefore, when assigning
-#'          to a new R variable, the R variable represents a _promise_ to
-#'          evaluate the expression on demand. The usual lexical scoping rules
-#'          of R apply to these objects.
+#'          are _lazily evaluated_. Therefore, when assigning to a new R variable,
+#'          the R variable represents a _promise_ to evaluate the expression on
+#'          demand. The usual lexical scoping rules of R apply to these objects.
 #'
 #'
 #' Note: <WARNING> Do NOT touch the env slot! It is used to link garbage collection between R and H2O
@@ -96,9 +95,10 @@ setClass("H2OParsedData",
             contains="H2OFrame")
 
 setMethod("show", "H2OParsedData", function(object) {
-  print(object@h2o)
-  cat("Parsed Data Key:", object@key, "\n")
-  print(head(object))
+  Last.value <- object
+  print(Last.value@h2o)
+  cat("Parsed Data Key:", Last.value@key, "\n")
+  print(head(Last.value))
 })
 
 #'
@@ -582,11 +582,11 @@ setClass("ASTSeries", representation(op="character", children = "list"), contain
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
 
-.isH2O <- function(x) { x %<i-% "H2OFrame" || x%<i-% "H2OClient" || x %<i-% "H2ORawData" }
+.isH2O <- function(x) { x .%<i-% "H2OFrame" || x .%<i-% "H2OClient" || x .%<i-% "H2ORawData" }
 .retrieveH2O<-
 function(env) {
-  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %<i-% "H2OClient"))
-  e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) %<i-% "H2OClient"))
+  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) .%<i-% "H2OClient"))
+  e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) .%<i-% "H2OClient"))
   if (any(g_list)) return(get(ls(globalenv())[which(g_list)[1]], envir=globalenv()))
   if (any(e_list)) return(get(ls(env)[which(e_list)[1]], envir=env))
   stop("Could not find any H2OClient. Do you have an active connection to H2O from R?")
