@@ -197,11 +197,12 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     ab.arrayHead(titles);
 
     // Rollup data
+    final long nrows = _fr.numRows();
     formatRow(ab,"","type" ,new ColOp() { String op(Col c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mins[0]); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.maxs[0]); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.mean   ); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.sigma  ); } } );
+    formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mins[0]); } } );
+    formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.maxs[0]); } } );
+    formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mean   ); } } );
+    formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.sigma  ); } } );
 
     // Optional rows: missing elements, zeros, positive & negative infinities, levels
     for( Col c : columns ) if( c.missing > 0 )
@@ -216,7 +217,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
         { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(Col c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
 
     // Frame data
-    int len = columns.length > 0 ? columns[0].data.length : 0;
+    final int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
       formatRow(ab,"",Long.toString(off+row+1),new ColOp() {
