@@ -43,19 +43,19 @@ visitor<-
 function(node) {
   res <- ""
   if (.hasSlot(node, "root")) {
-    res .%<p0-% '('
-    res .%<p0-% node@root@op
+    res %<p0-% '('
+    res %<p0-% node@root@op
     children <- lapply(node@children, visitor)
     for (child in children) res %<p-% child
-    res .%<p0-% ')'
+    res %<p0-% ')'
     list( ast = res)
 
-  } else if (node .%<i-% "ASTSeries") {
-    res .%<p-% node@op
+  } else if (node %<i-% "ASTSeries") {
+    res %<p-% node@op
     children <- unlist(lapply(node@children, visitor))
     children <- paste(children, collapse=";",sep="")
-    res .%<p0-% children
-    res .%<p0-% "}"
+    res %<p0-% children
+    res %<p0-% "}"
     res
   } else {
     node
@@ -199,10 +199,9 @@ function(x, envir) {
 .ast.walker<-
 function(expr, envir) {
   if (length(expr) == 1) {
-    if (is.numeric(expr[[1]])) return('#' .%<p0-% (eval(expr[[1]], envir=envir) - 1))
+    if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - 1))
   }
   if (isGeneric(deparse(expr[[1]]))) {
-
     # Have a vector => ASTSeries
     if ((expr[[1]]) == quote(`c`)) {
     children <- lapply(expr[-1], .ast.walker, envir)
@@ -214,7 +213,7 @@ function(expr, envir) {
 
   # Create a new ASTSpan
   if (identical(expr[[1]], quote(`:`))) {
-    return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' .%<p0-% (eval(expr[[2]],envir=envir) - 1), '#' .%<p0-% (eval(expr[[3]],envir=envir) - 1))))
+    return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %<p0-% (eval(expr[[2]],envir=envir) - 1), '#' %<p0-% (eval(expr[[3]],envir=envir) - 1))))
   }
 }
 

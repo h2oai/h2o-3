@@ -50,17 +50,17 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[[op]])
 
   # Prep the LHS
-  if (e1 .%<i-% "ASTNode")       lhs <- e1
-  if (e1 .%<i-% "numeric")       lhs <- paste("#", e1, sep = "")
-  if (e1 .%<i-% "character")     lhs <- depares(substitute(e1))
-  if (e1 .%<i-% "H2OParsedData") lhs <- paste("$", e1@key, sep = "")
+  if (e1 %<i-% "ASTNode")       lhs <- e1
+  if (e1 %<i-% "numeric")       lhs <- paste("#", e1, sep = "")
+  if (e1 %<i-% "character")     lhs <- depares(substitute(e1))
+  if (e1 %<i-% "H2OParsedData") lhs <- paste("$", e1@key, sep = "")
   # TODO: e1 inherits ASTFun ?
 
   # Prep the RHS
-  if (e2 .%<i-% "ASTNode")       rhs <- e2
-  if (e2 .%<i-% "numeric")       rhs <- paste("#", e2, sep = "")
-  if (e2 .%<i-% "character")     rhs <- depares(substitute(e2))
-  if (e2 .%<i-% "H2OParsedData") rhs <- paste("$", e2@key, sep = "")
+  if (e2 %<i-% "ASTNode")       rhs <- e2
+  if (e2 %<i-% "numeric")       rhs <- paste("#", e2, sep = "")
+  if (e2 %<i-% "character")     rhs <- depares(substitute(e2))
+  if (e2 %<i-% "H2OParsedData") rhs <- paste("$", e2@key, sep = "")
   # TODO: e2 inherits ASTFun ?
 
   # Return an ASTNode
@@ -163,7 +163,7 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if(length(as.list(substitute(Last.value))) > 1)
     stop(paste("Found phrase: ", substitute(Last.value), ". Illegal usage.", sep = ""))
 
-  Last.value <- ID .%<-% Last.value
+  Last.value <- ID %<-% Last.value
   expr <- visitor(Last.value)
 
   # Have H2O evaluate the AST

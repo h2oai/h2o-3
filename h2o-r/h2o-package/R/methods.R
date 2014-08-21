@@ -319,7 +319,7 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
-  if (x .%<i-% "H2OParsedData") x <- '$' .%<p0-% x@key
+  if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
   op <- new("ASTApply", op='[')
   rows <- if(missing(i)) deparse("null") else .eval(substitute(i), parent.frame())
   cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
@@ -359,10 +359,45 @@ length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrows else ncol(x)
 dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
 
 #'
-#' The H2OFrame "lazy" evaluators
+#' Head of an H2O Data Frame
 #'
-#' The pattern below is necessary in order to swap out S4 objects,
-#' and the code re-use is necessary in order to safely assign back to the correct environment.
+#' Returns as an R data frame.
+head.H2OParsedData <- function(x, n = 6L, ...) {
+  numRows <- nrow(x)
+  stopifnot(length(n) == 1L)
+  n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
+  if(n == 0) return(data.frame())
+
+  tmp_head <- x[1:n,]
+  x.slice <- as.data.frame(tmp_head)
+  h2o.rm(tmp_head@key)
+  return(x.slice)
+}
+
+#'
+#' Tail of an H2O Data Frame
+#'
+#' Returns as an R data frame.
+tail.H2OParsedData <- function(x, n = 6L, ...) {
+  stopifnot(length(n) == 1L)
+  nrx <- nrow(x)
+  n <- ifelse(n < 0L, max(nrx + n, 0L), min(n, nrx))
+  if(n == 0) return(data.frame())
+
+  idx <- seq.int(to = nrx, length.out = n)
+  tmp_tail <- x[idx,]
+  x.slice <- as.data.frame(tmp_tail)
+  h2o.rm(tmp_tail@h2o, tmp_tail@key)
+  rownames(x.slice) <- idx
+  return(x.slice)
+}
+
+#'
+#' The H2OFrame "lazy" evaluators: Evaulate an AST.
+#'
+#' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
+#' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
+#' calling scope).
 
 nrow.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
@@ -419,30 +454,6 @@ dim.H2OFrame <- function(x) {
   dim(get(ID, parent.frame()))
 }
 
-#setMethod("levels", "H2OParsedData", function(x) {
-#  if(ncol(x) != 1) return(NULL)
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
-#  res$levels[[1]]
-#})
-#
-
-
-#'
-#' Head of an H2O Data Frame
-#'
-#' Returns as an R data frame.
-head.H2OParsedData <- function(x, n = 6L, ...) {
-  numRows <- nrow(x)
-  stopifnot(length(n) == 1L)
-  n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
-  if(n == 0) return(data.frame())
-
-  tmp_head <- x[1:n,]
-  x.slice <- as.data.frame(tmp_head)
-  h2o.rm(tmp_head@key)
-  return(x.slice)
-}
-
 #'
 #' Head of an AST.
 #'
@@ -457,24 +468,6 @@ head.H2OFrame <- function(x, n = 6L, ...) {
 }
 
 #'
-#' Tail of an H2O Data Frame
-#'
-#' Returns as an R data frame.
-tail.H2OParsedData <- function(x, n = 6L, ...) {
-  stopifnot(length(n) == 1L)
-  nrx <- nrow(x)
-  n <- ifelse(n < 0L, max(nrx + n, 0L), min(n, nrx))
-  if(n == 0) return(data.frame())
-
-  idx <- seq.int(to = nrx, length.out = n)
-  tmp_tail <- x[idx,]
-  x.slice <- as.data.frame(tmp_tail)
-  h2o.rm(tmp_tail@h2o, tmp_tail@key)
-  rownames(x.slice) <- idx
-  return(x.slice)
-}
-
-#'
 #' Tailof an AST.
 #'
 #' Evaluate the AST and produce the tail of the eval'ed AST.
@@ -486,6 +479,13 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
   assign(ID, x, parent.frame())
   tail(get(ID, parent.frame()))
 }
+
+#setMethod("levels", "H2OParsedData", function(x) {
+#  if(ncol(x) != 1) return(NULL)
+#  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
+#  res$levels[[1]]
+#})
+#
 
 #setMethod("is.factor", "H2OFrame", function(x) { as.logical(.h2o.unop("is.factor", x)) })
 #

@@ -31,37 +31,72 @@
 #' H2OFrame methods follow these divisions as well, with the exception of Complex, which are
 #' unimplemented.
 #'
+#' More precicely, the group divisions follow the S4 divisions: Ops, Math, Math2, Summary.
+#'
 #' See also groupGeneric.
 
 #'
+#' Binary Infix (Ops) Generics
+#'
 #' Handle all of the binary infix operations with this simple function!
 #'
-#' Scrape the function call by casting the sys.call() to a list and extracting the root.
-.ops.function <- function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) }
+#' Scrape the function call by casting the sys.calls() to a list and extracting the root.
+.ops.fun <- function(e1,e2) .h2o.binop(deparse(as.list(as.list(sys.calls())[[1]])[[1]]), e1, e2)
 
-#TODO: Do the returns need to be wrapped by `invisble` ?
-setMethod("Ops", signature(e1="H2OFrame",  e2="missing"),  function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, 0)  })
-setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
-setMethod("Ops", signature(e1="numeric",   e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
-setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"),  function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
-setMethod("Ops", signature(e1="H2OFrame",  e2="character"),function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
-setMethod("Ops", signature(e1="character", e2="H2OFrame"), function(e1,e2) { .h2o.binop(deparse(as.list(sys.call())[[1]]), e1, e2) })
+#'
+#' Ops Generics:
+#'
+#' ‘"+"’, ‘"-"’, ‘"*"’, ‘"^"’, ‘"%%"’, ‘"%/%"’, ‘"/"’
+#' ‘"=="’, ‘">"’, ‘"<"’, ‘"!="’, ‘"<="’, ‘">="’
+#' ‘"&"’, ‘"|"’
+#'
+#' Bonus Operators: ‘"**"’
+setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) { .ops.fun(e1, 0) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
+setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) { .ops.fun(e1,e2) })
+setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) { .ops.fun(e1,e2) })
+setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
 
-#
-##TODO: This needs a method .h2o.varop() to handle varargs
-##setMethod("Math", signature(e1="H2OFrame"),
-##  function(x) {
-##    .h2o.unop(deparse(as.list(sys.call())[[1]]), x)
-##  }
-##)
-#
-#setMethod("Summary", signature(x="H2OFrame"),
-#  function(x) {
-#    .h2o.binop(deparse(as.list(sys.call())[[1]]), x)
-#  }
-#)
-#
-#
+#'
+#' Math Generics:
+#'
+#' ‘"abs"’,   ‘"sign"’,   ‘"sqrt"’,   ‘"ceiling"’, ‘"floor"’,
+#' ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
+#' ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
+#' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
+#' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
+#' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
+setMethod("Math", signature(x = "H2OFrame"),
+  function (x) {
+    stop("need a definition for the method here")
+  }
+)
+
+#'
+#' Math2 Generics:
+#'
+#' ‘"round"’, ‘"signif"’
+#'
+#' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
+setMethod("Math2", signature(x = "H2OFrame"),
+  function (x, digits) {
+    print(sys.calls())
+    stop("need a definition for the method here")
+  }
+)
+
+#'
+#' Summary Generics:
+#'
+#' ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
+setMethod("Summary", signature(x = "H2OFrame"),
+  function (x, ..., na.rm = FALSE) {
+    stop("need a definition for the method here")
+  }
+)
+
+
 #setMethod("!",       "H2OParsedData",                function(x) {      .h2o.__unop2("!",     x) })
 #setMethod("abs",     "H2OParsedData",                function(x) {      .h2o.__unop2("abs",   x) })
 #setMethod("sign",    "H2OParsedData",                function(x) {      .h2o.__unop2("sgn",   x) })

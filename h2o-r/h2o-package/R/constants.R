@@ -20,10 +20,10 @@
 
 
 # Some handy utility functions for doing common tasks
-".%<i-%"  <- function(x,y) inherits(x, y)
-".%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
-".%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
-".%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
+"%<i-%"  <- function(x,y) inherits(x, y)
+"%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
+"%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
+"%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
 
 #'
 #' Map of binary operators to their "AST" operator value.
