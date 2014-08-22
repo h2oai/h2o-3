@@ -1,3 +1,6 @@
+#'
+#' A set of utility functions for the H2O R Unit Test Framework.
+
 .origEchoValue <- getOption("echo")
 options(echo=FALSE)
 local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
@@ -131,10 +134,20 @@ if (distance < 0) {
     source(paste(path, "tests/Utils/glmR.R", sep = ""))
     source(paste(path, "tests/Utils/gbmR.R", sep = ""))
     source(paste(path, "tests/Utils/utilsR.R", sep = ""))
-    source(paste(path, "h2o-package/R/Algorithms.R", sep = ""))
-    source(paste(path, "h2o-package/R/Classes.R", sep = ""))
-    source(paste(path, "h2o-package/R/ParseImport.R", sep = ""))
-    source(paste(path, "h2o-package/R/Internal.R", sep = ""))
+    source(paste(path, "h2o-package/R/wrapper.R", sep = ""))
+    source(paste(path, "h2o-package/R/constants.R", sep = ""))
+    source(paste(path, "h2o-package/R/logging.R", sep = ""))
+    source(paste(path, "h2o-package/R/h2o.R", sep = ""))
+    source(paste(path, "h2o-package/R/exec.R", sep = ""))
+    source(paste(path, "h2o-package/R/classes.R", sep = ""))
+    source(paste(path, "h2o-package/R/ops.R", sep = ""))
+    source(paste(path, "h2o-package/R/methods.R", sep = ""))
+    source(paste(path, "h2o-package/R/ast.R", sep = ""))
+    source(paste(path, "h2o-package/R/import.R", sep = ""))
+    source(paste(path, "h2o-package/R/parse.R", sep = ""))
+    source(paste(path, "h2o-package/R/export.R", sep = ""))
+    source(paste(path, "h2o-package/R/models.R", sep = ""))
+    source(paste(path, "h2o-package/R/algorithms.R", sep = ""))
 } else {
     dots     <- genDots(distance)
     source(paste(dots, "Utils/h2oR.R", sep = ""))
@@ -147,10 +160,20 @@ if (distance < 0) {
     #rdots is the calculated path to the R source files...
     rdots <- ifelse(dots == "./", "../", paste("../", dots, sep = ""))
 
-    source(paste(rdots, "h2o-package/R/Algorithms.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/Classes.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/ParseImport.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/Internal.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/wrapper.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/constants.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/logging.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/h2o.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/exec.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/classes.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/ops.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/methods.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/ast.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/import.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/parse.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/export.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/models.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/algorithms.R", sep = ""))
 }
 
 #The master seed is set by the runnerSetup.R script.

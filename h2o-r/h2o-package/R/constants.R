@@ -5,19 +5,12 @@
 #' environment variables for the H2O package are named here.
 
 .pkg.env              <- new.env()
+
+# These may no longer be needed...
 .pkg.env$result_count <- 0
 .pkg.env$temp_count   <- 0
 .pkg.env$IS_LOGGING   <- FALSE
 .pkg.env$call_list    <- NULL
-
-#"<-" <- function(l, r) {
-#    lhs <- substitute(l)
-#    e <- .pkg.env
-#    assign(as.character(lhs), r, e)
-#    lockBinding(lhs, e)
-#    invisible(r)
-#}
-
 .TEMP_KEY <- "Last.value"
 .RESULT_MAX <- 1000
 .MAX_INSPECT_ROW_VIEW <- 10000
@@ -25,22 +18,47 @@
 .LOGICAL_OPERATORS <- c("==", ">", "<", "!=", ">=", "<=", "&", "|", "&&", "||", "!", "is.na")
 .INFIX_OPERATORS   <- c("+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">")
 
-.op.map <- list('>' = 'g', '>=' = 'G', '<' = 'l', '<=' = 'L', '==' = 'N', '!=' = 'n', '%%' = '%', '**' = '^',
-                '|'='|', '&'='&', "&&"="&&", '+'='+', '-'='-', '*'='*', '/'='/', '^'='^', "%/%"="%/%")
+
+# Some handy utility functions for doing common tasks
+"%<i-%"  <- function(x,y) inherits(x, y)
+"%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
+"%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
+"%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
+
+#'
+#' Map of binary operators to their "AST" operator value.
+#'
+.op.map <- list('>'  = 'g',
+                '>=' = 'G',
+                '<'  = 'l',
+                '<=' = 'L',
+                '==' = 'N',
+                '!=' = 'n',
+                '%%' = '%',
+                '**' = '^',
+                '|'  = '|',
+                '&'  = '&',
+                "&&" = "&&",
+                '+'  = '+',
+                '-'  = '-',
+                '*'  = '*',
+                '/'  = '/',
+                '^'  = '^',
+                "%/%"="%/%")
 
 #'
 #' H2O API endpoints
 #'
 
 #'
-#' Import & Parse Endpointss
+#' Import/Parse Endpointss
 .h2o.__IMPORT       <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
 .h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://path/to/data]
 .h2o.__PARSE        <- "Parse.json"         # Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
 .h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
 
 #'
-#' Summary and Inspect Endpoints
+#' Inspect/Summary Endpoints
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES       <- "3/Frames.json"      # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
@@ -50,17 +68,22 @@
 .h2o.__CLOUD        <- "Cloud.json"
 
 #'
-#' Algorithmic Endpoints
+#' Algorithm Endpoints
 .h2o.__KMEANS       <- "v2/Kmeans.json"
 
 #'
-#' Cascade
+#' Cascade/Exec3
 .h2o.__CASCADE      <- "Cascade.json"
 
 #'
 #' Removal
 .h2o.__REMOVE       <- "Remove.json"
 
+
+
+#'
+#' The list of H2O1 endpoints
+#######
 #.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"
 #.h2o.__PAGE_CLOUD                 <- "Cloud.json"

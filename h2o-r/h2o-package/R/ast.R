@@ -32,11 +32,11 @@ function(object) {
 #'
 #' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON call.
 #'
-#' Given a node, the `visitor` function recursively "Lisp"-ifies the node's S4 slots and then returns the list.
+#' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'
 #' The returned list has two main pieces: the ast to execute and function defintions:
 #'
-#'  { '_ast' : { ... }, '_funs' : {[ ... ]} }
+#'  { 'ast' : { ... }, 'funs' : {[ ... ]} }
 #'
 #' All ASTNodes have children. All nodes with the @root slot has a list in the @children slot that represent operands.
 visitor<-
@@ -177,15 +177,31 @@ function(expr) {
 }
 
 #'
-#' Walk the R AST directly
+#' Assign the value into the correct environment.
+.eval.assign<-
+function(x, ID, top_level_envir, calling_envir) {
+  .force.eval(.retrieveH2O(top_level_envir), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, top_level_envir)
+  ID
+}
+
 #'
+#' Convert R expression to an AST.
+.eval<-
+function(x, envir) {
+  if (.anyH2O(x, envir)) return(eval(x),envir)
+  .ast.walker(x,envir)
+}
+
+#'
+#' Walk the R AST directly
 .ast.walker<-
 function(expr, envir) {
   if (length(expr) == 1) {
     if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - 1))
   }
   if (isGeneric(deparse(expr[[1]]))) {
-
     # Have a vector => ASTSeries
     if ((expr[[1]]) == quote(`c`)) {
     children <- lapply(expr[-1], .ast.walker, envir)
@@ -204,7 +220,7 @@ function(expr, envir) {
 #'
 #' Walk the R AST directly.
 #'
-#' This walks the AST for some arbitrary R expression and produces an "S4"-ified AST.
+#' This walks the AST for some arbitrary R expression and produces an "S4"ified AST.
 #'
 #' This function has lots of twists and turns mainly for involving h2o S4 objects.
 #' We have to "prove" that we can safely eval an expression by showing that the

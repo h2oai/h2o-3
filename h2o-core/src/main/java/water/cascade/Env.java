@@ -386,11 +386,13 @@ public class Env extends Iced {
    *
    *  Valid types:
    *
-   *    ID  =0;  // For a !ID (will be set into)
-   *    ARY =1;
-   *    STR =2;
-   *    NUM =3;
-   *    FUN =4;
+   *    ID    =0;  // For a !ID (will be set into)
+   *    ARY   =1;
+   *    STR   =2;
+   *    NUM   =3;
+   *    FUN   =4;
+   *    SPAN  =5;  // something like 1:10
+   *    SERIES=6;  // something like c(1:10, 90, 230:500) ...
    *
    *  Symbol Table Permissions:
    *  -------------------------
@@ -548,6 +550,8 @@ class ValStr extends Val {
   @Override String value() { return _s; }
 }
 
+
+//TODO: add in a boolean field for exclusion
 class ValSpan extends Val {
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
@@ -569,6 +573,7 @@ class ValSpan extends Val {
   }
 }
 
+//TODO: add in a boolean field for exclusion
 class ValSeries extends Val {
   final long[] _idxs;
   final ASTSpan[] _spans;

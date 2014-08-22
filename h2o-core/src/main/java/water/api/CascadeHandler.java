@@ -8,7 +8,7 @@ import water.cascade.Env;
 import water.fvec.Frame;
 import water.util.Log;
 
-class CascadeHandler extends Handler<Cascade, CascadeV1>{
+class CascadeHandler extends Handler<Cascade, CascadeV1> {
 
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
@@ -21,20 +21,18 @@ class CascadeHandler extends Handler<Cascade, CascadeV1>{
   protected static final class Cascade extends Iced {
     // Inputs
     String _ast; // A Lisp-like ast.
+    //TODO: String[] _funs //
 
     //Outputs
-    @API(help="Parsing error, if any") String _error;
-    @API(help="Result key"           ) Key _key;
-    @API(help="Rows in Frame result" ) long _num_rows;
-    @API(help="Columns in Frame result" ) int  _num_cols;
-    @API(help="Scalar result"        ) double _scalar;
-    @API(help="Const String result")   String _string;
-    @API(help="Function result"      ) String _funstr;
-    @API(help="Column Names")          String[] _col_names;
-    // Pretty-print of result.  For Frames, first 10 rows.  For scalars, just the
-    // value.  For functions, the pretty-printed AST.
-    @API(help="String result"        ) String _result;
-
+    String _error;
+    Key      _key;
+    long     _num_rows;
+    int      _num_cols;
+    double   _scalar;
+    String   _string;
+    String   _funstr;
+    String[] _col_names;
+    String   _result;
   }
 
   CascadeV1 exec(int version, Cascade cascade) {
