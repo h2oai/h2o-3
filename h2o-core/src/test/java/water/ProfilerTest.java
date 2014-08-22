@@ -6,6 +6,7 @@ import org.junit.*;
 import water.util.JProfile;
 
 public class ProfilerTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
   public ProfilerTest() { super(3); }
 
   @Test public void testProfiler() {
