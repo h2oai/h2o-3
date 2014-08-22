@@ -488,6 +488,15 @@ public class Frame extends Lockable {
     unlock(null);
   }
 
+  // Return an array of Chunks, by chunk#
+  public Chunk[] getChunks( int cidx ) {
+    Vec vecs[] = vecs();
+    Chunk chks[] = new Chunk[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      chks[i] = vecs[i].chunkForChunkIdx(cidx);
+    return chks;
+  }
+
   // --------------------------------------------------------------------------
   // In support of R, a generic Deep Copy & Slice.
   // Semantics are a little odd, to match R's.
