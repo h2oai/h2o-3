@@ -43,7 +43,8 @@ public class NetworkTest {
     microseconds = new double[msg_sizes.length][];
     microseconds_collective = new double[msg_sizes.length];
     NetworkTester nt = new NetworkTester(msg_sizes, microseconds, microseconds_collective, repeats, serial, collective);
-    nt.compute2();
+    H2O.submitTask(nt);
+    nt.join();
 
     // compute bandwidths from timing results
     bandwidths = new double[msg_sizes.length][];
@@ -75,11 +76,6 @@ public class NetworkTest {
     public int repeats = 10;
     boolean serial;
     boolean collective;
-
-    @Override
-    public byte priority() {
-      return H2O.MIN_HI_PRIORITY;
-    }
 
     public NetworkTester(int[] msg, double[][] res, double[] res_collective, int rep, boolean serial, boolean collective) {
       microseconds = res;
@@ -116,9 +112,8 @@ public class NetworkTest {
   private static class PingPongTask extends DTask<PingPongTask> {
     private final byte[] _payload;
 
-    public PingPongTask(int msg_size){
-      _payload = new byte[msg_size];
-      new Random().nextBytes(_payload);
+    public PingPongTask(byte[] payload){
+      _payload = payload;
     }
     @Override public void compute2() {
       tryComplete();
@@ -135,13 +130,15 @@ public class NetworkTest {
    * @return Time in nanoseconds that it took to send and receive the message (one per node)
    */
   private static double[] send_recv_all(int msg_size, int repeats) {
-    PingPongTask ppt = new PingPongTask(msg_size); //same payload for all nodes
+    byte[] payload = new byte[msg_size];
+    new Random().nextBytes(payload);
     final int siz = H2O.CLOUD.size();
     double[] times = new double[siz];
     for (int i = 0; i < siz; ++i) { //loop over compute nodes
       H2ONode node = H2O.CLOUD._memary[i];
       Timer t = new Timer();
       for (int l = 0; l < repeats; ++l) {
+        PingPongTask ppt = new PingPongTask(payload); //same payload for all nodes
         new RPC<>(node, ppt).call().get(); //blocking send
       }
       times[i] = (double) t.nanos() / repeats;
