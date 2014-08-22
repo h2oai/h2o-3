@@ -227,4 +227,40 @@ public class NetworkTest {
     }
     return true;
   }
+
+  public boolean toASCII(StringBuilder sb) {
+    try {
+      sb.append("Origin: " + H2O.SELF._key);
+
+      sb.append("\n");
+      sb.append("Destination / Message Size\t");
+      for (int msg_size : msg_sizes) {
+        sb.append("        ").append(PrettyPrint.bytes(msg_size)).append("             ");
+      }
+
+      sb.append("\n");
+      sb.append("All (broadcast & reduce)");
+      sb.append("\t");
+      for (int m = 0; m < msg_sizes.length; ++m) {
+        sb.append("    ").append(PrettyPrint.usecs((long) microseconds_collective[m])).append(", ").
+                append(PrettyPrint.bytesPerSecond((long)bandwidths_collective[m])).append("    ");
+        sb.append("\t");
+      }
+
+      for (int n = 0; n < H2O.CLOUD._memary.length; ++n) {
+
+        sb.append("\n");
+        sb.append(H2O.CLOUD._memary[n]._key);
+        sb.append("    \t");
+        for (int m = 0; m < msg_sizes.length; ++m) {
+          sb.append("    ").append(PrettyPrint.usecs((long) microseconds[m][n])).append(", ").
+                  append(PrettyPrint.bytesPerSecond((long)bandwidths[m][n])).append("   ");
+          sb.append("\t");
+        }
+      }
+    } catch (Throwable t) {
+      return false;
+    }
+    return true;
+  }
 }
