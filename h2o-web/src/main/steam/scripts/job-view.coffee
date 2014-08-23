@@ -8,9 +8,9 @@ Steam.JobView = (_, _jobItem) ->
           #TODO
           _.error 'Error inspecting job result', _jobItem.destinationKey, error
         else
-          switch result.className 
-            when 'water.fvec.Frame'
-              jobResult = type: 'frame', key: _jobItem.destinationKey
+          switch result.kind
+            when 'frame'
+              jobResult = kind: result.kind, key: _jobItem.destinationKey
               _jobItem.result jobResult
               go jobResult
     else
@@ -18,7 +18,7 @@ Steam.JobView = (_, _jobItem) ->
 
   viewResult = ->
     getJobResult (jobResult) ->
-      switch jobResult.type
+      switch jobResult.kind
         when 'frame'
           _.switchToFrames type: 'one', key: jobResult.key
 
