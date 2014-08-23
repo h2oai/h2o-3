@@ -67,16 +67,21 @@ public abstract class JarHash {
   // from a possible local dev build.
   public static InputStream getResource2(String uri) {
     try {
-      // Jar file mode.
-      InputStream is = null;
-      is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
-      if( is != null ) return is;
-      is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
-      if( is != null ) return is;
-      // This is the right file location of resource inside jar bundled by gradle
-      is = ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
-      if( is != null ) return is;
-      // That failed, so try all registered locations
+      // If -Dwebdev=1 is set in VM args, we're in front end dev mode, so skip the class loader.
+      // This is to allow the front end scripts/styles/templates to be loaded from the build
+      //  directory during development.
+      if (System.getProperty("webdev") == null) {
+        // Jar file mode.
+        InputStream is = null;
+        is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
+        if (is != null) return is;
+        is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
+        if (is != null) return is;
+        // This is the right file location of resource inside jar bundled by gradle
+        is = ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
+        if (is != null) return is;
+        // That failed, so try all registered locations
+      }
       for( File f : RESOURCE_FILES ) {
         File f2 = new File(f,uri);
         if( f2.exists() )
