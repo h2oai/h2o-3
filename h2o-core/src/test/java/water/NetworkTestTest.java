@@ -14,9 +14,6 @@ public class NetworkTestTest extends TestUtil {
     NetworkTest nt = new NetworkTest();
     nt.execImpl();
     nt.toHTML(new StringBuilder());
-    StringBuilder sb = new StringBuilder();
-    nt.toASCII(sb);
-    Log.info(sb);
     assertEquals(nt.nodes.length,H2O.CLOUD.size());
     assertTrue(nt.bandwidths.length == nt.msg_sizes.length);
     assertTrue(nt.microseconds.length == nt.msg_sizes.length);

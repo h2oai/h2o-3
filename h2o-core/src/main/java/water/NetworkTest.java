@@ -2,6 +2,7 @@ package water;
 
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.Timer;
 
@@ -66,6 +67,9 @@ public class NetworkTest {
     nodes = new String[H2O.CLOUD.size()];
     for (int i=0; i<nodes.length; ++i)
       nodes[i] = H2O.CLOUD._memary[i]._key.toString();
+    StringBuilder sb = new StringBuilder();
+    toASCII(sb);
+    Log.info(sb);
   }
 
   // Helper class to run the actual test
@@ -112,7 +116,7 @@ public class NetworkTest {
   private static class PingPongTask extends DTask<PingPongTask> {
     private final byte[] _payload;
 
-    public PingPongTask(byte[] payload){
+    public PingPongTask(byte[] payload) {
       _payload = payload;
     }
     @Override public void compute2() {
@@ -240,7 +244,7 @@ public class NetworkTest {
       sb.append("\t");
       for (int m = 0; m < msg_sizes.length; ++m) {
         sb.append("    ").append(PrettyPrint.usecs((long) microseconds_collective[m])).append(", ").
-                append(PrettyPrint.bytesPerSecond((long)bandwidths_collective[m])).append("    ");
+                append(PrettyPrint.bytesPerSecond((long) bandwidths_collective[m])).append("    ");
         sb.append("\t");
       }
 
@@ -251,7 +255,7 @@ public class NetworkTest {
         sb.append("    \t");
         for (int m = 0; m < msg_sizes.length; ++m) {
           sb.append("    ").append(PrettyPrint.usecs((long) microseconds[m][n])).append(", ").
-                  append(PrettyPrint.bytesPerSecond((long)bandwidths[m][n])).append("   ");
+                  append(PrettyPrint.bytesPerSecond((long) bandwidths[m][n])).append("   ");
           sb.append("\t");
         }
       }
