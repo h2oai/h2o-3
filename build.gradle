@@ -10,7 +10,7 @@ apply from: 'gradle/java.gradle'
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
 apply from: 'gradle/release.gradle'
 
-// The build scrit settings to fetch plugins and put them on 
+// The build script settings to fetch plugins and put them on
 // classpath
 buildscript {
     repositories {
@@ -24,6 +24,9 @@ buildscript {
     }
 }
 
+//
+// For all projects (this and all subprojects) specify common properties and tasks
+//
 allprojects {
     group = 'ai.h2o'
 
