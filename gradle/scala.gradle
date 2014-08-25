@@ -1,0 +1,14 @@
+apply plugin: 'scala'
+
+// Specify properties
+ext {
+  scalaVersion = '2.10.4'
+}
+
+// Activate Zinc compiler
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.useCompileDaemon = false
+    scalaCompileOptions.useAnt = false
+    scalaCompileOptions.additionalParameters = ['-target:jvm-1.6']
+}
+
