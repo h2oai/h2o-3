@@ -253,7 +253,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     }
 
     //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
-    private DataInfo(Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
+    public DataInfo(Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
       _adaptedFrame = fr;
       _catOffsets = MemoryManager.malloc4(catLevels.length+1);
       _catMissing = new int[catLevels.length];
