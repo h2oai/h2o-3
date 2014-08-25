@@ -38,11 +38,9 @@ parseDelimiters = do ->
     "' ' SPACE"
   ]
 
-  format02d = d3.format '02d'
-  
   createDelimiter = (caption, charCode) ->
     charCode: charCode
-    caption: "#{caption}: '#{format02d charCode}'"
+    caption: "#{caption}: '#{('00' + charCode).slice(-2)}'"
 
   whitespaceDelimiters = map whitespaceSeparators, createDelimiter
 

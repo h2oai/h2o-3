@@ -1,3 +1,7 @@
+_ = require 'lodash'
+httpRequest = require 'request'
+test = require 'tape'
+
 dumpAssertion = (path, value) ->
   if isUndefined value
     console.log "t.ok (isUndefined #{path}), '#{path} is undefined'"

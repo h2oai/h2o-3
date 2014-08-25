@@ -1,4 +1,5 @@
 gulp = require 'gulp'
+through = require 'through2'
 clean = require 'gulp-clean'
 concat = require 'gulp-concat'
 iff = require 'gulp-if'
@@ -12,6 +13,10 @@ coffee = require 'gulp-coffee'
 jade = require 'gulp-jade'
 stylus = require 'gulp-stylus'
 nib = require 'nib'
+
+clog = through.obj (file, enc, cb) ->
+  console.log file.path
+  cb()
 
 config =
   dir:
@@ -48,9 +53,20 @@ config =
 
 gulp.task 'build-browser-script', ->
   gulp.src 'src/main/steam/scripts/*.coffee'
-    .pipe iff /\.global\.coffee$/, (coffee bare: yes), (coffee bare: no)
-    .pipe order [ 'prelude.global.js', '*.global.js', '*.js' ]
+    .pipe ignore.exclude /tests.coffee$/
+    .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
+    .pipe order [ 'global.prelude.js', 'global.*.js', '*.js' ]
     .pipe concat 'steam.js'
+    .pipe header '"use strict";(function(){'
+    .pipe footer '}).call(this);'
+    .pipe gulp.dest config.dir.deploy + 'js/'
+
+gulp.task 'build-unit-test-script', ->
+  gulp.src 'src/main/steam/scripts/*.coffee'
+    .pipe ignore.exclude /system\-tests.coffee$/
+    .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
+    .pipe order [ 'global.node.unit-tests.js', 'global.prelude.js', 'global.*.js', '*.js' ]
+    .pipe concat 'steam-unit-tests.js'
     .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
@@ -100,6 +116,7 @@ gulp.task 'clean', ->
 gulp.task 'build', [ 
   'compile-browser-assets'
   'build-browser-script'
+  'build-unit-test-script'
   'build-templates'
   'build-styles'
 ]
