@@ -1,7 +1,6 @@
+###
 test 'FrameListView: should display all frames when no predicate is applied', (t) ->
-  _ = Steam.ApplicationContext()
-  Steam.Xhr _
-  Steam.H2OProxy _
+  _ = createContext()
   frameListView = Steam.FrameListView _
 
   link$ _.framesLoaded, ->
@@ -88,4 +87,4 @@ test 'FrameListView: Clicking on a frame item marks it as active and launches th
     t.ok item0.isActive() is no and item1.isActive() is yes and item2.isActive() is no, 'item1 is active'
 
   _.loadFrames type: 'all'
-
+###

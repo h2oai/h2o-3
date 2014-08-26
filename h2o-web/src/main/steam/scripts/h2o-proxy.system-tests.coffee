@@ -1,3 +1,4 @@
+###
 t_h2o_response = T
   h2o_response:
     h2o: T.str
@@ -177,4 +178,4 @@ test 'requestModelAndCompatibleFrames', (t) ->
       t.equal model.key, modelKey
       t.ok model.compatible_frames.length > 0
       t.end()
-
+###
