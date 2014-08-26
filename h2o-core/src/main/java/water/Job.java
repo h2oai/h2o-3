@@ -67,7 +67,7 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Returns true if the job was cancelled by the user or crashed.
    *  @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#FAILED} */
-  private boolean isCancelledOrCrashed() {
+  public boolean isCancelledOrCrashed() {
     return _state == JobState.CANCELLED || _state == JobState.FAILED;
   }
 

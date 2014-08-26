@@ -1,5 +1,7 @@
 package water.util;
 
+import static java.lang.Double.isNaN;
+
 import java.util.concurrent.TimeUnit;
 
 public class PrettyPrint {
@@ -103,5 +105,12 @@ public class PrettyPrint {
     long hi0 = (hi>>48)&0xFFFFL;
     long hi1 = (hi>> 0)&0xFFFFFFFFFFFFL;
     return String.format("%08X-%04X-%04X-%04X-%012X",lo0,lo1,lo2,hi0,hi1);
+  }
+
+  public static String formatPct(double pct) {
+    String s = "N/A";
+    if( !isNaN(pct) )
+      s = String.format("%5.2f %%", 100 * pct);
+    return s;
   }
 }

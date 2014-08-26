@@ -39,6 +39,8 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Sum squared distance between each point and its cluster center, divided by rows.
     public double _mse;           // Total MSE, variance
 
+    @Override public int nfeatures() { return _names.length; }
+
     @Override public ModelCategory getModelCategory() {
       return Model.ModelCategory.Clustering;
     }

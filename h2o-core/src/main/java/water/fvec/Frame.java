@@ -67,6 +67,38 @@ public class Frame extends Lockable {
   // Append a Frame
   public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
 
+  /** Appends an entire Frame */
+  public Frame add( Frame fr, String names[] ) {
+    assert _vecs.length==0 || (anyVec().group().equals(fr.anyVec().group()) || Arrays.equals(anyVec()._espc,fr.anyVec()._espc)): "Adding a vector from different vector group. Current frame contains "+Arrays.toString(_names)+ " vectors. New frame contains "+Arrays.toString(fr.names()) + " vectors.";
+    if( _names != null && fr._names != null )
+      for( String name : names )
+        if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
+    final int len0= _names!=null ? _names.length : 0;
+    final int len1=  names!=null ?  names.length : 0;
+    final int len = len0+len1;
+    // Note: _names==null <=> _vecs==null <=> _keys==null
+    _names = _names != null ? Arrays.copyOf(_names,len) : new String[len];
+    _vecs  = _vecs  != null ? Arrays.copyOf(_vecs ,len) : new Vec   [len];
+    _keys  = _keys  != null ? Arrays.copyOf(_keys ,len) : new Key   [len];
+    System.arraycopy(    names,0,_names,len0,len1);
+    System.arraycopy(fr._vecs ,0,_vecs ,len0,len1);
+    System.arraycopy(fr._keys ,0,_keys ,len0,len1);
+    return this;
+  }
+
+  public Frame add( Frame fr, boolean rename ) {
+    if( !rename ) return add(fr,fr._names);
+    String names[] = new String[fr._names.length];
+    for( int i=0; i<names.length; i++ ) {
+      String name = fr._names[i];
+      int cnt=0;
+      while( find(name) != -1 )
+        name = fr._names[i]+(cnt++);
+      names[i] = name;
+    }
+    return add(fr,names);
+  }
+
   // Allow sorting of columns based on some function
   public void swap( int lo, int hi ) {
     assert 0 <= lo && lo < _keys.length;

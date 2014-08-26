@@ -16,6 +16,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
   protected float[] _modelClassDist;
   public void setModelClassDistribution(float[] classdist) { _modelClassDist = classdist.clone(); }
 
+  public boolean isSupervised() { return true; }
+
   public SupervisedModel( Key selfKey, Frame fr, P parms, O output, float[] priorClassDist ) {
     this(selfKey,fr.names(),fr.domains(),parms,output,priorClassDist);
   }
