@@ -1,6 +1,6 @@
 Steam.Application = (_) ->
 
-  if window
+  unless exports?
     Steam.ErrorMonitor _
     Steam.TextMetrics _
     Steam.CalloutManager _

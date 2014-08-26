@@ -56,7 +56,7 @@ Steam.ApplicationContext = ->
     requestModel: do edge$
     requestModelAndCompatibleFrames: do edge$
     requestJobs: do edge$
-    requestJobPoll: do edge$
+    requestJob: do edge$
     requestCloud: do edge$
     requestTimeline: do edge$
 

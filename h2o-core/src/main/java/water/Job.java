@@ -251,4 +251,6 @@ public class Job<T extends Keyed> extends Keyed {
     }.fork(jobkey);
   }
 
+  public static class JobCancelledException extends RuntimeException{}
+
 }

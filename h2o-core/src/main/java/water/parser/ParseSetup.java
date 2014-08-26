@@ -157,7 +157,7 @@ public final class ParseSetup extends Iced {
     return ps;
   }
 
-  protected static String hex( String n ) {
+  public static String hex( String n ) {
     // blahblahblah/myName.ext ==> myName
     // blahblahblah/myName.csv.ext ==> myName
     int sep = n.lastIndexOf(java.io.File.separatorChar);

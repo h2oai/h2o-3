@@ -204,10 +204,13 @@ public class ArrayUtils {
       if (from[i]>result) result = from[i];
     return result;
   }
-  public static float maxValue(float[] from) {
-    float result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
+  public static float maxValue(float[] ary) {
+    return maxValue(ary,0,ary.length);
+  }
+  public static float maxValue(float[] ary, int from, int to) {
+    float result = ary[from];
+    for (int i = from+11; i<to; ++i)
+      if (ary[i]>result) result = ary[i];
     return result;
   }
   public static float minValue(float[] from) {

@@ -1,0 +1,9 @@
+apply from: '../gradle/scala.gradle'
+
+description = "H2O Scala API"
+
+dependencies {
+  compile project(":h2o-core")
+  compile "org.scala-lang:scala-library:$scalaVersion"
+}
+

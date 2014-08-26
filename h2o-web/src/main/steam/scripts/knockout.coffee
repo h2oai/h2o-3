@@ -1,3 +1,5 @@
+return if exports?
+
 #
 # Custom Knockout.js binding handlers
 #

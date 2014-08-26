@@ -1,13 +1,7 @@
 Steam.H2OProxy = (_) ->
-  composePath = (path, opts) ->
-    if opts
-      params = mapWithKey opts, (v, k) -> "#{k}=#{v}"
-      path + '?' + join params, '&'
-    else
-      path
 
-  request = (path, opts, go) ->
-    _.invokeH2O 'GET', (composePath path, opts), (error, result) ->
+  request = (path, go) ->
+    _.invokeH2O 'GET', path, (error, result) ->
       if error
         #TODO error logging / retries, etc.
         go error, result
@@ -17,15 +11,25 @@ Steam.H2OProxy = (_) ->
         else
           go error, result.data
 
+  composePath = (path, opts) ->
+    if opts
+      params = mapWithKey opts, (v, k) -> "#{k}=#{v}"
+      path + '?' + join params, '&'
+    else
+      path
+
+  requestWithOpts = (path, opts, go) ->
+    request (composePath path, opts), go
+
   requestTypeaheadFiles = (path, limit, go) ->
     opts =
       src: encodeURIComponent path
       limit: limit
-    request '/Typeahead.json/files', opts, go
+    requestWithOpts '/Typeahead.json/files', opts, go
 
   requestImportFile = (path, go) ->
     opts = path: encodeURIComponent path
-    request '/ImportFiles.json', opts, go
+    requestWithOpts '/ImportFiles.json', opts, go
 
   requestImportFiles = (paths, go) ->
     actions = map paths, (path) ->
@@ -38,7 +42,7 @@ Steam.H2OProxy = (_) ->
     encodedPaths = map sources, encodeURIComponent
     opts =
       srcs: "[#{join encodedPaths, ','}]"
-    request '/ParseSetup.json', opts, go
+    requestWithOpts '/ParseSetup.json', opts, go
 
   encodeArray = (array) -> "[#{join (map array, encodeURIComponent), ','}]"
 
@@ -53,16 +57,16 @@ Steam.H2OProxy = (_) ->
       columnNames: encodeArray columnNames
       checkHeader: checkHeader
       delete_on_done: deleteOnDone
-    request '/Parse.json', opts, go
+    requestWithOpts '/Parse.json', opts, go
 
   requestInspect = (key, go) ->
     opts = key: encodeURIComponent key
-    request '/Inspect.json', opts, go
+    requestWithOpts '/Inspect.json', opts, go
 
   filterOutUnhandledModels = (models) -> filter models, (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
 
   requestFrames = (go, opts) ->
-    request '/3/Frames.json', opts, (error, result) ->
+    requestWithOpts '/3/Frames.json', opts, (error, result) ->
       if error
         go error, result
       else
@@ -83,7 +87,7 @@ Steam.H2OProxy = (_) ->
         go error, result.frames
 
   requestModels = (go, opts) ->
-    request '/2/Models.json', opts, (error, result) ->
+    requestWithOpts '/2/Models.json', opts, (error, result) ->
       if error
         go error, result
       else
@@ -102,21 +106,26 @@ Steam.H2OProxy = (_) ->
         go error, response: response, models: filterOutUnhandledModels values models
 
   requestJobs = (go) ->
-    request '/Jobs.json', null, (error, result) ->
+    request '/Jobs.json', (error, result) ->
       if error
         go error, result
       else
         go error, result.jobs
 
-  requestJobPoll = (key, go) ->
-    opts = key: encodeURIComponent key
-    request '/Job.json', opts, go
+  requestJob = (key, go) ->
+    #opts = key: encodeURIComponent key
+    #requestWithOpts '/Job.json', opts, go
+    request "/Jobs.json/#{encodeURIComponent key}", (error, result) ->
+      if error
+        go error, result
+      else
+        go error, result.jobs[0]
 
   requestCloud = (go) ->
-    request '/Cloud.json', null, go
+    request '/Cloud.json', go
 
   requestTimeline = (go) ->
-    request '/Timeline.json', null, go
+    request '/Timeline.json', go
 
   link$ _.requestTypeaheadFiles, requestTypeaheadFiles
   link$ _.requestImportFiles, requestImportFiles
@@ -126,9 +135,9 @@ Steam.H2OProxy = (_) ->
   link$ _.requestFrames, (go) -> requestFrames go
   link$ _.requestFramesAndCompatibleModels, (go) -> requestFrames go, find_compatible_models: yes
   link$ _.requestFrame, (key, go) ->
-    request "/3/Frames/#{encodeURIComponent key}", null, (error, result) -> go error, result.frames
+    request "/3/Frames/#{encodeURIComponent key}", (error, result) -> go error, result.frames
   link$ _.requestColumnSummary, (key, column, go) ->
-    request "/3/Frames/#{encodeURIComponent key}/columns/#{column}/summary", null, go
+    request "/3/Frames/#{encodeURIComponent key}/columns/#{column}/summary", go
   link$ _.requestFrameAndCompatibleModels, (key, go) -> requestFrames go, key: (encodeURIComponent key), find_compatible_models: yes
   #TODO test
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
@@ -137,7 +146,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestModel, (key, go) -> requestModels go, key: (encodeURIComponent key)
   link$ _.requestModelAndCompatibleFrames, (key, go) -> requestModels go, key: (encodeURIComponent key), find_compatible_frames: yes
   link$ _.requestJobs, requestJobs
-  link$ _.requestJobPoll, requestJobPoll
+  link$ _.requestJob, requestJob
   link$ _.requestCloud, requestCloud
   link$ _.requestTimeline, requestTimeline
 

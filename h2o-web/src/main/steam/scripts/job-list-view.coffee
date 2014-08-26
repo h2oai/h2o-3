@@ -55,7 +55,7 @@ Steam.JobListView = (_) ->
     job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
 
   pollJobStatus = (item)->
-    _.requestJobPoll item.data.key.name, (error, job) ->
+    _.requestJob item.data.key.name, (error, job) ->
       if error
         # Do nothing
       else

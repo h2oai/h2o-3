@@ -1,0 +1,43 @@
+// requires JAVA_6 home
+// after compilation modify class file and also verify each generated class file
+
+// Create a converter task for given compile task
+tasks.addRule("Pattern: convertToJava6Bytecode<ID>") { String taskName ->
+    if (taskName.startsWith("convertToJava6Bytecode")) {
+        task(taskName, type:Exec) {
+            // The property has to be checked here
+            commandLine "find", ".", "-name", "*.class", "-exec", "$rootDir/gradle/bin/j6patch.sh", "{}", ";"
+        }
+    }
+}
+
+tasks.withType(org.gradle.api.tasks.compile.JavaCompile) { Task t ->
+    t.finalizedBy {
+        logger.info("Installing byte code convertor for task $project.path:$t.name")
+        println("Installing byte code convertor for task $project.path:$t.name")
+        "convertToJava6Bytecode_$t.name" {
+            println t.asType(JavaCompile).destinationDir
+            workingDir = t.asType(JavaCompile).destinationDir
+            onlyIf { Task tt -> tt.project.ext.convertRequired && workingDir.exists() }
+        }
+    }
+}
+
+// By default convert to Java6 bytecode is disabled, enable only if specified tasks are in
+// execution graph
+project.ext.convertRequired = false
+
+// Convert class files to Java 6 byte code only if given tasks are in execution
+// graph for this project
+public def convertOnlyWhen(String ... taskNames) {
+    gradle.taskGraph.whenReady { graph ->
+        // Enable only if any of specified tasks appears
+        project.ext.convertRequired |= taskNames.any { String tn -> graph.hasTask("$project.path:$tn") }
+        if (project.ext.convertRequired && !System.env["JAVA_6_HOME"])
+            throw new GradleException("JAVA_6_HOME property is missing! It is required to convert Java7 to Java6 bytecode!")
+    }
+}
+
+// FIXME: should be installed by a caller not here in plugin definition
+// Install Java6 bytecode converter only if tasks are in execution DAG
+convertOnlyWhen("install", "uploadArchives")
