@@ -121,11 +121,25 @@ public class Vec extends Keyed {
     if( (long)d==d ) return makeCon((long)d);
     final int nchunks = nChunks();
     final Vec v0 = new Vec(group().addVec(),_espc);
-    throw H2O.unimpl();
+
+    new MRTask() {              // Body of all zero chunks
+      @Override protected void setupLocal() {
+        for( int i=0; i<nchunks; i++ ) {
+          Key k = v0.chunkKey(i);
+          if( k.home() ) DKV.put(k,new C0DChunk(d,v0.chunkLen(i)),_fs);
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v0._key,v0);        // Header last
+    return v0;
   }
 
+  public Vec [] makeZeros(int n){return makeZeros(n,null,null,null,null);}
+
+  public Vec [] makeZeros(int n, String [][] domain, boolean[] uuids, boolean[] strings, byte[] times){ return makeCons(n, 0, domain, uuids, strings, times);}
+
   // Make a bunch of compatible zero Vectors
-  Vec[] makeZeros(int n, String[][] domains, boolean[] uuids, boolean[] strings, byte[] times) {
+  Vec[] makeCons(int n, final long l, String[][] domains, boolean[] uuids, boolean[] strings, byte[] times) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
@@ -140,7 +154,7 @@ public class Vec extends Keyed {
         for (Vec v1 : vs) {
           for (int i = 0; i < nchunks; i++) {
             Key k = v1.chunkKey(i);
-            if (k.home()) DKV.put(k, new C0LChunk(0L, chunkLen(i)), _fs);
+            if (k.home()) DKV.put(k, new C0LChunk(l, chunkLen(i)), _fs);
           }
         }
         for( Vec v : vs ) if( v._key.home() ) DKV.put(v._key,v,_fs);

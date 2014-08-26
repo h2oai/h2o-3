@@ -1,5 +1,6 @@
 package water.util;
 
+import static java.lang.Double.isNaN;
 import static water.util.RandomUtils.getDeterRNG;
 
 import java.util.Arrays;

@@ -30,6 +30,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Clustering
   }
 
+  public boolean isSupervised() { return false; }
 
   /**
    * Model-specific parameter class.  Each model sub-class contains an instance of one of
@@ -56,7 +57,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name. */
     public String _names[];
-    /** Returns number of input features */
+    /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
     public int nfeatures() { return _names.length - 1; }
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
@@ -133,7 +134,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *
    * @see #score(Frame, boolean)
    */
-  public final Frame score(Frame fr) {
+  public Frame score(Frame fr) {
     return score(fr, true);
   }
   /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st Vec is the
@@ -150,10 +151,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *         one column with predicted values.
    */
   public final Frame score(Frame fr, boolean adapt) {
-    int ridx = fr.find(_output.responseName());
-    if (ridx != -1) { // drop the response for scoring!
-      fr = new Frame(fr);
-      fr.remove(ridx);
+    if (isSupervised()) {
+      int ridx = fr.find(_output.responseName());
+      if (ridx != -1) { // drop the response for scoring!
+        fr = new Frame(fr);
+        fr.remove(ridx);
+      }
     }
     // Adapt the Frame layout - returns adapted frame and frame containing only
     // newly created vectors
@@ -176,39 +179,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * @return
    */
   private Frame scoreImpl(Frame adaptFrm) {
-    int ridx = adaptFrm.find(_output.responseName());
-    Vec vecs[] = adaptFrm.vecs();
-    assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
-    assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
-    assert vecs.length == _output._names.length-1 : "Scoring data set contains wrong number of columns: " + vecs.length  + " instead of " + (_output._names.length-1);
+    if (isSupervised()) {
+      int ridx = adaptFrm.find(_output.responseName());
+      assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
+      assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
+      assert adaptFrm.vecs().length == _output.nfeatures() : "Scoring data set contains wrong number of columns: " + adaptFrm.vecs().length + " instead of " + _output.nfeatures();
+    }
 
     // Create a new vector for response
     // If the model produces a classification/enum, copy the domain into the
     // result vector.
-    Vec v = adaptFrm.anyVec().makeZero(_output.classNames());
-    adaptFrm.add("predict",v);
-    if( _output.nclasses() > 1 ) {
-      String prefix = "";
-      for( int c=0; c<_output.nclasses(); c++ ) // if any class is the same as column name in frame, then prefix all classnames
-        if (ArrayUtils.contains(adaptFrm._names, _output.classNames()[c])) { prefix = "class_"; break; }
-      for( int c=0; c<_output.nclasses(); c++ )
-        adaptFrm.add(prefix+_output.classNames()[c],adaptFrm.anyVec().makeZero());
-    }
+    int nc = _output.nclasses();
+    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
+    if(nc > 1)
+      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
+    String [] names = new String[newVecs.length];
+    names[0] = "predict";
+    for(int i = 1; i < names.length; ++i)
+      names[i] = _output.classNames()[i-1];
+    final int num_features = _output.nfeatures();
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        double tmp [] = new double[_output._names.length];
+        double tmp [] = new double[num_features];
         float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
         int len = chks[0].len();
         for( int row=0; row<len; row++ ) {
           float p[] = score0(chks,row,tmp,preds);
           for( int c=0; c<preds.length; c++ )
-            chks[_output._names.length-1+c].set0(row,p[c]);
+            chks[num_features+c].set0(row,p[c]);
         }
       }
-    }.doAll(adaptFrm);
+    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
     // Return just the output columns
-    int x=_output._names.length-1, y=adaptFrm.numCols();
-    return adaptFrm.extractFrame(x, y);
+    return new Frame(names,newVecs);
   }
 
   /** Single row scoring, on a compatible Frame.  */
@@ -258,7 +261,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *    any enums returned by the model that the data does not have a mapping for.
    *  If 'exact' is false, these situations will use or return NA's instead.
    */
-  private int[][][] adapt( String names[], String domains[][], boolean exact) {
+  protected int[][][] adapt( String names[], String domains[][], boolean exact) {
     int maplen = names.length;
     int map[][][] = new int[maplen][][];
     // Make sure all are compatible
@@ -280,6 +283,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     return map;
   }
 
+
+  /**
+   * Type of missing columns during adaptation between train/test datasets
+   * Overload this method for models that have sparse data handling.
+   * Otherwise, NaN is used.
+   * @return real-valued number (can be NaN)
+   */
+  protected double missingColumnsType() { return Double.NaN; }
+
   /** Build an adapted Frame from the given Frame. Useful for efficient bulk
    *  scoring of a new dataset to an existing model.  Same adaption as above,
    *  but expressed as a Frame instead of as an int[][]. The returned Frame
@@ -289,18 +301,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *  second frame is to delete all adapted vectors with deletion of the
    *  frame). */
   public Frame[] adapt( final Frame fr, boolean exact) {
+    return adapt(fr, exact, true);
+  }
+
+  public Frame[] adapt( final Frame fr, boolean exact, boolean haveResponse) {
     Frame vfr = new Frame(fr); // To avoid modification of original frame fr
-    int ridx = vfr.find(_output._names[_output._names.length-1]);
-    if(ridx != -1 && ridx != vfr._names.length-1){ // Unify frame - put response to the end
-      String n = vfr._names[ridx];
-      vfr.add(n,vfr.remove(ridx));
+    int n = _output._names.length;
+    if (haveResponse && isSupervised()) {
+      int ridx = vfr.find(_output._names[_output._names.length - 1]);
+      if (ridx != -1 && ridx != vfr._names.length - 1) { // Unify frame - put response to the end
+        String name = vfr._names[ridx];
+        vfr.add(name, vfr.remove(ridx));
+      }
+      n = ridx == -1 ? _output._names.length - 1 : _output._names.length;
     }
-    int n = ridx == -1?_output._names.length-1:_output._names.length;
-    String [] names = Arrays.copyOf(_output._names, n);
+    String [] names = isSupervised() ? Arrays.copyOf(_output._names, n) : _output._names.clone();
     Frame  [] subVfr;
     // replace missing columns with NaNs (or 0s for DeepLearning with sparse data)
-    // subVfr = vfr.subframe(names, (this instanceof DeepLearningModel && ((DeepLearningModel)this).get_params().sparse) ? 0 : Double.NaN);
-    subVfr = vfr.subframe(names, Double.NaN);
+    subVfr = vfr.subframe(names, missingColumnsType());
     vfr = subVfr[0]; // extract only subframe but keep the rest for delete later
     Vec[] frvecs = vfr.vecs();
     boolean[] toEnum = new boolean[frvecs.length];
@@ -318,7 +336,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       if(map[c] != null) { // Column needs adaptation
         Vec adaptedVec;
         if (toEnum[c]) { // Vector was flipped to column already, compose transformation
-          adaptedVec = TransfVec.compose((TransfVec) frvecs[c], map[c], vfr.domains()[c], false);
+          adaptedVec = TransfVec.compose( (TransfVec) frvecs[c], map[c], vfr.domains()[c], false);
         } else adaptedVec = frvecs[c].makeTransf(map[c], vfr.domains()[c]);
         avecs.add(frvecs[c] = adaptedVec);
         anames.add(names[c]); // Collect right names
@@ -328,7 +346,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       }
     // Fill trash bin by vectors which need to be deleted later by the caller.
     Frame vecTrash = new Frame(anames.toArray(new String[anames.size()]), avecs.toArray(new Vec[avecs.size()]));
-//    if (subVfr[1]!=null) vecTrash.add(subVfr[1], true);
+    if (subVfr[1]!=null) vecTrash.add(subVfr[1], true);
     return new Frame[] { new Frame(names,frvecs), vecTrash };
   }
 
