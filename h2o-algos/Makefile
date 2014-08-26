@@ -2,8 +2,8 @@
 # Source code
 main_javas = $(wildcard src/main/java/hex/*java src/main/java/hex/*/*java)
 test_javas = $(wildcard src/test/java/hex/*java src/test/java/hex/*/*java)
-main_classes = $(patsubst src/main/java/%java,build/classes/%class,$(main_javas))
-test_classes = $(patsubst src/test/java/%java,build/classes/%class,$(test_javas))
+main_classes = $(patsubst src/main/java/%java,build/classes/main/%class,$(main_javas))
+test_classes = $(patsubst src/test/java/%java,build/classes/test/%class,$(test_javas))
 classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
@@ -40,7 +40,7 @@ default: build/h2o-algos.jar
 classes: $(classes)
 
 
-JVM = java -ea -cp "build/classes$(SEP)$(jars)" 
+JVM = java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
 # deep learning tests turned off as they are currently not working
 #JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest
 JUNIT_TESTS = hex.kmeans.KMeansTest hex.example.ExampleTest
@@ -53,19 +53,22 @@ check: $(classes)
 	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
-$(main_classes): build/classes/%class: src/main/java/%java
+$(main_classes): build/classes/main/%class: src/main/java/%java
 	@echo "compiling " $?
-	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(main_javas)
+	@[ -d build/classes/main ] || mkdir -p build/classes/main
+	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/main $(main_javas)
 
-$(test_classes): build/classes/%class: src/test/java/%java
+$(test_classes): build/classes/test/%class: src/test/java/%java
 	@echo "compiling " $?
-	@[ -d build/classes ] || mkdir -p build/classes
-	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(test_javas)
+	@[ -d build/classes/test ] || mkdir -p build/classes/test
+	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/test $(test_javas)
 
 # Build the h2o-algos.jar file
-build/h2o-algos.jar: $(classes)
-	@jar -cf build/h2o-algos.jar -C build/classes .
+build/h2o-algos.jar: $(main_classes)
+	@jar -cf build/h2o-algos.jar -C build/classes/main .
+
+build/test-h2o-algos.jar: $(test_classes)
+	@jar -cf build/test-h2o-algos.jar -C build/classes/test .
 
 
 .PHONY: clean

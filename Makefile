@@ -25,6 +25,8 @@ h2o-core: build/BuildVersion.java
 # h2o-algos needs h2o-core
 h2o-algos: h2o-core
 
+h2o-scala: h2o-core
+
 h2o-app: h2o-core h2o-algos h2o-web
 
 # R-integration requires H2O to be built first

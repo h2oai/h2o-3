@@ -504,7 +504,7 @@ public class Env extends Iced {
     return res;
   }
 
-  AST lookup(ASTId id) {
+  AST lookup(water.cascade.ASTId id) {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());

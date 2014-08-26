@@ -34,7 +34,7 @@ else
 endif
 
 # Jars, with OS-specific separators
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-core/build/h2o-algos.jar
+jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-algos/build/h2o-algos.jar
 
 # Default build: the h2o-scala jar file
 default: build/h2o-scala.jar
@@ -69,12 +69,12 @@ check_slow: $(classes)
 $(main_classes): build/classes/%class: src/main/scala/%scala
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/main $(main_scalas)
+	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes $(main_scalas)
 
 $(test_classes): build/classes/%class: src/test/scala/%scala $(main_classes)
 	@echo "compiling " $?
-	@[ -d build/classes/main ] || mkdir -p build/classes/main
-	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/main $(test_scalas)
+	@[ -d build/classes ] || mkdir -p build/classes
+	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/test/scala -d build/classes $(test_scalas)
 
 # Build the h2o-scala.jar file
 build/h2o-scala.jar: $(classes)

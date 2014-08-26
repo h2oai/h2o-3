@@ -60,7 +60,7 @@ $(main_classes): build/classes/%class: src/main/java/%java
 # H2O names win over all other names.
 #	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 build/h2o-web.jar: $(classes) ../h2o-algos/build/h2o-algos.jar ../h2o-core/build/h2o-core.jar
-	@mkdir -p build/tmp
+	@rm -rf build/tmp ; mkdir -p build/tmp
 	@(cd build/tmp; jar xf ../../../h2o-algos/build/h2o-algos.jar; jar xf ../../../h2o-core/build/h2o-core.jar )
 	@jar -cfm build/h2o-web.jar manifest.txt -C build/classes . -C build/tmp .
 	@rm -rf build/tmp
