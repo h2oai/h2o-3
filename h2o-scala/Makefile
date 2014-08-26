@@ -69,22 +69,16 @@ check_slow: $(classes)
 $(main_classes): build/classes/%class: src/main/scala/%scala
 	@echo "compiling " $?
 	@[ -d build/classes ] || mkdir -p build/classes
-	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes $(main_scalas)
+	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/main $(main_scalas)
 
 $(test_classes): build/classes/%class: src/test/scala/%scala $(main_classes)
 	@echo "compiling " $?
-	@[ -d build/classes ] || mkdir -p build/classes
-	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes $(test_scalas)
+	@[ -d build/classes/main ] || mkdir -p build/classes/main
+	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/main $(test_scalas)
 
 # Build the h2o-scala.jar file
-# All included jars are unpacked into a flat structure, then repacked into One Jar
-# Name collisions amongst packages are quietly ignored.
-# H2O names win over all other names.
 build/h2o-scala.jar: $(classes)
-	@mkdir -p build/tmp
-	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
-	@jar -cfm build/h2o-scala.jar manifest.txt -C build/classes . -C build/tmp . -C src/main resources
-	@rm -rf build/tmp
+	@jar -cf build/h2o-scala.jar -C build/classes .
 
 
 .PHONY: clean
