@@ -81,4 +81,5 @@ installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
 buildClientWithGulp.dependsOn installBowerPackages
 processResources.dependsOn buildClientWithGulp
+cleanClientWithGulp.dependsOn installBowerPackages
 clean.dependsOn cleanClientWithGulp
