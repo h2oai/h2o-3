@@ -21,7 +21,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   public DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(input,fraction,null);}
   private DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
-    super(input.get_params(),input.data_info(),cmp);
+    super(input.get_params().self(),input.data_info(),cmp);
     _training=true;
     _input=input;
     _useFraction=fraction;
