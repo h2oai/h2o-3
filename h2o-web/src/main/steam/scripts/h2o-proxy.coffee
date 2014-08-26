@@ -1,5 +1,4 @@
 Steam.H2OProxy = (_) ->
-
   request = (path, go) ->
     _.invokeH2O 'GET', path, (error, result) ->
       if error
