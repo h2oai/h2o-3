@@ -8,23 +8,22 @@ def getOsSpecificCommandLine(args) {
   return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
 }
 
-def checkPrerequisite(name, message) {
+def checkPrerequisite(name) {
   def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
   def command = prefix + name + ' -v'
   def proc
-  def success = true
   try {
     proc = command.execute()
     if (proc != null) {
       proc.waitFor()
     }
   } catch(e) {
-    success = false
-    throw new StopExecutionException(message)
+    return -1
   }
-  if (!success || proc == null || (proc != null && proc.exitValue() != 0)) {
-    throw new StopExecutionException(message)
+  if (proc == null || (proc != null && proc.exitValue() != 0)) {
+    return -1
   }
+  return 0
 }
 
 task checkClientPrerequisites {
@@ -44,8 +43,29 @@ Windows:
 Use the official installer at http://nodejs.org/download/
 
 """
-  checkPrerequisite( 'node', 'Could not detect a node.js installation on this system.\nInstall node.js and try again.\n' + nodeInstallationInstruction )
-  checkPrerequisite( 'npm', "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction )
+  
+  def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
+  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
+  
+  if (checkPrerequisite('node') != 0) {
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+      if (checkPrerequisite('/usr/local/bin/node') != 0) {
+        throw new StopExecutionException(nodeFailureMessage)
+      }
+    } else {
+      throw new StopExecutionException(nodeFailureMessage)
+    }
+  }
+
+  if (checkPrerequisite('npm') != 0) {
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+      if (checkPrerequisite('/usr/local/bin/npm') != 0) {
+        throw new StopExecutionException(npmFailureMessage)
+      }
+    } else {
+      throw new StopExecutionException(npmFailureMessage)
+    }
+  }
 }
 
 task installNpmPackages(type: Exec) {
