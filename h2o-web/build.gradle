@@ -57,15 +57,15 @@ Use the official installer at http://nodejs.org/download/
     }
   }
 
-  if (checkPrerequisite('npm') != 0) {
-    if (Os.isFamily(Os.FAMILY_MAC)) {
-      if (checkPrerequisite('/usr/local/bin/npm') != 0) {
-        throw new StopExecutionException(npmFailureMessage)
-      }
-    } else {
-      throw new StopExecutionException(npmFailureMessage)
-    }
-  }
+//  if (checkPrerequisite('npm') != 0) {
+//    if (Os.isFamily(Os.FAMILY_MAC)) {
+//      if (checkPrerequisite('/usr/local/bin/npm') != 0) {
+//        throw new StopExecutionException(npmFailureMessage)
+//      }
+//    } else {
+//      throw new StopExecutionException(npmFailureMessage)
+//    }
+//  }
 }
 
 task installNpmPackages(type: Exec) {
