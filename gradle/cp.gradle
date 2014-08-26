@@ -1,7 +1,11 @@
-task cpLibs(type:Copy) { 
-    from { project.configurations.runtime }
-    from { project.configurations.testRuntime }
+task cpLibs(type:Sync) {
+    def skipFiles = { 
+      project.configurations.archives.allArtifacts.getFiles()
+    }
+
+    from { project.configurations.runtime.minus(skipFiles()) }
+    from { project.configurations.testRuntime.minus(skipFiles()) }
+    
     into "$rootDir/lib"
 }
 
-//processResources.dependsOn(xxJars)
