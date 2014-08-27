@@ -1,9 +1,9 @@
 package water;
 
 import hex.ModelBuilder;
+import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.kmeans.KMeans;
-import water.H2O;
 
 import java.io.File;
 
@@ -21,8 +21,7 @@ public class H2OApp {
     H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/src/main/resources/www"));
 
     // Register menu items and service handlers for algos
-    // H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
-    // TODO: put back: water.H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
+    H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model");
     H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"work","/Example","Example","Model");
 
@@ -30,6 +29,7 @@ public class H2OApp {
     // TODO: put back:
     // H2O.registerGET("/SlowJob", SlowJobHandler.class, "work", "/SlowJob", "Slow Job", "Model");
 
+    ModelBuilder.registerModelBuilder("deeplearning", DeepLearning.class);
     ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
     ModelBuilder.registerModelBuilder("example", Example.class);
 

@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.*;
 
 import water.*;
@@ -9,6 +10,8 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.util.Log;
+import static hex.deeplearning.DeepLearningModel.*;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 
 import java.util.Random;
 
@@ -51,9 +54,9 @@ public class DeepLearningProstateTest extends TestUtil {
                       false,
               }) {
                 for (int resp : responses[i]) {
-                  for (DeepLearning.ClassSamplingMethod csm : new DeepLearning.ClassSamplingMethod[]{
-                          DeepLearning.ClassSamplingMethod.Stratified,
-                          DeepLearning.ClassSamplingMethod.Uniform
+                  for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
+                          ClassSamplingMethod.Stratified,
+                          ClassSamplingMethod.Uniform
                   }) {
                     for (int scoretraining : new int[]{
                             200,
@@ -103,7 +106,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     dest_tmp = Key.make("first");
                                     {
                                       Log.info("Using seed: " + seed);
-                                      DeepLearning p = new DeepLearning(dest_tmp, 1);
+                                      DeepLearningParameters p = new DeepLearningParameters();
                                       p.checkpoint = null;
 
                                       p.source = frame;
@@ -130,13 +133,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
                                       try {
-                                        p.exec();
+                                        model1 = new DeepLearning(dest_tmp, p, 1).train().get();
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
                                       }
-
-                                      model1 = DKV.get(dest_tmp).get();
 
                                       if (n_folds != 0)
                                       // test HTML of cv models
@@ -155,9 +156,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                     // Do some more training via checkpoint restart
                                     // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
                                     dest = Key.make("restart");
-                                    DeepLearning p = new DeepLearning(dest, 1);
+                                    DeepLearningParameters p = new DeepLearningParameters();
                                     final DeepLearningModel tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
-                                    Assert.assertTrue(tmp_model.get_params()._state == Job.JobState.DONE); //HEX-1817
                                     Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                     assert (tmp_model != null);
 
@@ -173,7 +173,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
                                     try {
-                                      p.exec();
+                                      model1 = new DeepLearning(dest, p, 1).train().get();
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       throw new RuntimeException(t);
@@ -181,22 +181,10 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     // score and check result (on full data)
                                     model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
-                                    Assert.assertTrue(model2.get_params()._state == Job.JobState.DONE); //HEX-1817
-                                    // test HTML
-                                    {
-                                      StringBuilder sb = new StringBuilder();
-                                      model2.generateHTML("test", sb);
-                                    }
 
                                     // score and check result of the best_model
                                     if (model2.actual_best_model_key != null) {
                                       final DeepLearningModel best_model = DKV.get(model2.actual_best_model_key).get();
-                                      Assert.assertTrue(best_model.get_params()._state == Job.JobState.DONE); //HEX-1817
-                                      // test HTML
-                                      {
-                                        StringBuilder sb = new StringBuilder();
-                                        best_model.generateHTML("test", sb);
-                                      }
                                       if (override_with_best_model) {
                                         Assert.assertEquals(best_model.error(), model2.error(), 0);
                                       }

@@ -1,14 +1,22 @@
 package hex.deeplearning;
 
-import org.junit.*;
-
 import hex.FrameTask;
-import java.util.Random;
-import water.*;
-import water.fvec.*;
+import static hex.deeplearning.DeepLearningModel.*;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import water.Key;
+import water.TestUtil;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.util.Log;
 import static water.util.ModelUtils.getPrediction;
 import water.util.RandomUtils;
+
+import java.util.Random;
 
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
@@ -30,12 +38,12 @@ public class DeepLearningIrisTest extends TestUtil {
       // Note: Microsoft reference implementation is only for Tanh + MSE, rectifier and MCE are implemented by 0xdata (trivial).
       // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
-      DeepLearning.Activation[] activations = {DeepLearning.Activation.Tanh, DeepLearning.Activation.Rectifier};
-      DeepLearning.Loss[] losses = {DeepLearning.Loss.MeanSquare, DeepLearning.Loss.CrossEntropy};
-      DeepLearning.InitialWeightDistribution[] dists = {
-              DeepLearning.InitialWeightDistribution.Normal,
-              DeepLearning.InitialWeightDistribution.Uniform,
-              DeepLearning.InitialWeightDistribution.UniformAdaptive
+      Activation[] activations = {Activation.Tanh, Activation.Rectifier};
+      Loss[] losses = {Loss.MeanSquare, Loss.CrossEntropy};
+      InitialWeightDistribution[] dists = {
+              InitialWeightDistribution.Normal,
+              InitialWeightDistribution.Uniform,
+              InitialWeightDistribution.UniformAdaptive
       };
       final long seed = seed0 + repeat;
       Random rng = new Random(seed);
@@ -47,9 +55,9 @@ public class DeepLearningIrisTest extends TestUtil {
       int[] epochs = {1, 2 + rng.nextInt(50)};
       double[] rates = {0.01, 1e-5 + rng.nextDouble() * .1};
 
-      for (DeepLearning.Activation activation : activations) {
-        for (DeepLearning.Loss loss : losses) {
-          for (DeepLearning.InitialWeightDistribution dist : dists) {
+      for (Activation activation : activations) {
+        for (Loss loss : losses) {
+          for (InitialWeightDistribution dist : dists) {
             for (double scale : initial_weight_scales) {
               for (double holdout_ratio : holdout_ratios) {
                 for (double momentum : momenta) {
@@ -61,7 +69,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             DeepLearningModel mymodel = null;
                             Frame frame = null;
                             Frame fr = null;
-                            DeepLearning p = null;
+                            DeepLearningParameters p = null;
                             Frame trainPredict = null;
                             Frame testPredict = null;
                             try {
@@ -109,7 +117,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
                               _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
-                                p = new DeepLearning(Key.make(), 1);
+                                p = new DeepLearningParameters();
                                 p.source = _train;
                                 p.response = _train.lastVec();
                                 p.ignored_cols = null;
@@ -132,7 +140,6 @@ public class DeepLearningIrisTest extends TestUtil {
                               p.rate = rate / (1 - momentum); //adapt to (1-m) correction that's done inside (only for constant momentum!)
                               p.activation = activation;
                               p.max_w2 = Float.POSITIVE_INFINITY;
-                              p.epochs = epoch;
                               p.input_dropout_ratio = 0;
                               p.rate_annealing = 0; //do not change - not implemented in reference
                               p.l1 = 0;
@@ -148,9 +155,9 @@ public class DeepLearningIrisTest extends TestUtil {
                               p.validation = null;
                               p.quiet_mode = true;
                               p.fast_mode = false; //to be the same as reference
-//                      p.fast_mode = true; //to be the same as old NeuralNet code
+//                            p.fast_mode = true; //to be the same as old NeuralNet code
                               p.nesterov_accelerated_gradient = false; //to be the same as reference
-//                        p.nesterov_accelerated_gradient = true; //to be the same as old NeuralNet code
+//                            p.nesterov_accelerated_gradient = true; //to be the same as old NeuralNet code
                               p.train_samples_per_iteration = 0; //sync once per period
                               p.ignore_const_cols = false;
                               p.shuffle_training_data = false;
@@ -161,7 +168,9 @@ public class DeepLearningIrisTest extends TestUtil {
                               p.single_node_mode = true;
                               p.sparse = sparse;
                               p.col_major = col_major;
-                              mymodel = p.initModel(); //randomize weights, but don't start training yet
+                              p.epochs = 0;
+                              mymodel = new DeepLearning(p).train().get();
+                              p.epochs = epoch;
 
                               Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
 
@@ -169,11 +178,11 @@ public class DeepLearningIrisTest extends TestUtil {
                               Neurons l = neurons[1];
                               for (int o = 0; o < l._a.size(); o++) {
                                 for (int i = 0; i < l._previous._a.size(); i++) {
-//                          System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
+//                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
                                   ref._nn.ihWeights[i][o] = l._w.get(o, i);
                                 }
                                 ref._nn.hBiases[o] = l._b.get(o);
-//                        System.out.println("initial bias[" + o + "]=" + l._b[o]);
+//                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
                               }
                               l = neurons[2];
                               for (int o = 0; o < l._a.size(); o++) {
@@ -189,7 +198,8 @@ public class DeepLearningIrisTest extends TestUtil {
                               ref.train((int) p.epochs, rate, p.momentum_stable, loss);
 
                               // Train H2O
-                              mymodel = p.trainModel(mymodel);
+                              mymodel.delete();
+                              mymodel = new DeepLearning(p).train().get();
                               Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * fr.numRows());
 
                               /**
@@ -284,7 +294,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
                               // get the actual best error on training data
                               float best_err = Float.MAX_VALUE;
-                              for (DeepLearningModel.Errors err : mymodel.scoring_history()) {
+                              for (Errors err : mymodel.scoring_history()) {
                                 best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
                               }
                               Log.info("Actual best error : " + best_err * 100 + "%.");
@@ -314,7 +324,6 @@ public class DeepLearningIrisTest extends TestUtil {
                               if (_test != null) _test.delete();
                               if (frame != null) frame.delete();
                               if (fr != null) fr.delete();
-//                              if (p != null) p.delete();
                               if (trainPredict != null) trainPredict.delete();
                               if (testPredict != null) testPredict.delete();
                             }

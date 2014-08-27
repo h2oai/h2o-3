@@ -21,7 +21,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   public DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(input,fraction,null);}
   private DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
-    super(input.get_params().self(),input.data_info(),cmp);
+    super(input.job(),input.data_info(),cmp);
     _training=true;
     _input=input;
     _useFraction=fraction;
@@ -43,7 +43,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   @Override public final void processRow(long seed, final double [] nums, final int numcats, final int [] cats, double [] responses){
-    if(_output.get_params().self() != null && !Job.isRunning(_output.get_params().self())) throw new RuntimeException();
+    if(_output.job() != null && !Job.isRunning(_output.job())) throw new RuntimeException();
     if (H2O.CLOUD.size()==1) {
       seed += model_info().get_processed_global(); //avoid periodicity
     } else {
@@ -100,7 +100,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   // Helper
   private static Neurons[] makeNeurons(final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
     DataInfo dinfo = minfo.data_info();
-    final DeepLearning params = minfo.get_params();
+    final DeepLearningModel.DeepLearningParameters params = minfo.get_params();
     final int[] h = params.hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input

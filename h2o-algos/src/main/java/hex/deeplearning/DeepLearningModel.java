@@ -10,6 +10,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 
 /**
@@ -17,7 +18,500 @@ import java.util.Random;
  * It contains a DeepLearningModelInfo with the most up-to-date model,
  * a scoring history, as well as some helpers to indicate the progress
  */
-public class DeepLearningModel extends SupervisedModel implements Comparable<DeepLearningModel> {
+
+public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+
+  public static class DeepLearningParameters extends Model.Parameters<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+    // FIXME
+    public Frame source;
+    public Frame validation;
+    public boolean classification;
+    public Vec response;
+    public int[] ignored_cols;
+    public int n_folds;
+    public boolean keep_cross_validation_splits;
+
+    /**
+     * A model key associated with a previously trained Deep Learning
+     * model. This option allows users to build a new model as a
+     * continuation of a previously generated model (e.g., by a grid search).
+     */
+//  @API(help = "Model checkpoint to resume training with", filter= Default.class, json = true)
+    public Key checkpoint;
+
+    /**
+     * If enabled, store the best model under the destination key of this model at the end of training.
+     * Only applicable if training is not cancelled.
+     */
+//  @API(help = "If enabled, override the final model with the best model found during training", filter= Default.class, json = true)
+    public boolean override_with_best_model = true;
+
+    /**
+     * Unlock expert mode parameters than can affect model building speed,
+     * predictive accuracy and scoring. Leaving expert mode parameters at default
+     * values is fine for many problems, but best results on complex datasets are often
+     * only attainable via expert mode options.
+     */
+//  @API(help = "Enable expert mode (to access all options from GUI)", filter = Default.class, json = true)
+    public boolean expert_mode = false;
+
+    //  @API(help = "Auto-Encoder (Experimental)", filter= Default.class, json = true)
+    public boolean autoencoder = false;
+
+    //  @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.",filter=Default.class, json=true, importance = ParamImportance.SECONDARY)
+    public boolean use_all_factor_levels = true;
+
+  /*Neural Net Topology*/
+    /**
+     * The activation function (non-linearity) to be used the neurons in the hidden layers.
+     * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
+     * Rectifier: Chooses the maximum of (0, x) where x is the input value.
+     * Maxout: Choose the maximum coordinate of the input vector.
+     * With Dropout: Zero out a random user-given fraction of the
+     *      incoming weights to each hidden layer during training, for each
+     *      training row. This effectively trains exponentially many models at
+     *      once, and can improve generalization.
+     */
+//  @API(help = "Activation function", filter = Default.class, json = true, importance = ParamImportance.CRITICAL)
+    public Activation activation = Activation.Tanh;
+
+    /**
+     * The number and size of each hidden layer in the model.
+     * For example, if a user specifies "100,200,100" a model with 3 hidden
+     * layers will be produced, and the middle hidden layer will have 200
+     * neurons.To specify a grid search, add parentheses around each
+     * model's specification: "(100,100), (50,50,50), (20,20,20,20)".
+     */
+//  @API(help = "Hidden layer sizes (e.g. 100,100). Grid search: (10,10), (20,20,20)", filter = Default.class, json = true, importance = ParamImportance.CRITICAL)
+    public int[] hidden = new int[] { 200, 200 };
+
+    /**
+     * The number of passes over the training dataset to be carried out.
+     * It is recommended to start with lower values for initial grid searches.
+     * This value can be modified during checkpoint restarts and allows continuation
+     * of selected models.
+     */
+//  @API(help = "How many times the dataset should be iterated (streamed), can be fractional", filter = Default.class, dmin = 1e-3, json = true, importance = ParamImportance.CRITICAL)
+    public double epochs = 10;
+
+    /**
+     * The number of training data rows to be processed per iteration. Note that
+     * independent of this parameter, each row is used immediately to update the model
+     * with (online) stochastic gradient descent. This parameter controls the
+     * synchronization period between nodes in a distributed environment and the
+     * frequency at which scoring and model cancellation can happen. For example, if
+     * it is set to 10,000 on H2O running on 4 nodes, then each node will
+     * process 2,500 rows per iteration, sampling randomly from their local data.
+     * Then, model averaging between the nodes takes place, and scoring can happen
+     * (dependent on scoring interval and duty factor). Special values are 0 for
+     * one epoch per iteration, -1 for processing the maximum amount of data
+     * per iteration (if **replicate training data** is enabled, N epochs
+     * will be trained per iteration on N nodes, otherwise one epoch). Special value
+     * of -2 turns on automatic mode (auto-tuning).
+     */
+//  @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", filter = Default.class, lmin = -2, json = true, importance = ParamImportance.SECONDARY)
+    public long train_samples_per_iteration = -2;
+    public long actual_train_samples_per_iteration;
+
+    /**
+     * The random seed controls sampling and initialization. Reproducible
+     * results are only expected with single-threaded operation (i.e.,
+     * when running on one node, turning off load balancing and providing
+     * a small dataset that fits in one chunk).  In general, the
+     * multi-threaded asynchronous updates to the model parameters will
+     * result in (intentional) race conditions and non-reproducible
+     * results. Note that deterministic sampling and initialization might
+     * still lead to some weak sense of determinism in the model.
+     */
+//  @API(help = "Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded", filter = Default.class, json = true)
+    public long seed = new Random().nextLong();
+
+  /*Adaptive Learning Rate*/
+    /**
+     * The implemented adaptive learning rate algorithm (ADADELTA) automatically
+     * combines the benefits of learning rate annealing and momentum
+     * training to avoid slow convergence. Specification of only two
+     * parameters (rho and epsilon)  simplifies hyper parameter search.
+     * In some cases, manually controlled (non-adaptive) learning rate and
+     * momentum specifications can lead to better results, but require the
+     * specification (and hyper parameter search) of up to 7 parameters.
+     * If the model is built on a topology with many local minima or
+     * long plateaus, it is possible for a constant learning rate to produce
+     * sub-optimal results. Learning rate annealing allows digging deeper into
+     * local minima, while rate decay allows specification of different
+     * learning rates per layer.  When the gradient is being estimated in
+     * a long valley in the optimization landscape, a large learning rate
+     * can cause the gradient to oscillate and move in the wrong
+     * direction. When the gradient is computed on a relatively flat
+     * surface with small learning rates, the model can converge far
+     * slower than necessary.
+     */
+//  @API(help = "Adaptive learning rate (ADADELTA)", filter = Default.class, json = true, importance = ParamImportance.SECONDARY)
+    public boolean adaptive_rate = true;
+
+    /**
+     * The first of two hyper parameters for adaptive learning rate (ADADELTA).
+     * It is similar to momentum and relates to the memory to prior weight updates.
+     * Typical values are between 0.9 and 0.999.
+     * This parameter is only active if adaptive learning rate is enabled.
+     */
+//  @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", filter = Default.class, dmin = 0.01, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double rho = 0.95;
+
+    /**
+     * The second of two hyper parameters for adaptive learning rate (ADADELTA).
+     * It is similar to learning rate annealing during initial training
+     * and momentum at later stages where it allows forward progress.
+     * Typical values are between 1e-10 and 1e-4.
+     * This parameter is only active if adaptive learning rate is enabled.
+     */
+//  @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", filter = Default.class, dmin = 1e-15, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double epsilon = 1e-6;
+
+  /*Learning Rate*/
+    /**
+     * When adaptive learning rate is disabled, the magnitude of the weight
+     * updates are determined by the user specified learning rate
+     * (potentially annealed), and are a function  of the difference
+     * between the predicted value and the target value. That difference,
+     * generally called delta, is only available at the output layer. To
+     * correct the output at each hidden layer, back propagation is
+     * used. Momentum modifies back propagation by allowing prior
+     * iterations to influence the current update. Using the momentum
+     * parameter can aid in avoiding local minima and the associated
+     * instability. Too much momentum can lead to instabilities, that's
+     * why the momentum is best ramped up slowly.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Learning rate (higher => less stable, lower => slower convergence)", filter = Default.class, dmin = 1e-10, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double rate = .005;
+
+    /**
+     * Learning rate annealing reduces the learning rate to "freeze" into
+     * local minima in the optimization landscape.  The annealing rate is the
+     * inverse of the number of training samples it takes to cut the learning rate in half
+     * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Learning rate annealing: rate / (1 + rate_annealing * samples)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double rate_annealing = 1e-6;
+
+    /**
+     * The learning rate decay parameter controls the change of learning rate across layers.
+     * For example, assume the rate parameter is set to 0.01, and the rate_decay parameter is set to 0.5.
+     * Then the learning rate for the weights connecting the input and first hidden layer will be 0.01,
+     * the learning rate for the weights connecting the first and the second hidden layer will be 0.005,
+     * and the learning rate for the weights connecting the second and third hidden layer will be 0.0025, etc.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Learning rate decay factor between layers (N-th layer: rate*alpha^(N-1))", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.EXPERT)
+    public double rate_decay = 1.0;
+
+  /*Momentum*/
+    /**
+     * The momentum_start parameter controls the amount of momentum at the beginning of training.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Initial momentum at the beginning of training (try 0.5)", filter = Default.class, dmin = 0, dmax = 0.9999999999, json = true, importance = ParamImportance.SECONDARY)
+    public double momentum_start = 0;
+
+    /**
+     * The momentum_ramp parameter controls the amount of learning for which momentum increases
+     * (assuming momentum_stable is larger than momentum_start). The ramp is measured in the number
+     * of training samples.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Number of training samples for which momentum increases", filter = Default.class, dmin = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double momentum_ramp = 1e6;
+
+    /**
+     * The momentum_stable parameter controls the final momentum value reached after momentum_ramp training samples.
+     * The momentum used for training will remain the same for training beyond reaching that point.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Final momentum after the ramp is over (try 0.99)", filter = Default.class, dmin = 0, dmax = 0.9999999999, json = true, importance = ParamImportance.SECONDARY)
+    public double momentum_stable = 0;
+
+    /**
+     * The Nesterov accelerated gradient descent method is a modification to
+     * traditional gradient descent for convex functions. The method relies on
+     * gradient information at various points to build a polynomial approximation that
+     * minimizes the residuals in fewer iterations of the descent.
+     * This parameter is only active if adaptive learning rate is disabled.
+     */
+//  @API(help = "Use Nesterov accelerated gradient (recommended)", filter = Default.class, json = true, importance = ParamImportance.SECONDARY)
+    public boolean nesterov_accelerated_gradient = true;
+
+  /*Regularization*/
+    /**
+     * A fraction of the features for each training row to be omitted from training in order
+     * to improve generalization (dimension sampling).
+     */
+//  @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double input_dropout_ratio = 0.0;
+
+    /**
+     * A fraction of the inputs for each hidden layer to be omitted from training in order
+     * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
+     */
+//  @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double[] hidden_dropout_ratios;
+
+    /**
+     * A regularization method that constrains the absolute value of the weights and
+     * has the net effect of dropping some weights (setting them to zero) from a model
+     * to reduce complexity and avoid overfitting.
+     */
+//  @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double l1 = 0.0;
+
+    /**
+     *  A regularization method that constrdains the sum of the squared
+     * weights. This method introduces bias into parameter estimates, but
+     * frequently produces substantial gains in modeling as estimate variance is
+     * reduced.
+     */
+//  @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
+    public double l2 = 0.0;
+
+    /**
+     *  A maximum on the sum of the squared incoming weights into
+     * any one neuron. This tuning parameter is especially useful for unbound
+     * activation functions such as Maxout or Rectifier.
+     */
+//  @API(help = "Constraint for squared sum of incoming weights per unit (e.g. for Rectifier)", filter = Default.class, dmin = 1e-10, json = true, importance = ParamImportance.EXPERT)
+    public float max_w2 = Float.POSITIVE_INFINITY;
+
+  /*Initialization*/
+    /**
+     * The distribution from which initial weights are to be drawn. The default
+     * option is an optimized initialization that considers the size of the network.
+     * The "uniform" option uses a uniform distribution with a mean of 0 and a given
+     * interval. The "normal" option draws weights from the standard normal
+     * distribution with a mean of 0 and given standard deviation.
+     */
+//  @API(help = "Initial Weight Distribution", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public InitialWeightDistribution initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
+
+    /**
+     * The scale of the distribution function for Uniform or Normal distributions.
+     * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
+     * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
+     */
+//  @API(help = "Uniform: -value...value, Normal: stddev)", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.EXPERT)
+    public double initial_weight_scale = 1.0;
+
+    /**
+     * The loss (error) function to be minimized by the model.
+     * Cross Entropy loss is used when the model output consists of independent
+     * hypotheses, and the outputs can be interpreted as the probability that each
+     * hypothesis is true. Cross entropy is the recommended loss function when the
+     * target values are class labels, and especially for imbalanced data.
+     * It strongly penalizes error in the prediction of the actual class label.
+     * Mean Square loss is used when the model output are continuous real values, but can
+     * be used for classification as well (where it emphasizes the error on all
+     * output classes, not just for the actual class).
+     */
+//  @API(help = "Loss function", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public Loss loss = Loss.Automatic;
+
+  /*Scoring*/
+    /**
+     * The minimum time (in seconds) to elapse between model scoring. The actual
+     * interval is determined by the number of training samples per iteration and the scoring duty cycle.
+     */
+//  @API(help = "Shortest time interval (in secs) between model scoring", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.SECONDARY)
+    public double score_interval = 5;
+
+    /**
+     * The number of training dataset points to be used for scoring. Will be
+     * randomly sampled. Use 0 for selecting the entire training dataset.
+     */
+//  @API(help = "Number of training set samples for scoring (0 for all)", filter = Default.class, lmin = 0, json = true, importance = ParamImportance.EXPERT)
+    public long score_training_samples = 10000l;
+
+    /**
+     * The number of validation dataset points to be used for scoring. Can be
+     * randomly sampled or stratified (if "balance classes" is set and "score
+     * validation sampling" is set to stratify). Use 0 for selecting the entire
+     * training dataset.
+     */
+//  @API(help = "Number of validation set samples for scoring (0 for all)", filter = Default.class, lmin = 0, json = true, importance = ParamImportance.EXPERT)
+    public long score_validation_samples = 0l;
+
+    /**
+     * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
+     * and on diagnostics such as computation of feature importances (i.e., not on training).
+     */
+//  @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.EXPERT)
+    public double score_duty_cycle = 0.1;
+
+    /**
+     * The stopping criteria in terms of classification error (1-accuracy) on the
+     * training data scoring dataset. When the error is at or below this threshold,
+     * training stops.
+     */
+//  @API(help = "Stopping criterion for classification error fraction on training data (-1 to disable)", filter = Default.class, dmin=-1, dmax=1, json = true, importance = ParamImportance.EXPERT)
+    public double classification_stop = 0;
+
+    /**
+     * The stopping criteria in terms of regression error (MSE) on the training
+     * data scoring dataset. When the error is at or below this threshold, training
+     * stops.
+     */
+//  @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", filter = Default.class, dmin=-1, json = true, importance = ParamImportance.EXPERT)
+    public double regression_stop = 1e-6;
+
+    /**
+     * Enable quiet mode for less output to standard output.
+     */
+//  @API(help = "Enable quiet mode for less output to standard output", filter = Default.class, json = true)
+    public boolean quiet_mode = false;
+
+    /**
+     * For classification models, the maximum size (in terms of classes) of the
+     * confusion matrix for it to be printed. This option is meant to avoid printing
+     * extremely large confusion matrices.
+     */
+//  @API(help = "Max. size (number of classes) for confusion matrices to be shown", filter = Default.class, json = true)
+    public int max_confusion_matrix_size = 20;
+
+    /**
+     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+     */
+//  @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", filter = Default.class, lmin=0, json = true, importance = ParamImportance.EXPERT)
+    public int max_hit_ratio_k = 10;
+
+  /*Imbalanced Classes*/
+    /**
+     * For imbalanced data, balance training data class counts via
+     * over/under-sampling. This can result in improved predictive accuracy.
+     */
+//  @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean balance_classes = false;
+
+    /**
+     * When classes are balanced, limit the resulting dataset size to the
+     * specified multiple of the original dataset size.
+     */
+//  @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0)", filter = Default.class, json = true, dmin=1e-3, importance = ParamImportance.EXPERT)
+    public float max_after_balance_size = 5.0f;
+
+    /**
+     * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
+     */
+//  @API(help = "Method used to sample validation dataset for scoring", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public ClassSamplingMethod score_validation_sampling = ClassSamplingMethod.Uniform;
+
+  /*Misc*/
+    /**
+     * Gather diagnostics for hidden layers, such as mean and RMS values of learning
+     * rate, momentum, weights and biases.
+     */
+//  @API(help = "Enable diagnostics for hidden layers", filter = Default.class, json = true)
+    public boolean diagnostics = true;
+
+    /**
+     * Whether to compute variable importances for input features.
+     * The implemented method (by Gedeon) considers the weights connecting the
+     * input features to the first two hidden layers.
+     */
+//  @API(help = "Compute variable importances for input features (Gedeon method) - can be slow for large networks", filter = Default.class, json = true)
+    public boolean variable_importances = false;
+
+    /**
+     * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
+     */
+//  @API(help = "Enable fast mode (minor approximation in back-propagation)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean fast_mode = true;
+
+    /**
+     * Ignore constant training columns (no information can be gained anyway).
+     */
+//  @API(help = "Ignore constant training columns (no information can be gained anyway)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean ignore_const_cols = true;
+
+    /**
+     * Increase training speed on small datasets by splitting it into many chunks
+     * to allow utilization of all cores.
+     */
+//  @API(help = "Force extra load balancing to increase training speed for small datasets (to keep all cores busy)", filter = Default.class, json = true)
+    public boolean force_load_balance = true;
+
+    /**
+     * Replicate the entire training dataset onto every node for faster training on small datasets.
+     */
+//  @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean replicate_training_data = true;
+
+    /**
+     * Run on a single node for fine-tuning of model parameters. Can be useful for
+     * checkpoint resumes after training on multiple nodes for fast initial
+     * convergence.
+     */
+//  @API(help = "Run on a single node for fine-tuning of model parameters", filter = Default.class, json = true)
+    public boolean single_node_mode = false;
+
+    /**
+     * Enable shuffling of training data (on each node). This option is
+     * recommended if training data is replicated on N nodes, and the number of training samples per iteration
+     * is close to N times the dataset size, where all nodes train will (almost) all
+     * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
+     * times the dataset size or larger).
+     */
+//  @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean shuffle_training_data = false;
+
+    //  @API(help = "Handling of missing values. Either Skip or MeanImputation.", filter= Default.class, json = true)
+    public MissingValuesHandling missing_values_handling = MissingValuesHandling.MeanImputation;
+
+    //  @API(help = "Sparse data handling (Experimental).", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean sparse = false;
+
+    //  @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental).", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
+    public boolean col_major = false;
+
+    //  @API(help = "Average activation for sparse auto-encoder (Experimental)", filter= Default.class, json = true)
+    public double average_activation = 0;
+
+    //  @API(help = "Sparsity regularization (Experimental)", filter= Default.class, json = true)
+    public double sparsity_beta = 0;
+
+    public enum MissingValuesHandling {
+      Skip, MeanImputation
+    }
+
+    public enum ClassSamplingMethod {
+      Uniform, Stratified
+    }
+
+    public enum InitialWeightDistribution {
+      UniformAdaptive, Uniform, Normal
+    }
+
+    /**
+     * Activation functions
+     */
+    public enum Activation {
+      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
+    }
+
+    /**
+     * Loss functions
+     * CrossEntropy is recommended
+     */
+    public enum Loss {
+      Automatic, MeanSquare, Loss, CrossEntropy
+    }
+  }
+
+  public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+//    @Override public int nfeatures() { return _names.length; }
+//    @Override public ModelCategory getModelCategory() {
+//      return Model.ModelCategory.Clustering;
+//    }
+  }
+
   @Override protected String errStr() {
     return "Locking of DeepLearningModel failed.";
   }
@@ -60,7 +554,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
   Errors last_scored() { return errors == null ? null : errors[errors.length-1]; }
 
 //  @Override
-  public final DeepLearning get_params() { return model_info.get_params(); }
+  public final DeepLearningParameters get_params() { return _parms; }
 //  @Override public final Request2 job() { return get_params(); }
 
   protected double missingColumnsType() { return get_params().sparse ? 0 : Double.NaN; }
@@ -251,8 +745,10 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
     public final Neurons.DenseVector get_avg_activations(int i) { return avg_activations[i]; }
 
 //    @API(help = "Model parameters", json = true)
-    private DeepLearning parameters;
-    public final DeepLearning get_params() { return parameters; }
+    private DeepLearningParameters parameters;
+    public final DeepLearningParameters get_params() { return parameters; }
+    public final Key job() { return _job; }
+    private Key _job;
 
 //    @API(help = "Mean rate", json = true)
     private float[] mean_rate;
@@ -298,13 +794,14 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
 
     public DeepLearningModelInfo() {}
 
-    public DeepLearningModelInfo(final DeepLearning params, final DataInfo dinfo) {
+    public DeepLearningModelInfo(Key jobKey, final DeepLearningParameters params, final DataInfo dinfo) {
+      _job = jobKey;
       data_info = dinfo;
+      parameters = params;
       final int num_input = dinfo.fullN();
       final int num_output = get_params().autoencoder ? num_input : get_params().classification ? dinfo._adaptedFrame.domains()[dinfo._adaptedFrame.domains().length-1].length : 1;
       assert(num_input > 0);
       assert(num_output > 0);
-      parameters = params;
       if (has_momenta() && adaDelta()) throw new IllegalArgumentException("Cannot have non-zero momentum and adaptive rate at the same time.");
       final int layers=get_params().hidden.length;
       // units (# neurons for each layer)
@@ -459,15 +956,15 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
       //TODO: determine good/optimal/best initialization scheme for biases
       // hidden layers
       for (int i=0; i<get_params().hidden.length; ++i) {
-        if (get_params().activation == DeepLearning.Activation.Rectifier
-                || get_params().activation == DeepLearning.Activation.RectifierWithDropout
-                || get_params().activation == DeepLearning.Activation.Maxout
-                || get_params().activation == DeepLearning.Activation.MaxoutWithDropout
+        if (get_params().activation == DeepLearningParameters.Activation.Rectifier
+                || get_params().activation == DeepLearningParameters.Activation.RectifierWithDropout
+                || get_params().activation == DeepLearningParameters.Activation.Maxout
+                || get_params().activation == DeepLearningParameters.Activation.MaxoutWithDropout
                 ) {
 //          Arrays.fill(biases[i], 1.); //old behavior
           Arrays.fill(biases[i].raw(), i == 0 ? 0.5f : 1f); //new behavior, might be slightly better
         }
-        else if (get_params().activation == DeepLearning.Activation.Tanh || get_params().activation == DeepLearning.Activation.TanhWithDropout) {
+        else if (get_params().activation == DeepLearningParameters.Activation.Tanh || get_params().activation == DeepLearningParameters.Activation.TanhWithDropout) {
           Arrays.fill(biases[i].raw(), 0f);
         }
       }
@@ -522,17 +1019,17 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
-            if (get_params().initial_weight_distribution == DeepLearning.InitialWeightDistribution.UniformAdaptive) {
+            if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.UniformAdaptive) {
               // cf. http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_GlorotB10.pdf
               if (w==dense_row_weights.length-1 && get_params().classification)
                 get_weights(w).set(i,j, (float)(4.*uniformDist(rng, -range, range))); //Softmax might need an extra factor 4, since it's like a sigmoid
               else
                 get_weights(w).set(i,j, (float)uniformDist(rng, -range, range));
             }
-            else if (get_params().initial_weight_distribution == DeepLearning.InitialWeightDistribution.Uniform) {
+            else if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Uniform) {
               get_weights(w).set(i,j, (float)uniformDist(rng, -get_params().initial_weight_scale, get_params().initial_weight_scale));
             }
-            else if (get_params().initial_weight_distribution == DeepLearning.InitialWeightDistribution.Normal) {
+            else if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Normal) {
               get_weights(w).set(i,j, (float)(rng.nextGaussian() * get_params().initial_weight_scale));
             }
           }
@@ -682,26 +1179,21 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
    * @param jobKey New job key (job which updates the model)
    */
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
-    super(destKey, /*cp._dataKey, */ dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), null/*Parameters*/, null/*Output*/, cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
+    super(destKey, dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), cp._parms, new DeepLearningOutput(), cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
     final boolean store_best_model = (jobKey == null);
     this.jobKey = jobKey;
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
-      get_params()._state = Job.JobState.DONE; //change the deep_clone'd state to DONE
+//      get_params()._state = Job.JobState.DONE; //change the deep_clone'd state to DONE //FIXME
       _modelClassDist = cp._modelClassDist != null ? cp._modelClassDist.clone() : null;
     } else {
       model_info = (DeepLearningModelInfo) cp.model_info.clone(); //shallow clone is ok (won't modify the Checkpoint in K-V store during checkpoint restart)
       model_info.data_info = dataInfo; //shallow clone is ok
       get_params().checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
-      get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent
+//      get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent //FIXME
     }
-    //FIXME
-    assert false : "not yet implemented";
-//    get_params().job_key = jobKey;
-//    get_params().destination_key = destKey;
 //    get_params().start_time = System.currentTimeMillis(); //for displaying the model progress
-    //FIXME
 
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
@@ -723,16 +1215,16 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
-  public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearning params, final float[] priorDist) {
-    super(destKey, /*dataKey, */dinfo._adaptedFrame, null/*Parameters*/, null/*Output*/, priorDist);
+  public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearningParameters params, final float[] priorDist) {
+    super(destKey, /*dataKey, */dinfo._adaptedFrame, params, new DeepLearningOutput(), priorDist);
     this.jobKey = jobKey;
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
-    model_info = new DeepLearningModelInfo(params, dinfo);
+    model_info = new DeepLearningModelInfo(jobKey, params, dinfo);
     actual_best_model_key = Key.makeUserHidden(Key.make());
     if (params.n_folds != 0) actual_best_model_key = null;
-    get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent
+//    get_params()._state = ((DeepLearningParameters)DKV.get(jobKey).get())._state; //make the job state consistent //FIXME
     if (!get_params().autoencoder) {
       errors = new Errors[1];
       errors[0] = new Errors();
@@ -755,12 +1247,13 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
    * @return true if model building is ongoing
    */
   boolean doScoring(Frame train, Frame ftrain, Frame ftest, Key job_key, ValidationAdapter.Response2CMAdaptor vadaptor) {
+    boolean keep_running = true;
     try {
       final long now = System.currentTimeMillis();
       epoch_counter = (float)model_info().get_processed_total()/train.numRows();
       run_time += now-_timeLastScoreEnter;
       _timeLastScoreEnter = now;
-      boolean keep_running = (epoch_counter < get_params().epochs);
+      keep_running = (epoch_counter < get_params().epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
       final long samples = model_info().get_processed_total();
@@ -947,12 +1440,13 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
         keep_running = false;
       }
       update(job_key);
-
-//    System.out.println(this);
-      return keep_running;
     }
     catch (Exception ex) {
-      return false;
+      ex.printStackTrace();
+      keep_running = false;
+      throw new RuntimeException(ex);
+    } finally {
+      return keep_running;
     }
   }
 
@@ -1163,394 +1657,12 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
 //    return qp.result;
 //  }
 
-  public boolean generateHTML(String title, StringBuilder sb) {
-//    if (_key == null) {
-//      DocGen.HTML.title(sb, "No model yet");
-//      return true;
-//    }
-//
-//    // optional JFrame creation for visualization of weights
-////    DeepLearningVisualization.visualize(this);
-//
-//    final String mse_format = "%g";
-////    final String cross_entropy_format = "%2.6f";
-//
-//    // stats for training and validation
-//    final Errors error = last_scored();
-//
-//    DocGen.HTML.title(sb, title);
-//
-//    if (get_params().source == null || UKV.get(get_params().source._key) == null) (Job.hygiene(get_params())).toHTML(sb);
-//    else job().toHTML(sb);
-//
-//    final Key val_key = get_params().validation != null ? get_params().validation._key : null;
-//    sb.append("<div class='alert'>Actions: "
-//            + (jobKey != null && UKV.get(jobKey) != null && Job.isRunning(jobKey) ? "<i class=\"icon-stop\"></i>" + Cancel.link(jobKey, "Stop training") + ", " : "")
-//            + Inspect2.link("Inspect training data (" + _dataKey + ")", _dataKey) + ", "
-//            + (val_key != null ? (Inspect2.link("Inspect validation data (" + val_key + ")", val_key) + ", ") : "")
-//            + water.api.Predict.link(_key, "Score on dataset") + ", "
-//            + DeepLearning.link(_dataKey, "Compute new model", null, responseName(), val_key)
-//            + (actual_best_model_key != null && UKV.get(actual_best_model_key) != null && actual_best_model_key != _key ? ", " + DeepLearningModelView.link("Go to best model", actual_best_model_key) : "")
-//            + (jobKey == null || ((jobKey != null && UKV.get(jobKey) == null)) || (jobKey != null && UKV.get(jobKey) != null && Job.isEnded(jobKey)) ? ", <i class=\"icon-play\"></i>" + DeepLearning.link(_dataKey, "Continue training this model", _key, responseName(), val_key) : "") + ", "
-//            + UIUtils.qlink(SaveModel.class, "model", _key, "Save model") + ", "
-//            + "</div>");
-//
-//    DocGen.HTML.paragraph(sb, "Model Key: " + _key);
-//    if (jobKey != null) DocGen.HTML.paragraph(sb, "Job Key: " + jobKey);
-//    if (!get_params().autoencoder)
-//      DocGen.HTML.paragraph(sb, "Model type: " + (get_params().classification ? " Classification" : " Regression") + ", predicting: " + responseName());
-//    else
-//      DocGen.HTML.paragraph(sb, "Model type: Auto-Encoder");
-//    DocGen.HTML.paragraph(sb, "Number of model parameters (weights/biases): " + String.format("%,d", model_info().size()));
-//
-//    if (model_info.unstable()) {
-//      DocGen.HTML.section(sb, "=======================================================================================");
-//      DocGen.HTML.section(sb, unstable_msg.replace("\n"," "));
-//      DocGen.HTML.section(sb, "=======================================================================================");
-//    }
-//
-//    if (error == null) return true;
-//
-//    DocGen.HTML.title(sb, "Progress");
-//    // update epoch counter every time the website is displayed
-//    epoch_counter = training_rows > 0 ? (float)model_info().get_processed_total()/training_rows : 0;
-//    final double progress = get_params().progress();
-//
-//    if (get_params() != null && get_params().diagnostics) {
-//      DocGen.HTML.section(sb, "Status of Neuron Layers");
-//      sb.append("<table class='table table-striped table-bordered table-condensed'>");
-//      sb.append("<tr>");
-//      sb.append("<th>").append("#").append("</th>");
-//      sb.append("<th>").append("Units").append("</th>");
-//      sb.append("<th>").append("Type").append("</th>");
-//      sb.append("<th>").append("Dropout").append("</th>");
-//      sb.append("<th>").append("L1").append("</th>");
-//      sb.append("<th>").append("L2").append("</th>");
-//      if (get_params().adaptive_rate) {
-//        sb.append("<th>").append("Rate (Mean, RMS)").append("</th>");
-//      } else {
-//        sb.append("<th>").append("Rate").append("</th>");
-//        sb.append("<th>").append("Momentum").append("</th>");
-//      }
-//      sb.append("<th>").append("Weight (Mean, RMS)").append("</th>");
-//      sb.append("<th>").append("Bias (Mean, RMS)").append("</th>");
-//      sb.append("</tr>");
-//      Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info()); //link the weights to the neurons, for easy access
-//      for (int i=0; i<neurons.length; ++i) {
-//        sb.append("<tr>");
-//        sb.append("<td>").append("<b>").append(i+1).append("</b>").append("</td>");
-//        sb.append("<td>").append("<b>").append(neurons[i].units).append("</b>").append("</td>");
-//        sb.append("<td>").append(neurons[i].getClass().getSimpleName()).append("</td>");
-//
-//        if (i == 0) {
-//          sb.append("<td>");
-//          sb.append(Utils.formatPct(neurons[i].params.input_dropout_ratio));
-//          sb.append("</td>");
-//          sb.append("<td></td>");
-//          sb.append("<td></td>");
-//          sb.append("<td></td>");
-//          if (!get_params().adaptive_rate) sb.append("<td></td>");
-//          sb.append("<td></td>");
-//          sb.append("<td></td>");
-//          sb.append("</tr>");
-//          continue;
-//        }
-//        else if (i < neurons.length-1) {
-//          sb.append("<td>");
-//          if (neurons[i].params.hidden_dropout_ratios == null)
-//            sb.append(Utils.formatPct(0));
-//          else
-//            sb.append(Utils.formatPct(neurons[i].params.hidden_dropout_ratios[i - 1]));
-//          sb.append("</td>");
-//        } else {
-//          sb.append("<td></td>");
-//        }
-//
-//        final String format = "%g";
-//        sb.append("<td>").append(neurons[i].params.l1).append("</td>");
-//        sb.append("<td>").append(neurons[i].params.l2).append("</td>");
-//        if (get_params().adaptive_rate) {
-//          sb.append("<td>(").append(String.format(format, model_info.mean_rate[i])).
-//                  append(", ").append(String.format(format, model_info.rms_rate[i])).append(")</td>");
-//        } else {
-//          sb.append("<td>").append(String.format("%.5g", neurons[i].rate(error.training_samples))).append("</td>");
-//          sb.append("<td>").append(String.format("%.5f", neurons[i].momentum(error.training_samples))).append("</td>");
-//        }
-//        sb.append("<td>(").append(String.format(format, model_info.mean_weight[i])).
-//                append(", ").append(String.format(format, model_info.rms_weight[i])).append(")</td>");
-//        sb.append("<td>(").append(String.format(format, model_info.mean_bias[i])).
-//                append(", ").append(String.format(format, model_info.rms_bias[i])).append(")</td>");
-//        sb.append("</tr>");
-//      }
-//      sb.append("</table>");
-//    }
-//
-//    if (isClassifier() && !get_params().autoencoder) {
-//      DocGen.HTML.section(sb, "Classification error on training data: " + Utils.formatPct(error.train_err));
-//      if(error.validation) {
-//        DocGen.HTML.section(sb, "Classification error on validation data: " + Utils.formatPct(error.valid_err));
-//      } else if(error.num_folds > 0) {
-//        DocGen.HTML.section(sb, "Classification error on " + error.num_folds + "-fold cross-validated training data"
-//                + (_have_cv_results ? ": " + Utils.formatPct(error.valid_err) : " is being computed - please reload this page later."));
-//      }
-//    } else {
-//      DocGen.HTML.section(sb, "MSE on training data: " + String.format(mse_format, error.train_mse));
-//      if(error.validation) {
-//        DocGen.HTML.section(sb, "MSE on validation data: " + String.format(mse_format, error.valid_mse));
-//      } else if(error.num_folds > 0) {
-//        DocGen.HTML.section(sb, "MSE on " + error.num_folds + "-fold cross-validated training data"
-//                + (_have_cv_results ? ": " + String.format(mse_format, error.valid_mse) : " is being computed - please reload this page later."));
-//      }
-//    }
-//    DocGen.HTML.paragraph(sb, "Training samples: " + String.format("%,d", model_info().get_processed_total()));
-//    DocGen.HTML.paragraph(sb, "Epochs: " + String.format("%.3f", epoch_counter) + " / " + String.format("%.3f", get_params().epochs));
-//    int cores = 0; for (H2ONode n : H2O.CLOUD._memary) cores += n._heartbeat._num_cpus;
-//    DocGen.HTML.paragraph(sb, "Number of compute nodes: " + (model_info.get_params().single_node_mode ? ("1 (" + H2O.NUMCPUS + " threads)") : (H2O.CLOUD.size() + " (" + cores + " threads)")));
-//    DocGen.HTML.paragraph(sb, "Training samples per iteration" + (
-//            get_params().train_samples_per_iteration == -2 ? " (-2 -> auto-tuning): " :
-//            get_params().train_samples_per_iteration == -1 ? " (-1 -> max. available data): " :
-//            get_params().train_samples_per_iteration == 0 ? " (0 -> one epoch): " : " (user-given): ")
-//                    + String.format("%,d", get_params().actual_train_samples_per_iteration));
-//
-//    final boolean isEnded = get_params().self() == null || (UKV.get(get_params().self()) != null && Job.isEnded(get_params().self()));
-//    final long time_so_far = isEnded ? run_time : run_time + System.currentTimeMillis() - _timeLastScoreEnter;
-//    if (time_so_far > 0) {
-//      DocGen.HTML.paragraph(sb, "Training speed: " + String.format("%,d", model_info().get_processed_total() * 1000 / time_so_far) + " samples/s");
-//    }
-//    DocGen.HTML.paragraph(sb, "Training time: " + PrettyPrint.msecs(time_so_far, true));
-//    if (progress > 0 && !isEnded)
-//      DocGen.HTML.paragraph(sb, "Estimated time left: " +PrettyPrint.msecs((long)(time_so_far*(1-progress)/progress), true));
-//
-//    long score_train = error.score_training_samples;
-//    long score_valid = error.score_validation_samples;
-//    final boolean fulltrain = score_train==0 || score_train == training_rows;
-//    final boolean fullvalid = error.validation && get_params().n_folds == 0 && (score_valid==0 || score_valid == validation_rows);
-//
-//    final String toolarge = " Confusion matrix not shown here - too large: number of classes (" + model_info.units[model_info.units.length-1]
-//            + ") is greater than the specified limit of " + get_params().max_confusion_matrix_size + ".";
-//    boolean smallenough = model_info.units[model_info.units.length-1] <= get_params().max_confusion_matrix_size;
-//
-//    if (!error.validation) {
-//      if (_have_cv_results) {
-//        RString v_rs = new RString("<a href='Inspect2.html?src_key=%$key'>%key</a>");
-//        v_rs.replace("key", get_params().source != null && get_params().source._key != null ? get_params().source._key : "");
-//        String cmTitle = "<div class=\"alert\">Scoring results reported for " + error.num_folds + "-fold cross-validated training data " + v_rs.toString() + ":</div>";
-//        sb.append("<h5>" + cmTitle);
-//        sb.append("</h5>");
-//      }
-//      else {
-//        RString t_rs = new RString("<a href='Inspect2.html?src_key=%$key'>%key</a>");
-//        t_rs.replace("key", get_params().source != null && get_params().source._key != null ? get_params().source._key : "");
-//        String cmTitle = "<div class=\"alert\">Scoring results reported on training data " + t_rs.toString() + (fulltrain ? "" : " (" + score_train + " samples)") + ":</div>";
-//        sb.append("<h5>" + cmTitle);
-//        sb.append("</h5>");
-//      }
-//    }
-//    else {
-//      RString v_rs = new RString("<a href='Inspect2.html?src_key=%$key'>%key</a>");
-//      v_rs.replace("key", get_params().validation != null && get_params().validation._key != null ? get_params().validation._key : "");
-//      String cmTitle = "<div class=\"alert\">Scoring results reported on validation data " + v_rs.toString() + (fullvalid ? "" : " (" + score_valid + " samples)") + ":</div>";
-//      sb.append("<h5>" + cmTitle);
-//      sb.append("</h5>");
-//    }
-//
-//    if (isClassifier()) {
-//      // print AUC
-//      if (error.validAUC != null) {
-//        error.validAUC.toHTML(sb);
-//      }
-//      else if (error.trainAUC != null) {
-//        error.trainAUC.toHTML(sb);
-//      }
-//      else {
-//        if (error.validation) {
-//          if (error.valid_confusion_matrix != null && smallenough) {
-//            error.valid_confusion_matrix.toHTML(sb);
-//          } else if (smallenough) sb.append("<h5>Confusion matrix on validation data is not yet computed.</h5>");
-//          else sb.append(toolarge);
-//        }
-//        else if (_have_cv_results) {
-//          if (error.valid_confusion_matrix != null && smallenough) {
-//            error.valid_confusion_matrix.toHTML(sb);
-//          } else if (smallenough) sb.append("<h5>Confusion matrix on " + error.num_folds + "-fold cross-validated training data is not yet computed.</h5>");
-//          else sb.append(toolarge);
-//        }
-//        else {
-//          if (error.train_confusion_matrix != null && smallenough) {
-//            error.train_confusion_matrix.toHTML(sb);
-//          } else if (smallenough) sb.append("<h5>Confusion matrix on training data is not yet computed.</h5>");
-//          else sb.append(toolarge);
-//        }
-//      }
-//    }
-//
-//    // Hit ratio
-//    if (error.valid_hitratio != null) {
-//      error.valid_hitratio.toHTML(sb);
-//    } else if (error.train_hitratio != null) {
-//      error.train_hitratio.toHTML(sb);
-//    }
-//
-//    // Variable importance
-//    if (error.variable_importances != null) {
-//      error.variable_importances.toHTML(this, sb);
-//    }
-//
-//    printCrossValidationModelsHTML(sb);
-//
-//    DocGen.HTML.title(sb, "Scoring history");
-//    if (errors.length > 1) {
-//      DocGen.HTML.paragraph(sb, "Time taken for last scoring and diagnostics: " + PrettyPrint.msecs(errors[errors.length-1].scoring_time, true));
-//      // training
-//      {
-//        final long pts = fulltrain ? training_rows : score_train;
-//        String training = "Number of training data samples for scoring: " + (fulltrain ? "all " : "") + pts;
-//        if (pts < 1000 && training_rows >= 1000) training += " (low, scoring might be inaccurate -> consider increasing this number in the expert mode)";
-//        if (pts > 100000 && errors[errors.length-1].scoring_time > 10000) training += " (large, scoring can be slow -> consider reducing this number in the expert mode or scoring manually)";
-//        DocGen.HTML.paragraph(sb, training);
-//      }
-//      // validation
-//      if (error.validation) {
-//        final long ptsv = fullvalid ? validation_rows : score_valid;
-//        String validation = "Number of validation data samples for scoring: " + (fullvalid ? "all " : "") + ptsv;
-//        if (ptsv < 1000 && validation_rows >= 1000) validation += " (low, scoring might be inaccurate -> consider increasing this number in the expert mode)";
-//        if (ptsv > 100000 && errors[errors.length-1].scoring_time > 10000) validation += " (large, scoring can be slow -> consider reducing this number in the expert mode or scoring manually)";
-//        DocGen.HTML.paragraph(sb, validation);
-//      }
-//
-//      if (isClassifier() && nclasses() != 2 /*binary classifier has its own conflicting D3 object (AUC)*/) {
-//        // Plot training error
-//        float[] err = new float[errors.length];
-//        float[] samples = new float[errors.length];
-//        for (int i=0; i<err.length; ++i) {
-//          err[i] = (float)errors[i].train_err;
-//          samples[i] = errors[i].training_samples;
-//        }
-//        new D3Plot(samples, err, "training samples", "classification error",
-//                "classification error on training data").generate(sb);
-//
-//        // Plot validation error
-//        if (get_params().validation != null) {
-//          for (int i=0; i<err.length; ++i) {
-//            err[i] = (float)errors[i].valid_err;
-//          }
-//          new D3Plot(samples, err, "training samples", "classification error",
-//                  "classification error on validation set").generate(sb);
-//        }
-//      }
-//      // regression
-//      else if (!isClassifier()) {
-//        // Plot training MSE
-//        float[] err = new float[errors.length-1];
-//        float[] samples = new float[errors.length-1];
-//        for (int i=0; i<err.length; ++i) {
-//          err[i] = (float)errors[i+1].train_mse;
-//          samples[i] = errors[i+1].training_samples;
-//        }
-//        new D3Plot(samples, err, "training samples", "MSE",
-//                "regression error on training data").generate(sb);
-//
-//        // Plot validation MSE
-//        if (get_params().validation != null) {
-//          for (int i=0; i<err.length; ++i) {
-//            err[i] = (float)errors[i+1].valid_mse;
-//          }
-//          new D3Plot(samples, err, "training samples", "MSE",
-//                  "regression error on validation data").generate(sb);
-//        }
-//      }
-//    }
-//
-////    String training = "Number of training set samples for scoring: " + error.score_training;
-//    if (error.validation) {
-////      String validation = "Number of validation set samples for scoring: " + error.score_validation;
-//    }
-//    sb.append("<table class='table table-striped table-bordered table-condensed'>");
-//    sb.append("<tr>");
-//    sb.append("<th>Training Time</th>");
-//    sb.append("<th>Training Epochs</th>");
-//    sb.append("<th>Training Samples</th>");
-//    if (isClassifier()) {
-////      sb.append("<th>Training MCE</th>");
-//      sb.append("<th>Training Error</th>");
-//      if (nclasses()==2) sb.append("<th>Training AUC</th>");
-//    } else {
-//      sb.append("<th>Training MSE</th>");
-//    }
-//    if (error.validation) {
-//      if (isClassifier()) {
-////      sb.append("<th>Validation MCE</th>");
-//        sb.append("<th>Validation Error</th>");
-//        if (nclasses()==2) sb.append("<th>Validation AUC</th>");
-//      } else {
-//        sb.append("<th>Validation MSE</th>");
-//      }
-//    }
-//    else if (error.num_folds > 0) {
-//      if (isClassifier()) {
-//        sb.append("<th>Cross-Validation Error</th>");
-//        if (nclasses()==2) sb.append("<th>Cross-Validation AUC</th>");
-//      } else {
-//        sb.append("<th>Cross-Validation MSE</th>");
-//      }
-//    }
-//    sb.append("</tr>");
-//    for( int i = errors.length - 1; i >= 0; i-- ) {
-//      final Errors e = errors[i];
-//      sb.append("<tr>");
-//      sb.append("<td>" + PrettyPrint.msecs(e.training_time_ms, true) + "</td>");
-//      sb.append("<td>" + String.format("%g", e.epoch_counter) + "</td>");
-//      sb.append("<td>" + String.format("%,d", e.training_samples) + "</td>");
-//      if (isClassifier() && !get_params().autoencoder) {
-//        sb.append("<td>" + Utils.formatPct(e.train_err) + "</td>");
-//        if (nclasses()==2) {
-//          if (e.trainAUC != null) sb.append("<td>" + Utils.formatPct(e.trainAUC.AUC()) + "</td>");
-//          else sb.append("<td>" + "N/A" + "</td>");
-//        }
-//      } else {
-//        sb.append("<td>" + String.format(mse_format, e.train_mse) + "</td>");
-//      }
-//      if(e.validation) {
-//        if (isClassifier()) {
-//          sb.append("<td>" + Utils.formatPct(e.valid_err) + "</td>");
-//          if (nclasses()==2) {
-//            if (e.validAUC != null) sb.append("<td>" + Utils.formatPct(e.validAUC.AUC()) + "</td>");
-//            else sb.append("<td>" + "N/A" + "</td>");
-//          }
-//        } else {
-//          sb.append("<td>" + String.format(mse_format, e.valid_mse) + "</td>");
-//        }
-//      }
-//      else if(e.num_folds > 0) {
-//        if (i == errors.length - 1 && _have_cv_results) {
-//          if (isClassifier()) {
-//            sb.append("<td>" + Utils.formatPct(e.valid_err) + "</td>");
-//            if (nclasses() == 2) {
-//              if (e.validAUC != null) sb.append("<td>" + Utils.formatPct(e.validAUC.AUC()) + "</td>");
-//              else sb.append("<td>" + "N/A" + "</td>");
-//            }
-//          } else {
-//            sb.append("<td>" + String.format(mse_format, e.valid_mse) + "</td>");
-//          }
-//        }
-//        else {
-//          sb.append("<td>N/A</td>");
-//          if (nclasses() == 2) sb.append("<td>N/A</td>");
-//        }
-//      }
-//      sb.append("</tr>");
-//    }
-//    sb.append("</table>");
-    return true;
-  }
-
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     final Key job = null;
     final DeepLearningModel cp = this;
     DeepLearningModel bestModel = new DeepLearningModel(cp, bestModelKey, job, model_info().data_info());
-    bestModel.get_params()._state = Job.JobState.DONE;
-    assert false : "not implemented";
+//    bestModel.get_params()._state = Job.JobState.DONE; //FIXME
 //    bestModel.get_params()._key = get_params().self(); //FIXME : is private
     bestModel.delete_and_lock(job);
     bestModel.unlock(job);
@@ -1564,7 +1676,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
   }
 
   public void delete_xval_models( ) {
-    //FIXME
+    throw H2O.unimpl();
 //    if (get_params().xval_models != null) {
 //      for (Key k : get_params().xval_models) {
 //        DKV.get(k).<DeepLearningModel>get().delete_best_model();
@@ -1573,7 +1685,7 @@ public class DeepLearningModel extends SupervisedModel implements Comparable<Dee
 //    }
   }
 
-  private final String unstable_msg = "Job was aborted due to observed numerical instability (exponential growth)."
+  transient private final String unstable_msg = "Job was aborted due to observed numerical instability (exponential growth)."
           + "\nTry a different initial distribution, a bounded activation function or adding"
           + "\nregularization with L1, L2 or max_w2 and/or use a smaller learning rate or faster annealing.";
 

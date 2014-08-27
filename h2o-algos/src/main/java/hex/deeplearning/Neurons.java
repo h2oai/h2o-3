@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.FrameTask;
-import hex.deeplearning.DeepLearning.Loss;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
@@ -44,7 +43,7 @@ public abstract class Neurons {
   /**
    * Parameters (deep-cloned() from the user input, can be modified here, e.g. learning rate decay)
    */
-  protected transient DeepLearning params;
+  protected transient DeepLearningModel.DeepLearningParameters params;
   protected transient int _index; //which hidden layer it is
 
   /**
@@ -126,9 +125,9 @@ public abstract class Neurons {
    * @param minfo Model information (weights/biases and their momenta)
    * @param training Whether training is done or just testing (no need for dropout)
    */
-  public final void init(Neurons[] neurons, int index, DeepLearning p, final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
+  public final void init(Neurons[] neurons, int index, DeepLearningModel.DeepLearningParameters p, final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
     _index = index-1;
-    params = (DeepLearning)p.clone();
+    params = (DeepLearningModel.DeepLearningParameters)p.clone();
     params.rate *= Math.pow(params.rate_decay, index-1);
     _a = new DenseVector(units);
     if (!(this instanceof Output) && !(this instanceof Input)) {
@@ -481,7 +480,7 @@ public abstract class Neurons {
    */
   protected float autoEncoderError(int row) {
     assert (_minfo.get_params().autoencoder && _index == _minfo.get_params().hidden.length);
-    assert (params.loss == Loss.MeanSquare);
+    assert (params.loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
     return (_input._a.get(row) - _a.get(row));
   }
 
@@ -937,12 +936,12 @@ public abstract class Neurons {
         final float t = (row == target ? 1f : 0f);
         final float y = _a.get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
-        if (params.loss == Loss.CrossEntropy) {
+        if (params.loss == DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy) {
           //nothing else needed, -dCE/dy * dy/dnet = target - y
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
         } else {
-          assert(params.loss == Loss.MeanSquare);
+          assert(params.loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
         }
@@ -967,7 +966,7 @@ public abstract class Neurons {
      */
     protected void bprop(float target) {
       assert (target != missing_real_value);
-      if (params.loss != Loss.MeanSquare) throw new UnsupportedOperationException("Regression is only implemented for MeanSquare error.");
+      if (params.loss != DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) throw new UnsupportedOperationException("Regression is only implemented for MeanSquare error.");
       final int row = 0;
       // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
       final float g = target - _a.get(row); //for MSE -dMSE/dy = target-y

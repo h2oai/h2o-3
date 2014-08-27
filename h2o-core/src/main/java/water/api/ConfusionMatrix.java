@@ -6,7 +6,7 @@ import water.fvec.Frame;
 import water.fvec.TransfVec;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.ModelUtils;
+import static water.util.PrettyPrint.printConfusionMatrix;
 import java.util.Arrays;
 
 /**
@@ -181,12 +181,11 @@ public class ConfusionMatrix extends Iced {
   }
 
   public void toASCII( StringBuilder sb ) {
-//    if (classification) {
-//      if(cm == null) return;
-//      ModelUtils.printConfusionMatrix(sb, cm, domain, false);
-//    } else {
-//      sb.append("MSE: " + mse);
-//    }
-    throw H2O.unimpl();
+    if (classification) {
+      if(cm == null) return;
+      printConfusionMatrix(sb, cm, domain, false);
+    } else {
+      sb.append("MSE: " + mse);
+    }
   }
 }
