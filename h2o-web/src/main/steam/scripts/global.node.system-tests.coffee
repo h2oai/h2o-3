@@ -45,26 +45,52 @@ createContext = (host) ->
   Steam.H2OProxy _
   _
 
-createCloud = (go) ->
+_clouds = []
+_spawnCloud = ->
   diag "Starting new H2O cloud..."
-  h2o = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH ]
-  diag "PID #{h2o.pid}"
+  cloud = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH ]
+  diag "PID #{cloud.pid}"
+  _clouds.push cloud
+  cloud
 
-  done = ->
-    diag "Killing H2O..."
-    h2o.kill() # SIGTERM
+_killCloud = (cloud) ->
+  if cloud
+    try
+      diag "Killing cloud #{cloud.pid}..."
+      cloud.kill() # SIGTERM
+    catch error
+      # noop
+  return
+
+killCloud = (cloud) ->
+  if index = _clouds.indexOf cloud
+    _clouds.splice index, 1
+  _killCloud cloud
+
+killAllClouds = ->
+  while cloud = _clouds.pop()
+    _killCloud cloud
+  return
+
+'exit uncaughtException SIGINT SIGTERM SIGHUP SIGBREAK'.split(' ')
+  .forEach (signal) ->
+    process.on signal, killAllClouds
+
+createCloud = (go) ->
+  cloud = _spawnCloud()
+  done = -> killCloud cloud
 
   runTests = (host) ->
     ->
       diag "Executing tests..."
       go (createContext host), done
 
-  h2o.stdout.on 'data', (data) ->
+  cloud.stdout.on 'data', (data) ->
     diag data
     if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
       host = match[1]
       diag "H2O cloud started at #{host}"
       setTimeout (runTests host), 1000
 
-  h2o.stderr.on 'data', (data) -> diag data
-  h2o.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."
+  cloud.stderr.on 'data', (data) -> diag data
+  cloud.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."
