@@ -17,15 +17,44 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(water.parser.ParseSetup.hex(file.getName)),file))
 
   // Operators for the Map and MapLike
-  override def get( row : Long ) : Option[Array[Any]] = ???
   override def iterator: Iterator[(Long, Array[Any])] = ???
   override def + [B1 >: Array[Any]](kv: (Long, B1)): Map[Long,Array[Any]] = ???
   override def -(key: Long): Map[Long,Array[Any]] = ???
 
   override def empty : Map[Long,Array[Any]] = ???
-  override def foreach[U](f: ((Long, Array[Any])) => U): Unit = ???
-  override def size: Int = ???
-  
+  override def size: Int = numRows.asInstanceOf[Int]
+
+  // If the row is outside the range, return None.
+  // Else return an Array of Option; None for any NA values.
+  // Else return Option[Double] or Option[Long] or Option[String].
+  override def get( row : Long ) : Option[Array[Any]] = {
+    if( 0 <= row && row < numRows ) 
+      Some(for( vec <- vecs ) yield if( vec.isNA(row) ) None else vec.at(row))
+    else None
+  }
+
+  // 
+  override def foreach[U](f: ((Long, Array[Any])) => U): Unit = {
+    new MRTask {
+      override def map( chks : Array[Chunk] ) = {
+        val start = chks(0)._start
+        val row = new Array[Any](chks.length)
+        var i=0
+        val len = chks(0).len
+        while( i<len ) {
+          var col = 0
+          while( col < chks.length ) {
+            row(col) = if( chks(col).isNA0(i) ) None else chks(col).at0(i)
+            col+=1
+          }
+          f(start+i,row)
+          i+=1
+        }
+      }
+    }.doAll(this)
+  }
+}
+
 
 //val fr = new DataFrame("airlines.csv")
 //
@@ -45,7 +74,6 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
 //      }
 //    }.doAll( fr.int("Year"), fr("IsDelayed"), fr("Dist"))
 //  }
-}
 
 
 //import scala.reflect.runtime.universe._
