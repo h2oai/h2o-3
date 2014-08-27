@@ -37,17 +37,23 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   override def foreach[U](f: ((Long, Array[Any])) => U): Unit = {
     new MRTask {
       override def map( chks : Array[Chunk] ) = {
-        val len = chks(0).len
         val start = chks(0)._start
+        val row = new Array[Any](chks.length)
         var i=0
+        val len = chks(0).len
         while( i<len ) {
-          val row = for( chk <- chks ) yield if( chk.isNA0(i) ) None else chk.at0(i)
-          f((start+i,row))
+          var col = 0
+          while( col < chks.length ) {
+            row(col) = if( chks(col).isNA0(i) ) None else chks(col).at0(i)
+            col+=1
+          }
+          f(start+i,row)
           i+=1
         }
       }
     }.doAll(this)
   }
+}
 
 
 //val fr = new DataFrame("airlines.csv")
@@ -68,7 +74,6 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
 //      }
 //    }.doAll( fr.int("Year"), fr("IsDelayed"), fr("Dist"))
 //  }
-}
 
 
 //import scala.reflect.runtime.universe._
