@@ -503,6 +503,94 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public enum Loss {
       Automatic, MeanSquare, Loss, CrossEntropy
     }
+
+    //Sanity check for Deep Learning job parameters
+    public void sanityCheck() {
+      if (source.numCols() <= 1)
+        throw new IllegalArgumentException("Training data must have at least 2 features (incl. response).");
+
+      if (hidden == null) throw new IllegalArgumentException("There must be at least one hidden layer.");
+
+      for (int i=0;i<hidden.length;++i) {
+        if (hidden[i]==0)
+          throw new IllegalArgumentException("Hidden layer size must be >0.");
+      }
+
+      //Auto-fill defaults
+      if (hidden_dropout_ratios == null) {
+        if (activation == Activation.TanhWithDropout || activation == Activation.MaxoutWithDropout || activation == Activation.RectifierWithDropout) {
+          hidden_dropout_ratios = new double[hidden.length];
+          if (!quiet_mode) Log.info("Automatically setting all hidden dropout ratios to 0.5.");
+          Arrays.fill(hidden_dropout_ratios, 0.5);
+        }
+      }
+      else if (hidden_dropout_ratios.length != hidden.length) throw new IllegalArgumentException("Must have " + hidden.length + " hidden layer dropout ratios.");
+      else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
+        if (!quiet_mode) Log.info("Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
+      }
+      if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
+        throw new IllegalArgumentException("Input dropout must be in [0,1).");
+      }
+
+      if (!quiet_mode) {
+        if (adaptive_rate) {
+          Log.info("Using automatic learning rate.  Ignoring the following input parameters:");
+          Log.info("  rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+        } else {
+          Log.info("Using manual learning rate.  Ignoring the following input parameters:");
+          Log.info("  rho, epsilon.");
+        }
+
+        if (initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
+          Log.info("Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
+        }
+        if (n_folds != 0) {
+          if (override_with_best_model) {
+            Log.info("Automatically setting override_with_best_model to false, since the final model is the only scored model with n-fold cross-validation.");
+            override_with_best_model = false;
+          }
+        }
+      }
+
+      if(loss == Loss.Automatic) {
+        if (!classification) {
+          if (!quiet_mode) Log.info("Automatically setting loss to MeanSquare for regression.");
+          loss = Loss.MeanSquare;
+        }
+        else if (autoencoder) {
+          if (!quiet_mode) Log.info("Automatically setting loss to MeanSquare for auto-encoder.");
+          loss = Loss.MeanSquare;
+        }
+        else {
+          if (!quiet_mode) Log.info("Automatically setting loss to Cross-Entropy for classification.");
+          loss = Loss.CrossEntropy;
+        }
+      }
+
+      if(autoencoder && sparsity_beta > 0) {
+        if (activation == Activation.Tanh || activation == Activation.TanhWithDropout) {
+          if (average_activation >= 1 || average_activation <= -1)
+            throw new IllegalArgumentException("Tanh average activation must be in (-1,1).");
+        }
+        else if (activation == Activation.Rectifier || activation == Activation.RectifierWithDropout) {
+          if (average_activation <= 0)
+            throw new IllegalArgumentException("Rectifier average activation must be positive.");
+        }
+      }
+
+      if (!classification && loss == Loss.CrossEntropy) throw new IllegalArgumentException("Cannot use CrossEntropy loss function for regression.");
+      if (autoencoder && loss != Loss.MeanSquare) throw new IllegalArgumentException("Must use MeanSquare loss function for auto-encoder.");
+      if (autoencoder && classification) { classification = false; Log.info("Using regression mode for auto-encoder.");}
+
+      // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
+      if (autoencoder && validation != null) throw new UnsupportedOperationException("Cannot specify a validation dataset for auto-encoder.");
+      if (autoencoder && activation == Activation.Maxout) throw new UnsupportedOperationException("Maxout activation is not supported for auto-encoder.");
+
+      if (!sparse && col_major) {
+        if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
+      }
+    }
+
   }
 
   public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
@@ -1676,7 +1764,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   public void delete_xval_models( ) {
-    throw H2O.unimpl();
 //    if (get_params().xval_models != null) {
 //      for (Key k : get_params().xval_models) {
 //        DKV.get(k).<DeepLearningModel>get().delete_best_model();

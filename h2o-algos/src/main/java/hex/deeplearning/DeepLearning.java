@@ -244,6 +244,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final DeepLearningModel initModel() {
       try {
         lock_data();
+        _parms.sanityCheck();
         final DataInfo dinfo = prepareDataInfo();
         final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
         float[] priorDist = _parms.classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;
@@ -351,19 +352,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         Log.info(model);
         Log.info("Finished training the Deep Learning model.");
-        return model;
       }
       catch(RuntimeException ex) {
         model = DKV.get(dest()).get();
         _state = JobState.CANCELLED; //for JSON REST response
         Log.info("Deep Learning model building was cancelled.");
-        return model;
+        throw ex;
       }
       finally {
         if (model != null) model.unlock(self());
         unlock_data();
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
+      return model;
     }
     transient HashSet<Frame> _delete_me = new HashSet<>();
 
