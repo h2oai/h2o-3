@@ -1,9 +1,13 @@
 apply from: '../gradle/scala.gradle'
+apply from: '../gradle/cp.gradle'
 
 description = "H2O Scala API"
 
 dependencies {
   compile project(":h2o-core")
   compile "org.scala-lang:scala-library:$scalaVersion"
+  
+  testCompile project(path: ":h2o-core", configuration: "testArtifacts")
+  testCompile "junit:junit:4.+"
 }
 
