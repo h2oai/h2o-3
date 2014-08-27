@@ -133,6 +133,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
+      Scope.enter();
       DeepLearningModel cp = null;
       if (_parms.checkpoint == null) cp = initModel();
       else {
@@ -205,7 +206,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
       // clean up
       int validlen = _parms.validation != null ? _parms.validation.vecs().length : 0;
-      Key[] keep = new Key[_parms.source.vecs().length+validlen+3];
+      Key[] keep = new Key[_parms.source.vecs().length+validlen+4];
       //don't delete the training data
       for (int i = 0; i< _parms.source.vecs().length; ++i)
         keep[i] = _parms.source.vecs()[i]._key;
@@ -214,8 +215,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       for (int i = 0; i< validlen; ++i)
         keep[i] = _parms.validation.vecs()[i]._key;
       if (_parms.validation != null) keep[_parms.source.vecs().length+1] = _parms.validation._key;
-      //don't delete teh model
+      //don't delete the model
       keep[_parms.source.vecs().length+2] = _dest;
+      keep[_parms.source.vecs().length+3] = cp.actual_best_model_key;
       Scope.exit(keep);
     }
 

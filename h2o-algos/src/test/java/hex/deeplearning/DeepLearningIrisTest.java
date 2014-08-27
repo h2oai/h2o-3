@@ -23,7 +23,7 @@ public class DeepLearningIrisTest extends TestUtil {
   Frame _train, _test;
 
   // Default run is the short run
-  @Test @Ignore public void run() throws Exception { runFraction(0.05f); }
+  @Test public void run() throws Exception { runFraction(0.05f); }
 
   private void compareVal(double a, double b, double abseps, double releps) {
     if( !compare(a,b,abseps,releps) ) // Complex test does not fit JUnit Assert very well
@@ -187,17 +187,18 @@ public class DeepLearningIrisTest extends TestUtil {
                               l = neurons[2];
                               for (int o = 0; o < l._a.size(); o++) {
                                 for (int i = 0; i < l._previous._a.size(); i++) {
-//                          System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
+//                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
                                   ref._nn.hoWeights[i][o] = l._w.get(o, i);
                                 }
                                 ref._nn.oBiases[o] = l._b.get(o);
-//                        System.out.println("initial bias[" + o + "]=" + l._b[o]);
+//                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
                               }
 
                               // Train the Reference
                               ref.train((int) p.epochs, rate, p.momentum_stable, loss);
 
                               // Train H2O
+                              mymodel.delete_best_model();
                               mymodel.delete();
                               mymodel = new DeepLearning(p).train().get();
                               Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * fr.numRows());
@@ -218,7 +219,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   double a = ref._nn.ihWeights[i][o];
                                   double b = l._w.get(o, i);
                                   compareVal(a, b, abseps, releps);
-//                          System.out.println("weight[" + o + "]=" + b);
+//                                System.out.println("weight[" + o + "]=" + b);
                                 }
                                 double ba = ref._nn.hBiases[o];
                                 double bb = l._b.get(o);
@@ -265,10 +266,10 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                   // compare predicted label
                                   Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
-//                          // compare predicted probabilities
-//                          for (int j=0; j<ref_preds.length; ++j) {
-//                            compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);
-//                          }
+//                                // compare predicted probabilities
+//                                for (int j=0; j<ref_preds.length; ++j) {
+//                                  compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);
+//                                }
                                 }
                               } finally {
                                 if (fpreds != null) fpreds.delete();
