@@ -2,7 +2,7 @@
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
-main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java)
+main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java src/main/java/jsr166y/*java)
 test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java src/test/java/water/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/main/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/test/%class,$(test_javas))
@@ -76,17 +76,17 @@ check_slow: $(classes)
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/main/%class: src/main/java/%java
-	@echo "compiling " $?
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes/main ] || mkdir -p build/classes/main
 	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/main $(main_javas)
 
-$(test_classes): build/classes/test/%class: src/test/java/%java $(main_classes)
-	@echo "compiling " $?
+$(test_classes): build/classes/test/%class: src/test/java/%java $(filter-out %/AbstractBuildVersion.class,$(main_classes))
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes/test ] || mkdir -p build/classes/test
-	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/test/java -d build/classes/test $(test_javas)
+	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/test $(test_javas)
 
 build/classes/main/water/init/BuildVersion.class: ../build/BuildVersion.java
-	@echo "compiling " $?
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes/main ] || mkdir -p build/classes/main
 	@javac $(JAVAC_ARGS) -sourcepath src/main/java -d build/classes/main $?
 
@@ -95,12 +95,14 @@ build/classes/main/water/init/BuildVersion.class: ../build/BuildVersion.java
 # Name collisions amongst packages are quietly ignored.
 # H2O names win over all other names.
 build/h2o-core.jar: $(main_classes) build/classes/main/water/init/BuildVersion.class
+	@echo "jarring " $@ " because " $?
 	@rm -rf build/tmp ; mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes/main . -C build/tmp . -C src/main resources
 	@rm -rf build/tmp
 
 build/test-h2o-core.jar: $(test_classes)
+	@echo "jarring " $@ " because " $?
 	@jar -cfm build/test-h2o-core.jar manifest.txt -C build/classes/test .
 
 

@@ -1,2 +1,2 @@
-Main-Class: H2OApp
+Main-Class: water.H2OApp
 

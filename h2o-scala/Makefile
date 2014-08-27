@@ -34,7 +34,7 @@ else
 endif
 
 # Jars, with OS-specific separators
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-algos/build/h2o-algos.jar
+jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-core/build/test-h2o-core.jar
 
 # Default build: the h2o-scala jar file
 default: build/h2o-scala.jar
@@ -54,7 +54,8 @@ JUNIT_TESTS  = $(JUNIT_TESTS5)
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
 	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+#	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+	-($(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0
 	-@(pkill java; echo )
 	@exit `cat sandbox/status.0`
 
@@ -67,17 +68,18 @@ check_slow: $(classes)
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/scala/%scala
-	@echo "compiling " $?
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes $(main_scalas)
 
 $(test_classes): build/classes/%class: src/test/scala/%scala $(main_classes)
-	@echo "compiling " $?
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/test/scala -d build/classes $(test_scalas)
 
 # Build the h2o-scala.jar file
 build/h2o-scala.jar: $(classes)
+	@echo "jarring " $@ " because " $?
 	@jar -cf build/h2o-scala.jar -C build/classes .
 
 
