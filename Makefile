@@ -2,7 +2,7 @@
 PROJECT_VERSION = 999999
 
 # All the subdirs we might recursively make, in no particular order
-SUBDIRS = h2o-core h2o-algos h2o-app h2o-web #h2o-r h2o-scala h2o-hadoop h2o-docs assembly
+SUBDIRS = h2o-core h2o-algos h2o-app h2o-web h2o-scala #h2o-r h2o-hadoop h2o-docs assembly
 
 # subdirs is a (phony) target we can make
 .PHONY: subdirs $(SUBDIRS)
@@ -24,6 +24,8 @@ h2o-core: build/BuildVersion.java
 
 # h2o-algos needs h2o-core
 h2o-algos: h2o-core
+
+h2o-scala: h2o-core
 
 h2o-app: h2o-core h2o-algos h2o-web
 

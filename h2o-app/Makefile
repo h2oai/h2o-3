@@ -50,7 +50,7 @@ check: $(classes)
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/%class: src/main/java/%java
-	@echo "compiling " $?
+	@echo "compiling " $@ " because " $?
 	@[ -d build/classes ] || mkdir -p build/classes
 	@javac $(JAVAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/java -d build/classes $(main_javas)
 
@@ -60,9 +60,11 @@ $(main_classes): build/classes/%class: src/main/java/%java
 # H2O names win over all other names.
 #	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 build/h2o-web.jar: $(classes) ../h2o-algos/build/h2o-algos.jar ../h2o-core/build/h2o-core.jar
-	@mkdir -p build/tmp
+	@echo "jarring " $@ " because " $?
+	@rm -rf build/tmp ; mkdir -p build/tmp
+	@cp -r build/classes/water build/tmp
 	@(cd build/tmp; jar xf ../../../h2o-algos/build/h2o-algos.jar; jar xf ../../../h2o-core/build/h2o-core.jar )
-	@jar -cfm build/h2o-web.jar manifest.txt -C build/classes . -C build/tmp .
+	@jar -cfm build/h2o-web.jar manifest.txt -C build/tmp .
 	@rm -rf build/tmp
 
 

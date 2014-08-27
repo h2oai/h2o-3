@@ -11,7 +11,7 @@ dependencies {
 
 fatJar {
    manifest {
-      attributes 'Main-Class': 'H2OApp'
+      attributes 'Main-Class': 'water.H2OApp'
    }
 }
 

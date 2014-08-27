@@ -8,12 +8,13 @@ import water.api.API;
 import water.nbhm.UtilUnsafe;
 
 public class Weaver {
-  private static final ClassPool _pool = ClassPool.getDefault();
+  private static final ClassPool _pool;
   private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
     try { 
+      _pool = ClassPool.getDefault();
       _dtask= _pool.get("water.DTask");    // these also need copyOver
       _enum = _pool.get("java.lang.Enum"); // Special serialization
       _iced = _pool.get("water.Iced");     // Base of serialization
