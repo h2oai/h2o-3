@@ -23,7 +23,7 @@ public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: re
       case 2:
         return new ProfilerV2();
       default:
-        throw H2O.fail("Bad version for Frames schema: " + version);
+        throw H2O.fail("Bad version for Profiler schema: " + version);
     }
   }
   public ProfilerBase fetch(int version, Profiler p) {
