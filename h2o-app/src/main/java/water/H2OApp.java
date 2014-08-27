@@ -21,7 +21,7 @@ public class H2OApp {
     H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/src/main/resources/www"));
 
     // Register menu items and service handlers for algos
-    H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"compute2","/DeepLearning","Deep Learning","Model");
+    H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"train","/DeepLearning","Deep Learning","Model");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model");
     H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"work","/Example","Example","Model");
 
