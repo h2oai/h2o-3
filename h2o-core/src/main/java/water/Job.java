@@ -82,7 +82,8 @@ public class Job<T extends Keyed> extends Keyed {
    *  @param job_key job key
    *  @return true if job is still running else returns false.  */
   public static boolean isRunning(Key job_key) {
-    return ((Job)DKV.get(job_key).get()).isRunning();
+    Value j = DKV.get(job_key);
+    return j == null ? false : ((Job)j.get()).isRunning();
   }
 
   /** Current runtime; zero if not started */
