@@ -1,9 +1,11 @@
 package hex.deeplearning;
 
 import hex.FrameTask;
+import water.DKV;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Job;
+import water.Key;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -19,9 +21,9 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   int _chunk_node_count = 1;
 
-  public DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(input,fraction,null);}
-  private DeepLearningTask(hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
-    super(input.job(),input.data_info(),cmp);
+  public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(jobKey, input,fraction,null);}
+  private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
+    super(jobKey,input.data_info(),cmp);
     _training=true;
     _input=input;
     _useFraction=fraction;
@@ -43,7 +45,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   @Override public final void processRow(long seed, final double [] nums, final int numcats, final int [] cats, double [] responses){
-    if(_output.job() != null && !Job.isRunning(_output.job())) throw new RuntimeException();
     if (H2O.CLOUD.size()==1) {
       seed += model_info().get_processed_global(); //avoid periodicity
     } else {

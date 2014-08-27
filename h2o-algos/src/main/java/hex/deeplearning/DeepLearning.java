@@ -331,9 +331,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         //main loop
         do model.set_model_info(mp.epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp.replicate_training_data ? ( mp.single_node_mode ?
-                new DeepLearningTask2(train, model.model_info(), rowUsageFraction).doAll(Key.make()).model_info() : //replicated data + single node mode
-                new DeepLearningTask2(train, model.model_info(), rowUsageFraction).doAllNodes().model_info() ) : //replicated data + multi-node mode
-                new DeepLearningTask(model.model_info(), rowUsageFraction).doAll(train).model_info()); //distributed data (always in multi-node mode)
+                new DeepLearningTask2(self(), train, model.model_info(), rowUsageFraction).doAll(Key.make()).model_info() : //replicated data + single node mode
+                new DeepLearningTask2(self(), train, model.model_info(), rowUsageFraction).doAllNodes().model_info() ) : //replicated data + multi-node mode
+                new DeepLearningTask(self(), model.model_info(), rowUsageFraction).doAll(train).model_info()); //distributed data (always in multi-node mode)
         while (model.doScoring(train, trainScoreFrame, validScoreFrame, self(), validAdapter.getValidAdaptor()));
 
         // replace the model with the best model so far (if it's better)

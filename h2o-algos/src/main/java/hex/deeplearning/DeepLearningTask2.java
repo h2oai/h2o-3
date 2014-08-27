@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import water.Key;
 import water.MRTask;
 import water.fvec.Frame;
 
@@ -14,8 +15,9 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    * @param model_info Initial DeepLearningModelInfo (weights + biases)
    * @param sync_fraction Fraction of the training data to use for one SGD iteration
    */
-  public DeepLearningTask2(Frame train, DeepLearningModel.DeepLearningModelInfo model_info, float sync_fraction) {
+  public DeepLearningTask2(Key jobKey, Frame train, DeepLearningModel.DeepLearningModelInfo model_info, float sync_fraction) {
     assert(sync_fraction > 0);
+    _jobKey = jobKey;
     _fr = train;
     _model_info = model_info;
     _sync_fraction = sync_fraction;
@@ -29,6 +31,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     return _res.model_info();
   }
 
+  final private Key _jobKey;
   final private Frame _fr;
   final private DeepLearningModel.DeepLearningModelInfo _model_info;
   final private float _sync_fraction;
@@ -42,7 +45,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   public void setupLocal() {
-    _res = new DeepLearningTask(_model_info, _sync_fraction);
+    _res = new DeepLearningTask(_jobKey, _model_info, _sync_fraction);
     _res.setCompleter(this);
     _res.asyncExec(0, _fr, true /*run_local*/);
   }
