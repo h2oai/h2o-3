@@ -1,21 +1,26 @@
+argv = (require 'minimist') process.argv.slice 2
 fs = require 'fs'
 path = require 'path'
+spawn = (require 'child_process').spawn
 httpRequest = require 'request'
-_ = require('lodash');
-test = require('tape');
+_ = require 'lodash'
+test = require 'tape'
 
-STEAM_HOST = process.argv[2]
+# TAP diagnostics
+diag = (message) -> console.log '# ' + message
 
-# Check env for STEAM_HOST
-STEAM_HOST = process.env.STEAM_HOST unless STEAM_HOST
+# TAP bail out
+bailout = (message) -> console.log 'Bail out! ' + message
 
-# Default to localhost
-STEAM_HOST = '127.0.0.1:54321' unless STEAM_HOST
+# Pass -jar /path/to/h2o.jar to override the default jar
+JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'h2o-app', 'build', 'libs', 'h2o-app.jar'
+
+throw "H2O jar '#{jarpath}' not found!" unless fs.existsSync JAR_PATH
 
 # Node.js equivalent of Steam.Xhr
-Xhr = (_) ->
-  link$ _.invokeH2O = (method, path, go) ->
-    url = "http://#{STEAM_HOST}#{path}"
+Xhr = (_, host) ->
+  link$ _.invokeH2O, (method, path, go) ->
+    url = "http://#{host}#{path}"
     httpRequest url, (error, reply, body) ->
       if error
         go error
@@ -34,9 +39,32 @@ Xhr = (_) ->
           else
             go response
 
-createContext = (go) ->
+createContext = (host) ->
   _ = Steam.ApplicationContext()
-  Xhr _
+  Xhr _, host
   Steam.H2OProxy _
   _
 
+createCloud = (go) ->
+  diag "Starting new H2O cloud..."
+  h2o = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH ]
+  diag "PID #{h2o.pid}"
+
+  done = ->
+    diag "Killing H2O..."
+    h2o.kill() # SIGTERM
+
+  runTests = (host) ->
+    ->
+      diag "Executing tests..."
+      go (createContext host), done
+
+  h2o.stdout.on 'data', (data) ->
+    diag data
+    if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
+      host = match[1]
+      diag "H2O cloud started at #{host}"
+      setTimeout (runTests host), 1000
+
+  h2o.stderr.on 'data', (data) -> diag data
+  h2o.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."

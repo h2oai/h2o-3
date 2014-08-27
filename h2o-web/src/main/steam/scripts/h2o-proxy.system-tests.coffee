@@ -1,3 +1,4 @@
+
 ###
 t_h2o_response = T
   h2o_response:
@@ -179,3 +180,13 @@ test 'requestModelAndCompatibleFrames', (t) ->
       t.ok model.compatible_frames.length > 0
       t.end()
 ###
+
+test 'empty cloud should return empty frames list', (t) ->
+  t.plan 2
+  createCloud (_, done) ->
+    _.requestFrames (error, frames) ->
+      t.ok isArray frames
+      t.equal frames.length, 0
+      t.end()
+      done()
+
