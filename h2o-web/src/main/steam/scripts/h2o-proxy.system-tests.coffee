@@ -182,11 +182,14 @@ test 'requestModelAndCompatibleFrames', (t) ->
 ###
 
 test 'empty cloud should return empty frames list', (t) ->
-  t.plan 2
+  t.plan 3
   createCloud (_, done) ->
     _.requestFrames (error, frames) ->
-      t.ok isArray frames
-      t.equal frames.length, 0
-      t.end()
+      if error
+        t.fail 'request failed'
+      else
+        t.ok isArray frames
+        t.equal frames.length, 0
+        t.end()
       done()
 

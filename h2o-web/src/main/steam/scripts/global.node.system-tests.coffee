@@ -21,7 +21,13 @@ throw "H2O jar '#{jarpath}' not found!" unless fs.existsSync JAR_PATH
 Xhr = (_, host) ->
   link$ _.invokeH2O, (method, path, go) ->
     url = "http://#{host}#{path}"
-    httpRequest url, (error, reply, body) ->
+    diag "Calling #{url}"
+    opts =
+      method: method
+      url: url
+      timeout: 15000
+      #TODO can avoid JSON.parse() step by passing json:true
+    httpRequest opts, (error, reply, body) ->
       if error
         go error
       else
@@ -38,12 +44,6 @@ Xhr = (_, host) ->
               go response
           else
             go response
-
-createContext = (host) ->
-  _ = Steam.ApplicationContext()
-  Xhr _, host
-  Steam.H2OProxy _
-  _
 
 _clouds = []
 _spawnCloud = ->
@@ -63,7 +63,7 @@ _killCloud = (cloud) ->
   return
 
 killCloud = (cloud) ->
-  if index = _clouds.indexOf cloud
+  if -1 < (index = _clouds.indexOf cloud)
     _clouds.splice index, 1
   _killCloud cloud
 
@@ -75,6 +75,12 @@ killAllClouds = ->
 'exit uncaughtException SIGINT SIGTERM SIGHUP SIGBREAK'.split(' ')
   .forEach (signal) ->
     process.on signal, killAllClouds
+
+createContext = (host) ->
+  _ = Steam.ApplicationContext()
+  Xhr _, host
+  Steam.H2OProxy _
+  _
 
 createCloud = (go) ->
   cloud = _spawnCloud()
