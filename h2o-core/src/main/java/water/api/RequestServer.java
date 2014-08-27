@@ -86,6 +86,9 @@ public class RequestServer extends NanoHTTPD {
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
+  // NOTE!
+  // URL patterns are searched in order.  If you have two patterns that can match on the same URL
+  // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
   static {
     // Data
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles"), "/ImportFiles", "Import Files",  "Data");
@@ -128,6 +131,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
+    register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
 
     register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
