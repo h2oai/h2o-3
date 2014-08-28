@@ -66,7 +66,7 @@ Steam.ImportFilesDialog = (_, _go) ->
 
   tryImportFiles = ->
     specifiedPath = _specifiedPath()
-    _.requestTypeaheadFiles specifiedPath, 0, (error, result) ->
+    _.requestFileGlob specifiedPath, 0, (error, result) ->
       if error
         _errorMessage error.data.errmsg
       else
@@ -132,7 +132,7 @@ Steam.ImportFilesDialog = (_, _go) ->
         file.deselect() if file = (find _selectedFiles(), (file) -> file.path is path)
 
   listPathHints = (query, process) ->
-    _.requestTypeaheadFiles query, 10, (error, result) ->
+    _.requestFileGlob query, 10, (error, result) ->
       if error
         # swallow
       else

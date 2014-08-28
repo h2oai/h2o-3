@@ -74,7 +74,9 @@ killAllClouds = ->
 
 'exit uncaughtException SIGINT SIGTERM SIGHUP SIGBREAK'.split(' ')
   .forEach (signal) ->
-    process.on signal, killAllClouds
+    process.on signal, ->
+      diag "Caught signal '#{signal}'"
+      killAllClouds()
 
 createContext = (host) ->
   _ = Steam.ApplicationContext()
@@ -100,3 +102,81 @@ createCloud = (go) ->
 
   cloud.stderr.on 'data', (data) -> diag data
   cloud.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."
+
+tapediff = (x, y, opts) ->
+  _compile = (pattern) ->
+    pattern = pattern.replace /\./g, '\\.'
+    pattern = pattern.replace /\*{2,}/g, '.+?'
+    pattern = pattern.replace /\*/g, '[^.]+?'
+    new RegExp '^' + pattern + '$'
+
+  glob = if opts then { include: map((opts.include or []), _compile), exclude: map((opts.exclude or []), _compile) } else null
+
+  _dig = (path) ->
+    if glob
+      if glob.include.length > 0 and glob.exclude.length > 0
+        for include in glob.include
+          if include.test path
+            for exclude in glob.exclude
+              if exclude.test path
+                return no
+            return yes 
+        no
+      else if glob.include.length > 0
+        for include in glob.include
+          return yes if include.test path
+        no
+      else
+        for exclude in glob.exclude
+          return no if exclude.test path
+        yes
+    else
+      yes
+
+  _message = (path, x, y) ->
+    "Mismatched #{path}: expected '#{x}', actual '#{y}'"
+
+  _diff = (path, x, y) ->
+    if (isArray x) and (isArray y)
+      subpath = "#{path}#{if path then '.' else ''}#"
+      if _dig subpath
+        for xi, i in x
+          yi = y[i]
+          if result = _diff subpath, xi, yi
+            return result
+      null
+    else if (isObject x) and (isObject y)
+      for k, vx of x
+        subpath = "#{path}#{if path then '.' else ''}#{k}"
+        if _dig subpath
+          vy = y[k]
+          if result = _diff subpath, vx, vy
+            return result
+      null
+    else if (isNaN x) and (isNaN y)
+      null
+    else
+      if x is y then null else _message path, x, y
+
+  _diff '', x, y
+
+tdiff = (t, x, y, opts) ->
+  t.fail result if result = tapediff x, y, opts
+
+test 'tapediff', (t) ->
+  t.equal (tapediff null, null), null
+  t.equal (tapediff null, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched : expected \'null\', actual \'[object Object]\'' 
+  t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: 'baz' }, null), 'Mismatched : expected \'[object Object]\', actual \'null\''
+  t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), null
+  t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: Number.NaN }, { foo: 3.1415, bar: 'bar', baz: Number.NaN }), null
+  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched bar: expected \'ba\', actual \'bar\''
+  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched bar: expected \'ba\', actual \'bar\''
+  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }), null
+  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }), 'Mismatched qux.bar: expected \'bar\', actual \'10\''
+  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }, { include: ['qux.foo', 'qux.baz'] } ), null
+  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }, { exclude: ['qux.bar'] } ), null
+  t.end()
+
+
+
+
