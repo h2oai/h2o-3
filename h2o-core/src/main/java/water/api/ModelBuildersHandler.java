@@ -20,39 +20,12 @@ class ModelBuildersHandler extends Handler<ModelBuildersHandler.ModelBuilders, M
     IcedHashMap<String, ModelBuilder> model_builders;
   }
 
-  /** Return all the modelbuilders. */
-  protected Schema list(int version, ModelBuilders m) {
-    Map<String, Class<? extends ModelBuilder>> builders = ModelBuilder.getModelBuilders();
-    m.model_builders = new IcedHashMap<>();
+  /** Create a ModelBuilder instance of the correct class given the algo name. */
+  private ModelBuilder createModelBuilder(String algo) {
+    ModelBuilder modelBuilder = null;
 
-    int i = 0;
-    for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
-      try {
-        Class<? extends ModelBuilder> clz = entry.getValue();
-        String algo = entry.getKey();
-
-        if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
-          throw H2O.fail("Class is not parameterized as expected: " + clz);
-        }
-
-        Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
-        // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
-        Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
-
-        ModelBuilder modelbuilder = clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] }).newInstance(pclz.newInstance());
-        m.model_builders.put(algo, modelbuilder);
-      }
-      catch (Exception e) {
-        throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + entry.getKey() + ": " + e);
-      }
-    }
-    return this.schema(version).fillFromImpl(m);
-  }
-
-  /** Return a single modelbuilder. */
-  protected Schema fetch(int version, ModelBuilders m) {
     try {
-      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(m.algo);
+      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
       if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
         throw H2O.fail("Class is not parameterized as expected: " + clz);
       }
@@ -61,15 +34,40 @@ class ModelBuildersHandler extends Handler<ModelBuildersHandler.ModelBuilders, M
       // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
       Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
 
-      ModelBuilder modelbuilder = clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] }).newInstance(pclz.newInstance());
-
-      m.model_builders = new IcedHashMap<>();
-      m.model_builders.put(m.algo, modelbuilder);
+      modelBuilder = clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] }).newInstance(pclz.newInstance());
     }
     catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + m.algo + ": " + e);
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
+    }
+
+    return modelBuilder;
+  }
+
+  /** Return all the modelbuilders. */
+  protected Schema list(int version, ModelBuilders m) {
+    Map<String, Class<? extends ModelBuilder>> builders = ModelBuilder.getModelBuilders();
+    m.model_builders = new IcedHashMap<>();
+
+    for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
+        String algo = entry.getKey();
+        m.model_builders.put(algo, createModelBuilder(algo));
     }
     return this.schema(version).fillFromImpl(m);
+  }
+
+  /** Return a single modelbuilder. */
+  protected Schema fetch(int version, ModelBuilders m) {
+    m.model_builders = new IcedHashMap<>();
+    m.model_builders.put(m.algo, createModelBuilder(m.algo));
+    return this.schema(version).fillFromImpl(m);
+  }
+
+  /** Create a model by launching a ModelBuilder algo. */
+  protected Schema train(int version, ModelBuilders m) {
+    ModelBuilder builder = createModelBuilder(m.algo);
+
+    // TODO: WRONG: needs to return a schema containing the job
+    return this.schema(version);
   }
 
   @Override protected ModelBuildersBase schema(int version) {

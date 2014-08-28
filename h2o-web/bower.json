@@ -36,8 +36,5 @@
     "stacktrace": "~0.6.0",
     "momentjs": "~2.6.0",
     "typeahead.js": "~0.10.2"
-  },
-  "resolutions": {
-    "jquery": "~2.1.0"
   }
 }
