@@ -181,12 +181,48 @@ test 'requestModelAndCompatibleFrames', (t) ->
       t.end()
 ###
 
-test 'empty cloud should return empty frames list', (t) ->
-  t.plan 2
+test 'empty cloud', (t) ->
+  t.plan 4
   createCloud (_, done) ->
     _.requestFrames (error, frames) ->
-      t.ok isArray frames
-      t.equal frames.length, 0
-      t.end()
-      done()
+      if error
+        t.fail 'request failed'
+      else
+        t.ok isArray frames
+        t.equal frames.length, 0
+
+        _.requestJobs (error, jobs) ->
+          if error
+            t.fail 'request failed'
+          else
+            t.ok isArray jobs
+            t.equal jobs.length, 0
+
+            t.end()
+            done()
+
+test 'airlines ingest and model building flow', (t) ->
+  t.plan 0
+  createCloud (_, done) ->
+    # no frames exist
+    _.requestFrames (error, frames) ->
+      if error
+        t.fail 'request failed'
+      else
+        t.ok isArray frames
+        t.equal frames.length, 0
+
+        # import files dialog
+        
+        # searching for a file pattern
+        _.requestFileGlob './smalldata/airlines', (error, result) ->
+          if error
+            t.fail 'request failed'
+          else
+            t.ok isArray result.matches
+            t.equal result.matches.length, 1
+            t.equal result.matches[0], './smalldata/airlines/allyears2k_headers.zip'
+        
+
+
 

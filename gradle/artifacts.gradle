@@ -1,0 +1,13 @@
+// Print all artifacts of given project
+task artifacts {
+    group = "Help"
+    description = "Displays the artifacts associated with each configuration of " + project
+    doFirst {
+        configurations.findAll().each { config ->
+            println "${config}:"
+            config.allArtifacts.getFiles().each { file -> println "  " + file}
+            println ' '
+        }
+    }
+}
+

@@ -26,10 +26,12 @@ task testJar(type: Jar, dependsOn: testClasses) {
     from sourceSets.test.output
 }
 
+// Create a configuration containing only for test artifacts
 configurations {
-    tests
+    testArchives
 }
 
+// Explicitly 
 artifacts {
-    tests testJar
+    testArchives testJar
 }

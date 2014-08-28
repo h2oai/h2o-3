@@ -40,7 +40,7 @@ Steam.ApplicationContext = ->
 
     invokeH2O: do edge$
 
-    requestTypeaheadFiles: do edge$
+    requestFileGlob: do edge$
     requestImportFiles: do edge$
     requestParseSetup: do edge$
     requestParseFiles: do edge$

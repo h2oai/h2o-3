@@ -20,7 +20,7 @@ Steam.H2OProxy = (_) ->
   requestWithOpts = (path, opts, go) ->
     request (composePath path, opts), go
 
-  requestTypeaheadFiles = (path, limit, go) ->
+  requestFileGlob = (path, limit, go) ->
     opts =
       src: encodeURIComponent path
       limit: limit
@@ -126,7 +126,7 @@ Steam.H2OProxy = (_) ->
   requestTimeline = (go) ->
     request '/Timeline.json', go
 
-  link$ _.requestTypeaheadFiles, requestTypeaheadFiles
+  link$ _.requestFileGlob, requestFileGlob
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
   link$ _.requestParseFiles, requestParseFiles

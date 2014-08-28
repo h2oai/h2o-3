@@ -1,7 +1,13 @@
-task cpLibs(type:Copy) { 
-    from { project.configurations.runtime }
-    from { project.configurations.testRuntime }
+task cpLibs(type:Sync) {
+    def skipFiles = {
+      // Use parent property containing all artifacts 
+        allArchives + allTestArchives
+    }
+
+    from { project.configurations.runtime.minus(skipFiles()) }
+    //from { println skipFiles().each{f->println "S : "+f}; project.configurations.runtime.minus(skipFiles()); project.configurations.runtime.each { f -> println "R: " +f } }
+    from { project.configurations.testRuntime.minus(skipFiles()) }
+    
     into "$rootDir/lib"
 }
 
-//processResources.dependsOn(xxJars)
