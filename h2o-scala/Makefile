@@ -43,7 +43,7 @@ default: build/h2o-scala.jar
 classes: $(classes)
 
 
-JVM = nice scala -cp "build/classes$(SEP)$(jars)" 
+JVM = nice java -cp "build/classes$(SEP)$(jars)" 
 # Too slow for normal junit runs
 # All Tests minus the excludes
 JUNIT_TESTS0 = $(subst /,.,$(test_clazzes))

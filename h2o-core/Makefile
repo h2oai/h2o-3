@@ -45,7 +45,7 @@ classes: $(classes)
 
 JVM = nice java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
 # Tests that happen during Cloud startup
-JUNIT_TESTS_BOOT = water.api.APITest
+JUNIT_TESTS_BOOT = water.AAA_PreCloudLock
 # Too slow for normal junit runs
 JUNIT_TESTS_SLOW1 = water.KVTest
 JUNIT_TESTS_SLOW2 = water.parser.ParseProgressTest
