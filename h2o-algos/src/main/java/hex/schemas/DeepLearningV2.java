@@ -1,23 +1,79 @@
 package hex.schemas;
 
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.Key;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.BeanUtils;
-import water.util.Log;
-
-import java.util.Arrays;
 import java.util.Random;
 
 public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearningV2,DeepLearningV2.DeepLearningParametersV2> {
 
   public static final class DeepLearningParametersV2 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV2> {
-//    public String[] fields() { return new String[] {"K", "max_iters", "normalize", "seed", "init" }; }
-    public String[] fields() { return new String[] {}; } //FIXME
+    public String[] fields() { return new String[]{
+            "source",
+            "validation",
+            "classification",
+            "response",
+            "ignored_cols",
+            "n_folds",
+            "keep_cross_validation_splits",
+            "checkpoint",
+            "override_with_best_model",
+            "autoencoder",
+            "use_all_factor_levels",
+            "activation",
+            "hidden",
+            "epochs",
+            "train_samples_per_iteration",
+            "seed",
+            "adaptive_rate",
+            "rho",
+            "epsilon",
+            "rate",
+            "rate_annealing",
+            "rate_decay",
+            "momentum_start",
+            "momentum_ramp",
+            "momentum_stable",
+            "nesterov_accelerated_gradient",
+            "input_dropout_ratio",
+            "hidden_dropout_ratios",
+            "l1",
+            "l2",
+            "max_w2",
+            "initial_weight_distribution",
+            "initial_weight_scale",
+            "loss",
+            "score_interval",
+            "score_training_samples",
+            "score_validation_samples",
+            "score_duty_cycle",
+            "classification_stop",
+            "regression_stop",
+            "quiet_mode",
+            "max_confusion_matrix_size",
+            "max_hit_ratio_k",
+            "balance_classes",
+            "max_after_balance_size",
+            "score_validation_sampling",
+            "diagnostics",
+            "variable_importances",
+            "fast_mode",
+            "ignore_const_cols",
+            "force_load_balance",
+            "replicate_training_data",
+            "single_node_mode",
+            "shuffle_training_data",
+            "missing_values_handling",
+            "sparse",
+            "col_major",
+            "average_activation",
+            "sparsity_beta",
+    };
+    }
 
     // FIXME
     public Frame source;
