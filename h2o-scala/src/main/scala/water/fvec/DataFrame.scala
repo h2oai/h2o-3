@@ -1,12 +1,12 @@
 package water.fvec
 
 import water._
-import water.fvec._
 import java.io.File
 
 class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] ) 
   extends Frame(key,names,vecs) 
-  with Map[Long,Array[Any]] {
+  with Map[Long,Array[Option[Any]]] {
+  type T = Array[Option[Any]]
 
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
   // underlying arrays.  Recommended that the input Java Frame be dead after
@@ -17,34 +17,34 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(water.parser.ParseSetup.hex(file.getName)),file))
 
   // Operators for the Map and MapLike
-  override def iterator: Iterator[(Long, Array[Any])] = ???
-  override def + [B1 >: Array[Any]](kv: (Long, B1)): Map[Long,Array[Any]] = ???
-  override def -(key: Long): Map[Long,Array[Any]] = ???
+  override def iterator: Iterator[(Long, T)] = ???
+  override def + [B1 >: T](kv: (Long, B1)): Map[Long,T] = ???
+  override def - (key: Long): Map[Long,T] = ???
 
-  override def empty : Map[Long,Array[Any]] = ???
+  override def empty : Map[Long,T] = ???
   override def size: Int = numRows.asInstanceOf[Int]
 
   // If the row is outside the range, return None.
   // Else return an Array of Option; None for any NA values.
   // Else return Option[Double] or Option[Long] or Option[String].
-  override def get( row : Long ) : Option[Array[Any]] = {
+  override def get( row : Long ) : Option[T] = {
     if( 0 <= row && row < numRows ) 
-      Some(for( vec <- vecs ) yield if( vec.isNA(row) ) None else vec.at(row))
+      Some(for( vec <- vecs ) yield if( vec.isNA(row) ) None else Some(vec.at(row)))
     else None
   }
 
-  // 
-  override def foreach[U](f: ((Long, Array[Any])) => U): Unit = {
+  // Map a function over each Row.  Reuse the Row array, but still allocates Options & Doubles
+  override def foreach[U](f: ((Long, T)) => U): Unit = {
     new MRTask {
       override def map( chks : Array[Chunk] ) = {
         val start = chks(0)._start
-        val row = new Array[Any](chks.length)
+        val row = new T(chks.length)
         var i=0
         val len = chks(0).len
         while( i<len ) {
           var col = 0
           while( col < chks.length ) {
-            row(col) = if( chks(col).isNA0(i) ) None else chks(col).at0(i)
+            row(col) = if( chks(col).isNA0(i) ) None else Some(chks(col).at0(i))
             col+=1
           }
           f(start+i,row)

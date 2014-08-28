@@ -14,10 +14,25 @@ class BasicTest extends TestUtil {
       println(fr.get(-1))               // None
       println(fr.get(150))              // None
       println(fr.get(0).get.deep.mkString(",")) // row 0, pretty printed
+      // For loop over a frame; called with idx & row; row is a recycled array
+      // filled with None or Option[Double]
       val x = for( (idx,row) <- fr ) yield row(0)
-      println(x)
+      println(x)                        // All of column 0
+      // Column-wise addition, allowing for Nones
+      val y = fr.reduce( (l,r) => (l._1, for( (ll,rr) <- l._2.zip(r._2) ) yield add(ll,rr)))
+      println(y._2.deep.mkString(","))
     } finally {
       fr.delete
+    }
+  }
+
+  // Add values "the R way" - NA's ignored
+  private def add(l : Option[Any], r : Option[Any] ):Option[Any] = {
+    (l,r) match {
+      case (None,x) => x
+      case (x,None) => x
+      case (Some(ld : Double),Some(rd : Double)) => Some(ld+rd)
+      case _ => ???
     }
   }
 }
