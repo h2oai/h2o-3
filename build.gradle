@@ -32,6 +32,7 @@ allprojects {
 
     apply plugin: 'idea'
     apply plugin: 'eclipse'
+    apply from: "$rootDir/gradle/artifacts.gradle"
 }
 
 // 
@@ -54,5 +55,24 @@ subprojects {
 
 task wrapper(type: Wrapper) {
   gradleVersion = '2.0'
+}
+
+// Setup global properties shared by all projects
+ext {
+    // Collect all artifacts produced by all projects in this project - all "archives" artifacts
+    allArchives = subprojects.findAll().inject(
+            files(), { acc, pj ->
+        acc + pj.configurations.archives.allArtifacts.getFiles()
+    })
+    // Collect all test artifacts
+    allTestArchives = files() // filed lazily below
+}
+
+// After evaluation of all projects collect all artifacts produced by testArchives configuration
+subprojects {
+    afterEvaluate( { pj ->
+        def testCnf = pj.configurations.findAll().find({ it.getName().equals("testArchives") })
+        if (testCnf != null) allTestArchives = allTestArchives + testCnf.allArtifacts.getFiles()
+    } )
 }
 
