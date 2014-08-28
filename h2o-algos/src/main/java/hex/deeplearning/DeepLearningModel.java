@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.FrameTask;
 import static java.lang.Double.isNaN;
 import hex.FrameTask.DataInfo;
 import water.*;
@@ -618,10 +619,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-//    @Override public int nfeatures() { return _names.length; }
-//    @Override public ModelCategory getModelCategory() {
-//      return Model.ModelCategory.Clustering;
-//    }
+    //FIXME
+    //add output fields
   }
 
   @Override protected String errStr() {
@@ -635,9 +634,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
-
-//  @API(help="Job that built the model", json = true)
-  final private Key jobKey;
 
 //  @API(help="Time to build the model", json = true)
   private long run_time;
@@ -1282,6 +1278,22 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   /**
+   * Helper to create a DataInfo object from the source and response
+   * @return DataInfo object
+   */
+  public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
+    final Frame train = FrameTask.DataInfo.prepareFrame(parms.source, parms.autoencoder ? null : parms.response, parms.ignored_cols, parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
+    if (!parms.autoencoder) {
+      final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
+      assert (!parms.classification ^ resp.isEnum()) : "Must have enum response for classification!"; //either regression or enum response
+    }
+    return dinfo;
+  }
+
+  /**
    * Constructor to restart from a checkpointed model
    * @param cp Checkpoint to restart from
    * @param destKey New destination key for the model
@@ -1290,7 +1302,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
     super(destKey, dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), cp._parms, new DeepLearningOutput(), cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
     final boolean store_best_model = (jobKey == null);
-    this.jobKey = jobKey;
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
@@ -1322,7 +1333,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearningParameters params, final float[] priorDist) {
     super(destKey, /*dataKey, */dinfo._adaptedFrame, params, new DeepLearningOutput(), priorDist);
-    this.jobKey = jobKey;
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
