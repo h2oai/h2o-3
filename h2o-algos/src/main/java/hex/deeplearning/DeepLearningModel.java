@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.FrameTask;
 import static java.lang.Double.isNaN;
 import hex.FrameTask.DataInfo;
 import water.*;
@@ -10,7 +11,6 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
 
 /**
@@ -501,7 +501,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * CrossEntropy is recommended
      */
     public enum Loss {
-      Automatic, MeanSquare, Loss, CrossEntropy
+      Automatic, MeanSquare, CrossEntropy
     }
 
     //Sanity check for Deep Learning job parameters
@@ -532,13 +532,38 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         throw new IllegalArgumentException("Input dropout must be in [0,1).");
       }
 
+      if (response.isEnum() && !classification) {
+        Log.info("Automatically switching to classification for enum response.");
+        classification = true;
+      }
+      if (H2O.CLOUD.size() == 1 && replicate_training_data) {
+        Log.info("Disabling replicate_training_data on 1 node.");
+        replicate_training_data = false;
+      }
+      if (single_node_mode && (H2O.CLOUD.size() == 1 || !replicate_training_data)) {
+        Log.info("Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        single_node_mode = false;
+      }
+      if (!use_all_factor_levels && autoencoder ) {
+        Log.info("Enabling all_factor_levels for auto-encoders.");
+        use_all_factor_levels = true;
+      }
+      if(override_with_best_model && n_folds != 0) {
+        Log.info("Disabling override_with_best_model in combination with n-fold cross-validation.");
+        override_with_best_model = false;
+      }
+
       if (!quiet_mode) {
         if (adaptive_rate) {
           Log.info("Using automatic learning rate.  Ignoring the following input parameters:");
           Log.info("  rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+          momentum_start = 0;
+          momentum_stable = 0;
         } else {
           Log.info("Using manual learning rate.  Ignoring the following input parameters:");
           Log.info("  rho, epsilon.");
+          rho = 0;
+          epsilon = 0;
         }
 
         if (initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
@@ -594,10 +619,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-//    @Override public int nfeatures() { return _names.length; }
-//    @Override public ModelCategory getModelCategory() {
-//      return Model.ModelCategory.Clustering;
-//    }
+    //FIXME
+    //add output fields
   }
 
   @Override protected String errStr() {
@@ -611,9 +634,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
-
-//  @API(help="Job that built the model", json = true)
-  final private Key jobKey;
 
 //  @API(help="Time to build the model", json = true)
   private long run_time;
@@ -835,8 +855,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    @API(help = "Model parameters", json = true)
     private DeepLearningParameters parameters;
     public final DeepLearningParameters get_params() { return parameters; }
-    public final Key job() { return _job; }
-    private Key _job;
 
 //    @API(help = "Mean rate", json = true)
     private float[] mean_rate;
@@ -882,8 +900,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     public DeepLearningModelInfo() {}
 
-    public DeepLearningModelInfo(Key jobKey, final DeepLearningParameters params, final DataInfo dinfo) {
-      _job = jobKey;
+    public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo) {
       data_info = dinfo;
       parameters = params;
       final int num_input = dinfo.fullN();
@@ -1261,6 +1278,22 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   /**
+   * Helper to create a DataInfo object from the source and response
+   * @return DataInfo object
+   */
+  public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
+    final Frame train = FrameTask.DataInfo.prepareFrame(parms.source, parms.autoencoder ? null : parms.response, parms.ignored_cols, parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
+    if (!parms.autoencoder) {
+      final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
+      assert (!parms.classification ^ resp.isEnum()) : "Must have enum response for classification!"; //either regression or enum response
+    }
+    return dinfo;
+  }
+
+  /**
    * Constructor to restart from a checkpointed model
    * @param cp Checkpoint to restart from
    * @param destKey New destination key for the model
@@ -1269,20 +1302,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
     super(destKey, dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), cp._parms, new DeepLearningOutput(), cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
     final boolean store_best_model = (jobKey == null);
-    this.jobKey = jobKey;
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
-//      get_params()._state = Job.JobState.DONE; //change the deep_clone'd state to DONE //FIXME
       _modelClassDist = cp._modelClassDist != null ? cp._modelClassDist.clone() : null;
     } else {
       model_info = (DeepLearningModelInfo) cp.model_info.clone(); //shallow clone is ok (won't modify the Checkpoint in K-V store during checkpoint restart)
       model_info.data_info = dataInfo; //shallow clone is ok
       get_params().checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
-//      get_params()._state = ((DeepLearning)DKV.get(jobKey).get())._state; //make the job state consistent //FIXME
     }
-//    get_params().start_time = System.currentTimeMillis(); //for displaying the model progress
-
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
     run_time = cp.run_time;
@@ -1305,14 +1333,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearningParameters params, final float[] priorDist) {
     super(destKey, /*dataKey, */dinfo._adaptedFrame, params, new DeepLearningOutput(), priorDist);
-    this.jobKey = jobKey;
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
-    model_info = new DeepLearningModelInfo(jobKey, params, dinfo);
+    model_info = new DeepLearningModelInfo(params, dinfo);
     actual_best_model_key = Key.makeUserHidden(Key.make());
     if (params.n_folds != 0) actual_best_model_key = null;
-//    get_params()._state = ((DeepLearningParameters)DKV.get(jobKey).get())._state; //make the job state consistent //FIXME
     if (!get_params().autoencoder) {
       errors = new Errors[1];
       errors[0] = new Errors();

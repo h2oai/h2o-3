@@ -1,8 +1,8 @@
 package hex.deeplearning;
 
 import hex.FrameTask.DataInfo;
-import hex.FrameTask;
 import hex.ModelBuilder;
+import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import static water.util.MRUtils.sampleFrame;
@@ -169,7 +169,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         _parms.epochs += previous.epoch_counter; //add new epochs to existing model
         Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
         try {
-          final DataInfo dataInfo = prepareDataInfo();
+          final DataInfo dataInfo = prepareDataInfo(_parms);
           cp = new DeepLearningModel(previous, dest(), self(), dataInfo);
           cp.write_lock(self());
           final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
@@ -221,23 +221,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       Scope.exit(keep);
     }
 
-    /**
-     * Helper to create a DataInfo object from the source and response
-     * @return DataInfo object
-     */
-    private DataInfo prepareDataInfo() {
-//    final boolean del_enum_resp = (classification && !response.isEnum());
-      final Frame train = FrameTask.DataInfo.prepareFrame(_parms.source, _parms.autoencoder ? null : _parms.response, _parms.ignored_cols, _parms.classification, _parms.ignore_const_cols, true /*drop >20% NA cols*/);
-      final DataInfo dinfo = new FrameTask.DataInfo(train, _parms.autoencoder ? 0 : 1, _parms.autoencoder || _parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
-              _parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-              _parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
-      if (!_parms.autoencoder) {
-        final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
-        assert (!_parms.classification ^ resp.isEnum()) : "Must have enum response for classification!"; //either regression or enum response
-//      if (del_enum_resp) ltrash(resp);
-      }
-      return dinfo;
-    }
 
     /**
      * Create an initial Deep Learning model, typically to be trained by trainModel(model)
@@ -247,7 +230,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       try {
         lock_data();
         _parms.sanityCheck();
-        final DataInfo dinfo = prepareDataInfo();
+        final DataInfo dinfo = prepareDataInfo(_parms);
         final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
         float[] priorDist = _parms.classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;
         final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms.source._key, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
@@ -331,9 +314,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         //main loop
         do model.set_model_info(mp.epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp.replicate_training_data ? ( mp.single_node_mode ?
-                new DeepLearningTask2(train, model.model_info(), rowUsageFraction).doAll(Key.make()).model_info() : //replicated data + single node mode
-                new DeepLearningTask2(train, model.model_info(), rowUsageFraction).doAllNodes().model_info() ) : //replicated data + multi-node mode
-                new DeepLearningTask(model.model_info(), rowUsageFraction).doAll(train).model_info()); //distributed data (always in multi-node mode)
+                new DeepLearningTask2(self(), train, model.model_info(), rowUsageFraction).doAll(Key.make()).model_info() : //replicated data + single node mode
+                new DeepLearningTask2(self(), train, model.model_info(), rowUsageFraction).doAllNodes().model_info() ) : //replicated data + multi-node mode
+                new DeepLearningTask(self(), model.model_info(), rowUsageFraction).doAll(train).model_info()); //distributed data (always in multi-node mode)
         while (model.doScoring(train, trainScoreFrame, validScoreFrame, self(), validAdapter.getValidAdaptor()));
 
         // replace the model with the best model so far (if it's better)

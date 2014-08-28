@@ -48,6 +48,9 @@ public abstract class DKV {
   // either success or fail.  If a Futures is passed in, it can be used to
   // block until the PUT completes cluster-wide.
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs, boolean dontCache ) {
+    // For debugging where keys are created from
+//    try { System.err.flush(); System.err.println(key); Thread.dumpStack(); System.err.flush(); } catch (Throwable t) {}
+
     // First: I must block repeated remote PUTs to the same Key until all prior
     // ones complete - the home node needs to see these PUTs in order.
     // Repeated PUTs on the home node are already ordered.

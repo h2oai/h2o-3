@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.*;
 
 import water.*;
@@ -16,8 +15,9 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMe
 import java.util.Random;
 
 public class DeepLearningProstateTest extends TestUtil {
-  //Default: run 3%
-  @Test @Ignore public void run() throws Exception { runFraction(0.003f); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+
+  @Test public void run() throws Exception { runFraction(0.001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -81,13 +81,13 @@ public class DeepLearningProstateTest extends TestUtil {
                             for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
                               for (boolean override_with_best_model : new boolean[]{false, true}) {
                                 for (int train_samples_per_iteration : new int[]{
-                                        -2, //auto-tune
+//                                        -2, //auto-tune
                                         -1, //N epochs per iteration
                                         0, //1 epoch per iteration
                                         rng.nextInt(100), // <1 epoch per iteration
                                         500, //>1 epoch per iteration
                                 }) {
-                                  DeepLearningModel model1 = null, model2 = null;
+                                  DeepLearningModel model1 = null, model2 = null, tmp_model = null;
                                   Key dest = null, dest_tmp = null;
                                   count++;
                                   if (fraction < rng.nextFloat()) continue;
@@ -103,7 +103,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
 
                                     // build the model, with all kinds of shuffling/rebalancing/sampling
-                                    dest_tmp = Key.make("first");
+                                    dest_tmp = Key.make(Key.make().toString() + "first");
                                     {
                                       Log.info("Using seed: " + seed);
                                       DeepLearningParameters p = new DeepLearningParameters();
@@ -155,9 +155,9 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     // Do some more training via checkpoint restart
                                     // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
-                                    dest = Key.make("restart");
+                                    dest = Key.make();
                                     DeepLearningParameters p = new DeepLearningParameters();
-                                    final DeepLearningModel tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                                    tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
                                     Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                     assert (tmp_model != null);
 
@@ -215,10 +215,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                           Log.info(sb);
 
                                           // check that auc.cm() is the right CM
-                                Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
 
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                Assert.assertEquals(model2.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
+                                          Assert.assertEquals(model2.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
                                         }
 
                                         // Compute CM
@@ -235,7 +235,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           sb.append("Threshold: " + "default\n");
                                           CM.toASCII(sb);
                                           Log.info(sb);
-//                                CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
+//                                        CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
                                         }
 
                                         // confirm that orig CM was made with threshold 0.5
@@ -313,6 +313,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                       model2.delete_xval_models();
                                       model2.delete_best_model();
                                       model2.delete();
+                                    }
+                                    if (tmp_model != null) {
+                                      tmp_model.delete_xval_models();
+                                      tmp_model.delete_best_model();
+                                      tmp_model.delete();
                                     }
                                   }
                                 }
