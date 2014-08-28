@@ -1,4 +1,4 @@
-apply from: 'http://tellurianring.com/projects/gradle-plugins/gradle-release/1.2/apply.groovy'
+apply plugin: 'release'
 
 release {
   tagPrefix = "RELEASE"
