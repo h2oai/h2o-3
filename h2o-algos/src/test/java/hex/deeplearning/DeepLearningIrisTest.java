@@ -6,6 +6,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
@@ -21,6 +22,8 @@ import java.util.Random;
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
+
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   // Default run is the short run
   @Test public void run() throws Exception { runFraction(0.05f); }
