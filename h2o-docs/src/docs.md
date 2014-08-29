@@ -71,6 +71,7 @@ H2O brings better algorithms to Big Data.
   - [Compiling H2O from source](develop/build)
   - [Developing in IntelliJ IDEA](develop/idea)
   - [Developing in Eclipse](develop/eclipse)
+  - [Developing with Sparkling Water (Spark integration)](develop/sparkling_water)  
   - [Setting up a H2O Hadoop cluster on a Mac](develop/hadoop-osx)
   - [H2O Developer Cookbook](develop/cookbook)
   - [Java API](develop/java-api)
