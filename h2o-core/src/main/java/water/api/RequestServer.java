@@ -282,7 +282,7 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  // Top-level dispatch based the URI.  Break down URI into parts;
+  // Top-level dispatch based on the URI.  Break down URI into parts;
   // e.g. /2/GBM.html/crunk?hex=some_hex breaks down into:
   //   version:      2
   //   requestType:  ".html"

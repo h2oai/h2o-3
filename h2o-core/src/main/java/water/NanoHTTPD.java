@@ -1,10 +1,13 @@
 package water;
 
+import water.util.Log;
+
 import java.io.*;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.regex.Pattern;
-import water.util.*;
 
 /**
  * A simple, tiny, nicely embeddable HTTP 1.0 (partially 1.1) server in Java
@@ -411,7 +414,12 @@ public class NanoHTTPD
               }
               postLine = postLine.trim();
             }
-            decodeParms( postLine, parms );
+
+            if (contentType.equalsIgnoreCase("application/json")) {
+              parms.put("_post_body", postLine); // JSON text; we'll deserialize later, e.g. into a subclass of ModelParametersSchema
+            } else {
+              decodeParms(postLine, parms);
+            }
           }
         }
 

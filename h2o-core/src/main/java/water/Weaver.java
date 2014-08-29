@@ -1,11 +1,12 @@
 package water;
 
 import javassist.*;
-import java.lang.reflect.*;
-import java.lang.reflect.Modifier;
 import sun.misc.Unsafe;
 import water.api.API;
 import water.nbhm.UtilUnsafe;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 
 public class Weaver {
   private static final ClassPool _pool;
