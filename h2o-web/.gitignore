@@ -3,4 +3,5 @@ node_modules
 lib
 build
 *.swp
+*.log
 
