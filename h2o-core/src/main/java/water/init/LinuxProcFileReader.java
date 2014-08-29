@@ -25,6 +25,7 @@ public class LinuxProcFileReader {
   private long _processTotalTicks = -1;
 
   private long _processRss = -1;
+  private int _processCpusAllowed = -1;
 
   private int _processNumOpenFds = -1;
 
@@ -53,6 +54,17 @@ public class LinuxProcFileReader {
    * @return resident set size (RSS) of this process.
    */
   public long getProcessRss()        { assert _processRss > 0;         return _processRss; }
+
+  /**
+   * @return number of CPUs allowed by this process.
+   */
+  public int getProcessCpusAllowed() {
+    return Runtime.getRuntime().availableProcessors();
+
+    // proper way: FIXME
+//    if(!SystemUtils.IS_OS_LINUX) return Runtime.getRuntime().availableProcessors();
+//    assert _processCpusAllowed > 0;   return _processCpusAllowed;
+  }
 
   /**
    * @return number of currently open fds of this process.

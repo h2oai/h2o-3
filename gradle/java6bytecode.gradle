@@ -14,9 +14,7 @@ tasks.addRule("Pattern: convertToJava6Bytecode<ID>") { String taskName ->
 tasks.withType(org.gradle.api.tasks.compile.JavaCompile) { Task t ->
     t.finalizedBy {
         logger.info("Installing byte code convertor for task $project.path:$t.name")
-        println("Installing byte code convertor for task $project.path:$t.name")
         "convertToJava6Bytecode_$t.name" {
-            println t.asType(JavaCompile).destinationDir
             workingDir = t.asType(JavaCompile).destinationDir
             onlyIf { Task tt -> tt.project.ext.convertRequired && workingDir.exists() }
         }
