@@ -230,6 +230,7 @@ public class Vec extends Keyed {
   public final boolean isEnum(){return _domain != null && !_isString;}
   public final boolean isUUID(){return _isUUID;}
   public final boolean isString(){return _isString;}
+  public final boolean isNumeric(){return !_isUUID && !_isString; }
 
   /** Whether or not this column parsed as a time, and if so what pattern was used. */
   public final boolean isTime(){ return _time>=0; }
