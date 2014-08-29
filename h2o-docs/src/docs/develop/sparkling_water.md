@@ -2,8 +2,17 @@
 
 These instructions assume you are using Linux, MacOSX, or Cygwin (on Windows).
 
+Create a git clone of the h2o-dev repository and build the software:
+
+    git clone https://github.com/0xdata/h2o-dev.git
+    cd h2o-dev
+    gradle install # will build h2o and push it to your local Maven artifact cache
+
+*NOTE: if gradle install hangs it may be because some other process, such as IntelliJ, is holding the lock on the artifact cache.  If so, stop that process and retry gradle install.*
+
 Create a git clone of the Perrier repository.
 
+    cd ..
     git clone https://github.com/0xdata/perrier.git
     cd perrier
     sbt/sbt assembly
