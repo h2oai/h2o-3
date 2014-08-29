@@ -21,6 +21,7 @@ buildscript {
     dependencies {
         classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+        classpath 'com.github.townsfolk:gradle-release:1.2'
     }
 }
 

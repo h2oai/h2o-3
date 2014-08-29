@@ -5,7 +5,6 @@ task cpLibs(type:Sync) {
     }
 
     from { project.configurations.runtime.minus(skipFiles()) }
-    //from { println skipFiles().each{f->println "S : "+f}; project.configurations.runtime.minus(skipFiles()); project.configurations.runtime.each { f -> println "R: " +f } }
     from { project.configurations.testRuntime.minus(skipFiles()) }
     
     into "$rootDir/lib"
