@@ -1,4 +1,5 @@
 argv = (require 'minimist') process.argv.slice 2
+EOL = (require 'os').EOL
 fs = require 'fs'
 path = require 'path'
 spawn = (require 'child_process').spawn
@@ -15,7 +16,24 @@ bailout = (message) -> console.log 'Bail out! ' + message
 # Pass -jar /path/to/h2o.jar to override the default jar
 JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'h2o-app', 'build', 'libs', 'h2o-app.jar'
 
-throw "H2O jar '#{jarpath}' not found!" unless fs.existsSync JAR_PATH
+throw "H2O jar '#{JAR_PATH}' not found!" unless fs.existsSync JAR_PATH
+
+DATA_PATH = if argv.data then path.resolve argv.data else path.resolve process.cwd(), '..', 'smalldata'
+
+throw "Data path '#{DATA_PATH}' not found!" unless fs.existsSync DATA_PATH
+
+GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve process.cwd(), path.join 'src', 'main', 'steam', 'tests', 'gold'
+
+throw "Gold file path '#{GOLD_PATH}' not found!" unless fs.existsSync GOLD_PATH
+
+readGoldFile = (name) -> fs.readFileSync (path.join GOLD_PATH, name), encoding: 'utf8'
+readGoldJson = (name) -> JSON.parse readGoldFile name
+
+if argv.s # spool
+  spool = (data) ->
+    fs.appendFileSync 'spool.log', data + EOL + EOL
+else
+  spool = ->
 
 # Node.js equivalent of Steam.Xhr
 Xhr = (_, host) ->
@@ -27,20 +45,29 @@ Xhr = (_, host) ->
       url: url
       timeout: 15000
       #TODO can avoid JSON.parse() step by passing json:true
+    spool '===============REQUEST==============='
+    spool JSON.stringify opts, null, 2
     httpRequest opts, (error, reply, body) ->
       if error
+        spool '*****ERROR*****'
+        spool error
         go error
       else
+        spool '-----RAW-----'
+        spool body
         response = status: reply.statusCode, data: body, xhr: reply
         switch response.status
           when 200
             try
               json = JSON.parse response.data
-              if json
-                go null, status: response.status, data: json, xhr: response.xhr
-              else
-                go response
             catch error
+              json = null
+
+            if json
+              spool '-----JSON-----'
+              spool JSON.stringify json, null, 2
+              go null, status: response.status, data: json, xhr: response.xhr
+            else
               go response
           else
             go response
@@ -93,12 +120,15 @@ createCloud = (go) ->
       diag "Executing tests..."
       go (createContext host), done
 
+  _isStarted = no
   cloud.stdout.on 'data', (data) ->
     diag data
-    if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
-      host = match[1]
-      diag "H2O cloud started at #{host}"
-      setTimeout (runTests host), 1000
+    unless _isStarted
+      if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
+        host = match[1]
+        diag "H2O cloud started at #{host}"
+        _isStarted = yes
+        setTimeout (runTests host), 1000
 
   cloud.stderr.on 'data', (data) -> diag data
   cloud.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."
@@ -161,18 +191,21 @@ tapediff = (x, y, opts) ->
   _diff '', x, y
 
 tdiff = (t, x, y, opts) ->
-  t.fail result if result = tapediff x, y, opts
+  if result = tapediff x, y, opts
+    t.fail result 
+  else
+    t.pass 'diff ok'
 
 test 'tapediff', (t) ->
   t.equal (tapediff null, null), null
-  t.equal (tapediff null, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched : expected \'null\', actual \'[object Object]\'' 
-  t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: 'baz' }, null), 'Mismatched : expected \'[object Object]\', actual \'null\''
+  t.equal (tapediff null, { foo: 3.1415, bar: 'bar', baz: 'baz' }), "Mismatched : expected 'null', actual '[object Object]'" 
+  t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: 'baz' }, null), "Mismatched : expected '[object Object]', actual 'null'"
   t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), null
   t.equal (tapediff { foo: 3.1415, bar: 'bar', baz: Number.NaN }, { foo: 3.1415, bar: 'bar', baz: Number.NaN }), null
-  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched bar: expected \'ba\', actual \'bar\''
-  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), 'Mismatched bar: expected \'ba\', actual \'bar\''
+  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), "Mismatched bar: expected 'ba', actual 'bar'"
+  t.equal (tapediff { foo: 3.1415, bar: 'ba', baz: 'baz' }, { foo: 3.1415, bar: 'bar', baz: 'baz' }), "Mismatched bar: expected 'ba', actual 'bar'"
   t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }), null
-  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }), 'Mismatched qux.bar: expected \'bar\', actual \'10\''
+  t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }), "Mismatched qux.bar: expected 'bar', actual '10'"
   t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }, { include: ['qux.foo', 'qux.baz'] } ), null
   t.equal (tapediff { qux: { foo: 3.1415, bar: 'bar', baz: 'baz' } }, { qux: { foo: 3.1415, bar: 10, baz: 'baz' } }, { exclude: ['qux.bar'] } ), null
   t.end()
