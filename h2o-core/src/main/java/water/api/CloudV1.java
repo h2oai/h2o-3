@@ -47,6 +47,12 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     @API(help="System load; average #runnables/#cores")
     final float sys_load;       // Average #runnables/#cores
 
+    @API(help="Linpack GFlops")
+    final double gflops;
+
+    @API(help="Memory Bandwidth")
+    final double mem_bw;
+
     @API(help="Data on Node (memory or disk)")
     final long total_value_size;
 
@@ -97,6 +103,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
       healthy = (System.currentTimeMillis()-h2o._last_heard_from)<HeartBeatThread.TIMEOUT;
       last_ping = h2o._last_heard_from;
       sys_load = hb._system_load_average;
+      gflops = hb._gflops;
+      mem_bw = hb._membw;
 
       // Memory being used
       total_value_size = hb.get_tvalsz();
@@ -168,7 +176,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
                               "GC free / total / max",
                               "Disk (free%)",
                               "CPU (rpcs, threads, tasks)",
-                              "TCPs & FDs", "Cores", "PID"});
+                              "TCPs & FDs", "Cores",
+                              "Linpack GFlops","Memory B/W", "PID"});
 
     // Totals line
     long now = System.currentTimeMillis();
@@ -182,6 +191,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     short fjqueue[] = new short[H2O.MAX_PRIORITY+1];  java.util.Arrays.fill(fjqueue,(short)-1);
     int tcps=0, fds=0;
     int cores=0;
+    float gflops_tot=0f;
+    float mem_bw_tot=0f;
     for( Node n : nodes ) {
       max_ping = Math.max(max_ping,(now-n.last_ping));
       load       += n.sys_load;         // Sys health
@@ -197,6 +208,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
       tcps       += n.tcps_active; // I/O
       fds        += n.open_fds;
       cores      += n.num_cpus; // CPUs
+      gflops_tot += n.gflops;
+      mem_bw_tot += n.mem_bw;
       for( int i=0; i<fjthrds.length; i++ ) { // Work
         fjadd(fjthrds,i,n.fjthrds[i]);
         fjadd(fjqueue,i,n.fjqueue[i]);
@@ -209,7 +222,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
               gc_free,gc_tot,gc_max,
               disk_free,disk_max,
               cpu_rpcs,fjthrds,fjqueue,
-              tcps, fds, cores, ""
+              tcps, fds, cores,
+              gflops_tot,mem_bw_tot, ""
               );
 
     // All Node lines
@@ -220,7 +234,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
                 n.free_mem,n.tot_mem,n.max_mem,
                 n.free_disk,n.max_disk,
                 n.rpcs_active,n.fjthrds,n.fjqueue,
-                n.tcps_active,n.open_fds,n.num_cpus,n.pid
+                n.tcps_active,n.open_fds,n.num_cpus, n.gflops, n.mem_bw, n.pid
                 );
 
     ab.arrayTail();
@@ -234,7 +248,9 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
                           long free_mem, long tot_mem, long max_mem,
                           long free_disk, long max_disk,
                           int rpcs, short fjthrds[], short fjqueue[],
-                          int tpcs, int fds, int cores, String pid
+                          int tpcs, int fds, int cores,
+                          double gflops, double mem_bw,
+                          String pid
                           ) {
     ab.p("<tr").p(color).p(">");
     // Basic node health
@@ -252,7 +268,8 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     ab.p("<td nowrap>").p(Integer.toString(rpcs)+fjq(fjthrds)+fjq(fjqueue)).p("</td>");
     // File Descripters and System
     ab.cell(Integer.toString(tpcs)+" / "+(fds < 0 ? "-" : Integer.toString(fds)));
-    ab.cell(cores);
+    // Node performance
+    ab.cell(cores).cell(String.format("%4.3f GFlops",gflops)).cell(PrettyPrint.bytesPerSecond((long)mem_bw));
     ab.cell(pid);
 
     return ab.p("</tr>");

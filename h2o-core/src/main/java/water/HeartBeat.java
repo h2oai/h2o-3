@@ -16,11 +16,14 @@ public class HeartBeat extends Iced<HeartBeat> {
   public long jvmBootTimeMsec(){return _jvm_boot_msec;}
   byte[] _jar_md5;       // JAR file digest
   public char _num_cpus; // Number of CPUs for this Node, limit of 65535
+  public double _gflops;        // Number of GFlops for this node
+  public double _membw;         // Memory bandwidth in GB/s
   public float _system_load_average;
   long _system_idle_ticks;
   long _system_total_ticks;
   long _process_total_ticks;
   public int _process_num_open_fds;
+  public int _cpus_allowed;   // Number of CPUs allowed by process
   public String _pid;
 
   // Scaled by K or by M setters & getters.
