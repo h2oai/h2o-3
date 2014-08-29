@@ -65,25 +65,7 @@ Steam.H2OProxy = (_) ->
   filterOutUnhandledModels = (models) -> filter models, (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
 
   requestFrames = (go, opts) ->
-    requestWithOpts '/3/Frames.json', opts, (error, result) ->
-      if error
-        go error, result
-      else
-        ###
-        # Flatten response so that keys are attributes on the objects, 
-        # and linked objects are direct refs instead of keys.
-        { frames, models, metrics, response } = result
-        for modelKey, model of models
-          model.key = modelKey
-
-        for frameKey, frame of frames
-          frame.key = frameKey
-          #TODO remove 'filterOutUnhandledModels' when issue with non-DONE models is resolved.
-          frame.compatible_models = filterOutUnhandledModels map frame.compatible_models, (modelKey) ->
-            models[modelKey]
-        ###
-
-        go error, result.frames
+    requestWithOpts '/3/Frames.json', opts, go
 
   requestModels = (go, opts) ->
     requestWithOpts '/2/Models.json', opts, (error, result) ->
@@ -105,11 +87,7 @@ Steam.H2OProxy = (_) ->
         go error, response: response, models: filterOutUnhandledModels values models
 
   requestJobs = (go) ->
-    request '/Jobs.json', (error, result) ->
-      if error
-        go error, result
-      else
-        go error, result.jobs
+    request '/Jobs.json', go
 
   requestJob = (key, go) ->
     #opts = key: encodeURIComponent key
@@ -127,6 +105,7 @@ Steam.H2OProxy = (_) ->
     request '/Timeline.json', go
 
   link$ _.requestFileGlob, requestFileGlob
+  link$ _.requestImportFile, requestImportFile
   link$ _.requestImportFiles, requestImportFiles
   link$ _.requestParseSetup, requestParseSetup
   link$ _.requestParseFiles, requestParseFiles
@@ -134,7 +113,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestFrames, (go) -> requestFrames go
   link$ _.requestFramesAndCompatibleModels, (go) -> requestFrames go, find_compatible_models: yes
   link$ _.requestFrame, (key, go) ->
-    request "/3/Frames/#{encodeURIComponent key}", (error, result) -> go error, result.frames
+    request "/3/Frames/#{encodeURIComponent key}", go
   link$ _.requestColumnSummary, (key, column, go) ->
     request "/3/Frames/#{encodeURIComponent key}/columns/#{column}/summary", go
   link$ _.requestFrameAndCompatibleModels, (key, go) -> requestFrames go, key: (encodeURIComponent key), find_compatible_models: yes

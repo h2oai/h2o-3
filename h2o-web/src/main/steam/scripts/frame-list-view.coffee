@@ -52,18 +52,18 @@ Steam.FrameListView = (_) ->
   loadFrames = (predicate) ->
     switch predicate.type
       when 'all'
-        _.requestFrames (error, frames) ->
+        _.requestFrames (error, result) ->
           if error
             _.error 'Error requesting all frames', null, error
           else
-            displayFrames frames
+            displayFrames result.frames
 
       when 'one'
-        _.requestFrame predicate.key, (error, frames) ->
+        _.requestFrame predicate.key, (error, result) ->
           if error
             _.error 'Error requesting frame', predicate.key, error
           else
-            displayFrames frames
+            displayFrames result.frames
 
     _predicate predicate
     return

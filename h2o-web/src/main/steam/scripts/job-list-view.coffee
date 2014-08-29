@@ -108,12 +108,12 @@ Steam.JobListView = (_) ->
     console.assert isDefined predicate
     switch predicate.type
       when 'all'
-        _.requestJobs (error, jobs) ->
+        _.requestJobs (error, result) ->
           if error
             #TODO handle errors
             _.error 'Error requesting job list', null, error
           else
-            displayJobs reverse jobs
+            displayJobs reverse result.jobs
 
     _predicate predicate
     return
