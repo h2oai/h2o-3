@@ -181,47 +181,165 @@ test 'requestModelAndCompatibleFrames', (t) ->
       t.end()
 ###
 
-test 'empty cloud', (t) ->
+test.only 'empty cloud', (t) ->
   t.plan 4
   createCloud (_, done) ->
-    _.requestFrames (error, frames) ->
+    _.requestFrames (error, result) ->
       if error
         t.fail 'request failed'
       else
-        t.ok isArray frames
-        t.equal frames.length, 0
+        t.pass 'got frames reply'
+        tdiff t, (readGoldJson 'frames-empty.json'), result
 
-        _.requestJobs (error, jobs) ->
+        _.requestJobs (error, result) ->
           if error
             t.fail 'request failed'
           else
-            t.ok isArray jobs
-            t.equal jobs.length, 0
-
+            t.pass 'got jobs reply'
+            tdiff t, (readGoldJson 'jobs-empty.json'), result
             t.end()
             done()
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 0
+  t.plan 28
   createCloud (_, done) ->
-    # no frames exist
-    _.requestFrames (error, frames) ->
+    # UI loaded.
+    # empty clound shouldn't have any frames...
+    _.requestFrames (error, result) ->
       if error
-        t.fail 'request failed'
+        t.fail 'frames request failed'
       else
-        t.ok isArray frames
-        t.equal frames.length, 0
+        t.pass 'got frames reply'
+        tdiff t, (readGoldJson 'frames-empty.json'), result
 
-        # import files dialog
+        # bring up the import dialog.
         
-        # searching for a file pattern
-        _.requestFileGlob './smalldata/airlines', (error, result) ->
+        #
+        # glob for a non existent path...
+        #
+        _.requestFileGlob '/non/existent/path', 10, (error, result) ->
           if error
-            t.fail 'request failed'
+            t.fail 'glob request failed'
           else
-            t.ok isArray result.matches
-            t.equal result.matches.length, 1
-            t.equal result.matches[0], './smalldata/airlines/allyears2k_headers.zip'
+            t.pass 'got glob reply'
+            tdiff t, (readGoldJson 'glob-empty.json'), result
+
+            #
+            # glob for the airlines zip...
+            #
+            _.requestFileGlob (path.join DATA_PATH, 'airlines'), 10, (error, result) ->
+              if error
+                t.fail 'glob request failed'
+              else
+                t.pass 'got glob reply'
+                expectedGlobResponse =
+                  src: null
+                  limit: 0
+                tdiff t, expectedGlobResponse, result, exclude: [ 'matches' ]
+                t.ok isArray result.matches, 'has matches'
+                t.ok result.matches.length > 0, 'has matches'
+                airlinesZip = find result.matches, (match) -> (/allyears2k_headers\.zip$/).test match
+                t.ok airlinesZip isnt null, 'found airlines zip'
+
+                #
+                # import this file
+                #
+                _.requestImportFile airlinesZip, (error, result) ->
+                  if error
+                    t.fail 'import request failed'
+                  else
+                    t.pass 'got import reply'
+                    expectedImportResponse =
+                      dels: []
+                      fails: []
+                      path: airlinesZip
+                      files: [ airlinesZip ]
+                      keys: [ "nfs://#{airlinesZip.substr 1}" ]
+                    tdiff t, expectedImportResponse, result
+
+                    airlinesZipKey = result.keys[0]
+
+                    #
+                    # try setting up parse for this file...
+                    #
+                    _.requestParseSetup [ airlinesZipKey ], (error, result) ->
+                      if error
+                        t.fail 'parse setup request failed'
+                      else
+                        t.pass 'got parse setup reply'
+                        tdiff t, (readGoldJson 'parse-setup-allyears2k_headers-zip.json'), result, exclude: [ 'srcs' ]
+                        t.ok isArray result.srcs, 'has srcs'
+                        t.equal result.srcs.length, 1, 'has 1 src'
+                        t.ok isString result.srcs[0].name, 'has src name'
+
+                        #
+                        # submit a parse request...
+                        #
+                        sourceKeys = map result.srcs, (src) -> src.name
+                        _.requestParseFiles sourceKeys, result.hexName, result.pType, result.sep, result.ncols, result.singleQuotes, result.columnNames, yes, result.checkHeader, (error, result) ->
+                          if error
+                            t.fail 'parse request failed'
+                          else
+                            t.pass 'got parse reply'
+                            tdiff t, (readGoldJson 'parse-allyears2k_headers-zip.json'), result, exclude: [ 'job' ]
+                            t.ok isString result.job.name, 'has job name'
+
+
+                            #
+                            # this job should be present in the job list...
+                            #
+                            jobKey = result.job.name
+                            _.requestJobs (error, result) ->
+                              if error
+                                t.fail 'jobs request failed'
+                              else
+                                t.pass 'got jobs reply'
+                                t.ok result.jobs.length is 1
+                                t.equal result.jobs[0].key.name, jobKey
+
+                                pollJob = (go) ->
+                                  _.requestJob jobKey, (error, job) ->
+                                    if error
+                                      t.fail 'job poll failed'
+                                    else
+                                      if job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+                                        delay pollJob, 1000, go
+                                      else
+                                        go job
+
+                                #
+                                # poll the only job till it's done...
+                                #
+                                pollJob (job) ->
+                                  t.equal job.progress, 1, 'job progress ok'
+                                  t.equal job.status, 'DONE', 'job status ok'
+
+                                  # 
+                                  # inspect dest key
+                                  #
+                                  
+                                  frameKey = job.dest.name
+
+                                  _.requestInspect frameKey, (error, result) ->
+                                    if error
+                                      t.fail 'inspect request failed'
+                                    else
+                                      t.pass 'got inspect reply'
+                                      tdiff t, (readGoldJson 'inspect-allyears2k_headers-zip.json'), result
+                                      
+                                      #
+                                      # get frame...
+                                      #
+                                      _.requestFrame frameKey, (error, result) ->
+                                        if error
+                                          t.fail 'frame request failed'
+                                        else
+                                          t.pass 'got frame reply'
+                                          tdiff t, (readGoldJson 'frames-allyears2k_headers-zip.json'), result
+
+
+                                          t.end()
+                                          done()
         
 
 
