@@ -9,11 +9,14 @@ watch:
 
 check:
 
+launch:
+	java -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar
+
 test:
 	node_modules/.bin/gulp build-unit-test-script && node src/main/resources/www/steam/js/steam-unit-tests.js | node_modules/.bin/faucet
 
 system-test:
 	node_modules/.bin/gulp build-system-test-script && node src/main/resources/www/steam/js/steam-system-tests.js -s | node_modules/.bin/faucet 
 
-.PHONY: default watch clean test system-test
+.PHONY: default watch clean test system-test launch 
 
