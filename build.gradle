@@ -52,6 +52,7 @@ subprojects {
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
     // to all projects
     apply from: "$rootDir/gradle/publish.gradle"
+    apply from: "$rootDir/gradle/makeSupport.gradle"
 }
 
 task wrapper(type: Wrapper) {

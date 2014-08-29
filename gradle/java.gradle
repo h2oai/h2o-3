@@ -17,10 +17,6 @@ task testMultiNode(type: Exec) {
   commandLine 'bash', './testMultiNode.sh'
 }
 
-jar {
-  archiveName = "${baseName}.${extension}"
-}
-
 task testJar(type: Jar, dependsOn: testClasses) {
     baseName = "test-${project.name}"
     from sourceSets.test.output

@@ -2,6 +2,7 @@ apply plugin: 'scala'
 
 // Specify properties
 ext {
+  scalaBinaryVersion = '2.10'
   scalaVersion = '2.10.4'
 }
 
@@ -12,3 +13,6 @@ tasks.withType(ScalaCompile) {
     scalaCompileOptions.additionalParameters = ['-target:jvm-1.6']
 }
 
+jar {
+  baseName = "${project.name}_${scalaBinaryVersion}"
+}
