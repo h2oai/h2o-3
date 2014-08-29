@@ -27,12 +27,38 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
         print "%s parameters:" % function, params_dict
         sys.stdout.flush()
 
+
+######################
+# Assertion-type stuff
 def make_sure_path_exists(path):
     try:
         os.makedirs(path)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
+
+def assertKeysExist(self, d, path, keys):
+    path_elems = path.split("/")
+
+    d = self.followPath(d, path_elems)
+    for key in keys:
+        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
+
+def assertKeysExistAndNonNull(self, d, path, keys):
+    path_elems = path.split("/")
+
+    d = self.followPath(d, path_elems)
+    for key in keys:
+        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
+        assert d[key] != None, "Value unexpectedly null: " + key + " in dict: " + repr(d)
+
+def assertKeysDontExist(self, d, path, keys):
+    path_elems = path.split("/")
+
+    d = self.followPath(d, path_elems)
+    for key in keys:
+        assert key not in d, "Unexpectedly found key: " + key + " in dict: " + repr(d)
+
 
 ###############
 # LOGGING STUFF

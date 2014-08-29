@@ -20,3 +20,14 @@ import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/log
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
 
 pp.pprint(parse_result)
+
+prostate_key = parse_result['frames'][0]['key']['name']
+
+model_builders = a_node.model_builders()
+pp.pprint(model_builders)
+
+kmeans_builder = a_node.model_builders(key='kmeans')['model_builders']['kmeans']
+
+a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 })
+
+

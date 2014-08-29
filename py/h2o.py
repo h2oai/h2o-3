@@ -1,4 +1,4 @@
-import sys, os, getpass, logging, time, inspect, requests
+import sys, os, getpass, logging, time, inspect, requests, json
 import h2o_util
 from h2o_util import log, log_rest
 import h2o_print as h2p
@@ -153,7 +153,7 @@ class H2O(object):
     '''
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
-    def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, returnFast=False,
+    def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
@@ -190,7 +190,7 @@ class H2O(object):
         # file get passed thru kwargs here
         try:
             if cmd == 'post':
-                r = requests.post(url, timeout=timeout, params=params, **kwargs)
+                r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
             else:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
 
@@ -423,10 +423,77 @@ class H2O(object):
 
     # TODO: remove .json
     '''
+    Return a single Frame or all of the Frames in the h2o cluster.  The
+    frames are contained in a list called "frames" at the top level of the
+    result.  Currently the list is unordered.
+    TODO:
+    When find_compatible_models is implemented then the top level 
+    dict will also contain a "models" list.
+    '''
+    def frames(self, key=None, timeoutSecs=10, **kwargs):
+        params_dict = {
+#            'find_compatible_models': 0,
+#            'score_model': None
+        }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
+        
+        if key:
+            result = self.__do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
+        else:
+            result = self.__do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    # TODO: remove .json
+    '''
+    Return a model builder or all of the model builders known to the
+    h2o cluster.  The model builders are contained in a dictionary
+    called "model_builders" at the top level of the result.  The
+    dictionary maps algorithm names to parameters lists.  Each of the
+    parameters contains all the metdata required by a client to
+    present a model building interface to the user.
+    '''
+    def model_builders(self, key=None, timeoutSecs=10, **kwargs):
+        params_dict = {
+        }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
+
+        if key:
+            result = self.__do_json_request('2/ModelBuilders.json/' + key, timeout=timeoutSecs, params=params_dict)
+        else:
+            result = self.__do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    '''
+    Build a model on the h2o cluster using the given algorithm, training 
+    Frame and model parameters.
+    '''
+    def build_model(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
+        assert algo is not None, '"algo" parameter is null'
+        assert training_frame is not None, '"training_frame" parameter is null'
+        assert parameters is not None, '"parameters" parameter is null'
+
+        model_builders = self.model_builders()
+        assert model_builders is not None, "/ModelBuilders REST call failed"
+        assert algo in model_builders['model_builders']
+        builder = model_builders['model_builders'][algo]
+        
+        frames = self.frames(key=training_frame)
+        assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
+        assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+
+        # TODO: add parameter existence checks
+        # TODO: add parameter value validation
+        result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
+        return result
+
+
+    # TODO: remove .json
+    '''
     Return all of the models in the h2o cluster.  The models are
     contained in a list called "models" at the top level of the
     result.  Currently the list is unordered.
-
     TODO:
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
@@ -444,27 +511,4 @@ class H2O(object):
             result = self.__do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
         return result
 
-
-    # TODO: remove .json
-    '''
-    Return all of the frames in the h2o cluster.  The frames are
-    contained in a list called "frames" at the top level of the
-    result.  Currently the list is unordered.
-
-    TODO:
-    When find_compatible_models is implemented then the top level 
-    dict will also contain a "models" list.
-    '''
-    def frames(self, key=None, timeoutSecs=10, **kwargs):
-        params_dict = {
-#            'find_compatible_models': 0,
-#            'score_model': None
-        }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
-        
-        if key:
-            result = self.__do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
-        else:
-            result = self.__do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
-        return result
 

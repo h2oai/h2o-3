@@ -4,7 +4,7 @@ import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
 import water.util.DocGen.HTML;
 
-// Base Class for the "iced implementation" heirarchy.  Subclasses are all
+// Base Class for the "iced implementation" hierarchy.  Subclasses are all
 // auto-gen'd.  Since this is the base, it has no fields to read or write.
 public class Icer<T extends Freezable> { 
   protected static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
