@@ -29,13 +29,21 @@ project.ext.convertRequired = false
 // graph for this project
 public def convertOnlyWhen(String ... taskNames) {
     gradle.taskGraph.whenReady { graph ->
-        // Enable only if any of specified tasks appears
-        project.ext.convertRequired |= taskNames.any { String tn -> graph.hasTask("$project.path:$tn") }
-        if (project.ext.convertRequired && !System.env["JAVA_6_HOME"])
-            throw new GradleException("JAVA_6_HOME property is missing! It is required to convert Java7 to Java6 bytecode!")
+            // Enable only if any of specified tasks appears
+            project.ext.convertRequired |= taskNames.any { String tn -> graph.hasTask("$project.path:$tn") }
+            project.ext.convertRequired &= !project.hasProperty("disable.java6bytecode.gen")
+            if (project.hasProperty("disable.java6bytecode.gen")) {
+                logger.warn("Property 'disable.java6bytecode.gen' was specified - disabling Java6 bytecode generation for project $project.path")
+            }
+            if (project.ext.convertRequired) {
+                logger.warn("Generating Java6 bytecode for project '$project.path' - you can disable this feature by specifying -Pdisable.java6bytecode.gen")
+            }
+            if (project.ext.convertRequired && !System.env["JAVA_6_HOME"])
+                throw new GradleException("JAVA_6_HOME property is missing! It is required to convert Java7 to Java6 bytecode!")
     }
 }
 
 // FIXME: should be installed by a caller not here in plugin definition
 // Install Java6 bytecode converter only if tasks are in execution DAG
 convertOnlyWhen("install", "uploadArchives")
+
