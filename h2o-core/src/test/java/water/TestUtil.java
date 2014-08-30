@@ -15,7 +15,7 @@ import water.util.Timer;
 import water.parser.ValueString;
 
 @Ignore("Support for tests, but no actual tests here")
-public class TestUtil {
+public class TestUtil extends Iced {
   private static boolean _stall_called_before = false;
   protected static int _initial_keycnt = 0;
   protected static int MINCLOUDSIZE;
@@ -61,7 +61,7 @@ public class TestUtil {
 
 
   /** Execute this rule before each test to print test name and test class */
-  @Rule public TestRule logRule = new TestRule() {
+  @Rule transient public TestRule logRule = new TestRule() {
 
     @Override public Statement apply(Statement base, Description description) {
       Log.info("###########################################################");
@@ -72,7 +72,7 @@ public class TestUtil {
     }
   };
 
-  @Rule public TestRule timerRule = new TestRule() {
+  @Rule transient public TestRule timerRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
     }
