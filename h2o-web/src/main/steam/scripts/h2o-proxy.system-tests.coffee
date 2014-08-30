@@ -1,3 +1,195 @@
+test 'empty cloud', (t) ->
+  t.plan 4
+  createCloud (_, go) ->
+    ensureNoFramesExist = (go) ->
+      _.requestFrames (error, result) ->
+        if error
+          t.fail 'frames request failed'
+          go error
+        else
+          t.pass 'got frames reply'
+          tdiff t, (readGoldJson 'frames-empty.json'), result
+          go null
+
+    ensureNoJobsExist = (go) ->
+      _.requestJobs (error, result) ->
+        if error
+          t.fail 'request failed'
+          go error
+        else
+          t.pass 'got jobs reply'
+          tdiff t, (readGoldJson 'jobs-empty.json'), result
+          go null
+
+    operations = [
+      ensureNoFramesExist
+      ensureNoJobsExist
+    ]
+    async.waterfall operations, -> t.end(); go()
+
+test 'airlines ingest and model building flow 2', (t) ->
+  t.plan 30
+
+  createCloud (_, go) ->
+    ensureNoFramesExist = (go) ->
+      _.requestFrames (error, result) ->
+        if error
+          t.fail 'frames request failed'
+          go error
+        else
+          t.pass 'got frames reply'
+          tdiff t, (readGoldJson 'frames-empty.json'), result
+          go null
+
+
+    findNonExistentFile = (go) ->
+      _.requestFileGlob '/non/existent/path', 10, (error, result) ->
+        if error
+          t.fail 'glob request failed'
+          go error
+        else
+          t.pass 'got glob reply'
+          tdiff t, (readGoldJson 'glob-empty.json'), result
+          go null
+
+    findAirlines = (go) ->
+      _.requestFileGlob (path.join DATA_PATH, 'airlines'), 10, (error, result) ->
+        if error
+          t.fail 'glob request failed'
+          go error
+        else
+          t.pass 'got glob reply'
+          expectedGlobResponse =
+            src: null
+            limit: 0
+          tdiff t, expectedGlobResponse, result, exclude: [ 'matches' ]
+          t.ok isArray result.matches, 'has matches'
+          t.ok result.matches.length > 0, 'has matches'
+          airlinesZip = find result.matches, (match) -> (/allyears2k_headers\.zip$/).test match
+          t.ok airlinesZip isnt null, 'found airlines zip'
+          go null, airlinesZip
+
+    importAirlines = (airlinesZip, go) ->
+      _.requestImportFile airlinesZip, (error, result) ->
+        if error
+          t.fail 'import request failed'
+          go error
+        else
+          t.pass 'got import reply'
+          expectedImportResponse =
+            dels: []
+            fails: []
+            path: airlinesZip
+            files: [ airlinesZip ]
+            keys: [ "nfs://#{airlinesZip.substr 1}" ]
+          tdiff t, expectedImportResponse, result
+
+          go null, result.keys[0]
+
+    parseSetupAirlines = (airlinesZipKey, go) ->
+      _.requestParseSetup [ airlinesZipKey ], (error, result) ->
+        if error
+          t.fail 'parse setup request failed'
+          go error
+        else
+          t.pass 'got parse setup reply'
+          tdiff t, (readGoldJson 'parse-setup-allyears2k_headers-zip.json'), result, exclude: [ 'srcs' ]
+          t.ok isArray result.srcs, 'has srcs'
+          t.equal result.srcs.length, 1, 'has 1 src'
+          t.ok isString result.srcs[0].name, 'has src name'
+          go null, result
+
+    parseAirlines = (parseSetup, go) ->
+      sourceKeys = map parseSetup.srcs, (src) -> src.name
+      _.requestParseFiles sourceKeys, parseSetup.hexName, parseSetup.pType, parseSetup.sep, parseSetup.ncols, parseSetup.singleQuotes, parseSetup.columnNames, yes, parseSetup.checkHeader, (error, result) ->
+        if error
+          t.fail 'parse request failed'
+          go error
+        else
+          t.pass 'got parse reply'
+          tdiff t, (readGoldJson 'parse-allyears2k_headers-zip.json'), result, exclude: [ 'job' ]
+          t.ok isString result.job.name, 'has job name'
+          go null, result.job.name
+
+    fetchJobs = (jobKey, go) ->
+      _.requestJobs (error, result) ->
+        if error
+          t.fail 'jobs request failed'
+          go error
+        else
+          t.pass 'got jobs reply'
+          t.ok result.jobs.length is 1
+          t.equal result.jobs[0].key.name, jobKey
+          go null, jobKey
+
+    pollJob = (jobKey, go) ->
+      poll = (go) ->
+        _.requestJob jobKey, (error, job) ->
+          if error
+            t.fail 'job poll failed'
+            go error
+          else
+            if job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+              delay poll, 1000, go
+            else
+              go null, job
+
+      poll (error, job) ->
+        if error
+          go error
+        else
+          t.equal job.progress, 1, 'job progress ok'
+          t.equal job.status, 'DONE', 'job status ok'
+          go null, job.dest.name
+
+
+    inspectFrame = (frameKey, go) -> 
+      _.requestInspect frameKey, (error, result) ->
+        if error
+          t.fail 'inspect request failed'
+          go error
+        else
+          t.pass 'got inspect reply'
+          tdiff t, (readGoldJson 'inspect-allyears2k_headers-zip.json'), result
+          go null, frameKey
+
+
+    getFrame = (frameKey, go) ->
+      _.requestFrame frameKey, (error, result) ->
+        if error
+          t.fail 'frame request failed'
+          go error
+        else
+          t.pass 'got frame reply'
+          tdiff t, (readGoldJson 'frames-allyears2k_headers-zip.json'), result
+          go null, frameKey
+
+    getKmeansModelBuilder = (frameKey, go) ->
+      _.requestModelBuilders 'kmeans', (error, result) ->
+        if error
+          t.fail 'model builders request failed'
+          go error
+        else
+          t.pass 'got model builders reply'
+          tdiff t, (readGoldJson 'model-builders-kmeans.json'), result, exclude: [ 'model_builders.kmeans.job' ]
+          go null, frameKey, result
+
+    operations = [
+      ensureNoFramesExist
+      findNonExistentFile
+      findAirlines
+      importAirlines
+      parseSetupAirlines
+      parseAirlines
+      fetchJobs
+      pollJob
+      inspectFrame
+      getFrame
+      getKmeansModelBuilder
+    ]
+    async.waterfall operations, -> t.end(); go()
+
+  return
 
 ###
 t_h2o_response = T
@@ -180,167 +372,4 @@ test 'requestModelAndCompatibleFrames', (t) ->
       t.ok model.compatible_frames.length > 0
       t.end()
 ###
-
-test.only 'empty cloud', (t) ->
-  t.plan 4
-  createCloud (_, done) ->
-    _.requestFrames (error, result) ->
-      if error
-        t.fail 'request failed'
-      else
-        t.pass 'got frames reply'
-        tdiff t, (readGoldJson 'frames-empty.json'), result
-
-        _.requestJobs (error, result) ->
-          if error
-            t.fail 'request failed'
-          else
-            t.pass 'got jobs reply'
-            tdiff t, (readGoldJson 'jobs-empty.json'), result
-            t.end()
-            done()
-
-test 'airlines ingest and model building flow', (t) ->
-  t.plan 28
-  createCloud (_, done) ->
-    # UI loaded.
-    # empty clound shouldn't have any frames...
-    _.requestFrames (error, result) ->
-      if error
-        t.fail 'frames request failed'
-      else
-        t.pass 'got frames reply'
-        tdiff t, (readGoldJson 'frames-empty.json'), result
-
-        # bring up the import dialog.
-        
-        #
-        # glob for a non existent path...
-        #
-        _.requestFileGlob '/non/existent/path', 10, (error, result) ->
-          if error
-            t.fail 'glob request failed'
-          else
-            t.pass 'got glob reply'
-            tdiff t, (readGoldJson 'glob-empty.json'), result
-
-            #
-            # glob for the airlines zip...
-            #
-            _.requestFileGlob (path.join DATA_PATH, 'airlines'), 10, (error, result) ->
-              if error
-                t.fail 'glob request failed'
-              else
-                t.pass 'got glob reply'
-                expectedGlobResponse =
-                  src: null
-                  limit: 0
-                tdiff t, expectedGlobResponse, result, exclude: [ 'matches' ]
-                t.ok isArray result.matches, 'has matches'
-                t.ok result.matches.length > 0, 'has matches'
-                airlinesZip = find result.matches, (match) -> (/allyears2k_headers\.zip$/).test match
-                t.ok airlinesZip isnt null, 'found airlines zip'
-
-                #
-                # import this file
-                #
-                _.requestImportFile airlinesZip, (error, result) ->
-                  if error
-                    t.fail 'import request failed'
-                  else
-                    t.pass 'got import reply'
-                    expectedImportResponse =
-                      dels: []
-                      fails: []
-                      path: airlinesZip
-                      files: [ airlinesZip ]
-                      keys: [ "nfs://#{airlinesZip.substr 1}" ]
-                    tdiff t, expectedImportResponse, result
-
-                    airlinesZipKey = result.keys[0]
-
-                    #
-                    # try setting up parse for this file...
-                    #
-                    _.requestParseSetup [ airlinesZipKey ], (error, result) ->
-                      if error
-                        t.fail 'parse setup request failed'
-                      else
-                        t.pass 'got parse setup reply'
-                        tdiff t, (readGoldJson 'parse-setup-allyears2k_headers-zip.json'), result, exclude: [ 'srcs' ]
-                        t.ok isArray result.srcs, 'has srcs'
-                        t.equal result.srcs.length, 1, 'has 1 src'
-                        t.ok isString result.srcs[0].name, 'has src name'
-
-                        #
-                        # submit a parse request...
-                        #
-                        sourceKeys = map result.srcs, (src) -> src.name
-                        _.requestParseFiles sourceKeys, result.hexName, result.pType, result.sep, result.ncols, result.singleQuotes, result.columnNames, yes, result.checkHeader, (error, result) ->
-                          if error
-                            t.fail 'parse request failed'
-                          else
-                            t.pass 'got parse reply'
-                            tdiff t, (readGoldJson 'parse-allyears2k_headers-zip.json'), result, exclude: [ 'job' ]
-                            t.ok isString result.job.name, 'has job name'
-
-
-                            #
-                            # this job should be present in the job list...
-                            #
-                            jobKey = result.job.name
-                            _.requestJobs (error, result) ->
-                              if error
-                                t.fail 'jobs request failed'
-                              else
-                                t.pass 'got jobs reply'
-                                t.ok result.jobs.length is 1
-                                t.equal result.jobs[0].key.name, jobKey
-
-                                pollJob = (go) ->
-                                  _.requestJob jobKey, (error, job) ->
-                                    if error
-                                      t.fail 'job poll failed'
-                                    else
-                                      if job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
-                                        delay pollJob, 1000, go
-                                      else
-                                        go job
-
-                                #
-                                # poll the only job till it's done...
-                                #
-                                pollJob (job) ->
-                                  t.equal job.progress, 1, 'job progress ok'
-                                  t.equal job.status, 'DONE', 'job status ok'
-
-                                  # 
-                                  # inspect dest key
-                                  #
-                                  
-                                  frameKey = job.dest.name
-
-                                  _.requestInspect frameKey, (error, result) ->
-                                    if error
-                                      t.fail 'inspect request failed'
-                                    else
-                                      t.pass 'got inspect reply'
-                                      tdiff t, (readGoldJson 'inspect-allyears2k_headers-zip.json'), result
-                                      
-                                      #
-                                      # get frame...
-                                      #
-                                      _.requestFrame frameKey, (error, result) ->
-                                        if error
-                                          t.fail 'frame request failed'
-                                        else
-                                          t.pass 'got frame reply'
-                                          tdiff t, (readGoldJson 'frames-allyears2k_headers-zip.json'), result
-
-
-                                          t.end()
-                                          done()
-        
-
-
 

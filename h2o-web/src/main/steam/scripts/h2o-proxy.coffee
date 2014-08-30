@@ -67,6 +67,9 @@ Steam.H2OProxy = (_) ->
   requestFrames = (go, opts) ->
     requestWithOpts '/3/Frames.json', opts, go
 
+  requestModelBuilders = (algo, go) ->
+    request "/2/ModelBuilders.json/#{algo}", go
+
   requestModels = (go, opts) ->
     requestWithOpts '/2/Models.json', opts, (error, result) ->
       if error
@@ -118,6 +121,7 @@ Steam.H2OProxy = (_) ->
     request "/3/Frames/#{encodeURIComponent key}/columns/#{column}/summary", go
   link$ _.requestFrameAndCompatibleModels, (key, go) -> requestFrames go, key: (encodeURIComponent key), find_compatible_models: yes
   #TODO test
+  link$ _.requestModelBuilders, requestModelBuilders
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
   link$ _.requestModels, (go) -> requestModels go
   link$ _.requestModelsAndCompatibleFrames, (go) -> requestModels go, find_compatible_frames: yes

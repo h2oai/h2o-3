@@ -5,6 +5,7 @@ path = require 'path'
 spawn = (require 'child_process').spawn
 httpRequest = require 'request'
 _ = require 'lodash'
+async = require 'async'
 test = require 'tape'
 
 # TAP diagnostics
