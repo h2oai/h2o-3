@@ -164,7 +164,9 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      */
 //  @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", filter = Default.class, lmin = -2, json = true, importance = ParamImportance.SECONDARY)
     public long train_samples_per_iteration = -2;
-    public long actual_train_samples_per_iteration;
+
+    //  @API(help = "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)", filter = Default.class, dmin = 1e-3, dmax=0.999, json = true, importance = ParamImportance.SECONDARY)
+    public double target_ratio_comm_to_comp = 0.02;
 
     /**
      * The random seed controls sampling and initialization. Reproducible

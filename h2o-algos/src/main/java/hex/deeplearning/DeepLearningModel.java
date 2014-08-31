@@ -111,7 +111,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
 //  @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", filter = Default.class, lmin = -2, json = true, importance = ParamImportance.SECONDARY)
     public long train_samples_per_iteration = -2;
-    public long actual_train_samples_per_iteration;
+
+    //  @API(help = "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)", filter = Default.class, dmin = 1e-3, dmax=0.999, json = true, importance = ParamImportance.SECONDARY)
+    public double target_ratio_comm_to_comp = 0.02;
 
     /**
      * The random seed controls sampling and initialization. Reproducible
@@ -638,6 +640,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //  @API(help="Time to build the model", json = true)
   private long run_time;
   final private long start_time;
+
+  public long actual_train_samples_per_iteration;
+  public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
 //  @API(help="Number of training epochs", json = true)
   public double epoch_counter;
@@ -1348,7 +1353,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
-  private long _timeLastScoreEnter; //not transient: needed for HTML display page
+  public long _timeLastScoreEnter; //not transient: needed for HTML display page
   transient private long _timeLastScoreStart;
   transient private long _timeLastScoreEnd;
   transient private long _timeLastPrintStart;
@@ -1365,7 +1370,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     try {
       final long now = System.currentTimeMillis();
       epoch_counter = (float)model_info().get_processed_total()/train.numRows();
-      run_time += now-_timeLastScoreEnter;
+      final double time_last_iter_millis = now-_timeLastScoreEnter;
+
+      // Auto-tuning
+      // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
+      // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
+      // Note: actual communication time is estimated by the NetworkTest's collective test.
+      if (H2O.CLOUD.size() > 1 && get_params().train_samples_per_iteration == -2 && time_for_communication_us > 1e4) {
+//        Log.info("Time taken for communication: " + PrettyPrint.usecs((long)time_for_communication_us));
+//        Log.info("Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long)time_last_iter_millis, true));
+        final double comm_to_work_ratio = (time_for_communication_us *1e-3) / time_last_iter_millis;
+//        Log.info("Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
+//        Log.info("target_comm_to_work: " + get_params().target_ratio_comm_to_comp);
+        final double correction = get_params().target_ratio_comm_to_comp / comm_to_work_ratio;
+//        Log.warn("Suggested value for train_samples_per_iteration: " + get_params().actual_train_samples_per_iteration/correction);
+        actual_train_samples_per_iteration /= correction;
+        actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
+      }
+
+      run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
       keep_running = (epoch_counter < get_params().epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
