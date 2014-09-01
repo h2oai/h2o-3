@@ -236,7 +236,7 @@ final public class Key extends Iced<Key> implements Comparable {
   }
 
   // A random string, useful as a Key name or partial Key suffix.
-  static String rand() {
+  public static String rand() {
     UUID uid = UUID.randomUUID();
     long l1 = uid.getLeastSignificantBits();
     long l2 = uid. getMostSignificantBits();
