@@ -68,6 +68,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _chunk_node_count += other._chunk_node_count;
       }
     }
+    if (other._output.unstable()) _output.set_unstable();
   }
 
   static long _lastWarn;
