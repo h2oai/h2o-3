@@ -1,7 +1,7 @@
 // Nexus plugin for releasing https://github.com/bmuschko/gradle-nexus-plugin
 apply plugin: 'nexus'
 // java byte code converter
-// EVIL: apply from: "$rootDir/gradle/java6bytecode.gradle"
+apply from: "$rootDir/gradle/java6bytecode.gradle"
 
 modifyPom {
     project {
