@@ -126,7 +126,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *      once, and can improve generalization.
      */
 //  @API(help = "Activation function", filter = Default.class, json = true, importance = ParamImportance.CRITICAL)
-    public DeepLearningParameters.Activation activation = DeepLearningParameters.Activation.Tanh;
+    public DeepLearningParameters.Activation activation = DeepLearningParameters.Activation.Rectifier;
 
     /**
      * The number and size of each hidden layer in the model.
@@ -211,7 +211,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is enabled.
      */
 //  @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", filter = Default.class, dmin = 0.01, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
-    public double rho = 0.95;
+    public double rho = 0.99;
 
     /**
      * The second of two hyper parameters for adaptive learning rate (ADADELTA).
@@ -221,7 +221,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is enabled.
      */
 //  @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", filter = Default.class, dmin = 1e-15, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
-    public double epsilon = 1e-6;
+    public double epsilon = 1e-8;
 
   /*Learning Rate*/
     /**
