@@ -15,8 +15,8 @@ Create a git clone of the Perrier repository.
     cd ..
     git clone https://github.com/0xdata/perrier.git
     cd perrier
-    sbt/sbt assembly
-    
+    sbt/sbt assembly       # build jars
+    sbt/sbt publish-local  # install in local Maven repository
 
 
 
