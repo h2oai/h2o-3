@@ -33,7 +33,7 @@ public class TestUtil extends Iced {
       }
     }
 
-    H2O.waitForCloudSize(x, 10000);
+    H2O.waitForCloudSize(x, 30000);
   }
 
   @BeforeClass()

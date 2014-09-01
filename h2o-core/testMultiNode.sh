@@ -12,6 +12,13 @@ case "`uname`" in
       ;;
 esac
 
+# Run cleanup on interrupt or exit
+cleanup () {
+  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
+  exit `cat $OUTDIR/status.0`
+}
+trap cleanup SIGINT
+
 # Gradle puts files:
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
@@ -38,13 +45,7 @@ $JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
 # and tee'd to stdout so we can watch.
-(sleep 1; $JVM org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+(sleep 2; $JVM org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
 
-cleanup () {
-  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
-  exit `cat $OUTDIR/status.0`
-}
-
-trap cleanup SIGINT
 cleanup
 
