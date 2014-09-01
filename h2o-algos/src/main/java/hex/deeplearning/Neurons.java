@@ -522,6 +522,23 @@ public abstract class Neurons {
     return rate;
   }
 
+  /**
+   * Compute learning rate with AdaDelta, specialized for DenseVector (Bias)
+   * @param grad2 squared gradient
+   * @param row neuron index
+   * @param bias_ada_dx_g Matrix holding helper values (2 floats per weight)
+   * @param rho hyper-parameter #1
+   * @param eps hyper-parameter #2
+   * @return learning rate
+   */
+  private static float computeAdaDeltaRateForBias(final float grad2, final int row,
+                                                  final DenseVector bias_ada_dx_g,
+                                                  final float rho, final float eps) {
+    bias_ada_dx_g.raw()[2*row+1] = rho * bias_ada_dx_g.raw()[2*row+1] + (1f - rho) * grad2;
+    final float rate = MathUtils.approxSqrt((bias_ada_dx_g.raw()[2*row  ] + eps)/(bias_ada_dx_g.raw()[2*row+1] + eps));
+    bias_ada_dx_g.raw()[2*row]   = rho * bias_ada_dx_g.raw()[2*row  ] + (1f - rho) * rate * rate * grad2;
+    return rate;
+  }
 
   /**
    * Helper to enforce learning rule to satisfy sparsity constraint:
@@ -546,19 +563,18 @@ public abstract class Neurons {
    * @param momentum momentum factor (needed only if ADADELTA isn't used)
    */
   void update_bias(final DenseVector _b, final DenseVector _bm, final int row,
-                   final float partial_grad, final float avg_grad2, float rate, final float momentum) {
+                   float partial_grad, final float avg_grad2, float rate, final float momentum) {
     final boolean have_momenta = _minfo.has_momenta();
     final boolean have_ada = _minfo.adaDelta();
+    final float l1 = (float)params.l1;
+    final float l2 = (float)params.l2;
+    final float bias = _b.get(row);
+    partial_grad -= Math.signum(bias) * l1 + bias * l2;
 
     if (have_ada) {
       final float rho = (float)params.rho;
       final float eps = (float)params.epsilon;
-      _bias_ada_dx_g.set(2*row+1, _bias_ada_dx_g.get(2*row+1) * rho);
-      _bias_ada_dx_g.add(2*row+1, (1f-rho)*avg_grad2);
-      final float RMS_dx = MathUtils.approxSqrt(_bias_ada_dx_g.get(2*row) + eps);
-      final float invRMS_g = MathUtils.approxInvSqrt(_bias_ada_dx_g.get(2*row+1) + eps);
-      rate = RMS_dx*invRMS_g;
-      _bias_ada_dx_g.set(2*row, rho * _bias_ada_dx_g.get(2*row) + (1f - rho) * rate * rate * avg_grad2);
+      rate = computeAdaDeltaRateForBias(avg_grad2, row, _bias_ada_dx_g, rho, eps);
     }
     if (!params.nesterov_accelerated_gradient) {
       final float delta = rate * partial_grad;
