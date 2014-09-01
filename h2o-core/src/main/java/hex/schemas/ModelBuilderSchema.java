@@ -26,8 +26,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   public S fillFromParms(Properties parms) {
     this.parameters = createParametersSchema();
-    // Not sure we ever want to do this:
-    // this.parameters.fillFromParms(parms);
+    this.parameters.fillFromParms(parms);
     return (S)this;
   }
 
