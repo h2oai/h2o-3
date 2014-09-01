@@ -1,10 +1,11 @@
 package water;
 
+import water.util.DocGen.HTML;
+import water.util.UnsafeUtils;
+
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import water.util.DocGen.HTML;
-import water.util.UnsafeUtils;
 
 /**
  * Keys
@@ -62,6 +63,9 @@ final public class Key extends Iced<Key> implements Comparable {
   // is nonsense, e.g. asking for replica #3 in a 2-Node system.
   int D( int repl ) {
     int hsz = H2O.CLOUD.size();
+
+    if (0 == hsz)
+      throw H2O.fail("Cloud size is zero.");
   
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
