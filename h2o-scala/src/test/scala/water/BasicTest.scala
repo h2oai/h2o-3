@@ -63,6 +63,7 @@ class BasicTest extends TestUtil {
 
     } finally {
       fr.delete()
+      fr2.delete()
     }
   }
 }
