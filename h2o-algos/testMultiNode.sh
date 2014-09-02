@@ -12,6 +12,13 @@ case "`uname`" in
       ;;
 esac
 
+cleanup () {
+  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
+  exit `cat $OUTDIR/status.0`
+}
+
+trap cleanup SIGINT
+
 # Gradle puts files:
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
@@ -34,11 +41,5 @@ $JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 # and tee'd to stdout so we can watch.
 (sleep 1; $JVM org.junit.runner.JUnitCore `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
 
-cleanup () {
-  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
-  exit `cat $OUTDIR/status.0`
-}
-
-trap cleanup SIGINT
 cleanup
 
