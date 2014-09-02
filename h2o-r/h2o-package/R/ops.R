@@ -40,7 +40,7 @@
 #'
 #' Handle all of the binary infix operations with this simple function!
 #'
-#' Scrape the function call by casting the sys.calls() to a list and extracting the root.
+#' Scrape the function call for the operator. Cast the sys.calls() to a list and extracting the root.
 .ops.fun <- function(e1,e2) .h2o.binop(deparse(as.list(as.list(sys.calls())[[1]])[[1]]), e1, e2)
 
 #'

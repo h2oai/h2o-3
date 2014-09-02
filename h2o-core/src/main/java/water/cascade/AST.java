@@ -154,7 +154,7 @@ class ASTSpan extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override void exec(Env e) { e.push(new ValSpan(_ast_min, _ast_max)); }
+  @Override void exec(Env e) { ValSpan v = new ValSpan(_ast_min, _ast_max); v.setSlice(_isRow, _isCol); e.push(v); }
   @Override String value() { return null; }
   @Override int type() { return Env.SPAN; }
   @Override public String toString() { return _min + ":" + _max; }
@@ -197,7 +197,7 @@ class ASTSeries extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override void exec(Env e) { e.push(new ValSeries(_idxs, _spans)); }
+  @Override void exec(Env e) { ValSeries v = new ValSeries(_idxs, _spans); v.setSlice(_isRow, _isCol); e.push(v); }
   @Override String value() { return null; }
   @Override int type() { return Env.SERIES; }
   @Override public String toString() {
@@ -460,8 +460,7 @@ class ASTSlice extends AST {
 
     // stack looks like:  [....,hex,rows,cols], so pop, pop !
     int cols_type = env.peekType();
-    Val cols = env.pop();
-    int rows_type = env.peekType();
+    Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = env.pop();
 
     // Scalar load?  Throws AIIOOB if out-of-bounds
