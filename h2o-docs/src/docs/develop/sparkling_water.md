@@ -31,3 +31,6 @@ Create a git clone of the Perrier repository.
     
 If you have the Maven plugin installed and enabled in IntelliJ IDEA you can open the project there by doing File ->  Open and choosing perrier/pom.xml.
 
+If you want to build the Perrier project inside of IntelliJ without rebuilding all the base Spark modules you can disable them in the Maven tab: select all he folders except for Profiles, the three whose name contains H2O, and Spark Project Parent POM (root), right click, and select Ignore Projects.
+
+
