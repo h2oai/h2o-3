@@ -7,6 +7,11 @@ Create a git clone of the h2o-dev repository and build the software:
     git clone https://github.com/0xdata/h2o-dev.git
     cd h2o-dev
     gradle install # will build h2o and push it to your local Maven artifact cache
+    
+To do this for Java7 only, you can do this instead, which is a bit faster:
+    gradle  -Pdisable.java6bytecode.gen install
+
+
 
 *NOTE: if gradle install hangs it may be because some other process, such as IntelliJ, is holding the lock on the artifact cache.  If so, stop that process and retry gradle install.*
 
