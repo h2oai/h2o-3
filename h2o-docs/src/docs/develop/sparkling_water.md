@@ -68,5 +68,8 @@ In IntelliJ locate the DeepLearningSuite class.  Right click and run.  This will
     
 ### . . .and Submit It to the Cluster
 
-    mvn
+    cd perrier/h2o-examples
+    # the following command is from h2o-examples/run-example.sh:
+    ( cd ../; bin/spark-submit --verbose --master "spark://$SPARK_MASTER_IP:$SPARK_MASTER_PORT" --class org.apache.examples.h2o.ProstateDemo h2o-examples/target/shaded.jar )
+    
     
