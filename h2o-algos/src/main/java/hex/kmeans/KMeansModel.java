@@ -11,11 +11,11 @@ import water.fvec.Frame;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-    public int _K;                // Number of clusters
-    public int _max_iters;        // Max iterations
-    public boolean _normalize;    // Normalize columns
-    public long _seed;            // RNG seed
-    public KMeans.Initialization _init;
+    public int _K;                        // Number of clusters
+    public int _max_iters = 100;          // Max iterations
+    public boolean _normalize = false;    // Normalize columns
+    public long _seed;                    // RNG seed
+    public KMeans.Initialization _init = KMeans.Initialization.None;
   }
 
   public static class KMeansOutput extends Model.Output<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
