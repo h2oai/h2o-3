@@ -25,5 +25,5 @@ Create a git clone of the Perrier repository.
     mvn -DskipTests clean install    # install all the artifacts of all the projects to the Maven cache
     sbt/sbt clean assembly           # build fat jar using the artifacts
     
-If you have the Maven plugin installed and enabled in IntelliJ IDEA you can open the project there by doing File ->  Open <choose perrier/pom.xml>.
+If you have the Maven plugin installed and enabled in IntelliJ IDEA you can open the project there by doing File ->  Open and choosing perrier/pom.xml.
 
