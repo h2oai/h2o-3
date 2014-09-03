@@ -33,4 +33,5 @@ If you have the Maven plugin installed and enabled in IntelliJ IDEA you can open
 
 If you want to build the Perrier project inside of IntelliJ without rebuilding all the base Spark modules you can disable them in the Maven tab: select all he folders except for Profiles, the three whose name contains H2O, and Spark Project Parent POM (root), right click, and select Ignore Projects.
 
+*If IntelliJ can't find dependencies (e.g., spark-core) find the failing dependant modules in the Project view (e.g., h20-perrier), right click -> Maven -> Reimport and Build -> Rebuild Project.*
 
