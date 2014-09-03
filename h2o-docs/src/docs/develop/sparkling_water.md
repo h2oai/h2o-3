@@ -2,6 +2,10 @@
 
 These instructions assume you are using Linux, MacOSX, or Cygwin (on Windows).
 
+Ensure that you have the Java 7 SDK and Maven installed:
+http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+http://maven.apache.org
+
 Create a git clone of the h2o-dev repository and build the software:
 
     git clone https://github.com/0xdata/h2o-dev.git
