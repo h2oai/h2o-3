@@ -1,5 +1,7 @@
 # Developing with Sparkling Water (H2O <-> Apache Spark integration)
 
+## Setting Up Your Development Environment
+
 These instructions assume you are using Linux, MacOSX, or Cygwin (on Windows).
 
 Ensure that you have the Java 7 SDK and Maven installed:
@@ -35,3 +37,8 @@ If you want to build the Perrier project inside of IntelliJ without rebuilding a
 
 >If IntelliJ can't find dependencies (e.g., *spark-core*) find the failing dependant modules in the Project view (e.g., *h20-perrier*), right click -> *Maven* -> *Reimport* and then *Build* -> *Rebuild Project*.
 
+## Running an Example
+
+In IntelliJ locate the ProstateDemo class.  Right click and run.  This will launch a Spark instance in local mode containing an embedded H2O instance, and will run a Spark application which loads data into H2O, converts it to a Spark RDD, filters the data using a Spark SQL query, moves the result to H2O, and runs a KMeans clustering algorithm.
+
+In IntelliJ locate the DeepLearningSuite class.  Right click and run.  This will launch a Spark instance in local mode containing an embedded H2O instance, and will run a Spark application which generates test data in a Spark RDD, moves that data into H2O, and launches DeepLearning which creates a binary classification model.  This model is used to generate predictions on test data from Spark, which is then pushed back to a Spark RDD where it is validated using Spark's standard technique.
