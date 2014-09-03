@@ -328,12 +328,12 @@ public class Weaver {
 
       String z = FLDSZ1[ftype % 20];
       for(int i = 0; i < ftype / 20; ++i ) z = 'A'+z;
-      subsub(sb, "%z", z);                                // %z ==> short type name
-      subsub(sb, "%s", ctf.getName());                    // %s ==> field name
-      subsub(sb, "%c", base.getName().replace('$', '.')); // %c ==> base class name
-      subsub(sb, "%C", ctft.getName().replace('$', '.')); // %C ==> full class name
-      subsub(sb, "%d", ""+off);                           // %d ==> field offset, only for Unsafe
-      subsub(sb, "%u", utype(ctf.getSignature()));        // %u ==> unsafe type name
+      subsub(sb, "%z", z);                         // %z ==> short type name
+      subsub(sb, "%s", ctf.getName());             // %s ==> field name
+      subsub(sb, "%c", dollarsub(base.getName())); // %c ==> base class name
+      subsub(sb, "%C", dollarsub(ctft.getName())); // %C ==> full class name
+      subsub(sb, "%d", ""+off);                    // %d ==> field offset, only for Unsafe
+      subsub(sb, "%u", utype(ctf.getSignature())); // %u ==> unsafe type name
 
     }
     if( mimpl != null )         // default auto-gen serializer?
@@ -404,6 +404,12 @@ public class Weaver {
     case '[': return "Object";
     }
     throw new RuntimeException("unsafe access to type "+sig);
+  }
+
+  // Replace the 1st '$' with '.'
+  static private String dollarsub( String s ) {
+    int idx = s.indexOf('$');
+    return idx == -1 ? s : (s.substring(0,idx)+"."+s.substring(idx+1,s.length()));
   }
 
   // Replace 2-byte strings like "%s" with s2.

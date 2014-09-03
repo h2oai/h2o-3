@@ -6,6 +6,17 @@ ext {
   scalaVersion = '2.10.4'
 }
 
+// Actually run the tests by building a cluster of free-running JVMs first.
+task testMultiNode(type: Exec) {
+  dependsOn compileTestJava
+  commandLine 'bash', './testMultiNode.sh'
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    baseName = "test-${project.name}"
+    from sourceSets.test.output
+}
+
 // Activate Zinc compiler
 tasks.withType(ScalaCompile) {
     scalaCompileOptions.useCompileDaemon = false
