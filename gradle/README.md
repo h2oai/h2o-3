@@ -78,6 +78,7 @@ nexusPassword=<your Sonatype password>
 signing.keyId=<Your Key Id>
 signing.password=<Your Public Key Password>
 signing.secretKeyRingFile=<Path To Your Key Ring File>
+```
 
 ## Gradle FAQ
 
