@@ -29,14 +29,17 @@ GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve process.c
 
 throw "Gold file path '#{GOLD_PATH}' not found!" unless fs.existsSync GOLD_PATH
 
-readGoldFile = (name) -> fs.readFileSync (path.join GOLD_PATH, name), encoding: 'utf8'
-readGoldJson = (name) -> JSON.parse readGoldFile name
-
 if argv.s # spool
   spool = (data) ->
     fs.appendFileSync 'spool.log', data + EOL + EOL
 else
   spool = ->
+
+readGoldFile = (name) ->
+  fs.readFileSync (path.join GOLD_PATH, name), encoding: 'utf8'
+
+readGoldJson = (name) ->
+  JSON.parse readGoldFile name
 
 # Node.js equivalent of Steam.Xhr
 Xhr = (_, host) ->
