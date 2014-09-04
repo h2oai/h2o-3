@@ -100,3 +100,11 @@ signing.secretKeyRingFile=<Path To Your Key Ring File>
 * How can I open h2o-dev project in Idea?
   * Open project via selecting top-level `build.gradle` file.
    
+* How can I work offline with gradle?
+  * Run gradle with `--offline` command line parameter, for example: `./gradlew --offline
+    test`
+
+* How can I pass a parameter to gradle build?
+  * Specify parameter with `-P` option on gradle command line, for example:
+    `./gradlew -Pdisable.java6bytecode.gen=true install`
+
