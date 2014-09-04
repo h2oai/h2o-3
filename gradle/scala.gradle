@@ -6,18 +6,7 @@ ext {
   scalaVersion = '2.10.4'
 }
 
-// Actually run the tests by building a cluster of free-running JVMs first.
-task testMultiNode(type: Exec) {
-  dependsOn compileTestJava
-  commandLine 'bash', './testMultiNode.sh'
-}
-
-task testJar(type: Jar, dependsOn: testClasses) {
-    baseName = "test-${project.name}"
-    from sourceSets.test.output
-}
-
-// Activate Zinc compiler
+// Activate Zinc compiler and configure scalac
 tasks.withType(ScalaCompile) {
     scalaCompileOptions.useCompileDaemon = false
     scalaCompileOptions.useAnt = false
@@ -27,3 +16,23 @@ tasks.withType(ScalaCompile) {
 jar {
   baseName = "${project.name}_${scalaBinaryVersion}"
 }
+
+// Create jar
+task testJar(type: Jar, dependsOn: testClasses) {
+    baseName = "${project.name}_${scalaBinaryVersion}"
+    appendix = 'test'
+    from sourceSets.test.output
+}
+
+// Create a configuration containing only for test artifacts
+configurations {
+    testArchives
+}
+
+// Explicitly
+artifacts {
+    testArchives testJar
+}
+
+// Enable support for multi-node testing
+apply from: "$rootDir/gradle/multiNodeTesting.gradle"
