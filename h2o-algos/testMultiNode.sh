@@ -12,18 +12,18 @@ case "`uname`" in
       ;;
 esac
 
-cleanup () {
+function cleanup () {
   kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
   exit `cat $OUTDIR/status.0`
 }
 
-trap cleanup SIGINT
+trap cleanup SIGTERM SIGINT
 
 # Gradle puts files:
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-algos.jar${SEP}build/libs/test-h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/test-h2o-core.jar${SEP}../lib/*"
+JVM="nice java -ea -cp build/libs/h2o-algos.jar${SEP}build/libs/h2o-algos-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../lib/*"
 
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"

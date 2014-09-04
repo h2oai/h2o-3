@@ -11,14 +11,8 @@ compileJava {
   options.debug = true 
 }
 
-// Actually run the tests by building a cluster of free-running JVMs first.
-task testMultiNode(type: Exec) {
-  dependsOn compileTestJava
-  commandLine 'bash', './testMultiNode.sh'
-}
-
 task testJar(type: Jar, dependsOn: testClasses) {
-    baseName = "test-${project.name}"
+    appendix = 'test'
     from sourceSets.test.output
 }
 
@@ -31,3 +25,7 @@ configurations {
 artifacts {
     testArchives testJar
 }
+
+// Enable support for multi-node testing
+apply from: "$rootDir/gradle/multiNodeTesting.gradle"
+
