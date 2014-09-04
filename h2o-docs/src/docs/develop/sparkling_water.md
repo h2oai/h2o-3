@@ -58,6 +58,8 @@ In IntelliJ locate the DeepLearningSuite class.  Right click and run.  This will
     ./start-master.sh 
     ./start-slave.sh 1 $MASTER
     ./start-slave.sh 2 $MASTER
+    
+Go to http://localhost:8080 with your browser to see the status page for your Spark cluster.
 
 ### Assemble the Application for Spark. . .
     
@@ -70,6 +72,9 @@ In IntelliJ locate the DeepLearningSuite class.  Right click and run.  This will
 
     cd perrier/h2o-examples
     # the following command is from h2o-examples/run-example.sh:
-    ( cd ../; bin/spark-submit --verbose --master "spark://$SPARK_MASTER_IP:$SPARK_MASTER_PORT" --class org.apache.examples.h2o.ProstateDemo h2o-examples/target/shaded.jar )
+    ( cd ../; bin/spark-submit --verbose --master "spark://$SPARK_MASTER_IP:$SPARK_MASTER_PORT" --class org.apache.spark.examples.h2o.ProstateDemo h2o-examples/target/shaded.jar )
     
+Go to http://localhost:8080 with your browser to see the status page for your Spark cluster.
+Go to http://localhost:54321 with your browser to see the status page for your H2O cluster.
+
     
