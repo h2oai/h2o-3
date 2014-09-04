@@ -1,0 +1,37 @@
+.y-dialog-container
+  .y-dialog.y-create-model-dialog(data-dialog-width='-1' data-dialog-height='-1')
+    .y-dialog-title-bar
+      .y-dialog-title New Model
+      .y-dialog-exit(data-bind='click:cancel')
+        i.fa.fa-times 
+    .y-dialog-body
+      .y-dialog-margin
+        // ko if:isAlgorithmSelectionMode
+        .y-algorithms
+          h1 Select Algorithm
+          table.table.table-condensed.table-hover
+            tbody
+              // ko foreach:algorithms
+              tr
+                td
+                  .y-algorithm(data-bind='click:select')
+                    .y-algorithm-title(data-bind='text:title')
+                    .y-algorithm-description(data-bind='text:description')
+              // /ko
+        // /ko
+
+
+        // ko if:isModelCreationMode
+        // ko with:form
+        h1(data-bind='text:title')
+        h2(data-bind='collapse:false') Parameters
+        div(data-bind='template: { name: parameterTemplateOf, foreach:criticalParameters }')
+        h2(data-bind='collapse:false') Advanced
+        div(data-bind='template: { name: parameterTemplateOf, foreach:secondaryParameters }')
+        h2(data-bind='collapse:false') Expert
+        div(data-bind='template: { name: parameterTemplateOf, foreach:expertParameters }')
+        // /ko
+        // /ko
+
+
+
