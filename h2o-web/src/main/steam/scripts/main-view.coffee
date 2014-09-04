@@ -108,7 +108,7 @@ Steam.MainView = (_) ->
 
   _topics = node$ [
     _frameTopic = createTopic 'Datasets', switchToFrames
-    _modelTopic = createTopic 'Models', null #switchToModels
+    _modelTopic = createTopic 'Models', switchToModels
     _scoringTopic = createTopic 'Scoring', null #switchToScoring
     _timelineTopic = createTopic 'Timeline', null
     _notificationTopic = createTopic 'Notifications', switchToNotifications
@@ -119,7 +119,7 @@ Steam.MainView = (_) ->
   # List views
   _topicListView = Steam.TopicListView _, _topics
   _frameListView = Steam.FrameListView _
-  #_modelListView = Steam.ModelListView _
+  _modelListView = Steam.ModelListView _
   #_scoringListView = Steam.ScoringListView _
   _notificationListView = Steam.NotificationListView _
   _jobListView = Steam.JobListView _

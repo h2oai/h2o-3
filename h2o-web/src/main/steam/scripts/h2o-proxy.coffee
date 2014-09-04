@@ -71,7 +71,7 @@ Steam.H2OProxy = (_) ->
     request "/2/ModelBuilders.json/#{algo}", go
 
   requestModels = (go, opts) ->
-    requestWithOpts '/2/Models.json', opts, (error, result) ->
+    requestWithOpts '/3/Models.json', opts, (error, result) ->
       if error
         go error, result
       else

@@ -19,10 +19,12 @@ JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(
 
 throw "H2O jar '#{JAR_PATH}' not found!" unless fs.existsSync JAR_PATH
 
+# Pass -data /path/to/smalldata to override the smalldata directory
 DATA_PATH = if argv.data then path.resolve argv.data else path.resolve process.cwd(), '..', 'smalldata'
 
 throw "Data path '#{DATA_PATH}' not found!" unless fs.existsSync DATA_PATH
 
+# Pass -gold /path/to/src/main/steam/tests/gold to override gold files
 GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve process.cwd(), path.join 'src', 'main', 'steam', 'tests', 'gold'
 
 throw "Gold file path '#{GOLD_PATH}' not found!" unless fs.existsSync GOLD_PATH
