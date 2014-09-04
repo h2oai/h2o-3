@@ -78,4 +78,24 @@ nexusPassword=<your Sonatype password>
 signing.keyId=<Your Key Id>
 signing.password=<Your Public Key Password>
 signing.secretKeyRingFile=<Path To Your Key Ring File>
-```
+
+## Gradle FAQ
+
+* Should i use `gradle` command from my machine or `gradlew` command provided by the project?
+  * Use `gradlew` command since it will download expected (and supported) gradle version for you.
+
+* How can I run a specific task (i.e., test)?
+  * `./gradlew test`
+  
+* How can I run a specific task on a particular project?
+  * `./gradlew :h2o-test:test`
+  
+* How can I run gradle daemon by default?
+  * Put `org.gradle.daemon=true` into your `~/.gradle/gradle.properties`
+  
+* How can I run gradle without daemon?
+  * `./gradlew --no-daemon`
+  
+* How can I open h2o-dev project in Idea?
+  * Open project via selecting top-level `build.gradle` file.
+   
