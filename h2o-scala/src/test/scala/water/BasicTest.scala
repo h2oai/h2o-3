@@ -68,13 +68,14 @@ class BasicTest extends TestUtil {
   }
 
   // test is off, until can pass around anon functions
-  /*@Test*/ def biggerTest() = {
+  @Test def biggerTest() = {
     val fr = new DataFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
     try {
 
       val start = System.currentTimeMillis
       (0 until 10)foreach( i => {
         class CalcSums(var X:Double =0, var Y:Double =0, var X2:Double =0, var nrows:Long=0) extends MapReduce[Array[Double],CalcSums] {
+          val DEBUG_WEAVER=1
           override def map = (row : Array[Double]) => { X = row(0); Y = row(1); X2 = X*X; nrows=1 }
           override def reduce = (that : CalcSums) => { X += that.X ; Y += that.Y; X2 += that.X2; nrows += that.nrows }
         }
@@ -92,5 +93,5 @@ class BasicTest extends TestUtil {
 }
 
 object BasicTest extends TestUtil {
-  @BeforeClass def setup() = water.TestUtil.stall_till_cloudsize(5)
+  @BeforeClass def setup() = water.TestUtil.stall_till_cloudsize(2)
 }
