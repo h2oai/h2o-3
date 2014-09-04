@@ -89,7 +89,7 @@ signing.secretKeyRingFile=<Path To Your Key Ring File>
   * `./gradlew test`
   
 * How can I run a specific task on a particular project?
-  * `./gradlew :h2o-test:test`
+  * `./gradlew :h2o-scala:test`
   
 * How can I run gradle daemon by default?
   * Put `org.gradle.daemon=true` into your `~/.gradle/gradle.properties`
