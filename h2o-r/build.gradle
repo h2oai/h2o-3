@@ -140,18 +140,18 @@ task setPackageFiles << {
 
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"
-    else commandLine 'R', "CMD", "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package/man"
+    else commandLine 'R', "CMD", "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "--noclean", "h2o-package/man"
     standardOutput = new ByteArrayOutputStream() // > /dev/null
 }
 
-genPDF.onlyIf { PDF_LATEX != "" }
+genPDF.onlyIf { PDF_LATEX != ""  && SYS_OS != "unix" }
 
 task cpPDF << {
     new File([T,"R"].join(File.separator)).mkdirs()
     copyFile([T,"h2o_package.pdf"], [T,"R", "h2o_package.pdf"])
 }
 
-cpPDF.onlyIf { PDF_LATEX != "" }
+cpPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "unix" }
 
 task cpH2OAppJar << {
     def path = [T, "h2o-package", "inst", "java"].join(File.separator)
