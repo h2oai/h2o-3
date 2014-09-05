@@ -46,12 +46,12 @@ public class CBSChunk extends Chunk {
   @Override boolean set_impl(int idx, float f ) { return false; }
   @Override boolean setNA_impl(int idx) {  return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
+    nc.set_sparseLen(nc.set_len(0));
     for (int i=0; i< len(); i++) {
       int res = atb(i);
       if (res == _NA) nc.addNA();
       else            nc.addNum(res,0);
     }
-    nc.set_sparseLen(nc.set_len(len()));
     return nc;
   }
 
