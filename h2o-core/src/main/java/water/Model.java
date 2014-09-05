@@ -45,6 +45,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
   public P _parms; // TODO: move things around so that this can be protected
 
+  public String [] _warnings = new String[0];
+
+  public void addWarning(String s){
+    _warnings = Arrays.copyOf(_warnings,_warnings.length+1);
+    _warnings[_warnings.length-1] = s;
+  }
 
   /**
    * Model-specific output class.  Each model sub-class contains an instance of one of

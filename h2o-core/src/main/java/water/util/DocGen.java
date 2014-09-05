@@ -91,6 +91,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAAStr(String name, String [][] sss) { return sss==null?f(name,"null"):f0(name).array(sss).f1(); }
     public HTML putAA4  (String name, int    [][] iss) { throw H2O.unimpl(); }
     public HTML putAA8  (String name, long   [][] lss) { throw H2O.unimpl(); }
+    public HTML putAA4f (String name, float  [][] fss) { return fss==null?f(name,"null"):f0(name).array(fss).f1(); }
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
@@ -170,6 +171,15 @@ public abstract class DocGen<T extends DocGen> {
       for( double[] ds : dss ) { 
         p("<tr>");
         if( ds != null ) for( double d : ds ) cell(d);
+        p("</tr>");
+      }
+      return arrayTail();
+    }
+    public HTML array( float[][] fss ) {
+      arrayHead();
+      for( float[] fs : fss ) {
+        p("<tr>");
+        if( fs != null ) for( float f : fs ) cell(f);
         p("</tr>");
       }
       return arrayTail();

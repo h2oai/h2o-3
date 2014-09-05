@@ -4,6 +4,8 @@ package water;
  *  A typed atomic update.
  */
 public abstract class TAtomic<T extends Freezable> extends Atomic<TAtomic<T>> {
+  public TAtomic(){}
+  public TAtomic(H2O.H2OCountedCompleter completer){super(completer);}
   /** Atomically update an old value to a new one.
    *  @param old  The old value, it may be null.  It is a defensive copy.
    *  @return The new value; if null if this atomic update no longer needs to be run

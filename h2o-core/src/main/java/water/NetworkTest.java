@@ -119,10 +119,7 @@ public class NetworkTest {
     public PingPongTask(byte[] payload) {
       _payload = payload;
     }
-    @Override public void compute2() {
-      tryComplete();
-    }
-
+    @Override public void compute2(){tryComplete();}
     @Override public byte priority() {
       return H2O.MIN_HI_PRIORITY;
     }

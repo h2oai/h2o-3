@@ -232,7 +232,7 @@ final public class H2O {
   }
 
 
-  static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
+  public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
     public H2OCallback(){}
     public H2OCallback(H2OCountedCompleter cc){super(cc);}
     @Override protected void compute2(){throw H2O.fail();}

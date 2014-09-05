@@ -62,22 +62,11 @@ gulp.task 'build-browser-script', ->
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
 
-gulp.task 'build-unit-test-script', ->
+gulp.task 'build-test-script', ->
   gulp.src 'src/main/steam/scripts/*.coffee'
-    .pipe ignore.exclude /system\-tests.coffee$/
     .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
-    .pipe order [ 'global.node.unit-tests.js', 'global.prelude.js', 'global.*.js', '*.js' ]
-    .pipe concat 'steam-unit-tests.js'
-    .pipe header '"use strict";(function(){'
-    .pipe footer '}).call(this);'
-    .pipe gulp.dest config.dir.deploy + 'js/'
-
-gulp.task 'build-system-test-script', ->
-  gulp.src 'src/main/steam/scripts/*.coffee'
-    .pipe ignore.exclude /unit\-tests.coffee$/
-    .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
-    .pipe order [ 'global.node.system-tests.js', 'global.prelude.js', 'global.*.js', '*.js' ]
-    .pipe concat 'steam-system-tests.js'
+    .pipe order [ 'global.tests.js', 'global.prelude.js', 'global.*.js', '*.js' ]
+    .pipe concat 'steam-tests.js'
     .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
@@ -121,11 +110,8 @@ gulp.task 'clean', ->
   gulp.src config.dir.deploy, read: no
     .pipe clean()
 
-gulp.task 'test', [ 'build-unit-test-script' ], ->
-  require path.resolve config.dir.deploy + 'js/steam-unit-tests.js'
-
-gulp.task 'system-test', [ 'build-system-test-script' ], ->
-  require path.resolve config.dir.deploy + 'js/steam-system-tests.js'
+gulp.task 'test', [ 'build-test-script' ], ->
+  require path.resolve config.dir.deploy + 'js/steam-tests.js'
 
 gulp.task 'build', [ 
   'compile-browser-assets'
