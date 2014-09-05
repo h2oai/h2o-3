@@ -83,7 +83,7 @@ task getRPlatform(type: Exec) {
     commandLine getOsSpecificCommandLine(['R', "--vanilla -q -e options(echo=FALSE);cat(R.Version()\$platform);"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
-        return standardOutput.toString().replace(' ','').replace('-','_').split("\\\n")[1]
+        return standardOutput.toString().replace(' ','').split("\\\n")[1] //replace('-','_').
     }
 }
 
@@ -109,6 +109,8 @@ task setProperties << {
     project.ext.BUILD_BRANCH = gitbranch.output()
     project.ext.R_PLATFORM   = getRPlatform.output()
     project.ext.R_VERSION    = getRVersion.output()
+    project.ext.H2O_R_LINUX_FILE = "h2o_${PROJECT_VERSION}_R_${R_PLATFORM}.tar.gz"
+    project.ext.H2O_R_PKG_FILE = getRPKGType(SYS_OS)
     println "Git Branch: " + BUILD_BRANCH
     println "R Platform: " + R_PLATFORM
     println "PDF LATEX: " + PDF_LATEX
@@ -185,7 +187,7 @@ task cpToR2 << {
     new File((contrib + "2.15").join(File.separator)).mkdir()
     new File((contrib + "2.14").join(File.separator)).mkdir()
     new File((contrib + "2.13").join(File.separator)).mkdir()
-    Files.move(newPath(T, H2O_R_PKG_FILE), newPath(T, "R", REPO_PATH_MAC, H2O_R_MAC_FILE), REPLACE_EXISTING)
+    Files.move(newPath(T, H2O_R_PKG_FILE), newPath(T, "R", REPO_PATH_MAC, H2O_R_PKG_FILE), REPLACE_EXISTING)
     copyFile([T, "PACKAGES"], [T, "R", REPO_PATH_MAC, "PACKAGES"])
     copyFile([T, "PACKAGES.gz"], [T, "R", REPO_PATH_MAC, "PACKAGES.gz"])
     new File([T, "R", REPO_PATH_MAC].join(File.separator)).eachFile {
