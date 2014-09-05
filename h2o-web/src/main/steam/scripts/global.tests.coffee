@@ -8,12 +8,6 @@ _ = require 'lodash'
 async = require 'async'
 test = require 'tape'
 
-# TAP diagnostics
-diag = (message) -> console.log '# ' + message
-
-# TAP bail out
-bailout = (message) -> console.log 'Bail out! ' + message
-
 # Pass -jar /path/to/h2o.jar to override the default jar
 JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'h2o-app', 'build', 'libs', 'h2o-app.jar'
 
@@ -29,11 +23,23 @@ GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve process.c
 
 throw "Gold file path '#{GOLD_PATH}' not found!" unless fs.existsSync GOLD_PATH
 
+# Pass -s to spool request/response pairs.
 if argv.s # spool
   spool = (data) ->
     fs.appendFileSync 'spool.log', data + EOL + EOL
 else
   spool = ->
+
+# Pass -u to run unit tests only
+SYSTEM_TEST = if argv.u then no else yes
+
+# TAP diagnostics
+diag = (message) ->
+  console.log '# ' + message
+
+# TAP bail out
+bailout = (message) ->
+  console.log 'Bail out! ' + message
 
 dumpAssertion = (path, value) ->
   if isUndefined value

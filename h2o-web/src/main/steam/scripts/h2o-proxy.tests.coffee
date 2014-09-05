@@ -1,3 +1,5 @@
+return unless SYSTEM_TEST
+
 test 'empty cloud', (t) ->
   t.plan 4
   createCloud (_, go) ->
@@ -27,7 +29,7 @@ test 'empty cloud', (t) ->
     ]
     async.waterfall operations, -> t.end(); go()
 
-test 'airlines ingest and model building flow 2', (t) ->
+test 'airlines ingest and model building flow', (t) ->
   t.plan 30
 
   createCloud (_, go) ->

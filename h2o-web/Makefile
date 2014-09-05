@@ -15,15 +15,15 @@ check:
 launch:
 	java -Dwebdev=1 -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar
 
-test:
-	$B/gulp build-unit-test-script && node $O/js/steam-unit-tests.js | $B/faucet
+unit-test:
+	$B/gulp build-test-script && node $O/js/steam-tests.js -u | $B/faucet 
 
-system-test:
-	$B/gulp build-system-test-script && node $O/js/steam-system-tests.js -s | $B/faucet 
+test:
+	$B/gulp build-test-script && node $O/js/steam-tests.js -s | $B/faucet
 
 coverage:
 	@mkdir -p $O/coverage
-	$B/istanbul cover --dir $O/coverage -x "**/lib/**" $O/js/steam-system-tests.js
+	$B/gulp build-test-script && $B/istanbul cover --dir $O/coverage -x "**/lib/**" $O/js/steam-tests.js
 
 .PHONY: default watch clean test system-test coverage launch 
 
