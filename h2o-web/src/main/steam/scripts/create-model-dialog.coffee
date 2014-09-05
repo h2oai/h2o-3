@@ -64,23 +64,26 @@ Steam.ModelBuilderForm = (_, _algorithm, _parameters, _go) ->
   _expertParameters = map parametersByLevel.expert, createControlFromParameter
   parameterTemplateOf = (control) -> "#{control.kind}-model-parameter"
 
+  createModel = ->
+
   title: _algorithm.title
   criticalParameters: _criticalParameters
   secondaryParameters: _secondaryParameters
   expertParameters: _expertParameters
   parameterTemplateOf: parameterTemplateOf
+  createModel: createModel
 
 Steam.CreateModelDialog = (_, _go) ->
   _isModelCreationMode = node$ no
   _isAlgorithmSelectionMode = lift$ _isModelCreationMode, negate
-  _form = node$ null
+  _modelForm = node$ null
 
   selectAlgorithm = (algorithm) ->
     _.requestModelBuilders algorithm.data.key, (error, result) ->
       if error
         #TODO handle properly
       else
-        _form Steam.ModelBuilderForm _, algorithm, result.model_builders[algorithm.data.key].parameters, ->
+        _modelForm Steam.ModelBuilderForm _, algorithm, result.model_builders[algorithm.data.key].parameters, ->
           #TODO proceed to next step
         _isModelCreationMode yes
 
@@ -91,12 +94,18 @@ Steam.CreateModelDialog = (_, _go) ->
       data: algorithm
       select: -> selectAlgorithm self
 
+  backToAlgorithms = -> _isModelCreationMode no
+
+  createModel = -> _modelForm().createModel()
+
   cancel = -> _go 'cancel'
 
   isAlgorithmSelectionMode: _isAlgorithmSelectionMode
   isModelCreationMode: _isModelCreationMode
   algorithms: _algorithms
-  form: _form
+  modelForm: _modelForm
   cancel: cancel
+  backToAlgorithms: backToAlgorithms
+  createModel: createModel
   template: 'create-model-dialog'
 
