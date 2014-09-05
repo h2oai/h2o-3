@@ -114,7 +114,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     final Link   link;
     final double tweedie_variance_power;
     final double tweedie_link_power;
-    final double [] alpha;
+    double [] alpha;
     double [] lambda;
     double       prior = -1;
     boolean lambda_search = false;
