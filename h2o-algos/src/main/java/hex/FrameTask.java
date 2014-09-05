@@ -23,8 +23,9 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
   protected float _useFraction = 1.0f;
   protected boolean _shuffle = false;
+  protected boolean _skipMissing = true;
 
-  protected boolean skipMissing() { return true; }
+  protected boolean skipMissing() { return _skipMissing; }
 
   public FrameTask(Key jobKey, DataInfo dinfo) {
     this(jobKey,dinfo,null);

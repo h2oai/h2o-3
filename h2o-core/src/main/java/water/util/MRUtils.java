@@ -1,12 +1,17 @@
 package water.util;
 
 import static water.util.RandomUtils.getDeterRNG;
+
 import water.*;
+import water.H2O.H2OCallback;
+import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MRUtils {
+
 
   /**
    * Sample rows from a frame.
@@ -253,5 +258,46 @@ public class MRUtils {
     r.delete();
 
     return shuffled;
+  }
+
+  public static class ParallelTasks<T extends DTask<T>> extends H2OCountedCompleter {
+    public transient final T [] _tasks;
+    transient final public int _maxP;
+    transient private AtomicInteger _nextTask;
+
+    public ParallelTasks(H2OCountedCompleter cmp, T[] tsks){
+      this(cmp,tsks,H2O.CLOUD.size());
+    }
+    public ParallelTasks(H2OCountedCompleter cmp, T[] tsks, int maxP){
+      super(cmp);
+      _maxP = maxP;
+      _tasks = tsks;
+      addToPendingCount(_tasks.length-1);
+    }
+
+    private void forkDTask(int i){
+      int nodeId = i%H2O.CLOUD.size();
+      forkDTask(i,H2O.CLOUD._memary[nodeId]);
+    }
+    private void forkDTask(final int i, H2ONode n){
+      if(n == H2O.SELF) H2O.submitTask(_tasks[i]);
+      else new RPC(n,_tasks[i]).addCompleter(this).call();
+    }
+    class Callback extends H2OCallback<H2OCountedCompleter> {
+      final int i;
+      final H2ONode n;
+      public Callback(H2ONode n, int i){super(ParallelTasks.this); this.n = n; this.i = i;}
+      @Override public void callback(H2OCountedCompleter cc){
+        int i;
+        if((i = _nextTask.getAndIncrement()) < _tasks.length)  // not done yet
+          forkDTask(i, n);
+      }
+    }
+    @Override public void compute2(){
+      final int n = Math.min(_maxP, _tasks.length);
+      _nextTask = new AtomicInteger(n);
+      for(int i = 0; i < n; ++i)
+        forkDTask(i);
+    }
   }
 }

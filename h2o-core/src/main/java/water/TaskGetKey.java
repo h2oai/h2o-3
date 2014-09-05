@@ -80,6 +80,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
     if( old != null && !old.isEmpty() ) old=null;
     Value res = H2O.putIfMatch(_xkey,_val,old);
     if( res != old ) _val = res;
+    tryComplete();
   }
 
   // Received an ACKACK; executes on the node sending the Value

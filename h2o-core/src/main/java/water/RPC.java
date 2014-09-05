@@ -94,7 +94,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // Make a remotely executed FutureTask.  Must name the remote target as well
   // as the remote function.  This function is expected to be subclassed.
-  RPC( H2ONode target, V dtask ) {
+  public RPC( H2ONode target, V dtask ) {
     this(target,dtask,1.0f);
     setTaskNum();
   }
@@ -116,7 +116,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
-  synchronized RPC<V> call() {
+  public synchronized RPC<V> call() {
     // completer will not be carried over to remote
     // add it to the RPC call.
     if(_dt.getCompleter() != null){
@@ -146,7 +146,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             assert dt==_dt;
             synchronized(RPC.this) { // Might be called several times
               if( _done ) return true; // Filter down to 1st exceptional completion
-              _done = true;
+              _done = true; // must be the last set before notify call cause the waiting thread can wake up at any moment independently on notify
               _dt.setException(ex);
               RPC.this.notifyAll();
             }
@@ -563,7 +563,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   }
 
   // ---
-  synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
+  public synchronized RPC<V> addCompleter( H2OCountedCompleter task ) {
     if( _fjtasks == null ) _fjtasks = new ArrayList(2);
     _fjtasks.add(task);
     return this;

@@ -41,8 +41,8 @@ final public class Key extends Iced<Key> implements Comparable {
   public static final byte DVEC = 5;
   public static final byte VGROUP = 6; // vector group
 
-  static final byte HIDDEN_USER_KEY = 31;
-  static final byte USER_KEY = 32;
+  public static final byte HIDDEN_USER_KEY = 31;
+  public static final byte USER_KEY = 32;
 
   // For Fluid Vectors, we have a special Key layout.
   // 0 - key type byte, one of VEC, DVEC or VGROUP
@@ -255,7 +255,7 @@ final public class Key extends Iced<Key> implements Comparable {
   // Make a particular system key that is homed to given node and possibly
   // specifies also other 2 replicas. Works for both IPv4 and IPv6 addresses.
   // If the addresses are not specified, returns a key with no home information.
-  static Key make(String s, byte rf, byte systemType, H2ONode... replicas) {
+  public static Key make(String s, byte rf, byte systemType, H2ONode... replicas) {
     return make(decodeKeyName(s),rf,systemType,replicas);
   }
   public static Key make(byte rf, byte systemType, H2ONode... replicas) {

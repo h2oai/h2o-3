@@ -56,6 +56,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
+  public ModelBuilder(Key jobKey, Key dest, String desc, P parms, long work) {
+    super(jobKey,dest,desc,work);
+    this._parms = parms;
+  }
   public ModelBuilder(Key dest, String desc, P parms, long work) {
     super(dest, desc, work);
     this._parms = parms;

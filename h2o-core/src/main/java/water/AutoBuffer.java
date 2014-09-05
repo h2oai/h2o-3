@@ -1126,7 +1126,8 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putA4(ary[i]);
     return this;
   }
-  @SuppressWarnings("unused")  AutoBuffer putAA4f( float[][] ary ) {
+  @SuppressWarnings("unused")
+  public AutoBuffer putAA4f( float[][] ary ) {
     //_arys++;
     long xy = putZA(ary);
     if( xy == -1 ) return this;

@@ -73,6 +73,13 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     return remove(fs);
   }
 
+  public static void unlock_lockable(final Key lockable, final Key job){
+    new DTask.DKeyTask<DTask.DKeyTask,Lockable>(null,lockable){
+      @Override
+      public void map(Lockable l) { l.unlock(job);}
+    }.invokeTask();
+  }
+
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
   private class PriorWriteLock extends TAtomic<Lockable> {
     private final Key _job_key;         // Job doing the locking

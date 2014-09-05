@@ -96,17 +96,20 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
+  public Job(Key jobKey, Key dest, String desc, long work) {
+    super(jobKey);
+    _description = desc;
+    _dest = dest;
+    _state = JobState.CREATED;  // Created, but not yet running
+    _work = work;               // Units of work
+  }
   /** Create a Job
    *  @param dest Final result Key to be produced by this Job
    *  @param desc String description
    *  @param work Units of work to be completed
    */
   public Job(Key dest, String desc, long work) {
-    super(defaultJobKey()); 
-    _description = desc; 
-    _dest = dest; 
-    _state = JobState.CREATED;  // Created, but not yet running
-    _work = work;               // Units of work
+    this(defaultJobKey(),dest,desc,work);
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
@@ -241,7 +244,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  Can default to returning e.g. 0 always.  */
   public final long _work;
   private long _worked;
-  public final float progress() { return (float)_worked/(float)_work; }
+  public float progress() { return (float)_worked/(float)_work; }
   public final void update(final long newworked) { update(newworked,_key); }
   public static void update(final long newworked, Key jobkey) { 
     new TAtomic<Job>() {
