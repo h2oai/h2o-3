@@ -42,25 +42,28 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
       // No reduce for first map
       var needreduce = false
       // For all rows in Chunk
-      (0 until len).foreach{ i =>       // For all rows
-        if( fill(row,chks,i) ) {        // Fill all cols into 'row'
-          if( needreduce ) {            // Need a map & reduce
-            map22(row)                  // Map into mr2
-            outer.reduce(mr2)  // Reduce mr2 into self
-          } else {                      // First value; map into self
-            map2(row)                   // Call user map into self
-            needreduce = true           // Next time will need a reduce
-          }
+      var i = 0
+      // Find first available row & map it
+      while( i < len && !fill(row,chks,i) ) i += 1
+      map2(row); i += 1
+      // For all remaining rows, find available, map & reduce
+      while( i < len ) {         // For all rows
+        if( fill(row,chks,i) ) { // Fill all cols into 'row'
+          map22(row)             // Map into mr2
+          outer.reduce(mr2)      // Reduce mr2 into self
         }
+        i += 1
       }
     }
     // Call user reduce
     override def reduce( mrt : MRTask_AD ) = outer.reduce(mrt.outer)
     // Fill reused temp array from Chunks.  Returns false is any value is NaN & skipNA true
     private def fill(row : Array[Double], chks : Array[Chunk], i : Int) : Boolean = {
-      (0 until chks.length).foreach{ col => 
+      var col = 0
+      while( col < chks.length ) {
         val d = chks(col).at0(i); row(col) = d
         if( skipNA && d.isNaN ) return false
+        col += 1
       }
       true
     }
