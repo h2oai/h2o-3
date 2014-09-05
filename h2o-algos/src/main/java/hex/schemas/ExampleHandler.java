@@ -1,8 +1,6 @@
 package hex.schemas;
 
-import hex.ModelBuilder;
 import hex.example.Example;
-import hex.example.ExampleModel;
 import water.H2O;
 import water.api.Handler;
 
@@ -11,7 +9,7 @@ public class ExampleHandler extends Handler<Example,ExampleV2> {
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   public ExampleHandler() {}
-  public ExampleV2 work(int version, Example e) {
+  public ExampleV2 train(int version, Example e) {
     assert e._parms != null;
     e.train();
     return schema(version).fillFromImpl(e);
