@@ -9,7 +9,7 @@ Maintainer: Anqi Fu <anqi@0xdata.com>
 Description: This is a package for running H2O via its REST API from within R.
 License: Apache License (== 2.0)
 Depends: R (>= 2.13.0), RCurl, rjson, statmod, tools, methods, utils
-Collate: wrapper.R constants.R logging.R h2o.R exec.R classes.R ops.R methods.R ast.R import.R parse.R export.R algorithms.R
+Collate: wrapper.R constants.R logging.R h2o.R exec.R classes.R ops.R methods.R ast.R import.R parse.R export.R edicts.R algorithms.R
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.7)
 URL: http://www.0xdata.com

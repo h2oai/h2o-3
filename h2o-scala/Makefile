@@ -34,7 +34,7 @@ else
 endif
 
 # Jars, with OS-specific separators
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-core/build/test-h2o-core.jar
+jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/classes/main$(SEP)../h2o-core/build/classes/test
 
 # Default build: the h2o-scala jar file
 default: build/h2o-scala.jar

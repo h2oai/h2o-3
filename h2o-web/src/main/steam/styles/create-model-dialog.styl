@@ -1,0 +1,43 @@
+.y-create-model-dialog
+  .y-dialog-margin
+    dock(15px, 20px, 5px, 20px)
+
+  .y-algorithms
+    overflow auto
+    dock(0, 0, 10px, 0)
+
+  .y-algorithm
+    cursor pointer
+
+  .y-algorithm-title
+    font-weight 300
+    font-size 20px
+
+  .y-model-parameter
+    display inline-block
+    margin-right 10px
+
+    input:focus, select:focus
+      outline none !important
+      box-shadow none !important
+
+    input[type="text"]
+      border 1px solid #ddd 
+      &:focus
+        border-color #999
+
+    label.y-input-inline
+      text-transform uppercase
+      font-size 11px
+      margin-right 3px
+
+    &.y-invalid
+      input[type="text"]
+        border-color red
+        &:focus
+          border-color red
+
+      label
+        border-bottom 1px dotted red
+
+

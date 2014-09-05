@@ -155,6 +155,7 @@ class H2O(object):
     '''
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
+        print "__do_json_request, timeout: ", timeout
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
             url = fullUrl
@@ -190,7 +191,11 @@ class H2O(object):
         # file get passed thru kwargs here
         try:
             if cmd == 'post':
-                r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
+                # This does application/json (aka, posting JSON in the body)
+                # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
+                # This does form-encoded, which doesn't allow POST of nested structures
+                print "doing POST"
+                r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
             else:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
 
@@ -474,17 +479,19 @@ class H2O(object):
         assert training_frame is not None, '"training_frame" parameter is null'
         assert parameters is not None, '"parameters" parameter is null'
 
-        model_builders = self.model_builders()
+        model_builders = self.model_builders(timeoutSecs=timeoutSecs)
         assert model_builders is not None, "/ModelBuilders REST call failed"
         assert algo in model_builders['model_builders']
         builder = model_builders['model_builders'][algo]
         
+        # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=training_frame)
         assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
         assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
+        parameters['src'] = training_frame
         result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
         return result
 

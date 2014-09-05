@@ -32,9 +32,10 @@
     "chai": "~1.9.1",
     "hasher": "~1.2.0",
     "crossroads": "~0.12.0",
-    "fontawesome": "~4.0.3",
     "stacktrace": "~0.6.0",
     "momentjs": "~2.6.0",
-    "typeahead.js": "~0.10.2"
-  }
+    "typeahead.js": "~0.10.2",
+    "fontawesome": "~4.2.0"
+  },
+  "devDependencies": {}
 }

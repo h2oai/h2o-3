@@ -61,7 +61,7 @@ public class KeySnapshot {
     }
 
     public boolean isLockable(){
-      return TypeMap.newInstance(_type) instanceof Lockable;
+      return TypeMap.theFreezable(_type) instanceof Lockable;
     }
   }
   private static final long _updateInterval = 1000;

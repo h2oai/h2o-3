@@ -1,7 +1,9 @@
 // Nexus plugin for releasing https://github.com/bmuschko/gradle-nexus-plugin
 apply plugin: 'nexus'
 // java byte code converter
-// EVIL: apply from: "$rootDir/gradle/java6bytecode.gradle"
+apply from: "$rootDir/gradle/java6bytecode.gradle"
+// install Ivy publisher plugin
+apply plugin: 'ivy-publish'
 
 modifyPom {
     project {
@@ -48,4 +50,17 @@ modifyPom {
     }
 }
 
-
+// This is part of publish module responsible by putting jars into local Ivy cache
+// The code is here to support Spark assembly which expects modules in local Ivy cache
+publishing {
+  publications {
+      ivyJava(IvyPublication) {
+        from components.java
+      }
+  }
+  repositories {
+      ivy {
+          url "${System.properties['user.home']}/.ivy2/local"
+      }
+  }
+}

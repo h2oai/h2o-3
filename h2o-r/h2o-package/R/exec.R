@@ -64,7 +64,7 @@ function(op, e1, e2) {
   # TODO: e2 inherits ASTFun ?
 
   # Return an ASTNode
-  return(new("ASTNode", root=op, children=list(left = lhs, right = rhs)))
+  new("ASTNode", root=op, children=list(left = lhs, right = rhs))
 }
 
 #'

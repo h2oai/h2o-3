@@ -1,7 +1,6 @@
 package water.api;
 
 import water.*;
-import water.api.FramesV2.FrameSummaryV2;
 import water.fvec.Frame;
 import water.fvec.RollupStats;
 import water.fvec.Vec;
@@ -18,7 +17,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   // /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all.
-  protected Schema list_or_fetch(int version, Frames f) {
+  public Schema list_or_fetch(int version, Frames f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
 
@@ -30,7 +29,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** Return all the frames. */
-  protected Schema list(int version, Frames f) {
+  public Schema list(int version, Frames f) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override
         public boolean filter(KeySnapshot.KeyInfo k) {
@@ -47,7 +46,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** NOTE: We really want to return a different schema here! */
-  protected Schema columns(int version, Frames f) {
+  public Schema columns(int version, Frames f) {
     // TODO: return *only* the columns. . .  This may be a different schema.
     return fetch(version, f);
   }
@@ -74,7 +73,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** Return a single column from the frame. */
-  protected Schema column(int version, Frames f) { // TODO: should return a Vec schema
+  public Schema column(int version, Frames f) { // TODO: should return a Vec schema
     Frame frame = getFromDKV(f.key);
 
     // TODO: We really want to return a different schema here!
@@ -90,7 +89,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return this.schema(version).fillFromImpl(f);
   }
 
-  protected FramesBase columnSummary(int version, Frames frames) {
+  public FramesBase columnSummary(int version, Frames frames) {
     Frame frame = getFromDKV(frames.key);
     Vec vec = frame.vec(frames.column);
     if (null == vec)
@@ -107,7 +106,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** Return a single frame. */
-  protected Schema fetch(int version, Frames f) {
+  public Schema fetch(int version, Frames f) {
     Frame frame = getFromDKV(f.key);
     f.frames = new Frame[1];
     f.frames[0] = frame;
@@ -115,14 +114,14 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   // Remove an unlocked frame.  Fails if frame is in-use
-  protected void delete(int version, Frames frames) {
+  public void delete(int version, Frames frames) {
     Frame frame = getFromDKV(frames.key);
     frame.delete();             // lock & remove
   }
 
   // Remove ALL an unlocked frames.  Throws IAE for all deletes that failed
   // (perhaps because the Frames were locked & in-use).
-  protected void deleteAll(int version, Frames frames) {
+  public void deleteAll(int version, Frames frames) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return k._type == TypeMap.FRAME;

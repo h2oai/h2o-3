@@ -1,20 +1,27 @@
 package water.fvec
 
-import water._
 import java.io.File
 
-class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] ) 
+import water._
+
+class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   extends Frame(key,names,vecs) 
   with Map[Long,Array[Option[Any]]] {
   type T = Array[Option[Any]]
 
+  // Force into K/V store
+  if( key != null ) DKV.put(key,new Value(key,this))
+
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
   // underlying arrays.  Recommended that the input Java Frame be dead after
   // this call.
-  def this(fr : Frame) = this(fr._key,fr._names,fr.vecs())
+  def this(fr : Frame) = this(if( fr._key==null ) Key.make else fr._key, fr._names, fr.vecs())
 
   // Scala DataFrame by reading a CSV file
   def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(water.parser.ParseSetup.hex(file.getName)),file))
+
+  // No-args public constructor for (de)serialization
+  def this() = this(null,null,new Array[Vec](0))
 
   def apply( cols: Array[String] ) : DataFrame = new DataFrame(subframe(cols))
 

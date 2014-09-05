@@ -42,8 +42,7 @@ classes: $(classes)
 
 JVM = java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
 # deep learning tests turned off as they are currently not working
-#JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest
-JUNIT_TESTS = hex.kmeans.KMeansTest hex.example.ExampleTest
+JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest hex.kmeans.KMeansTest hex.example.ExampleTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)

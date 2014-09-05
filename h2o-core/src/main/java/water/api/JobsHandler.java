@@ -20,8 +20,8 @@ class JobsHandler extends Handler<Jobs,JobsV2> {
   }
 
   @Override public void compute2() { throw H2O.fail(); }                       // TODO: what to do about Key here?
-  Schema list(int version, Jobs jobs) { return schema(version).fillFromImpl(new Jobs(null, Job.jobs())); } // All work in schema
-  Schema fetch(int version, Jobs jobs) {
+  public Schema list(int version, Jobs jobs) { return schema(version).fillFromImpl(new Jobs(null, Job.jobs())); } // All work in schema
+  public Schema fetch(int version, Jobs jobs) {
     Key key = jobs.key;
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");

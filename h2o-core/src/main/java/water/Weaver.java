@@ -74,6 +74,7 @@ public class Weaver {
     String iced_name = iced_clazz.getName();
     if( iced_name.equals("water.Iced") ) return water.Icer.class;
     if( iced_name.equals("water.H2O$H2OCountedCompleter") ) return water.Icer.class;
+    assert !iced_name.startsWith("scala.runtime.AbstractFunction");
 
     // Now look for a pre-cooked Icer.  No locking, 'cause we're just looking
     String icer_name = implClazzName(iced_name);
@@ -152,7 +153,7 @@ public class Weaver {
               "    write"+super_id+"(ab,ice);\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
-              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
+              "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    return ab;\n" +
               "  }");
     if( debug_print ) System.out.println(debug);
@@ -260,7 +261,7 @@ public class Weaver {
     try {
       icer_cc.addConstructor(CtNewConstructor.make(cstrbody,icer_cc));
     } catch( CannotCompileException ce ) {
-      System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+cstrbody+"\n------");
+      System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+cstrbody+"\n------\n"+ce);
       throw ce;
     }
     if( debug_print ) System.out.println("}");
@@ -269,12 +270,12 @@ public class Weaver {
   }
 
   // Generate a method body string
-  private static String make_body(CtClass icer, CtClass iced_cc, Class iced_clazz, String impl, String field_sep1, String field_sep2,
+  private static String make_body(CtClass icer_cc, CtClass iced_cc, Class iced_clazz, String impl, String field_sep1, String field_sep2,
                                   String header,
                                   String supers,
-                                  String prims,  String prims_unsafe,
-                                  String enums,  String enums_unsafe,
-                                  String  iced,  String  iced_unsafe,
+                                  String  prims, String prims_unsafe,
+                                  String  enums, String enums_unsafe,
+                                  String   iced, String  iced_unsafe,
                                   String trailer
                                   ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
     StringBuilder sb = new StringBuilder();
@@ -328,18 +329,18 @@ public class Weaver {
 
       String z = FLDSZ1[ftype % 20];
       for(int i = 0; i < ftype / 20; ++i ) z = 'A'+z;
-      subsub(sb, "%z", z);                                // %z ==> short type name
-      subsub(sb, "%s", ctf.getName());                    // %s ==> field name
-      subsub(sb, "%c", base.getName().replace('$', '.')); // %c ==> base class name
-      subsub(sb, "%C", ctft.getName().replace('$', '.')); // %C ==> full class name
-      subsub(sb, "%d", ""+off);                           // %d ==> field offset, only for Unsafe
-      subsub(sb, "%u", utype(ctf.getSignature()));        // %u ==> unsafe type name
+      subsub(sb, "%z", z);                         // %z ==> short type name
+      subsub(sb, "%s", ctf.getName());             // %s ==> field name
+      subsub(sb, "%c", dollarsub(base.getName())); // %c ==> base class name
+      subsub(sb, "%C", dollarsub(ctft.getName())); // %C ==> full class name
+      subsub(sb, "%d", ""+off);                    // %d ==> field offset, only for Unsafe
+      subsub(sb, "%u", utype(ctf.getSignature())); // %u ==> unsafe type name
 
     }
     if( mimpl != null )         // default auto-gen serializer?
       sb.append(trailer);
     String body = sb.toString();
-    addMethod(body,icer);
+    addMethod(body,icer_cc);
     return body;
   }
 
@@ -348,13 +349,15 @@ public class Weaver {
     try {
       icer_cc.addMethod(CtNewMethod.make(body,icer_cc));
     } catch( CannotCompileException ce ) {
-      System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+body+"\n------");
+      System.err.println("--- Compilation failure while compiling "+icer_cc.getName()+"\n"+body+"\n------\n"+ce);
       throw ce;
     }
   }
 
   static private final String[] FLDSZ1 = {
-    "Z","1","2","2","4","4f","8","8d","Str","","Enum", "Obj" // prims, String, Freezable, Enum, Obj
+    "Z","1","2","2","4","4f","8","8d", // Primitives
+    "Str","","Enum",                   // String, Freezable, Enum
+    "Ser"                              // java.lang.Serializable
   };
 
   // Field types:
@@ -381,7 +384,7 @@ public class Weaver {
       CtClass argClass = _pool.get(clz);
       if( argClass.subtypeOf(_pool.get("water.Freezable")) ) return 9;
       if( argClass.subtypeOf(_enum) ) return 10;
-      if( argClass.subtypeOf(_pool.get("java.io.Serializable")) ) return 11;
+      if( argClass.subtypeOf(_serialize) ) return 11; // Uses Java Serialization
       break;
     case '[':                   // Arrays
       return ftype(ct, sig.substring(1))+20; // Same as prims, plus 20
@@ -404,6 +407,12 @@ public class Weaver {
     case '[': return "Object";
     }
     throw new RuntimeException("unsafe access to type "+sig);
+  }
+
+  // Replace the 1st '$' with '.'
+  static private String dollarsub( String s ) {
+    int idx = s.indexOf('$');
+    return idx == -1 ? s : (s.substring(0,idx)+"."+s.substring(idx+1,s.length()));
   }
 
   // Replace 2-byte strings like "%s" with s2.

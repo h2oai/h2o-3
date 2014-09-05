@@ -1,6 +1,7 @@
 package water;
 
 import hex.ModelBuilder;
+import hex.api.KMeansBuilderHandler;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.kmeans.KMeans;
@@ -31,6 +32,7 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("deeplearning", DeepLearning.class);
     ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
+    H2O.registerPOST("/2/ModelBuilders/kmeans", KMeansBuilderHandler.class, "train");
     ModelBuilder.registerModelBuilder("example", Example.class);
 
     // Done adding menu items; fire up web server
