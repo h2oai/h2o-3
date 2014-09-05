@@ -294,7 +294,7 @@ public class Vec extends Keyed {
   public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
 
   /** Compute the roll-up stats as-needed */
-  public RollupStats rollupStats() { return RollupStats.get(this, null); }
+  public RollupStats rollupStats() { return RollupStats.get(this).getResult(); }
 
   /** Writing into this Vector from *some* chunk.  Immediately clear all caches
    *  (_min, _max, _mean, etc).  Can be called repeatedly from one or all

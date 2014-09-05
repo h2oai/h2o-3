@@ -17,6 +17,8 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -138,6 +140,18 @@ final public class H2O {
       synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new ForkJoinPool2(priority,-1); }
     FJPS[priority].submit(task);
     return task;
+  }
+
+  public static abstract class H2OFuture<T> implements Future<T> {
+    public final T getResult(){
+      try {
+        return get();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   // Simple wrapper over F/J CountedCompleter to support priority queues.  F/J
