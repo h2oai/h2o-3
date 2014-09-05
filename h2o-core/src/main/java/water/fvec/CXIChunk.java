@@ -12,6 +12,7 @@ public class CXIChunk extends Chunk {
   private transient int _valsz_log; //
   private transient int _ridsz; // byte size of stored (chunk-relative) row nums
   protected final int ridsz() { return _ridsz; }
+  private transient int _sparse_len;
   protected static final int _OFF = 6;
   private transient int _lastOff = _OFF;
 
@@ -27,15 +28,17 @@ public class CXIChunk extends Chunk {
     _valsz_log = log;
 
     _ridsz = (len >= 65535)?4:2;
+
     UnsafeUtils.set4(buf, 0, len);
     byte b = (byte) _ridsz;
     buf[4] = b;
     buf[5] = (byte) _valsz;
     _mem = buf;
+    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
   }
 
   @Override public final boolean isSparse() {return true;}
-  @Override public final int sparseLen(){return (_mem.length - _OFF) / (_valsz + _ridsz);}
+  @Override public final int sparseLen(){ return _sparse_len; }
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
     int off = _OFF;
@@ -118,16 +121,12 @@ public class CXIChunk extends Chunk {
     int lastIdx = getId(off);
     // check the last accessed elem
     if( idx == lastIdx ) return off;
-    if(idx > lastIdx){
-      // check the next one
+    if( idx > lastIdx ) {       // check the next one
       final int nextOff = off + _ridsz + _valsz;
-      if(nextOff < mem.length){
+      if( nextOff < mem.length ) {
         int nextId =  getId(nextOff);
-        if(idx < nextId)return off;
-        if(idx == nextId){
-          _lastOff = nextOff;
-          return nextOff;
-        }
+        if( idx <  nextId ) return off;
+        if( idx == nextId ) return (_lastOff = nextOff);
       }
     }
     // no match so far, do binary search
@@ -165,6 +164,7 @@ public class CXIChunk extends Chunk {
       ++log;
     }
     _valsz_log = log;
+    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
     return this;
   }
 

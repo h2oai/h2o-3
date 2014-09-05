@@ -349,7 +349,7 @@ public class RequestServer extends NanoHTTPD {
     case json:
     case xml: {
       Class<Handler> clz = (Class<Handler>)route._handler_class;
-      // TODO: Handler no longer has state, so we can create single instances and put them in the Route
+      // TODO: Handler no longer has state, so we can create single instances and put them in the Routes
       Handler h = clz.newInstance();
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }

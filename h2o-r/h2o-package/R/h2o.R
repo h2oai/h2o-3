@@ -1,7 +1,7 @@
 #'
 #' H2O <-> R Communication and Utility Methods
 #'
-#' Here are collected various methods used by the h2o R package to communicate with the H2O
+#' Collected here are the various methods used by the h2o-R package to communicate with the H2O
 #' backend. There are methods for checking cluster health, polling, and inspecting objects in
 #' the H2O store.
 
@@ -11,6 +11,7 @@
 
 #'
 #' Make an HTTP request to the H2O backend.
+#'
 .h2o.__remoteSend <- function(client, page, method = "GET", ..., .params = list()) {
   .h2o.__checkClientHealth(client)
   ip <- client@ip
@@ -90,8 +91,50 @@
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-#   H2O Server Health
+#   H2O Server Health & Info
 #-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Obtain the cluster info.
+#'
+h2o.clusterInfo <- function(client) {
+  if(missing(client)) client <- .retrieveH2O(parent.frame())
+  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+  myURL <- paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
+  if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
+
+  res = NULL
+  {
+    res <- fromJSON(postForm(myURL, style = "POST"))
+
+    nodeInfo <- res$nodes
+    numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+
+    if (numCPU == 0) {
+      # If the cloud has not been up for a few seconds yet, then query again.
+      # Sometimes the heartbeat info with cores and memory has not had a chance
+      # to post its information yet.
+      threeSeconds = 3
+      Sys.sleep(threeSeconds)
+      res <- fromJSON(postForm(myURL, style = "POST"))
+    }
+  }
+
+  nodeInfo <- res$nodes
+  maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
+  numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy']))==TRUE)
+
+  cat("R is connected to H2O cluster:\n")
+  cat("    H2O cluster uptime:       ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
+  cat("    H2O cluster version:      ", res$version, "\n")
+  cat("    H2O cluster name:         ", res$cloud_name, "\n")
+  cat("    H2O cluster total nodes:  ", res$cloud_size, "\n")
+  cat("    H2O cluster total memory: ", sprintf("%.2f GB", maxMem), "\n")
+  cat("    H2O cluster total cores:  ", numCPU, "\n")
+  cat("    H2O cluster healthy:      ", clusterHealth, "\n")
+}
+
 
 #'
 #' Check H2O Server Health
@@ -223,19 +266,6 @@
   }
 }
 
-#------------------------------------ Exec2 ------------------------------------#
-
-#
-#.h2o.__castType <- function(object) {
-#  if(!inherits(object, "H2OParsedData")) stop("object must be a H2OParsedData or H2OParsedDataVA object")
-#  .h2o.__checkClientHealth(object@h2o)
-#  res = .h2o.__remoteSend(object@h2o, .h2o.__PAGE_INSPECT, key = object@key)
-#  if(is.null(res$value_size_bytes))
-#    return(new("H2OParsedData", h2o=object@h2o, key=object@key))
-#  else
-#    return(new("H2OParsedDataVA", h2o=object@h2o, key=object@key))
-#}
-
 #------------------------------------ Utilities ------------------------------------#
 
 .h2o.__checkForFactors <- function(object) {
@@ -269,43 +299,6 @@
   h <- basicHeaderGatherer()
   invisible(getURI(uri, headerfunction = h$update))
   "200" == as.list(h$value())$status
-}
-
-h2o.clusterInfo <- function(client) {
-  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-  myURL <- paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
-  if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
-
-  res = NULL
-  {
-    res <- fromJSON(postForm(myURL, style = "POST"))
-
-    nodeInfo <- res$nodes
-    numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
-
-    if (numCPU == 0) {
-      # If the cloud has not been up for a few seconds yet, then query again.
-      # Sometimes the heartbeat info with cores and memory has not had a chance
-      # to post its information yet.
-      threeSeconds = 3
-      Sys.sleep(threeSeconds)
-      res <- fromJSON(postForm(myURL, style = "POST"))
-    }
-  }
-
-  nodeInfo <- res$nodes
-  maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
-  numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
-  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy']))==TRUE)
-
-  cat("R is connected to H2O cluster:\n")
-  cat("    H2O cluster uptime:       ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
-  cat("    H2O cluster version:      ", res$version, "\n")
-  cat("    H2O cluster name:         ", res$cloud_name, "\n")
-  cat("    H2O cluster total nodes:  ", res$cloud_size, "\n")
-  cat("    H2O cluster total memory: ", sprintf("%.2f GB", maxMem), "\n")
-  cat("    H2O cluster total cores:  ", numCPU, "\n")
-  cat("    H2O cluster healthy:      ", clusterHealth, "\n")
 }
 
 .h2o.__formatError <- function(error,prefix="  ") {

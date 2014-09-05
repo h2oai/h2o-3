@@ -34,3 +34,12 @@ h2o.kmeans <- function(data, centers, cols = '', key = "", iter.max = 10, normal
     .h2o.gridsearch.internal("KM", data, res, params=params)
   }
 }
+
+
+
+checkargs <- function(message, ...) {
+  failed <- FALSE
+  tryCatch(stopifnot(...), error = function(e) {failed <<- TRUE; print(message)})
+  if (failed) error(message)
+}
+

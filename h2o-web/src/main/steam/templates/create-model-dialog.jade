@@ -18,11 +18,13 @@
                     .y-algorithm-title(data-bind='text:title')
                     .y-algorithm-description(data-bind='text:description')
               // /ko
+        .y-model-actions
+          button.btn(data-bind='click:cancel') Cancel
         // /ko
 
 
         // ko if:isModelCreationMode
-        // ko with:form
+        // ko with:modelForm
         h1(data-bind='text:title')
         h2(data-bind='collapse:false') Parameters
         div(data-bind='template: { name: parameterTemplateOf, foreach:criticalParameters }')
@@ -31,6 +33,13 @@
         h2(data-bind='collapse:false') Expert
         div(data-bind='template: { name: parameterTemplateOf, foreach:expertParameters }')
         // /ko
+        .y-model-actions(style='width:50%;text-align:left')
+          button.btn(data-bind='click:backToAlgorithms')
+            i.fa.fa-arrow-left
+            span &nbsp;Back
+        .y-model-actions(style='width:50%;left:50%')
+          button.btn(data-bind='click:cancel') Cancel
+          button.btn.btn-primary(data-bind='click:createModel') Create Model
         // /ko
 
 

@@ -1,12 +1,12 @@
 package water.api;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Properties;
-
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
 import water.api.RequestServer.Route;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Properties;
 
 public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2OCountedCompleter {
   protected Handler( ) { super(); }
@@ -15,9 +15,9 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
   /** Dumb Version->Schema mapping */
-  abstract protected S schema(int version);
-  abstract protected int min_ver();
-  abstract protected int max_ver();
+  abstract protected S schema(int version); // TODO: should be static
+  abstract protected int min_ver();         // TODO: should be static
+  abstract protected int max_ver();         // TODO: should be static
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {

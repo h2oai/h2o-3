@@ -359,7 +359,7 @@ public class DeepLearningIrisTest extends TestUtil {
   }
 
   public static class Short extends DeepLearningIrisTest {
-    @Test public void run() throws Exception { runFraction(0.05f); }
+    @Test @Ignore public void run() throws Exception { runFraction(0.05f); }
   }
 }
 

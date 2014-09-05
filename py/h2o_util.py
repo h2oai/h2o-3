@@ -24,7 +24,7 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
             raise Exception("illegal parameter '%s' in %s" % (k, function))
 
     if print_params:
-        print "%s parameters:" % function, params_dict
+        print "%s parameters:" % function + repr(params_dict)
         sys.stdout.flush()
 
 

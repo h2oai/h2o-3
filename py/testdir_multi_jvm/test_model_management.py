@@ -39,7 +39,7 @@ pp.pprint(model_builders)
 
 kmeans_builder = a_node.model_builders(key='kmeans')['model_builders']['kmeans']
 
-a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240)
+jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
 
 models = a_node.models()
 

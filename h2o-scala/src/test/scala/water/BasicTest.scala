@@ -73,7 +73,7 @@ class BasicTest extends TestUtil {
     try {
 
       val start = System.currentTimeMillis
-      (0 until 10)foreach( i => {
+      (0 until 100) foreach( i => {
         class CalcSums(var X:Double =0, var Y:Double =0, var X2:Double =0, var nrows:Long=0) extends MapReduce[Array[Double],CalcSums] {
           override def map = (row : Array[Double]) => { X = row(0); Y = row(1); X2 = X*X; nrows=1 }
           override def reduce = (that : CalcSums) => { X += that.X ; Y += that.Y; X2 += that.X2; nrows += that.nrows }
