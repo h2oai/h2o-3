@@ -46,7 +46,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
   @Override
   public void setupLocal() {
     _res = new DeepLearningTask(_jobKey, _model_info, _sync_fraction);
-    _res.addToPendingCount(1);
+    addToPendingCount(1);
     _res.setCompleter(this);
     _res.asyncExec(0, _fr, true /*run_local*/);
   }
@@ -73,7 +73,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   protected void postGlobal() {
-    assert(_res.model_info().get_params().replicate_training_data);
+    assert(_res.model_info().get_params().replicate_training_data ^ _res._chunk_node_count == 1);
     super.postGlobal();
     _res.model_info().div(_res._chunk_node_count); //model averaging
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
