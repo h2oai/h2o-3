@@ -232,7 +232,7 @@ final public class H2O {
   }
 
 
-  static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
+  public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
     public H2OCallback(){}
     public H2OCallback(H2OCountedCompleter cc){super(cc);}
     @Override protected void compute2(){throw H2O.fail();}
@@ -474,6 +474,10 @@ final public class H2O {
   static public void registerGET( String url_pattern, Class hclass, String hmeth, String base_url, String label, String menu ) {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth),base_url,label,menu);
+  }
+  static public void registerPOST( String url_pattern, Class hclass, String hmeth ) {
+    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
+    RequestServer.register(url_pattern,"POST",hclass,hmeth);
   }
 
   public static void registerResourceRoot(File f) {

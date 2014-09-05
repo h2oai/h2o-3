@@ -1,22 +1,29 @@
+B=node_modules/.bin
+O=src/main/resources/www/steam
+
 default: 
-	node_modules/.bin/gulp
+	$B/gulp
 
 clean:
-	node_modules/.bin/gulp clean
+	$B/gulp clean
 
 watch:
-	node_modules/.bin/gulp watch
+	$B/gulp watch
 
 check:
 
 launch:
-	java -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar
+	java -Dwebdev=1 -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar
+
+unit-test:
+	$B/gulp build-test-script && node $O/js/steam-tests.js -u | $B/faucet 
 
 test:
-	node_modules/.bin/gulp build-unit-test-script && node src/main/resources/www/steam/js/steam-unit-tests.js | node_modules/.bin/faucet
+	$B/gulp build-test-script && node $O/js/steam-tests.js -s | $B/faucet
 
-system-test:
-	node_modules/.bin/gulp build-system-test-script && node src/main/resources/www/steam/js/steam-system-tests.js -s | node_modules/.bin/faucet 
+coverage:
+	@mkdir -p $O/coverage
+	$B/gulp build-test-script && $B/istanbul cover --dir $O/coverage -x "**/lib/**" $O/js/steam-tests.js && $B/istanbul report --dir $O/coverage cobertura
 
-.PHONY: default watch clean test system-test launch 
+.PHONY: default watch clean test system-test coverage launch 
 

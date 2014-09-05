@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import org.junit.*;
 import org.junit.rules.*;
 import org.junit.runners.model.Statement;
@@ -129,8 +130,10 @@ public class TestUtil extends Iced {
   protected Frame parse_test_folder( String fname ) {
     File folder = find_test_file(fname);
     assert folder.isDirectory();
+    File[] files = folder.listFiles();
+    Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
-    for( File f : folder.listFiles() )
+    for( File f : files )
       if( f.isFile() )
         keys.add(NFSFileVec.make(f)._key);
     Key[] res = new Key[keys.size()];

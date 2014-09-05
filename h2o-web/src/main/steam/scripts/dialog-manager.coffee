@@ -8,6 +8,7 @@ Steam.DialogManager = (_) ->
     linkDialog _.configureStripPlot, Steam.ConfigureStripPlotDialog
     linkDialog _.promptImportFiles, Steam.ImportFilesDialog
     linkDialog _.promptParseFiles, Steam.ParseFilesDialog
+    linkDialog _.promptCreateModel, Steam.CreateModelDialog
 
     # --- Add additional dialogs here ---
 

@@ -6,6 +6,8 @@ import water.Job;
 import water.Key;
 import water.Model;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +31,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _builders.get(name);
   }
 
+  public static String getModelBuilderName(Class<? extends ModelBuilder> clz) {
+    if (! _builders.containsValue(clz))
+      throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+
+    for (Map.Entry<String, Class<? extends ModelBuilder>> entry : _builders.entrySet())
+      if (entry.getValue().equals(clz))
+        return entry.getKey();
+    // Note: unreachable:
+    throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+  }
+
   /**
    * Externally visible default schema
    * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
@@ -43,9 +56,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
+  public ModelBuilder(Key jobKey, Key dest, String desc, P parms, long work) {
+    super(jobKey,dest,desc,work);
+    this._parms = parms;
+  }
   public ModelBuilder(Key dest, String desc, P parms, long work) {
     super(dest, desc, work);
     this._parms = parms;
+  }
+
+  /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
+  public static ModelBuilder createModelBuilder(String algo) {
+    ModelBuilder modelBuilder = null;
+
+    try {
+      Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
+      if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
+        throw H2O.fail("Class is not parameterized as expected: " + clz);
+      }
+
+      Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
+      // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
+      Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
+
+      modelBuilder = clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] }).newInstance(pclz.newInstance());
+    }
+    catch (Exception e) {
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
+    }
+
+    return modelBuilder;
   }
 
   /** Method to launch training of a Model, based on its parameters. */

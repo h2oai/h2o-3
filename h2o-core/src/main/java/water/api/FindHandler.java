@@ -1,16 +1,18 @@
 package water.api;
 
-import java.util.Arrays;
 import water.H2O;
 import water.Iced;
-import water.api.FindHandler.FindPojo;
 import water.MRTask;
-import water.util.ArrayUtils;
+import water.api.FindHandler.FindPojo;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
-class FindHandler extends Handler<FindPojo,FindV2> {
+import java.util.Arrays;
+
+class
+        FindHandler extends Handler<FindPojo,FindV2> {
 
   protected static final class FindPojo extends Iced {
     // Inputs
@@ -25,7 +27,7 @@ class FindHandler extends Handler<FindPojo,FindV2> {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
-  FindV2 find(int version, FindPojo find) {
+  public FindV2 find(int version, FindPojo find) {
     // Convert the search string into a column-specific flavor
     Vec[] vecs = find._fr.vecs();
     double ds[] = new double[vecs.length];

@@ -18,8 +18,7 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
       jc.getComponentType match {
         case q if q == classOf[Double] => 
           fr.vecs().zip(fr.names()).foreach( x => if( !x._1.isNumeric ) throw new IllegalArgumentException(x._2+"is not of type "+q))
-          new MRTask_AD().doAll(fr)
-          this
+          new MRTask_AD().doAll(fr).outer
         case _ => ???                   // Array of String or UUID, etc
       }
     } else {
@@ -35,8 +34,8 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
       val len = chks(0).len
       if( len == 0 ) return
       // Specialize user map to double[]
-      val map2 = MapReduce.this.map.asInstanceOf[(Array[Double])=>Unit]
-      val mr2 : E = MapReduce.this.clone    // Something to reduce into
+      val map2 = outer.map.asInstanceOf[(Array[Double])=>Unit]
+      val mr2 : E = outer.clone    // Something to reduce into
       val map22 = mr2.map.asInstanceOf[(Array[Double])=>Unit]
       // Temp buffer to hold data without reallocating each row
       val row = new Array[Double](chks.length)
@@ -47,7 +46,7 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
         if( fill(row,chks,i) ) {        // Fill all cols into 'row'
           if( needreduce ) {            // Need a map & reduce
             map22(row)                  // Map into mr2
-            MapReduce.this.reduce(mr2)  // Reduce mr2 into self
+            outer.reduce(mr2)  // Reduce mr2 into self
           } else {                      // First value; map into self
             map2(row)                   // Call user map into self
             needreduce = true           // Next time will need a reduce
@@ -56,7 +55,7 @@ abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends I
       }
     }
     // Call user reduce
-    override def reduce( mrt : MRTask_AD ) = MapReduce.this.reduce(mrt.outer)
+    override def reduce( mrt : MRTask_AD ) = outer.reduce(mrt.outer)
     // Fill reused temp array from Chunks.  Returns false is any value is NaN & skipNA true
     private def fill(row : Array[Double], chks : Array[Chunk], i : Int) : Boolean = {
       (0 until chks.length).foreach{ col => 

@@ -422,7 +422,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       }
     }
     _profile._mapdone = System.currentTimeMillis();
-    tryComplete();              // And this task is complete
+    tryComplete();
   }
 
   /** OnCompletion - reduce the left & right into self.  Called internal by

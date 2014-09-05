@@ -71,13 +71,12 @@ Steam.ModelListView = (_) ->
     _items items = map models, createItem
     activateAndDisplayItem head items
 
-  apply$ _predicate, (predicate) ->
-    console.assert isDefined predicate
+  loadModels = (predicate) ->
     _.modelSelectionCleared()
 
     switch predicate.type
       when 'all'
-        _.requestModelsAndCompatibleFrames (error, data) ->
+        _.requestModels (error, data) -> #TODO request compatible frames as well
           if error
             #TODO handle errors
           else
@@ -95,6 +94,7 @@ Steam.ModelListView = (_) ->
                 #TODO handle errors
               else
                 displayModels filter data.models, (model) -> if compatibleModelsByKey[model.key] then yes else no
+    _predicate predicate
     return
   
   deselectAllModels = ->
@@ -110,11 +110,18 @@ Steam.ModelListView = (_) ->
 
   link$ _.loadModels, (predicate) ->
     if predicate
-      _predicate predicate
+      loadModels predicate
     else
+      loadModels type: 'all'
       displayActiveItem()
 
   link$ _.deselectAllModels, deselectAllModels
+
+  createModel = ->
+    _.promptCreateModel (action) ->
+      switch action
+        when 'confirm'
+          console.log 'TODO CONFIRMED'
 
   items: _items
   hasItems: _hasItems
@@ -122,5 +129,6 @@ Steam.ModelListView = (_) ->
   clearPredicate: clearPredicate
   canClearPredicate: _canClearPredicate
   isSelectAll: _isSelectAll
+  createModel: createModel
   template: 'model-list-view'
 
