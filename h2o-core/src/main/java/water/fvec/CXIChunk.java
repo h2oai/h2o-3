@@ -12,7 +12,7 @@ public class CXIChunk extends Chunk {
   private transient int _valsz_log; //
   private transient int _ridsz; // byte size of stored (chunk-relative) row nums
   protected final int ridsz() { return _ridsz; }
-  private transient int _sz_log;
+  private transient int _sparse_len;
   protected static final int _OFF = 6;
   private transient int _lastOff = _OFF;
 
@@ -28,17 +28,17 @@ public class CXIChunk extends Chunk {
     _valsz_log = log;
 
     _ridsz = (len >= 65535)?4:2;
-    _sz_log = log+((len >= 65535)?2:1);
 
     UnsafeUtils.set4(buf, 0, len);
     byte b = (byte) _ridsz;
     buf[4] = b;
     buf[5] = (byte) _valsz;
     _mem = buf;
+    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
   }
 
   @Override public final boolean isSparse() {return true;}
-  @Override public final int sparseLen(){ return (_mem.length - _OFF)>>_sz_log; }
+  @Override public final int sparseLen(){ return _sparse_len; }
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
     int off = _OFF;
@@ -164,6 +164,7 @@ public class CXIChunk extends Chunk {
       ++log;
     }
     _valsz_log = log;
+    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
     return this;
   }
 
