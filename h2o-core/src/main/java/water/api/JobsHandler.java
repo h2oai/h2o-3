@@ -19,6 +19,11 @@ class JobsHandler extends Handler<Jobs,JobsV2> {
     public Job[] jobs;
   }
 
+  public static final Schema jobToSchemaHelper(int version, Job job) {
+    // TODO: we really should have a single instance of each handler. . .
+    return new JobsHandler().schema(version).fillFromImpl(new Jobs(job._key, new Job[] { job } ));
+  }
+
   @Override public void compute2() { throw H2O.fail(); }                       // TODO: what to do about Key here?
   public Schema list(int version, Jobs jobs) { return schema(version).fillFromImpl(new Jobs(null, Job.jobs())); } // All work in schema
   public Schema fetch(int version, Jobs jobs) {

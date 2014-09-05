@@ -3,6 +3,7 @@ package water.api;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O;
+import water.Job;
 
 abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler<B, S> {
   @Override protected int min_ver() { return 2; }
@@ -10,10 +11,8 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
 
   /** Create a model by launching a ModelBuilder algo. */
   public Schema train(int version, B builder) {
-    builder.train();
-
-    // TODO: WRONG: needs to return a schema containing the job
-    return this.schema(version);
+    Job j = builder.train();
+    return JobsHandler.jobToSchemaHelper(version, j);
   }
 
   abstract protected S schema(int version);
@@ -30,5 +29,3 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
   // Need to stub this because it's required by H2OCountedCompleter:
   @Override public void compute2() { throw H2O.fail(); }
 }
-
-

@@ -128,7 +128,7 @@ class H2O(object):
 
 
     # TODO: UGH, move this.
-    @classmethod
+    @staticmethod
     def verboseprint(*args, **kwargs):
         if H2O.verbose:
             for x in args: # so you don't have to create a single string
@@ -155,7 +155,7 @@ class H2O(object):
     '''
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
-        print "__do_json_request, timeout: ", timeout
+        H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
             url = fullUrl
@@ -191,10 +191,13 @@ class H2O(object):
         # file get passed thru kwargs here
         try:
             if cmd == 'post':
-                # This does application/json (aka, posting JSON in the body)
+                # NOTE: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
+                # This is temporary.
+                # 
+                # This following does application/json (aka, posting JSON in the body):
                 # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
+                # 
                 # This does form-encoded, which doesn't allow POST of nested structures
-                print "doing POST"
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
             else:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
@@ -216,9 +219,10 @@ class H2O(object):
             log_rest("EXCEPTION CAUGHT DOING REQUEST: " + str(e.message))
             raise exc_info[1], None, exc_info[2]
 
-        print "r: " + repr(r)
+            H2O.verboseprint("r: " + repr(r))
 
         if 200 != r.status_code:
+            print "JSON call returned non-200 status: ", url
             print "r.status_code: " + str(r.status_code)
             print "r.headers: " + repr(r.headers)
             print "r.text: " + r.text
@@ -271,7 +275,7 @@ class H2O(object):
         for e in ['error', 'Error', 'errors', 'Errors']:
             # error can be null (python None). This happens in exec2
             if e in rjson and rjson[e]:
-                print "rjson:", h2o_util.dump_json(rjson)
+                H2O.verboseprint("rjson:" + h2o_util.dump_json(rjson))
                 emsg = 'rjson %s in %s: %s' % (e, inspect.stack()[1][3], rjson[e])
                 if ignoreH2oError:
                     # well, we print it..so not totally ignore. test can look at rjson returned
@@ -333,7 +337,7 @@ class H2O(object):
 
 
     '''
-    Poll a single job from the /Jobs endpoint until it's "status": "DONE" or we time out.
+    Poll a single job from the /Jobs endpoint until it is "status": "DONE" or "CANCELLED" or "FAILED" or we time out.
     '''
     # TODO: add delays, etc.
     def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
@@ -343,16 +347,18 @@ class H2O(object):
 
         start_time = time.time()
         while True:
+            H2O.verboseprint('Polling for job: ' + job_key + '. . .')
             result = self.__do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
             
-            if result['jobs'][0]['status'] == 'DONE':
+            if result['jobs'][0]['status'] == 'DONE' or result['jobs'][0]['status'] == 'CANCELLED' or result['jobs'][0]['status'] == 'FAILED':
+                H2O.verboseprint('Job ' + result['jobs'][0]['status'] + ': ' + job_key + '.')
                 return result
 
             if time.time() - start_time > timeoutSecs:
+                H2O.verboseprint('Job: ' + job_key + ' timed out in: ' + timeoutSecs + '.')
                 return None
 
             time.sleep(retryDelaySecs)
-
 
 
     ''' 
@@ -416,10 +422,9 @@ class H2O(object):
         if noPoll:
             return this.jobs(job_key)
 
-        job_json = self.poll_job(job_key)
+        job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
 
         if job_json:
-            print repr(job_json)
             dest_key = job_json['jobs'][0]['dest']['name']
             return self.frames(dest_key)
 
@@ -474,7 +479,7 @@ class H2O(object):
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
     '''
-    def build_model(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
+    def build_model(self, algo, training_frame, parameters, timeoutSecs=60, asynchronous=False, **kwargs):
         assert algo is not None, '"algo" parameter is null'
         assert training_frame is not None, '"training_frame" parameter is null'
         assert parameters is not None, '"parameters" parameter is null'
@@ -493,7 +498,15 @@ class H2O(object):
         # TODO: add parameter value validation
         parameters['src'] = training_frame
         result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
-        return result
+
+        if asynchronous:
+            return result
+        else:
+            job = result['jobs'][0]
+            job_key = job['key']['name']
+            H2O.verboseprint("model building job_key: " + repr(job_key))
+            job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+            return job_json
 
 
     # TODO: remove .json
