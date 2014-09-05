@@ -28,6 +28,7 @@ public class C4ChunkTest extends TestUtil {
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
+      nc.values(0, nc.len());
       if (l==1) Assert.assertTrue(cc.isNA0(0));
       Assert.assertEquals(vals.length+l+1, nc.sparseLen());
       Assert.assertEquals(vals.length+l+1, nc.len());
@@ -77,6 +78,7 @@ public class C4ChunkTest extends TestUtil {
 
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
+    nc.values(0, nc.len());
     Assert.assertEquals(vals.length, nc.sparseLen());
     Assert.assertEquals(vals.length, nc.len());
 

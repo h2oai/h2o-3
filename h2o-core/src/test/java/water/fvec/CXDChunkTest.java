@@ -35,6 +35,7 @@ public class CXDChunkTest extends TestUtil {
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
+      nc.values(0, nc.len());
       Assert.assertEquals(vals.length+l+1, nc.len());
       Assert.assertEquals(2+1+l, nc.sparseLen());
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+l+1);

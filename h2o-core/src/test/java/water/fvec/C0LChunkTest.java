@@ -23,6 +23,7 @@ public class C0LChunkTest extends TestUtil {
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
+      nc.values(0, nc.len());
       Assert.assertEquals(K, nc.len());
       Assert.assertEquals(l == 0 ? 0 : K, nc.sparseLen());
 

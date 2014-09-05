@@ -24,6 +24,7 @@ public class C4FChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA0(vals.length+l));
 
       Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
+      nc.values(0, nc.len());
       Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc2 instanceof C4FChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], (float)cc2.at0(l+i));

@@ -25,6 +25,7 @@ public class CX0ChunkTest extends TestUtil {
 
     nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
+    nc.values(0, nc.len());
     Assert.assertEquals(vals.length , nc.len());
     Assert.assertEquals(2, nc.sparseLen());
     Iterator<NewChunk.Value> it = nc.values(0, vals.length);

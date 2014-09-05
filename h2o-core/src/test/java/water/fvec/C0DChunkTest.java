@@ -22,6 +22,7 @@ public class C0DChunkTest extends TestUtil {
       for (int i=0;i<K;++i) Assert.assertEquals(d, cc.at (i), Math.ulp(d));
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc.values(0, nc.len());
       Assert.assertEquals(K, nc.len());
       Assert.assertEquals(K, nc.sparseLen());
       for (int i=0;i<K;++i) Assert.assertEquals(d, nc.at0(i), Math.ulp(d));
