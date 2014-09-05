@@ -73,7 +73,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   protected void postGlobal() {
-    assert(_res.model_info().get_params().replicate_training_data ^ _res._chunk_node_count == 1);
+    assert(_res.model_info().get_params().replicate_training_data);
     super.postGlobal();
     _res.model_info().div(_res._chunk_node_count); //model averaging
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
