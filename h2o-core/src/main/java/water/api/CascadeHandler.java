@@ -35,7 +35,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     String   _result;
   }
 
-  CascadeV1 exec(int version, Cascade cascade) {
+  public CascadeV1 exec(int version, Cascade cascade) {
     Throwable e;
     Env env = null;
     try {

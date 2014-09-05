@@ -475,6 +475,10 @@ final public class H2O {
     if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.addToNavbar(RequestServer.register(url_pattern,"GET",hclass,hmeth),base_url,label,menu);
   }
+  static public void registerPOST( String url_pattern, Class hclass, String hmeth ) {
+    if( _doneRequests ) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
+    RequestServer.register(url_pattern,"POST",hclass,hmeth);
+  }
 
   public static void registerResourceRoot(File f) {
     JarHash.registerResourceRoot(f);

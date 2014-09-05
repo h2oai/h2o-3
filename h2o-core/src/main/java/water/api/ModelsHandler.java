@@ -14,7 +14,7 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   /** Return all the models. */
-  protected Schema list(int version, Models m) {
+  public Schema list(int version, Models m) {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override
         public boolean filter(KeySnapshot.KeyInfo k) {
@@ -52,7 +52,7 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   /** Return a single model. */
-  protected Schema fetch(int version, Models m) {
+  public Schema fetch(int version, Models m) {
     Model model = getFromDKV(m.key);
     m.models = new Model[1];
     m.models[0] = model;
@@ -60,14 +60,14 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   // Remove an unlocked model.  Fails if model is in-use
-  protected void delete(int version, Models models) {
+  public void delete(int version, Models models) {
     Model model = getFromDKV(models.key);
     model.delete();             // lock & remove
   }
 
   // Remove ALL an unlocked models.  Throws IAE for all deletes that failed
   // (perhaps because the Models were locked & in-use).
-  protected void deleteAll(int version, Models models) {
+  public void deleteAll(int version, Models models) {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return Value.isSubclassOf(k._type, Model.class);

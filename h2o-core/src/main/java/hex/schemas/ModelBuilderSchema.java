@@ -14,7 +14,7 @@ import java.util.Properties;
 abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
   // Input fields
   @API(help="Model builder parameters.")
-  P parameters;
+  public P parameters;
 
   // Output fields
   @API(help = "Job Key")
@@ -47,7 +47,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    ab.putJSONStr("job", job.toString());
+    ab.putJSONStr("job", (null == job ? null : job.toString())); // TODO: is currently null, but probably should never be. . .
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

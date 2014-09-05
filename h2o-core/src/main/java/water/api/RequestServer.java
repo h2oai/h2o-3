@@ -131,8 +131,14 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
-    register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
+
+    // ModelBuilder Handler registration must be done for each algo in the application class
+    // (e.g., H2OApp), because the Handler class is parameterized by the associated Schema,
+    // and this is different for each ModelBuilder in order to handle its parameters in a
+    // typesafe way:
+    //
+    // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
 
     register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch");
@@ -145,7 +151,6 @@ public class RequestServer extends NanoHTTPD {
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method, String[] path_params) {
     assert url_pattern.startsWith("/");
-    try {
       Class iced_class = null;
       // Most of the handlers are parameterized on the Iced and Schema classes,
       // but Inspect isn't, because it can accept any Iced and return any Schema.
@@ -159,9 +164,21 @@ public class RequestServer extends NanoHTTPD {
       if (null == iced_class)
         throw H2O.fail("Failed to find an implementation class for handler class: " + handler_class + " for method: " + handler_method);
 
-      Method meth = handler_class.getDeclaredMethod(
-              handler_method,
-              new Class[ ]{int.class, iced_class});
+      // Search handler_class and all its superclasses for the method.  Unfortunately, getMethod does not return a
+      // match a method which takes a superclass of the class that we specify in the parameters list, so we need
+      // to walk up all the parent classes of iced_class until we hit Iced.  :-(
+      Method meth = null;
+      Class clz = iced_class;
+      do {
+        try {
+          meth = handler_class.getMethod(handler_method,
+                                         new Class[]{int.class, clz});
+        }
+        catch (NoSuchMethodException e) {
+          // ignore: keep looking for methods that accept superclasses of clz
+        }
+        clz = clz.getSuperclass();
+      } while (meth == null && clz != Iced.class);
 
       if (null == meth)
         throw H2O.fail("Failed to find  method: " + handler_method + " for handler class: " + handler_class);
@@ -177,10 +194,8 @@ public class RequestServer extends NanoHTTPD {
       Route route = new Route(http_method, p, handler_class, meth, path_params);
       _routes.put(p, route);
       return route;
-    } catch( NoSuchMethodException nsme ) {
-      throw new Error("NoSuchMethodException: "+handler_class.getName()+"."+handler_method);
     }
-  }
+
 
   // Lookup the method/url in the register list, and return a matching Method
   private static Route lookup( String http_method, String url ) {
