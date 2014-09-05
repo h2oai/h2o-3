@@ -18,17 +18,25 @@
 #' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
 #' and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
 
+# TODO: Section for the *ply methods.
+# lapply -> apply to each column
+# ldply, ddply, etc.
+
 #-----------------------------------------------------------------------------------------------------------------------
 # H2O Methods
 #-----------------------------------------------------------------------------------------------------------------------
 
 #h2o.ls <- function(object, pattern = "") {
-#  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+#  if (missing(object)) object <- .retrieveH2O(parent.frame())
+#  if(class(object) != "H2OClient") {
+#    if (pattern == "") {  # no pattern supplied....
+#      object <- .retrieveH2O(parent.frame())  # try to guess the h2o connections
+#  }
 #  if(!is.character(pattern)) stop("pattern must be of class character")
 #
-#  i = 0
-#  myList = list()
-#  page_keys = .MAX_INSPECT_ROW_VIEW
+#  i <- 0
+#  myList <- list()
+#  page_keys <- .MAX_INSPECT_ROW_VIEW
 #
 #  # Need to pull all keys from every page in StoreView
 #  while(page_keys == .MAX_INSPECT_ROW_VIEW) {
@@ -260,23 +268,6 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #
 #`.` <- `h2o..`
 #
-#h2o.addFunction <- function(fun, name) {
-#  print(match.call())
-#  print(as.list(match.call()))
-#
-#  if( missing(fun) ) stop('must specify fun')
-#  if( !missing(name) ){
-#    if( class(name) != 'character' ) stop('name must be a name')
-#    fun_name <- name
-#  } else {
-#    fun_name <- match.call()[['fun']]
-#  }
-#  src <- paste(deparse(fun), collapse='\n')
-#  exec_cmd <- sprintf('%s <- %s', as.character(fun_name), src)
-#  exec_cmd
-##  res <- .h2o.__exec2(object, exec_cmd)
-#}
-#
 #h2o.unique <- function(x, incomparables = FALSE, ...) {
 #  # NB: we do nothing with incomparables right now
 #  # NB: we only support MARGIN = 2 (which is the default)
@@ -337,7 +328,7 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(missing(i)) return(x)
   if(length(i) > 1) stop("[[]] may only select one column")
   if(!i %in% colnames(x) ) return(NULL)
-  x[, i]
+  doCall("[", x = x, j = i)
 })
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -399,6 +390,10 @@ tail.H2OParsedData <- function(x, n = 6L, ...) {
 #' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
 #' calling scope).
 
+#'
+#' Num Rows of an AST.
+#'
+#' Evaluate the AST and produce the nrow of the eval'ed AST.
 nrow.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -409,6 +404,10 @@ nrow.H2OFrame <- function(x) {
   nrow(get(ID, parent.frame()))
 }
 
+#'
+#' Num Columns of an AST.
+#'
+#' Evaluate the AST and produce the ncol of the eval'ed AST.
 ncol.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -418,6 +417,10 @@ ncol.H2OFrame <- function(x) {
   ncol(get(ID, parent.frame()))
 }
 
+#'
+#' Colnames of an AST.
+#'
+#' Evaluate the AST and produce the colnames of the eval'ed AST.
 colnames.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -427,6 +430,10 @@ colnames.H2OFrame <- function(x) {
   colnames(get(ID, parent.frame()))
 }
 
+#'
+#' Names of An AST.
+#'
+#' Evaluate the AST and produce the names of the eval'ed AST.
 names.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -436,6 +443,10 @@ names.H2OFrame <- function(x) {
   names(get(ID, parent.frame()))
 }
 
+#'
+#' Length of an AST.
+#'
+#' Evaluate the AST and produce the length of the eval'ed AST.
 length.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -445,6 +456,10 @@ length.H2OFrame <- function(x) {
   length(get(ID, parent.frame()))
 }
 
+#'
+#' Shape of an AST.
+#'
+#' Evaluate the AST and produce the dim of the eval'ed AST.
 dim.H2OFrame <- function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -468,7 +483,7 @@ head.H2OFrame <- function(x, n = 6L, ...) {
 }
 
 #'
-#' Tailof an AST.
+#' Tail of an AST.
 #'
 #' Evaluate the AST and produce the tail of the eval'ed AST.
 tail.H2OFrame <- function(x, n = 6L, ...) {
@@ -485,10 +500,10 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
 #  res$levels[[1]]
 #})
-#
+
 
 #setMethod("is.factor", "H2OFrame", function(x) { as.logical(.h2o.unop("is.factor", x)) })
-#
+
 #quantile.H2OFrame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
 #  if((numCols = ncol(x)) != 1) stop("quantile only operates on a single column")
 #  if(is.factor(x)) stop("factors are not allowed")
@@ -573,93 +588,70 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #  result
 #}
 
-
 #-----------------------------------------------------------------------------------------------------------------------
-# Summary Functions
-#-----------------------------------------------------------------------------------------------------------------------
-
-#.min_internal <- min
-#min <- function(..., na.rm = FALSE) {
-#  # idx = sapply(c(...), function(y) { class(y) == "H2OParsedData" })
-#  idx = sapply(c(...), function(y) { class(y) %in% c("H2OParsedData", "H2OParsedDataVA") })
-#
-#  if(any(idx)) {
-#    hex.op = ifelse(na.rm, "min.na.rm", "min")
-#    myVals = c(...); myData = myVals[idx]
-#    myKeys = sapply(myData, function(y) { y@key })
-#    expr = paste(hex.op, "(", paste(myKeys, collapse=","), ")", sep = "")
-#    res = .h2o.__exec2(myData[[1]]@h2o, expr)
-#    .Primitive("min")(unlist(myVals[!idx]), res$scalar, na.rm = na.rm)
-#  } else
-#    .Primitive("min")(..., na.rm = na.rm)
-#}
-#
-#.max_internal <- max
-#max <- function(..., na.rm = FALSE) {
-#  # idx = sapply(c(...), function(y) { class(y) == "H2OParsedData" })
-#  idx = sapply(c(...), function(y) { class(y) %in% c("H2OParsedData", "H2OParsedDataVA") })
-#
-#  if(any(idx)) {
-#    hex.op = ifelse(na.rm, "max.na.rm", "max")
-#    myVals = c(...); myData = myVals[idx]
-#    myKeys = sapply(myData, function(y) { y@key })
-#    expr = paste(hex.op, "(", paste(myKeys, collapse=","), ")", sep = "")
-#    res = .h2o.__exec2(myData[[1]]@h2o, expr)
-#    .Primitive("max")(unlist(myVals[!idx]), res$scalar, na.rm = na.rm)
-#  } else
-#    .Primitive("max")(..., na.rm = na.rm)
-#}
-#
-#.sum_internal <- sum
-#sum <- function(..., na.rm = FALSE) {
-#  # idx = sapply(c(...), function(y) { class(y) == "H2OParsedData" })
-#  idx = sapply(c(...), function(y) { class(y) %in% c("H2OParsedData", "H2OParsedDataVA") })
-#
-#  if(any(idx)) {
-#    hex.op = ifelse(na.rm, "sum.na.rm", "sum")
-#    myVals = c(...); myData = myVals[idx]
-#    myKeys = sapply(myData, function(y) { y@key })
-#    expr = paste(hex.op, "(", paste(myKeys, collapse=","), ")", sep = "")
-#    res = .h2o.__exec2(myData[[1]]@h2o, expr)
-#    .Primitive("sum")(unlist(myVals[!idx]), res$scalar, na.rm = na.rm)
-#  } else
-#    .Primitive("sum")(..., na.rm = na.rm)
-#}
-#
-#setMethod("range", "H2OParsedData", function(x) {
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__PAGE_INSPECT2, src_key=x@key)
-#  temp = sapply(res$cols, function(x) { c(x$min, x$max) })
-#  c(min(temp[1,]), max(temp[2,]))
-#})
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Math Operations
+# Summary Statistics Operations
 #-----------------------------------------------------------------------------------------------------------------------
 
-#mean.H2OFrame <- function(x, trim = 0, na.rm = FALSE, ...) {
-#  if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
-#  if(h2o.anyFactor(x) || dim(x)[2] != 1) {
-#    warning("argument is not numeric or logical: returning NA")
-#    return(NA_real_)
-#  }
-#  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-#  .h2o.unop("mean", x)
-#}
-#
-#setMethod("sd", "H2OParsedData", function(x, na.rm = FALSE) {
-#  if(ncol(x) != 1) stop("Unimplemented")
-#  if(dim(x)[2] != 1 || h2o.anyFactor(x)) stop("Could not coerce argument to double. H2O sd requires a single numeric column.")
-#  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-#  .h2o.unop2("sd", x)
-#})
-#
-#setMethod("var", "H2OParsedData", function(x, y = NULL, na.rm = FALSE, use) {
-#  if(!is.null(y) || !missing(use)) stop("Unimplemented")
-#  if(h2o.anyFactor(x)) stop("x cannot contain any categorical columns")
-#  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-#  .h2o.unop("var", x)
-#})
+mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
+var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else base::var(x,y,na.rm,use)
+sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else base::sd(x,na.rm)
 
+mean.H2OParsedData<-
+function(x, trim = 0, na.rm = FALSE, ...) {
+    if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
+    if(h2o.anyFactor(x) || dim(x)[2] != 1) {
+      warning("argument is not numeric or logical: returning NA")
+      NA
+    }
+    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
+    .h2o.unop("mean", x, trim, na.rm, ...)
+}
+
+mean.H2OFrame<-
+function(x, trim = 0, na.rm = FALSE, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  mean(get(ID, parent.frame()), trim, na.rm, ...)
+}
+
+var.H2OParsedData<-
+function(x, y = NULL, na.rm = FALSE, use) {
+  if(!is.null(y) || !missing(use)) stop("Unimplemented")
+  if(h2o.anyFactor(x)) stop("x cannot contain any categorical columns")
+  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
+  .h2o.unop("var", x)
+}
+
+var.H2OFrame<-
+function(x, trim = 0, na.rm = FALSE, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  var(get(ID, parent.frame()), trim, na.rm, ...)
+}
+
+sd.H2OParsedData<-
+function(x, na.rm = FALSE) {
+    if(ncol(x) != 1) stop("Unimplemented")
+    if(dim(x)[2] != 1 || h2o.anyFactor(x)) stop("Could not coerce argument to double. H2O sd requires a single numeric column.")
+    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
+    .h2o.unop2("sd", x)
+}
+
+sd.H2OFrame<-
+function(x, trim = 0, na.rm = FALSE, ...) {
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  ID <- ifelse(ID == "Last.value", ID, x@key)
+  assign(ID, x, parent.frame())
+  sd(get(ID, parent.frame()), trim, na.rm, ...)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-,

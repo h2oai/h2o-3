@@ -1,28 +1,12 @@
 #'
+#' R -> AST
+#'
 #' This is the front-end of the execution interface between R and H2O.
 #'
 #' The workhorses of this front end are .h2o.unop, .h2o.binop, and .h2o.varop.
 #'
 #' Together, these three methods handle all of the available operations that can
 #' be done with H2OFrame objects (this includes H2OParsedData objects and ASTNode objects).
-
-.h2o.__exec2 <- function(client, expr) {
-  destKey = paste(.TEMP_KEY, ".", .pkg.env$temp_count, sep="")
-  .pkg.env$temp_count = (.pkg.env$temp_count + 1) %% .RESULT_MAX
-  .h2o.__exec2_dest_key(client, expr, destKey)
-  # .h2o.__exec2_dest_key(client, expr, .TEMP_KEY)
-}
-
-.h2o.__exec2_dest_key <- function(client, expr, destKey) {
-  type = tryCatch({ typeof(expr) }, error = function(e) { "expr" })
-  if (type != "character")
-    expr = deparse(substitute(expr))
-  expr = paste(destKey, "=", expr)
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_EXEC2, str=expr)
-  if(!is.null(res$response$status) && res$response$status == "error") stop("H2O returned an error!")
-  res$dest_key = destKey
-  return(res)
-}
 
 .h2o.unop<-
 function(op, x) {

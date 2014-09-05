@@ -1,16 +1,8 @@
 import("RCurl", "rjson", "statmod", "methods")
 importFrom("utils", "installed.packages")
 exportPattern("^[[:alpha:]]+")
-export('h2o.shutdown', 'h2o.init', 'h2o.glm', 'h2o.glm.FV', 'h2o.kmeans', 'h2o.randomForest', 
-       'h2o.prcomp', 'h2o.naiveBayes', 'h2o.gbm', 'h2o.deeplearning', 'h2o.predict', 'h2o.importFile', 
-       'h2o.importFolder', 'h2o.uploadFile', 'h2o.parseRaw', 'h2o.importFile.VA', 'h2o.importFolder.VA', 
-       'h2o.importHDFS.VA', 'h2o.importURL.VA', 'h2o.uploadFile.VA', 'h2o.parseRaw.VA', 'h2o.ls', 'h2o.rm',
-       'summary.H2OParsedData', 'summary.H2OParsedDataVA', 'screeplot.H2OPCAModel', 'h2o.cut', '.', 'h2o..',
-       'cbind.H2OParsedData', 'unique.H2OParsedData')
 exportMethods(
-  "colnames",
-  "show",
-  "levels"
+  "show"
 )
 exportClasses(
   "H2OClient",
@@ -22,9 +14,5 @@ exportClasses(
   "H2OPCAModel",
   "H2ONBModel",
   "H2OGBMModel",
-  "H2OModel",
-  "H2ORawDataVA",
-  "H2OParsedDataVA",
-  "H2OGLMModelVA",
-  "H2OGLMGridVA"
+  "H2OModel"
 )

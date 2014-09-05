@@ -1,9 +1,21 @@
 #'
-#' H2O Package Constants.
+#' H2O Package Constants
 #'
-#' The API endpoints for interacting with H2O via REST are named here. Additionally,
-#' environment variables for the H2O package are named here.
+#' The API endpoints for interacting with H2O via REST are named here.
+#'
+#' Additionally, environment variables for the H2O package are named here.
 
+
+#'
+#' Inspect Constants
+#'
+.RESULT_MAX <- 1000
+.MAX_INSPECT_ROW_VIEW <- 10000
+.MAX_INSPECT_COL_VIEW <- 10000
+
+#'
+#' The H2O Package Environment
+#'
 .pkg.env              <- new.env()
 
 # These may no longer be needed...
@@ -12,18 +24,16 @@
 .pkg.env$IS_LOGGING   <- FALSE
 .pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
-.RESULT_MAX <- 1000
-.MAX_INSPECT_ROW_VIEW <- 10000
-.MAX_INSPECT_COL_VIEW <- 10000
 .LOGICAL_OPERATORS <- c("==", ">", "<", "!=", ">=", "<=", "&", "|", "&&", "||", "!", "is.na")
 .INFIX_OPERATORS   <- c("+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">")
 
-
-# Some handy utility functions for doing common tasks
-"%<i-%"  <- function(x,y) inherits(x, y)
-"%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())
-"%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())
-"%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
+#'
+#' Some handy utility functions for doing common h2o package-related tasks.
+#'
+"%<i-%"  <- function(x,y) inherits(x, y)  # check if `x` inherits from `y`
+"%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0
+"%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
+"%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
 
 #'
 #' Map of binary operators to their "AST" operator value.
@@ -49,7 +59,6 @@
 #'
 #' H2O API endpoints
 #'
-
 #'
 #' Import/Parse Endpointss
 .h2o.__IMPORT       <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
@@ -59,30 +68,35 @@
 
 #'
 #' Inspect/Summary Endpoints
+#'
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES       <- "3/Frames.json"      # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
 #'
 #' Administrative Endpoints
+#'
 .h2o.__JOBS         <- "Jobs.json"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
 .h2o.__CLOUD        <- "Cloud.json"
 
 #'
 #' Algorithm Endpoints
+#'
 .h2o.__KMEANS       <- "v2/Kmeans.json"
 
 #'
 #' Cascade/Exec3
+#'
 .h2o.__CASCADE      <- "Cascade.json"
 
 #'
 #' Removal
+#'
 .h2o.__REMOVE       <- "Remove.json"
 
 
 
 #'
-#' The list of H2O1 endpoints
+#' The list of H2O1 (old) endpoints
 #######
 #.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"
