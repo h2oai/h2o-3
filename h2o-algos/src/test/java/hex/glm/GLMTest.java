@@ -189,7 +189,7 @@ public class GLMTest  extends TestUtil {
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
       model.delete();
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0},new double[]{0});
-      params._response = 1;
+      params._response = fr.find("power (hp)");
       params._src = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
@@ -201,7 +201,7 @@ public class GLMTest  extends TestUtil {
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
-      params._response = 1;
+      params._response = fr.find("power (hp)");
       params._src = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
