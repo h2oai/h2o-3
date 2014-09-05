@@ -41,7 +41,7 @@ public abstract class DocGen<T extends DocGen> {
     private HTML f1() { return p("</dd></dl>\n");  }
     private HTML f(String name, String s) { return f0(name).p(s).f1();  }
     // Weaver entry points
-    public HTML putObj(String name, Serializable obj) { throw H2O.unimpl(); }
+    public HTML putSer(String name, Serializable obj) { throw H2O.unimpl(); }
     public HTML putStr(String name, String  s) { return f(name,s); }
     public HTML putZ  (String name, boolean b) { return f(name,Boolean.toString(b)); }
     public HTML put1  (String name, byte    b) { return f(name,Byte   .toString(b)); }

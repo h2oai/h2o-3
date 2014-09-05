@@ -1,12 +1,13 @@
 package water;
 
 import water.util.DocGen.HTML;
+import java.io.*;
 
 /** Auto-serializer base-class using a delegator pattern.  
  *  (the faster option is to byte-code gen directly in all Iced classes, but
  *  this requires all Iced classes go through a ClassLoader).
  */
-abstract public class Iced<D extends Iced> implements Freezable {
+abstract public class Iced<D extends Iced> implements Freezable, Externalizable {
 
   // The serialization flavor / delegate.  Lazily set on first use.
   private short _ice_id;
@@ -43,4 +44,18 @@ abstract public class Iced<D extends Iced> implements Freezable {
   @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
   //noninspection UnusedDeclaration
   @Override public HTML writeHTML_impl( HTML ab ) { return ab; }
+
+  // Java serializers use H2Os Icing
+  @Override public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {
+    int x = ois.readInt();
+    byte[] buf = MemoryManager.malloc1(x);
+    ois.readFully(buf);
+    read(new AutoBuffer(buf));
+  }
+
+  @Override public void writeExternal( ObjectOutput oos ) throws IOException {
+    byte[] buf = write(new AutoBuffer()).buf();
+    oos.writeInt(buf.length);
+    oos.write(buf);
+  }
 }
