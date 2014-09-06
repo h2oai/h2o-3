@@ -32,14 +32,14 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
     @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
       super.fillFromImpl(parms);
-      this.init = KMeans.Initialization.PlusPlus;
+      this.init = KMeans.Initialization.Furthest;
       return this;
     }
 
     public KMeansParameters createImpl() {
       KMeansParameters impl = new KMeansParameters();
       BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      impl._init = KMeans.Initialization.PlusPlus;
+      impl._init = KMeans.Initialization.Furthest;
       return impl;
     }
   }

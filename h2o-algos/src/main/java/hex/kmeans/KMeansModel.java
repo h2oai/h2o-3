@@ -15,7 +15,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public int _max_iters = 100;          // Max iterations
     public boolean _normalize = false;    // Normalize columns
     public long _seed;                    // RNG seed
-    public KMeans.Initialization _init = KMeans.Initialization.None;
+    public KMeans.Initialization _init = KMeans.Initialization.Furthest;
   }
 
   public static class KMeansOutput extends Model.Output<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
