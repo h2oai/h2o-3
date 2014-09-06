@@ -173,12 +173,12 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
     try {
       fr = getFrameForFile(parsed, "smalldata/cars.csv");
-      GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double []{0},new double[]{0});
+      GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
       params._src = parsed;
       params.lambda = new double[]{0};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
@@ -188,11 +188,12 @@ public class GLMTest  extends TestUtil {
       // test gamma
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
       model.delete();
-      params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0},new double[]{0});
-      params._response = 1;
+      params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
+      params._response = fr.find("power (hp)");
+      params._ignored_cols = new int[]{fr.find("name")};
       params._src = parsed;
       params.lambda = new double[]{0};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
@@ -201,17 +202,15 @@ public class GLMTest  extends TestUtil {
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
-      params._response = 1;
+      params._response = fr.find("power (hp)");
+      params._ignored_cols = new int[]{fr.find("name")};
       params._src = parsed;
       params.lambda = new double[]{0};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
-    } catch(Throwable t){
-      t.printStackTrace();
-      System.out.println("haha");
     } finally {
       if( fr != null ) fr.delete();
       if(model != null)model.delete();
@@ -228,7 +227,7 @@ public class GLMTest  extends TestUtil {
    * @throws ExecutionException
    * @throws InterruptedException
    */
-  @Test public void testProstate() throws InterruptedException, ExecutionException{
+  @Test public void testProstate() throws InterruptedException, ExecutionException {
     Key parsed = Key.make("prostate_parsed");
     Key modelKey = Key.make("prostate_model");
     GLMModel model = null;
@@ -261,6 +260,29 @@ public class GLMTest  extends TestUtil {
       DKV.remove(jobKey);
     }
   }
+
+  @Test public void testArcene() throws InterruptedException, ExecutionException{
+    Key parsed = Key.make("arcene_parsed");
+    Key modelKey = Key.make("arcene_model");
+    GLMModel model = null;
+    Frame fr = getFrameForFile(parsed, "smalldata/glm_test/arcene.csv");
+    try{
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      params._response = 0;
+      params._src = parsed;
+      params.lambda_search = true;
+      params.alpha = new double[]{1};
+      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      model = DKV.get(modelKey).get();
+      GLMValidation val = model.validation();
+      System.out.println(val);
+    } finally {
+      fr.delete();
+      if(model != null)model.delete();
+      DKV.remove(jobKey);
+    }
+  }
+
   private static Frame getFrameForFile(Key outputKey, String path){
     File f = new File(path);
     if(!f.exists()) f = new File("../" + path);

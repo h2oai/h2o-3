@@ -107,22 +107,22 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
   }
 
   public static class GLMParameters extends Model.Parameters<GLMModel,GLMParameters,GLMOutput> {
-    int _response;
-    int [] _ignored_cols;
-    boolean _standardize = true;
-    final Family family;
-    final Link   link;
-    final double tweedie_variance_power;
-    final double tweedie_link_power;
-    final double [] alpha;
-    double [] lambda;
-    double       prior = -1;
-    boolean lambda_search = false;
-    int nlambdas = -1;
-    double lambda_min_ratio = -1; // special
-    boolean higher_accuracy = false;
-    boolean useAllFactorLvls = false;
-    int n_folds;
+    public int _response;
+    public int [] _ignored_cols;
+    public boolean _standardize = true;
+    public final Family family;
+    public final Link   link;
+    public final double tweedie_variance_power;
+    public final double tweedie_link_power;
+    public double [] alpha;
+    public double [] lambda;
+    public double       prior = -1;
+    public boolean lambda_search = false;
+    public int nlambdas = -1;
+    public double lambda_min_ratio = -1; // special
+    public boolean higher_accuracy = false;
+    public boolean useAllFactorLvls = false;
+    public int n_folds;
 
     public GLMParameters(){this(Family.gaussian);}
     public GLMParameters(Family f){this(f,f.defaultLink);}

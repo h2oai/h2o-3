@@ -35,8 +35,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   public GLM(Key jobKey, Key dest, String desc, GLMModel.GLMParameters parms) {
     super(jobKey,dest, desc, parms, 0 /* really don't want to pass work here before I see the data */);
   }
+
   public GLM(GLMModel.GLMParameters parms) {
-    super(parms);
+    super(Key.make("GLMModel"), "GLM", parms, 0 /* no progress */);
   }
 
   @Override

@@ -1,9 +1,17 @@
 package water.fvec;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import jsr166y.CountedCompleter;
 import water.*;
+import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
 import water.util.ArrayUtils;
+import water.H2O.H2OFuture;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
@@ -135,7 +143,7 @@ public class RollupStats extends DTask<RollupStats> {
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
     RollupStats _rs;
-    Roll( Key rskey ) { _rskey=rskey; }
+    Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(_rskey,0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
     @Override public void postGlobal() { _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
@@ -153,28 +161,48 @@ public class RollupStats extends DTask<RollupStats> {
     return rs;                  // In progress
   }
 
-  // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
-  // the rollup in the background and do not return.
-  static RollupStats get(Vec vec, Futures fs) {
-    final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-    if( rs.isReady() ) return rs;                 // All good
+
+  public static H2OFuture<RollupStats> get(Vec v){
+    final Key rskey = v.rollupStatsKey();
+    final RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+    if( rs.isReady() ) return new H2OFuture<RollupStats>(){
+      @Override public boolean cancel(boolean mayInterruptIfRunning) {return false;}
+      @Override public boolean isCancelled() { return false;}
+      @Override public boolean isDone() {return true;}
+      @Override public RollupStats get() throws InterruptedException, ExecutionException {return rs; }
+      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {return rs;}
+    };                 // All good
     assert rs.isComputing();
     // No local cached Rollups; go ask Master for a copy
     H2ONode h2o = rskey.home_node();
-    if( h2o.equals(H2O.SELF) ) {
-      if( fs == null ) { rs.compute2(); return rs; } // Block till ready
-      fs.add(H2O.submitTask(rs));
-      throw H2O.unimpl();
-      //return null;
-    } else {                                   // Run remotely
-      RPC<RollupStats> rpc = RPC.call(h2o,rs); // Run remote
-      if( fs == null ) return rpc.get();       // Block till ready
-      throw H2O.unimpl();
-      //fs.add(comp);
-      //return null;
-    }
+    final Future fs;
+    if( h2o.equals(H2O.SELF) )
+      fs = (H2O.submitTask(rs));
+    else                        // Run remotely
+      fs = (RPC.call(h2o,rs)); // Run remote
+    return new H2OFuture<RollupStats>() {
+      @Override public boolean cancel(boolean mayInterruptIfRunning) { return fs.cancel(mayInterruptIfRunning);}
+      @Override public boolean isCancelled() { return fs.isCancelled();}
+      @Override public boolean isDone() { return fs.isDone();}
+      @Override public RollupStats get() throws InterruptedException, ExecutionException { fs.get(); return rs;}
+      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException { fs.get(timeout, unit); return rs;}
+    };
   }
+
+  // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
+  // the rollup in the background and do not return.
+//  public static RollupStats get(Vec vec) {
+//    final Key rskey = vec.rollupStatsKey();
+//    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+//    if( rs.isReady() ) return rs;                 // All good
+//    assert rs.isComputing();
+//    // No local cached Rollups; go ask Master for a copy
+//    if( rskey.home() ) {
+//      rs.compute2();
+//      return rs;  // Block till ready
+//    } else                                    // Run remotely
+//      return RPC.call(rskey.home_node(),rs).get(); // Run remote
+//  }
 
   // Fetch if present, but do not compute
   static RollupStats getOrNull(Vec vec) {
@@ -185,13 +213,14 @@ public class RollupStats extends DTask<RollupStats> {
     return rs.isReady() ? rs : null;
   }
 
+  private transient Value nnn;
+  private transient Futures fs;
   @Override protected void compute2() {
     assert _rskey.home();  // Only runs on Home node
     assert isComputing();
-    Futures fs = new Futures(); // Just to track invalidates
-
     // Attempt to flip from no-rollups to computing-rollups
-    Value nnn = new Value(_rskey,this);
+    nnn = new Value(_rskey,this);
+    fs = new Futures();
     Value old = DKV.DputIfMatch(_rskey,nnn,null,fs);
     RollupStats rs = check(_rskey,this,old);
     if( rs.isReady() ) {        // Old stuff already is good stuff
@@ -206,13 +235,15 @@ public class RollupStats extends DTask<RollupStats> {
     // This call to DKV "get the lock" on making the Rollups.
     // Do them Right Here, Right Now.
     Vec vec = DKV.get(Vec.getVecKey(_rskey)).get();
-    rs = new Roll(_rskey).doAll(vec)._rs;
+    new Roll(this,_rskey).asyncExec(vec);
+  }
+  @Override public void onCompletion(CountedCompleter caller){
+    RollupStats rs = ((Roll)caller)._rs;
     copyOver(rs);               // Copy over from rs into self
     assert isReady();           // We're Ready!!!
     Value old2 = DKV.DputIfMatch(_rskey,new Value(_rskey,this),nnn,fs);
     assert old2==nnn;           // Since we "have the lock" this "must work"
     fs.blockForPending();       // Block for any invalidates
-    tryComplete();
   }
 
   // ----------------------------
@@ -221,7 +252,7 @@ public class RollupStats extends DTask<RollupStats> {
   // Version that allows histograms to be computed in parallel
   static Futures computeHisto(Vec vec, Futures fs) {
     while( true ) {
-      RollupStats rs = get(vec,null); // Block for normal histogram
+      RollupStats rs = get(vec).getResult(); // Block for normal histogram
       if( rs._bins != null ) return fs;
       rs.computeHisto_impl(vec);
       Value old = DKV.get(rs._rskey);

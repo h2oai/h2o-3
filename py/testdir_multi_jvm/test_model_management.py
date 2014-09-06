@@ -3,9 +3,25 @@ import sys, pprint
 sys.path.extend(['.','..','py'])
 import h2o, h2o_util
 
-# pretty printer for debugging
-pp = pprint.PrettyPrinter(indent=4)
+#########
+# Config:
+algos = ['example', 'kmeans', 'deeplearning', 'glm']
 
+
+###########
+# Utilities
+pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
+
+def validate_builder(builder):
+    assert 'parameters' in builder and isinstance(builder['parameters'], list)
+    parameters = builder['parameters']
+    assert len(parameters) > 0
+    parameter = parameters[0]
+    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'dependencies', 'validation', 'values'])
+
+
+################
+# The test body:
 a_node = h2o.H2O("127.0.0.1", 54321)
 
 # TODO: remove die fast test case:
@@ -19,13 +35,34 @@ if False:
     sys.exit()
 
 models = a_node.models()
-frames = a_node.frames()
-
 print 'Models: '
 pp.pprint(models)
 
+frames = a_node.frames()
 print 'Frames: '
 pp.pprint(frames)
+
+
+# test model_builders collection GET
+print 'Testing /ModelBuilders. . .'
+model_builders = a_node.model_builders()
+
+print 'ModelBuilders: '
+pp.pprint(model_builders)
+
+for algo in algos:
+    assert algo in model_builders['model_builders'], "Failed to find algo: " + algo
+    builder = model_builders['model_builders'][algo]
+    validate_builder(builder)
+    
+
+# test model_builders individual GET
+print 'Testing /ModelBuilders/{algo}. . .'
+for algo in algos:
+    model_builder = a_node.model_builders(algo=algo)
+    assert algo in model_builder['model_builders'], "Failed to find algo: " + algo
+    builder = model_builders['model_builders'][algo]
+    validate_builder(builder)
 
 import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
@@ -37,7 +74,7 @@ prostate_key = parse_result['frames'][0]['key']['name']
 model_builders = a_node.model_builders()
 pp.pprint(model_builders)
 
-kmeans_builder = a_node.model_builders(key='kmeans')['model_builders']['kmeans']
+kmeans_builder = a_node.model_builders(algo='kmeans')['model_builders']['kmeans']
 
 jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
 

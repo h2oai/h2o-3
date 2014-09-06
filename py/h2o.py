@@ -463,13 +463,13 @@ class H2O(object):
     parameters contains all the metdata required by a client to
     present a model building interface to the user.
     '''
-    def model_builders(self, key=None, timeoutSecs=10, **kwargs):
+    def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
         params_dict = {
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
 
-        if key:
-            result = self.__do_json_request('2/ModelBuilders.json/' + key, timeout=timeoutSecs, params=params_dict)
+        if algo:
+            result = self.__do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
         else:
             result = self.__do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
         return result

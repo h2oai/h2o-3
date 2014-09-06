@@ -6,6 +6,7 @@ import water.Job;
 import water.Key;
 import water.Model;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -78,8 +79,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
       // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
       Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
-
-      modelBuilder = clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] }).newInstance(pclz.newInstance());
+      Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
+      Model.Parameters p = pclz.newInstance();
+      modelBuilder = constructor.newInstance(p);
     }
     catch (Exception e) {
       throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
