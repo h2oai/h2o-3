@@ -1,7 +1,6 @@
 package water.api;
 
 import water.*;
-import water.Model;
 
 class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   @Override protected int min_ver() { return 2; }
@@ -60,14 +59,20 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   // Remove an unlocked model.  Fails if model is in-use
-  public void delete(int version, Models models) {
+  public Schema delete(int version, Models models) {
     Model model = getFromDKV(models.key);
+    if (null == model)
+      throw new IllegalArgumentException("Model key not found: " + models.key);
     model.delete();             // lock & remove
+    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
+    InspectV1 s = new InspectV1();
+    s.key = models.key;
+    return s;
   }
 
   // Remove ALL an unlocked models.  Throws IAE for all deletes that failed
   // (perhaps because the Models were locked & in-use).
-  public void deleteAll(int version, Models models) {
+  public Schema deleteAll(int version, Models models) {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return Value.isSubclassOf(k._type, Model.class);
@@ -85,6 +90,10 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
     }
     fs.blockForPending();
     if( err != null ) throw new IllegalArgumentException(err);
+
+    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
+    InspectV1 s = new InspectV1();
+    return s;
   }
 
 

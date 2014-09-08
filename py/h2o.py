@@ -190,8 +190,8 @@ class H2O(object):
 
         # file get passed thru kwargs here
         try:
-            if cmd == 'post':
-                # NOTE: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
+            if 'post' == cmd:
+                # NOTE == cmd: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
                 # This is temporary.
                 # 
                 # This following does application/json (aka, posting JSON in the body):
@@ -199,8 +199,12 @@ class H2O(object):
                 # 
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
-            else:
+            elif 'delete' == cmd:
+                r = requests.delete(url, timeout=timeout, params=params, **kwargs)                
+            elif 'get' == cmd:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
+            else:
+                raise ValueError("Unknown HTTP command (expected 'get', 'post' or 'delete'): " + cmd)
 
         except Exception, e:
             # rethrow the exception after we've checked for stack trace from h2o
@@ -507,6 +511,31 @@ class H2O(object):
             H2O.verboseprint("model building job_key: " + repr(job_key))
             job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
             return job_json
+
+
+    '''
+    Delete a model on the h2o cluster, given its key.
+    '''
+    def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
+        assert key is not None, '"key" parameter is null'
+
+        result = self.__do_json_request('/3/Models.json/' + key, cmd='delete', timeout=timeoutSecs)
+
+        # TODO: look for what?
+        if not ignoreMissingKey and 'f00b4r' in result:
+            raise ValueError('Model key not found: ' + key)
+
+        return result
+
+
+    '''
+    Delete all models on the h2o cluster.
+    '''
+    def delete_models(self, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/3/Models.json', cmd='delete', timeout=timeoutSecs)
+
+        return result
 
 
     # TODO: remove .json
