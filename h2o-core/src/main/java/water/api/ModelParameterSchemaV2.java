@@ -40,14 +40,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   @API(help="other fields that must be set before setting this one, e.g. \"response_column\"")
   public String[] dependencies;
 
-  // TODO: change to a richer type:
-  @API(help="list of validation expressions for use by the front-end and back-end")
-  public String[] validation;
-// [
-//     "type": "regexp", "value": "[0-9]*\.?[0-9]+",
-//     "type": "backend", "value": "/models/my_model/parameters/lambda?validate_value=%s"
-// ]
-
   @API(help="list of valid values for use by the front-end")
   public String[] values;
 
@@ -86,8 +78,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
         if (is_enum && (null == this.values || 0 == this.values.length)) {
           throw H2O.fail("Didn't find values annotation for enum field: " + this.name);
         }
-
-        this.validation = annotation.validation();
       }
     }
     catch (Exception e) {

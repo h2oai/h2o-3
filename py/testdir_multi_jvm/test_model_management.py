@@ -17,7 +17,7 @@ def validate_builder(builder):
     parameters = builder['parameters']
     assert len(parameters) > 0
     parameter = parameters[0]
-    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'dependencies', 'validation', 'values'])
+    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'dependencies', 'values'])
 
 
 ################

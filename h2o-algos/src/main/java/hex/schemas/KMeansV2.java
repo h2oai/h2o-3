@@ -15,7 +15,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     // TODO: we do defaults both here and in the impl; that's no good.
 
     // Input fields
-    @API(help = "Number of clusters", required = true, validation = { "K > 0", "K < 100000" })
+    @API(help = "Number of clusters", required = true)
     public int K;
 
     @API(help="Maximum training iterations.")
