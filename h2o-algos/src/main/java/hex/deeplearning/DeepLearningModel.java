@@ -637,6 +637,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
 
+  @API(help="Training dataset used for model building", json = true)
+  public final Key _dataKey;
+
+  @API(help="Validation dataset used for model building", json = true)
+  public final Key _validationKey;
+
 //  @API(help="Time to build the model", json = true)
   private long run_time;
   final private long start_time;
@@ -1306,6 +1312,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
     super(destKey, dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), cp._parms, new DeepLearningOutput(), cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
+    _dataKey = cp._dataKey;
+    _validationKey = cp._validationKey;
     final boolean store_best_model = (jobKey == null);
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
@@ -1338,6 +1346,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearningParameters params, final float[] priorDist) {
     super(destKey, /*dataKey, */dinfo._adaptedFrame, params, new DeepLearningOutput(), priorDist);
+    _dataKey = dataKey;
+    _validationKey = _parms.validation != null ? _parms.validation._key : null;
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
