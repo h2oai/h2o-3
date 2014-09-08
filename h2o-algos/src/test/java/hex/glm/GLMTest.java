@@ -260,25 +260,25 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test public void testArcene() throws InterruptedException, ExecutionException{
-    Key parsed = Key.make("arcene_parsed");
-    Key modelKey = Key.make("arcene_model");
-    GLMModel model = null;
-    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
-    try{
-      GLMParameters params = new GLMParameters(Family.gaussian);
-      params._response = 0;
-      params._src = parsed;
-      params.lambda_search = true;
-      params.alpha = new double[]{1};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
-      model = DKV.get(modelKey).get();
-      GLMValidation val = model.validation();
-      System.out.println(val);
-    } finally {
-      fr.delete();
-      if(model != null)model.delete();
-      DKV.remove(jobKey);
-    }
-  }
+//  @Test public void testArcene() throws InterruptedException, ExecutionException{
+//    Key parsed = Key.make("arcene_parsed");
+//    Key modelKey = Key.make("arcene_model");
+//    GLMModel model = null;
+//    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
+//    try{
+//      GLMParameters params = new GLMParameters(Family.gaussian);
+//      params._response = 0;
+//      params._src = parsed;
+//      params.lambda_search = true;
+//      params.alpha = new double[]{1};
+//      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+//      model = DKV.get(modelKey).get();
+//      GLMValidation val = model.validation();
+//      System.out.println(val);
+//    } finally {
+//      fr.delete();
+//      if(model != null)model.delete();
+//      DKV.remove(jobKey);
+//    }
+//  }
 }
