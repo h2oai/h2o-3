@@ -123,6 +123,8 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     public boolean higher_accuracy = false;
     public boolean useAllFactorLvls = false;
     public int n_folds;
+    // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
+    public int maxActivePredictors = 10000;
 
     public GLMParameters(){this(Family.gaussian);}
     public GLMParameters(Family f){this(f,f.defaultLink);}
@@ -346,7 +348,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
 
   }
 
-  static class Submodel extends Iced {
+  public static class Submodel extends Iced {
     final double lambda_value;
     final int        iteration;
     final long       run_time;
