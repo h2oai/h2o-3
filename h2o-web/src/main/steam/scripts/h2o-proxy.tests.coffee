@@ -176,7 +176,13 @@ test 'airlines ingest and model building flow', (t) ->
           go null, frameKey
 
     buildAirlinesKmeansModel = (frameKey, go) ->
-      parameters = src: frameKey, K: 2
+      parameters = 
+        src: frameKey
+        K: 2
+        max_iters: 1000
+        normalize: 'true'
+        seed: 1410214121289766000
+        init: 'Furthest'
       _.requestModelBuild 'kmeans', parameters, (error, result) ->
         if error
           t.fail 'model build request failed'
@@ -194,8 +200,9 @@ test 'airlines ingest and model building flow', (t) ->
           go error
         else
           t.pass 'got model inspect reply'
-          result.schema.parameters[3].actual_value = "(random)"
-          tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          #result.schema.parameters[3].actual_value = "(random)"
+          #tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result
           go null, modelKey
 
     operations = [
