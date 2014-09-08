@@ -119,9 +119,12 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_file( String fname ) {
-    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
-    return water.parser.ParseDataset2.parse(Key.make(),nfs._key);
+  protected Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  protected Frame parse_test_file( Key outputKey, String fname ) {
+    File f = find_test_file(fname);
+    assert f != null && f.exists():" file not found: " + fname;
+    NFSFileVec nfs = NFSFileVec.make(f);
+    return water.parser.ParseDataset2.parse(outputKey,nfs._key);
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.

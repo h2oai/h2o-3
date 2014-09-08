@@ -17,7 +17,7 @@ def validate_builder(builder):
     parameters = builder['parameters']
     assert len(parameters) > 0
     parameter = parameters[0]
-    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'dependencies', 'validation', 'values'])
+    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'dependencies', 'values'])
 
 
 ################
@@ -76,9 +76,35 @@ pp.pprint(model_builders)
 
 kmeans_builder = a_node.model_builders(algo='kmeans')['model_builders']['kmeans']
 
-jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
+kmeans_model_name = 'KMeansModel' # TODO: currently can't specify the target key
 
+jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
 models = a_node.models()
 
 print 'After Model build: Models: '
 pp.pprint(models)
+
+found_kmeans = False;
+for model in models['models']:
+    if model['key'] == 'KMeansModel':
+        found_kmeans = True
+
+assert found_kmeans, 'Did not find KMeansModel in the models list.'
+
+# test delete_model
+a_node.delete_model(kmeans_model_name)
+models = a_node.models()
+
+found_kmeans = False;
+for model in models['models']:
+    if model['key'] == 'KMeansModel':
+        found_kmeans = True
+
+assert not found_kmeans, 'Found KMeansModel in the models list: ' + h2o_util.dump_json(models)
+
+# test delete_models
+jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
+a_node.delete_models()
+models = a_node.models()
+
+assert 'models' in models and 0 == len(models['models']), "Called delete_models and the models list isn't empty: " + h2o_util.dump_json(models)

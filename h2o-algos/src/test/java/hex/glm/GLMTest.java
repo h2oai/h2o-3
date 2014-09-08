@@ -1,6 +1,5 @@
 package hex.glm;
 
-
 import hex.FrameTask.DataInfo;
 import hex.glm.GLM.GLMDriver;
 import hex.glm.GLMModel.GLMParameters;
@@ -172,7 +171,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null;
     GLMModel model = null;
     try {
-      fr = getFrameForFile(parsed, "smalldata/cars.csv");
+      fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
@@ -231,7 +230,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("prostate_parsed");
     Key modelKey = Key.make("prostate_model");
     GLMModel model = null;
-    Frame fr = getFrameForFile(parsed, "smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame fr = parse_test_file(parsed, "smalldata/glm_test/prostate_cat_replaced.csv");
 
     try{
       // R results
@@ -261,33 +260,25 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test public void testArcene() throws InterruptedException, ExecutionException{
-    Key parsed = Key.make("arcene_parsed");
-    Key modelKey = Key.make("arcene_model");
-    GLMModel model = null;
-    Frame fr = getFrameForFile(parsed, "smalldata/glm_test/arcene.csv");
-    try{
-      GLMParameters params = new GLMParameters(Family.gaussian);
-      params._response = 0;
-      params._src = parsed;
-      params.lambda_search = true;
-      params.alpha = new double[]{1};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
-      model = DKV.get(modelKey).get();
-      GLMValidation val = model.validation();
-      System.out.println(val);
-    } finally {
-      fr.delete();
-      if(model != null)model.delete();
-      DKV.remove(jobKey);
-    }
-  }
-
-  private static Frame getFrameForFile(Key outputKey, String path){
-    File f = new File(path);
-    if(!f.exists()) f = new File("../" + path);
-    assert f.exists():" file not found: " + f.getAbsolutePath();
-    Key k = NFSFileVec.make(f)._key;
-    return ParseDataset2.parse(outputKey, new Key[]{k});
-  }
+//  @Test public void testArcene() throws InterruptedException, ExecutionException{
+//    Key parsed = Key.make("arcene_parsed");
+//    Key modelKey = Key.make("arcene_model");
+//    GLMModel model = null;
+//    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
+//    try{
+//      GLMParameters params = new GLMParameters(Family.gaussian);
+//      params._response = 0;
+//      params._src = parsed;
+//      params.lambda_search = true;
+//      params.alpha = new double[]{1};
+//      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+//      model = DKV.get(modelKey).get();
+//      GLMValidation val = model.validation();
+//      System.out.println(val);
+//    } finally {
+//      fr.delete();
+//      if(model != null)model.delete();
+//      DKV.remove(jobKey);
+//    }
+//  }
 }
