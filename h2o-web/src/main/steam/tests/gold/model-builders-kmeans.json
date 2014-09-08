@@ -13,10 +13,6 @@
           "actual_value": "0",
           "level": "critical",
           "dependencies": [],
-          "validation": [
-            "K > 0",
-            "K < 100000"
-          ],
           "values": []
         },
         {
@@ -29,7 +25,6 @@
           "actual_value": "100",
           "level": "critical",
           "dependencies": [],
-          "validation": [],
           "values": []
         },
         {
@@ -42,7 +37,6 @@
           "actual_value": "false",
           "level": "secondary",
           "dependencies": [],
-          "validation": [],
           "values": []
         },
         {
@@ -55,7 +49,6 @@
           "actual_value": "0",
           "level": "expert",
           "dependencies": [],
-          "validation": [],
           "values": []
         },
         {
@@ -68,7 +61,6 @@
           "actual_value": "Furthest",
           "level": "critical",
           "dependencies": [],
-          "validation": [],
           "values": [
             "None",
             "PlusPlus",
