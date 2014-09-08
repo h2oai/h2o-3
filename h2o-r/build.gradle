@@ -80,7 +80,7 @@ task gitbranch(type: Exec) {
 }
 
 task getRPlatform(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', "--vanilla -q -e options(echo=FALSE);cat(R.Version()\$platform);"])
+    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "options(echo=FALSE);cat(R.Version()\$platform);"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
         return standardOutput.toString().replace(' ','').split("\\\n")[1] //replace('-','_').
@@ -96,6 +96,7 @@ task getRVersion(type: Exec) {
 }
 
 task pdflatex(type: Exec) {
+    ignoreExitValue = true
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'where', 'pdflatex'
     else commandLine 'which', 'pdflatex'
     standardOutput = new ByteArrayOutputStream()
@@ -105,7 +106,7 @@ task pdflatex(type: Exec) {
 }
 
 task setProperties << {
-    project.ext.PDF_LATEX    = pdflatex.output()
+    project.ext.PDF_LATEX    = (pdflatex.output()).toLowerCase().contains("pdflatex") ? pdflatex.output() : ""
     project.ext.BUILD_BRANCH = gitbranch.output()
     project.ext.R_PLATFORM   = getRPlatform.output()
     project.ext.R_VERSION    = getRVersion.output()
@@ -137,7 +138,6 @@ task setPackageFiles << {
     src_info.write("https://github.com/0xdata/h2o")
 }
 
-
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"
     else commandLine 'R', "CMD", "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "--noclean", "h2o-package/man"
@@ -151,7 +151,7 @@ task cpPDF << {
     copyFile([T,"h2o_package.pdf"], [T,"R", "h2o_package.pdf"])
 }
 
-cpPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "unix" }
+cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") && SYS_OS != "unix" }
 
 task cpH2OAppJar << {
     def path = [T, "h2o-package", "inst", "java"].join(File.separator)
