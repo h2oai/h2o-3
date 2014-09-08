@@ -86,14 +86,9 @@ readGoldJson = (name) ->
 
 # Node.js equivalent of Steam.Xhr
 Xhr = (_, host) ->
-  link$ _.invokeH2O, (method, path, go) ->
-    url = "http://#{host}#{path}"
-    diag "Calling #{url}"
-    opts =
-      method: method
-      url: url
-      timeout: 15000
-      #TODO can avoid JSON.parse() step by passing json:true
+  makeRequest = (opts, go) ->
+    diag "Calling #{opts.url}"
+    #TODO can avoid JSON.parse() step by passing json:true in opts
     spool '===============REQUEST==============='
     spool JSON.stringify opts, null, 2
     httpRequest opts, (error, reply, body) ->
@@ -120,6 +115,22 @@ Xhr = (_, host) ->
               go response
           else
             go response
+
+
+  link$ _.h2oGet, (path, go) ->
+    opts =
+      method: 'GET'
+      url: "http://#{host}#{path}"
+      timeout: 15000
+    makeRequest opts, go
+
+  link$ _.h2oPost, (path, parameters, go) ->
+    opts =
+      method: 'POST'
+      url: "http://#{host}#{path}"
+      form: parameters
+      timeout: 15000
+    makeRequest opts, go
 
 _clouds = []
 _spawnCloud = ->
