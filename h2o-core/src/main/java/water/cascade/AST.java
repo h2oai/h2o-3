@@ -34,7 +34,8 @@ abstract public class AST extends Iced {
         ((ASTBinOp) this).apply(e);
 
       } else if (this instanceof ASTUniPrefixOp) {
-        // TODO: do the prefix op thing
+        for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
+        ((ASTUniPrefixOp)this).apply(e);
       } else {
         // TODO: do the udf op thing: capture env...
       }
@@ -135,6 +136,7 @@ class ASTNum extends AST {
   @Override void exec(Env e) { e.push(new ValNum(_d)); }
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
+  double dbl() { return _d; }
 }
 
 /**

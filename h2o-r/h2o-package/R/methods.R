@@ -606,13 +606,10 @@ sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")
 mean.H2OParsedData<-
 function(x, trim = 0, na.rm = FALSE, ...) {
     if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
-#    if(h2o.anyFactor(x) || dim(x)[2] != 1) {
-#      warning("argument is not numeric or logical: returning NA")
-#      NA
-#    }
-#    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-    stop("hello")
-    .h2o.varop("mean", x, trim, na.rm, ...)
+    ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
+    ID <- "Last.value"
+    .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
+    ast.mean
 }
 
 #'
@@ -621,18 +618,12 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 #' Expression is evaluated <=> this operation is top-level.
 mean.H2OFrame<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-  .h2o.varop("mean", x, trim, na.rm, ...)
-  # then trigger eval
-
-#  op <- new("ASTApply", op="mean")
-#  trim <- '#' %<p0-% trim
-#  ast.mean <- new("ASTNode", root=op, children=list(x, trim, na.rm))
-#  ID  <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
-#  ID <- ifelse(ID == "Last.value", ID, x@key)
-#  assign(ID, ast.mean, parent.frame())
-#  mean(get(ID, parent.frame()), trim, na.rm, ...)
+  ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
+  ast.mean
 }
 
 #'
@@ -640,11 +631,12 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 #'
 #' Obtain the variance of a column of data.
 var.H2OParsedData<-
-function(x, y = NULL, na.rm = FALSE, use) {
-  if(!is.null(y) || !missing(use)) stop("Unimplemented")
-  if(h2o.anyFactor(x)) stop("x cannot contain any categorical columns")
-  if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-  .h2o.unop("var", x)
+function(x, y = NULL, na.rm = FALSE, use = "everything") {
+#  if(!is.null(y) || !missing(use)) stop("Unimplemented")
+  ast.var <- .h2o.varop("var", x, y, na.rm, use)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.var, ID = ID, rID = 'ast.var')
+  ast.var
 }
 
 #'
@@ -652,22 +644,22 @@ function(x, y = NULL, na.rm = FALSE, use) {
 #'
 #' Expression is evaluated <=> this operation is top-level.
 var.H2OFrame<-
-function(x, trim = 0, na.rm = FALSE, ...) {
-  .h2o.varop("var", x, trim, na.rm, ...)
-#  ID  <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-#  ID <- ifelse(ID == "Last.value", ID, x@key)
-#  assign(ID, x, parent.frame())
-#  var(get(ID, parent.frame()), trim, na.rm, ...)
+function(x, y = NULL, na.rm = FALSE, use = "everything") {
+  ast.var <- .h2o.varop("var", x, y, na.rm, use)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.var@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.var, ID = ID, rID = 'ast.var')
+  ast.var
 }
 
 sd.H2OParsedData<-
 function(x, na.rm = FALSE) {
-    if(ncol(x) != 1) stop("Unimplemented")
-    if(dim(x)[2] != 1 || h2o.anyFactor(x)) stop("Could not coerce argument to double. H2O sd requires a single numeric column.")
-    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-    .h2o.unop2("sd", x)
+  if(ncol(x) != 1) stop("Unimplemented")
+  ast.sd <- .h2o.varop("sd", x, na.rm)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
+  ast.sd
 }
 
 #'
@@ -675,14 +667,13 @@ function(x, na.rm = FALSE) {
 #'
 #' Expression is evaluated <=> this operation is top-level.
 sd.H2OFrame<-
-function(x, trim = 0, na.rm = FALSE, ...) {
-  .h2o.varop("sd", x, trim, na.rm, ...)
-#  ID  <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-#  ID <- ifelse(ID == "Last.value", ID, x@key)
-#  assign(ID, x, parent.frame())
-#  sd(get(ID, parent.frame()), trim, na.rm, ...)
+function(x, na.rm = FALSE) {
+  ast.sd <- .h2o.varop("sd", x, na.rm)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.sd@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
+  ast.var
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

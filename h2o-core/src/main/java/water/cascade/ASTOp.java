@@ -1,17 +1,23 @@
 package water.cascade;
 
 //import hex.Quantiles;
-//import hex.FrameTask.DataInfo;
-//import hex.gram.Gram.GramTask;
+
+import water.Futures;
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.fvec.*;
+import water.util.MathUtils;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Set;
+
 //import hex.la.Matrix;
-import java.util.*;
 //import org.apache.commons.math3.util.*;
 //import org.joda.time.DateTime;
 //import org.joda.time.MutableDateTime;
-import water.*;
 //import water.cascade.Env;
-import water.fvec.*;
-import water.util.MathUtils;
 //import water.fvec.Vec.VectorGroup;
 //import water.util.Log;
 //import water.util.Utils;
@@ -48,10 +54,9 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("[", new ASTSlice());
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
+    SYMBOLS.put("_", new ASTNot());
     // Unary infix ops
-//    putUniInfix(new ASTUniPlus());
-//    putUniInfix(new ASTUniMinus());
-//    putUniInfix(new ASTNot());
+    putUniInfix(new ASTNot());
     // Binary infix ops
     putBinInfix(new ASTPlus());
     putBinInfix(new ASTSub());
@@ -121,8 +126,8 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTMax ());
 //    putPrefix(new ASTSum ());
 //    putPrefix(new ASTSdev());
-//    putPrefix(new ASTVar());
-//    putPrefix(new ASTMean());
+    putPrefix(new ASTVar());
+    putPrefix(new ASTMean());
 //    putPrefix(new ASTMinNaRm());
 //    putPrefix(new ASTMaxNaRm());
 //    putPrefix(new ASTSumNaRm());
@@ -213,6 +218,12 @@ abstract class ASTUniOp extends ASTOp {
   ASTUniOp() { super(VARS1); }
   double op( double d ) { throw H2O.fail(); }
   protected ASTUniOp( String[] vars) { super(vars); }
+  ASTUniOp parse_impl(Exec E) {
+    AST arg = E.parse();
+    ASTUniOp res = (ASTUniOp) clone();
+    res._asts = new AST[]{arg};
+    return res;
+  }
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
@@ -249,7 +260,6 @@ class ASTATan extends ASTUniPrefixOp { @Override String opStr(){ return "atan"; 
 class ASTCosh extends ASTUniPrefixOp { @Override String opStr(){ return "cosh"; } @Override ASTOp make() {return new ASTCosh ();} @Override double op(double d) { return Math.cosh(d);}}
 class ASTSinh extends ASTUniPrefixOp { @Override String opStr(){ return "sinh"; } @Override ASTOp make() {return new ASTSinh ();} @Override double op(double d) { return Math.sinh(d);}}
 class ASTTanh extends ASTUniPrefixOp { @Override String opStr(){ return "tanh"; } @Override ASTOp make() {return new ASTTanh ();} @Override double op(double d) { return Math.tanh(d);}}
-
 class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  } @Override ASTOp make() {return new ASTAbs ();} @Override double op(double d) { return Math.abs(d);}}
 class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sgn" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
@@ -1425,88 +1435,134 @@ class ASTOR extends ASTBinOp {
 //  }
 //}
 
-//class ASTVar extends ASTOp {
-//  ASTVar() { super(new String[]{"var", "ary"}, new Type[]{Type.dblary(),Type.dblary()},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
-//  @Override String opStr() { return "var"; }
-//  @Override ASTOp make() { return new ASTVar(); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(env.isDbl()) {
-//      env.pop(2); env.push(Double.NaN);
-//    } else {
-//      Frame fr = env.ary(-1);
-//      String[] colnames = fr.names();
-//
-//      // Save standard deviations for later use
-//      double[] sdev = new double[fr.numCols()];
-//      for(int i = 0; i < fr.numCols(); i++)
-//        sdev[i] = fr.vecs()[i].sigma();
-//
-//      // TODO: Might be more efficient to modify DataInfo to allow for separate standardization of mean and std dev
-//      DataInfo dinfo = new DataInfo(fr, 0, true, DataInfo.TransformType.STANDARDIZE);
-//      GramTask tsk = new GramTask(null, dinfo, false, false).doAll(dinfo._adaptedFrame);
-//      double[][] var = tsk._gram.getXX();
-//      long nobs = tsk._nobs;
-//
-//      assert sdev.length == var.length;
-//      assert sdev.length == var[0].length;
-//
-//      // Just push the scalar if input is a single col
-//      if(var.length == 1 && var[0].length == 1) {
-//        env.pop(2);
-//        double x = var[0][0]*sdev[0]*sdev[0];   // Undo normalization of each col's standard deviation
-//        x = x*nobs/(nobs-1);   // Divide by n-1 rather than n so unbiased
-//        env.push(x);
-//      } else {
-//        // Build output vecs for var-cov matrix
-//        Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(var.length);
-//        Vec[] vecs = new Vec[var.length];
-//        for(int i = 0; i < var.length; i++) {
-//          AppendableVec v = new AppendableVec(keys[i]);
-//          NewChunk c = new NewChunk(v,0);
-//          v._domain = null;
-//          for (int j = 0; j < var[0].length; j++) {
-//            double x = var[i][j]*sdev[i]*sdev[j];   // Undo normalization of each col's standard deviation
-//            x = x*nobs/(nobs-1);   // Divide by n-1 rather than n so unbiased
-//            c.addNum(x);
-//          }
-//          c.close(0, null);
-//          vecs[i] = v.close(null);
-//        }
-//        env.pop(2); env.push(new Frame(colnames, vecs));
-//      }
-//    }
-//  }
-//}
+class ASTVar extends ASTUniPrefixOp {
+  boolean _narm = false;
+  boolean _ynull = false;
+  ASTVar() { super(new String[]{"var", "ary", "y", "na.rm", "use"}); } // the order Vals appear on the stack
+  @Override String opStr() { return "var"; }
+  @Override ASTOp make() { return new ASTVar(); }
+  @Override ASTVar parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the trim
+    AST y = E.skipWS().parse();
+    if (y instanceof ASTString && ((ASTString)y)._s.equals("null")) {_ynull = true; y = ary; }
+    // Get the na.rm
+    AST a = E._env.lookup((ASTId)E.skipWS().parse());
+    _narm = ((ASTNum)a).dbl() == 1;
+    // Get the `use`
+    ASTString use = (ASTString) E.skipWS().parse();
+    // Finish the rest
+    ASTVar res = (ASTVar) clone();
+    res._asts = new AST[]{use,y,ary}; // in reverse order so they appear correctly on the stack.
+    return res;
+  }
 
-//class ASTMean extends ASTOp {
-//  ASTMean() { super(new String[]{"mean", "ary"}, new Type[]{Type.DBL,Type.ARY},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
-//  @Override String opStr() { return "mean"; }
-//  @Override ASTOp make() { return new ASTMean(); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.peekAry();
-//    if (fr.vecs().length > 1)
-//      throw new IllegalArgumentException("mean does not apply to multiple cols.");
-//    if (fr.vecs()[0].isEnum())
-//      throw new IllegalArgumentException("mean only applies to numeric vector.");
-//    double ave = fr.vecs()[0].mean();
-//    env.pop();
-//    env.poppush(ave);
-//  }
-//  @Override double[] map(Env env, double[] in, double[] out) {
-//    if (out == null || out.length < 1) out = new double[1];
-//    double s = 0;  int cnt=0;
-//    for (double v : in) if( !Double.isNaN(v) ) { s+=v; cnt++; }
-//    out[0] = s/cnt;
-//    return out;
-//  }
-//}
-//
+  @Override void apply(Env env) {
+    if (env.isNum()) {
+      env.pop();
+      env.push(new ValNum(Double.NaN));
+    } else {
+      Frame fr = env.peekAry();                   // number of rows
+      Frame y = ((ValFrame) env.peekAt(-1))._fr;  // number of columns
+      String use = ((ValStr) env.peekAt(-2))._s;  // what to do w/ NAs: "everything","all.obs","complete.obs","na.or.complete","pairwise.complete.obs"
+      String[] rownames = fr.names();
+      String[] colnames = y.names();
+
+      if (fr.numRows() != y.numRows())
+        throw new IllegalArgumentException("In var(): incompatible dimensions. Frames must have the same number of rows.");
+
+      final double[/*cols*/][/*rows*/] covars = new double[y.numCols()][fr.numCols()];
+      final MRTask[][] tsks = new MRTask[y.numCols()][fr.numCols()];
+      for (int c = 0; c < y.numCols(); ++c) {
+        Futures fs = new Futures();
+        for (int r = 0; r < fr.numCols(); ++r) {
+          final Frame f = new Frame(y.vecs()[c], fr.vecs()[r]);
+          tsks[c][r] = new CovarTask().dfork(f);
+        }
+      }
+      for (int c = 0; c < y.numCols(); c++)
+        for (int r = 0; r < fr.numCols(); r++)
+          covars[c][r] = ((CovarTask) tsks[c][r].getResult())._ss / (fr.numRows() - 1);
+
+      env.pop(); // pop fr
+      env.pop(); // pop y
+      env.pop(); // pop use
+
+      // Just push the scalar if input is a single col
+      if (covars.length == 1 && covars[0].length == 1) env.push(new ValNum(covars[0][0]));
+      else {
+        // Build output vecs for var-cov matrix
+        Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
+        Vec[] vecs = new Vec[covars.length];
+        for (int i = 0; i < covars.length; i++) {
+          AppendableVec v = new AppendableVec(keys[i]);
+          NewChunk c = new NewChunk(v, 0);
+          v.setDomain(null);
+          for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
+          c.close(0, null);
+          vecs[i] = v.close(null);
+        }
+        env.push(new ValFrame(new Frame(colnames, vecs)));
+      }
+    }
+  }
+
+  private class CovarTask extends MRTask<CovarTask> {
+    double _ss;
+    @Override public void map(Chunk[] cs) {
+      int len = cs[0].len();
+      Chunk x = cs[0]; double x_bar = x.vec().isEnum() || x.vec().isUUID() ? Double.NaN : x.vec().mean();
+      Chunk y = cs[1]; double y_bar = y.vec().isEnum() || y.vec().isUUID() ? Double.NaN : y.vec().mean();
+      for (int r = 0; r < len; ++r) {
+        _ss += (x.at0(r) - x_bar) * (y.at0(r) - y_bar);
+      }
+    }
+    @Override public void reduce(CovarTask tsk) { _ss += tsk._ss; }
+  }
+}
+
+class ASTMean extends ASTUniPrefixOp {
+  double  _trim = 0;
+  boolean _narm = false;
+  ASTMean() { super(new String[]{"mean", "ary", "trim", "na.rm"}); }
+  @Override String opStr() { return "mean"; }
+  @Override ASTOp make() { return new ASTMean(); }
+  @Override ASTMean parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the trim
+    _trim = ((ASTNum)(E.skipWS().parse())).dbl();
+    // Get the na.rm
+    AST a = E._env.lookup((ASTId)E.skipWS().parse());
+    _narm = ((ASTNum)a).dbl() == 1;
+    // Finish the rest
+    ASTMean res = (ASTMean) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    Frame fr = env.peekAry(); // get the frame w/o popping/sub-reffing
+    if (fr.vecs().length > 1)
+      throw new IllegalArgumentException("mean does not apply to multiple cols.");
+    if (fr.vecs()[0].isEnum())
+      throw new IllegalArgumentException("mean only applies to numeric vector.");
+    double ave = fr.vecs()[0].mean();
+    env.pop(); // pop the frame and subref counts of vecs
+    env.push(new ValNum(ave));
+  }
+
+  // Keep this map for legacy reasons (H2O Console).
+  @Override double[] map(Env env, double[] in, double[] out) {
+    if (out == null || out.length < 1) out = new double[1];
+    double s = 0;  int cnt=0;
+    for (double v : in) if( !Double.isNaN(v) ) { s+=v; cnt++; }
+    out[0] = s/cnt;
+    return out;
+  }
+}
+
 //class ASTXorSum extends ASTReducerOp { ASTXorSum() {super(0,false); }
 //  @Override String opStr(){ return "xorsum";}
 //  @Override ASTOp make() {return new ASTXorSum();}
