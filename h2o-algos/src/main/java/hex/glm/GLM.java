@@ -55,7 +55,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     _progressKey = Key.make();
-    DKV.put(_progressKey,new GLM2_Progress(100));
+    DKV.put(_progressKey,new Job.Progress(100));
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       @Override
       public void compute2(){}
@@ -329,7 +329,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
           int diff = MAX_ITERATIONS_PER_LAMBDA - _iter + _taskInfo._iter;
           if(diff > 0)
-            new GLM2_ProgressUpdate(diff).fork(_progressKey); // update progress
+            new Job.ProgressUpdate(diff).fork(_progressKey); // update progress
           setSubmodel(newBeta, glmt2._val,(H2O.H2OCountedCompleter)getCompleter().getCompleter());
         }
       }).asyncExec(_taskInfo._dinfo._adaptedFrame);
@@ -438,7 +438,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         // print all info about iteration
         LogInfo("Gram computed in " + (callbackStart - _iterationStartTime) + "ms, " + (Double.isNaN(gerr)?"":"gradient = " + gerr + ",") + ", step = " + _lineSearchStep + ", ADMM: " + slvr.iterations + " iterations, " + (System.currentTimeMillis() - t1) + "ms (" + slvr.decompTime + "), subgrad_err=" + slvr.gerr);
         if (slvr._addedL2 > _addedL2) LogInfo("added " + (slvr._addedL2 - _addedL2) + "L2 penalty");
-        new GLM2_ProgressUpdate().fork(_progressKey); // update progress
+        new Job.ProgressUpdate(1).fork(_progressKey); // update progress
         _addedL2 = slvr._addedL2;
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
@@ -723,31 +723,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         }
       }
     }
-
   }
-  public float progress() { return DKV.get(_progressKey).<GLM2_Progress>get().progress(); }
-  private static class GLM2_Progress extends Iced{
-    final long _total;
-    double _done;
-    public GLM2_Progress(int total){_total = total;
-      assert _total > 0:"total = " + _total;
-    }
-    public float progress(){
-      return 0.01f*((int)(100*_done/(double)_total));
-    }
-  }
-
-  private static class GLM2_ProgressUpdate extends TAtomic<GLM2_Progress> {
-    final int _i;
-    public GLM2_ProgressUpdate(){_i = 1;}
-    public GLM2_ProgressUpdate(int i){_i = i;}
-    @Override
-    public GLM2_Progress atomic(GLM2_Progress old) {
-      if(old == null)return old;
-      old._done += _i;
-      return old;
-    }
-  }
+  public float progress() { return DKV.get(_progressKey).<Job.Progress>get().progress(); }
   private static final double beta_diff(double[] b1, double[] b2) {
     if(b1 == null)return Double.MAX_VALUE;
     double res = b1[0] >= b2[0]?b1[0] - b2[0]:b2[0] - b1[0];
