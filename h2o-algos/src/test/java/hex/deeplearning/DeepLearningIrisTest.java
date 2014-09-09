@@ -174,7 +174,12 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.sparse = sparse;
                                 p.col_major = col_major;
                                 p.epochs = 0;
-                                mymodel = new DeepLearning(p).train().get();
+                                DeepLearning dl = new DeepLearning(p);
+                                try {
+                                  mymodel = dl.train().get();
+                                } finally {
+                                  dl.remove();
+                                }
                                 p.epochs = epoch;
 
                                 Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
@@ -205,7 +210,12 @@ public class DeepLearningIrisTest extends TestUtil {
                                 // Train H2O
                                 mymodel.delete_best_model();
                                 mymodel.delete();
-                                mymodel = new DeepLearning(p).train().get();
+                                dl = new DeepLearning(p);
+                                try {
+                                  mymodel = dl.train().get();
+                                } finally {
+                                  dl.remove();
+                                }
                                 Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * fr.numRows());
 
                                 /**

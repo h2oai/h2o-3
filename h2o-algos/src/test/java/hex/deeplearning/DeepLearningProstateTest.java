@@ -15,7 +15,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMe
 import java.util.Random;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -132,11 +132,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.balance_classes = balance_classes;
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
+                                      DeepLearning dl = new DeepLearning(dest_tmp, p);
                                       try {
-                                        model1 = new DeepLearning(dest_tmp, p).train().get();
+                                        model1 = dl.train().get();
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
+                                      } finally {
+                                        dl.remove();
                                       }
 
                                       if (n_folds != 0)
@@ -172,11 +175,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.epochs = epochs;
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
+                                    DeepLearning dl = new DeepLearning(dest, p);
                                     try {
-                                      model1 = new DeepLearning(dest, p).train().get();
+                                      model1 = dl.train().get();
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       throw new RuntimeException(t);
+                                    } finally {
+                                      dl.remove();
                                     }
 
                                     // score and check result (on full data)

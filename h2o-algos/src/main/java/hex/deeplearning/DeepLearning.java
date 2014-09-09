@@ -204,11 +204,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
       }
       trainModel(cp);
-      remove();
 
       // clean up
       int validlen = _parms.validation != null ? _parms.validation.vecs().length : 0;
-      Key[] keep = new Key[_parms.source.vecs().length+validlen+4];
+      Key[] keep = new Key[_parms.source.vecs().length+validlen+6];
       //don't delete the training data
       for (int i = 0; i< _parms.source.vecs().length; ++i)
         keep[i] = _parms.source.vecs()[i]._key;
@@ -220,6 +219,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       //don't delete the model
       keep[_parms.source.vecs().length+2] = _dest;
       keep[_parms.source.vecs().length+3] = cp.actual_best_model_key;
+      //don't delete the job
+      keep[_parms.source.vecs().length+4] = self();
+      keep[_parms.source.vecs().length+5] = _progressKey;
       Scope.exit(keep);
     }
 
