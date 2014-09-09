@@ -71,7 +71,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         return true;
       }
     };
-    start(cmp, 100); // FIXME: same as Job.Progress above
+    start(cmp, 100);
     H2O.submitTask(new GLMDriver(cmp,_parms,_key,_progressKey,_dest,dinfo));
     return this;
   }
