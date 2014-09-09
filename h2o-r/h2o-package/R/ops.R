@@ -35,13 +35,36 @@
 #'
 #' See also groupGeneric.
 
+##'
+##' Get the prefix op.
+#.getValidPrefix<-
+#function() {
+#  stack <- as.list(sys.calls())
+#  for (s in stack)
+#
+#}
+
 #'
-#' Binary Infix (Ops) Generics
+#' Prefix, Binary Infix (Ops), and Variable Ops Generics
 #'
 #' Handle all of the binary infix operations with this simple function!
 #'
 #' Scrape the function call for the operator. Cast the sys.calls() to a list and extracting the root.
-.ops.fun <- function(e1,e2) .h2o.binop(deparse(as.list(as.list(sys.calls())[[1]])[[1]]), e1, e2)
+.unops.fun  <- function(x)      .h2o.unop (deparse(as.list(as.list(sys.calls())[[1]])[[1]]), x     )
+.binops.fun <- function(e1,e2)  .h2o.binop(.getValidBinOp(), e1, e2)
+.varops.fun <- function(x, ...) .h2o.varop(deparse(as.list(as.list(sys.calls())[[1]])[[1]]), x, ...)
+
+#'
+#' Get the binary operator off the stack.
+#'
+#' Return the first valid binary operator encountered
+.getValidBinOp<-
+function() {
+  stack <- as.list(sys.calls())
+  for (s in stack) {
+    if (!is.null(.op.map[[ deparse(as.list(s)[[1]]) ]])) return(deparse(as.list(s)[[1]]))
+  }
+}
 
 #'
 #' Ops Generics:
@@ -51,12 +74,13 @@
 #' ‘"&"’, ‘"|"’
 #'
 #' Bonus Operators: ‘"**"’
-setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) { .ops.fun(e1, 0) })
-setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
-setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
-setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) { .ops.fun(e1,e2) })
-setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) { .ops.fun(e1,e2) })
-setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) { .ops.fun(e1,e2) })
+setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .binops.fun(0, e1))
+setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .binops.fun(e1, 0))
+setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
+setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
+setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .binops.fun(e1,e2))
+setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .binops.fun(e1,e2))
+setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
 
 #'
 #' Math Generics:
@@ -67,43 +91,28 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) { .o
 #' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
 #' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
 #' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
-setMethod("Math", signature(x = "H2OFrame"),
-  function (x) {
-    stop("need a definition for the method here")
-  }
-)
+setMethod("Math", signature(x = "H2OFrame"), function (x) .unops.fun(x))
 
 #'
 #' Math2 Generics:
 #'
 #' ‘"round"’, ‘"signif"’
-#'
-#' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
-setMethod("Math2", signature(x = "H2OFrame"),
-  function (x, digits) {
-    print(sys.calls())
-    stop("need a definition for the method here")
-  }
-)
+setMethod("Math2", signature(x = "H2OFrame"), function (x, digits) .varops.fun(x, digits))
 
 #'
 #' Summary Generics:
 #'
 #' ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
-setMethod("Summary", signature(x = "H2OFrame"),
-  function (x, ..., na.rm = FALSE) {
-    stop("need a definition for the method here")
-  }
-)
+setMethod("Summary", signature(x = "H2OFrame"), function (x, ..., na.rm = FALSE) .varops.fun(x, ..., na.rm))
 
-
-#setMethod("!",       "H2OParsedData",                function(x) {      .h2o.__unop2("!",     x) })
-#setMethod("abs",     "H2OParsedData",                function(x) {      .h2o.__unop2("abs",   x) })
-#setMethod("sign",    "H2OParsedData",                function(x) {      .h2o.__unop2("sgn",   x) })
-#setMethod("sqrt",    "H2OParsedData",                function(x) {      .h2o.__unop2("sqrt",  x) })
-#setMethod("ceiling", "H2OParsedData",                function(x) {      .h2o.__unop2("ceil",  x) })
-#setMethod("floor",   "H2OParsedData",                function(x) {      .h2o.__unop2("floor", x) })
-#setMethod("log",     "H2OParsedData",                function(x) {      .h2o.__unop2("log",   x) })
-#setMethod("exp",     "H2OParsedData",                function(x) {      .h2o.__unop2("exp",   x) })
-#setMethod("is.na",   "H2OParsedData",                function(x) {      .h2o.__unop2("is.na", x) })
-#setMethod("t",       "H2OParsedData",                function(x) {      .h2o.__unop2("t",     x) })
+#'
+#' Methods that don't fit into the S4 group generics
+#'
+#' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
+#'
+#' ‘"!"’, ‘"is.na"’, ‘"t"’
+setMethod("!",     "H2OFrame", function(x) .h2o.unop("!", x))
+setMethod("is.na", "H2OFrame", function(x) .h2o.unop("is.na", x) )
+setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )
+setMethod("log",   "H2OFrame", function(x, ...) .h2o.varop("log", x, ...))
+setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))

@@ -293,10 +293,11 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #
 #  .h2o.varop("runif", x, min, max, seed)
 #}
-#
-#h2o.anyFactor <- function(x) {
-#  if(!inherits(x, "H2OParsedData")) stop("x must be an H2O parsed data object")
-#  as.logical(.h2o.unop("any.factor", x))
+
+#h2o.anyFactor<-
+#function(x) {
+#  if(!(x %<i-% "H2OParsedData")) stop("x must be an H2O parsed data object")
+#  .force.eval
 #}
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -320,15 +321,15 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 setMethod("$", "H2OFrame", function(x, name) {
   col_names <- colnames(x)
   if (!(name %in% col_names)) return(NULL)
-  idx <- match(name, col_names) - 1
-  doCall("[", x=x, j=idx)
+  idx <- match(name, col_names)
+  do.call("[", list(x=x, j=idx))
 })
 
 setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(missing(i)) return(x)
   if(length(i) > 1) stop("[[]] may only select one column")
-  if(!i %in% colnames(x) ) return(NULL)
-  doCall("[", x = x, j = i)
+  if(!(i %in% colnames(x)) ) return(NULL)
+  do.call("[", list(x = x, j = match(i, colnames(x))))
 })
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -354,6 +355,7 @@ dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
 #'
 #' Returns as an R data frame.
 head.H2OParsedData <- function(x, n = 6L, ...) {
+  #TODO: when 'x' is an expression
   numRows <- nrow(x)
   stopifnot(length(n) == 1L)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
@@ -371,12 +373,13 @@ head.H2OParsedData <- function(x, n = 6L, ...) {
 #' Returns as an R data frame.
 tail.H2OParsedData <- function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  nrx <- nrow(x)
-  n <- ifelse(n < 0L, max(nrx + n, 0L), min(n, nrx))
+  endidx <- nrow(x)
+  n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0) return(data.frame())
 
-  idx <- seq.int(to = nrx, length.out = n)
-  tmp_tail <- x[idx,]
+  startidx <- max(1, endidx - n)
+  idx <- startidx:endidx
+  tmp_tail <- x[startidx:endidx,]
   x.slice <- as.data.frame(tmp_tail)
   h2o.rm(tmp_tail@h2o, tmp_tail@key)
   rownames(x.slice) <- idx
@@ -596,27 +599,46 @@ mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean
 var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else base::var(x,y,na.rm,use)
 sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else base::sd(x,na.rm)
 
+#'
+#' Mean of a column.
+#'
+#' Obtain the mean of a column of data.
 mean.H2OParsedData<-
 function(x, trim = 0, na.rm = FALSE, ...) {
     if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
-    if(h2o.anyFactor(x) || dim(x)[2] != 1) {
-      warning("argument is not numeric or logical: returning NA")
-      NA
-    }
-    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
-    .h2o.unop("mean", x, trim, na.rm, ...)
+#    if(h2o.anyFactor(x) || dim(x)[2] != 1) {
+#      warning("argument is not numeric or logical: returning NA")
+#      NA
+#    }
+#    if(!na.rm && .h2o.unop("any.na", x)) return(NA)
+    stop("hello")
+    .h2o.varop("mean", x, trim, na.rm, ...)
 }
 
+#'
+#' Mean of a column, backed by AST.
+#'
+#' Expression is evaluated <=> this operation is top-level.
 mean.H2OFrame<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-  ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, parent.frame())
-  mean(get(ID, parent.frame()), trim, na.rm, ...)
+  .h2o.varop("mean", x, trim, na.rm, ...)
+  # then trigger eval
+
+#  op <- new("ASTApply", op="mean")
+#  trim <- '#' %<p0-% trim
+#  ast.mean <- new("ASTNode", root=op, children=list(x, trim, na.rm))
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
+#  ID <- ifelse(ID == "Last.value", ID, x@key)
+#  assign(ID, ast.mean, parent.frame())
+#  mean(get(ID, parent.frame()), trim, na.rm, ...)
 }
 
+#'
+#' Variance of a column.
+#'
+#' Obtain the variance of a column of data.
 var.H2OParsedData<-
 function(x, y = NULL, na.rm = FALSE, use) {
   if(!is.null(y) || !missing(use)) stop("Unimplemented")
@@ -625,14 +647,19 @@ function(x, y = NULL, na.rm = FALSE, use) {
   .h2o.unop("var", x)
 }
 
+#'
+#' Variance of a column, backed by AST.
+#'
+#' Expression is evaluated <=> this operation is top-level.
 var.H2OFrame<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-  ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, parent.frame())
-  var(get(ID, parent.frame()), trim, na.rm, ...)
+  .h2o.varop("var", x, trim, na.rm, ...)
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+#  ID <- ifelse(ID == "Last.value", ID, x@key)
+#  assign(ID, x, parent.frame())
+#  var(get(ID, parent.frame()), trim, na.rm, ...)
 }
 
 sd.H2OParsedData<-
@@ -643,14 +670,19 @@ function(x, na.rm = FALSE) {
     .h2o.unop2("sd", x)
 }
 
+#'
+#' Standard Deviation of a column, backed by AST.
+#'
+#' Expression is evaluated <=> this operation is top-level.
 sd.H2OFrame<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-  ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, parent.frame())
-  sd(get(ID, parent.frame()), trim, na.rm, ...)
+  .h2o.varop("sd", x, trim, na.rm, ...)
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+#  ID <- ifelse(ID == "Last.value", ID, x@key)
+#  assign(ID, x, parent.frame())
+#  sd(get(ID, parent.frame()), trim, na.rm, ...)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -779,7 +811,7 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 #})
 #
 #setMethod("names<-", "H2OParsedData", function(x, value) { colnames(x) <- value; return(x) })
-#
+
 
 #'
 #' AST -> R data.frame
