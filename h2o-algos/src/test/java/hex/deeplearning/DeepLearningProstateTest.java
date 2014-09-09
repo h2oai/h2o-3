@@ -15,7 +15,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMe
 import java.util.Random;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
