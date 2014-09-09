@@ -1,0 +1,21 @@
+{
+  "key": {
+    "name": "$0301c0a8015234d4ffffffff$_881b2e9aaa57a4e81019c5b17eb84820"
+  },
+  "jobs": [
+    {
+      "key": {
+        "name": "$0301c0a8015234d4ffffffff$_881b2e9aaa57a4e81019c5b17eb84820"
+      },
+      "description": "K-means",
+      "work": 1000,
+      "status": "RUNNING",
+      "progress": 0,
+      "msec": 13,
+      "dest": {
+        "name": "KMeansModel"
+      },
+      "exception": null
+    }
+  ]
+}

@@ -160,9 +160,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           _parms.ignored_cols = previous.model_info().get_params().ignored_cols;
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
-        if ((_parms.validation == null) == (previous.model_info().get_params().validation != null)
-                || (_parms.validation != null && _parms.validation._key != null && previous.model_info().get_params().validation._key != null
-                && !Arrays.equals(_parms.validation._key._kb, previous.model_info().get_params().validation._key._kb))) {
+        if ((_parms.validation == null) == (previous._validationKey != null)
+                || (_parms.validation != null && _parms.validation._key != null && previous._validationKey != null
+                && !Arrays.equals(_parms.validation._key._kb, previous._validationKey._kb))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
         if (_parms.classification != previous.model_info().get_params().classification) {

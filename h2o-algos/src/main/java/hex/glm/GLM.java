@@ -36,6 +36,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     super(jobKey,dest, desc, parms, 0 /* really don't want to pass work here before I see the data */);
   }
 
+  private static class TooManyPredictorsException extends RuntimeException {}
+
   public GLM(GLMModel.GLMParameters parms) {
     super(Key.make("GLMModel"), "GLM", parms, 0 /* no progress */);
   }
@@ -51,7 +53,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     fr.read_lock(_key);
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
-    DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);;
+    DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     _progressKey = Key.make();
     DKV.put(_progressKey,new GLM2_Progress(100));
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
@@ -104,13 +106,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     final DataInfo        _dinfo;
     final GLMParameters   _params;
 
-    public GLMTaskInfo(Key dstKey, DataInfo dinfo, GLMParameters params, long nobs, double ymu, double lmax, double[] beta, double[] gradient){
+    public GLMTaskInfo(Key dstKey, DataInfo dinfo, GLMParameters params, long nobs, double ymu, double lmax, double lambda, double[] beta, double[] gradient){
       _dstKey = dstKey;
       _dinfo = dinfo;
       _params = params;
       _nobs = nobs;
       _ymu = ymu;
       _lambdaMax = lmax;
+      _lambda = lambda;
       _beta = beta;
       _gradient = gradient;
       _max_iter = _params.lambda_search?MAX_ITERATIONS_PER_LAMBDA:MAX_ITER;
@@ -371,13 +374,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         return; // no point doing anything, it's just the null model
       _iter = _taskInfo._iter;
       LogInfo("starting computation of lambda = " + _lambda + ", previous lambda = " + _taskInfo._lambda);
-      final double previousLambda = _taskInfo._lambda;
-      activeCols(_lambda, _taskInfo._lambda, _taskInfo._gradient);
+      if(activeCols(_lambda, _taskInfo._lambda, _taskInfo._gradient).length > _taskInfo._params.maxActivePredictors)
+        throw new TooManyPredictorsException();
       double [] beta = contractVec(_taskInfo._beta, _activeCols);
       _lastResult = new IterationInfo(_taskInfo._iter,beta,contractVec(_taskInfo._gradient,_activeCols), _taskInfo._objval);
       new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, false, false, beta, _taskInfo._ymu, 1.0 / _taskInfo._nobs, _taskInfo._thresholds, new Iteration(this)).asyncExec(_activeData._adaptedFrame);
     }
-
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
       public final long _iterationStartTime;
       final boolean _countIteration;
@@ -503,6 +505,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     double [] lambdas;
     final GLMTaskInfo[] _state;
     int             _lambdaId;
+    int   _maxLambda;
     transient AtomicBoolean _gotException = new AtomicBoolean();
 
     public GLMDriver(H2OCountedCompleter cmp,GLMParameters params, Key jobKey, Key progressKey, Key dstKey, DataInfo dinfo){
@@ -523,6 +526,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       if(!_gotException.getAndSet(true)){
+        if(ex instanceof TooManyPredictorsException){
+          // TODO add warning
+          _maxLambda = _lambdaId;
+          this.tryComplete();
+          return false;
+        }
         new RemoveCall(null, _dstKey).invokeTask();
         return true;
       }
@@ -618,12 +627,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
               }
               if(lambdas.length > 1)
                 glmOutput.addNullSubmodel(gLmax.lmax(),_params.linkInv(gYmu),gLmax._val);
+              _maxLambda = lambdas.length;
               GLMModel model = new GLMModel(_dstKey, _dinfo, _params, glmOutput,gYmu,gLmax.lmax(),nobs);
               if(warning != null)
                 model.addWarning(warning);
               model.delete_and_lock(_jobKey);
               final double lmax = gLmax.lmax();
-              _state[0] = new GLMTaskInfo(_dstKey,_dinfo,_params,gLmax._nobs,gLmax._ymu,lmax,null,gLmax.gradient(_params.alpha[0],lmax));
+              _state[0] = new GLMTaskInfo(_dstKey,_dinfo,_params,gLmax._nobs,gLmax._ymu,lmax,lmax,null,gLmax.gradient(_params.alpha[0],lmax));
               getCompleter().addToPendingCount(1);
               if(_params.n_folds > 1){
                 final H2OCountedCompleter cmp = new H2OCallback((H2OCountedCompleter)getCompleter()) {
@@ -657,7 +667,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                         // long nobs, double ymu, double lmax, double [] beta, double [] gradient
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, H2O.SELF);
-                        _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax));
+                        _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax));
                         new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
@@ -679,30 +689,37 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp);}
+
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
+        double currentLambda = lambdas[_lambdaId];
         if(_params.n_folds > 1){
           // copy the state over
           ParallelTasks<GLMLambdaTask> t = (ParallelTasks<GLMLambdaTask>)h2OCountedCompleter;
           for(int i = 0; i < t._tasks.length; ++i)
             _state[i] = t._tasks[i]._taskInfo;
           // launch xval-task to compute validations of xval models
-          getCompleter().addToPendingCount(1);
+          // getCompleter().addToPendingCount(1);
           // TODO ...
         }
         // now launch the next lambda
-        if(++_lambdaId  < lambdas.length){
+
+        if(++_lambdaId  < _maxLambda){
           getCompleter().addToPendingCount(1);
           double nextLambda = lambdas[_lambdaId];
           if(_params.n_folds > 1){
             GLMLambdaTask [] tasks = new GLMLambdaTask[_state.length];
             H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
             cmp.addToPendingCount(tasks.length-1);
-            for(int i = 0; i < tasks.length; ++i)
-              tasks[i] = new GLMLambdaTask(cmp,_jobKey,_progressKey,_state[i],nextLambda);
+            for(int i = 0; i < tasks.length; ++i) {
+              _state[i]._lambda = currentLambda;
+              tasks[i] = new GLMLambdaTask(cmp, _jobKey, _progressKey, _state[i], nextLambda);
+            }
             new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter()),tasks).fork();
-          } else
-            new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter)getCompleter()),_jobKey,_progressKey,_state[0],nextLambda).fork();
+          } else {
+            _state[0]._lambda = currentLambda;
+            new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _jobKey, _progressKey, _state[0], nextLambda).fork();
+          }
         }
       }
     }

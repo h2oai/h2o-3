@@ -1,6 +1,7 @@
 Steam.H2OProxy = (_) ->
-  request = (path, go) ->
-    _.invokeH2O 'GET', path, (error, result) ->
+
+  processResponse = (go) ->
+    (error, result) ->
       if error
         #TODO error logging / retries, etc.
         go error, result
@@ -9,6 +10,12 @@ Steam.H2OProxy = (_) ->
           go result.data.error, result.data
         else
           go error, result.data
+
+  request = (path, go) ->
+    _.h2oGet path, processResponse go
+
+  post = (path, opts, go) ->
+    _.h2oPost path, opts, processResponse go
 
   composePath = (path, opts) ->
     if opts
@@ -70,6 +77,9 @@ Steam.H2OProxy = (_) ->
   requestModelBuilders = (algo, go) ->
     request "/2/ModelBuilders.json/#{algo}", go
 
+  requestModelBuild = (algo, parameters, go) ->
+    post "/2/ModelBuilders.json/#{algo}", parameters, go
+
   requestModels = (go, opts) ->
     requestWithOpts '/3/Models.json', opts, (error, result) ->
       if error
@@ -122,6 +132,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestFrameAndCompatibleModels, (key, go) -> requestFrames go, key: (encodeURIComponent key), find_compatible_models: yes
   #TODO test
   link$ _.requestModelBuilders, requestModelBuilders
+  link$ _.requestModelBuild, requestModelBuild
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
   link$ _.requestModels, (go) -> requestModels go
   link$ _.requestModelsAndCompatibleFrames, (go) -> requestModels go, find_compatible_frames: yes

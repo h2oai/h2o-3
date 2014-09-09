@@ -38,7 +38,8 @@ Steam.ApplicationContext = ->
     confirm: do edge$
     fail: do edge$
 
-    invokeH2O: do edge$
+    h2oGet: do edge$
+    h2oPost: do edge$
 
     requestFileGlob: do edge$
     requestImportFile: do edge$
@@ -52,6 +53,7 @@ Steam.ApplicationContext = ->
     requestFrameAndCompatibleModels: do edge$
     requestColumnSummary: do edge$
     requestModelBuilders: do edge$
+    requestModelBuild: do edge$
     requestScoringOnFrame: do edge$
     requestModels: do edge$
     requestModelsAndCompatibleFrames: do edge$

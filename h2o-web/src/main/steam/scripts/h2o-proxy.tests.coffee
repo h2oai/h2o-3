@@ -30,7 +30,7 @@ test 'empty cloud', (t) ->
     async.waterfall operations, -> t.end(); go()
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 30
+  t.plan 35
 
   createCloud (_, go) ->
     ensureNoFramesExist = (go) ->
@@ -131,7 +131,7 @@ test 'airlines ingest and model building flow', (t) ->
             t.fail 'job poll failed'
             go error
           else
-            if job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+            if job.status is 'CREATED' or job.status is 'RUNNING'
               delay poll, 1000, go
             else
               go null, job
@@ -140,7 +140,6 @@ test 'airlines ingest and model building flow', (t) ->
         if error
           go error
         else
-          t.equal job.progress, 1, 'job progress ok'
           t.equal job.status, 'DONE', 'job status ok'
           go null, job.dest.name
 
@@ -148,10 +147,10 @@ test 'airlines ingest and model building flow', (t) ->
     inspectFrame = (frameKey, go) -> 
       _.requestInspect frameKey, (error, result) ->
         if error
-          t.fail 'inspect request failed'
+          t.fail 'frame inspect request failed'
           go error
         else
-          t.pass 'got inspect reply'
+          t.pass 'got frame inspect reply'
           tdiff t, (readGoldJson 'inspect-allyears2k_headers-zip.json'), result
           go null, frameKey
 
@@ -174,7 +173,37 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got model builders reply'
           tdiff t, (readGoldJson 'model-builders-kmeans.json'), result, exclude: [ 'model_builders.kmeans.job' ]
-          go null, frameKey, result
+          go null, frameKey
+
+    buildAirlinesKmeansModel = (frameKey, go) ->
+      parameters = 
+        src: frameKey
+        K: 2
+        max_iters: 1000
+        normalize: 'true'
+        seed: 1410214121289766000
+        init: 'Furthest'
+      _.requestModelBuild 'kmeans', parameters, (error, result) ->
+        if error
+          t.fail 'model build request failed'
+          go error
+        else
+          t.pass 'got model build reply'
+          tdiff t, (readGoldJson 'kmeans-allyears2k_headers-zip.json'), result, include: [ 'jobs.#.description', 'jobs.#.dest', 'jobs.#.exception' ]
+          t.ok isString result.key.name, 'has job name'
+          go null, result.key.name
+
+    inspectModel = (modelKey, go) ->
+      _.requestInspect modelKey, (error, result) ->
+        if error
+          t.fail 'model inspect request failed'
+          go error
+        else
+          t.pass 'got model inspect reply'
+          #result.schema.parameters[3].actual_value = "(random)"
+          #tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result
+          go null, modelKey
 
     operations = [
       ensureNoFramesExist
@@ -188,6 +217,9 @@ test 'airlines ingest and model building flow', (t) ->
       inspectFrame
       getFrame
       getKmeansModelBuilder
+      buildAirlinesKmeansModel
+      pollJob
+      inspectModel
     ]
     async.waterfall operations, -> t.end(); go()
 

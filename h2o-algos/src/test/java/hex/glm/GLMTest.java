@@ -4,6 +4,7 @@ import hex.FrameTask.DataInfo;
 import hex.glm.GLM.GLMDriver;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.Submodel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class GLMTest  extends TestUtil {
@@ -260,25 +262,38 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-//  @Test public void testArcene() throws InterruptedException, ExecutionException{
-//    Key parsed = Key.make("arcene_parsed");
-//    Key modelKey = Key.make("arcene_model");
-//    GLMModel model = null;
-//    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
-//    try{
-//      GLMParameters params = new GLMParameters(Family.gaussian);
-//      params._response = 0;
-//      params._src = parsed;
-//      params.lambda_search = true;
-//      params.alpha = new double[]{1};
-//      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
-//      model = DKV.get(modelKey).get();
-//      GLMValidation val = model.validation();
-//      System.out.println(val);
-//    } finally {
-//      fr.delete();
-//      if(model != null)model.delete();
-//      DKV.remove(jobKey);
-//    }
-//  }
+  @Test public void testArcene() throws InterruptedException, ExecutionException{
+    Key parsed = Key.make("arcene_parsed");
+    Key modelKey = Key.make("arcene_model");
+    GLMModel model = null;
+    Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
+    try{
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      params._response = 0;
+      params._src = parsed;
+      params.lambda_search = true;
+      params.nlambdas = 35;
+      params.lambda_min_ratio = 0.18;
+//      params.nlambdas = 50;
+//      params.lambda_min_ratio = 1e-2;
+      params.maxActivePredictors = 200;
+      params.alpha = new double[]{1};
+      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      model = DKV.get(modelKey).get();
+      // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
+      assertEquals(params.nlambdas,model._output._submodels.length);
+      GLMValidation val = model.validation();
+      // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
+      model._output.setSubmodelIdx(model._output._submodels.length-1);
+      Submodel sm = model._output._submodels[model._output._best_lambda_idx];
+      double l1norm = 0;
+      for(double d:sm.norm_beta) l1norm += Math.abs(d);
+      double objval = sm.validation.residual_deviance / sm.validation.nobs + sm.lambda_value*l1norm;
+      assertEquals(0.32922849120947384,objval,0.32922849120947384*1e-2);
+    } finally {
+      fr.delete();
+      if(model != null)model.delete();
+      DKV.remove(jobKey);
+    }
+  }
 }
