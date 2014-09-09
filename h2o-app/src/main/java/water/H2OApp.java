@@ -22,8 +22,8 @@ public class H2OApp {
     // Fire up the H2O Cluster
     H2O.main(args);
 
-    H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-web/training_frame/main/resources/www"));
-    H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/training_frame/main/resources/www"));
+    H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/src/main/resources/www"));
 
     // Register menu items and service handlers for algos
     H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"train","/DeepLearning","Deep Learning","Model");
