@@ -725,14 +725,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     }
 
   }
-  public float progress() { return DKV.get(_progressKey).<GLM2_Progress>get().progess(); }
+  public float progress() { return DKV.get(_progressKey).<GLM2_Progress>get().progress(); }
   private static class GLM2_Progress extends Iced{
     final long _total;
     double _done;
     public GLM2_Progress(int total){_total = total;
       assert _total > 0:"total = " + _total;
     }
-    public float progess(){
+    public float progress(){
       return 0.01f*((int)(100*_done/(double)_total));
     }
   }
