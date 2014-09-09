@@ -97,6 +97,7 @@ function(x, envir) {
 #'
 #' Walk the R AST directly
 #'
+#' Handles all of the 1 -> 0 indexing issues.
 .ast.walker<-
 function(expr, envir) {
   if (length(expr) == 1) {
@@ -116,4 +117,76 @@ function(expr, envir) {
   if (identical(expr[[1]], quote(`:`))) {
     return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %<p0-% (eval(expr[[2]],envir=envir) - 1), '#' %<p0-% (eval(expr[[3]],envir=envir) - 1))))
   }
+}
+
+#'
+#' Retrieve values from arguments supplied in a function call.
+#'
+#' Developer Note: If a method takes a function as an argument and
+#'                 you wish to pass arguments to that function by the way of `...`
+#'                 then you before passing flowing control to .h2o.varop, you MUST
+#'                 label the `...` and list it.
+#'
+#'                   e.g.: Inside of ddply, we have the following "fun_args" pattern:
+#'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
+.getValueFromArg<-
+function(a, name=NULL) {
+  if (inherits(a, "H2OParsedData")) {
+    a@key
+  } else if (inherits(a, "ASTNode")) {
+    a
+  } else if (class(a) == "function") {
+    ret <- .funToAST(a)
+    .pkg.env$formals <- names(formals(a))
+    ret
+  } else if (!is.null(name) && (name == "fun_args")) {
+    .toSymbolTable(a, .pkg.env$formals)
+  } else {
+    res <- eval(a)
+    if (is.vector(res)) {
+      if (length(res) > 1) {
+        return(.ast.walker(res, parent.frame()))
+      } else {
+        if (is.numeric(res)) return('#' %<p0-% res)
+        return(res)
+      }
+    } else {
+      return(deparse(eval(a)))
+    }
+  }
+}
+
+.argsToAST<-
+function(...) {
+  arg.names <- names(as.list(substitute(list(...)))[-1])
+  if ("fun_args" %in% arg.names) {
+    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
+    to_keep <- which(names(arg_names) == "")
+    idx_to_change <- which(arg.names != "")
+    lapply(seq_along(arg.names),
+      function(i) {
+        if (arg.names[i] == "") {
+          arg.names[i] <<- arg_names[to_keep[1]]
+          to_keep <<- to_keep[-1]
+        }
+      }
+    )
+    to_keep   <- NULL
+    arg_names <- arg.names
+    arg_ts <- lapply(list(...), .eval_class)
+    arg_ts$fun_args <- "ASTSymbolTable"
+    names(arg_ts) <- NULL
+    arg_types <- arg_ts
+  } else {
+    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
+    arg_types  <- lapply(list(...), .eval_class)
+  }
+  arg_values <- lapply(seq_along(list(...)), function(i) { .getValueFromArg(list(...)[[i]], names(list(...))[i]) })
+  return(arg_values)
+#  args <- as.data.frame(rbind(arg_names, arg_types, arg_values, arg_numbers = 1:length(arg_names)))
+#  stop("hello")
+#  print(args)
+#  .pkg.env$formals <- NULL
+#  names(args) <- paste("Arg", 1:length(arg_names), sep ="")
+#  unlist(apply(args, 2, .toASTArg))
 }
