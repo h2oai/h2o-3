@@ -132,7 +132,7 @@ function(expr, envir) {
 .getValueFromArg<-
 function(a, name=NULL) {
   if (inherits(a, "H2OParsedData")) {
-    a@key
+    '$' %<p0-% a@key
   } else if (inherits(a, "ASTNode")) {
     a
   } else if (class(a) == "function") {
@@ -143,12 +143,14 @@ function(a, name=NULL) {
     .toSymbolTable(a, .pkg.env$formals)
   } else {
     res <- eval(a)
+    if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
       if (length(res) > 1) {
         return(.ast.walker(res, parent.frame()))
       } else {
         if (is.numeric(res)) return('#' %<p0-% res)
-        return(res)
+        if (is.logical(res)) return('$' %<p0-% res)
+        else return(deparse(eval(a)))
       }
     } else {
       return(deparse(eval(a)))
