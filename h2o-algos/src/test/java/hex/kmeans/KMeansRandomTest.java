@@ -54,8 +54,9 @@ public class KMeansRandomTest extends TestUtil {
                 KMeans job = new KMeans(parms);
                 job.train();
                 KMeansModel m = job.get();
-                job.remove();
+                Assert.assertTrue("Progress not 100%, but " + job.progress() *100, job.progress() == 1.0);
 
+                Frame score = null;
                 try {
                   for (int j = 0; j < parms._K; j++)
                     Assert.assertTrue(m._output._rows[j] != 0);
@@ -67,10 +68,9 @@ public class KMeansRandomTest extends TestUtil {
                   for (double[] dc : m._output._clusters) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
 
                   // make prediction (cluster assignment)
-                  Frame score = m.score(frame);
+                  score = m.score(frame);
                   for (long j = 0; j < score.numRows(); ++j)
                     Assert.assertTrue(score.anyVec().at8(j) >= 0 && score.anyVec().at8(j) < clusters);
-                  score.delete();
 
                   Log.info("Parameters combination " + count + ": PASS");
                   testcount++;
@@ -79,6 +79,8 @@ public class KMeansRandomTest extends TestUtil {
                   throw new RuntimeException(t);
                 } finally {
                   m.delete();
+                  if (score!=null) score.delete();
+                  job.remove();
                 }
               }
             }
