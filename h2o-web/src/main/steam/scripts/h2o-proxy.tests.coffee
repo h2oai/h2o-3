@@ -177,7 +177,7 @@ test 'airlines ingest and model building flow', (t) ->
 
     buildAirlinesKmeansModel = (frameKey, go) ->
       parameters = 
-        src: frameKey
+        training_frame: frameKey
         K: 2
         max_iters: 1000
         normalize: 'true'
