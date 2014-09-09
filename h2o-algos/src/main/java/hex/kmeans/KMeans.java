@@ -33,7 +33,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms) {
-    super(Key.make("KMeansModel"),"K-means",parms,parms._max_iters/*work is max iterations*/);
+    super(Key.make("KMeansModel"),"K-means",parms);
   }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }
@@ -41,7 +41,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> train() {
-    return start(new KMeansDriver());
+    return start(new KMeansDriver(), _parms._max_iters);
   }
 
   // ----------------------

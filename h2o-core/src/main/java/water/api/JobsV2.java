@@ -35,7 +35,7 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
     jobs = new JobV2[js.length];
     for( int i=0; i<js.length; i++ ) {
       Job job = js[i];
-      jobs[i] = new JobV2(job._key, job._description, job._work, job._state.toString(), job.progress(), job.msec(), job.dest(), job._exception);
+      jobs[i] = new JobV2(job._key, job._description, job._state.toString(), job.progress(), job.msec(), job.dest(), job._exception);
     }
     return this;
   }

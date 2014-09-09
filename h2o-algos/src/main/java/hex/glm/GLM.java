@@ -33,13 +33,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput>{
   public GLM(Key jobKey, Key dest, String desc, GLMModel.GLMParameters parms) {
-    super(jobKey,dest, desc, parms, 0 /* really don't want to pass work here before I see the data */);
+    super(jobKey,dest, desc, parms);
   }
 
   private static class TooManyPredictorsException extends RuntimeException {}
 
   public GLM(GLMModel.GLMParameters parms) {
-    super(Key.make("GLMModel"), "GLM", parms, 0 /* no progress */);
+    super(Key.make("GLMModel"), "GLM", parms);
   }
 
   @Override
@@ -73,7 +73,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         return true;
       }
     };
-    start(cmp);
+    start(cmp, 100); // FIXME: same as Job.Progress above
     H2O.submitTask(new GLMDriver(cmp,_parms,_key,_progressKey,_dest,dinfo));
     return this;
   }

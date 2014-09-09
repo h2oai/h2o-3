@@ -25,20 +25,20 @@ import java.util.HashSet;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-  public DeepLearning(Key dest, DeepLearningModel.DeepLearningParameters parms, int work) {
-    super(dest, "DeepLearning", parms, work);
+  public DeepLearning(Key dest, DeepLearningModel.DeepLearningParameters parms) {
+    super(dest, "DeepLearning", parms);
   }
 
   // Called from an http request
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms) {
-    super(Key.make("DeepLearningModel"),"DeepLearning",parms,1); //FIXME: work units
+    super(Key.make("DeepLearningModel"),"DeepLearning",parms);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV2(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> train() {
-    return start(new DeepLearningDriver());
+    return start(new DeepLearningDriver(), (long)_parms.epochs);
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {

@@ -53,16 +53,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(Model.Parameters parms) {
-    super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.", Long.MAX_VALUE);
+    super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
     throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
-  public ModelBuilder(Key jobKey, Key dest, String desc, P parms, long work) {
-    super(jobKey,dest,desc,work);
+  public ModelBuilder(Key jobKey, Key dest, String desc, P parms) {
+    super(jobKey,dest,desc);
     this._parms = parms;
   }
-  public ModelBuilder(Key dest, String desc, P parms, long work) {
-    super(dest, desc, work);
+  public ModelBuilder(Key dest, String desc, P parms) {
+    super(dest, desc);
     this._parms = parms;
   }
 

@@ -133,7 +133,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
                                       try {
-                                        model1 = new DeepLearning(dest_tmp, p, 1).train().get();
+                                        model1 = new DeepLearning(dest_tmp, p).train().get();
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
@@ -173,7 +173,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
                                     try {
-                                      model1 = new DeepLearning(dest, p, 1).train().get();
+                                      model1 = new DeepLearning(dest, p).train().get();
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       throw new RuntimeException(t);

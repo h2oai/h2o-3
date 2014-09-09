@@ -89,16 +89,16 @@ public final class ParseDataset2 extends Job<Frame> {
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(sum)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
     // Fire off the parse
-    ParseDataset2 job = new ParseDataset2(dest, sum);
+    ParseDataset2 job = new ParseDataset2(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
-    job.start(fjt);
+    job.start(fjt, sum);
     return job;
   }
   // Setup a private background parse job
-  private ParseDataset2(Key dest, long totalLen) {
-    super(dest,"Parse",totalLen);
+  private ParseDataset2(Key dest) {
+    super(dest,"Parse");
   }
 
   // -------------------------------

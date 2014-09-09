@@ -96,20 +96,18 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  public Job(Key jobKey, Key dest, String desc, long work) {
+  public Job(Key jobKey, Key dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
     _state = JobState.CREATED;  // Created, but not yet running
-    _work = work;               // Units of work
   }
   /** Create a Job
    *  @param dest Final result Key to be produced by this Job
    *  @param desc String description
-   *  @param work Units of work to be completed
    */
-  public Job(Key dest, String desc, long work) {
-    this(defaultJobKey(),dest,desc,work);
+  public Job(Key dest, String desc) {
+    this(defaultJobKey(),dest,desc);
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
@@ -118,12 +116,14 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
+   *  @param work Units of work to be completed
    *  @return this job in {@link JobState#RUNNING} state
    *  
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job start(final H2OCountedCompleter fjtask) {
+  public Job start(final H2OCountedCompleter fjtask, long work) {
+    DKV.put(_progressKey = Key.make(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
@@ -162,11 +162,11 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Blocks and get result of this job.
    * <p>
-   * The call blocks on working task which was passed via {@link #start(H2OCountedCompleter)} method
+   * The call blocks on working task which was passed via {@link #start(H2OCountedCompleter, long)} method
    * and returns the result which is fetched from UKV based on job destination key.
    * </p>
    * @return result of this job fetched from UKV by destination key.
-   * @see #start(H2OCountedCompleter)
+   * @see #start(H2OCountedCompleter, long)
    * @see DKV
    */
   public T get() {
@@ -178,7 +178,10 @@ public class Job<T extends Keyed> extends Keyed {
   }
 
   /** Marks job as finished and records job end time. */
-  public void done() { cancel(null,JobState.DONE); }
+  public void done() {
+    if (_progressKey != null && DKV.get(_progressKey) != null) DKV.get(_progressKey).<Progress>get().set_done();
+    cancel(null,JobState.DONE);
+  }
 
   /** Signal cancellation of this job.
    * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
@@ -239,23 +242,51 @@ public class Job<T extends Keyed> extends Keyed {
   protected void onCancelled() {
   }
 
-
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.  
    *  Can default to returning e.g. 0 always.  */
-  public final long _work;
-  private long _worked;
-  public float progress() { return (float)_worked/(float)_work; }
-  public final void update(final long newworked) { update(newworked,_key); }
-  public static void update(final long newworked, Key jobkey) { 
-    new TAtomic<Job>() {
-      @Override public Job atomic(Job old) {
-        assert newworked+old._worked <= old._work;
-        old._worked+=newworked;
-        return old;
-      }
-    }.fork(jobkey);
+  public float progress() { return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress(); }
+  protected Key _progressKey; //Key to store the Progress object under
+
+  /* Report new work done for this job */
+  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
+
+  /* Report new work done for a given job key */
+  public static void update(final long newworked, Key jobkey) {
+    DKV.get(jobkey).<Job>get().update(newworked);
+  }
+
+  /**
+   * Helper class to store the job progress in the DKV
+   */
+  protected static class Progress extends Iced{
+    private final long _work;
+    private long _worked;
+    private boolean _done;
+    public Progress(long total) { _work = total; }
+    public void set_done() { _done = true; }
+    public float progress() {
+      return _done ? 1.0f : _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float)_worked / (float)_work));
+    }
+  }
+
+  /**
+   * Helper class to atomically update the job progress in the DKV
+   */
+  protected static class ProgressUpdate extends TAtomic<Progress> {
+    final long _newwork;
+    public ProgressUpdate(long newwork) { _newwork = newwork; }
+    @Override public Progress atomic(Progress old) {
+      if(old == null) return old;
+      old._worked += _newwork;
+      return old;
+    }
   }
 
   public static class JobCancelledException extends RuntimeException{}
 
+  @Override
+  protected Futures remove_impl(Futures fs) {
+    DKV.remove(_progressKey, fs);
+    return fs;
+  }
 }

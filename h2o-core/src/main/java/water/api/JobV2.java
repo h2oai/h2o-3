@@ -14,9 +14,6 @@ public class JobV2 extends Schema<Job, JobV2> {
   @API(help="Job description")
   String description;
 
-  @API(help="Job work metric")
-  long work;
-
   // Output fields
   @API(help="job status")
   String status;
@@ -34,10 +31,9 @@ public class JobV2 extends Schema<Job, JobV2> {
   String exception;
 
   JobV2() {}
-  JobV2(Key key, String description, long work, String status, float progress, long msec, Key dest, String exception) {
+  JobV2(Key key, String description, String status, float progress, long msec, Key dest, String exception) {
     this.key = key;
     this.description = description;
-    this.work = work;
     this.status = status;
     this.progress = progress;
     this.msec = msec;
@@ -50,7 +46,7 @@ public class JobV2 extends Schema<Job, JobV2> {
 
   // Version&Schema-specific filling into the impl
   @Override public Job createImpl( ) {
-    Job j = new Job(key, description, work);
+    Job j = new Job(key, description);
     return j;
   }
 

@@ -18,14 +18,14 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
 
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms) {
-    super(Key.make("ExampleModel"),"Example",parms,parms._max_iters/*work is max iterations*/);
+    super(Key.make("ExampleModel"),"Example",parms);
     _parms = parms;
   }
 
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example train() {
-    return (Example)start(new ExampleDriver());
+    return (Example)start(new ExampleDriver(), _parms._max_iters);
   }
 
   // ----------------------
