@@ -54,8 +54,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
-    _progressKey = Key.make();
-    DKV.put(_progressKey,new Job.Progress(100));
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       @Override
       public void compute2(){}
@@ -83,7 +81,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   private static final int MAX_ITER = 50;
   private static final int sparseCoefThreshold = 750;
   private static final double beta_epsilon = 1e-4;
-  Key _progressKey;
 
   /**
    * Encapsulates state of the computation.
@@ -724,7 +721,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       }
     }
   }
-  public float progress() { return DKV.get(_progressKey).<Job.Progress>get().progress(); }
   private static final double beta_diff(double[] b1, double[] b2) {
     if(b1 == null)return Double.MAX_VALUE;
     double res = b1[0] >= b2[0]?b1[0] - b2[0]:b2[0] - b1[0];
