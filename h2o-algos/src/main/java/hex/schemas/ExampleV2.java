@@ -38,5 +38,5 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
   }
 
   // Return a URL to invoke Example on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/Example?src="+fr._key; }
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/Example?training_frame="+fr._key; }
 }

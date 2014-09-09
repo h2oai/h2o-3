@@ -264,8 +264,8 @@ public abstract class DocGen<T extends DocGen> {
     //
     //public StringBuilder graph(StringBuilder sb, String gid, String gname, StringBuilder ...gparams) {
     //  p("<style scoped>@import url('/h2o/css/graphs.css')</style>");
-    //  p("<script type=\"text/javascript\" src='/h2o/js/d3.v3.min.js'></script>");
-    //  p("<script src='/h2o/js/graphs.js'></script>");
+    //  p("<script type=\"text/javascript\" training_frame='/h2o/js/d3.v3.min.js'></script>");
+    //  p("<script training_frame='/h2o/js/graphs.js'></script>");
     //  p("<div id='").p(gid).p("'>")
     //    .p("  <script>")
     //    .p(gname).p("('").p(gid).p("'");

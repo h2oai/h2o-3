@@ -60,9 +60,9 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     KMeansParameters parms = parameters.createImpl();
     return new KMeans(parms);
   }
-  public KMeans createImpl(Frame fr) { parameters.src = fr._key; return createImpl(); }
+  public KMeans createImpl(Frame fr) { parameters.training_frame = fr._key; return createImpl(); }
 
   // TODO: UGH
   // Return a URL to invoke KMeans on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?src="+fr._key; }
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }
 }

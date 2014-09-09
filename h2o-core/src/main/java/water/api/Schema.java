@@ -1,11 +1,15 @@
 package water.api;
 
-import java.lang.reflect.*;
+import water.Iced;
+import water.Key;
+import water.fvec.Frame;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import water.*;
-import water.fvec.Frame;
 
 
 /** Base Schema Class
@@ -88,22 +92,22 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         int mods = f.getModifiers();
         if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
           // Attempting to set a transient or static; treat same as junk fieldname
-          throw new IllegalArgumentException("Unknown argument "+key);
+          throw new IllegalArgumentException("Unknown argument: " + key);
         // Only support a single annotation which is an API, and is required
         API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
         if( api.direction() == API.Direction.OUTPUT )
-          throw new IllegalArgumentException("Attempting to set output field "+key);
+          throw new IllegalArgumentException("Attempting to set output field: " + key);
 
         // Primitive parse by field type
         f.set(this,parse(parms.getProperty(key),f.getType()));
 
       } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
-        throw new RuntimeException("Broken internal schema; missing API annotation: "+key);
+        throw new RuntimeException("Broken internal schema; missing API annotation for field: " + key);
       } catch( IllegalAccessException iae ) {
         // Come here if field is final or private
-        throw new RuntimeException("Broken internal schema; cannot be private nor final: "+key);
+        throw new RuntimeException("Broken internal schema; field cannot be private nor final: " + key);
       }
     }
     // Here every thing in 'parms' was set into some field - so we have already

@@ -395,7 +395,7 @@ public class AUCData extends Iced {
   }
 
   void plotROC(StringBuilder sb) {
-    sb.append("<script type=\"text/javascript\" src='/h2o/js/d3.v3.min.js'></script>");
+    sb.append("<script type=\"text/javascript\" training_frame='/h2o/js/d3.v3.min.js'></script>");
     sb.append("<div id=\"ROC\">");
     sb.append("<style type=\"text/css\">");
     sb.append(".axis path," +

@@ -1,14 +1,14 @@
 package water.fvec;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import water.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
@@ -50,6 +50,7 @@ public class Frame extends Lockable {
   }
   // Add a bunch of vecs
   private void add( String[] names, Vec[] vecs ) {
+    if (null == vecs || null == names) return;
     for( int i=0; i<vecs.length; i++ )
       add(names[i],vecs[i]);
   }

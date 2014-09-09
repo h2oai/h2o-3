@@ -39,7 +39,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     // Simply create a bogus new vector (don't even put it into KV) with
     // appropriate number of lines per chunk and then use it as a source to do
     // multiple makeZero calls to create empty vecs and than call RebalanceTask
-    // on each one of them.  RebalanceTask will fetch the appropriate src
+    // on each one of them.  RebalanceTask will fetch the appropriate training_frame
     // chunks and fetch the data from them.
     int rpc = (int)(_in.numRows() / _nchunks);
     int rem = (int)(_in.numRows() % _nchunks);
@@ -90,7 +90,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         src = srcRaw.inflate_impl(src);
         assert src.len() == srcRaw.len();
         int srcFrom = (int)(chk._start+ dst.len() - src._start);
-        // check if the result is sparse (not exact since we only take subset of src in general)
+        // check if the result is sparse (not exact since we only take subset of training_frame in general)
         if((src.sparse() && dst.sparse()) || (src.sparseLen() + dst.sparseLen() < NewChunk.MIN_SPARSE_RATIO*(src.len() + dst.len()))){
           src.set_sparse(src.sparseLen());
           dst.set_sparse(dst.sparseLen());

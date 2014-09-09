@@ -78,7 +78,14 @@ kmeans_builder = a_node.model_builders(algo='kmeans')['model_builders']['kmeans'
 
 kmeans_model_name = 'KMeansModel' # TODO: currently can't specify the target key
 
+print 'About to build a KMeans model. . .'
 jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
+print 'Done building KMeans model.'
+
+print 'About to build a DeepLearning model. . .'
+jobs = a_node.build_model(algo='deeplearning', training_frame=prostate_key, parameters={'classification': True, 'response': 'CAPSULE' }, timeoutSecs=240) # synchronous
+print 'Done building DeepLearning model.'
+
 models = a_node.models()
 
 print 'After Model build: Models: '

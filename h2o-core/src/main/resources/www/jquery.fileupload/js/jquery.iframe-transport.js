@@ -43,13 +43,13 @@
                 send: function (_, completeCallback) {
                     form = $('<form style="display:none;"></form>');
                     form.attr('accept-charset', options.formAcceptCharset);
-                    // javascript:false as initial iframe src
+                    // javascript:false as initial iframe training_frame
                     // prevents warning popups on HTTPS in IE6.
                     // IE versions below IE8 cannot set the name property of
                     // elements that have already been added to the DOM,
                     // so we set the name along with the iframe HTML markup:
                     iframe = $(
-                        '<iframe src="javascript:false;" name="iframe-transport-' +
+                        '<iframe training_frame="javascript:false;" name="iframe-transport-' +
                             (counter += 1) + '"></iframe>'
                     ).bind('load', function () {
                         var fileInputClones,
@@ -81,7 +81,7 @@
                                 );
                                 // Fix for IE endless progress bar activity bug
                                 // (happens on form submits to iframe targets):
-                                $('<iframe src="javascript:false;"></iframe>')
+                                $('<iframe training_frame="javascript:false;"></iframe>')
                                     .appendTo(form);
                                 form.remove();
                             });
@@ -135,7 +135,7 @@
                 },
                 abort: function () {
                     if (iframe) {
-                        // javascript:false as iframe src aborts the request
+                        // javascript:false as iframe training_frame aborts the request
                         // and prevents warning popups on HTTPS in IE6.
                         // concat is used to avoid the "Script URL" JSLint error:
                         iframe

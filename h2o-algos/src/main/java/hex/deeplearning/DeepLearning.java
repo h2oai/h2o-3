@@ -2,11 +2,8 @@ package hex.deeplearning;
 
 import hex.FrameTask.DataInfo;
 import hex.ModelBuilder;
-import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
-import static water.util.MRUtils.sampleFrame;
-import static water.util.MRUtils.sampleFrameStratified;
 import water.*;
 import water.api.ValidationAdapter;
 import water.fvec.Frame;
@@ -20,6 +17,10 @@ import water.util.PrettyPrint;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
+
+import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
+import static water.util.MRUtils.sampleFrame;
+import static water.util.MRUtils.sampleFrameStratified;
 
 /**
  * Deep Learning Neural Net implementation based on MRTask
@@ -152,8 +153,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
         }
         _parms.autoencoder = previous.model_info().get_params().autoencoder;
-        if (!_parms.autoencoder && (_parms.response == null || !Arrays.equals(_parms.response._key._kb, previous.model_info().get_params().response._key._kb))) {
-          throw new IllegalArgumentException("response must be the same as for the checkpointed model.");
+        if (!_parms.autoencoder && (_parms.response_vec == null || !Arrays.equals(_parms.response_vec._key._kb, previous.model_info().get_params().response_vec._key._kb))) {
+          throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
         if (ArrayUtils.difference(_parms.ignored_cols, previous.model_info().get_params().ignored_cols).length != 0
                 || ArrayUtils.difference(previous.model_info().get_params().ignored_cols, _parms.ignored_cols).length != 0) {
@@ -288,9 +289,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
             int rIndex = 0;
             for( int i = 0; i < _parms.source.vecs().length; i++ ) {
-              if (_parms.source.vecs()[i] == _parms.response) rIndex = i;
+              if (_parms.source.vecs()[i] == _parms.response_vec) rIndex = i;
             }
-            final String responseName = _parms.source._names != null && rIndex >= 0 ? _parms.source._names[rIndex] : "response";
+            final String responseName = _parms.source._names != null && rIndex >= 0 ? _parms.source._names[rIndex] : "response_vec";
             adaptedValid.add(validAdapter.getValidAdaptor().adaptedValidationResponse(responseName), validAdapter.getValidAdaptor().getAdaptedValidationResponse2CM());
           }
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset

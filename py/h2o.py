@@ -405,6 +405,14 @@ class H2O(object):
         # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
         #
 
+        first = True
+        ascii_column_names = '['
+        for s in setup_result['columnNames']:
+            if not first: ascii_column_names += ', '
+            ascii_column_names += str(s)
+            first  = False
+        ascii_column_names += ']'
+
         parse_params = {
             'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
             'hex': setup_result['hexName'],
@@ -413,8 +421,9 @@ class H2O(object):
             'ncols': setup_result['ncols'],
             'checkHeader': setup_result['checkHeader'],
             'singleQuotes': setup_result['singleQuotes'],
-            'columnNames': repr(setup_result['columnNames']),
+            'columnNames': ascii_column_names,
         }
+        print "parse_params: ", parse_params
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=True)
 
         parse_result = self.__do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
@@ -500,7 +509,7 @@ class H2O(object):
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
-        parameters['src'] = training_frame
+        parameters['training_frame'] = training_frame
         result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
 
         if asynchronous:

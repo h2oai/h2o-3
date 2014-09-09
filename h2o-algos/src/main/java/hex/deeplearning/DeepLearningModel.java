@@ -1,8 +1,8 @@
 package hex.deeplearning;
 
 import hex.FrameTask;
-import static java.lang.Double.isNaN;
 import hex.FrameTask.DataInfo;
+import hex.schemas.DeepLearningModelV2;
 import water.*;
 import water.api.*;
 import water.fvec.Chunk;
@@ -12,6 +12,8 @@ import water.util.*;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import static java.lang.Double.isNaN;
 
 /**
  * The Deep Learning model
@@ -23,10 +25,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public static class DeepLearningParameters extends Model.Parameters<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
     // FIXME
-    public Frame source;
-    public Frame validation;
+    public Frame source;     // TODO: Should use ModelParameters.training_frame
+    public Frame validation; // TODO: Should use ModelParameters.validation_frame
     public boolean classification;
-    public Vec response;
+    public Vec response_vec;
     public int[] ignored_cols;
     public int n_folds;
     public boolean keep_cross_validation_splits;
@@ -534,8 +536,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         throw new IllegalArgumentException("Input dropout must be in [0,1).");
       }
 
-      if (response.isEnum() && !classification) {
-        Log.info("Automatically switching to classification for enum response.");
+      if (response_vec.isEnum() && !classification) {
+        Log.info("Automatically switching to classification for enum response_vec.");
         classification = true;
       }
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
@@ -630,7 +632,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   // Default publically visible Schema is V2
-  public ModelSchema schema() { throw H2O.unimpl(); }
+  public ModelSchema schema() { return new DeepLearningModelV2(); }
 
 //  @API(help="Model info", json = true)
   private volatile DeepLearningModelInfo model_info;
@@ -1293,13 +1295,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return DataInfo object
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
-    final Frame train = FrameTask.DataInfo.prepareFrame(parms.source, parms.autoencoder ? null : parms.response, parms.ignored_cols, parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame train = FrameTask.DataInfo.prepareFrame(parms.source, parms.autoencoder ? null : parms.response_vec, parms.ignored_cols, parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
     if (!parms.autoencoder) {
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
-      assert (!parms.classification ^ resp.isEnum()) : "Must have enum response for classification!"; //either regression or enum response
+      assert (!parms.classification ^ resp.isEnum()) : "Must have enum response_vec for classification!"; //either regression or enum response
     }
     return dinfo;
   }

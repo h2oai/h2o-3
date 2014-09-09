@@ -1,7 +1,10 @@
 package hex.deeplearning;
 
-import org.junit.*;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 import water.api.AUC;
 import water.api.AUCData;
@@ -9,10 +12,10 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.util.Log;
-import static hex.deeplearning.DeepLearningModel.*;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 
 import java.util.Random;
+
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
@@ -110,7 +113,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.checkpoint = null;
 
                                       p.source = frame;
-                                      p.response = frame.vecs()[resp];
+                                      p.response_vec = frame.vecs()[resp];
                                       p.validation = valid;
 
                                       p.hidden = hidden;
@@ -169,7 +172,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     p.source = frame;
                                     p.validation = valid;
-                                    p.response = frame.vecs()[resp];
+                                    p.response_vec = frame.vecs()[resp];
                                     if (i == 0 && resp == 2) p.classification = false;
                                     p.override_with_best_model = override_with_best_model;
                                     p.epochs = epochs;

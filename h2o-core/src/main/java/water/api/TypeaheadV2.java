@@ -7,7 +7,7 @@ import water.util.DocGen.HTML;
 class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
 
   // Input fields
-  @API(help="src", required=true)
+  @API(help="training_frame", required=true)
   String src;
 
   @API(help="limit")

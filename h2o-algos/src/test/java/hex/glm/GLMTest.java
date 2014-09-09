@@ -1,27 +1,20 @@
 package hex.glm;
 
-import hex.FrameTask.DataInfo;
-import hex.glm.GLM.GLMDriver;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.Submodel;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
-import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class GLMTest  extends TestUtil {
@@ -41,7 +34,7 @@ public class GLMTest  extends TestUtil {
       FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._src = fr._key;
+      params._training_frame = fr._key;
       params._response = 1;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple gaussian",params).train().get();
@@ -71,7 +64,7 @@ public class GLMTest  extends TestUtil {
       FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
       GLMParameters params = new GLMParameters(Family.poisson);
-      params._src = fr._key;
+      params._training_frame = fr._key;
       params._response = 1;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
@@ -82,7 +75,7 @@ public class GLMTest  extends TestUtil {
       fr.delete();
       FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
-      params._src = fr._key;
+      params._training_frame = fr._key;
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
       model = DKV.get(modelKey).get();
       assertEquals(0.3396,model.beta()[1],1e-4);
@@ -110,12 +103,12 @@ public class GLMTest  extends TestUtil {
       Key parsed = Key.make("gamma_test_data_parsed");
       FVecTest.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
-//      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
+//      /public GLM2(String desc, Key dest, Frame training_frame, Family family, Link link, double alpha, double lambda) {
       double [] vals = new double[] {1.0,1.0};
-      //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
+      //public GLM2(String desc, Key dest, Frame training_frame, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
       params._response = 1;
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       Key modelKey = Key.make("gamma_test");
       new GLM(jobKey,modelKey,"glm test simple gamma",params).train().get();
@@ -177,7 +170,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -192,7 +185,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -205,7 +198,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian);
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -244,7 +237,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response = fr.find("CAPSULE");
       params._ignored_cols = new int[]{fr.find("ID")};
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
       model = DKV.get(modelKey).get();
@@ -270,7 +263,7 @@ public class GLMTest  extends TestUtil {
     try{
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._response = 0;
-      params._src = parsed;
+      params._training_frame = parsed;
       params.lambda_search = true;
       params.nlambdas = 35;
       params.lambda_min_ratio = 0.18;

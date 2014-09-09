@@ -22,7 +22,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   // Parameters common to all models:
   @API(help="Training frame.")
-  public Key src;              // Training Frame
+  public Key training_frame;              // Training Frame
 
   public ModelParametersSchema() {
   }

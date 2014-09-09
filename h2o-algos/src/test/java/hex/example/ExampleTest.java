@@ -18,7 +18,7 @@ public class ExampleTest extends TestUtil {
       System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
-      parms._src = fr._key;
+      parms._training_frame = fr._key;
       parms._max_iters = 10;
 
       Example job = new Example(parms).train();

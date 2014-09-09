@@ -2,11 +2,13 @@ package hex.schemas;
 
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import water.DKV;
+import water.H2O;
 import water.Key;
+import water.Value;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.BeanUtils;
 
 import java.util.Random;
@@ -78,12 +80,19 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     }
 
     // FIXME
+    @API(help="Training frame")
     public Frame source;
+    @API(help="Validation frame")
     public Frame validation;
+    @API(help="Classification v. regression")
     public boolean classification;
-    public Vec response;
+    @API(help="Response column")
+    public String response;
+    @API(help="List of ignored columns")
     public int[] ignored_cols;
+    @API(help="Number of folds for n-fold cross-validation (0 to n)")
     public int n_folds;
+    @API(help="Keep cross-validation Frames")
     public boolean keep_cross_validation_splits = false;
 
     /**
@@ -542,7 +551,12 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     public DeepLearningParameters createImpl() {
       DeepLearningParameters impl = new DeepLearningParameters();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.CONSISTENT);
+      Value v = DKV.get(training_frame);
+      if (null == v)
+        throw H2O.fail("Failed to find training frame: " + training_frame);
+      impl.source = v.get();
+      impl.response_vec = impl.source.vec(response);
       return impl;
     }
   }
@@ -554,12 +568,20 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
   // TODO: refactor ModelBuilder creation
   @Override public DeepLearning createImpl() {
+    // TODO: refactor to remove this hack:
+    parameters.source = DKV.get(parameters.training_frame).get();
+
     DeepLearningParameters parms = parameters.createImpl();
     parms.sanityCheck();
     return new DeepLearning(parms);
   }
-  public DeepLearning createImpl(Frame fr) { parameters.src = fr._key; return createImpl(); }
+  public DeepLearning createImpl(Frame fr) {
+    // TODO: refactor DeepLearningParameters to use Model.Parameters.training_frame
+    parameters.source = DKV.get(fr._key).get();
+    parameters.training_frame = fr._key;
+    return createImpl();
+  }
 
   // Return a URL to invoke KMeans on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?src="+fr._key; }
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }
 }

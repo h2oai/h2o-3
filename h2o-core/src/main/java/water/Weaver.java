@@ -248,10 +248,10 @@ public class Weaver {
                   "  protected void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
                   "    super.copyOver(fdst,fsrc);\n"+
                   "    "+iced_name+" dst = ("+iced_name+")fdst;\n"+
-                  "    "+iced_name+" src = ("+iced_name+")fsrc;\n",
-                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
-                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
-                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "    "+iced_name+" training_frame = ("+iced_name+")fsrc;\n",
+                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
+                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
+                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
                   "  }");
       if( debug_print ) System.out.println(cpbody_impl);
     }

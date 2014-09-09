@@ -36,8 +36,8 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
       ExampleModel model = null;
       try {
         // Fetch & read-lock source frame
-        Value val = DKV.get(_parms._src);
-        if( val == null ) throw new IllegalArgumentException("Missing frame "+_parms._src);
+        Value val = DKV.get(_parms._training_frame);
+        if( val == null ) throw new IllegalArgumentException("Missing frame "+_parms._training_frame);
         fr = val.get();
         fr.read_lock(_key);
 

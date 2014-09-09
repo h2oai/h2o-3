@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.FrameTask;
-import static hex.deeplearning.DeepLearningModel.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
@@ -14,10 +13,13 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.util.Log;
-import static water.util.ModelUtils.getPrediction;
 import water.util.RandomUtils;
 
 import java.util.Random;
+
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import static hex.deeplearning.DeepLearningModel.Errors;
+import static water.util.ModelUtils.getPrediction;
 
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
@@ -124,10 +126,10 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                   p = new DeepLearningParameters();
                                   p.source = _train;
-                                  p.response = _train.lastVec();
+                                  p.response_vec = _train.lastVec();
                                   p.ignored_cols = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(p.source, p.response, p.ignored_cols, true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(p.source, p.response_vec, p.ignored_cols, true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)

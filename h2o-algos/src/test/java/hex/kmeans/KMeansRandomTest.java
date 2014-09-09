@@ -44,7 +44,7 @@ public class KMeansRandomTest extends TestUtil {
                 count++;
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-                parms._src = frame._key;
+                parms._training_frame = frame._key;
                 parms._K = clusters;
                 parms._seed = rng.nextLong();
                 parms._max_iters = max_iter;

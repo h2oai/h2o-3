@@ -40,7 +40,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * initial random seed.
    */
   public abstract static class Parameters<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
-    public Key _src;              // Frame the Model is trained on
+    public Key _training_frame;              // Frame the Model is trained on
   }
 
   public P _parms; // TODO: move things around so that this can be protected

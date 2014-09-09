@@ -114,7 +114,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 //        rs.replace("key", model._key + "_clusters");
 //        rs.replace("content", "View the row-by-row cluster assignments");
 //        sb.append(rs.toString());
-//        //sb.append("<iframe src=\"" + "/Inspect.html?key=KMeansClusters\"" + "width = \"850\" height = \"550\" marginwidth=\"25\" marginheight=\"25\" scrolling=\"yes\"></iframe>" );
+//        //sb.append("<iframe training_frame=\"" + "/Inspect.html?key=KMeansClusters\"" + "width = \"850\" height = \"550\" marginwidth=\"25\" marginheight=\"25\" scrolling=\"yes\"></iframe>" );
 //        return true;
 //      }
 //      return false;
