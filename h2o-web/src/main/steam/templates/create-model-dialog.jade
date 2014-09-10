@@ -26,12 +26,19 @@
         // ko if:isModelCreationMode
         // ko with:modelForm
         h1(data-bind='text:title')
+
+        // ko with:validationError
+        .y-validation-error.bg-danger.y-monospace
+          div Please fix these errors and try again:
+          .y-validation-error-message(data-bind='text:message')
+        // /ko
+
         h2(data-bind='collapse:false') Parameters
-        div(data-bind='template: { name: parameterTemplateOf, foreach:criticalParameters }')
+        div(data-bind='template: { name: parameterTemplateOf, foreach:criticalControls }')
         h2(data-bind='collapse:false') Advanced
-        div(data-bind='template: { name: parameterTemplateOf, foreach:secondaryParameters }')
+        div(data-bind='template: { name: parameterTemplateOf, foreach:secondaryControls }')
         h2(data-bind='collapse:false') Expert
-        div(data-bind='template: { name: parameterTemplateOf, foreach:expertParameters }')
+        div(data-bind='template: { name: parameterTemplateOf, foreach:expertControls }')
         // /ko
         .y-model-actions(style='width:50%;text-align:left')
           button.btn(data-bind='click:backToAlgorithms')

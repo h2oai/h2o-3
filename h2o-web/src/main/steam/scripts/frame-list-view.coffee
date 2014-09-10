@@ -18,8 +18,10 @@ Steam.FrameListView = (_) ->
   displayItem = (item) ->
     if item
       _.displayFrame item.data
+      _.frameSelectionChanged item.data
     else
       _.displayEmpty()
+      _.frameSelectionChanged null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()

@@ -76,11 +76,18 @@ Steam.ModelListView = (_) ->
 
     switch predicate.type
       when 'all'
-        _.requestModels (error, data) -> #TODO request compatible frames as well
+        _.requestModels (error, models) -> #TODO request compatible frames as well
           if error
             #TODO handle errors
           else
-            displayModels data.models
+            displayModels models
+
+      when 'one'
+        _.requestModel key, (error, model) ->
+          if error
+            #TODO handle errors
+          else
+            displayModels [ model ]
 
       when 'compatibleWithFrame'
         #FIXME Need an api call to get "models and compatible frames for all models compatible with a frame"
@@ -117,11 +124,11 @@ Steam.ModelListView = (_) ->
 
   link$ _.deselectAllModels, deselectAllModels
 
-  createModel = ->
-    _.promptCreateModel (action) ->
-      switch action
-        when 'confirm'
-          console.log 'TODO CONFIRMED'
+#   createModel = ->
+#     _.promptCreateModel null, (action) ->
+#       switch action
+#         when 'confirm'
+#           console.log 'TODO CONFIRMED'
 
   items: _items
   hasItems: _hasItems
@@ -129,6 +136,6 @@ Steam.ModelListView = (_) ->
   clearPredicate: clearPredicate
   canClearPredicate: _canClearPredicate
   isSelectAll: _isSelectAll
-  createModel: createModel
+  # createModel: createModel
   template: 'model-list-view'
 

@@ -52,7 +52,7 @@ Steam.JobListView = (_) ->
     displayItem item
 
   isJobRunning = (job) ->
-    job.progress < 1 or job.status is 'CREATED' or job.status is 'RUNNING'
+    job.status is 'CREATED' or job.status is 'RUNNING'
 
   pollJobStatus = (item)->
     _.requestJob item.data.key.name, (error, job) ->
@@ -81,6 +81,7 @@ Steam.JobListView = (_) ->
     self =
       data: job
       title: job.key.name
+      key: job.key.name
       caption: node$ null
       status: node$ null
       statusColor: node$ null

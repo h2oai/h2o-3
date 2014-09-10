@@ -56,8 +56,8 @@ Steam.ApplicationContext = ->
     requestModelBuild: do edge$
     requestScoringOnFrame: do edge$
     requestModels: do edge$
-    requestModelsAndCompatibleFrames: do edge$
     requestModel: do edge$
+    requestModelsAndCompatibleFrames: do edge$
     requestModelAndCompatibleFrames: do edge$
     requestJobs: do edge$
     requestJob: do edge$
@@ -94,6 +94,7 @@ Steam.ApplicationContext = ->
     framesLoaded: do edge$
     displayFrame: do edge$
     promptForFrame: do edge$
+    frameSelectionChanged: do edge$
 
     promptCreateModel: do edge$
 
