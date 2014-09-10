@@ -82,6 +82,8 @@ print 'About to build a KMeans model. . .'
 jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
 print 'Done building KMeans model.'
 
+deep_learning_model_name = 'DeepLearningModel'
+
 print 'About to build a DeepLearning model. . .'
 jobs = a_node.build_model(algo='deeplearning', training_frame=prostate_key, parameters={'classification': True, 'response': 'CAPSULE' }, timeoutSecs=240) # synchronous
 print 'Done building DeepLearning model.'
@@ -91,12 +93,29 @@ models = a_node.models()
 print 'After Model build: Models: '
 pp.pprint(models)
 
+# look for kmeans_model_name
 found_kmeans = False;
 for model in models['models']:
-    if model['key'] == 'KMeansModel':
+    if model['key'] == kmeans_model_name:
         found_kmeans = True
 
-assert found_kmeans, 'Did not find KMeansModel in the models list.'
+assert found_kmeans, 'Did not find ' + kmeans_model_name + ' in the models list.'
+
+# look for deep_learning_model_name
+found_dl = False;
+for model in models['models']:
+    if model['key'] == deep_learning_model_name:
+        found_dl = True
+
+assert found_dl, 'Did not find ' + deep_learning_model_name + ' in the models list.'
+
+# now look for kmeans_model_name using the one-model API, and check it
+model = a_node.models(key=kmeans_model_name, find_compatible_frames=True)
+found_kmeans = False;
+h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
+h2o_util.assertKeysExist(model['models'][0]['compatible_frames'], '', ['frames'])
+assert model['models'][0]['compatible_frames']['frames'][0]['key']['name'] == prostate_key, prostate_key + ' not found in the compatible_frames list.'
+
 
 # test delete_model
 a_node.delete_model(kmeans_model_name)
