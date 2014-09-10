@@ -16,6 +16,7 @@ public class Weaver {
   static {
     try { 
       _pool = ClassPool.getDefault();
+      _pool.insertClassPath(new ClassClassPath(Weaver.class));
       _dtask= _pool.get("water.DTask");    // these also need copyOver
       _enum = _pool.get("java.lang.Enum"); // Special serialization
       _iced = _pool.get("water.Iced");     // Base of serialization
