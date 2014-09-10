@@ -152,7 +152,11 @@ public class Env extends Iced {
   }
 
   void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
-  static void removeVec(Vec v) { Keyed.remove(v._key);}
+  static void removeVec(Vec v) {
+    Futures fs = new Futures();
+    DKV.remove(v._key, fs);
+    fs.blockForPending();
+  }
 
   void cleanup(Frame ... frames) {
     for (Frame f : frames) remove(f,true);
