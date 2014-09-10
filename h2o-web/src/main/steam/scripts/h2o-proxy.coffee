@@ -69,7 +69,8 @@ Steam.H2OProxy = (_) ->
     opts = key: encodeURIComponent key
     requestWithOpts '/Inspect.json', opts, go
 
-  filterOutUnhandledModels = (models) -> filter models, (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
+  isSupportedModel = (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
+  filterSupportedModels = (models) -> filter models, isSupportedModel 
 
   requestFrames = (go, opts) ->
     requestWithOpts '/3/Frames.json', opts, go
@@ -85,19 +86,17 @@ Steam.H2OProxy = (_) ->
       if error
         go error, result
       else
-        # Flatten response so that keys are attributes on the objects, 
-        # and linked objects are direct refs instead of keys.
-        { frames, models, response } = result
-        for frameKey, frame of frames
-          frame.key = frameKey
+        #TODO remove 'filterSupportedModels' when issue with non-DONE models is resolved.
+        go error, filterSupportedModels result.models
 
-        for modelKey, model of models
-          model.key = modelKey
-          model.compatible_frames = map model.compatible_frames, (frameKey) ->
-            frames[frameKey]
+  requestModel = (key, go) ->
+    request '/3/Models.json/#{encodeURIComponent key}', (error, result) ->
+      if error
+        go error, result
+      else
+        #TODO remove 'filterSupportedModels' when issue with non-DONE models is resolved.
+        go error, head filterSupportedModels result.models
 
-        #TODO remove 'filterOutUnhandledModels' when issue with non-DONE models is resolved.
-        go error, response: response, models: filterOutUnhandledModels values models
 
   requestJobs = (go) ->
     request '/Jobs.json', go
@@ -134,9 +133,9 @@ Steam.H2OProxy = (_) ->
   link$ _.requestModelBuilders, requestModelBuilders
   link$ _.requestModelBuild, requestModelBuild
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
-  link$ _.requestModels, (go) -> requestModels go
+  link$ _.requestModels, requestModels
+  link$ _.requestModel, requestModel
   link$ _.requestModelsAndCompatibleFrames, (go) -> requestModels go, find_compatible_frames: yes
-  link$ _.requestModel, (key, go) -> requestModels go, key: (encodeURIComponent key)
   link$ _.requestModelAndCompatibleFrames, (key, go) -> requestModels go, key: (encodeURIComponent key), find_compatible_frames: yes
   link$ _.requestJobs, requestJobs
   link$ _.requestJob, requestJob

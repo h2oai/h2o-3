@@ -71,7 +71,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.ok airlinesZip isnt null, 'found airlines zip'
           go null, airlinesZip
 
-    importAirlines = (airlinesZip, go) ->
+    importAirlinesFrame = (airlinesZip, go) ->
       _.requestImportFile airlinesZip, (error, result) ->
         if error
           t.fail 'import request failed'
@@ -88,7 +88,7 @@ test 'airlines ingest and model building flow', (t) ->
 
           go null, result.keys[0]
 
-    parseSetupAirlines = (airlinesZipKey, go) ->
+    parseSetupAirlinesFrame = (airlinesZipKey, go) ->
       _.requestParseSetup [ airlinesZipKey ], (error, result) ->
         if error
           t.fail 'parse setup request failed'
@@ -101,7 +101,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.ok isString result.srcs[0].name, 'has src name'
           go null, result
 
-    parseAirlines = (parseSetup, go) ->
+    parseAirlinesFrame = (parseSetup, go) ->
       sourceKeys = map parseSetup.srcs, (src) -> src.name
       _.requestParseFiles sourceKeys, parseSetup.hexName, parseSetup.pType, parseSetup.sep, parseSetup.ncols, parseSetup.singleQuotes, parseSetup.columnNames, yes, parseSetup.checkHeader, (error, result) ->
         if error
@@ -144,7 +144,7 @@ test 'airlines ingest and model building flow', (t) ->
           go null, job.dest.name
 
 
-    inspectFrame = (frameKey, go) -> 
+    inspectAirlinesFrame = (frameKey, go) -> 
       _.requestInspect frameKey, (error, result) ->
         if error
           t.fail 'frame inspect request failed'
@@ -155,7 +155,7 @@ test 'airlines ingest and model building flow', (t) ->
           go null, frameKey
 
 
-    getFrame = (frameKey, go) ->
+    fetchAirlinesFrame = (frameKey, go) ->
       _.requestFrame frameKey, (error, result) ->
         if error
           t.fail 'frame request failed'
@@ -165,7 +165,7 @@ test 'airlines ingest and model building flow', (t) ->
           tdiff t, (readGoldJson 'frames-allyears2k_headers-zip.json'), result
           go null, frameKey
 
-    getKmeansModelBuilder = (frameKey, go) ->
+    fetchKmeansModelBuilder = (frameKey, go) ->
       _.requestModelBuilders 'kmeans', (error, result) ->
         if error
           t.fail 'model builders request failed'
@@ -193,7 +193,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.ok isString result.key.name, 'has job name'
           go null, result.key.name
 
-    inspectModel = (modelKey, go) ->
+    inspectAirlinesKmeansModel = (modelKey, go) ->
       _.requestInspect modelKey, (error, result) ->
         if error
           t.fail 'model inspect request failed'
@@ -209,17 +209,17 @@ test 'airlines ingest and model building flow', (t) ->
       ensureNoFramesExist
       findNonExistentFile
       findAirlines
-      importAirlines
-      parseSetupAirlines
-      parseAirlines
+      importAirlinesFrame
+      parseSetupAirlinesFrame
+      parseAirlinesFrame
       fetchJobs
       pollJob
-      inspectFrame
-      getFrame
-      getKmeansModelBuilder
+      inspectAirlinesFrame
+      fetchAirlinesFrame
+      fetchKmeansModelBuilder
       buildAirlinesKmeansModel
       pollJob
-      inspectModel
+      inspectAirlinesKmeansModel
     ]
     async.waterfall operations, -> t.end(); go()
 

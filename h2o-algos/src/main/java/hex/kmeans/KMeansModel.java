@@ -51,6 +51,9 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     _output._ncats = ncats;
   }
 
+  @Override
+  public boolean isSupervised() {return false;}
+
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 

@@ -1,6 +1,4 @@
 Steam.JobView = (_, _jobItem) ->
-  inspectJobTarget = (key, go) ->
-
   getJobResult = (go) ->
     unless jobResult = _jobItem.result()
       _.requestInspect _jobItem.destinationKey, (error, result) ->
@@ -8,11 +6,9 @@ Steam.JobView = (_, _jobItem) ->
           #TODO
           _.error 'Error inspecting job result', _jobItem.destinationKey, error
         else
-          switch result.kind
-            when 'frame'
-              jobResult = kind: result.kind, key: _jobItem.destinationKey
-              _jobItem.result jobResult
-              go jobResult
+          jobResult = kind: result.kind, key: _jobItem.destinationKey
+          _jobItem.result jobResult
+          go jobResult
     else
       go jobResult
 
@@ -21,6 +17,8 @@ Steam.JobView = (_, _jobItem) ->
       switch jobResult.kind
         when 'frame'
           _.switchToFrames type: 'one', key: jobResult.key
+        when 'model'
+          _.switchToModels type: 'one', key: getJobResult.key
 
   job: _jobItem
   viewResult: viewResult

@@ -30,7 +30,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Clustering
   }
 
-  public boolean isSupervised() { return false; }
+  /**
+   *
+   * Needs to be set correctly otherwise eg scoring does not work.
+   * @return true if there was a response column used during training.
+   */
+  public abstract boolean isSupervised();
 
   /**
    * Model-specific parameter class.  Each model sub-class contains an instance of one of

@@ -27,6 +27,26 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     _nobs = nobs;
     _dinfo = dinfo;
   }
+  @Override public boolean isSupervised(){return true;}
+
+  public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
+    final double _lambda;
+    public GLMModel _res;
+    public GetScoringModelTask(H2OCountedCompleter cmp, Key modelKey, double lambda){
+      super(cmp,modelKey);
+      _lambda = lambda;
+    }
+    @Override
+    public void map(GLMModel m) {
+      _res = (GLMModel)m.clone();
+      _res._output = (GLMOutput)_res._output.clone();
+      Submodel sm = Double.isNaN(_lambda)?_res._output._submodels[_res._output._best_lambda_idx]:_res._output.submodelForLambda(_lambda);
+      assert sm != null : "GLM[" + m._key + "]: missing submodel for lambda " + _lambda;
+      sm = (Submodel) sm.clone();
+      _res._output._submodels = new Submodel[]{sm};
+      _res._output.setSubmodelIdx(0);
+    }
+  }
 
   @Override
   public ModelSchema schema() {
@@ -51,7 +71,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].at0(row_in_chunk)];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats;
-    for(int i = _dinfo._cats; i < chks.length; ++i)
+    for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
       eta += b[noff+i]*chks[i].at0(row_in_chunk);
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
@@ -434,6 +454,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
 
     public GLMOutput(DataInfo dinfo){
       String [] cnames = dinfo.coefNames();
+      String [] pnames = dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       _coefficient_names[cnames.length] = "Intercept";
     }

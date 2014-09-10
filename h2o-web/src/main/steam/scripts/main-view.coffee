@@ -52,7 +52,7 @@ Steam.MainView = (_) ->
         unless _topic() is topic
           _topic topic
           switchListView _frameListView
-          switchSelectionView null
+          switchSelectionView _frameSelectionView
       when _modelTopic
         unless _topic() is topic
           _topic topic
@@ -126,6 +126,7 @@ Steam.MainView = (_) ->
   _adminListView = Steam.AdminListView _
 
   # Selection views
+  _frameSelectionView = Steam.FrameSelectionView _
   _modelSelectionView = Steam.ModelSelectionView _
   _scoringSelectionView = Steam.ScoringSelectionView _
 
