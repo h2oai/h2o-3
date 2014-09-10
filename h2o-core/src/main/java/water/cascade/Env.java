@@ -40,7 +40,7 @@ public class Env extends Iced {
   final ExecStack _stack;                   // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
   transient final public StringBuilder _sb; // Holder for print results
-  transient final ArrayList<Key> _locked;     // The original set of locked frames, these shalt not be DKV.removed.
+  transient final HashSet<Key> _locked;     // The original set of locked frames, these shalt not be DKV.removed.
   final SymbolTable _global;
   final SymbolTable _local;
   final Env _parent;
@@ -49,7 +49,7 @@ public class Env extends Iced {
   // Top-level Env object: This is the global Env object. To determine if we're in the global scope, _parent == null
   // and _local == null will always be true. The parent of a scope is the calling scope. All scopes inherit from the
   // global scope.
-  Env(ArrayList<Key> locked) {
+  Env(HashSet<Key> locked) {
     _stack  = new ExecStack();
     _refcnt = new IcedHashMap<>();
     _sb     = new StringBuilder();
@@ -151,11 +151,8 @@ public class Env extends Iced {
     } else { _refcnt.put(v, new IcedInt(cnt)); }
   }
 
-  static void removeVec(Vec v) {
-    Futures fs = new Futures();
-    DKV.remove(v._key, fs);
-    fs.blockForPending();
-  }
+  void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
+  static void removeVec(Vec v) { Keyed.remove(v._key);}
 
   void cleanup(Frame ... frames) {
     for (Frame f : frames) remove(f,true);
@@ -199,7 +196,7 @@ public class Env extends Iced {
     }
   }
 
-  private void remove(Object o, boolean popped) {
+  void remove(Object o, boolean popped) {
     assert o instanceof ValFrame || o instanceof Frame || o == null;
     if (o == null) return;
     if (o instanceof ValFrame) remove_and_unlock(((ValFrame)o)._fr);
@@ -210,8 +207,13 @@ public class Env extends Iced {
   private void remove_and_unlock(Frame fr) {
     extinguishCounts(fr);
     if (fr._lockers != null) fr.unlock_all();
-    if (_locked.contains(fr._key)) return;
+    if (_locked.contains(fr._key) || any_locked(fr)) return;
     fr.delete();
+  }
+
+  private boolean any_locked(Frame fr) {
+    for (Vec v : fr.vecs()) if (_locked.contains(v._key)) return true;
+    return false;
   }
 
   public String toString(int i) {

@@ -123,7 +123,7 @@ class ASTFrame extends AST {
     _fr = DKV.get(Key.make(_key)).get();
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
-  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.push(new ValFrame(_fr)); }
+  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.addKeys(_fr); e.push(new ValFrame(_fr)); }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
 }
