@@ -26,15 +26,14 @@ public class CXIChunk extends Chunk {
     assert valsz == 0 || (1 << log) == valsz;
     _valsz = valsz;
     _valsz_log = log;
-
     _ridsz = (len >= 65535)?4:2;
-
     UnsafeUtils.set4(buf, 0, len);
     byte b = (byte) _ridsz;
     buf[4] = b;
     buf[5] = (byte) _valsz;
     _mem = buf;
     _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
+    assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
   }
 
   @Override public final boolean isSparse() {return true;}
@@ -165,6 +164,7 @@ public class CXIChunk extends Chunk {
     }
     _valsz_log = log;
     _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
+    assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: meme.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
     return this;
   }
 

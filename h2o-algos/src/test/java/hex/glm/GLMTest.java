@@ -2,23 +2,21 @@ package hex.glm;
 
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
+import hex.utils.MSETsk;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset2;
-
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
-
 import static org.junit.Assert.assertEquals;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5);   jobKey = Key.make("job");}
+  @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
   static Key jobKey;
 
   //------------------- simple tests on synthetic data------------------------------------
@@ -103,9 +101,9 @@ public class GLMTest  extends TestUtil {
       Key parsed = Key.make("gamma_test_data_parsed");
       FVecTest.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
-//      /public GLM2(String desc, Key dest, Frame training_frame, Family family, Link link, double alpha, double lambda) {
+//      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       double [] vals = new double[] {1.0,1.0};
-      //public GLM2(String desc, Key dest, Frame training_frame, Family family, Link link, double alpha, double lambda) {
+      //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
       params._response = 1;
       params._training_frame = parsed;
@@ -248,6 +246,7 @@ public class GLMTest  extends TestUtil {
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(396.3, val.aic(),1e-1);
+      // TODO test scoring
     } finally {
       fr.delete();
       if(model != null)model.delete();
@@ -255,6 +254,14 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  /**
+   * Test strong rules on arcene datasets (10k predictors, 100 rows).
+   * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
+   * Scaled down (higher lambda min, fewer lambdas) to run at reasonable speed (whole test takes 20s on my laptop).
+   *
+   * Test runs glm with gaussian on arcene dataset and verifies it gets all lambda while limiting maximum actove predictors to reasonably small number.
+   * Compares the objective value to expected one.
+   */
   @Test public void testArcene() throws InterruptedException, ExecutionException{
     Key parsed = Key.make("arcene_parsed");
     Key modelKey = Key.make("arcene_model");
@@ -267,8 +274,6 @@ public class GLMTest  extends TestUtil {
       params.lambda_search = true;
       params.nlambdas = 35;
       params.lambda_min_ratio = 0.18;
-//      params.nlambdas = 50;
-//      params.lambda_min_ratio = 1e-2;
       params.maxActivePredictors = 200;
       params.alpha = new double[]{1};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
@@ -283,6 +288,22 @@ public class GLMTest  extends TestUtil {
       for(double d:sm.norm_beta) l1norm += Math.abs(d);
       double objval = sm.validation.residual_deviance / sm.validation.nobs + sm.lambda_value*l1norm;
       assertEquals(0.32922849120947384,objval,0.32922849120947384*1e-2);
+      // test scoring on several submodels
+      GLMModel m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
+      Frame score = m.score(fr);
+      MSETsk mse = new MSETsk().doAll(score.anyVec(), fr.vec(m._output.responseName()));
+      assertEquals(val.residualDeviance(),mse._resDev,1e-6);
+      score.remove();
+      // try scoring another model
+      model._output.setSubmodelIdx(model._output._submodels.length>>1);
+      sm = model._output._submodels[model._output._best_lambda_idx];
+      val = model._output._submodels[model._output._best_lambda_idx].validation;
+      m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
+      score = m.score(fr);
+      mse = new MSETsk().doAll(score.anyVec(), fr.vec(m._output.responseName()));
+      assertEquals(val.residualDeviance(),mse._resDev,1e-6);
+      score.remove();
+      // TODO test behavior when we can not fit within the active cols limit
     } finally {
       fr.delete();
       if(model != null)model.delete();
