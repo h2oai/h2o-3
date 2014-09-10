@@ -88,8 +88,8 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
     ret <- .h2o.parsedData(client, res$key$name, res$num_rows, res$num_cols, res$col_names)
   } else {
     ret <- res$scalar
+    if (ret == "NaN") ret <- NA
   }
-#  if (ret == "NaN") ret <- NA
   assign(ID, ret, env = env)
 }
 

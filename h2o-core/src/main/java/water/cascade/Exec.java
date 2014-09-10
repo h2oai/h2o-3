@@ -85,7 +85,7 @@ public class Exec extends Iced {
     String tok = parseID();
     //lookup of the token
     AST ast = ASTOp.SYMBOLS.get(tok);
-    assert ast != null : "Failed lookup on token: "+tok;
+    if (ast == null) throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
     return ast.parse_impl(this);
   }
 

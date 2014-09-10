@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.*;
 import water.util.MathUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -121,9 +122,9 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTDiff  ());
 //
 //    // More generic reducers
-//    putPrefix(new ASTMin ());
-//    putPrefix(new ASTMax ());
-//    putPrefix(new ASTSum ());
+    putPrefix(new ASTMin ());
+    putPrefix(new ASTMax ());
+    putPrefix(new ASTSum ());
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar());
     putPrefix(new ASTMean());
@@ -841,67 +842,93 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 }
 
 // Variable length; instances will be created of required length
-//abstract class ASTReducerOp extends ASTOp {
-//  final double _init;
-//  final boolean _narm;        // na.rm in R
-//  ASTReducerOp( double init, boolean narm ) {
-//    super(new String[]{"","dbls"});
-//    _init = init;
-//    _narm = narm;
-//  }
-//  @Override double[] map(Env env, double[] in, double[] out) {
-//    double s = _init;
-//    for (double v : in) if (!_narm || !Double.isNaN(v)) s = op(s,v);
-//    if (out == null || out.length < 1) out = new double[1];
-//    out[0] = s;
-//    return out;
-//  }
-//  abstract double op( double d0, double d1 );
-//  @Override void apply(Env env, int argcnt) {
-//    double sum=_init;
-//    for( int i=0; i<argcnt-1; i++ )
-//      if( env.isNum() ) sum = op(sum,env.popDbl());
-//      else {
-//        Frame fr = env.popAry();
-//        sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
-//        env.cleanup(fr);
-//      }
-//    env.push(new ASTNum(sum));
-//  }
-//
-//  private static class RedOp extends MRTask<RedOp> {
-//    final ASTReducerOp _bin;
-//    RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
-//    double _d;
-//    @Override public void map( Chunk chks[] ) {
-//      for (Chunk C : chks) {
-//        for (int r = 0; r < C.len(); r++)
-//          _d = _bin.op(_d, C.at0(r));
-//        if (Double.isNaN(_d)) break;
-//      }
-//    }
-//    @Override public void reduce( RedOp s ) { _d = _bin.op(_d,s._d); }
-//  }
-//
-//  private static class NaRmRedOp extends MRTask<NaRmRedOp> {
-//    final ASTReducerOp _bin;
-//    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
-//    double _d;
-//    @Override public void map( Chunk chks[] ) {
-//      for (Chunk C : chks) {
-//        for (int r = 0; r < C.len(); r++)
-//          if (!Double.isNaN(C.at0(r)))
-//            _d = _bin.op(_d, C.at0(r));
-//        if (Double.isNaN(_d)) break;
-//      }
-//    }
-//    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
-//  }
-//}
+abstract class ASTReducerOp extends ASTOp {
+  final double _init;
+  protected static boolean _narm;        // na.rm in R
+  ASTReducerOp( double init) {
+    super(new String[]{"","dblary","...", "na.rm"});
+    _init = init;
+  }
 
-//class ASTSum extends ASTReducerOp { ASTSum() {super(0,false);} @Override String opStr(){ return "sum";} @Override ASTOp make() {return new ASTSum();} @Override double op(double d0, double d1) { return d0+d1;}}
-//class ASTSumNaRm extends ASTReducerOp { ASTSumNaRm( ) {super(0,true) ;} @Override String opStr(){ return "sum.na.rm";} @Override ASTOp make() {return new ASTSumNaRm();} @Override double op(double d0, double d1) { return d0+d1;}}
-//
+  ASTReducerOp parse_impl(Exec E) {
+    ArrayList<AST> dblarys = new ArrayList<>();
+    AST ary = E.parse();
+    dblarys.add(ary);
+    AST a = null;
+    while (E.peek() != ')') {
+      a = E.skipWS().parse();
+      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp)
+        dblarys.add(a);
+      else break;
+    }
+    // Get the na.rm last
+    a = E._env.lookup((ASTId)a);
+    _narm = ((ASTNum)a).dbl() == 1;
+    ASTReducerOp res = (ASTReducerOp) clone();
+    AST[] arys = new AST[dblarys.size()];
+    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    res._asts = arys;
+    return res;
+  }
+
+  @Override double[] map(Env env, double[] in, double[] out) {
+    double s = _init;
+    for (double v : in) if (!_narm || !Double.isNaN(v)) s = op(s,v);
+    if (out == null || out.length < 1) out = new double[1];
+    out[0] = s;
+    return out;
+  }
+  abstract double op( double d0, double d1 );
+  @Override void apply(Env env) {
+    double sum=_init;
+    int argcnt = env.sp();
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) sum = op(sum,env.popDbl());
+      else {
+        Frame fr = env.pop0Ary(); // pop w/o lowering refcnts ... clean it up later
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
+        env.cleanup(fr);
+      }
+    env.push(new ValNum(sum));
+  }
+
+  private static class RedOp extends MRTask<RedOp> {
+    final ASTReducerOp _bin;
+    RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0].len();
+      for (Chunk C : chks) {
+        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        for (int r = 0; r < rows; r++)
+          _d = _bin.op(_d, C.at0(r));
+        if (Double.isNaN(_d)) break;
+      }
+    }
+    @Override public void reduce( RedOp s ) { _d = _bin.op(_d,s._d); }
+  }
+
+  private static class NaRmRedOp extends MRTask<NaRmRedOp> {
+    final ASTReducerOp _bin;
+    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0].len();
+      for (Chunk C : chks) {
+        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        for (int r = 0; r < rows; r++)
+          if (!Double.isNaN(C.at0(r)))
+            _d = _bin.op(_d, C.at0(r));
+        if (Double.isNaN(_d)) break;
+      }
+    }
+    @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
+  }
+}
+
+class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(){ return "sum";} @Override ASTOp make() {return new ASTSum();} @Override double op(double d0, double d1) { return d0+d1;}}
+
 //class ASTReduce extends ASTOp {
 //  static final String VARS[] = new String[]{ "", "op2", "ary"};
 //  static final Type   TYPES[]= new Type  []{ Type.ARY, Type.fcn(new Type[]{Type.DBL,Type.DBL,Type.DBL}), Type.ARY };
@@ -959,106 +986,52 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 //  }
 //}
 
-//class ASTMinNaRm extends ASTReducerOp {
-//  ASTMinNaRm( ) { super( Double.POSITIVE_INFINITY, true ); }
-//  @Override
-//  String opStr(){ return "min.na.rm";}
-//  @Override
-//  ASTOp make() {return new ASTMinNaRm();}
-//  @Override double op(double d0, double d1) { return Math.min(d0, d1); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    double min = Double.POSITIVE_INFINITY;
-//    int nacnt = 0;
-//    for( int i=0; i<argcnt-1; i++ )
-//      if( env.isDbl() ) {
-//        double a = env.popDbl();
-//        if (Double.isNaN(a)) nacnt++;
-//        else min = Math.min(min, a);
-//      }
-//      else {
-//        Frame fr = env.peekAry();
-//        for (Vec v : fr.vecs())
-//          min = Math.min(min, v.min());
-//        env.pop();
-//      }
-//    if (nacnt > 0 && min == Double.POSITIVE_INFINITY)
-//      min = Double.NaN;
-//    env.poppush(min);
-//  }
-//}
-//
-//class ASTMaxNaRm extends ASTReducerOp {
-//  ASTMaxNaRm( ) { super( Double.NEGATIVE_INFINITY, true ); }
-//  @Override
-//  String opStr(){ return "max.na.rm";}
-//  @Override
-//  ASTOp make() {return new ASTMaxNaRm();}
-//  @Override double op(double d0, double d1) { return Math.max(d0,d1); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    double max = Double.NEGATIVE_INFINITY;
-//    int nacnt = 0;
-//    for( int i=0; i<argcnt-1; i++ )
-//      if( env.isDbl() ) {
-//        double a = env.popDbl();
-//        if (Double.isNaN(a)) nacnt++;
-//        else max = Math.max(max, a);
-//      }
-//      else {
-//        Frame fr = env.peekAry();
-//        for (Vec v : fr.vecs())
-//          max = Math.max(max, v.max());
-//        env.pop();
-//      }
-//    if (nacnt > 0 && max == Double.NEGATIVE_INFINITY)
-//      max = Double.NaN;
-//    env.poppush(max);
-//  }
-//}
-//
-//class ASTMin extends ASTReducerOp {
-//  ASTMin( ) { super( Double.POSITIVE_INFINITY, false); }
-//  @Override
-//  String opStr(){ return "min";}
-//  @Override
-//  ASTOp make() {return new ASTMin();}
-//  @Override double op(double d0, double d1) { return Math.min(d0, d1); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    double min = Double.POSITIVE_INFINITY;
-//    for( int i=0; i<argcnt-1; i++ )
-//      if( env.isDbl() ) min = Math.min(min, env.popDbl());
-//      else {
-//        Frame fr = env.peekAry();
-//        for (Vec v : fr.vecs())
-//          if (v.naCnt() > 0) { min = Double.NaN; break; }
-//          else min = Math.min(min, v.min());
-//        env.pop();
-//      }
-//    env.poppush(min);
-//  }
-//}
+class ASTMin extends ASTReducerOp {
+  ASTMin( ) { super( Double.POSITIVE_INFINITY); }
+  @Override String opStr(){ return "min";}
+  @Override ASTOp make() {return new ASTMin();}
+  @Override double op(double d0, double d1) { return Math.min(d0, d1); }
+  ASTMin parse_impl(Exec E) { return (ASTMin)super.parse_impl(E); }
+  @Override void apply(Env env) {
+    double min = Double.POSITIVE_INFINITY;
+    int argcnt = env.sp();
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) min = Math.min(min, env.popDbl());
+      else {
+        Frame fr = env.pop0Ary();
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        for (Vec v : fr.vecs())
+          if (v.naCnt() > 0 && !_narm) { min = Double.NaN; break; }
+          else min = Math.min(min, v.min());
+        env.cleanup(fr);
+      }
+    env.push(new ValNum(min));
+  }
+}
 
-//class ASTMax extends ASTReducerOp {
-//  ASTMax( ) { super( Double.NEGATIVE_INFINITY, false ); }
-//  @Override
-//  String opStr(){ return "max";}
-//  @Override
-//  ASTOp make() {return new ASTMax();}
-//  @Override double op(double d0, double d1) { return Math.max(d0,d1); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    double max = Double.NEGATIVE_INFINITY;
-//    for( int i=0; i<argcnt-1; i++ )
-//      if( env.isDbl() ) max = Math.max(max, env.popDbl());
-//      else {
-//        Frame fr = env.peekAry();
-//        for (Vec v : fr.vecs())
-//          if (v.naCnt() > 0) { max = Double.NaN; break; }
-//          else max = Math.max(max, v.max());
-//        env.pop();
-//      }
-//    env.poppush(max);
-//  }
-//}
-//
+class ASTMax extends ASTReducerOp {
+  ASTMax( ) { super( Double.NEGATIVE_INFINITY); }
+  @Override String opStr(){ return "max";}
+  @Override ASTOp make() {return new ASTMax();}
+  @Override double op(double d0, double d1) { return Math.max(d0,d1); }
+  ASTMax parse_impl(Exec E) { return (ASTMax)super.parse_impl(E); }
+  @Override void apply(Env env) {
+    double max = Double.NEGATIVE_INFINITY;
+    int argcnt = env.sp();
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) max = Math.max(max, env.popDbl());
+      else {
+        Frame fr = env.pop0Ary();
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        for (Vec v : fr.vecs())
+          if (v.naCnt() > 0 && !_narm) { max = Double.NaN; break; }
+          else max = Math.max(max, v.max());
+        env.cleanup(fr);
+      }
+    env.push(new ValNum(max));
+  }
+}
+
 // R like binary operator &&
 class ASTAND extends ASTBinOp {
   @Override String opStr() { return "&&"; }
@@ -1418,13 +1391,13 @@ class ASTSdev extends ASTUniPrefixOp {
   public ASTSdev() { super(new String[]{"sd", "ary", "na.rm"}); }
   @Override String opStr() { return "sd"; }
   @Override ASTOp make() { return new ASTSdev(); }
-  @Override ASTVar parse_impl(Exec E) {
+  @Override ASTSdev parse_impl(Exec E) {
     // Get the ary
     AST ary = E.parse();
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.skipWS().parse());
     _narm = ((ASTNum)a).dbl() == 1;
-    ASTVar res = (ASTVar) clone();
+    ASTSdev res = (ASTSdev) clone();
     res._asts = new AST[]{ary}; // in reverse order so they appear correctly on the stack.
     return res;
   }
@@ -1434,7 +1407,8 @@ class ASTSdev extends ASTUniPrefixOp {
       throw new IllegalArgumentException("sd does not apply to multiple cols.");
     if (fr.vecs()[0].isEnum())
       throw new IllegalArgumentException("sd only applies to numeric vector.");
-    double sig = fr.vecs()[0].sigma();
+
+    double sig = ASTVar.getVar(fr.anyVec(), _narm);
     if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
     env.push(new ValNum(sig));
   }
@@ -1485,8 +1459,8 @@ class ASTVar extends ASTUniPrefixOp {
       final Frame frs[][] = new Frame[y.numCols()][fr.numCols()];
       final double xmeans[] = new double[fr.numCols()];
       final double ymeans[] = new double[y.numCols()];
-      for (int r = 0; r < fr.numCols(); ++r) xmeans[r] = getMean(new ASTMean.MeanNARMTask(_narm).doAll(fr.vecs()[r]), use);
-      for (int c = 0; c < y.numCols(); ++c) ymeans[c]  = getMean(new ASTMean.MeanNARMTask(_narm).doAll( y.vecs()[c]), use);
+      for (int r = 0; r < fr.numCols(); ++r) xmeans[r] = getMean(fr.vecs()[r], _narm, use);
+      for (int c = 0; c < y.numCols(); ++c) ymeans[c]  = getMean( y.vecs()[c], _narm, use);
       for (int c = 0; c < y.numCols(); ++c) {
         for (int r = 0; r < fr.numCols(); ++r) {
           frs[c][r] = new Frame(y.vecs()[c], fr.vecs()[r]);
@@ -1501,7 +1475,7 @@ class ASTVar extends ASTUniPrefixOp {
         }
 
       if (env.isAry()) env.cleanup(env.popAry()); else env.pop();  // pop fr
-      if (env.isAry()) env.cleanup(env.popAry()); else  env.pop();  // pop y
+      if (env.isAry()) env.cleanup(env.popAry()); else  env.pop(); // pop y
       env.pop(); // pop use
 
       // Just push the scalar if input is a single col
@@ -1523,12 +1497,19 @@ class ASTVar extends ASTUniPrefixOp {
     }
   }
 
-  private double getMean(ASTMean.MeanNARMTask t, String use) {
+  static double getMean(Vec v, boolean narm, String use) {
+    ASTMean.MeanNARMTask t = new ASTMean.MeanNARMTask(narm).doAll(v);
     if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
       if (use.equals("all.obs")) throw new IllegalArgumentException("use = \"all.obs\" with missing observations.");
       return Double.NaN;
     }
     return t._sum / t._rowcnt;
+  }
+
+  static double getVar(Vec v, boolean narm) {
+    double m = getMean( v, narm, "");
+    CovarTask t = new CovarTask(m,m).doAll(new Frame(v, v));
+    return Math.sqrt(t._ss);
   }
 
   private static class CovarTask extends MRTask<CovarTask> {

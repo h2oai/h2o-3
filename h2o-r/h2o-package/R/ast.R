@@ -180,7 +180,7 @@ function(...) {
     names(arg_ts) <- NULL
     arg_types <- arg_ts
   } else {
-    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
+#    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
     arg_types  <- lapply(list(...), .eval_class)
   }
   arg_values <- lapply(seq_along(list(...)), function(i) { .getValueFromArg(list(...)[[i]], names(list(...))[i]) })

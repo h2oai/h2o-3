@@ -35,7 +35,7 @@ public class Env extends Iced {
   final static int FUN   =4;
   final static int SPAN  =5;
   final static int SERIES=6;
-  final static int NULL=99999;
+  final static int NULL  =99999;
 
   final ExecStack _stack;                   // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
@@ -92,6 +92,7 @@ public class Env extends Iced {
     return o;
   }
 
+  // pop w/o lowering ref counts
   public Val pop0() { return _stack.pop(); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }

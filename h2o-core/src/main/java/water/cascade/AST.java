@@ -9,7 +9,7 @@ import java.util.ArrayList;
  */
 abstract public class AST extends Iced {
   AST[] _asts;
-  AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for class "+this.getClass()); }
+  AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for "+this.getClass()); }
   abstract void exec(Env e);
   abstract String value();
   abstract int type();
@@ -35,7 +35,10 @@ abstract public class AST extends Iced {
 
       } else if (this instanceof ASTUniPrefixOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
-        ((ASTUniPrefixOp)this).apply(e);
+        ((ASTUniPrefixOp) this).apply(e);
+      } else if (this instanceof ASTReducerOp) {
+        for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
+        ((ASTReducerOp)this).apply(e);
       } else {
         // TODO: do the udf op thing: capture env...
       }

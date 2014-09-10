@@ -91,19 +91,27 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .bin
 #' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
 #' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
 #' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
-setMethod("Math", signature(x = "H2OFrame"), function (x) .unops.fun(x))
+setMethod("Math", signature(x = "H2OFrame"), function(x) .unops.fun(x))
 
 #'
 #' Math2 Generics:
 #'
 #' ‘"round"’, ‘"signif"’
-setMethod("Math2", signature(x = "H2OFrame"), function (x, digits) .varops.fun(x, digits))
+setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .varops.fun(x, digits))
 
 #'
 #' Summary Generics:
 #'
 #' ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
-setMethod("Summary", signature(x = "H2OFrame"), function (x, ..., na.rm = FALSE) .varops.fun(x, ..., na.rm))
+setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
+  ast <- .varops.fun(x, ..., na.rm)
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  ID <- ifelse(ID == "Last.value", ID, ast@key)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast, ID = ID, rID = 'ast')
+  ast
+})
 
 #'
 #' Methods that don't fit into the S4 group generics

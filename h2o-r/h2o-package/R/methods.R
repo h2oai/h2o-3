@@ -605,14 +605,14 @@ sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")
 #' Obtain the mean of a column of data.
 mean.H2OParsedData<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-    if(ncol(x) != 1) stop("Can only compute the mean of a single column")
-    if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
-    if (trim < 0) trim <- 0
-    if (trim > .5) trim <- .5
-    ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
-    ID <- "Last.value"
-    .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
-    ast.mean
+  if(ncol(x) != 1) stop("Can only compute the mean of a single column")
+  if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
+  if (trim < 0) trim <- 0
+  if (trim > .5) trim <- .5
+  ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
+  ast.mean
 }
 
 #'
