@@ -72,13 +72,11 @@ public abstract class JarHash {
       //  directory during development.
       if (System.getProperty("webdev") == null) {
         // Jar file mode.
-        InputStream is = null;
-        is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/www" + uri);
-        if (is != null) return is;
-        is = ClassLoader.getSystemClassLoader().getResourceAsStream("resources/main/www" + uri);
-        if (is != null) return is;
-        // This is the right file location of resource inside jar bundled by gradle
-        is = ClassLoader.getSystemClassLoader().getResourceAsStream("www" + uri);
+        ClassLoader cl = ClassLoader.getSystemClassLoader();
+        InputStream is = loadResource(uri, cl);
+        if (is == null && (cl=Thread.currentThread().getContextClassLoader())!=null) {
+            is = loadResource(uri, cl);
+        }
         if (is != null) return is;
         // That failed, so try all registered locations
       }
@@ -87,10 +85,23 @@ public abstract class JarHash {
         if( f2.exists() )
           return new FileInputStream(f2);
       }
-    }
-    catch (FileNotFoundException ignore) {}
+    } catch (FileNotFoundException ignore) {}
 
     Log.info("Resource not found: " + uri);
     return null;
+  }
+
+  private static InputStream loadResource(String uri, ClassLoader cl) {
+      Log.info("Trying to load resource " + uri + " via classloader " + cl);
+      InputStream is = null;
+      is = cl.getResourceAsStream("resources/www" + uri);
+      if (is == null) {
+          is = cl.getResourceAsStream("resources/main/www" + uri);
+          if (is == null) {
+              // This is the right file location of resource inside jar bundled by gradle
+              is = cl.getResourceAsStream("www" + uri);
+          }
+      }
+      return is;
   }
 }
