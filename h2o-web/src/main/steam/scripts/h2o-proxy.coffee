@@ -69,7 +69,10 @@ Steam.H2OProxy = (_) ->
     opts = key: encodeURIComponent key
     requestWithOpts '/Inspect.json', opts, go
 
-  isSupportedModel = (model) -> model.state is 'DONE' and model.model_category is 'Binomial'
+  isSupportedModel = (model) ->
+    # model.state is 'DONE' and model.model_category is 'Binomial'
+    yes #TODO filter out non-binomial
+
   filterSupportedModels = (models) -> filter models, isSupportedModel 
 
   requestFrames = (go, opts) ->
@@ -87,10 +90,11 @@ Steam.H2OProxy = (_) ->
         go error, result
       else
         #TODO remove 'filterSupportedModels' when issue with non-DONE models is resolved.
+        console.log result.models
         go error, filterSupportedModels result.models
 
   requestModel = (key, go) ->
-    request '/3/Models.json/#{encodeURIComponent key}', (error, result) ->
+    request "/3/Models.json/#{encodeURIComponent key}", (error, result) ->
       if error
         go error, result
       else

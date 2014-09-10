@@ -18,7 +18,7 @@ Steam.JobView = (_, _jobItem) ->
         when 'frame'
           _.switchToFrames type: 'one', key: jobResult.key
         when 'model'
-          _.switchToModels type: 'one', key: getJobResult.key
+          _.switchToModels type: 'one', key: jobResult.key
 
   job: _jobItem
   viewResult: viewResult

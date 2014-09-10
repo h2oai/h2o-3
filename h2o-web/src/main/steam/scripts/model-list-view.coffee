@@ -19,6 +19,8 @@ Steam.ModelListView = (_) ->
     switch predicate.type
       when 'all'
         'Showing\nall models'
+      when 'one'
+        'Showing\none model'
       when 'compatibleWithFrame'
         "Showing models compatible with\n#{predicate.frameKey}"
       else
@@ -43,21 +45,13 @@ Steam.ModelListView = (_) ->
     displayItem item
 
   createItem = (model) ->
-    #TODO replace with type checking
-    console.assert isArray model.input_column_names
-    console.assert has model, 'model_algorithm'
-    console.assert has model, 'model_category'
-    console.assert isObject model.critical_parameters
-    console.assert isObject model.secondary_parameters
-    console.assert isObject model.expert_parameters
-    console.assert has model, 'response_column_name'
-    console.assert has model, 'state'
-
     self =
       data: model
       title: model.key
-      caption: "#{model.response_column_name} (#{model.model_category})"
-      timestamp: model.creation_epoch_time_millis
+      #TODO 
+      caption: "Unknown response column name / category" #"#{model.response_column_name} (#{model.model_category})"
+      #TODO
+      timestamp: Date.now() #model.creation_epoch_time_millis
       display: -> activateAndDisplayItem self
       isActive: node$ no
       isSelected: node$ no
@@ -83,7 +77,7 @@ Steam.ModelListView = (_) ->
             displayModels models
 
       when 'one'
-        _.requestModel key, (error, model) ->
+        _.requestModel predicate.key, (error, model) ->
           if error
             #TODO handle errors
           else
