@@ -466,7 +466,7 @@ class ASTSlice extends AST {
     // stack looks like:  [....,hex,rows,cols], so pop, pop !
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
-    Val rows = env.pop();
+    Val rows = rows_type == Env.ARY ? env.pop0() : env.pop();
 
     // Scalar load?  Throws AIIOOB if out-of-bounds
     if(cols_type == Env.NUM && rows_type == Env.NUM) {
@@ -489,7 +489,7 @@ class ASTSlice extends AST {
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.popAry());
+      env.cleanup(ary, env.popAry(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
       env.push(new ValFrame(fr2));
     }
   }

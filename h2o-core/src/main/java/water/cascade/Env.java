@@ -211,9 +211,15 @@ public class Env extends Iced {
 
   private void remove_and_unlock(Frame fr) {
     extinguishCounts(fr);
-    if (fr._lockers != null) fr.unlock_all();
+    if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
     if (_locked.contains(fr._key) || any_locked(fr)) return;
     fr.delete();
+  }
+
+  private boolean lockerKeysNotNull(Frame f) {
+    for (Key k : f._lockers)
+      if (k == null) return false;
+    return true;
   }
 
   private boolean any_locked(Frame fr) {
