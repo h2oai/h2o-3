@@ -79,6 +79,8 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__CASCADE, ast=expr$ast)
+
+  if (!is.null(res$exception)) stop(res$exception, call.=FALSE)
   ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$Last.value))
   if (!is.null(rID)) ID <- rID
   if (!is.null(res$string)) ret <- res$string
@@ -87,11 +89,9 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   } else {
     ret <- res$scalar
   }
+#  if (ret == "NaN") ret <- NA
   assign(ID, ret, env = env)
 }
 
-
 #cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")
-
-
 #cat(toJSON(visitor( h2o.ddply(hex, .("Sepal.Length", "Sepal.Width", "Petal.Length"), f, "hello", "from", "ddply") )), "\n")

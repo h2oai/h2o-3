@@ -596,8 +596,8 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
-var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else base::var(x,y,na.rm,use)
-sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else base::sd(x,na.rm)
+var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else stats::var(x,y,na.rm,use)
+sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
 
 #'
 #' Mean of a column.
@@ -605,7 +605,10 @@ sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")
 #' Obtain the mean of a column of data.
 mean.H2OParsedData<-
 function(x, trim = 0, na.rm = FALSE, ...) {
-    if(ncol(x) != 1 || trim != 0) stop("Unimplemented")
+    if(ncol(x) != 1) stop("Can only compute the mean of a single column")
+    if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
+    if (trim < 0) trim <- 0
+    if (trim > .5) trim <- .5
     ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
     ID <- "Last.value"
     .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
@@ -618,6 +621,9 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 #' Expression is evaluated <=> this operation is top-level.
 mean.H2OFrame<-
 function(x, trim = 0, na.rm = FALSE, ...) {
+  if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
+  if (trim < 0) trim <- 0
+  if (trim > .5) trim <- .5
   ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -632,7 +638,7 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 #' Obtain the variance of a column of data.
 var.H2OParsedData<-
 function(x, y = NULL, na.rm = FALSE, use = "everything") {
-#  if(!is.null(y) || !missing(use)) stop("Unimplemented")
+  if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   ast.var <- .h2o.varop("var", x, y, na.rm, use)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.var, ID = ID, rID = 'ast.var')
@@ -645,6 +651,7 @@ function(x, y = NULL, na.rm = FALSE, use = "everything") {
 #' Expression is evaluated <=> this operation is top-level.
 var.H2OFrame<-
 function(x, y = NULL, na.rm = FALSE, use = "everything") {
+  if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   ast.var <- .h2o.varop("var", x, y, na.rm, use)
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
@@ -655,7 +662,7 @@ function(x, y = NULL, na.rm = FALSE, use = "everything") {
 
 sd.H2OParsedData<-
 function(x, na.rm = FALSE) {
-  if(ncol(x) != 1) stop("Unimplemented")
+  if(ncol(x) != 1) stop("Can only compute sd of a single column.")
   ast.sd <- .h2o.varop("sd", x, na.rm)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
