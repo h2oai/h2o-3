@@ -65,16 +65,34 @@ Go to http://localhost:8080 with your browser to see the status page for your Sp
     
     cd perrier/h2o-examples
     # the following commands are from h2o-examples/make-package.sh:
-    mvn package -DXX:MaxPermSize=128m -DskipTests -Dclean.skip -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dscalastyle.skip=true -Dmaven.scaladoc.skip=true -Dskip=true
+    mvn package -DXX:MaxPermSize=128m -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dscalastyle.skip=true -Dmaven.scaladoc.skip=true -Dskip=true
     
     
 ### . . .and Submit It to the Cluster
 
     cd perrier/h2o-examples
+    export DEPLOY_MODE="client" # or can be cluster
     # the following command is from h2o-examples/run-example.sh:
-    ( cd ../; bin/spark-submit --verbose --master "spark://$SPARK_MASTER_IP:$SPARK_MASTER_PORT" --class org.apache.spark.examples.h2o.ProstateDemo h2o-examples/target/shaded.jar )
+    ( cd ../; bin/spark-submit --verbose --master "spark://$SPARK_MASTER_IP:$SPARK_MASTER_PORT" --deploy-mode $DEPLOY_MODE --class org.apache.spark.examples.h2o.ProstateDemo h2o-examples/target/shaded.jar )
     
 Go to http://localhost:8080 with your browser to see the status page for your Spark cluster.
 Go to http://localhost:54321 with your browser to see the status page for your H2O cluster.
 
-    
+### Spark Master versus Deploy Mode
+
+Spark master can be specified via URI which can have form:
+  * `local` - single JVM, single threaded execution of user code. JVM serves as a worker
+  * `local[*]` - single JVM, multi threaded execution of user code
+  * `spark://localhost:7070` - user code is submitted to a cluster, which will create workers JVMs controlled by user code. User code can run in JVM of submit process or in separated JVM launched by a Spark cluster (depends on *deploy mode* - see below)
+  * `mesos://...` - TBD
+  * `yarn://...` - TBD
+
+Spark supports two deploy modes:
+  * `client` - user code is executed in the JVM of submitter
+  * `cluster` - user code is sent to a cluster, which creates a new *driver* JVMs executing user code (via `DriverWrapper` class)
+ 
+> For more info see classes `SparkSubmit` and `DriverWrapper`
+
+### Supported modes in H<sub>2</sub>O
+
+
