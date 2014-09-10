@@ -133,7 +133,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
     if( fclz.equals(int.class) ) return Integer.valueOf(s);
     if( fclz.equals(long.class) ) return Long.valueOf(s);
-    if( fclz.equals(boolean.class) ) return Boolean.valueOf(s);
+    if( fclz.equals(boolean.class) ) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
     if( fclz.equals(byte.class) ) return Byte.valueOf(s);
     if( fclz.isArray() ) {      // An array?
       if( s.equals("null") ) return null;

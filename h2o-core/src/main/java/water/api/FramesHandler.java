@@ -14,6 +14,25 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     Key key;
     Frame[] frames;
     String column;
+
+    /**
+     * Fetch all Frames from the KV store.
+     */
+    protected static Frame[] fetchAll() {
+      // Get all the frames.
+      final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+        @Override
+        public boolean filter(KeySnapshot.KeyInfo k) {
+          return k._type == TypeMap.FRAME;
+        }
+      }).keys();
+      Frame[] frames = new Frame[frameKeys.length];
+      for (int i = 0; i < frameKeys.length; i++) {
+        Frame frame = getFromDKV(frameKeys[i]);
+        frames[i] = frame;
+      }
+      return frames;
+    }
   }
 
   // /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all.
@@ -30,18 +49,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
 
   /** Return all the frames. */
   public Schema list(int version, Frames f) {
-    final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override
-        public boolean filter(KeySnapshot.KeyInfo k) {
-          return k._type == TypeMap.FRAME;
-        }
-      }).keys();
-
-    f.frames = new Frame[frameKeys.length];
-    for (int i = 0; i < frameKeys.length; i++) {
-      Frame frame = getFromDKV(frameKeys[i]);
-      f.frames[i] = frame;
-    }
+    f.frames = Frames.fetchAll();
     return this.schema(version).fillFromImpl(f);
   }
 

@@ -558,7 +558,7 @@ class H2O(object):
     '''
     def models(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
-#            'find_compatible_frames': 0,
+            'find_compatible_frames': False
 #            'score_frame': None
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)

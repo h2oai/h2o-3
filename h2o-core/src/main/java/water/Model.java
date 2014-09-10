@@ -75,9 +75,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
      *  The last column holds the response col enums.  */
     public String _domains[][];
 
+    /** The names of all the columns, including the response column (which comes last). */
     public String[] allNames() { return _names; }
+    /** The name of the response column (which is always the last column). */
     public String responseName() { return   _names[  _names.length-1]; }
+    /** The names of the levels for an enum (categorical) response column. */
     public String[] classNames() { return _domains[_domains.length-1]; }
+    /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return classNames() != null ; }
     public int nclasses() {
       String cns[] = classNames();

@@ -96,7 +96,7 @@ public abstract class DKV {
   // User-Weak-Get a Key from the distributed cloud.
   static public Value get    ( Key key ) { return get(key,true ); }
   static public void prefetch( Key key ) {        get(key,false); }
-  static public Value get    ( String key_name) { return get(Key.make(key_name),true ); }
+  static public Value get    ( String key_name)  { return get(Key.make(key_name),true ); }
   static public void prefetch( String key_name ) {        get(Key.make(key_name),false); }
 
   static private Value get( Key key, boolean blocking ) {

@@ -29,6 +29,9 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   @API(help="The build output for the model (e.g. the clusters for KMeans).")
   protected ModelOutputSchema output;
 
+  @API(help="Compatible frames", direction = API.Direction.OUTPUT, json=true)
+  protected FramesBase compatible_frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
+
   public ModelSchema() {
   }
 
@@ -78,6 +81,11 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
     // Let output render itself:
     ab.putJSON ("output", output);
+    ab.put1(',');
+
+    // TODO: compatible_frames should only have the list of keys; the containing request should contain all the frames.
+    // Let the compatible_frames render themselves:
+    ab.putJSON("compatible_frames", compatible_frames);
     return ab;
   }
 
