@@ -10,7 +10,7 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
   String ast;
 
   // Output
-  @API(help="Parsing error, if any") String error;
+  @API(help="Parsing error, if any") String exception;
   @API(help="Result key"           ) Key key;
   @API(help="Rows in Frame result" ) long num_rows;
   @API(help="Columns in Frame result" ) int  num_cols;
@@ -42,6 +42,7 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
     result = cascade._result;
     col_names = cascade._col_names;
     string = cascade._string;
+    exception = cascade._error;
     return this;
   }
 }

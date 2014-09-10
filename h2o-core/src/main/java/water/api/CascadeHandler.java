@@ -24,7 +24,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     //TODO: String[] _funs //
 
     //Outputs
-    String _error;
+    String   _error;
     Key      _key;
     long     _num_rows;
     int      _num_cols;
@@ -36,7 +36,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
   }
 
   public CascadeV1 exec(int version, Cascade cascade) {
-    Throwable e;
+    Throwable e = null;
     Env env = null;
     try {
       env = water.cascade.Exec.exec(cascade._ast);
@@ -64,6 +64,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     catch( IllegalArgumentException pe ) { e=pe;}
     catch( Throwable e2 ) { Log.err(e=e2); }
     finally {
+      if (e != null) cascade._error = e.getMessage();
       if (env != null) {
         try {env.remove_and_unlock(); }
         catch (Exception xe) { Log.err("env.remove_and_unlock() failed", xe); }
