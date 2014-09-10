@@ -14,6 +14,7 @@ import water.parser.ParseDataset2;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
@@ -303,7 +304,19 @@ public class GLMTest  extends TestUtil {
       mse = new MSETsk().doAll(score.anyVec(), fr.vec(m._output.responseName()));
       assertEquals(val.residualDeviance(),mse._resDev,1e-6);
       score.remove();
-      // TODO test behavior when we can not fit within the active cols limit
+      // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
+      params = new GLMParameters(Family.gaussian);
+      params._response = 0;
+      params._training_frame = parsed;
+      params.lambda_search = true;
+      params.nlambdas = 35;
+      params.lambda_min_ratio = 0.18;
+      params.maxActivePredictors = 20;
+      params.alpha = new double[]{1};
+      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+      model = DKV.get(modelKey).get();
+      assertTrue(model._output._submodels.length > 3);
+      assertTrue(model.validation().residualDeviance() <= 93);
     } finally {
       fr.delete();
       if(model != null)model.delete();
