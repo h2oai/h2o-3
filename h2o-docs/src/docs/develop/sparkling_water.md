@@ -95,4 +95,12 @@ Spark supports two deploy modes:
 
 ### Supported modes in H<sub>2</sub>O
 
+| master v. deploy mode | *client* | *cluster* |
+| :---------------------| :--------| :---------|
+| *local*               | OK       | *NA*      |
+| *local[&#42;]*        | OK       | *NA*      |
+| *spark://...*         | User code is launched directly inside submitter JVM | Dedicated driver-JVM is launched for user code  |
+| *mesos://...*         | TBD | TBD |
+| *yarn://...*          | TBD | TBD |
+
 
