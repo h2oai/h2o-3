@@ -55,6 +55,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
+      AtomicBoolean _gotException = new AtomicBoolean(false);
       @Override
       public void compute2(){}
       @Override
@@ -65,10 +66,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       }
       @Override
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
-        cancel2(ex);
-        DKV.remove(_progressKey);
-        fr.unlock(_key);
-        return true;
+        if(!_gotException.getAndSet(true)) {
+          cancel2(ex);
+          DKV.remove(_progressKey);
+          fr.unlock(_key);
+          return true;
+        }
+        return false;
       }
     };
     start(cmp, 100);
@@ -399,6 +403,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         long callbackStart = System.currentTimeMillis();
 
         if(needLineSearch(glmt,_lineSearchStep)){
+          getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
           new GLMTask.GLMLineSearchTask(_jobKey,_activeData, _taskInfo._params, _lastResult._beta ,glmt._beta,1e-4, _taskInfo._ymu, _taskInfo._nobs, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
@@ -462,7 +467,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       }
     }
     private class LineSearchIteration extends H2O.H2OCallback<GLMLineSearchTask> {
-      LineSearchIteration(CountedCompleter cmp){super((H2O.H2OCountedCompleter)cmp); cmp.addToPendingCount(1);}
+      LineSearchIteration(CountedCompleter cmp){super((H2O.H2OCountedCompleter)cmp); }
       @Override public void callback(final GLMTask.GLMLineSearchTask glmt) {
         assert getCompleter().getPendingCount() <= 1:"unexpected pending count, expected 1, got " + getCompleter().getPendingCount();
         double step = 0.5;
@@ -470,6 +475,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
           if(!needLineSearch(glmt._glmts[i],step)){
             LogInfo("line search: found admissible step = " + step + ",  objval = " + objval(glmt._glmts[i]));
             _taskInfo._higher_accuracy = true;
+            getCompleter().addToPendingCount(1);
             new GLMIterationTask(_jobKey,_activeData, _taskInfo._params,true,true,true,glmt._glmts[i]._beta, _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false,step)).asyncExec(_activeData._adaptedFrame);
             return;
           }
@@ -480,6 +486,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
           int add2iter = (_iter - _taskInfo._iter);
           LogInfo("Line search failed to progress, rerunning current lambda from scratch with high accuracy on, adding " + add2iter + " to max iterations");
           _taskInfo._max_iter += add2iter;
+          getCompleter().addToPendingCount(1);
           new GLMIterationTask(_jobKey,_activeData, _taskInfo._params,true,true,true,contractVec(_taskInfo._beta,_activeCols), _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false,step)).asyncExec(_activeData._adaptedFrame);
           return;
         }

@@ -11,13 +11,15 @@ import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset2;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
+  @BeforeClass public static void setup() { stall_till_cloudsize(5);   jobKey = Key.make("job");}
   static Key jobKey;
 
   //------------------- simple tests on synthetic data------------------------------------
@@ -250,6 +252,30 @@ public class GLMTest  extends TestUtil {
       // TODO test scoring
     } finally {
       fr.delete();
+      if(model != null)model.delete();
+      DKV.remove(jobKey);
+    }
+  }
+
+  @Test public void testSynthetic() throws Exception {
+    Key parsed = Key.make("glm_parsed");
+    Key modelKey = Key.make("glm_model");
+    GLMModel model = null;
+    Frame fr = parse_test_file(parsed, "smalldata/glm_test/glm_test2.csv");
+    try {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response = fr.find("response");
+      params._ignored_cols = new int[]{fr.find("ID")};
+      params._training_frame = parsed;
+      params.lambda = new double[]{0};
+      new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
+      model = DKV.get(modelKey).get();
+      assertEquals(model.validation().auc(),1,1e-4);
+      double [] beta = model.beta();
+      for(double d:beta)
+        assertTrue(Math.abs(d) < 16);
+    } finally {
+      fr.remove();
       if(model != null)model.delete();
       DKV.remove(jobKey);
     }
