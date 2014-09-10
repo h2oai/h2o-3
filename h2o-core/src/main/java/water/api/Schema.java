@@ -135,6 +135,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     if( fclz.equals(long.class) ) return Long.valueOf(s);
     if( fclz.equals(boolean.class) ) return Boolean.valueOf(s);
     if( fclz.equals(byte.class) ) return Byte.valueOf(s);
+    if( fclz.equals(double.class) ) return Double.valueOf(s);
+    if( fclz.equals(float.class) ) return Float.valueOf(s);
     if( fclz.isArray() ) {      // An array?
       if( s.equals("null") ) return null;
       read(s,    0       ,'[',fclz);
