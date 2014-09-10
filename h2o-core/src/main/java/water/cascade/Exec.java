@@ -1,8 +1,11 @@
 package water.cascade;
 
 
-import water.*;
-import java.util.ArrayList;
+import water.Iced;
+import water.Key;
+import water.MRTask;
+
+import java.util.HashSet;
 
 /**
  * Exec is an interpreter of abstract syntax trees.
@@ -49,7 +52,7 @@ public class Exec extends Iced {
   public static Env exec( String str ) throws IllegalArgumentException {
     cluster_init();
     // Preload the global environment from existing Frames
-    ArrayList<Key> locked = new ArrayList<>();
+    HashSet<Key> locked = new HashSet<>();
     Env env = new Env(locked);
 
     // Some global constants
