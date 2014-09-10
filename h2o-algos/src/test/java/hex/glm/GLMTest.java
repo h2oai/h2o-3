@@ -50,43 +50,43 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  /**
-   * Test Poisson regression on simple and small synthetic dataset.
-   * Equation is: y = exp(x+1);
-   */
-  @Test public void testPoissonRegression() throws InterruptedException, ExecutionException {
-    Key raw = Key.make("poisson_test_data_raw");
-    Key parsed = Key.make("poisson_test_data_parsed");
-    Key modelKey = Key.make("poisson_test");
-    GLMModel model = null;
-    Frame fr = null;
-    try {
-      // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
-      fr = ParseDataset2.parse(parsed, new Key[]{raw});
-      GLMParameters params = new GLMParameters(Family.poisson);
-      params._training_frame = fr._key;
-      params._response = 1;
-      params.lambda = new double[]{0};
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
-      model = DKV.get(modelKey).get();
-      for(double c:model.beta())assertEquals(Math.log(2),c,1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
-      // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
-      model.delete();
-      fr.delete();
-      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
-      fr = ParseDataset2.parse(parsed, new Key[]{raw});
-      params._training_frame = fr._key;
-      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
-      model = DKV.get(modelKey).get();
-      assertEquals(0.3396,model.beta()[1],1e-4);
-      assertEquals(0.2565,model.beta()[0],1e-4);
-    }finally{
-      if( fr != null ) fr.delete();
-      if(model != null)model.delete();
-      DKV.remove(jobKey);
-    }
-  }
+//  /**
+//   * Test Poisson regression on simple and small synthetic dataset.
+//   * Equation is: y = exp(x+1);
+//   */
+//  @Test public void testPoissonRegression() throws InterruptedException, ExecutionException {
+//    Key raw = Key.make("poisson_test_data_raw");
+//    Key parsed = Key.make("poisson_test_data_parsed");
+//    Key modelKey = Key.make("poisson_test");
+//    GLMModel model = null;
+//    Frame fr = null;
+//    try {
+//      // make data so that the expected coefficients is icept = col[0] = 1.0
+//      FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
+//      fr = ParseDataset2.parse(parsed, new Key[]{raw});
+//      GLMParameters params = new GLMParameters(Family.poisson);
+//      params._training_frame = fr._key;
+//      params._response = 1;
+//      params.lambda = new double[]{0};
+//      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+//      model = DKV.get(modelKey).get();
+//      for(double c:model.beta())assertEquals(Math.log(2),c,1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
+//      // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
+//      model.delete();
+//      fr.delete();
+//      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
+//      fr = ParseDataset2.parse(parsed, new Key[]{raw});
+//      params._training_frame = fr._key;
+//      new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
+//      model = DKV.get(modelKey).get();
+//      assertEquals(0.3396,model.beta()[1],1e-4);
+//      assertEquals(0.2565,model.beta()[0],1e-4);
+//    }finally{
+//      if( fr != null ) fr.delete();
+//      if(model != null)model.delete();
+//      DKV.remove(jobKey);
+//    }
+//  }
 
 
   /**
