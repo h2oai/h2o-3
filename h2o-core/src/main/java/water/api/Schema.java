@@ -100,7 +100,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
           throw new IllegalArgumentException("Attempting to set output field: " + key);
 
         // Primitive parse by field type
-        f.set(this,parse(parms.getProperty(key),f.getType()));
+        f.set(this,parse(parms.getProperty(key),f.getType(), api.required()));
 
       } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
@@ -129,7 +129,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   // URL parameter parse
-  private <E> Object parse( String s, Class fclz ) {
+  private <E> Object parse( String s, Class fclz, boolean required ) {
     if( fclz.equals(String.class) ) return s; // Strings already the right primitive type
     if( fclz.equals(int.class) ) return Integer.valueOf(s);
     if( fclz.equals(long.class) ) return Long.valueOf(s);
@@ -138,18 +138,20 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     if( fclz.equals(double.class) ) return Double.valueOf(s);
     if( fclz.equals(float.class) ) return Float.valueOf(s);
     if( fclz.isArray() ) {      // An array?
-      if( s.equals("null") ) return null;
+      if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
       String[] splits = s.substring(1,s.length()-1).split(",");
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a= (E[])Array.newInstance(afclz,splits.length);
       for( int i=0; i<splits.length; i++ )
-        a[i] = (E)parse(splits[i].trim(),afclz);
+        a[i] = (E)parse(splits[i].trim(),afclz, required);
       return a;
     }
     if( fclz.equals(Key.class) )
-      if( s==null || s.length()==0 ) throw new IllegalArgumentException("Missing key");
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      else if (!required && (s == null || s.length() == 0)) return null;
+      else if (!required) return Key.make(s);
       else return Key.make(s);
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
