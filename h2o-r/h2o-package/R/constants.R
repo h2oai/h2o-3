@@ -83,6 +83,7 @@
 #' Algorithm Endpoints
 #'
 .h2o.__KMEANS       <- "v2/Kmeans.json"
+.h2o.__DEEPLEARNING <- "DeepLearning.json"
 
 #'
 #' Cascade/Exec3
@@ -99,9 +100,7 @@
 #'
 #' The list of H2O1 (old) endpoints
 #######
-#.h2o.__PAGE_EXEC3                 <- "2/Exec3.json"
 #.h2o.__PAGE_CANCEL                <- "Cancel.json"
-#.h2o.__PAGE_CLOUD                 <- "Cloud.json"
 #.h2o.__PAGE_GET                   <- "GetVector.json"
 #.h2o.__PAGE_IMPORTURL             <- "ImportUrl.json"
 #.h2o.__PAGE_IMPORTFILES           <- "ImportFiles.json"
