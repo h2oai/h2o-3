@@ -35,24 +35,15 @@
 #'
 #' See also groupGeneric.
 
-##'
-##' Get the prefix op.
-#.getValidPrefix<-
-#function() {
-#  stack <- as.list(sys.calls())
-#  for (s in stack)
-#
-#}
-
 #'
 #' Prefix, Binary Infix (Ops), and Variable Ops Generics
 #'
-#' Handle all of the binary infix operations with this simple function!
+#' Handle all of the ops with these simple functions!
 #'
 #' Scrape the function call for the operator. Cast the sys.calls() to a list and extracting the root.
-.unops.fun  <- function(x)      .h2o.unop (deparse(as.list(as.list(sys.calls())[[1]])[[1]]), x     )
+.unops.fun  <- function(x)      .h2o.unop (deparse(as.list(as.list(sys.calls())[[length(sys.calls())-1]])[[1]]), x     )
 .binops.fun <- function(e1,e2)  .h2o.binop(.getValidBinOp(), e1, e2)
-.varops.fun <- function(x, ...) .h2o.varop(deparse(as.list(as.list(sys.calls())[[1]])[[1]]), x, ...)
+.varops.fun <- function(x, ...) .h2o.varop(deparse(as.list(as.list(sys.calls())[[length(sys.calls())-1]])[[1]]), x, ...)
 
 #'
 #' Get the binary operator off the stack.

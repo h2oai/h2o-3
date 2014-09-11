@@ -236,8 +236,12 @@ abstract class ASTUniOp extends ASTOp {
           NewChunk n =nchks[i];
           Chunk c = chks[i];
           int rlen = c.len();
-          for( int r=0; r<rlen; r++ )
-            n.addNum(uni.op(c.at0(r)));
+          if (c.vec().isEnum() || c.vec().isUUID() || c.vec().isString()) {
+            for (int r = 0; r <rlen;r++) n.addNum(Double.NaN);
+          } else {
+            for( int r=0; r<rlen; r++ )
+              n.addNum(uni.op(c.at0(r)));
+          }
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
@@ -743,7 +747,7 @@ abstract class ASTBinOp extends ASTOp {
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
 }
 
-class ASTNot  extends ASTUniOp { public ASTNot()  { super(); } @Override String opStr(){ return "!";} @Override ASTOp make() {return new ASTNot(); } @Override double op(double d) { return d==0?1:0; }}
+class ASTNot  extends ASTUniPrefixOp { public ASTNot()  { super(); } @Override String opStr(){ return "!";} @Override ASTOp make() {return new ASTNot(); } @Override double op(double d) { if (Double.isNaN(d)) return Double.NaN; return d==0?1:0; } }
 class ASTPlus extends ASTBinOp { public ASTPlus() { super(); } @Override String opStr(){ return "+";} @Override ASTOp make() {return new ASTPlus();}
   @Override double op(double d0, double d1) { return d0+d1;}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot add Strings.");}
@@ -855,9 +859,14 @@ abstract class ASTReducerOp extends ASTOp {
     AST ary = E.parse();
     dblarys.add(ary);
     AST a = null;
-    while (E.peek() != ')') {
+    E.skipWS();
+    while (true) {
       a = E.skipWS().parse();
-      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp)
+      if (a instanceof ASTId) {
+        AST ast = E._env.lookup((ASTId)a);
+        if (ast instanceof ASTFrame) {dblarys.add(a); continue; } else break;
+      }
+      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
         dblarys.add(a);
       else break;
     }

@@ -40,6 +40,7 @@ abstract public class AST extends Iced {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
         ((ASTReducerOp)this).apply(e);
       } else {
+        throw H2O.fail("Unknown AST: " + this.getClass());
         // TODO: do the udf op thing: capture env...
       }
 
@@ -80,7 +81,7 @@ abstract public class AST extends Iced {
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
             this._asts[0] instanceof ASTFrame) { this.exec(e); }
 
-    else { throw H2O.fail("Unknown AST node. Don't know what to do with: " + this.toString());}
+    else { throw H2O.fail("Unknown AST: " + this.getClass());}
     return e;
   }
 
