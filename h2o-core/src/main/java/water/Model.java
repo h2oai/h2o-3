@@ -88,6 +88,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       return cns==null ? 1 : cns.length;
     }
 
+    // Note: Clustering algorithms MUST redefine this method to return ModelCategory.Clustering:
     public ModelCategory getModelCategory() {
       return (isClassifier() ?
               (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
@@ -109,6 +110,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   public State getState() { return _state; }
    */
 
+  private UniqueId uniqueId = null;
+
+  /** The start time in mS since the epoch for model training. */
+  public long training_start_time = 0L;
+
+  /** The duration in mS for model training. */
+  public long training_duration_in_ms = 0L;
 
   /**
    * Externally visible default schema
@@ -130,6 +138,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     assert output != null;
     _output = output;
 
+    this.uniqueId = new UniqueId(_key);
+
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
     assert names.length > 1;
@@ -139,6 +149,54 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
     assert parms != null;
     _parms = parms;
+  }
+
+  public UniqueId getUniqueId() {
+    return this.uniqueId;
+  }
+
+  public void start_training(long training_start_time) {
+    Log.info("setting training_start_time to: " + training_start_time + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ")");
+
+    final long t = training_start_time;
+    new TAtomic<Model>() {
+      @Override public Model atomic(Model m) {
+          if (m != null) {
+            m.training_start_time = t;
+          } return m;
+      }
+    }.invoke(_key);
+    this.training_start_time = training_start_time;
+  }
+  public void start_training(Model previous) {
+    training_start_time = System.currentTimeMillis();
+    Log.info("setting training_start_time to: " + training_start_time + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ") [checkpoint case]");
+    if (null != previous)
+      training_duration_in_ms += previous.training_duration_in_ms;
+
+    final long t = training_start_time;
+    final long d = training_duration_in_ms;
+    new TAtomic<Model>() {
+      @Override public Model atomic(Model m) {
+          if (m != null) {
+            m.training_start_time = t;
+            m.training_duration_in_ms = d;
+          } return m;
+      }
+    }.invoke(_key);
+  }
+  public void stop_training() {
+    training_duration_in_ms += (System.currentTimeMillis() - training_start_time);
+    Log.info("setting training_duration_in_ms to: " + training_duration_in_ms + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ")");
+
+    final long d = training_duration_in_ms;
+    new TAtomic<Model>() {
+      @Override public Model atomic(Model m) {
+          if (m != null) {
+            m.training_duration_in_ms = d;
+          } return m;
+      }
+    }.invoke(_key);
   }
 
   /** Bulk score for given <code>fr</code> frame.
