@@ -170,17 +170,6 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #}
 
 
-# TODO: Should these be in the Overlaoded section h2o.cut, h2o.table
-
-
-#h2o.cut <- function(x, breaks) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
-#  if(missing(breaks) || !is.numeric(breaks)) stop("breaks must be a numeric vector")
-#
-#  .h2o.varop("cut", x, breaks)
-#}
-#
 ## TODO: H2O doesn't support any arguments beyond the single H2OParsedData object (with <= 2 cols)
 #h2o.table <- function(x) {
 #  if(missing(x)) stop("Must specify data set")
@@ -188,6 +177,79 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  if(ncol(x) > 2) stop("Unimplemented")
 #  .h2o.unop("table", x)
 #}
+
+#'
+#' cut a numeric column into factors
+cut.H2OParsedData<-
+function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
+  if(missing(x)) stop("Must specify data set")
+  if(missing(breaks)) stop("`breaks` must be a numeric vector")
+  if(ncol(x) > 1) stop("*Unimplemented* `x` must be a single column.")
+  ast.cut <- .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.cut, ID = ID, rID = 'ast.cut')
+  ast.cut
+}
+
+#'
+#' cut a numeric column backed by an AST into factors
+cut.H2OFrame<-
+function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
+  if(missing(x)) stop("Must specify data set")
+  if(missing(breaks)) stop("`breaks` must be a numeric vector")
+  ast.cut <- .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.cut@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.cut, ID = ID, rID = 'ast.cut')
+  ast.cut
+}
+
+match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
+
+#'
+#' `match` or %in% for an AST
+#'
+match.H2OFrame <-function(x, table, nomatch = 0, incomparables = NULL) {
+#  if(missing(x)) stop("Must specify data set")
+#  if(ncol(x) > 1) stop("`x` must be a single column.")
+  ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
+#  ID <- "Last.value"
+#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.cut')
+  ast.match
+}
+
+
+#  if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
+#  if (trim < 0) trim <- 0
+#  if (trim > .5) trim <- .5
+#  ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
+#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
+#  ast.mean
+
+#'
+#' `match` or %in% for H2OParsedData
+#'
+match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables = NULL) {
+#  if(missing(x)) stop("Must specify data set")
+#  if(ncol(x) > 1) stop("`x` must be a single column.")
+  ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.match, ID = ID, rID = 'ast.match')
+  ast.match
+}
+
+#'
+#'
+#'
+"%in%" <- function(x, table) {
+  if (x %<i-% "ASTNode") match.H2OFrame(x, table, nomatch = 0) > 0
+  else if (x %<i-% "H2OParsedData") match.H2OParsedData(x, table, nomatch = 0) > 0
+  else match(x, table, nomatch = 0) > 0
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date

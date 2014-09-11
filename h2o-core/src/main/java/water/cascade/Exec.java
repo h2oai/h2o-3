@@ -115,6 +115,7 @@ public class Exec extends Iced {
   }
 
   char peek() { return (char)_ast[_x]; }
+  char peekPlus() { return (char)_ast[_x++]; }
 
   Exec skipWS() {
     while (true) {

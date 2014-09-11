@@ -22,8 +22,8 @@ import java.util.Set;
 //import water.util.Log;
 //import water.util.Utils;
 
-/** Parse a generic R string and build an AST, in the context of an H2O Cloud
- *  @author cliffc@0xdata.com
+/**
+ * Parse a generic R string and build an AST, in the context of an H2O Cloud
  */
 
 // --------------------------------------------------------------------------
@@ -121,7 +121,7 @@ public abstract class ASTOp extends AST {
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //
-//    // More generic reducers
+    // More generic reducers
     putPrefix(new ASTMin ());
     putPrefix(new ASTMax ());
     putPrefix(new ASTSum ());
@@ -133,7 +133,8 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTSumNaRm());
 //    putPrefix(new ASTXorSum ());
 //
-//    // Misc
+    // Misc
+    putPrefix(new ASTMatch());
 //    putPrefix(new ASTSeq   ());
 //    putPrefix(new ASTSeqLen());
 //    putPrefix(new ASTRepLen());
@@ -627,17 +628,17 @@ abstract class ASTBinOp extends ASTOp {
 
     // Cast the LHS of the op
     switch(left_type) {
-      case Env.NUM: d1  = ((ValNum)left)._d; break;
-      case Env.ARY: fr1 = ((ValFrame)left)._fr; break;
-      case Env.STR: s1  = ((ValStr)left)._s; break;
+      case Env.NUM: d0  = ((ValNum)left)._d; break;
+      case Env.ARY: fr0 = ((ValFrame)left)._fr; break;
+      case Env.STR: s0  = ((ValStr)left)._s; break;
       default: throw H2O.fail("Got unusable type: "+ left_type +" in binary operator "+ opStr());
     }
 
     // Cast the RHS of the op
     switch(right_type) {
-      case Env.NUM: d0  = ((ValNum)right)._d; break;
-      case Env.ARY: fr0 = ((ValFrame)right)._fr; break;
-      case Env.STR: s0  = ((ValStr)right)._s; break;
+      case Env.NUM: d1  = ((ValNum)right)._d; break;
+      case Env.ARY: fr1 = ((ValFrame)right)._fr; break;
+      case Env.STR: s1  = ((ValStr)right)._s; break;
       default: throw H2O.fail("Got unusable type: "+ right_type +" in binary operator "+ opStr());
     }
 
@@ -1080,6 +1081,47 @@ class ASTAND extends ASTBinOp {
     // Otherwise, push True
     env.push(new ValNum(1.0));
   }
+}
+
+class ASTMatch extends ASTUniPrefixOp {
+  double _nomatch;
+  String[] _matches;
+  @Override String opStr() { return "match"; }
+  ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
+  @Override ASTOp make() { return new ASTMatch(); }
+  ASTMatch parse_impl(Exec E) {
+    // First parse out the `ary` arg
+    AST ary = E.parse();
+    // The `table` arg
+    _matches = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    // cleanup _matches
+    for (int i = 0; i < _matches.length; ++i) _matches[i] = _matches[i].replace("\"", "").replace("\'", "");
+    // `nomatch` is just a number in case no match
+    ASTNum nomatch = (ASTNum)E.skipWS().parse(); _nomatch = nomatch.dbl();
+    // drop the incomparables arg for now ...
+    AST incomp = E.skipWS().parse();
+    ASTMatch res = (ASTMatch) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env e) {
+    Frame fr = e.pop0Ary();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("can only match on a single categorical column.");
+    if (!fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
+    Key tmp = Key.make();
+    final String[] matches = _matches;
+    Frame rez = new MRTask() {
+      private int in(String s) { return Arrays.asList(matches).contains(s) ? 1 : 0; }
+      @Override public void map(Chunk c, NewChunk n) {
+        int rows = c.len();
+        for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at80(r)]));
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
+    e.cleanup(fr);
+    e.push(new ValFrame(rez));
+  }
+
 }
 
 // R like binary operator ||
@@ -1653,12 +1695,9 @@ class ASTMean extends ASTUniPrefixOp {
 //    return out;
 //  }
 //}
-//
+
 //class ASTTable extends ASTOp {
-//  ASTTable() { super(new String[]{"table", "ary"}, new Type[]{Type.ARY,Type.ARY},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
+//  ASTTable() { super(new String[]{"table", "ary"}); }
 //  @Override String opStr() { return "table"; }
 //  @Override ASTOp make() { return new ASTTable(); }
 //  @Override void apply(Env env, int argcnt, ASTApply apply) {
@@ -1815,16 +1854,15 @@ class ASTMean extends ASTUniPrefixOp {
 //    env.push(fr2);
 //  }
 //}
-//
+
 //class ASTCut extends ASTOp {
-//  ASTCut() { super(new String[]{"cut", "ary", "dbls"},
-//          new Type[]{Type.ARY, Type.ARY, Type.dblary()},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
+//  ASTCut() { super(new String[]{"cut", "ary", "breaks", "labels", "include.lowest", "right", "dig.lab"});}
 //  @Override String opStr() { return "cut"; }
 //  @Override ASTOp make() {return new ASTCut();}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
+//  ASTCut parse_impl(Exec E) {
+//
+//  }
+//  @Override void apply(Env env) {
 //    if(env.isDbl()) {
 //      final int nbins = (int) Math.floor(env.popDbl());
 //      if(nbins < 2)
@@ -2038,11 +2076,11 @@ class ASTMean extends ASTUniPrefixOp {
 //}
 //
 ///**
-// * R 'ls' command.
-// *
-// * This method is purely for the console right now.  Print stuff into the string buffer.
-// * JSON response is not configured at all.
-// */
+//* R 'ls' command.
+//*
+//* This method is purely for the console right now.  Print stuff into the string buffer.
+//* JSON response is not configured at all.
+//*/
 //class ASTLs extends ASTOp {
 //  ASTLs() { super(new String[]{"ls"},
 //          new Type[]{Type.DBL},
@@ -2052,7 +2090,7 @@ class ASTMean extends ASTUniPrefixOp {
 //  @Override String opStr() { return "ls"; }
 //  @Override ASTOp make() {return new ASTLs();}
 //  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    for( Key key : H2O.KeySnapshot.globalSnapshot().keys())
+//    for( Key key : KeySnapshot.globalSnapshot().keys())
 //      if( key.user_allowed() && H2O.get(key) != null )
 //        env._sb.append(key.toString());
 //    // Pop the self-function and push a zero.

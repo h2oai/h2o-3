@@ -106,6 +106,7 @@ function(expr, envir) {
   if (isGeneric(deparse(expr[[1]]))) {
     # Have a vector => ASTSeries
     if ((expr[[1]]) == quote(`c`)) {
+    print("AST WALK DEBUG")
     children <- lapply(expr[-1], .ast.walker, envir)
     # ASTSeries single numbers should have no leading '#', so strip it.
     children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', x) else x)
@@ -146,7 +147,12 @@ function(a, name=NULL) {
     if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
       if (length(res) > 1) {
-        return(.ast.walker(res, parent.frame()))
+        # wrap the vector up into a ';' separated {} thingy
+#        return(unlist(lapply(res, deparse)))
+        tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
+#        return(tt)
+        return('{' %<p0-%   tt  %<p0-% '}')
+#        return(.ast.walker((substitute(res)), parent.frame()))
       } else {
         if (is.numeric(res)) return('#' %<p0-% res)
         if (is.logical(res)) return('$' %<p0-% res)

@@ -1,7 +1,10 @@
 package water.cascade;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
+
 import java.util.ArrayList;
 
 /**
@@ -176,18 +179,25 @@ class ASTSpan extends AST {
 class ASTSeries extends AST {
   final long[] _idxs;
   final ASTSpan[] _spans;
-  boolean _isCol; boolean _isRow;
-  ASTSeries(long[] idxs, ASTSpan[] spans) { _idxs = idxs; _spans = spans;}
+  boolean _isCol;
+  boolean _isRow;
+
+  ASTSeries(long[] idxs, ASTSpan[] spans) {
+    _idxs = idxs;
+    _spans = spans;
+  }
+
   ASTSeries parse_impl(Exec E) {
     ArrayList<Long> l_idxs = new ArrayList<>();
     ArrayList<ASTSpan> s_spans = new ArrayList<>();
     String[] strs = E.parseString('}').split(";");
     for (String s : strs) {
       if (s.charAt(0) == '(') {
-        s_spans.add( (ASTSpan)(new Exec(s,null)).parse());
+        s_spans.add((ASTSpan) (new Exec(s, null)).parse());
       } else l_idxs.add(Long.valueOf(s));
     }
-    long[] idxs = new long[l_idxs.size()]; ASTSpan[] spans = new ASTSpan[s_spans.size()];
+    long[] idxs = new long[l_idxs.size()];
+    ASTSpan[] spans = new ASTSpan[s_spans.size()];
     for (int i = 0; i < idxs.length; ++i) idxs[i] = l_idxs.get(i);
     for (int i = 0; i < spans.length; ++i) spans[i] = s_spans.get(i);
     return new ASTSeries(idxs, spans);
@@ -195,30 +205,58 @@ class ASTSeries extends AST {
 
   boolean contains(long a) {
     if (_spans != null)
-      for (ASTSpan s:_spans) if(s.contains(a)) return true;
+      for (ASTSpan s : _spans) if (s.contains(a)) return true;
     if (_idxs != null)
       for (long l : _idxs) if (l == a) return true;
     return false;
   }
-  boolean isColSelector() { return _isCol; }
-  boolean isRowSelector() { return _isRow; }
-  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override void exec(Env e) { ValSeries v = new ValSeries(_idxs, _spans); v.setSlice(_isRow, _isCol); e.push(v); }
-  @Override String value() { return null; }
-  @Override int type() { return Env.SERIES; }
-  @Override public String toString() {
+
+  boolean isColSelector() {
+    return _isCol;
+  }
+
+  boolean isRowSelector() {
+    return _isRow;
+  }
+
+  void setSlice(boolean row, boolean col) {
+    _isRow = row;
+    _isCol = col;
+  }
+
+  @Override
+  void exec(Env e) {
+    ValSeries v = new ValSeries(_idxs, _spans);
+    v.setSlice(_isRow, _isCol);
+    e.push(v);
+  }
+
+  @Override
+  String value() {
+    return null;
+  }
+
+  @Override
+  int type() {
+    return Env.SERIES;
+  }
+
+  @Override
+  public String toString() {
     String res = "c(";
     if (_spans != null) {
       for (ASTSpan s : _spans) {
-        res += s.toString(); res += ",";
+        res += s.toString();
+        res += ",";
       }
-      if (_idxs == null) res = res.substring(0, res.length()-1); // remove last comma?
+      if (_idxs == null) res = res.substring(0, res.length() - 1); // remove last comma?
     }
     if (_idxs != null) {
       for (long l : _idxs) {
-        res += l; res += ",";
+        res += l;
+        res += ",";
       }
-      res = res.substring(0, res.length()-1); // remove last comma.
+      res = res.substring(0, res.length() - 1); // remove last comma.
     }
     res += ")";
     return res;
@@ -226,8 +264,8 @@ class ASTSeries extends AST {
 
   long[] toArray() {
     int res_length = 0;
-    if (_spans != null) for (ASTSpan s : _spans) res_length += (int)s._max - (int)s._min + 1;
-    if ( _idxs != null) res_length += _idxs.length;
+    if (_spans != null) for (ASTSpan s : _spans) res_length += (int) s._max - (int) s._min + 1;
+    if (_idxs != null) res_length += _idxs.length;
     long[] res = new long[res_length];
     int cur = 0;
     if (_spans != null) {

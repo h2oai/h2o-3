@@ -563,7 +563,6 @@ class ValStr extends Val {
   @Override String value() { return _s; }
 }
 
-
 //TODO: add in a boolean field for exclusion
 class ValSpan extends Val {
   final long _min;       final long _max;
