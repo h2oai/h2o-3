@@ -319,7 +319,8 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     }
 
     @Override protected void chunkDone(long n){
-      if(_computeGram)_gram.mul(_reg);
+      if(_computeGram)
+        _gram.mul(_reg);
       for(int i = 0; i < _xy.length; ++i)
         _xy[i] *= _reg;
       if(_grad != null)
