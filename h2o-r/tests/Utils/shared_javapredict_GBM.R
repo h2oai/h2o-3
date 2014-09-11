@@ -3,11 +3,12 @@ heading("BEGIN TEST")
 conn <- new("H2OClient", ip=myIP, port=myPort)
 
 heading("Uploading train data to H2O")
-iris_train.hex <- h2o.uploadFile.FV(conn, train)
+iris_train.hex <- h2o.uploadFile(conn, train)
 
 heading("Creating GBM model in H2O")
 distribution <- if (exists("distribution")) distribution else "multinomial"
-iris.gbm.h2o <- h2o.gbm(x = x, y = y, data = iris_train.hex, distribution = distribution, n.trees = n.trees, interaction.depth = interaction.depth, n.minobsinnode = n.minobsinnode, shrinkage = shrinkage)
+balance_classes <- if (exists("balance_classes")) balance_classes else FALSE
+iris.gbm.h2o <- h2o.gbm(x = x, y = y, data = iris_train.hex, distribution = distribution, n.trees = n.trees, interaction.depth = interaction.depth, n.minobsinnode = n.minobsinnode, shrinkage = shrinkage, balance.classes = balance_classes)
 print(iris.gbm.h2o)
 
 heading("Downloading Java prediction model code from H2O")
@@ -21,7 +22,7 @@ cmd <- sprintf("curl -o %s/%s.java http://%s:%d/2/GBMModelView.java?_modelKey=%s
 safeSystem(cmd)
 
 heading("Uploading test data to H2O")
-iris_test.hex <- h2o.uploadFile.FV(conn, test)
+iris_test.hex <- h2o.uploadFile(conn, test)
 
 heading("Predicting in H2O")
 iris.gbm.pred <- h2o.predict(iris.gbm.h2o, iris_test.hex)
@@ -34,14 +35,18 @@ write.csv(prediction1, cmd, quote=FALSE, row.names=FALSE)
 heading("Setting up for Java POJO")
 iris_test_with_response <- read.csv(test, header=T)
 iris_test_without_response <- iris_test_with_response[,x]
+if(is.null(ncol(iris_test_without_response))) {
+  iris_test_without_response <- data.frame(iris_test_without_response)
+  colnames(iris_test_without_response) <- x
+}
 write.csv(iris_test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
 cmd <- sprintf("cp PredictCSV.java %s", tmpdir_name)
 safeSystem(cmd)
-cmd <- sprintf("javac -cp %s/h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m %s/PredictCSV.java %s/%s.java", H2O_JAR_DIR, tmpdir_name, tmpdir_name, model_key)
+cmd <- sprintf("javac -cp %s/h2o-model.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/PredictCSV.java %s/%s.java", H2O_JAR_DIR, tmpdir_name, tmpdir_name, model_key)
 safeSystem(cmd)
 
 heading("Predicting with Java POJO")
-cmd <- sprintf("java -ea -cp %s/h2o-model.jar:%s -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model %s --input %s/in.csv --output %s/out_pojo.csv", H2O_JAR_DIR, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
+cmd <- sprintf("java -ea -cp \"%s/h2o-model.jar%s%s\" -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model %s --input %s/in.csv --output %s/out_pojo.csv", H2O_JAR_DIR, .Platform$path.sep, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
 safeSystem(cmd)
 
 heading("Comparing predictions between H2O and Java POJO")

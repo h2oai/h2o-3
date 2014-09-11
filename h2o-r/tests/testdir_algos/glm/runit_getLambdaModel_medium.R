@@ -1,0 +1,43 @@
+#Build glm model with lambda search on and return_all_lambda as true.
+#Randomly choose a lambda and get the model specific to that lambda
+#Change the 1st parameter of the getLambdaModel method and make sure you get the same model for the same lambda
+
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../findNSourceUtils.R')
+
+
+test.GLM.getLambdaModel <- function(conn) {
+print("Read data")
+pros.hex = h2o.importFile(conn,normalizePath(locate("smalldata/logreg/prostate.csv")), key="pros.hex")
+
+myX = c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+myY = "CAPSULE"
+print("Choose distribution")
+family = sample(c("gaussian","binomial"),1)
+print(family)
+
+print("Do lambda search and build models")
+my.glm = h2o.glm(x=myX, y=myY, data=pros.hex, family=family,standardize=T,use_all_factor_levels=TRUE,higher_accuracy=T,lambda_search=T,return_all_lambda=T,variable_importances=TRUE)
+
+print("the models were built over the following lambda values  - ")
+all_lambdas = my.glm@models[[1]]@model$params$lambda_all
+print(all_lambdas)
+
+for(i in 1:10){
+	model_number = sample(seq(1,length(my.glm@models[[1]]@model$params$lambda_all),1),2)
+	lambda = all_lambdas[sample(seq(1,length(all_lambdas),1),1)]
+	print(paste("***************For lambda=",lambda," , we get this model- ",sep=''))
+	m1 = h2o.getGLMLambdaModel(model=my.glm@models[[model_number[1]]],lambda=lambda)
+	print(m1)
+	print("***************this model should be same as the one above- ")
+	m2 = h2o.getGLMLambdaModel(model=my.glm@models[[model_number[2]]],lambda=lambda)
+	print(m2)
+	expect_equal(m1,m2)
+}
+
+testEnd()
+}
+
+doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)
+
+

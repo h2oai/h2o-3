@@ -1,0 +1,58 @@
+##
+# Testing glm completion with strong rules on data with added synthetic noise.
+##
+
+
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../findNSourceUtils.R')
+
+
+test <- function(conn) {
+
+    print("Reading in original prostate data.")
+        prostate.hex = h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"), key="prostate.hex", header=TRUE)
+    
+    print("Reading in synthetic columns.")
+        BIN <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.bin.csv.zip"), key="BIN", header=FALSE)
+        FLOAT <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.float.csv.zip"), key="FLOAT", header=FALSE)
+        INT <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.int.csv.zip"), key="INT", header=FALSE)
+    
+    print("Bind synthetic columns to original data.")
+        prostate.data <- h2o.assign(cbind(prostate.hex, BIN, FLOAT, INT),"prostate.data")
+   
+    print("Run test/train split at 20/80.")
+        prostate.data$split <- ifelse(h2o.runif(prostate.data)>0.8, yes=1, no=0)
+        prostate.train <- h2o.assign(prostate.data[prostate.data$split == 0, c(1:12)], "prostate.train")
+        prostate.test <- h2o.assign(prostate.data[prostate.data$split == 1, c(1:12)], "prostate.test")
+    
+    print("Run modeling with with and without synthetic data.")
+        # Test that run time is within reasonable timeframe (ie. 30 seconds)
+        # GLM aborted if exceeds time frame and test fails
+        startTime = proc.time()
+        prostate.def.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        endTime = proc.time()
+        elapsedTime = endTime - startTime
+        stopifnot(elapsedTime < 60)
+        
+        startTime = proc.time()
+        prostate.bin.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","BIN"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        endTime = proc.time()
+        elapsedTime = endTime - startTime
+        stopifnot(elapsedTime < 60)
+        
+        startTime = proc.time()
+        prostate.float.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","FLOAT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        endTime = proc.time()
+        elapsedTime = endTime - startTime
+        stopifnot(elapsedTime < 60)
+        
+        startTime = proc.time()
+        prostate.int.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","INT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, use_all_factor_levels=TRUE, nfolds=0)
+        endTime = proc.time()
+        elapsedTime = endTime - startTime
+        stopifnot(elapsedTime < 60)
+
+    testEnd()
+    }
+
+doTest("Testing glm completion with strong rules on data with added synthetic noise.", test)

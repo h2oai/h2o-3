@@ -1,10 +1,12 @@
-#'
-#' A set of utility functions for the H2O R Unit Test Framework.
-
 .origEchoValue <- getOption("echo")
 options(echo=FALSE)
 local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
 if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
+if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
+tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Ups. Couldn't install `rgl` package...") })
+if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
+
+
 library(R.utils)
 ##
 # Utilities for relative paths in R
@@ -19,13 +21,14 @@ function(path, root, optional_root_parent = NULL) {
     #use optional_root_parent if your root directory is too generic (e.g. root = "tests")
     bdp <- basename(dirname(path)) == root
     rddNbdpEopr <- root %in% dir(dirname(path)) & (is.null(optional_root_parent) || basename(dirname(path)) == optional_root_parent)
+
     if (basename(path) == root || root %in% dir(path)) {  #rddNbdpEopr) {
         #I am in the root being searched for, or it's in the directory I am in currently
         if(!is.null(optional_root_parent)) ROOTISPARENT <<- TRUE
         return(0)
     }
 
-    if (basename(path) == "h2o-dev" || "smalldata" %in% dir(path)) {
+    if (basename(path) == "h2o" || "smalldata" %in% dir(path)) {
         print("\n[INFO]: Could not find the bucket that you specified! Checking R/*. Will fail if cannot find\n")
         SEARCHPATH <<- path
         return(-1)
@@ -134,20 +137,12 @@ if (distance < 0) {
     source(paste(path, "tests/Utils/glmR.R", sep = ""))
     source(paste(path, "tests/Utils/gbmR.R", sep = ""))
     source(paste(path, "tests/Utils/utilsR.R", sep = ""))
-    source(paste(path, "h2o-package/R/wrapper.R", sep = ""))
-    source(paste(path, "h2o-package/R/constants.R", sep = ""))
-    source(paste(path, "h2o-package/R/logging.R", sep = ""))
-    source(paste(path, "h2o-package/R/h2o.R", sep = ""))
-    source(paste(path, "h2o-package/R/exec.R", sep = ""))
-    source(paste(path, "h2o-package/R/classes.R", sep = ""))
-    source(paste(path, "h2o-package/R/ops.R", sep = ""))
-    source(paste(path, "h2o-package/R/methods.R", sep = ""))
-    source(paste(path, "h2o-package/R/ast.R", sep = ""))
-    source(paste(path, "h2o-package/R/import.R", sep = ""))
-    source(paste(path, "h2o-package/R/parse.R", sep = ""))
-    source(paste(path, "h2o-package/R/export.R", sep = ""))
+    source(paste(path, "h2o-package/R/Wrapper.R", sep = ""))
+    source(paste(path, "h2o-package/R/Internal.R", sep = ""))
+    source(paste(path, "h2o-package/R/Classes.R", sep = ""))
+    source(paste(path, "h2o-package/R/ParseImport.R", sep = ""))
+    source(paste(path, "h2o-package/R/Algorithms.R", sep = ""))
     source(paste(path, "h2o-package/R/models.R", sep = ""))
-    source(paste(path, "h2o-package/R/algorithms.R", sep = ""))
 } else {
     dots     <- genDots(distance)
     source(paste(dots, "Utils/h2oR.R", sep = ""))
@@ -160,20 +155,12 @@ if (distance < 0) {
     #rdots is the calculated path to the R source files...
     rdots <- ifelse(dots == "./", "../", paste("../", dots, sep = ""))
 
-    source(paste(rdots, "h2o-package/R/wrapper.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/constants.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/logging.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/h2o.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/exec.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/classes.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/ops.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/methods.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/ast.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/import.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/parse.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/export.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/Wrapper.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/Internal.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/Classes.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/ParseImport.R", sep = ""))
+    source(paste(rdots, "h2o-package/R/Algorithms.R", sep = ""))
     source(paste(rdots, "h2o-package/R/models.R", sep = ""))
-    source(paste(rdots, "h2o-package/R/algorithms.R", sep = ""))
 }
 
 #The master seed is set by the runnerSetup.R script.
@@ -200,7 +187,6 @@ h2o.removeAll(new("H2OClient", ip=myIP, port=myPort))
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {
   H2O_JAR_DIR = sprintf("%s/../../target", TEST_ROOT_DIR)
-  print("===CRUNK===",H2O_JAR_DIR)
 }
   
 # Clean up any temporary variables to avoid polluting the user's workspace.

@@ -1,0 +1,28 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../findNSourceUtils.R')
+
+# Test k-means clustering on prostate.csv
+test.km.prostate <- function(conn) {
+  Log.info("Importing prostate.csv data...\n")
+  # prostate.hex = h2o.importURL(conn, "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/prostate.csv", "prostate.hex")
+  # prostate.hex = h2o.importFile(conn, normalizePath("../../../smalldata/logreg/prostate.csv"))
+  prostate.hex = h2o.uploadFile(conn, locate("../../../smalldata/logreg/prostate.csv"))
+  prostate.sum = summary(prostate.hex)
+  print(prostate.sum)
+  
+  # prostate.data = read.csv(text = getURL("https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/prostate.csv"), header = TRUE)
+  prostate.data = read.csv(locate("../../../smalldata/logreg/prostate.csv"), header = TRUE)
+  prostate.data = na.omit(prostate.data)
+  
+  for(i in 5:8) {
+    Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
+    Log.info(paste( "Using these columns: ", colnames(prostate.hex)[-1]) )
+    prostate.km.h2o = h2o.kmeans(data = prostate.hex, centers = as.numeric(i), cols = colnames(prostate.hex)[-1])
+    print(prostate.km.h2o)
+    prostate.km = kmeans(prostate.data[,3], centers = i)
+  }
+
+  testEnd()
+}
+
+doTest("KMeans Test: Prostate Data", test.km.prostate)

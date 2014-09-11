@@ -1,0 +1,89 @@
+#----------------------------------------------------------------------
+# Tom's demonstration example.
+#
+# Purpose:  Fast local data prepapration for multi-model scoring option
+#           from H2O Web UI menu (aka steam).
+#----------------------------------------------------------------------
+
+# Source setup code to define myIP and myPort and helper functions.
+# If you are having trouble running this, just set the condition to FALSE
+# and hardcode myIP and myPort.
+if (TRUE) {
+  # Set working directory so that the source() below works.
+  setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+  
+  if (FALSE) {
+    setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
+  }
+  
+  source('../findNSourceUtils.R')
+  options(echo=TRUE)
+  filePath <- normalizePath(locate("smalldata/airlines/allyears2k_headers.zip"))
+} else {
+  stop("need to hardcode ip and port")
+  # myIP = "127.0.0.1"
+  # myPort = 54321
+  
+  library(h2o)
+  PASS_BANNER <- function() { cat("\nPASS\n\n") }
+  filePath <- "https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
+}
+
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
+
+df = h2o.importFile(conn, filePath, "df")
+
+s = h2o.runif(df)
+air.train = df[s <= 0.8,]
+h2o.assign(air.train, ("air.train"))
+air.valid = df[s > 0.8,]
+h2o.assign(air.valid, ("air.valid"))
+
+# Data set column headers
+# Year,Month,DayofMonth,DayOfWeek,DepTime,CRSDepTime,ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed,IsDepDelayed
+
+myX = c("Year", "Month", "DayofMonth", "DayOfWeek", "CRSDepTime", "CRSArrTime",
+        "UniqueCarrier", "FlightNum", "CRSElapsedTime", "Origin", "Dest", "Distance")
+myY = "IsDepDelayed"
+
+air.gbm = h2o.gbm(data = air.train, validation = air.valid,
+                  x = myX, y = myY,
+                  n.trees = c(5, 10), interaction.depth = c(3, 5),
+                  importance = TRUE)
+
+air.drf = h2o.randomForest(data = air.train, validation = air.valid,
+                           x = myX, y = myY,
+                           ntree = c(5, 10), depth = c(5, 10),
+                           importance = TRUE,
+                           type = "BigData")
+
+air.srf = h2o.randomForest(data = air.train, validation = air.valid,
+                           x = myX, y = myY,
+                           ntree = c(5, 10), depth = c(5, 10),
+                           importance = TRUE,
+                           type = "fast")
+
+air.glm = h2o.glm(data = air.train,
+                  x = myX, y = myY,
+                  family = "binomial",
+                  alpha = c(0.1, 0.2, 0.5),
+                  use_all_factor_levels = TRUE, variable_importances = TRUE)
+
+air.dl = h2o.deeplearning(data = air.train, validation = air.valid,
+                          x = myX, y = myY,
+                          classification = TRUE,
+                          activation = c("Tanh", "Rectifier"),
+                          hidden = list(c(5, 5), c(10,10)),
+                          use_all_factor_levels = TRUE, variable_importances = TRUE)
+
+# Scrub out Last.value's so the Store View isn't cluttered.
+h2o.rm(conn, grep(pattern = "Last.value", x = h2o.ls(conn)$Key, value = TRUE))
+
+message = sprintf("%sPoint your web browser to:  http://%s:%s/steam/index.html\n%s",
+                  "----------\n\n",
+                  conn@ip, conn@port,
+                  "\n----------\n"
+                  )
+cat(message)
+
+PASS_BANNER()

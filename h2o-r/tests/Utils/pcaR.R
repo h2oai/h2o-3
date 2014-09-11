@@ -1,4 +1,12 @@
 checkPCAModel <- function(myPCA.h2o, myPCA.r, toleq = 1e-5) {
+
+  Log.info("Checking the standard deviations: ")
+  Log.info("H2O: ")
+  print(myPCA.h2o@model$sdev)
+  Log.info("R: ")
+  print(myPCA.r$sdev)
+
+
   checkEqualsNumeric(myPCA.h2o@model$sdev, myPCA.r$sdev)
   ncomp = length(colnames(myPCA.h2o@model$rotation))
   myPCA.h2o@model$rotation = apply(myPCA.h2o@model$rotation, 2, as.numeric)
