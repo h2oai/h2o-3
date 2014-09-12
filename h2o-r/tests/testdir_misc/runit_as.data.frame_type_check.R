@@ -12,13 +12,13 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../findNSourceUtils.R')
+source('../h2o-runit.R')
 
 # setupRandomSeed(1994831827)
 
 data.frame.type.test <- function(conn) {
-   iris.FV <- h2o.uploadFile(conn, locate("smalldata/iris/iris2.csv"))
-   df.iris.FV <- as.data.frame(iris.FV)
+   iris.FV <- as.h2o(conn, iris)
+   df.iris.FV <- iris
 
    #Check each column:
 

@@ -1,10 +1,10 @@
 #!/bin/bash/
 
-#disperse findNSourceUtils.R
+#disperse h2o-runit.R
 
 disperse() {
-    #$1 is directory path to cp findNSourceUtils.R to
-    cp findNSourceUtils.R $1
+    #$1 is directory path to cp h2o-runit.R to
+    cp h2o-runit.R $1
 }
 
 #directories:

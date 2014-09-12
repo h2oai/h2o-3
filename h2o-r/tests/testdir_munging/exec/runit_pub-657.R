@@ -3,7 +3,7 @@
 # conn = h2o.init()
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
+source('../../h2o-runit.R')
 
 test.pub.657 <- function(conn) {
 

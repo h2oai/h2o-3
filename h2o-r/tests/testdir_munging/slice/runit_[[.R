@@ -2,7 +2,7 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
+source('../../h2o-runit.R')
 
 test.columndereference <- function(conn) {
   Log.info('test column dereference')

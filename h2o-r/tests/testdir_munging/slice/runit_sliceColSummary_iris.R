@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
+source('../../h2o-runit.R')
 
 #setupRandomSeed(1193410486)
 test.slice.colSummary <- function(conn) {

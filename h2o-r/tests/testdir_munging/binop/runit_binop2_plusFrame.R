@@ -1,54 +1,8 @@
-##
-# Test: binop2 + opeartor
-# Description: Check the '+' binop2 operator
-# Variations: e1 + e2
-#    e1 & e2 H2OParsedData
-#    e1 Numeric & e2 H2OParsedData
-#    e1 H2OParsedData & e2 Numeric
-##
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
-
-
-colCheckEquals<-
-function(fr1, fr2) {
-    expect_that(dim(fr1), equals(dim(fr2)))
-    expect_that(fr1[,1], equals(fr2[,1]))
-    for ( i in dim(fr1)[2]) {
-      expect_that(fr1[,i], equals(fr2[,i]))
-    }
-}
-
-
-#setupRandomSeed(2078846715)
-
-doSelect<-
-function() {
-    d <- select()
-    dd <- d[[1]]$ATTRS
-    if(any(dd$TYPES != "enum")) return(d)
-    Log.info("No numeric columns found in data, trying a different selection")
-    doSelect()
-}
+source('../../h2o-runit.R')
 
 test.plus.onFrame <- function(conn) {
-  dataSet <- doSelect()
-  dataName <- names(dataSet)
-  dd <- dataSet[[1]]$ATTRS
-  colnames <- dd$NAMES
-  numCols  <- as.numeric(dd$NUMCOLS)
-  numRows  <- as.numeric(dd$NUMROWS)
-  colTypes <- dd$TYPES
-  colRange <- dd$RANGE
-
-  Log.info(paste("Importing ", dataName, " data..."))
-  hex <- h2o.uploadFile(conn, locate(dataSet[[1]]$PATHS[1]), paste("r", gsub('-','_',dataName),".hex", sep = ""))
-  originalDataType <- class(hex)
-  hexOrig <- hex
-  anyEnum <- FALSE
-  if(any(dd$TYPES == "enum")) anyEnum <- TRUE
+  hex <- as.h2o(conn, iris)
 
   Log.info("Try adding scalar to frame: 5 + hex")
   # if(anyEnum) expect_warning(fivePlusHex <- 5 + hex)

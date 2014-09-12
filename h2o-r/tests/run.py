@@ -149,13 +149,14 @@ class H2OCloudNode:
                "-jar", self.h2o_jar,
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
-               "-hdfs_version", "cdh3"]
+               #"-hdfs_version", "cdh3",
+               ]
 
         # Add S3N credentials to cmd if they exist.
         ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
-        if (os.path.exists(ec2_hdfs_config_file_name)):
-            cmd.append("-hdfs_config")
-            cmd.append(ec2_hdfs_config_file_name)
+        #if (os.path.exists(ec2_hdfs_config_file_name)):
+        #    cmd.append("-hdfs_config")
+        #    cmd.append(ec2_hdfs_config_file_name)
 
         self.output_file_name = \
             os.path.join(self.output_dir, "java_" + str(self.cloud_num) + "_" + str(self.node_num) + ".out.txt")
@@ -836,7 +837,8 @@ class RUnitRunner:
             out = open(out_file_name, "w")
             cloud = self.clouds[0]
             port = cloud.get_port()
-            ip = "127.0.0.1:"
+            #ip = "127.0.0.1:"
+            ip = cloud.get_ip()+":"
             if (g_use_cloud2):
                 ip = cloud.get_ip()+":"
             cmd = ["R",
@@ -1464,8 +1466,8 @@ def main(argv):
 
     # Calculate and set other variables.
     h2o_jar = os.path.abspath(
-        os.path.join(os.path.join(os.path.join(os.path.join(
-            test_root_dir, ".."), ".."), "target"), "h2o.jar"))
+        os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
+            test_root_dir, ".."), ".."), "h2o-app"), "build"), "libs"), "h2o-app.jar"))
 
     # Override any defaults with the user's choices.
     parse_args(argv)

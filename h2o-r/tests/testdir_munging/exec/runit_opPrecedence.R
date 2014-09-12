@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
+source('../../h2o-runit.R')
 
 get.eval.result <- function(conn, expr) {
     res =  .h2o.__exec2(conn, expr)

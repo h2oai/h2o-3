@@ -4,7 +4,7 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../findNSourceUtils.R')
+source('../h2o-runit.R')
 
 test.basic.colname.assignment <- function(conn) {
   Log.info("Uploading iris data...")

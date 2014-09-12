@@ -6,7 +6,7 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../findNSourceUtils.R')
+source('../../h2o-runit.R')
 
 test.sdev <- function(conn) {
   Log.info("Uploading iris/iris_wheader.csv")

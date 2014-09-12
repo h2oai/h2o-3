@@ -3,7 +3,7 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../findNSourceUtils.R')
+source('../h2o-runit.R')
 
 test <- function(conn) {
   arrests.hex = h2o.uploadFile(conn, locate("../../../smalldata/pca_test/USArrests.csv"), "arrests.hex")

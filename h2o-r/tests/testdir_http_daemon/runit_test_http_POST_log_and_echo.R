@@ -6,7 +6,7 @@
 
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_http_daemon")
 
-source('../findNSourceUtils.R')
+source('../h2o-runit.R')
 
 conn <- new("H2OClient", ip=myIP, port=myPort)
 

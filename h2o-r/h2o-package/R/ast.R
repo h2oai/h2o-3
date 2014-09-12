@@ -106,7 +106,6 @@ function(expr, envir) {
   if (isGeneric(deparse(expr[[1]]))) {
     # Have a vector => ASTSeries
     if ((expr[[1]]) == quote(`c`)) {
-    print("AST WALK DEBUG")
     children <- lapply(expr[-1], .ast.walker, envir)
     # ASTSeries single numbers should have no leading '#', so strip it.
     children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', x) else x)

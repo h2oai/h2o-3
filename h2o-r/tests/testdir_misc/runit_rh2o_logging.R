@@ -4,7 +4,7 @@
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../findNSourceUtils.R')
+source('../h2o-runit.R')
 
 test.rh2o_logging <- function(conn) {
   # Change log paths to R working directory

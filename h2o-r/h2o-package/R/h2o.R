@@ -23,7 +23,7 @@
   # Re-enable POST since we found the bug in NanoHTTPD which was causing POST
   # payloads to be dropped.
   #
-  if(.pkg.env$IS_LOGGING) {
+#  if(.pkg.env$IS_LOGGING) {
     # Log list of parameters sent to H2O
 #    .h2o.__logIt(myURL, list(...), "Command")
 #
@@ -40,7 +40,7 @@
 #    cmdDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_COMMAND))
 #    if(!file.exists(cmdDir)) stop(cmdDir, " directory does not exist")
 #    write(s, file = .pkg.env$h2o.__LOG_COMMAND, append = TRUE)
-  } else {
+#  } else {
 
     temp <- list()
 
@@ -67,7 +67,7 @@
       if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
       stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
     }
-  }
+#  }
   res
 }
 
