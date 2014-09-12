@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
+  @BeforeClass public static void setup() { stall_till_cloudsize(5);   jobKey = Key.make("job");}
   static Key jobKey;
 
   //------------------- simple tests on synthetic data------------------------------------
