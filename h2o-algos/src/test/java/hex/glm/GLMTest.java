@@ -93,6 +93,8 @@ public class GLMTest  extends TestUtil {
       model = DKV.get(modelKey).get();
       assertEquals(0.3396,model.beta()[1],1e-4);
       assertEquals(0.2565,model.beta()[0],1e-4);
+      // test scoring
+
     }finally{
       if( fr != null ) fr.delete();
       if(model != null)model.delete();
@@ -127,6 +129,7 @@ public class GLMTest  extends TestUtil {
       new GLM(jobKey,modelKey,"glm test simple gamma",params).train().get();
       model = DKV.get(modelKey).get();
       for(double c:model.beta())assertEquals(1.0, c,1e-4);
+      // test scoring
     }finally{
       if( fr != null ) fr.delete();
       if(model != null)model.delete();
@@ -165,6 +168,13 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
+  static int rank(double [] ary) {
+    int res = 0;
+    for(int i = 0; i < ary.length-1; ++i)
+      if(ary[i] != 0) ++res;
+    return res;
+
+  }
   //------------ TEST on selected files form small data and compare to R results ------------------------------------
   /**
    * Simple test for poisson, gamma and gaussian families (no regularization, test both lsm solvers).
@@ -178,6 +188,7 @@ public class GLMTest  extends TestUtil {
     Key modelKey = Key.make("cars_model");
     Frame fr = null;
     GLMModel model = null;
+    Frame score = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
@@ -194,6 +205,12 @@ public class GLMTest  extends TestUtil {
         assertEquals(vls1[i], coefs.get(cfs1[i]), 1e-4);
       // test gamma
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
+      score = model.score(fr);
+      GLMValidation val = model.validation();
+      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("power (hp)"),score.vec("predict")})._val;
+      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-5);
+      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
+      score.delete();
       model.delete();
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
@@ -205,6 +222,11 @@ public class GLMTest  extends TestUtil {
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls2[i], coefs.get(cfs1[i]), 1e-4);
+      score = model.score(fr);
+      val = model.validation();
+      val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("power (hp)"),score.vec("predict")})._val;
+      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
+      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
       model.delete();
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
@@ -218,8 +240,10 @@ public class GLMTest  extends TestUtil {
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
+      // test scoring
     } finally {
       if( fr != null ) fr.delete();
+      if(score != null)score.delete();
       if(model != null)model.delete();
       DKV.remove(jobKey);
     }
@@ -270,6 +294,9 @@ public class GLMTest  extends TestUtil {
       auc.execImpl();
       AUCData adata = auc.data();
         assertEquals(val.auc(),adata.AUC(),1e-2);
+      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
+      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
+      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
     } finally {
       fr.delete();
       if(model != null)model.delete();
@@ -283,6 +310,7 @@ public class GLMTest  extends TestUtil {
     Key modelKey = Key.make("glm_model");
     GLMModel model = null;
     Frame fr = parse_test_file(parsed, "smalldata/glm_test/glm_test2.csv");
+    Frame score = null;
     try {
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response = fr.find("response");
@@ -295,9 +323,21 @@ public class GLMTest  extends TestUtil {
       double [] beta = model.beta();
       for(double d:beta)
         assertTrue(Math.abs(d) < 16);
+      GLMValidation val = model.validation();
+      assertEquals(1,val.auc,1e-2);
+      score = model.score(fr);
+      AUC auc = new AUC();
+      auc.predict = score;
+      auc.actual = fr;
+      auc.vactual = fr.vec("response");
+      auc.vpredict = score.vec("1");
+      auc.execImpl();
+      AUCData adata = auc.data();
+      assertEquals(val.auc(),adata.AUC(),1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();
+      if(score != null)score.delete();
       DKV.remove(jobKey);
     }
   }
