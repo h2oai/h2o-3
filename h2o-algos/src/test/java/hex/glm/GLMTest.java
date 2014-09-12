@@ -4,14 +4,19 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
+import hex.glm.GLMTask.GLMIterationTask;
 import hex.utils.MSETsk;
+import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.api.AUC;
+import water.api.AUCData;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset2;
+import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5);   jobKey = Key.make("job");}
+  @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
   static Key jobKey;
 
   //------------------- simple tests on synthetic data------------------------------------
@@ -234,7 +239,7 @@ public class GLMTest  extends TestUtil {
     Key modelKey = Key.make("prostate_model");
     GLMModel model = null;
     Frame fr = parse_test_file(parsed, "smalldata/glm_test/prostate_cat_replaced.csv");
-
+    Frame score = null;
     try{
       // R results
 //      Coefficients:
@@ -256,10 +261,19 @@ public class GLMTest  extends TestUtil {
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(396.3, val.aic(),1e-1);
-      // TODO test scoring
+      score = model.score(fr);
+      AUC auc = new AUC();
+      auc.predict = score;
+      auc.actual = fr;
+      auc.vactual = fr.vec("CAPSULE");
+      auc.vpredict = score.vec("1");
+      auc.execImpl();
+      AUCData adata = auc.data();
+        assertEquals(val.auc(),adata.AUC(),1e-2);
     } finally {
       fr.delete();
       if(model != null)model.delete();
+      if(score != null)score.delete();
       DKV.remove(jobKey);
     }
   }

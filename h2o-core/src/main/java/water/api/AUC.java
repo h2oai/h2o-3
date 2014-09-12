@@ -116,7 +116,7 @@ public class AUC extends Iced {
       // compute CMs
       aucdata = new AUCData().compute(new AUCTask(thresholds,va.mean()).doAll(va,vp).getCMs(), thresholds, va.factors(), threshold_criterion);
     } finally {       // Delete adaptation vectors
-      if (va!=null) DKV.remove(va._key);
+      if (va!=null) va.remove();
     }
   }
 

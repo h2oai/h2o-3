@@ -590,7 +590,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
             }
             @Override public void callback(final LMAXTask gLmax){
               // public GLMModel(Key selfKey, String[] names, String[][] domains, GLMParameters parms, GLMOutput output) {
-              GLMOutput glmOutput = new GLMOutput(_dinfo);
+              GLMOutput glmOutput = new GLMOutput(_dinfo,_params.family == Family.binomial);
               String warning = null;
 
               if(_params.lambda_search) {
@@ -662,7 +662,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax),objval(lLmax,_params.alpha[0],lLmax.lmax()));
-                        new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
+                        new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo,_params.family == Family.binomial), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
                           // lambda max for this n_fold is > than global lambda max -> it has non-trivial solution for global lambda max, need to compute it first.

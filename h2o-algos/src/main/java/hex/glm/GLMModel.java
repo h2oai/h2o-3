@@ -450,13 +450,24 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     float       _threshold;
     double   [] _global_beta;
     final String   [] _coefficient_names;
+    final boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
-    public GLMOutput(DataInfo dinfo){
+    public GLMOutput(DataInfo dinfo, boolean binomial){
       String [] cnames = dinfo.coefNames();
       String [] pnames = dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       _coefficient_names[cnames.length] = "Intercept";
+      _binomial = binomial;
+    }
+
+    @Override
+    public int nclasses() {
+      return _binomial?2:1;
+    }
+    private static String [] binomialClassNames = new String[]{"0","1"};
+    @Override public String [] classNames(){
+      return _binomial?binomialClassNames:null;
     }
     void addNullSubmodel(double lmax,double icept, GLMValidation val){
       assert _submodels == null;
