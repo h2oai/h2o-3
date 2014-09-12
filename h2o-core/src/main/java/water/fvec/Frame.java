@@ -17,18 +17,21 @@ import java.util.HashMap;
  * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
  * references all the Vecs but this one.
  */
-public class Frame extends Lockable {
+public class Frame extends Lockable implements UniquelyIdentifiable {
   public String[] _names;
   private Key[] _keys;           // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
+  private UniqueId _uniqueId = null; // Way to uniquely identify this Frame with an extremely high probability
 
   public Frame( String name ) { this(Key.make(name),null,new Vec[0]); } // Empty frame, lazily filled
   public Frame( Vec... vecs ){ this(null,vecs);}
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   public Frame( Key key ) { this(key,null,new Vec[0]); }
-  public Frame( Key key, String names[], Vec vecs[] ) { 
+  public Frame( Key key, String names[], Vec vecs[] ) {
     super(key);
+
+    _uniqueId = new UniqueFrameId(key, this);
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
@@ -38,7 +41,7 @@ public class Frame extends Lockable {
     if( names==null ) {
       names = new String[vecs.length];
       for( int i=0; i<vecs.length; i++ ) names[i] = "C"+(i+1);
-    } 
+    }
     assert names.length == vecs.length;
 
     // Make empty to dodge asserts, then "add()" them all which will check for
@@ -227,7 +230,7 @@ public class Frame extends Lockable {
     return null;
   }
 
-  public final Vec[] vecs() { 
+  public final Vec[] vecs() {
     Vec[] tvecs = _vecs; // read the content
     return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
   }
@@ -295,6 +298,25 @@ public class Frame extends Lockable {
     Vec[] vecs = vecs();
     for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
+  }
+
+  public UniqueId getUniqueId() {
+    return this._uniqueId;
+  }
+
+  /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the chunks are XORed
+   * together.  Since parse always parses the same pieces of files into the same offsets
+   * in some chunk this checksum will be consistent across reparses.
+   */
+  public long checksum() {
+    Vec [] vecs = vecs();
+    long _checksum = 0;
+    for(int i = 0; i < _names.length; ++i) {
+      long vec_checksum = vecs[i].checksum();
+      _checksum ^= vec_checksum;
+      _checksum ^= (2147483647 * i);
+    }
+    return _checksum;
   }
 
   // For MRTask: allow rollups for all written-into vecs

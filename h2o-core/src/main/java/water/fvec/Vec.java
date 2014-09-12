@@ -1,15 +1,16 @@
 package water.fvec;
 
-import java.util.Arrays;
-import java.util.UUID;
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.parser.Enum;
 import water.parser.ParseTime;
 import water.parser.ValueString;
-import water.parser.Enum;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
+
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * A single distributed vector column.
@@ -69,6 +70,10 @@ public class Vec extends Keyed {
   /** String flag */
   protected boolean _isString;    // All Strings
 
+  private long _last_write_timestamp = System.currentTimeMillis();
+  private long _checksum_timestamp = -1;
+  private long _checksum = 0;
+
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
   public Vec( Key key, long espc[]) { this(key, espc, null); }
@@ -99,7 +104,7 @@ public class Vec extends Keyed {
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<LOG_CHK;
     espc[nchunks] = len;
-    return makeCon(l,domain,VectorGroup.VG_LEN1,espc); 
+    return makeCon(l,domain,VectorGroup.VG_LEN1,espc);
   }
 
   static public Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
@@ -143,7 +148,7 @@ public class Vec extends Keyed {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
-    for(int i = 0; i < vs.length; ++i) 
+    for(int i = 0; i < vs.length; ++i)
       vs[i] = new Vec(keys[i],_espc,
                       domains== null ? null    : domains[i],
                       uuids  == null ? false   : uuids  [i],
@@ -284,7 +289,7 @@ public class Vec extends Keyed {
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
 
-  /** Histogram bins.  Computed on-demand to 1st call to these methods.  
+  /** Histogram bins.  Computed on-demand to 1st call to these methods.
    *  bins[] are row-counts in each bin
    *  base - start of bin 0
    *  stride - relative start of next bin
@@ -295,6 +300,59 @@ public class Vec extends Keyed {
 
   /** Compute the roll-up stats as-needed */
   public RollupStats rollupStats() { return RollupStats.get(this).getResult(); }
+
+  /** A private class to compute the rollup stats */
+  private static class ChecksummerTask extends MRTask<ChecksummerTask> {
+    public long checksum = 0;
+    public long getChecksum() { return checksum; }
+
+    @Override public void map( Chunk c ) {
+      long _start = c._start;
+
+      for( int i=0; i<c.len(); i++ ) {
+        long l = 81985529216486895L; // 0x0123456789ABCDEF
+        if (! c.isNA0(i)) {
+          if (c instanceof C16Chunk) {
+            l = c.at16l0(i);
+            l ^= (37 * c.at16h0(i));
+          } else {
+            l = c.at80(i);
+          }
+        }
+        long global_row = _start + i;
+
+        checksum ^= (17 * global_row);
+        checksum ^= (23 * l);
+      }
+    } // map()
+
+    @Override public void reduce( ChecksummerTask that ) {
+      this.checksum ^= that.checksum;
+    }
+  } // class ChecksummerTask
+
+  public long checksum() {
+    final long now = _last_write_timestamp;  // TODO: someone can be writing while we're checksuming. . .
+    if (-1 != now && now == _checksum_timestamp) {
+      return _checksum;
+    }
+    final long checksum = new ChecksummerTask().doAll(this).getChecksum();
+
+    new TAtomic<Vec>() {
+      @Override public Vec atomic(Vec v) {
+          if (v != null) {
+              v._checksum = checksum;
+              v._checksum_timestamp = now;
+          } return v;
+      }
+    }.invoke(_key);
+
+    this._checksum = checksum;
+    this._checksum_timestamp = now;
+
+    return checksum;
+  }
+
 
   /** Writing into this Vector from *some* chunk.  Immediately clear all caches
    *  (_min, _max, _mean, etc).  Can be called repeatedly from one or all
@@ -318,6 +376,8 @@ public class Vec extends Keyed {
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
   public Futures postWrite( Futures fs ) {
+    // TODO: update _last_write_timestamp!
+
     // Get the latest rollups *directly* (do not compute them!).
     final Key rskey = rollupStatsKey();
     Value val = DKV.get(rollupStatsKey());
@@ -634,7 +694,7 @@ public class Vec extends Keyed {
 
   /** Makes a new transformation vector with identity mapping.
    *  @return a new transformation vector
-   *  @see Vec#makeTransf(int[], int[], String[])   
+   *  @see Vec#makeTransf(int[], int[], String[])
    */
   private Vec makeIdentityTransf() {
     assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
@@ -776,15 +836,15 @@ public class Vec extends Keyed {
         if( !ys.isNA0(row) )
           _uniques.put(ys.at80(row),"");
     }
-  
+
     @Override public void reduce(CollectDomain mrt) {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
-  
+
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
-  
+
     @Override public CollectDomain read_impl( AutoBuffer ab ) {
       assert _uniques == null || _uniques.size()==0;
       long ls[] = ab.getA8();
@@ -795,7 +855,7 @@ public class Vec extends Keyed {
     @Override public void copyOver(CollectDomain that) {
       _uniques = that._uniques;
     }
-  
+
     /** Returns exact numeric domain of given vector computed by this task.
      * The domain is always sorted. Hence:
      *    domain()[0] - minimal domain value

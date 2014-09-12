@@ -97,27 +97,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     double [] _gradient; // full gradient at previous beta (or null)
     int             _iter;
     int             _max_iter;
-    double          _lambda;
+    double _lastLambda;
     float        [] _thresholds;
     double          _objval;
-    boolean         _higher_accuracy;
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
     final Key             _dstKey;
     final DataInfo        _dinfo;
     final GLMParameters   _params;
 
-    public GLMTaskInfo(Key dstKey, DataInfo dinfo, GLMParameters params, long nobs, double ymu, double lmax, double lambda, double[] beta, double[] gradient){
+    public GLMTaskInfo(Key dstKey, DataInfo dinfo, GLMParameters params, long nobs, double ymu, double lmax, double lambda, double[] beta, double[] gradient, double objval){
       _dstKey = dstKey;
       _dinfo = dinfo;
       _params = params;
       _nobs = nobs;
       _ymu = ymu;
       _lambdaMax = lmax;
-      _lambda = lambda;
+      _lastLambda = lambda;
       _beta = beta;
       _gradient = gradient;
       _max_iter = _params.lambda_search?MAX_ITERATIONS_PER_LAMBDA:MAX_ITER;
+      _objval = objval;
       if(_params.family == Family.binomial)
         _thresholds = ModelUtils.DEFAULT_THRESHOLDS;
 
@@ -135,7 +135,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   public static final class GLMLambdaTask extends DTask<GLMLambdaTask>{
     FrameTask.DataInfo _activeData;
     GLMTaskInfo _taskInfo;
-    final double _lambda;
+    final double _currentLambda;
     int _iter;
     final Key _jobKey;
     Key _progressKey;
@@ -144,13 +144,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     public GLMLambdaTask(H2OCountedCompleter cmp, Key jobKey, Key progressKey, GLMTaskInfo state, double lambda){
       super(cmp);
       _taskInfo = state;
-      _lambda = lambda;
+      _currentLambda = lambda;
       _jobKey = jobKey;
       _progressKey = progressKey;
     }
 
     private String LogInfo(String msg){
-      msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _iter + ", lambda = " + _lambda + "]: " + msg;
+      msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _iter + ", lambda = " + _currentLambda + "]: " + msg;
       Log.info(msg);
       return msg;
     }
@@ -181,24 +181,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _taskInfo._dinfo.fullN() + " total.");
       assert _activeCols == null || _activeData.fullN() == _activeCols.length:LogInfo("mismatched number of cols, got " + _activeCols.length + " active cols, but data info claims " + _activeData.fullN());
       return _activeCols;
-    }
-
-    private final double l2pen(){return 0.5 * _lambda * (1- _taskInfo._params.alpha[0]);}
-    private final double l1pen(){return _lambda * _taskInfo._params.alpha[0];}
-    protected double l2norm(double[] beta){
-      if(beta == null)return 0;
-      double l2 = 0;
-      for (double aBeta : beta) l2 += aBeta * aBeta;
-      return l2;
-    }
-    protected double l1norm(double[] beta){
-      if(beta == null)return 0;
-      double l2 = 0;
-      for (double aBeta : beta) l2 += Math.abs(aBeta);
-      return l2;
-    }
-    private double objval(GLMIterationTask glmt){
-      return glmt._val.residual_deviance / glmt._nobs + 0.5 * l2pen() * l2norm(glmt._beta) + l1pen() * l1norm(glmt._beta);
     }
 
     /**
@@ -238,7 +220,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         newBetaDeNorm[newBetaDeNorm.length-1] -= norm;
       } else
         newBetaDeNorm = null;
-      GLMModel.setSubmodel(cmp, _taskInfo._dstKey, _lambda, newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta, (_iter + 1), System.currentTimeMillis() - _start_time, _taskInfo._dinfo.fullN() >= sparseCoefThreshold, val);
+      GLMModel.setSubmodel(cmp, _taskInfo._dstKey, _currentLambda, newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta, (_iter + 1), System.currentTimeMillis() - _start_time, _taskInfo._dinfo.fullN() >= sparseCoefThreshold, val);
       return fullBeta;
     }
 
@@ -268,7 +250,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         @Override
         public void callback(final GLMIterationTask glmt2) {
           // first check KKT conditions!
-          final double [] grad = glmt2.gradient(_taskInfo._params.alpha[0],_lambda);
+          final double [] grad = glmt2.gradient(_taskInfo._params.alpha[0], _currentLambda);
           if(ArrayUtils.hasNaNsOrInfs(grad)){
             if(!failedLineSearch) {
               LogInfo("Check KKT got NaNs. Invoking line search");
@@ -278,13 +260,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
               return;
             } else {
               // TODO: add warning and break th lambda search? Or throw Exception?
-              LogInfo("got NaNs/Infs in gradient at lambda " + _lambda);
+              LogInfo("got NaNs/Infs in gradient at lambda " + _currentLambda);
             }
           }
           // check the KKT conditions and filter data for next lambda_value
           // check the gradient
           double[] subgrad = grad.clone();
-          ADMMSolver.subgrad(_taskInfo._params.alpha[0], _lambda, fullBeta, subgrad);
+          ADMMSolver.subgrad(_taskInfo._params.alpha[0], _currentLambda, fullBeta, subgrad);
           double err = GLM_GRAD_EPS;
           if (!failedLineSearch &&_activeCols != null) {
             for (int c : _activeCols)
@@ -325,7 +307,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
           }
           // update the state
           _taskInfo._beta = glmt2._beta;
-          _taskInfo._gradient = glmt2.gradient(_taskInfo._params.alpha[0], _taskInfo._lambda);
+          _taskInfo._gradient = glmt2.gradient(_taskInfo._params.alpha[0], _taskInfo._lastLambda);
           _taskInfo._iter = _iter;
 
           int diff = MAX_ITERATIONS_PER_LAMBDA - _iter + _taskInfo._iter;
@@ -348,7 +330,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         return true;
       if(glmt._val == null) // no validation info, no way to decide
         return false;
-      return needLineSearch(glmt._beta, objval(glmt), step);
+      return needLineSearch(glmt._beta, objval(glmt,_taskInfo._params.alpha[0], _currentLambda), step);
     }
     protected boolean needLineSearch(final double [] beta,double objval, double step){
       assert beta != null;
@@ -364,18 +346,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         double diff = (beta[i] - oldBeta[i]);
         f_hat += step * grad[i] * diff + .5*diff*diff;
       }
-      f_hat += _lastResult._objval;
+      f_hat = f_hat + _lastResult._objval;
       return objval > f_hat;
     }
 
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
-      if(_lambda > _taskInfo._lambdaMax)
+      if(_currentLambda > _taskInfo._lambdaMax)
         return; // no point doing anything, it's just the null model
       _iter = _taskInfo._iter;
-      LogInfo("starting computation of lambda = " + _lambda + ", previous lambda = " + _taskInfo._lambda);
-      int [] activeCols = activeCols(_lambda, _taskInfo._lambda, _taskInfo._gradient);
+      LogInfo("starting computation of lambda = " + _currentLambda + ", previous lambda = " + _taskInfo._lastLambda);
+      int [] activeCols = activeCols(_currentLambda, _taskInfo._lastLambda, _taskInfo._gradient);
       int n = activeCols == null?_taskInfo._dinfo.fullN():activeCols.length;
       if(n > _taskInfo._params.maxActivePredictors)
         throw new TooManyPredictorsException();
@@ -401,11 +383,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         assert getCompleter().getPendingCount() <= 1 : LogInfo("unexpected pending count, expected <=  1, got " + getCompleter().getPendingCount()); // will be decreased by 1 after we leave this callback
         if (_countIteration) ++_iter;
         long callbackStart = System.currentTimeMillis();
-
         if(needLineSearch(glmt,_lineSearchStep)){
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
-          new GLMTask.GLMLineSearchTask(_jobKey,_activeData, _taskInfo._params, _lastResult._beta ,glmt._beta,1e-4, _taskInfo._ymu, _taskInfo._nobs, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          double [] oldBeta = _lastResult._beta;
+          if(oldBeta == null) {
+            oldBeta = MemoryManager.malloc8d(_taskInfo._dinfo.fullN() + 1);
+            oldBeta[oldBeta.length-1] = _taskInfo._params.link(_taskInfo._ymu);
+          }
+          new GLMTask.GLMLineSearchTask(_jobKey,_activeData, _taskInfo._params, oldBeta, glmt._beta,1e-4, _taskInfo._ymu, _taskInfo._nobs, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         }
         if(glmt._newThresholds != null) {
@@ -414,9 +400,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         }
         double gerr = Double.NaN;
         if (glmt._val != null && glmt._computeGradient) { // check gradient
-          _lastResult = new IterationInfo(_iter,glmt._beta,glmt.gradient(_taskInfo._params.alpha[0],_lambda),objval(glmt));
+          _lastResult = new IterationInfo(_iter,glmt._beta,glmt.gradient(_taskInfo._params.alpha[0], _currentLambda),objval(glmt,_taskInfo._params.alpha[0],_currentLambda));
           double [] grad = _lastResult._grad.clone();
-          ADMMSolver.subgrad(_taskInfo._params.alpha[0], _lambda, glmt._beta, grad);
+          ADMMSolver.subgrad(_taskInfo._params.alpha[0], _currentLambda, glmt._beta, grad);
           gerr = 0;
           for (double d : grad)
             if (d > gerr) gerr = d;
@@ -429,8 +415,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         }
         final double [] newBeta = MemoryManager.malloc8d(glmt._xy.length);
         long t1 = System.currentTimeMillis();
-        ADMMSolver slvr = new ADMMSolver(_lambda, _taskInfo._params.alpha[0], GLM_GRAD_EPS, _addedL2);
-        slvr.solve(glmt._gram,glmt._xy,glmt._yy,newBeta,_lambda* _taskInfo._params.alpha[0]);
+        ADMMSolver slvr = new ADMMSolver(_currentLambda, _taskInfo._params.alpha[0], GLM_GRAD_EPS, _addedL2);
+        slvr.solve(glmt._gram,glmt._xy,glmt._yy,newBeta, _currentLambda * _taskInfo._params.alpha[0]);
         if(_lineSearchStep < 1){
           if(glmt._beta != null)
             for(int i = 0; i < newBeta.length; ++i)
@@ -459,7 +445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
           } else { // not done yet, launch next iteration
             if (glmt._beta != null)
               setSubmodel(glmt._beta, glmt._val, (H2O.H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
-            final boolean validate = _taskInfo._higher_accuracy || (_iter % 5) == 0;
+            final boolean validate = _taskInfo._params.higher_accuracy || (_iter % 5) == 0;
             getCompleter().addToPendingCount(1);
             new GLMIterationTask(_jobKey,_activeData,glmt._glm, true, validate, validate, newBeta, _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),true,Math.min(1,2*_lineSearchStep))).asyncExec(_activeData._adaptedFrame);
           }
@@ -473,21 +459,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         double step = 0.5;
         for(int i = 0; i < glmt._glmts.length; ++i){
           if(!needLineSearch(glmt._glmts[i],step)){
-            LogInfo("line search: found admissible step = " + step + ",  objval = " + objval(glmt._glmts[i]));
-            _taskInfo._higher_accuracy = true;
+            LogInfo("line search: found admissible step = " + step + ",  objval = " + objval(glmt._glmts[i],_taskInfo._params.alpha[0],_currentLambda));
+            _taskInfo._params.higher_accuracy = true;
             getCompleter().addToPendingCount(1);
             new GLMIterationTask(_jobKey,_activeData, _taskInfo._params,true,true,true,glmt._glmts[i]._beta, _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false,step)).asyncExec(_activeData._adaptedFrame);
             return;
           }
           step *= 0.5;
         } // no line step worked converge
-        if(!_taskInfo._higher_accuracy){ // start from scratch
-          _taskInfo._higher_accuracy = true;
+        if(!_taskInfo._params.higher_accuracy){ // start from scratch
+          _taskInfo._params.higher_accuracy = true;
           int add2iter = (_iter - _taskInfo._iter);
           LogInfo("Line search failed to progress, rerunning current lambda from scratch with high accuracy on, adding " + add2iter + " to max iterations");
           _taskInfo._max_iter += add2iter;
           getCompleter().addToPendingCount(1);
-          new GLMIterationTask(_jobKey,_activeData, _taskInfo._params,true,true,true,contractVec(_taskInfo._beta,_activeCols), _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false,step)).asyncExec(_activeData._adaptedFrame);
+          new GLMIterationTask(_jobKey,_activeData, _taskInfo._params,true,true,true,contractVec(_taskInfo._beta,_activeCols), _taskInfo._ymu,1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false,1)).asyncExec(_activeData._adaptedFrame);
           return;
         }
         LogInfo("Line search did not find feasible step, converged.");
@@ -606,6 +592,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
               // public GLMModel(Key selfKey, String[] names, String[][] domains, GLMParameters parms, GLMOutput output) {
               GLMOutput glmOutput = new GLMOutput(_dinfo);
               String warning = null;
+
               if(_params.lambda_search) {
                 assert !Double.isNaN(gLmax.lmax()) : "running lambda_value search, but don't know what is the lambda_value max!";
                 if (_params.lambda_min_ratio == -1)
@@ -628,18 +615,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                   throw new IllegalArgumentException("Given lambda(s) are all > lambda_max = " + gLmax.lmax() + ", have nothing to run with. lambda = " + Arrays.toString(lambdas));
                 if(i > 0) {
                   warning = "Removed " + i + " lambdas greater than lambda_max.";
-                  lambdas = ArrayUtils.append(new double[]{gLmax.lmax()},Arrays.copyOfRange(lambdas,i,lambdas.length));
                 }
+                lambdas = ArrayUtils.append(new double[]{gLmax.lmax()},Arrays.copyOfRange(lambdas,i,lambdas.length));
               }
+              double nextLambda = lambdas[1];
               if(lambdas.length > 1)
-                glmOutput.addNullSubmodel(gLmax.lmax(),_params.linkInv(gYmu),gLmax._val);
+                glmOutput.addNullSubmodel(gLmax.lmax(), _params.link(gYmu), gLmax._val);
               _maxLambda = lambdas.length;
               GLMModel model = new GLMModel(_dstKey, _dinfo, _params, glmOutput,gYmu,gLmax.lmax(),nobs);
               if(warning != null)
                 model.addWarning(warning);
               model.delete_and_lock(_jobKey);
               final double lmax = gLmax.lmax();
-              _state[0] = new GLMTaskInfo(_dstKey,_dinfo,_params,gLmax._nobs,gLmax._ymu,lmax,lmax,null,gLmax.gradient(_params.alpha[0],lmax));
+              _state[0] = new GLMTaskInfo(_dstKey,_dinfo,_params,gLmax._nobs,gLmax._ymu,lmax,lmax,null,gLmax.gradient(_params.alpha[0],lmax),objval(gLmax,_params.alpha[0],gLmax.lmax()));
               getCompleter().addToPendingCount(1);
               if(_params.n_folds > 1){
                 final H2OCountedCompleter cmp = new H2OCallback((H2OCountedCompleter)getCompleter()) {
@@ -673,7 +661,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                         // long nobs, double ymu, double lmax, double [] beta, double [] gradient
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, H2O.SELF);
-                        _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax));
+                        _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax),objval(lLmax,_params.alpha[0],lLmax.lmax()));
                         new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
@@ -685,7 +673,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                   }
                 }
               } else {
-                new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _jobKey, _progressKey, _state[0], lambdas[_lambdaId]).fork();
+                new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _jobKey, _progressKey, _state[0], lambdas[++_lambdaId]).fork();
               }
             }
           }).asyncExec(_dinfo._adaptedFrame);
@@ -718,12 +706,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
             H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
             cmp.addToPendingCount(tasks.length-1);
             for(int i = 0; i < tasks.length; ++i) {
-              _state[i]._lambda = currentLambda;
+              _state[i]._lastLambda = currentLambda;
               tasks[i] = new GLMLambdaTask(cmp, _jobKey, _progressKey, _state[i], nextLambda);
             }
             new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter()),tasks).fork();
           } else {
-            _state[0]._lambda = currentLambda;
+            _state[0]._lastLambda = currentLambda;
             new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _jobKey, _progressKey, _state[0], nextLambda).fork();
           }
         }
@@ -769,4 +757,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     return contractVec(full,activeCols);
   }
 
+  protected static double l2norm(double[] beta){
+    if(beta == null)return 0;
+    double l2 = 0;
+    for (int i = 0; i < beta.length-1; ++i)
+      l2 += beta[i] * beta[i];
+    return l2;
+  }
+  protected static double l1norm(double[] beta){
+    if(beta == null)return 0;
+    double l1 = 0;
+    for (int i = 0; i < beta.length-1; ++i)
+      l1 += beta[i] < 0?-beta[i]:beta[i];
+    return l1;
+  }
+
+  private static double penalty(double [] beta, double alpha, double lambda){
+    return lambda*(alpha*l1norm(beta) + .5*(1-alpha)*l2norm(beta));
+  }
+  private static double  objval(GLMIterationTask glmt, double alpha, double lambda){
+    return glmt._val.residual_deviance / glmt._nobs + penalty(glmt._beta,alpha,lambda);
+  }
 }
