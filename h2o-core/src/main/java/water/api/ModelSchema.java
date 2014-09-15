@@ -20,8 +20,11 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
   // Input fields
   @API(help="Model key", required=true)
-  protected
-  Key key;
+  protected Key key;
+
+  // Output fields
+  @API(help="Unique id")
+  protected UniqueIdBase unique_id;
 
   @API(help="The build parameters for the model (e.g. K for KMeans).")
   protected ModelParametersSchema parameters;
@@ -66,6 +69,9 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
     output = createOutputSchema();
     output.fillFromImpl(m._output);
+
+    unique_id = new UniqueIdV3();
+    unique_id.fillFromImpl(m.getUniqueId());
 
     return (S)this; // have to cast because the definition of S doesn't include ModelSchema
   }

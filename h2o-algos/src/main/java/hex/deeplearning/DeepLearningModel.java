@@ -4,7 +4,9 @@ import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
-import water.api.*;
+import water.api.API;
+import water.api.ModelSchema;
+import water.api.ValidationAdapter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -729,9 +731,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    @API(help = "AUC on validation data")
     public AUCData validAUC;
 //    @API(help = "Hit ratio on training data")
-    public water.api.HitRatio train_hitratio;
+    public water.HitRatio train_hitratio;
 //    @API(help = "Hit ratio on validation data")
-    public water.api.HitRatio valid_hitratio;
+    public water.HitRatio valid_hitratio;
 
     // regression
 //    @API(help = "Training MSE")
@@ -789,7 +791,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public ConfusionMatrix2 cm() {
     final Errors lasterror = last_scored();
     if (lasterror == null) return null;
-    water.api.ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
+    ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
     if (cm == null || cm.cm == null) {
@@ -1273,7 +1275,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
         }
         rms_bias[y] = MathUtils.approxSqrt(rms_bias[y]/biases[y-1].size());
-        rms_weight[y] = MathUtils.approxSqrt(rms_weight[y]/get_weights(y-1).size());
+        rms_weight[y] = MathUtils.approxSqrt(rms_weight[y] / get_weights(y - 1).size());
         if (rate != null) rms_rate[y] = MathUtils.approxSqrt(rms_rate[y]/rate[y-1].length);
 //        rms_bias[y] = (float)Math.sqrt(rms_bias[y]/biases[y-1].length);
 //        rms_weight[y] = (float)Math.sqrt(rms_weight[y]/weights[y-1].length);
@@ -1558,7 +1560,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 bestPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
               }
               final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-                      printme, get_params().max_confusion_matrix_size, new water.api.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
+                      printme, get_params().max_confusion_matrix_size, new water.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
               if (_output.isClassifier())
                 assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
               else

@@ -1,8 +1,8 @@
 package water;
 
 import water.Model.ModelCategory;
-import water.api.AUCData;
-import water.api.ConfusionMatrix;
+import water.api.ModelMetricsBase;
+import water.api.ModelMetricsV3;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -40,10 +40,19 @@ public final class ModelMetrics extends Iced {
     this.cm = cm;
   }
 
+  /**
+   * Externally visible default schema
+   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
+   * This puts a reverse edge into the dependency graph.
+   */
+  public ModelMetricsBase schema() {
+    return new ModelMetricsV3();
+  }
+
+
   public static Key buildKey(Model model, Frame frame) {
     return Key.make("modelmetrics_" + model.getUniqueId().getId() + "_on_" + frame.getUniqueId().getId());
   }
-
 
   public static Key buildKey(UniqueId model, UniqueId frame) {
     return Key.make("modelmetrics_" + model.getId() + "_on_" + frame.getId());
@@ -51,6 +60,14 @@ public final class ModelMetrics extends Iced {
 
   public Key buildKey() {
     return Key.make("modelmetrics_" + this.model.getId() + "_on_" + this.frame.getId());
+  }
+
+  public boolean isForModel(Model m) {
+    return (null != model && model.equals(m.getUniqueId()));
+  }
+
+  public boolean isForFrame(Frame f) {
+    return (null != frame && frame.equals(f.getUniqueId()));
   }
 
   public void putInDKV() {

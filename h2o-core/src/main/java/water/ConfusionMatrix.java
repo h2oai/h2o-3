@@ -1,4 +1,4 @@
-package water.api;
+package water;
 
 import water.*;
 import water.fvec.Chunk;

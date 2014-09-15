@@ -6,7 +6,7 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import water.ConfusionMatrix2;
 import water.Iced;
 import water.Key;
-import water.api.AUC;
+import water.AUC;
 import water.util.ModelUtils;
 
 /**

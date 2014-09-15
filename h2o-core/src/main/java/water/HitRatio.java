@@ -1,4 +1,4 @@
-package water.api;
+package water;
 
 import static water.util.ModelUtils.getPredictions;
 import java.util.Arrays;
