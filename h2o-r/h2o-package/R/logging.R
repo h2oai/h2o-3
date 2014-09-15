@@ -78,8 +78,7 @@ h2o.setLogPath <- function(path, type) {
 h2o.logAndEcho <- function(conn, message) {
   if(class(conn) != "H2OClient") stop("conn must be an H2OClient")
   if(!is.character(message)) stop("message must be a character string")
-
-  res = .h2o.__remoteSend(conn, .h2o.__PAGE_LOG_AND_ECHO, message=message)
+  res <- .h2o.__remoteSend(conn, .h2o.__LOGANDECHO, message=message)
   echo_message = res$message
   return(echo_message)
 }

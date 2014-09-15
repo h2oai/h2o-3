@@ -48,9 +48,16 @@
 
     # GET
     if (method == "GET") {
-      if(length(list(...)) == 0 && length(.params) == 0)
+      if(length(list(...)) == 0 && length(.params) == 0) {
+        #
+        # TODO: PUT IN A TRY CATCH AND DUMP EVERYTHING FOR DEBUG
+        #
+        tryCatch(
         temp <- invisible(getURLContent(myURL))
-      else
+        , error = function(e) { print("Error!"); print(myURL); print(getURLContent(myURL)); })
+        temp <- invisible(getURLContent(myURL))
+
+      } else
         temp = invisible(getForm(myURL, .params = .params, .checkParams = FALSE))  # Some H2O params overlap with Curl params
 
     # POST
@@ -61,6 +68,10 @@
     # post-processing
     after <- gsub('"Infinity"', '"Inf"', temp[1])
     after <- gsub('"-Infinity"', '"-Inf"', after)
+    if (is.null(after)) stop("`after` was NULL !!")
+    print("DEBUG")
+    print(after)
+    print("END")
     res <- fromJSON(after)
 
     if(!is.null(res$error)) {

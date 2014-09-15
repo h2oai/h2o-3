@@ -25,14 +25,14 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   myURL = paste("http://", ip, ":", port, sep="")
-  if(!url.exists(myURL)) {
+  if(!.uri.exists(myURL)) {
     if(!startH2O)
       stop(paste("Cannot connect to H2O server. Please check that H2O is running at", myURL))
     else if(ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
       .h2o.startJar(max_memory = max_mem_size, min_memory = min_mem_size, beta = beta, assertion = assertion, forceDL = forceDL, license = license)
-      count = 0; while(!url.exists(myURL) && count < 60) { Sys.sleep(1); count = count + 1 }
-      if(!url.exists(myURL)) stop("H2O failed to start, stopping execution.")
+      count = 0; while(!.uri.exists(myURL) && count < 60) { Sys.sleep(1); count = count + 1 }
+      if(!.uri.exists(myURL)) stop("H2O failed to start, stopping execution.")
     } else stop("Can only start H2O launcher if IP address is localhost.")
   }
   cat("Successfully connected to", myURL, "\n")
@@ -52,7 +52,7 @@ h2o.shutdown <- function(client, prompt = TRUE) {
   if(!is.logical(prompt)) stop("prompt must be of class logical")
   
   myURL = paste("http://", client@ip, ":", client@port, sep="")
-  if(!url.exists(myURL)) stop(paste("There is no H2O instance running at", myURL))
+  if(!.uri.exists(myURL)) stop(paste("There is no H2O instance running at", myURL))
   
   if(prompt) {
     ans = readline(paste("Are you sure you want to shutdown the H2O instance running at", myURL, "(Y/N)? "))
@@ -81,7 +81,7 @@ h2o.shutdown <- function(client, prompt = TRUE) {
 h2o.clusterStatus <- function(client) {
   if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
   myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
-  if(!url.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
+  if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
   res = fromJSON(postForm(myURL, style = "POST"))
   
   cat("Version:", res$version, "\n")
@@ -156,7 +156,7 @@ h2o.clusterStatus <- function(client) {
     myURL = paste("http://", ip, ":", port, sep = "")
             
     # require(RCurl); require(rjson)
-    if(.h2o.startedH2O() && url.exists(myURL))
+    if(.h2o.startedH2O() && .uri.exists(myURL))
       h2o.shutdown(new("H2OClient", ip=ip, port=port), prompt = FALSE)
   }, onexit = TRUE)
 }
@@ -166,7 +166,7 @@ h2o.clusterStatus <- function(client) {
   ip    <- "127.0.0.1";
   port  <- 54321
   myURL <- paste("http://", ip, ":", port, sep = "")
-  if (url.exists(myURL)) {
+  if (.uri.exists(myURL)) {
     tryCatch(h2o.shutdown(new("H2OClient", ip = ip, port = port), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
@@ -196,7 +196,7 @@ h2o.clusterStatus <- function(client) {
 #   myURL = paste("http://", ip, ":", port, sep = "")
 #   
 #   require(RCurl); require(rjson)
-#   if(.h2o.startedH2O() && url.exists(myURL))
+#   if(.h2o.startedH2O() && .uri.exists(myURL))
 #     h2o.shutdown(new("H2OClient", ip=ip, port=port), prompt = FALSE)
 # }
 

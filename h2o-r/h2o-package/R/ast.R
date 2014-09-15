@@ -101,6 +101,7 @@ function(x, envir) {
 .ast.walker<-
 function(expr, envir) {
   if (length(expr) == 1) {
+    if (is.symbol(expr)) expr <- get(deparse(expr), envir)
     if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - 1))
   }
   if (isGeneric(deparse(expr[[1]]))) {

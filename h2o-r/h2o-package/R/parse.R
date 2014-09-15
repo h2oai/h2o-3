@@ -35,6 +35,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$name)
+  Sys.sleep(3)
 
   # Return a new H2OParsedData object
   nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
@@ -65,9 +66,13 @@ function(v) {
   v
 }
 
+#Inspect.json?key
+
+.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, 'Inspect.json?key=' %<p0-% key)$schema$rows }
+
 #'
 #' Inspect /3/Frames for nrows.
-.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, '3/Frames.json/' %<p0-% key)$frames[[1]]$rows }
+#.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, '3/Frames.json/' %<p0-% key)$frames[[1]]$rows }
 
 #'
 #' Load H2O Model from HDFS or Local Disk

@@ -100,13 +100,17 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
   }
 }
 
-#h2o.assign <- function(data, key) {
-#  if(class(data) != "H2OParsedData") stop("data must be of class H2OParsedData")
-#  if(!is.character(key)) stop("key must be of class character")
-#  if(nchar(key) == 0) stop("key cannot be an empty string")
-#  if(key == data@key) stop(paste("Destination key must differ from data key", data@key))
-#  .h2o.exec2(expr = data@key, h2o = data@h2o, dest_key = key)
-#}
+h2o.assign <- function(data, key) {
+  if(data %<i-% "ASTNode") invisible(head(data))
+  if(!( "H2OParsedData")) stop("data must be of class H2OParsedData")
+  if(!is.character(key)) stop("key must be of class character")
+  if(nchar(key) == 0) stop("key cannot be an empty string")
+  if(key == data@key) stop(paste("Destination key must differ from data key", data@key))
+  ast <- key %<-% (' $' %<p0-% data@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast, ID = NULL, rID = key)
+  assign(deparse(substitute(data)), get(key), , envir = parent.frame())
+  invisible(get(key))
+}
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
@@ -746,7 +750,7 @@ function(x, na.rm = FALSE) {
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   ID <- ifelse(ID == "Last.value", ID, ast.sd@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
-  ast.var
+  ast.sd
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

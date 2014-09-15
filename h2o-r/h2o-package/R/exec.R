@@ -74,7 +74,7 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if(length(as.list(substitute(Last.value))) > 1)
     stop(paste("Found phrase: ", substitute(Last.value), ". Illegal usage.", sep = ""))
 
-  Last.value <- ID %<-% Last.value
+  if (!is.null(ID)) Last.value <- ID %<-% Last.value
   expr <- visitor(Last.value)
 
   # Have H2O evaluate the AST
@@ -90,7 +90,8 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
     ret <- res$scalar
     if (ret == "NaN") ret <- NA
   }
-  assign(ID, ret, env = env)
+  if (!is.null(ID)) assign(ID, ret, env = env)
+  else assign(rID, ret, env = env)
 }
 
 #cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")

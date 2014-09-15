@@ -42,8 +42,8 @@
                 '>=' = 'G',
                 '<'  = 'l',
                 '<=' = 'L',
-                '==' = 'N',
-                '!=' = 'n',
+                '==' = 'n',
+                '!=' = 'N',
                 '%%' = '%',
                 '**' = '^',
                 '!'  = '_',
@@ -94,7 +94,12 @@
 #' Removal
 #'
 .h2o.__REMOVE       <- "Remove.json"
+.h2o.__REMOVEALL    <- "RemoveAll.json"
 
+#'
+#' Log and Echo
+#'
+.h2o.__LOGANDECHO   <- "LogAndEcho.json"
 
 
 #'
