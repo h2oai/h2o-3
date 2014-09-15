@@ -10,7 +10,7 @@ source('../../h2o-runit.R')
 
 test.basic.minmax <- function(conn) {
   Log.info("Uploading iris data...")
-  hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
+  hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
   data(iris)
 
   Log.info("Computing min & max of the first column of iris...")

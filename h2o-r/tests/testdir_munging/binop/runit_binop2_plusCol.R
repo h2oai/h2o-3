@@ -10,12 +10,9 @@ colPlus.numeric <- function(conn) {
  
   sliced <- hex[,col]
   Log.info("Placing key \"sliced.hex\" into User Store")
-  sliced <- h2o.assign(sliced, "sliced.hex")
-  print(h2o.ls(conn))
 
   Log.info("Adding 5 to sliced.hex")
   slicedPlusFive <- sliced + 5
-  slicedPlusFive <- h2o.assign(slicedPlusFive, "slicedPlusFive.hex")
 
   Log.info("Orignal sliced: ")
   print(head(as.data.frame(sliced)))

@@ -12,9 +12,9 @@ source('../../h2o-runit.R')
 
 test.dim <- function(conn) {
   Log.info("Uploading logreg/princeton/cuse.dat")
-  hex <- h2o.uploadFile(conn, locate("smalldata/logreg/princeton/cuse.dat"), "cuse.hex")
+  hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), "pros.hex")
   
-  Rdat <- read.csv(locate("smalldata/logreg/princeton/cuse.dat"))
+  Rdat <- read.csv(locate("smalldata/logreg/prostate.csv"))
   
   Log.info("The dimension of the data when read into R is: ")
   print(dim(Rdat))

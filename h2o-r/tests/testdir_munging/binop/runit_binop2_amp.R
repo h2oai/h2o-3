@@ -5,16 +5,16 @@ test.binop2.ampersand <- function(conn) {
 
   hex <- as.h2o(conn, iris)
 
-  hex & 5
-  5 & hex
-  5 && hex
-  hex && 5
-  hex && c(5,10,20)
-  c(5,10,20) && hex
-  hex[,1] && c(5,10,20)
-  c(5,10,20) && hex[,1]
-  hex[,1] & c(5,10,20)
-  c(5,10,20) & hex[,1]
+  print(hex & 5)
+  print(5 & hex)
+  #print(5 && hex)
+  #print(hex && 5)
+  #print(hex && c(5,10,20))
+  #print(c(5,10,20) && hex)
+  #print(hex[,1] && c(5,10,20))
+  #print(c(5,10,20) && hex[,1])
+  #print(hex[,1] & c(5,10,20))
+  #print(c(5,10,20) & hex[,1])
   
   testEnd()
 }

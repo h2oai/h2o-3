@@ -9,13 +9,11 @@ test.minus <- function(conn) {
 
 
   df <- head(hex)
-  col <- sample(length(colnames(df)))
+  col <- sample(ncol(hex), 1)
   Log.info(paste("Using column: ", col))
  
   sliced <- hex[,col]
   Log.info("Placing key \"sliced.hex\" into User Store")
-  sliced <- h2o.assign(sliced, "sliced.hex")
-  print(h2o.ls(conn))
 
   Log.info("Minisuing 5 from sliced.hex")
   slicedMinusFive <- sliced - 5

@@ -13,9 +13,6 @@ test.binop2.pipe <- function(conn) {
   col <- sample(ncol(hex), 1)
 
   sliced <- hex[,col]
-  Log.info("Placing key \"sliced.hex\" into User Store")
-  sliced <- h2o.assign(sliced, "sliced.hex")
-  print(h2o.ls(conn))
 
   Log.info("Performing the binop2 operation: 5 | col")
   Log.info("Expectation is the following: ")

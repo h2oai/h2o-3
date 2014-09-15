@@ -9,27 +9,12 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 test.var <- function(conn) {
-  Log.info("Uploading swiss_clean.csv")
-  swiss.hex <- h2o.uploadFile(conn, locate("smalldata/swiss_clean.csv"), "swiss.hex")
-  swiss.dat <- read.csv(locate("smalldata/swiss_clean.csv"))
-  
-  Log.info("The variance of swiss.csv when read into R is: ")
-  print(var(swiss.dat))
-  
-  Log.info("The variance of swiss.csv when asking H2O: ")
-  swiss_H2Ovar <- as.matrix(var(swiss.hex))
-  print(swiss_H2Ovar)
-  
-  expect_equal(dim(swiss_H2Ovar), c(ncol(swiss.hex), ncol(swiss.hex)))
-  # Note: expect_equivalent ignores attributes of objects. We need this since H2O doesn't support rownames.
-  expect_equivalent(swiss_H2Ovar, var(swiss.dat))  
-  
   Log.info("Uploading iris_wheader.csv")
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
+  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
   iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"))
   
   # Column 5 of iris is categorical, so should reject
-  expect_error(var(iris.hex))
+  #expect_error(var(iris.hex))
   
   Log.info("Slice out iris[,1] and get the variance: ")
   Log.info(paste("R:", var(iris.dat[,1]), "\tH2O:", var(iris.hex[,1])))

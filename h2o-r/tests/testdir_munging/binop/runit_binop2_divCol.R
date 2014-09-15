@@ -9,14 +9,15 @@ test.slice.div <- function(conn) {
   col <- sample(ncol(hex), 1)
 
   sliced <- hex[,col]
+  print(sliced)
+  print(head(sliced))
   Log.info("Placing key \"sliced.hex\" into User Store")
-  sliced <- h2o.assign(sliced, "sliced.hex")
-  print(h2o.ls(conn))
+#  sliced <- h2o.assign(sliced, "sliced.hex")
 
   Log.info("/ing 5 to sliced.hex")
   slicedDivFive <- sliced / 5
 
-  slicedDivFive <- h2o.assign(slicedDivFive, "slicedDivFive.hex")
+#  slicedDivFive <- h2o.assign(slicedDivFive, "slicedDivFive.hex")
 
   Log.info("Orignal sliced: ")
   print(head(as.data.frame(sliced)))

@@ -15,7 +15,7 @@ test.column.assignment <- function(conn) {
   dataName <- names(dataSet)
   dd <- dataSet[[1]]$ATTRS
   Log.info(paste("Importing ", dataName, " data..."))
-  hex <- h2o.uploadFile(conn, locate(dataSet[[1]]$PATHS[1]), paste("r", gsub('-','_',dataName),".hex", sep = ""))
+  hex <- h2o.importFile(conn, locate(dataSet[[1]]$PATHS[1]), paste("r", gsub('-','_',dataName),".hex", sep = ""))
 
   #could replace these with h2o-R call, but not testing that here
   colnames <- dd$NAMES

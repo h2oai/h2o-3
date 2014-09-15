@@ -7,19 +7,16 @@ test.gte.frame <- function(conn) {
   Log.info("Expectation is a frame of booleans")
   
   Log.info("Try hex >= 5 : ")
-  # if(anyEnum) expect_warning(hexGTEFive <- hex >= 5)
-  # else hexGTEFive <- hex >= 5
   hexGTEFive <- hex >= 5
+  print(head(hexGTEFive))
   
   Log.info("Don't expect commutativity, but expect operation to work when operands switched: 5 >= hex ")
-  # if(anyEnum) expect_warning(fiveGTEHex <- 5 >= hex)
-  # else fiveGTEHex <- 5 >= hex
   fiveGTEHex <- 5 >= hex
+  print(head(fiveGTEHex))
   
   Log.info("Try >= the frame by itself: hex >= hex")
-  # if(anyEnum) expect_warning(hexGTEHex <- hex >= hex)
-  # else hexGTEHex <- hex >= hex
   hexGTEHex <- hex >= hex
+  print(hexGTEHex)
 
   testEnd()
 }

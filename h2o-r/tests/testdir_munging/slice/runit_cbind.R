@@ -7,8 +7,8 @@ source('../../h2o-runit.R')
 test.cbind <- function(conn) {
   Log.info('test cbind')
 
-  hdf <- h2o.uploadFile(conn, locate('../../../smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.uploadFile(conn, locate('../../../smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(conn, locate('../../../smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(conn, locate('../../../smalldata/jira/v-11.csv'))
 
   ##### WORKS #####
   # cbind self to self

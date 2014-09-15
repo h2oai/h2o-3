@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 #import multimodal data set; parse as FV
 test.summary2.numeric <- function(conn) {
   Log.info("Importing wonkysummary.csv data...")
-  wonkysummary.hex <- h2o.uploadFile(conn, locate("../../../smalldata/wonkysummary.csv"), "wonky.hex")
+  wonkysummary.hex <- h2o.importFile(conn, locate("../../../smalldata/wonkysummary.csv"), "wonky.hex")
 
 #check that summary2 gives expected output
   Log.info("Check that summary gives output...")

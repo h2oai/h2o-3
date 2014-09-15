@@ -14,11 +14,12 @@ test.slice.star <- function(conn) {
  
   sliced <- hex[,col]
   Log.info("Placing key \"sliced.hex\" into User Store")
-  sliced <- h2o.assign(sliced, "sliced.hex")
+  print(sliced)
+  print(class(sliced))
 
   Log.info("*ing 5 to sliced.hex")
   slicedStarFive <- sliced * 5
-  slicedStarFive <- h2o.assign(slicedStarFive, "slicedStarFive.hex")
+  print(head(slicedStarFive))
 
   Log.info("Checking left and right: ")
   slicedStarFive <- sliced * 5

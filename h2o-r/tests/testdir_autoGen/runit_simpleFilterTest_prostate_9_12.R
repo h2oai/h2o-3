@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 simpleFilterTest_prostate_9_12 <- function(conn) {
     Log.info("A munge-task R unit test on data <prostate_9> testing the functional unit <<=> ")
     Log.info("Uploading prostate_9")
-    hex <- h2o.importFile(conn, locate("smalldata/junit/parse_folder_test/prostate_9.csv"), "rprostate_9.hex")
+    hex <- h2o.importFile(conn, locate("smalldata/junit/parse_folder/prostate_9.csv"), "rprostate_9.hex")
     Log.info("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 56.0114571468")
          filterHex <- hex[hex[,c(2)] <= 56.0114571468,]
         Log.info("Perform filtering with the '$' sign also")

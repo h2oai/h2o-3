@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 sliceTest_prostate_2_4 <- function(conn) {
     Log.info("A munge-task R unit test on data <prostate_2> testing the functional unit <[> ")
     Log.info("Uploading prostate_2")
-    hex <- h2o.importFile(conn, locate("smalldata/junit/parse_folder_test/prostate_2.csv"), "rprostate_2.hex")
+    hex <- h2o.importFile(conn, locate("smalldata/junit/parse_folder/prostate_2.csv"), "rprostate_2.hex")
     Log.info("Performing a column slice of prostate_2 using these columns: c(1,3,2)")
     slicedHex <- hex[,c(1,3,2)]
         Log.info("Performing a row & column slice of prostate_2 using these rows & columns: c(3,2) & c(5)")

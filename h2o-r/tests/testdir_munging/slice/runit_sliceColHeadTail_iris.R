@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.slice.colTail <- function(conn) {
   Log.info("Importing iris.csv data...\n")
-  iris.hex <- h2o.uploadFile(conn, locate("../../../smalldata/iris/iris_wheader.csv"),key="iris.hex")
+  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"),key="iris.hex")
   
   iris_nrows <- nrow(iris.hex)
   iris_ncols <- ncol(iris.hex)
@@ -19,7 +19,8 @@ test.slice.colTail <- function(conn) {
   sepalLength <- iris.hex[,1]
   
   Log.info("Slicing out the first column still gives an h2o object.")
-  expect_that(sepalLength, is_a("H2OParsedData"))
+  expect_that(sepalLength, is_a("H2OFrame"))
+  print(head(sepalLength))
   
   Log.info("Tail of sepalLength is:\n")
   Log.info(tail(sepalLength))

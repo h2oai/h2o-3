@@ -12,16 +12,22 @@ test.div.frame <- function(conn) {
   # if(anyEnum) expect_warning(hexDivFive <- hex / 5)
   # else hexDivFive <- hex / 5
   hexDivFive <- hex / 5
+  print(hexDivFive)
+  print(head(hexDivFive))
   
   Log.info("Don't expect commutativity, but expect operation to work when operands switched: 5 / hex ")
   # if(anyEnum) expect_warning(fiveDivHex <- 5 / hex)
   # else fiveDivHex <- 5 / hex
   fiveDivHex <- 5 / hex
+  print(fiveDivHex)
+  print(head(fiveDivHex))
   
   Log.info("Try dividing the frame by itself: hex / hex")
   # if(anyEnum) expect_warning(hexDivHex <- hex / hex)
   # else hexDivHex <- hex / hex
   hexDivHex <- hex / hex
+  print(hexDivHex)
+  print(head(hexDivHex))
   
   testEnd()
 }

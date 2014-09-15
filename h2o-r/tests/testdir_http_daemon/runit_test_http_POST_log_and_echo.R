@@ -38,25 +38,4 @@ if (n != 10000) {
     stop("Not 10000")
 }
 
-echoed_message <- h2o.logAndEcho(conn, twentyThousandChars)
-n = nchar(echoed_message)
-print(n)
-if (n != 20000) {
-    stop("Not 20000")
-}
-
-echoed_message <- h2o.logAndEcho(conn, hundredThousandChars)
-n = nchar(echoed_message)
-print(n)
-if (n != 100000) {
-    stop("Not 100000")
-}
-
-echoed_message <- h2o.logAndEcho(conn, millionChars)
-n = nchar(echoed_message)
-print(n)
-if (n != 1000000) {
-    stop("Not 1000000")
-}
-
 PASS_BANNER()
