@@ -2,7 +2,7 @@ heading("BEGIN TEST")
 conn <- new("H2OClient", ip=myIP, port=myPort)
 
 heading("Uploading train data to H2O")
-iris_train.hex <- h2o.uploadFile(conn, train)
+iris_train.hex <- h2o.importFile(conn, train)
 
 heading("Creating DRF model in H2O")
 balance_classes <- if (exists("balance_classes")) balance_classes else FALSE
@@ -20,7 +20,7 @@ cmd <- sprintf("curl -o %s/%s.java http://%s:%d/2/DRFModelView.java?_modelKey=%s
 safeSystem(cmd)
 
 heading("Uploading test data to H2O")
-iris_test.hex <- h2o.uploadFile(conn, test)
+iris_test.hex <- h2o.importFile(conn, test)
 
 heading("Predicting in H2O")
 iris.rf.pred <- h2o.predict(iris.rf.h2o, iris_test.hex)

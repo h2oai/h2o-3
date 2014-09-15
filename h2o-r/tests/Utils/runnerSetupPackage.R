@@ -55,14 +55,11 @@ install.packages(paste(dir_to_search, h2o_r_package_file, sep="/"), repos = NULL
 library(h2o)
 
 Log.info("Trying to initialize h2o connection")
-tryCatch(
 h2o.init(ip            = ipPort[[1]], 
          port          = ipPort[[2]], 
          startH2O      = FALSE)
-         , error = function(e) print(traceback()))
 
-##generate master_seed
-
+# generate master_seed
 seed <- NULL
 MASTER_SEED <- FALSE
 if (file.exists("../master_seed")) {

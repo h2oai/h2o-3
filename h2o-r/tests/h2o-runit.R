@@ -24,16 +24,12 @@ SUBPROJECT.ROOT <- "h2o-r"
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
-  print(paste("path i'm lookin for: ", pathStub))
   pathStub <- clean(pathStub)
   bucket <- pathStub[1]
   offset <- pathStub[-1]
   cur.dir <- getwd()
   #recursively ascend until `bucket` is found
   bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
-  print(bucket.abspath)
-  print(offset)
-  print(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
   else return(bucket.abspath)
 }
@@ -88,7 +84,6 @@ function(cur.dir, root, root.parent = NULL) {
     if (basename(cur.dir) == root && parent.name == root.parent) return(normalizePath(cur.dir))
 
     # next check if root is in cur.dir somewhere (if so, then cur.dir is the parent!)
-    print(paste("current root, cur.dir, root.parent", root, cur.dir, root.parent))
     if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) return(normalizePath(paste(cur.dir, "/", root, sep = "")))
 
     # the root is the parent
@@ -139,11 +134,11 @@ sandbox()
 .h2o.__logIt("[SEED] :", SEED, "Command")
 
 
-#h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
-#h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
-#h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
-#h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
-#h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
+h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
+h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
+h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
+h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
 #h2o.removeAll(new("H2OClient", ip=myIP, port=myPort))
 
 # Set up some directories.

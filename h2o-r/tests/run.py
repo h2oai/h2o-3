@@ -742,7 +742,7 @@ class RUnitRunner:
             for f in files:
                 if (not re.match(".*runit.*\.[rR]$", f)):
                     continue
-
+                if "h2o-runit.R" in f: continue
                 is_small = False
                 is_medium = False
                 is_large = False
