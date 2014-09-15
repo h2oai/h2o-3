@@ -15,7 +15,6 @@ public class AutoBuffer2JSONTest extends TestUtil {
     double d3 = Double.NEGATIVE_INFINITY;
     double d4 = -3.141527;
   }
-
   @Test public void testDouble() {
     assertEqual(new A1(), "{\"d1\":\"NaN\",\"d2\":\"Infinity\",\"d3\":\"-Infinity\",\"d4\":-3.141527}");
   }
@@ -26,7 +25,6 @@ public class AutoBuffer2JSONTest extends TestUtil {
     final float f3 = Float.NEGATIVE_INFINITY;
     float f4 = -3.141527f;
   }
-
   @Test public void testFloat() {
     assertEqual(new A2(), "{\"f1\":\"NaN\",\"f2\":\"Infinity\",\"f3\":\"-Infinity\",\"f4\":-3.141527}");
   }
@@ -37,7 +35,6 @@ public class AutoBuffer2JSONTest extends TestUtil {
     String s = "hello";
     String ss[] = new String[]{"there",null,"\"",":"};
   }
-
   @Test public void testMisc() {
     assertEqual(new A3(), "{\"i\":3,\"is\":[1,2,2147483647,-1],\"s\":\"hello\",\"ss\":[\"there\",null,\"\\\"\",\":\"]}");
   }
@@ -56,5 +53,11 @@ public class AutoBuffer2JSONTest extends TestUtil {
   @Test public void testEmpty() {
     assertEqual(new A8(), "{}");
     assertEqual(new A7(), "{}");
+  }
+
+  // TODO: support arrays of booleans
+  static class A9 extends Iced {boolean yep = true; boolean nope = false; }; // Boolean[] yepNope = new Boolean[] {true, false};
+  @Test public void testBoolean() {
+    assertEqual(new A9(), "{\"yep\":true,\"nope\":false}"); // ,"yepNope":[true,false]
   }
 }

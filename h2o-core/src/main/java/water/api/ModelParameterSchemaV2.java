@@ -59,6 +59,8 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       this.actual_value = (o == null ? null : o.toString());
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
+
+      // TODO: arrays!
       this.type = (is_enum ? "enum" : f.getType().toString());
 
       API annotation = f.getAnnotation(API.class);
