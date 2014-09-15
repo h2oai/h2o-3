@@ -7,8 +7,8 @@ source('../../h2o-runit.R')
 test.columndereference <- function(conn) {
   Log.info('test column dereference')
 
-  hdf <- h2o.uploadFile(conn, locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.uploadFile(conn, locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
 
   column <- 'colgroup2'
 

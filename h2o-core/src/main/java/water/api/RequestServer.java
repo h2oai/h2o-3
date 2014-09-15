@@ -143,6 +143,7 @@ public class RequestServer extends NanoHTTPD {
     register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch");
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove");
+    register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
