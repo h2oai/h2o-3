@@ -3,6 +3,7 @@ package water.api;
 import water.H2O;
 import water.Iced;
 import water.util.BeanUtils;
+import water.util.Log;
 
 import java.lang.reflect.Field;
 
@@ -47,6 +48,36 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public ModelParameterSchemaV2() {
   }
 
+  /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
+  private static String consType(Class clz) {
+    boolean is_enum = Enum.class.isAssignableFrom(clz);
+    boolean is_array = clz.isArray();
+
+    if (is_enum)
+      return "enum";
+
+    if (is_array)
+      return consType(clz.getComponentType()) + "[]";
+
+    if (water.Model.class.isAssignableFrom(clz))
+      return "Model";
+
+    if (water.fvec.Frame.class.isAssignableFrom(clz))
+      return "Frame";
+
+    if (water.fvec.Vec.class.isAssignableFrom(clz))
+      return "Vec";
+
+    if (water.Key.class.isAssignableFrom(clz))
+      return "Key";
+
+    if (String.class.isAssignableFrom(clz))
+      return "String";
+
+    Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
+    return clz.toString();
+  }
+
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     try {
       this.name = f.getName();
@@ -59,7 +90,8 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       this.actual_value = (o == null ? null : o.toString());
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-      this.type = (is_enum ? "enum" : f.getType().toString());
+      boolean is_array = f.getType().isArray();
+      this.type = consType(f.getType());
 
       API annotation = f.getAnnotation(API.class);
 

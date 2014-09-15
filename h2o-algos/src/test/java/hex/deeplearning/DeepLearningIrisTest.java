@@ -300,10 +300,10 @@ public class DeepLearningIrisTest extends TestUtil {
                                 final double testErr = ref._nn.Accuracy(ref._testData);
                                 trainPredict = mymodel.score(_train, false);
                                 final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
-                                        true, p.max_confusion_matrix_size, new water.api.ConfusionMatrix(), null, null);
+                                        true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
                                 testPredict = mymodel.score(_test, false);
                                 final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
-                                        true, p.max_confusion_matrix_size, new water.api.ConfusionMatrix(), null, null);
+                                        true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
                                 Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
                                 Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
                                 compareVal(trainErr, myTrainErr, abseps, releps);
@@ -323,7 +323,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   try {
                                     bestPredict = mymodel.score(_train, false);
                                     final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
-                                            true, p.max_confusion_matrix_size, new water.api.ConfusionMatrix(), null, null);
+                                            true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
                                     Log.info("Best_model's error : " + bestErr * 100 + "%.");
                                     compareVal(bestErr, best_err, abseps, releps);
                                   } finally {

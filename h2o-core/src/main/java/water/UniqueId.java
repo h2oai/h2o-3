@@ -20,7 +20,6 @@ public class UniqueId extends Iced {
 //  @API(help="The id for the object.", required=false, filter=Default.class, json=true)
   private String id = null;
 
-
   public UniqueId(Key key) {
     if (null != key)
       this.key = key.toString();

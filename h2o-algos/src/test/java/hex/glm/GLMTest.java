@@ -4,23 +4,18 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
-import hex.glm.GLMTask.GLMIterationTask;
 import hex.utils.MSETsk;
-import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.AUC;
-import water.api.AUCData;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset2;
-import water.util.ModelUtils;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

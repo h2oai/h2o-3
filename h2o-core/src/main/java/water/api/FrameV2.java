@@ -20,6 +20,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   int len;
 
   // Output fields
+  @API(help="Unique id")
+  protected UniqueIdBase unique_id;
+
   @API(help="Number of rows")
   long rows;
 

@@ -1,8 +1,5 @@
-package water.api;
+package water;
 
-import static java.util.Arrays.sort;
-
-import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -10,29 +7,14 @@ import water.util.ArrayUtils;
 
 import java.util.HashSet;
 
+import static java.util.Arrays.sort;
+
 public class AUC extends Iced {
-//  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//  private static final String DOC_GET = "AUC";
-//
-//  @API(help = "", required = true, filter = Default.class, json=true)
   public Frame actual;
-
-//  @API(help="Column of the actual results (will display vertically)", required=true, filter=actualVecSelect.class, json=true)
   public Vec vactual;
-//  class actualVecSelect extends VecClassSelect { actualVecSelect() { super("actual"); } }
-
-//  @API(help = "", required = true, filter = Default.class, json=true)
   public Frame predict;
-
-//  @API(help="Column of the predicted results (will display horizontally)", required=true, filter=predictVecSelect.class, json=true)
   public Vec vpredict;
-//  class predictVecSelect extends VecClassSelect { predictVecSelect() { super("predict"); } }
-
-//  @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", required = false, filter = Default.class, json = true)
   private float[] thresholds;
-
-//  @API(help = "Threshold criterion", filter = Default.class, json = true)
   public ThresholdCriterion threshold_criterion = ThresholdCriterion.maximum_F1;
 
   public enum ThresholdCriterion {
@@ -47,7 +29,6 @@ public class AUC extends Iced {
     minimizing_max_per_class_Error
   }
 
-  @API(help = "AUC Data", json = true)
   AUCData aucdata;
   public AUCData data() { return aucdata; }
 
@@ -152,9 +133,6 @@ public class AUC extends Iced {
       throw new IllegalArgumentException("Unknown threshold criterion.");
     }
   }
-
-  public boolean toHTML( StringBuilder sb ) { return aucdata.toHTML(sb); }
-  public void toASCII( StringBuilder sb ) { aucdata.toASCII(sb); }
 
   // Compute CMs for different thresholds via MRTask2
   private static class AUCTask extends MRTask<AUCTask> {

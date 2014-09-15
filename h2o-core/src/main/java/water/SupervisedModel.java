@@ -1,9 +1,8 @@
 package water;
 
-import water.api.AUC;
-import water.api.ConfusionMatrix;
-import water.api.HitRatio;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.ModelUtils;
 
@@ -64,7 +63,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
       auc.vpredict = fpreds.vecs()[2]; //binary classifier (label, prob0, prob1 (THIS ONE), adaptedlabel)
       auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
       auc.execImpl();
-      auc.toASCII(sb);
+      // auc.toASCII(sb);
       error = auc.data().err(); //using optimal threshold for F1
     }
     // populate CM
