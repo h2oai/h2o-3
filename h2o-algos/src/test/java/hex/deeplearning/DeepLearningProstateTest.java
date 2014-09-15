@@ -6,8 +6,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.api.AUC;
-import water.api.AUCData;
+import water.AUC;
+import water.AUCData;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
@@ -217,7 +217,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           auc.predict = pred;
                                           auc.vpredict = pred.vecs()[2];
                                           auc.execImpl();
-                                          auc.toASCII(sb);
+                                          // auc.toASCII(sb);
                                           AUCData aucd = auc.data();
                                           threshold = aucd.threshold();
                                           error = aucd.err();
@@ -234,7 +234,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         double CMerrorOrig;
                                         {
                                           sb = new StringBuilder();
-                                          water.api.ConfusionMatrix CM = new water.api.ConfusionMatrix();
+                                          water.ConfusionMatrix CM = new water.ConfusionMatrix();
                                           CM.actual = valid;
                                           CM.vactual = valid.vecs()[resp];
                                           CM.predict = pred;

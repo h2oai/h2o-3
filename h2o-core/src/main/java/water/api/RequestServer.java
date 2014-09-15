@@ -133,6 +133,25 @@ public class RequestServer extends NanoHTTPD {
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
 
+    register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"});
+    register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"model"});
+    register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"});
+    register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"frame"});
+    register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "list");
+
+    // TODO: register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"});
+    // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"frame", "model"});
+
+    // TODO: register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"});
+    // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"});
+    // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame"});
+    // TODO: register("/3/ModelMetrics/models/(?<model>.*)"                        ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model"});
+    // TODO: register("/3/ModelMetrics"                                            ,"DELETE",ModelMetricsHandler.class, "delete");
+
+
+
+
+
     // ModelBuilder Handler registration must be done for each algo in the application class
     // (e.g., H2OApp), because the Handler class is parameterized by the associated Schema,
     // and this is different for each ModelBuilder in order to handle its parameters in a
