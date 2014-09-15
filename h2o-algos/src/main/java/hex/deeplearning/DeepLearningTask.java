@@ -54,6 +54,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     step(seed, _neurons, _output, _training, responses);
   }
 
+  @Override protected void chunkDone(long n) {
+    if (_training) _output.add_processed_local(n);
+  }
+
   @Override public void reduce(DeepLearningTask other){
     if (other._output.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
             && other._output != _output) //other NNTask worked on a different model_info
@@ -174,11 +178,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       if (training) {
         for (int i=neurons.length-2; i>0; --i)
           neurons[i].bprop();
-
-        /**
-         * Let neurons know the real-time number of processed rows -> for accurate learning rate decay, etc.
-         */
-        minfo.add_processed_local(1);
       }
     }
     catch(RuntimeException ex) {
