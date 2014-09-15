@@ -1575,7 +1575,7 @@ class ASTVar extends ASTUniPrefixOp {
   static double getVar(Vec v, boolean narm) {
     double m = getMean( v, narm, "");
     CovarTask t = new CovarTask(m,m).doAll(new Frame(v, v));
-    return Math.sqrt(t._ss);
+    return t._ss / (v.length() - 1);
   }
 
   private static class CovarTask extends MRTask<CovarTask> {
