@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 
 abstract class MapReduce[MapType: ClassTag, E <: MapReduce[MapType,E]] extends Iced { self: E =>
   type maptype=MapType
-  type self <: this.type
+  type self=E
   // Selected numeric columns mapped into 'this'
   def map(row : MapType) : Unit
   // Reduce the given operand into 'this'
