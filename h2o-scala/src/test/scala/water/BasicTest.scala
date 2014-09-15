@@ -17,22 +17,24 @@ class BasicTest extends TestUtil {
 
       // Linear Regression, Pass1
       // Sums & sum squares
-      val lr1 = new MapReduce[Array[Double]] { var X, Y, X2 =0.0; var nrows=0L
+      class Pass1 extends MapReduce[Array[Double],Pass1] { var X, Y, X2 =0.0; var nrows=0L
         override def map(row : maptype) = { X = row(0); Y = row(1); X2 = X*X; nrows=1 }
         override def reduce(@@ : self) = { X += @@.X ; Y += @@.Y; X2 += @@.X2; nrows += @@.nrows }
-      }.doAll(fr2)
+      }
+      val lr1 = new Pass1().doAll(fr2)
       val meanX = lr1.X/lr1.nrows
       val meanY = lr1.Y/lr1.nrows
 
       // Linear Regression, Pass 2
       // Sum of squares of errors
-      val lr2 = new MapReduce[Array[Double]] { var XXbar, YYbar, XYbar = 0.0
+      class Pass2 extends MapReduce[Array[Double],Pass2] { var XXbar, YYbar, XYbar = 0.0
         override def map(row : maptype) = { 
           val dx = row(0)-meanX; val dy = row(1)-meanY
           XXbar = dx*dx;  YYbar = dy*dy;  XYbar = dx*dy
         }
         override def reduce(@@ : self) = { XXbar += @@.XXbar ; YYbar += @@.YYbar; XYbar += @@.XYbar }
-      }.doAll(fr2)
+      }
+      val lr2 = new Pass2().doAll(fr2)
 
       // Compute the regression
       val beta1 = lr2.XYbar / lr2.XXbar
@@ -40,7 +42,7 @@ class BasicTest extends TestUtil {
       println(fr2._names(1)+" = "+beta1+"*"+fr2._names(0)+" + "+beta0)
 
       // Linear Regression, Pass 3
-      val lr3 = new MapReduce[Array[Double]] { var ssr, rss = 0.0
+      class Pass3 extends MapReduce[Array[Double],Pass3] { var ssr, rss = 0.0
         override def map(row : maptype) = { 
           val X = row(0); val Y = row(1)
           val fit = beta1*X + beta0
@@ -48,7 +50,8 @@ class BasicTest extends TestUtil {
           ssr = (fit-meanY)*(fit-meanY)
         }
         override def reduce(@@ : self) = { ssr += @@.ssr ; rss += @@.rss }
-      }.doAll(fr2)
+      }
+      val lr3 = new Pass3().doAll(fr2)
 
       // Compute goodness of fit
       val r2 = lr3.ssr / lr2.YYbar
@@ -67,25 +70,31 @@ class BasicTest extends TestUtil {
   }
 
   // test is off because of its size
-  /*@Test*/ def biggerTest() = {
+  @Test def biggerTest() = {
     //val fr = new DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
     val fr = new DataFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
+    val fr2 = fr('C1,'C2)
     try {
       val iters = 100
+      var meanX, meanY=0.0
+      var nrows=0L
       val start = System.currentTimeMillis
       (0 until iters) foreach( i => {
-        val lr1 = new MapReduce[Array[Double]] { var X, Y, X2 =0.0; var nrows=0L
+        class Pass1 extends MapReduce[Array[Double],Pass1] { var X, Y, X2 =0.0; var nrows=0L
           override def map(row : maptype) = { X = row(0); Y = row(1); X2 = X*X; nrows=1 }
           override def reduce(@@ : self) = { X += @@.X ; Y += @@.Y; X2 += @@.X2; nrows += @@.nrows }
-        }.doAll(fr)
-        val meanX = lr1.X/lr1.nrows
-        val meanY = lr1.Y/lr1.nrows
+        }
+        val lr1 = new Pass1().doAll(fr2)
+        meanX = lr1.X/lr1.nrows
+        meanY = lr1.Y/lr1.nrows
+        nrows = lr1.nrows
       })
       val end = System.currentTimeMillis
-      println("CalcSums iter over covtype: "+(end-start)/iters)
-
+      println("CalcSums iter over covtype: " + (end - start) / iters + "ms, meanX=" + meanX + ", meanY=" + meanY+", nrows="+nrows)
     } finally {
       fr.delete()
+      fr2.delete()
     }
   }
+
 }

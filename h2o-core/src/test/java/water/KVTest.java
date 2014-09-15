@@ -5,6 +5,7 @@ import org.junit.*;
 
 import java.io.File;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.util.UnsafeUtils;
 
@@ -195,6 +196,43 @@ public class KVTest extends TestUtil {
     }
   }
   
+  // Speed test: takes my lappy 4msec per iteration over covtype
+  @Test public void biggerTest() {
+    Frame fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.data");
+    try {
+      final int iters = 100;
+      final long start = System.currentTimeMillis();
+      CalcSumsTask lr1 = null;
+      for( int i=0; i<iters; i++ ) {
+        lr1 = new CalcSumsTask().doAll(fr.vecs()[0],fr.vecs()[1]);
+      }
+      final long end = System.currentTimeMillis();
+      final double meanX = lr1._sumX/lr1._nrows;
+      final double meanY = lr1._sumY/lr1._nrows;
+      System.out.println("CalcSums iter over covtype: "+(end-start)/iters+"ms, meanX="+meanX+", meanY="+meanY+", nrows="+lr1._nrows);
+    } finally {
+      fr.delete();
+    }
+  }
+  public static class CalcSumsTask extends MRTask<CalcSumsTask> {
+    long _nrows; // Rows used
+    double _sumX,_sumY,_sumX2; // Sum of X's, Y's, X^2's
+    @Override public void map( Chunk xs, Chunk ys ) {
+      for( int i=0; i<xs.len(); i++ ) {
+        double X = xs.at0(i);  double Y = ys.at0(i);
+        if( !Double.isNaN(X) && !Double.isNaN(Y)) {
+          _sumX += X;    _sumY += Y;
+          _sumX2+= X*X;  _nrows++;
+        }
+      }
+    }
+    @Override public void reduce( CalcSumsTask lr1 ) {
+      _sumX += lr1._sumX ;  _sumY += lr1._sumY ;
+      _sumX2+= lr1._sumX2;  _nrows += lr1._nrows;
+    }
+  }
+
+
 //  // ---
 //  // Test parsing "cars.csv" and running LinearRegression
 //  @Test public void testLinearRegression() {

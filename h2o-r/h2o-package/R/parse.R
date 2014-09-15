@@ -35,7 +35,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$name)
-  Sys.sleep(3)
 
   # Return a new H2OParsedData object
   nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)

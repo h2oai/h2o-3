@@ -5,6 +5,7 @@ import water.Iced;
 import water.util.BeanUtils;
 import water.util.Log;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 
 // TODO: move into hex.schemas!
@@ -30,10 +31,10 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public String type;
 
   @API(help="default value, e.g. 1")
-  public String default_value;
+  public String default_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .  Problem is Icer serialization blows up if the field is an Object
 
   @API(help="actual value as set by the user and / or modified by the ModelBuilder, e.g., 10")
-  public String actual_value;
+  public String actual_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .
 
   @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"")
   public String level;
@@ -72,25 +73,43 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       return "Key";
 
     if (String.class.isAssignableFrom(clz))
-      return "String";
+      return "string"; // lower-case, to be less Java-centric
 
     Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
     return clz.toString();
   }
 
+  private static String consValue(Object o) {
+    if (null == o)
+      return null;
+
+    if (! o.getClass().isArray())
+      return o.toString();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    for (int i = 0; i < Array.getLength(o); i++) {
+      if (i > 0) sb.append(", ");
+      sb.append(consValue(Array.get(o, i)));
+    }
+    sb.append("]");
+    return sb.toString();
+  }
+
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     try {
       this.name = f.getName();
+      boolean is_array = f.getType().isArray();
       Object o;
 
       o = f.get(default_schema);
-      this.default_value = (o == null ? null : o.toString());
+      this.default_value = consValue(o);
+
 
       o = f.get(schema);
-      this.actual_value = (o == null ? null : o.toString());
+      this.actual_value = consValue(o);
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-      boolean is_array = f.getType().isArray();
       this.type = consType(f.getType());
 
       API annotation = f.getAnnotation(API.class);

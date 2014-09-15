@@ -105,6 +105,8 @@ task pdflatex(type: Exec) {
     }
 }
 
+pdflatex.onlyIf{ SYS_OS != "windows"}
+
 task setProperties << {
     project.ext.PDF_LATEX    = (pdflatex.output()).toLowerCase().contains("pdflatex") ? pdflatex.output() : ""
     project.ext.BUILD_BRANCH = gitbranch.output()
@@ -144,7 +146,7 @@ task genPDF(type: Exec) {
     standardOutput = new ByteArrayOutputStream() // > /dev/null
 }
 
-genPDF.onlyIf { PDF_LATEX != ""  && SYS_OS != "unix" }
+genPDF.onlyIf { PDF_LATEX != ""  && SYS_OS != "unix" && SYS_OS != "windows" }
 
 task cpPDF << {
     new File([T,"R"].join(File.separator)).mkdirs()

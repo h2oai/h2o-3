@@ -1453,7 +1453,7 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONA4(String name, int[] a) {
+  public AutoBuffer putJSONA4(String name, int[] a) {
     putJSONStr(name).put1(':');
     return putJSONA4(a);
   }
