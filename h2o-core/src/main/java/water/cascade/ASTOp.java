@@ -135,6 +135,7 @@ public abstract class ASTOp extends AST {
 //
     // Misc
     putPrefix(new ASTMatch());
+//    putPrefix(new ASTRename());
 //    putPrefix(new ASTSeq   ());
 //    putPrefix(new ASTSeqLen());
 //    putPrefix(new ASTRepLen());
@@ -1083,6 +1084,20 @@ class ASTAND extends ASTBinOp {
   }
 }
 
+//class ASTRename extends ASTUniPrefixOp {
+//  String _newname;
+//  @Override String opStr() { return "rename"; }
+//  ASTRename() { super(new String[] {"", "ary", "new_name"}); }
+//  @Override ASTOp make() { return new ASTRename(); }
+//  ASTRename parse_impl(Exec E) {
+//    AST ary = E.parse();
+//    _newname = E.skipWS().parseID();
+//    ASTRename res = (ASTRename) clone();
+//    res._asts = new AST[]{ary};
+//    return res;
+//  }
+//}
+
 class ASTMatch extends ASTUniPrefixOp {
   double _nomatch;
   String[] _matches;
@@ -1459,7 +1474,7 @@ class ASTSdev extends ASTUniPrefixOp {
     if (fr.vecs()[0].isEnum())
       throw new IllegalArgumentException("sd only applies to numeric vector.");
 
-    double sig = ASTVar.getVar(fr.anyVec(), _narm);
+    double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
     if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
     env.push(new ValNum(sig));
   }

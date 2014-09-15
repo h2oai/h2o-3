@@ -302,7 +302,7 @@ class ASTNull extends AST {
 class ASTAssign extends AST {
   ASTAssign parse_impl(Exec E) {
     AST l = E.parse();            // parse the ID on the left, or could be a column, or entire frame, or a row
-    AST r = E.xpeek(' ').parse(); // parse double, String, or Frame on the right
+    AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();
     res._asts = new AST[]{l,r};
     return res;
