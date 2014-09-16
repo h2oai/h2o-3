@@ -2,9 +2,7 @@ package water.cascade;
 
 //import hex.Quantiles;
 
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
 
@@ -153,7 +151,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTCut   ());
 //    putPrefix(new ASTfindInterval());
 //    putPrefix(new ASTPrint ());
-//    putPrefix(new ASTLs    ());
+    putPrefix(new ASTLs    ());
   }
   static private void putUniInfix(ASTOp ast) { UNI_INFIX_OPS.put(ast.opStr(),ast); }
   static private void putBinInfix(ASTOp ast) { BIN_INFIX_OPS.put(ast.opStr(),ast); SYMBOLS.put(ast.opStr(), ast); }
@@ -2089,27 +2087,45 @@ class ASTMean extends ASTUniPrefixOp {
 //    env.pop_into_stk(-2);       // Pop off fcn, returning 1st arg
 //  }
 //}
-//
-///**
-//* R 'ls' command.
-//*
-//* This method is purely for the console right now.  Print stuff into the string buffer.
-//* JSON response is not configured at all.
-//*/
-//class ASTLs extends ASTOp {
-//  ASTLs() { super(new String[]{"ls"},
-//          new Type[]{Type.DBL},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
-//  @Override String opStr() { return "ls"; }
-//  @Override ASTOp make() {return new ASTLs();}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    for( Key key : KeySnapshot.globalSnapshot().keys())
-//      if( key.user_allowed() && H2O.get(key) != null )
-//        env._sb.append(key.toString());
-//    // Pop the self-function and push a zero.
-//    env.pop();
-//    env.push(0.0);
-//  }
-//}
+
+/**
+* R 'ls' command.
+*
+* This method is purely for the console right now.  Print stuff into the string buffer.
+* JSON response is not configured at all.
+*/
+class ASTLs extends ASTOp {
+  ASTLs() { super(new String[]{"ls"}); }
+  @Override String opStr() { return "ls"; }
+  @Override ASTOp make() {return new ASTLs();}
+  ASTLs parse_impl(Exec E) { return (ASTLs) clone(); }
+  @Override void apply(Env env) {
+    ArrayList<String> domain = new ArrayList<>();
+    Futures fs = new Futures();
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
+    NewChunk keys = new NewChunk(av,0);
+    int r = 0;
+    KeySnapshot.KeyInfo[] infos = KeySnapshot.globalSnapshot()._keyInfos;
+    for( Key key : KeySnapshot.globalSnapshot().keys())
+      if( key.user_allowed() && H2O.get(key) != null) {
+        if (DKV.get(key).get() instanceof Job.Progress) continue;
+        keys.addEnum(r++);
+        domain.add(key.toString());
+      }
+    keys.close(fs);
+    Vec c0 = av.close(fs);   // c0 is the row index vec
+    fs.blockForPending();
+    String[] key_domain = new String[domain.size()];
+    for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
+    c0.set_factors(key_domain);
+    Frame ls = new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0});
+    env.push(new ValFrame(ls));
+  }
+
+  private double getSize(Key k) {
+    return (double)(((Frame) DKV.get(k).get()).byteSize());
+//    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
+//    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
+//    return Double.NaN;
+  }
+}

@@ -190,7 +190,7 @@ public class Env extends Iced {
 
   public void remove_and_unlock() {
     // Unlock everything
-    new UnlockTask().doAllNodes();
+    new UnlockTask(true).doAllNodes();
 
     while(!_stack.isEmpty()) {
       int type = peekType();

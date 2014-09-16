@@ -162,6 +162,7 @@ public class RequestServer extends NanoHTTPD {
     register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch");
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove");
+    register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove");
     register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo");
   }
 

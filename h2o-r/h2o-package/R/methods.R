@@ -26,36 +26,15 @@
 # H2O Methods
 #-----------------------------------------------------------------------------------------------------------------------
 
-#h2o.ls <- function(object, pattern = "") {
-#  if (missing(object)) object <- .retrieveH2O(parent.frame())
-#  if(class(object) != "H2OClient") {
-#    if (pattern == "") {  # no pattern supplied....
-#      object <- .retrieveH2O(parent.frame())  # try to guess the h2o connections
-#  }
-#  if(!is.character(pattern)) stop("pattern must be of class character")
-#
-#  i <- 0
-#  myList <- list()
-#  page_keys <- .MAX_INSPECT_ROW_VIEW
-#
-#  # Need to pull all keys from every page in StoreView
-#  while(page_keys == .MAX_INSPECT_ROW_VIEW) {
-#    res = .h2o.__remoteSend(object, .h2o.__PAGE_VIEWALL, filter=pattern, offset=i*.MAX_INSPECT_ROW_VIEW, view=.MAX_INSPECT_ROW_VIEW)
-#    if(length(res$keys) == 0) return(myList)
-#    temp = lapply(res$keys, function(y) c(y$key, y$value_size_bytes))
-#
-#    i = i + 1
-#    myList = c(myList, temp)
-#    page_keys = res$num_keys
-#  }
-#  tot_keys = page_keys + (i-1)*.MAX_INSPECT_ROW_VIEW
-#
-#  temp = data.frame(matrix(unlist(myList), nrow=tot_keys, ncol=2, byrow = TRUE))
-#  colnames(temp) = c("Key", "Bytesize")
-#  temp$Key = as.character(temp$Key)
-#  temp$Bytesize = as.numeric(as.character(temp$Bytesize))
-#  return(temp)
-#}
+h2o.ls <- function(object) {
+  if (missing(object)) object <- .retrieveH2O(parent.frame())
+  if(class(object) != "H2OClient") {
+    if (pattern == "") {  # no pattern supplied....
+      object <- .retrieveH2O(parent.frame())  # try to guess the h2o connections
+    }
+  }
+  if(!is.character(pattern)) stop("pattern must be of class character")
+}
 
 #'
 #' Delete Objects In H2O
@@ -108,9 +87,34 @@ h2o.assign <- function(data, key) {
   if(key == data@key) stop(paste("Destination key must differ from data key", data@key))
   ast <- key %<-% (' $' %<p0-% data@key)
   .force.eval(.retrieveH2O(parent.frame()), ast, ID = NULL, rID = key)
-  assign(deparse(substitute(data)), get(key), , envir = parent.frame())
+  assign(deparse(substitute(data)), get(key), envir = parent.frame())
   invisible(get(key))
 }
+
+#'
+#' Get the reference to a frame with the given key.
+#h2o.getFrame <- function(h2o, key) {
+#  col.names <- parseSetup$columnNames
+#  ncols <- parseSetup$ncols
+#  parseSetup$hex <- ifelse(key != "", key %<p0-% ".hex", parseSetup$hexName)
+#  parseSetup$srcs <- srcs
+#  parseSetup$columnNames <- .collapse(parseSetup$columnNames)
+#
+#  # remove the following from the parseSetup list: not passed to PARSE page
+#  parseSetup$hexName <- NULL
+#  parseSetup$data <- NULL
+#
+#  # Perform the parse
+#  res <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE, method = "GET", .params = parseSetup)
+#
+#  # Poll on job
+#  .h2o.__waitOnJob(data@h2o, res$job$name)
+#
+#  # Return a new H2OParsedData object
+#  nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
+#  .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
+#  .h2o.exec2(expr = key, h2o = h2o, dest_key = key)
+#}
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
