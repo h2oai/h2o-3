@@ -195,7 +195,7 @@ task cpToR2 << {
     copyFile([T, "PACKAGES"], [T, "R", REPO_PATH_MAC, "PACKAGES"])
     copyFile([T, "PACKAGES.gz"], [T, "R", REPO_PATH_MAC, "PACKAGES.gz"])
     new File([T, "R", REPO_PATH_MAC].join(File.separator)).eachFile {
-        copyFile(it.toPath(), contrib + ["3.1", it.name])
+        copyFile(it.toPath(), contrib + ["3.0", it.name])
         copyFile(it.toPath(), contrib + ["2.15",it.name])
         copyFile(it.toPath(), contrib + ["2.14",it.name])
         copyFile(it.toPath(), contrib + ["2.13",it.name])
@@ -205,7 +205,7 @@ task cpToR2 << {
     rel_base = [T, "R", "bin", "windows", "contrib"]
     new File((rel_base + "3.1").join(File.separator)).mkdirs()
     Files.copy(newPath(T, H2O_R_WINDOWS_FILE), newPath(T, "R", REPO_PATH_WIN, H2O_R_WINDOWS_FILE), REPLACE_EXISTING)
-    new File((rel_base + "3.1").join(File.separator)).mkdirs()
+    new File((rel_base + "3.0").join(File.separator)).mkdirs()
     new File((rel_base + "2.15").join(File.separator)).mkdirs()
     new File((rel_base + "2.14").join(File.separator)).mkdirs()
     new File((rel_base + "2.13").join(File.separator)).mkdirs()
@@ -213,6 +213,7 @@ task cpToR2 << {
     copyFile([T, "PACKAGES.gz"], [T, "R", REPO_PATH_WIN, "PACKAGES.gz"])
     new File([T, "R", REPO_PATH_WIN].join(File.separator)).eachFile {
         copyFile(it.toPath(), rel_base +["3.1", it.name])
+        copyFile(it.toPath(), rel_base +["3.0", it.name])
         copyFile(it.toPath(), rel_base + ["2.15",it.name])
         copyFile(it.toPath(), rel_base + ["2.14",it.name])
         copyFile(it.toPath(), rel_base + [ "2.13",it.name])
