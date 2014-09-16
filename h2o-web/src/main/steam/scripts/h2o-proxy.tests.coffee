@@ -30,7 +30,7 @@ test 'empty cloud', (t) ->
     async.waterfall operations, -> t.end(); go()
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 35
+  t.plan 43
 
   createCloud (_, go) ->
     ensureNoFramesExist = (go) ->
@@ -143,7 +143,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.equal job.status, 'DONE', 'job status ok'
           go null, job.dest.name
 
-
+    # allyears2k_headers.hex
     inspectAirlinesFrame = (frameKey, go) -> 
       _.requestInspect frameKey, (error, result) ->
         if error
@@ -203,6 +203,47 @@ test 'airlines ingest and model building flow', (t) ->
           #result.schema.parameters[3].actual_value = "(random)"
           #tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
           tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result
+          go null
+
+    fetchDeepLearningModelBuilder = (go) ->
+      _.requestModelBuilders 'deeplearning', (error, result) ->
+        if error
+          t.fail 'model builders request failed'
+          go error
+        else
+          t.pass 'got model builders reply'
+          parameters = result.model_builders.deeplearning.parameters
+          seedParameter = find parameters, (parameter) -> parameter.name is 'seed'
+          seedParameter.default_value = seedParameter.actual_value = 'random'
+          tdiff t, (readGoldJson 'model-builders-deeplearning.json'), result, exclude: [ 'model_builders.deeplearning.job' ]
+          go null
+
+    buildAirlinesDeepLearningModel = (go) ->
+      parameters = 
+        training_frame: 'allyears2k_headers.hex'
+        classification: yes
+        response: 'IsDepDelayed'
+      _.requestModelBuild 'deeplearning', parameters, (error, result) ->
+        if error
+          t.fail 'model build request failed'
+          go error
+        else
+          t.pass 'got model build reply'
+          tdiff t, (readGoldJson 'deeplearning-allyears2k_headers-zip.json'), result, include: [ 'jobs.#.description', 'jobs.#.dest', 'jobs.#.exception' ]
+          t.ok isString result.key.name, 'has job name'
+          go null, result.key.name
+
+    inspectAirlinesDeepLearningModel = (modelKey, go) ->
+      _.requestInspect modelKey, (error, result) ->
+        if error
+          t.fail 'model inspect request failed'
+          go error
+        else
+          t.pass 'got model inspect reply'
+          seedParameter = find result.schema.parameters, (parameter) -> parameter.name is 'seed'
+          seedParameter.default_value = seedParameter.actual_value = 'random'
+          #tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result
           go null, modelKey
 
     operations = [
@@ -220,6 +261,10 @@ test 'airlines ingest and model building flow', (t) ->
       buildAirlinesKmeansModel
       pollJob
       inspectAirlinesKmeansModel
+      fetchDeepLearningModelBuilder
+      buildAirlinesDeepLearningModel
+      pollJob
+      inspectAirlinesDeepLearningModel
     ]
     async.waterfall operations, -> t.end(); go()
 

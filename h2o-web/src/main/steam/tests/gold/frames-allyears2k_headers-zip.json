@@ -8,7 +8,7 @@
       "len": 100,
       "rows": 43978,
       "byteSize": 1939554,
-      "isText": "false",
+      "isText": false,
       "default_pctiles": [
         0.01,
         0.1,
