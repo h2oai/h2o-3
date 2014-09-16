@@ -28,12 +28,10 @@
 
 h2o.ls <- function(object) {
   if (missing(object)) object <- .retrieveH2O(parent.frame())
-  if(class(object) != "H2OClient") {
-    if (pattern == "") {  # no pattern supplied....
-      object <- .retrieveH2O(parent.frame())  # try to guess the h2o connections
-    }
-  }
-  if(!is.character(pattern)) stop("pattern must be of class character")
+  ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
+  ret <- as.data.frame(ast)
+  h2o.rm("ast")
+  ret
 }
 
 #'
@@ -59,29 +57,25 @@ h2o.rm <- function(object, keys) {
 #'
 as.h2o <- function(client, object, key = "", header, sep = "") {
   if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
+#  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
   if(!is.character(key)) stop("key must be of class character")
   if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
   else if (missing(key) || nchar(key) == 0) key <- "Last.value"
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(is.numeric(object) && is.vector(object)) {
-    stop("Unimplemented")
-#    res <- .h2o.__exec2_dest_key(client, paste("c(", paste(object, sep=',', collapse=","), ")", collapse=""), key)
-#    return(.h2o.exec2(res$dest_key, h2o = client, res$dest_key))
-  } else {
+    object <- as.data.frame(object)
+  }
     tmpf <- tempfile(fileext=".csv")
     write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-#    h2f <- h2o.uploadFile(client, tmpf, key=key, header=header, sep=sep) TODO: no PostFile yet!
     h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
     unlink(tmpf)
     return(h2f)
-  }
 }
 
 h2o.assign <- function(data, key) {
   if(data %<i-% "ASTNode") invisible(head(data))
-  if(!( "H2OParsedData")) stop("data must be of class H2OParsedData")
+  if(!(data %<i-% "H2OParsedData")) stop("data must be of class H2OParsedData")
   if(!is.character(key)) stop("key must be of class character")
   if(nchar(key) == 0) stop("key cannot be an empty string")
   if(key == data@key) stop(paste("Destination key must differ from data key", data@key))

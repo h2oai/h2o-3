@@ -121,15 +121,16 @@ setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))
 #'
 
 #`&&` <- function(e1, e2) UseMethod("&&", c(e1,e2))
-#`&&.default`  <- function(e1, e2) if (e2 %<i-% "H2OFrame" || e1 %<i-% "H2OFrame") .binops.fun(e1, e2) else .Primitive("&&")(e1, e2)
+#`&&.default`  <- function(e1, e2) {
+#  if (e2 %<i-% "H2OFrame") .binops.fun(e1, e2)
+#  else .Primitive("&&")(e1, e2)
+#}
 #`&&.H2OFrame` <- function(e1, e2) .binops.fun(e1,e2)
-#
+
 #`||` <- function(e1, e2) UseMethod("||", c(e1,e2))
 #`||.default`  <- function(e1, e2) {
 #  l <- (e2 %<i-% "H2OFrame")
-#  r <- (e1 %<i-% "H2OFrame")
 #  if (l) .binops.fun(e1, e2)
-#  if (r) .binops.fun(e1, e2)
 #  else .Primitive("||")(e1, e2)
 #}
 #`||.H2OFrame` <- function(e1, e2) .binops.fun(e1,e2)

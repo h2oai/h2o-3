@@ -2041,29 +2041,27 @@ class ASTMean extends ASTUniPrefixOp {
 //    }
 //  }
 //}
-//
-//class ASTFactor extends ASTOp {
-//  ASTFactor() { super(new String[]{"factor", "ary"},
-//          new Type[]{Type.ARY, Type.ARY},
-//          OPF_PREFIX,
-//          OPP_PREFIX,OPA_RIGHT); }
-//  @Override String opStr() { return "factor"; }
-//  @Override ASTOp make() {return new ASTFactor();}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame ary = env.peekAry();   // Ary on top of stack, keeps +1 refcnt
-//    String skey = env.peekKey();
-//    if( ary.numCols() != 1 )
-//      throw new IllegalArgumentException("factor requires a single column");
-//    Vec v0 = ary.vecs()[0];
-//    Vec v1 = v0.isEnum() ? null : v0.toEnum();
-//    if (v1 != null) {
-//      ary = new Frame(ary._names,new Vec[]{v1});
-//      skey = null;
-//    }
-//    env.poppush(2, ary, skey);
-//  }
-//}
-//
+
+class ASTFactor extends ASTOp {
+  ASTFactor() { super(new String[]{"", "ary"});}
+  @Override String opStr() { return "as.factor"; }
+  @Override ASTOp make() {return new ASTFactor();}
+  ASTFactor parse_impl(Exec E) {
+    AST ary = E.parse();
+    ASTFactor res = (ASTFactor) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame ary = env.pop0Ary(); // pop w/o lowering refs
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
+    Vec v0 = ary.anyVec();
+    Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
+    if (v1 != null) { ary.delete(); ary = new Frame(ary._names,new Vec[]{v1}); }
+    env.push(new ValFrame(ary));
+  }
+}
+
 //class ASTPrint extends ASTOp {
 //  static Type[] newsig() {
 //    Type t1 = Type.unbound();

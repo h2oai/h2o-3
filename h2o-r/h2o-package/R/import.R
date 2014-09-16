@@ -25,7 +25,7 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
     for(i in 1:length(res$fails))
       cat(res$fails[[i]], "failed to import")
   }
-
+  ret <- NULL
   # Return only the files that successfully imported
   if(length(res$files) > 0) {
     if(parse) {
@@ -35,12 +35,15 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
       srcKey <- ifelse(length(res$keys) == 1, res$keys[[1]], paste("*", regPath, "*", sep=""))
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
       assign("dd", rawData, globalenv())
-      h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
+      ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
       myData = lapply(res$keys, function(x) { new("H2ORawData", h2o=object, key=x) })
-      if(length(res$keys) == 1) myData[[1]] else myData
+      if(length(res$keys) == 1) ret <- myData[[1]] else ret <- myData
     }
   } else stop("All files failed to import!")
+  h2o.rm(object, "nfs:/" %<p0-% path)
+  invisible(h2o.rm(object, "nfs://private" %<p0-% path))
+  ret
 }
 
 #'
