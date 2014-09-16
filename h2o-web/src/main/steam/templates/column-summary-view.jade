@@ -38,6 +38,13 @@
   // ko with:boxplot
   h2 Box plot
   .y-boxplot(data-bind='geyser:graphic')
+  // ko with:data
+  table.y-monospace(style='width:100%')
+    tbody
+      tr
+        td(data-bind='text:min')
+        td(style='text-align:right' data-bind='text:max')
+  // /ko
   // /ko
 
   // ko with:topCounts

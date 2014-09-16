@@ -47,18 +47,25 @@
         .y-inspector-title Inspector
 
       .y-lane-body
+        // ko if:hasInspections
         .y-inspector(data-bind="template:{name:template, foreach:inspectorViews}")
+        // /ko
 
-        .y-help-pane
-          .y-help-pane-header
-            button.y-help-home-button.btn.fa-btn(data-bind='click:navigateHelpHome')
-              i.fa.fa-home
-            .y-help-title Help
-            button.y-help-back-button.btn.fa-btn(data-bind='click:navigateHelpBack, enable:canNavigateHelpBack')
-              i.fa.fa-arrow-left
-            button.y-help-forward-button.btn.fa-btn(data-bind='click:navigateHelpForward, enable:canNavigateHelpForward')
-              i.fa.fa-arrow-right
-          .y-help(data-bind="raw:help")
+        // ko ifnot:hasInspections
+        .y-middle Nothing to display
+        // /ko
+
+        //-
+          .y-help-pane
+            .y-help-pane-header
+              button.y-help-home-button.btn.fa-btn(data-bind='click:navigateHelpHome')
+                i.fa.fa-home
+              .y-help-title Help
+              button.y-help-back-button.btn.fa-btn(data-bind='click:navigateHelpBack, enable:canNavigateHelpBack')
+                i.fa.fa-arrow-left
+              button.y-help-forward-button.btn.fa-btn(data-bind='click:navigateHelpForward, enable:canNavigateHelpForward')
+                i.fa.fa-arrow-right
+            .y-help(data-bind="raw:help")
       //-
         .y-grab-bar
           .y-grab-bar-border

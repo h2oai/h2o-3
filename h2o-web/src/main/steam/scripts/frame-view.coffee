@@ -215,7 +215,7 @@ computeBoxplot = (percentiles, column) ->
   mins: column.mins
   maxs: column.maxs
 
-renderBoxplot = (boxplot, bounds) ->
+renderBoxplot = (_, boxplot, bounds) ->
   width = bounds.width - bounds.margin.left - bounds.margin.right
   height = bounds.height - bounds.margin.top - bounds.margin.bottom
 
@@ -257,7 +257,19 @@ renderBoxplot = (boxplot, bounds) ->
       .attr 'cy', h50
       .attr 'r', 3
 
-  # Box from Q1 to Q2
+  drawHotspot = (x, name, value) ->
+    g.append 'circle'
+      .attr 'class', 'hotspot'
+      .attr 'cx', x
+      .attr 'cy', h50
+      .attr 'r', 5
+      .on 'mouseover', ->
+        tooltip = {}
+        tooltip[name] = value
+        _.tooltip @, tooltip, 'top'
+      .on 'mouseout', -> _.tooltip null
+
+  # Box from Q1 to Q3
   g.append 'rect'
     .attr 'class', 'rule'
     .attr 'x', q1
@@ -288,6 +300,18 @@ renderBoxplot = (boxplot, bounds) ->
   # Circles for mins/maxs higher/lower than min/max
   forEach mins, (value) -> drawCircle value if value isnt min
   forEach maxs, (value) -> drawCircle value if value isnt max
+
+  # Hot spots
+  # Box from Q1 to Q3
+  drawHotspot q1, 'Q1', boxplot.q1
+  drawHotspot q2, 'Q2', boxplot.q2
+  drawHotspot q3, 'Q3', boxplot.q3
+  drawHotspot mean, 'Mean', boxplot.mean
+
+  # Circles for mins/maxs higher/lower than min/max
+  forEach mins, (value, i) -> drawHotspot value, "Min ##{i+1}", boxplot.mins[i]
+  forEach maxs, (value, i) -> drawHotspot value, "Max ##{i+1}", boxplot.maxs[i]
+
 
   svg
 
@@ -408,7 +432,7 @@ Steam.FrameView = (_, _frame) ->
 
         boxplot = computeBoxplot frame.default_pctiles, column
         appendBoxplot = ($element) ->
-          $element.empty().append renderBoxplot boxplot,
+          $element.empty().append renderBoxplot _, boxplot,
             width: localConfig.chartWidth
             height: 70
             margin:
@@ -417,6 +441,7 @@ Steam.FrameView = (_, _frame) ->
               bottom: 5
               left: 5
         boxplotInspection =
+          data: boxplot
           graphic:
             markup: div()
             behavior: appendBoxplot
