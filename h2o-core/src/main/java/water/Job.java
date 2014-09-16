@@ -1,11 +1,12 @@
 package water;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
 import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.util.Log;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
 
 /** 
  *  Jobs are Keyed, because they need to Key to control e.g. atomic updates.
@@ -258,7 +259,7 @@ public class Job<T extends Keyed> extends Keyed {
   /**
    * Helper class to store the job progress in the DKV
    */
-  protected static class Progress extends Iced{
+  public static class Progress extends Iced{
     private final long _work;
     private long _worked;
     private boolean _done;
