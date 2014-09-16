@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "test"
+    "test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s | faucet"
   },
   "repository": {
     "type": "git",
