@@ -24,22 +24,26 @@
 
 
         // ko if:isModelCreationMode
-        // ko with:modelForm
-        h1(data-bind='text:title')
+        .y-dialog-content
+          // ko with:modelForm
+          h1(data-bind='text:title')
 
-        // ko with:validationError
-        .y-validation-error.bg-danger.y-monospace
-          div Please fix these errors and try again:
-          .y-validation-error-message(data-bind='text:message')
-        // /ko
+          // ko with:validationError
+          .y-validation-error.bg-danger.y-monospace
+            div Please fix these errors and try again:
+            .y-validation-error-message(data-bind='text:message')
+          // /ko
 
-        h2(data-bind='collapse:false') Parameters
-        div(data-bind='template: { name: parameterTemplateOf, foreach:criticalControls }')
-        h2(data-bind='collapse:false') Advanced
-        div(data-bind='template: { name: parameterTemplateOf, foreach:secondaryControls }')
-        h2(data-bind='collapse:false') Expert
-        div(data-bind='template: { name: parameterTemplateOf, foreach:expertControls }')
-        // /ko
+          h2(data-bind='collapse:false') Parameters
+          table.table.table-condensed.table-striped
+            tbody(data-bind='template: { name: parameterTemplateOf, foreach:criticalControls }')
+          h2(data-bind='collapse:false') Advanced
+          table.table.table-condensed.table-striped
+            tbody(data-bind='template: { name: parameterTemplateOf, foreach:secondaryControls }')
+          h2(data-bind='collapse:false') Expert
+          table.table.table-condensed.table-striped
+            tbody(data-bind='template: { name: parameterTemplateOf, foreach:expertControls }')
+          // /ko
         .y-model-actions(style='width:50%;text-align:left')
           button.btn(data-bind='click:backToAlgorithms')
             i.fa.fa-arrow-left

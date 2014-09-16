@@ -2,6 +2,10 @@
   .y-dialog-margin
     dock(15px, 20px, 5px, 20px)
 
+  .y-dialog-content
+    overflow auto
+    dock(0, 0, 50px, 0)
+
   .y-algorithms
     overflow auto
     dock(0, 0, 10px, 0)
@@ -17,8 +21,12 @@
     padding 10px
 
   .y-model-parameter
-    display inline-block
-    margin-right 10px
+    td
+      vertical-align top
+      padding 5px
+
+    .y-description
+      color #888
 
     input:focus, select:focus
       outline none !important
@@ -42,6 +50,10 @@
 
       label
         border-bottom 1px dotted red
+
+    &:hover
+      .y-description
+        color inherit
 
   // TODO Duplicate of y-import-actions 
   .y-model-actions

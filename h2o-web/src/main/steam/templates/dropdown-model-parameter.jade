@@ -1,3 +1,9 @@
-.y-model-parameter(data-bind="css:{'y-invalid':isInvalid}, tooltip:description")
-  label.y-input-inline(data-bind='text:label')
-  select(data-bind='options:values, value:value')
+tr.y-model-parameter(data-bind="css:{'y-invalid':isInvalid}")
+  td.y-shrink
+    label(data-bind='text:label')
+  td.y-shrink
+    select(data-bind='options:values, value:value')
+  td.y-expand
+    span.y-description(data-bind='text:description')
+          
+
