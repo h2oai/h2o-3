@@ -88,10 +88,10 @@ task getRPlatform(type: Exec) {
 }
 
 task getRVersion(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', '--version'])
+    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "options(echo=FALSE);cat(paste(R.Version()\$major, R.Version()\$minor, collapse = '.', sep = '.'));"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
-        return standardOutput.toString().split(' ')[2]
+        return standardOutput.toString().replace(' ','').split("\\\n")[1] //replace('-','_').
     }
 }
 
@@ -100,6 +100,7 @@ task pdflatex(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'where', 'pdflatex'
     else commandLine 'which', 'pdflatex'
     standardOutput = new ByteArrayOutputStream()
+    println standardOutput
     ext.output = {
         return standardOutput.toString().replace("\n","")
     }
