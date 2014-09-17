@@ -18,7 +18,7 @@ import java.util.Random;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -84,10 +84,10 @@ public class DeepLearningProstateTest extends TestUtil {
                             for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
                               for (boolean override_with_best_model : new boolean[]{false, true}) {
                                 for (int train_samples_per_iteration : new int[]{
-                                        -2, //auto-tune
-                                        -1, //N epochs per iteration
-                                        0, //1 epoch per iteration
-                                        rng.nextInt(100), // <1 epoch per iteration
+//                                        -2, //auto-tune
+//                                        -1, //N epochs per iteration
+//                                        0, //1 epoch per iteration
+//                                        rng.nextInt(100), // <1 epoch per iteration
                                         500, //>1 epoch per iteration
                                 }) {
                                   DeepLearningModel model1 = null, model2 = null, tmp_model = null;
@@ -135,6 +135,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.balance_classes = balance_classes;
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
+//                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(dest_tmp, p);
                                       try {
                                         model1 = dl.train().get();
@@ -144,6 +145,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
+                                      assert(p.train_samples_per_iteration <= 0 || model1.epoch_counter > epochs || Math.abs(model1.epoch_counter - epochs)/epochs < 0.1);
 
                                       if (n_folds != 0)
                                       // test HTML of cv models
