@@ -540,9 +540,10 @@ class ValFrame extends Val {
   final Frame _fr;
   ValFrame(Frame fr) { _key = null; _fr = fr; }
   ValFrame(String key) {
-    if (DKV.get(Key.make(key)) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    Key k = Key.make(key);
+    if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
-    _fr = DKV.get(Key.make(_key)).get();
+    _fr = k.get();
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override int type () { return Env.ARY; }

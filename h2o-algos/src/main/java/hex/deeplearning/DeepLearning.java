@@ -39,7 +39,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> train() {
-    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms._training_frame.get().numRows()));
+    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms._training_frame.<Frame>get().numRows()));
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
@@ -208,7 +208,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       trainModel(cp);
 
       // clean up
-      Frame val_fr = _parms._validation_frame==null ? null : _parms._validation_frame.get();
+      Frame val_fr = _parms._validation_frame==null ? null : _parms._validation_frame.<Frame>get();
       int validlen = val_fr!= null ? val_fr.vecs().length : 0;
       Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
       //don't delete the training data
@@ -266,7 +266,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
         Frame tra_fr = _parms._training_frame.get();
-        Frame val_fr = _parms._validation_frame == null ? null : _parms._validation_frame.get();
+        Frame val_fr = _parms._validation_frame == null ? null : _parms._validation_frame.<Frame>get();
 
         ValidationAdapter validAdapter = new ValidationAdapter(val_fr, _parms.classification);
         validAdapter.prepareValidationWithModel(model);
@@ -374,18 +374,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * Lock the input datasets against deletes
      */
     private void lock_data() {
-      _parms._training_frame.get().read_lock(self());
+      _parms._training_frame.<Frame>get().read_lock(self());
       if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
-        _parms._validation_frame.get().read_lock(self());
+        _parms._validation_frame.<Frame>get().read_lock(self());
     }
 
     /**
      * Release the lock for the input datasets
      */
     private void unlock_data() {
-      _parms._training_frame.get().unlock(self());
+      _parms._training_frame.<Frame>get().unlock(self());
       if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
-        _parms._validation_frame.get().unlock(self());
+        _parms._validation_frame.<Frame>get().unlock(self());
     }
 
     /**

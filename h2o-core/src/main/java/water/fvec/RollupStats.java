@@ -234,7 +234,7 @@ public class RollupStats extends DTask<RollupStats> {
     }
     // This call to DKV "get the lock" on making the Rollups.
     // Do them Right Here, Right Now.
-    Vec vec = DKV.get(Vec.getVecKey(_rskey)).get();
+    Vec vec = Vec.getVecKey(_rskey).get();
     new Roll(this,_rskey).asyncExec(vec);
   }
   @Override public void onCompletion(CountedCompleter caller){

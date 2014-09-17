@@ -46,7 +46,7 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
-  public final Key _dest;       // Key for result
+  public final Key _dest;   // Key for result
   public final Key dest() { return _dest; }
 
   /** Basic metadata about the Job */
@@ -82,11 +82,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** Check if given job is running.
    *  @param job_key job key
    *  @return true if job is still running else returns false.  */
-  public static boolean isRunning(Key job_key) {
-    Value j = DKV.get(job_key);
-    assert (j != null) : "Job not in DKV!";
-    return ((Job)j.get()).isRunning();
-  }
+  public static boolean isRunning(Key job_key) { return job_key.<Job>get().isRunning(); }
 
   /** Current runtime; zero if not started */
   public final long msec() {
@@ -175,7 +171,7 @@ public class Job<T extends Keyed> extends Keyed {
     assert _key.home();         // Always blocking on same node job was created
     _barrier.join();            // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
-    return DKV.get(_dest).get();
+    return _dest.get();
   }
 
   /** Marks job as finished and records job end time. */
@@ -253,7 +249,7 @@ public class Job<T extends Keyed> extends Keyed {
 
   /* Report new work done for a given job key */
   public static void update(final long newworked, Key jobkey) {
-    DKV.get(jobkey).<Job>get().update(newworked);
+    jobkey.<Job>get().update(newworked);
   }
 
   /**

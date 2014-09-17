@@ -24,8 +24,8 @@ public class DownloadDataHandler extends Handler<DownloadData, DownloadDataV1> {
   public DownloadDataV1 fetch(int version, DownloadData server) {
 
     if (DKV.get(server.src_key) == null) throw new IllegalArgumentException(server.src_key.toString() + " not found.");
-    Object value = DKV.get(server.src_key).get();
-    server.csv = ((Frame) value).toCSV(true, server.hex_string);
+    Frame value = server.src_key.get();
+    server.csv = value.toCSV(true, server.hex_string);
     // Clean up Key name back to something resembling a file system name.  Hope
     // the user's browser actually asks for what to do with the suggested
     // filename.  Without this code, my FireFox would claim something silly

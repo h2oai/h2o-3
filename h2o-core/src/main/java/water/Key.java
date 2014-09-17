@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
-final public class Key<T> extends Iced<Key<T>> implements Comparable {
+final public class Key extends Iced implements Comparable {
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
@@ -56,7 +56,7 @@ final public class Key<T> extends Iced<Key<T>> implements Comparable {
   public final Key getVecKey() { assert isChunkKey(); return water.fvec.Vec.getVecKey(this); }
 
   // Fetch key contents
-  public final T get() { 
+  public final <T extends Keyed> T get() {
     Value val = DKV.get(this);
     return val == null ? null : (T)val.get(); 
   }

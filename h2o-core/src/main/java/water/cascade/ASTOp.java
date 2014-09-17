@@ -2156,7 +2156,7 @@ class ASTLs extends ASTOp {
   }
 
   private double getSize(Key k) {
-    return (double)(((Frame) DKV.get(k).get()).byteSize());
+    return (double)(((Frame) k.get()).byteSize());
 //    if (k.isChunkKey()) return (double)((Chunk)DKV.get(k).get()).byteSize();
 //    if (k.isVec()) return (double)((Vec)DKV.get(k).get()).rollupStats()._size;
 //    return Double.NaN;
