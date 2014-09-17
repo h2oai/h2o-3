@@ -12,6 +12,7 @@ Steam.MainView = (_) ->
   _modalViews = do nodes$
   _modalDialogs = do nodes$
   _inspectorViews = nodes$ null
+  _hasInspections = lift$ _inspectorViews, (inspections) -> inspections.length > 0
   _isInspectorHidden = node$ no
   _topic = node$ null
 
@@ -276,6 +277,7 @@ Steam.MainView = (_) ->
   isViewMasked: _isViewMasked
   isInspectorHidden: _isInspectorHidden
   inspectorViews: _inspectorViews
+  hasInspections: _hasInspections
   refresh: refresh
   help: _help
   navigateHelpHome: navigateHelpHome

@@ -10,7 +10,7 @@ import water.util.BeanUtils;
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
   public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
-    public String[] fields() { return new String[] {"K", "max_iters", "normalize", "seed", "init" }; }
+    public String[] fields() { return new String[] {"training_frame", "K", "max_iters", "normalize", "seed", "init" }; }
 
     // TODO: we do defaults both here and in the impl; that's no good.
 
@@ -60,7 +60,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     KMeansParameters parms = parameters.createImpl();
     return new KMeans(parms);
   }
-  public KMeans createImpl(Frame fr) { parameters.training_frame = fr._key; return createImpl(); }
 
   // TODO: UGH
   // Return a URL to invoke KMeans on this Frame

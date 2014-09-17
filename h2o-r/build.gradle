@@ -88,10 +88,10 @@ task getRPlatform(type: Exec) {
 }
 
 task getRVersion(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', '--version'])
+    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "options(echo=FALSE);cat(paste(R.Version()\$major, R.Version()\$minor, collapse = '.', sep = '.'));"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
-        return standardOutput.toString().split(' ')[2]
+        return standardOutput.toString().replace(' ','').split("\\\n")[1] //replace('-','_').
     }
 }
 
@@ -100,6 +100,7 @@ task pdflatex(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'where', 'pdflatex'
     else commandLine 'which', 'pdflatex'
     standardOutput = new ByteArrayOutputStream()
+    println standardOutput
     ext.output = {
         return standardOutput.toString().replace("\n","")
     }
@@ -189,7 +190,8 @@ task cpToR2 << {
     new File((contrib + "2.15").join(File.separator)).mkdir()
     new File((contrib + "2.14").join(File.separator)).mkdir()
     new File((contrib + "2.13").join(File.separator)).mkdir()
-    Files.move(newPath(T, H2O_R_PKG_FILE), newPath(T, "R", REPO_PATH_MAC, H2O_R_PKG_FILE), REPLACE_EXISTING)
+
+    Files.copy(newPath(T, H2O_R_PKG_FILE), newPath(T, "R", REPO_PATH_MAC, H2O_R_PKG_FILE), REPLACE_EXISTING)
     copyFile([T, "PACKAGES"], [T, "R", REPO_PATH_MAC, "PACKAGES"])
     copyFile([T, "PACKAGES.gz"], [T, "R", REPO_PATH_MAC, "PACKAGES.gz"])
     new File([T, "R", REPO_PATH_MAC].join(File.separator)).eachFile {
@@ -202,7 +204,7 @@ task cpToR2 << {
 
     rel_base = [T, "R", "bin", "windows", "contrib"]
     new File((rel_base + "3.1").join(File.separator)).mkdirs()
-    Files.move(newPath(T, H2O_R_WINDOWS_FILE), newPath(T, "R", REPO_PATH_WIN, H2O_R_WINDOWS_FILE), REPLACE_EXISTING)
+    Files.copy(newPath(T, H2O_R_WINDOWS_FILE), newPath(T, "R", REPO_PATH_WIN, H2O_R_WINDOWS_FILE), REPLACE_EXISTING)
     new File((rel_base + "3.0").join(File.separator)).mkdirs()
     new File((rel_base + "2.15").join(File.separator)).mkdirs()
     new File((rel_base + "2.14").join(File.separator)).mkdirs()
@@ -210,6 +212,7 @@ task cpToR2 << {
     copyFile([T, "PACKAGES"], [T, "R", REPO_PATH_WIN, "PACKAGES"])
     copyFile([T, "PACKAGES.gz"], [T, "R", REPO_PATH_WIN, "PACKAGES.gz"])
     new File([T, "R", REPO_PATH_WIN].join(File.separator)).eachFile {
+        copyFile(it.toPath(), rel_base +["3.1", it.name])
         copyFile(it.toPath(), rel_base +["3.0", it.name])
         copyFile(it.toPath(), rel_base + ["2.15",it.name])
         copyFile(it.toPath(), rel_base + ["2.14",it.name])

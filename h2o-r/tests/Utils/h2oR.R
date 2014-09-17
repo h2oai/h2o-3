@@ -277,7 +277,7 @@ function() {
 #checkNLoadWrapper(ipPort)
 #checkNLoadPackages()
 
-h2o.removeAll <-
+h2o.removeAll<-
 function(object) {
   Log.info("Throwing away any keys on the H2O cluster")
   .h2o.__remoteSend(object, .h2o.__REMOVEALL)

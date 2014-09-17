@@ -178,7 +178,7 @@ Steam.ImportFilesDialog = (_, _go) ->
   processParseSetupResult = (result) ->
     _parserType find parserTypes, (parserType) -> parserType.type is result.pType
     _delimiter find parseDelimiters, (delimiter) -> delimiter.charCode is result.sep 
-    _useSingleQuotes result.singleQuotes isnt 'false'
+    _useSingleQuotes result.singleQuotes
     _destinationKey result.hexName
     _headerOption if result.checkHeader is 0 then 'auto' else if result.checkHeader is -1 then 'data' else 'header'
     _columnCount result.ncols

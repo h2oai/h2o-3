@@ -5,10 +5,10 @@
   "sep": 0,
   "ncols": 0,
   "checkHeader": 0,
-  "singleQuotes": "false",
+  "singleQuotes": false,
   "columnNames": null,
-  "delete_on_done": "false",
-  "blocking": "false",
+  "delete_on_done": false,
+  "blocking": false,
   "job": {
     "name": "$0301c0a8014232d4ffffffff$_93d62182ec831b1fc5a39c9daf71458b"
   }

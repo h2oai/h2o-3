@@ -1,11 +1,15 @@
 package hex.kmeans;
 
-import java.io.File;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+
+import java.io.File;
 
 public class KMeansTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -34,7 +38,7 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 10;
@@ -58,7 +62,7 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 10;
@@ -84,7 +88,7 @@ public class KMeansTest extends TestUtil {
       fr = water.parser.ParseDataset2.parse(Key.make(),nfs._key);
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 7;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -112,7 +116,7 @@ public class KMeansTest extends TestUtil {
     Frame fr = frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -150,7 +154,7 @@ public class KMeansTest extends TestUtil {
     Frame fr = frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 2;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -175,7 +179,7 @@ public class KMeansTest extends TestUtil {
     try {
 
       parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._K = 10; //too high -> will throw
       parms._normalize = true;
       parms._max_iters = 100;

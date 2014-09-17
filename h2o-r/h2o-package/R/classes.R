@@ -501,6 +501,7 @@ setClass("ASTNode", representation(root="Node", children="list"), contains="Node
 setMethod("show", "ASTNode", function(object) {
    cat(visitor(object)$ast, "\n")
    print(head(object))
+   h2o.rm("object")
 })
 
 #'

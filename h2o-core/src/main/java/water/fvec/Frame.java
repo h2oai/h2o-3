@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
@@ -293,6 +294,19 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
 
   public String[] names() { return _names; }
 
+  public int [] indices(String [] cols){
+    if(cols == null) return null;
+
+    Map<String, Integer> names_map = new HashMap();
+    for(int i = 0; i < _names.length; i++)
+      names_map.put(_names[i], i);
+
+    int [] res = new int[cols.length];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = names_map.get(i);
+    return res;
+  }
+
   public long byteSize() {
     long sum=0;
     Vec[] vecs = vecs();
@@ -365,6 +379,10 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
   public Vec lastVec() {
     final Vec [] vecs = vecs();
     return vecs[vecs.length-1];
+  }
+
+  public String lastVecName() {
+    return _names[_names.length - 1];
   }
 
   public Vec vec(String name){

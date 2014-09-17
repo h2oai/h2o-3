@@ -41,7 +41,9 @@ abstract public class AST extends Iced {
         ((ASTUniPrefixOp) this).apply(e);
       } else if (this instanceof ASTReducerOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
-        ((ASTReducerOp)this).apply(e);
+        ((ASTReducerOp) this).apply(e);
+      } else if (this instanceof ASTLs) {
+        ((ASTLs) this).apply(e);
       } else {
         throw H2O.fail("Unknown AST: " + this.getClass());
         // TODO: do the udf op thing: capture env...

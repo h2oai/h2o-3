@@ -5,7 +5,7 @@
     }
   ],
   "checkHeader": 0,
-  "singleQuotes": "false",
+  "singleQuotes": false,
   "hexName": "allyears2k_headers.hex",
   "pType": "CSV",
   "sep": 44,

@@ -1,7 +1,7 @@
 package hex.example;
 
-import org.junit.*;
-
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -18,7 +18,7 @@ public class ExampleTest extends TestUtil {
       System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
-      parms._training_frame = fr._key;
+      parms._training_frame = fr;
       parms._max_iters = 10;
 
       Example job = new Example(parms).train();
