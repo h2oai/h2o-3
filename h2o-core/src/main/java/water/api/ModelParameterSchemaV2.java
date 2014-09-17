@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
+import water.Keyed;
 import water.util.BeanUtils;
 import water.util.Log;
 
@@ -86,6 +87,11 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   private static String consValue(Object o) {
     if (null == o)
       return null;
+
+    if (water.Keyed.class.isAssignableFrom(o.getClass())) {
+      Keyed k = (Keyed)o;
+      return k._key.toString();
+    }
 
     if (! o.getClass().isArray())
       return o.toString();
