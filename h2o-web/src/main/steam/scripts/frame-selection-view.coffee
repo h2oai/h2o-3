@@ -1,20 +1,20 @@
 Steam.FrameSelectionView = (_) ->
   _activeFrame = do node$
-  _hasFrame = lift$ _activeFrame, isTruthy
+  _hasActiveFrame = lift$ _activeFrame, isTruthy
 
   createModel = ->
-    _.promptCreateModel _activeFrame().key.name, (action) ->
+    _.promptCreateModel _activeFrame().key.name, null, (action) ->
       switch action
         when 'confirm'
           _.switchToJobs()
 
   deleteFrame = -> #TODO
 
-  link$ _.frameSelectionChanged, (frame) ->
+  link$ _.activeFrameChanged, (frame) ->
     _activeFrame frame
 
   createModel: createModel
-  hasFrame: _hasFrame
+  hasActiveFrame: _hasActiveFrame
   deleteFrame: deleteFrame
   template: 'frame-selection-view'
 

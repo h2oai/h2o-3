@@ -1,7 +1,7 @@
 .y-dialog-container
   .y-dialog.y-create-model-dialog(data-dialog-width='-1' data-dialog-height='-1')
     .y-dialog-title-bar
-      .y-dialog-title New Model
+      .y-dialog-title(data-bind='text:title')
       .y-dialog-exit(data-bind='click:cancel')
         i.fa.fa-times 
     .y-dialog-body
@@ -45,9 +45,11 @@
             tbody(data-bind='template: { name: parameterTemplateOf, foreach:expertControls }')
           // /ko
         .y-model-actions(style='width:50%;text-align:left')
+          // ko if:canChangeAlgorithm
           button.btn(data-bind='click:backToAlgorithms')
             i.fa.fa-arrow-left
             span &nbsp;Back
+          // /ko
         .y-model-actions(style='width:50%;left:50%')
           button.btn(data-bind='click:cancel') Cancel
           button.btn.btn-primary(data-bind='click:createModel') Create Model

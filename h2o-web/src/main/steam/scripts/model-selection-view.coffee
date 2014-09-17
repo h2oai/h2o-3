@@ -1,5 +1,7 @@
 defaultScoringSelectionMessage = 'Score selected models.'
 Steam.ModelSelectionView = (_) ->
+  _activeModel = do node$
+  _hasActiveModel = lift$ _activeModel, isTruthy
   _selections = nodes$ []
   _hasSelection = lift$ _selections, (selections) -> selections.length > 0
   _caption = lift$ _selections, (selections) ->
@@ -18,6 +20,12 @@ Steam.ModelSelectionView = (_) ->
       defaultScoringSelectionMessage
     else
       'No compatible datasets found.'
+
+  cloneModel = ->
+    _.promptCreateModel null, _activeModel(), (action) ->
+      switch action
+        when 'confirm'
+          _.switchToJobs()
 
   scoreSelections = ->
     _.promptForFrame _compatibleFrames(), (action, frameKey) ->
@@ -40,6 +48,9 @@ Steam.ModelSelectionView = (_) ->
   clearSelections = ->
     _.deselectAllModels()
 
+  link$ _.activeModelChanged, (model) ->
+    _activeModel model
+
   link$ _.modelSelectionChanged, (isSelected, model) ->
     if isSelected
       _selections.push model
@@ -50,6 +61,8 @@ Steam.ModelSelectionView = (_) ->
     _selections.removeAll()
 
   caption: _caption
+  hasActiveModel: _hasActiveModel
+  cloneModel: cloneModel
   hasSelection: _hasSelection
   clearSelections: clearSelections
   canScoreSelections: _canScoreSelections
