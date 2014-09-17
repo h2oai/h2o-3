@@ -295,7 +295,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _type = (short) bb.get2();
     _mem = bb.getA1();
     _max = _mem.length;
-    assert _max < MAX : "Value size=0x"+Integer.toHexString(_max);
+    assert _max < MAX : "Value size=0x"+Integer.toHexString(_max)+" during read is larger than "+Integer.toHexString(MAX)+", type: "+TypeMap.className(_type);
     _pojo = null;
     // On remote nodes _rwlock is initialized to 0 (signaling a remote PUT is
     // in progress) flips to -1 when the remote PUT is done, or +1 if a notify
