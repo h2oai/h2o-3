@@ -83,10 +83,10 @@ public class DeepLearningProstateTest extends TestUtil {
                             for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
                               for (boolean override_with_best_model : new boolean[]{false, true}) {
                                 for (int train_samples_per_iteration : new int[]{
-                                        -2, //auto-tune
-                                        -1, //N epochs per iteration
-                                        0, //1 epoch per iteration
-                                        rng.nextInt(100), // <1 epoch per iteration
+//                                        -2, //auto-tune
+//                                        -1, //N epochs per iteration
+//                                        0, //1 epoch per iteration
+//                                        rng.nextInt(100), // <1 epoch per iteration
                                         500, //>1 epoch per iteration
                                 }) {
                                   DeepLearningModel model1 = null, model2 = null, tmp_model = null;
@@ -111,9 +111,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                       DeepLearningParameters p = new DeepLearningParameters();
                                       p.checkpoint = null;
 
-                                      p.source = frame;
-                                      p.response_vec = frame.vecs()[resp];
-                                      p.validation = valid;
+                                      p._training_frame = frame;
+                                      p.response_column = frame._names[resp];
+                                      p._validation_frame = valid;
 
                                       p.hidden = hidden;
                                       if (i == 0 && resp == 2) p.classification = false;
@@ -134,6 +134,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.balance_classes = balance_classes;
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
+//                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(dest_tmp, p);
                                       try {
                                         model1 = dl.train().get();
@@ -143,6 +144,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
+                                      assert(p.train_samples_per_iteration <= 0 || model1.epoch_counter > epochs || Math.abs(model1.epoch_counter - epochs)/epochs < 0.1);
 
                                       if (n_folds != 0)
                                       // test HTML of cv models
@@ -169,9 +171,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.checkpoint = dest_tmp;
                                     p.n_folds = 0;
 
-                                    p.source = frame;
-                                    p.validation = valid;
-                                    p.response_vec = frame.vecs()[resp];
+                                    p._training_frame = frame;
+                                    p._validation_frame = valid;
+                                    p.response_column = frame._names[resp];
                                     if (i == 0 && resp == 2) p.classification = false;
                                     p.override_with_best_model = override_with_best_model;
                                     p.epochs = epochs;

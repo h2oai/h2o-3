@@ -4,6 +4,7 @@ import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
 import water.Key;
+import water.fvec.Frame;
 import water.util.BeanUtils;
 
 import java.lang.reflect.Field;
@@ -22,7 +23,17 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   // Parameters common to all models:
   @API(help="Training frame.")
-  public Key training_frame;              // Training Frame
+  public Frame training_frame;
+
+  @API(help="Validation frame")
+  public Frame validation_frame;
+
+  @API(help="Response column")
+  public String response_column;
+
+  @API(help="Ignored columns")
+  public String[] ignored_columns;         // column names to ignore for training
+
 
   public ModelParametersSchema() {
   }

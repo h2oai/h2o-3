@@ -4,7 +4,6 @@ import hex.*;
 import hex.FrameTask.DataInfo;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
-import water.api.API;
 import water.api.ModelSchema;
 import water.api.ValidationAdapter;
 import water.fvec.Chunk;
@@ -26,12 +25,7 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
 
   public static class DeepLearningParameters extends Model.Parameters<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-    // FIXME
-    public Frame source;     // TODO: Should use ModelParameters.training_frame
-    public Frame validation; // TODO: Should use ModelParameters.validation_frame
     public boolean classification;
-    public Vec response_vec;
-    public int[] ignored_cols;
     public int n_folds;
     public boolean keep_cross_validation_splits;
 
@@ -40,14 +34,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * model. This option allows users to build a new model as a
      * continuation of a previously generated model (e.g., by a grid search).
      */
-//  @API(help = "Model checkpoint to resume training with", filter= Default.class, json = true)
     public Key checkpoint;
 
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.
      * Only applicable if training is not cancelled.
      */
-//  @API(help = "If enabled, override the final model with the best model found during training", filter= Default.class, json = true)
     public boolean override_with_best_model = true;
 
     /**
@@ -56,13 +48,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * values is fine for many problems, but best results on complex datasets are often
      * only attainable via expert mode options.
      */
-//  @API(help = "Enable expert mode (to access all options from GUI)", filter = Default.class, json = true)
     public boolean expert_mode = false;
 
-    //  @API(help = "Auto-Encoder (Experimental)", filter= Default.class, json = true)
     public boolean autoencoder = false;
 
-    //  @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.",filter=Default.class, json=true, importance = ParamImportance.SECONDARY)
     public boolean use_all_factor_levels = true;
 
   /*Neural Net Topology*/
@@ -76,7 +65,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      *      training row. This effectively trains exponentially many models at
      *      once, and can improve generalization.
      */
-//  @API(help = "Activation function", filter = Default.class, json = true, importance = ParamImportance.CRITICAL)
     public Activation activation = Activation.Rectifier;
 
     /**
@@ -86,7 +74,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * neurons.To specify a grid search, add parentheses around each
      * model's specification: "(100,100), (50,50,50), (20,20,20,20)".
      */
-//  @API(help = "Hidden layer sizes (e.g. 100,100). Grid search: (10,10), (20,20,20)", filter = Default.class, json = true, importance = ParamImportance.CRITICAL)
     public int[] hidden = new int[] { 200, 200 };
 
     /**
@@ -95,7 +82,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * This value can be modified during checkpoint restarts and allows continuation
      * of selected models.
      */
-//  @API(help = "How many times the dataset should be iterated (streamed), can be fractional", filter = Default.class, dmin = 1e-3, json = true, importance = ParamImportance.CRITICAL)
     public double epochs = 10;
 
     /**
@@ -113,10 +99,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * will be trained per iteration on N nodes, otherwise one epoch). Special value
      * of -2 turns on automatic mode (auto-tuning).
      */
-//  @API(help = "Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic", filter = Default.class, lmin = -2, json = true, importance = ParamImportance.SECONDARY)
     public long train_samples_per_iteration = -2;
 
-    //  @API(help = "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)", filter = Default.class, dmin = 1e-3, dmax=0.999, json = true, importance = ParamImportance.SECONDARY)
     public double target_ratio_comm_to_comp = 0.02;
 
     /**
@@ -129,7 +113,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * results. Note that deterministic sampling and initialization might
      * still lead to some weak sense of determinism in the model.
      */
-//  @API(help = "Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded", filter = Default.class, json = true)
     public long seed = new Random().nextLong();
 
   /*Adaptive Learning Rate*/
@@ -152,7 +135,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * surface with small learning rates, the model can converge far
      * slower than necessary.
      */
-//  @API(help = "Adaptive learning rate (ADADELTA)", filter = Default.class, json = true, importance = ParamImportance.SECONDARY)
     public boolean adaptive_rate = true;
 
     /**
@@ -161,7 +143,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Typical values are between 0.9 and 0.999.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-//  @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", filter = Default.class, dmin = 0.01, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double rho = 0.99;
 
     /**
@@ -171,7 +152,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Typical values are between 1e-10 and 1e-4.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-//  @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", filter = Default.class, dmin = 1e-15, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double epsilon = 1e-8;
 
   /*Learning Rate*/
@@ -189,7 +169,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * why the momentum is best ramped up slowly.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Learning rate (higher => less stable, lower => slower convergence)", filter = Default.class, dmin = 1e-10, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double rate = .005;
 
     /**
@@ -199,7 +178,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Learning rate annealing: rate / (1 + rate_annealing * samples)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double rate_annealing = 1e-6;
 
     /**
@@ -210,7 +188,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * and the learning rate for the weights connecting the second and third hidden layer will be 0.0025, etc.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Learning rate decay factor between layers (N-th layer: rate*alpha^(N-1))", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.EXPERT)
     public double rate_decay = 1.0;
 
   /*Momentum*/
@@ -218,7 +195,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * The momentum_start parameter controls the amount of momentum at the beginning of training.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Initial momentum at the beginning of training (try 0.5)", filter = Default.class, dmin = 0, dmax = 0.9999999999, json = true, importance = ParamImportance.SECONDARY)
     public double momentum_start = 0;
 
     /**
@@ -227,7 +203,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * of training samples.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Number of training samples for which momentum increases", filter = Default.class, dmin = 1, json = true, importance = ParamImportance.SECONDARY)
     public double momentum_ramp = 1e6;
 
     /**
@@ -235,7 +210,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * The momentum used for training will remain the same for training beyond reaching that point.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Final momentum after the ramp is over (try 0.99)", filter = Default.class, dmin = 0, dmax = 0.9999999999, json = true, importance = ParamImportance.SECONDARY)
     public double momentum_stable = 0;
 
     /**
@@ -245,7 +219,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * minimizes the residuals in fewer iterations of the descent.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-//  @API(help = "Use Nesterov accelerated gradient (recommended)", filter = Default.class, json = true, importance = ParamImportance.SECONDARY)
     public boolean nesterov_accelerated_gradient = true;
 
   /*Regularization*/
@@ -253,14 +226,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * A fraction of the features for each training row to be omitted from training in order
      * to improve generalization (dimension sampling).
      */
-//  @API(help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double input_dropout_ratio = 0.0;
 
     /**
      * A fraction of the inputs for each hidden layer to be omitted from training in order
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
-//  @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double[] hidden_dropout_ratios;
 
     /**
@@ -268,7 +239,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * has the net effect of dropping some weights (setting them to zero) from a model
      * to reduce complexity and avoid overfitting.
      */
-//  @API(help = "L1 regularization (can add stability and improve generalization, causes many weights to become 0)", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double l1 = 0.0;
 
     /**
@@ -277,7 +247,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * frequently produces substantial gains in modeling as estimate variance is
      * reduced.
      */
-//  @API(help = "L2 regularization (can add stability and improve generalization, causes many weights to be small", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.SECONDARY)
     public double l2 = 0.0;
 
     /**
@@ -285,7 +254,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Maxout or Rectifier.
      */
-//  @API(help = "Constraint for squared sum of incoming weights per unit (e.g. for Rectifier)", filter = Default.class, dmin = 1e-10, json = true, importance = ParamImportance.EXPERT)
     public float max_w2 = Float.POSITIVE_INFINITY;
 
   /*Initialization*/
@@ -296,7 +264,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * interval. The "normal" option draws weights from the standard normal
      * distribution with a mean of 0 and given standard deviation.
      */
-//  @API(help = "Initial Weight Distribution", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public InitialWeightDistribution initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
 
     /**
@@ -304,7 +271,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
      * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
      */
-//  @API(help = "Uniform: -value...value, Normal: stddev)", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.EXPERT)
     public double initial_weight_scale = 1.0;
 
     /**
@@ -318,7 +284,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-//  @API(help = "Loss function", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public Loss loss = Loss.Automatic;
 
   /*Scoring*/
@@ -326,14 +291,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * The minimum time (in seconds) to elapse between model scoring. The actual
      * interval is determined by the number of training samples per iteration and the scoring duty cycle.
      */
-//  @API(help = "Shortest time interval (in secs) between model scoring", filter = Default.class, dmin = 0, json = true, importance = ParamImportance.SECONDARY)
     public double score_interval = 5;
 
     /**
      * The number of training dataset points to be used for scoring. Will be
      * randomly sampled. Use 0 for selecting the entire training dataset.
      */
-//  @API(help = "Number of training set samples for scoring (0 for all)", filter = Default.class, lmin = 0, json = true, importance = ParamImportance.EXPERT)
     public long score_training_samples = 10000l;
 
     /**
@@ -342,14 +305,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * validation sampling" is set to stratify). Use 0 for selecting the entire
      * training dataset.
      */
-//  @API(help = "Number of validation set samples for scoring (0 for all)", filter = Default.class, lmin = 0, json = true, importance = ParamImportance.EXPERT)
     public long score_validation_samples = 0l;
 
     /**
      * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
      * and on diagnostics such as computation of feature importances (i.e., not on training).
      */
-//  @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", filter = Default.class, dmin = 0, dmax = 1, json = true, importance = ParamImportance.EXPERT)
     public double score_duty_cycle = 0.1;
 
     /**
@@ -357,7 +318,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * training data scoring dataset. When the error is at or below this threshold,
      * training stops.
      */
-//  @API(help = "Stopping criterion for classification error fraction on training data (-1 to disable)", filter = Default.class, dmin=-1, dmax=1, json = true, importance = ParamImportance.EXPERT)
     public double classification_stop = 0;
 
     /**
@@ -365,13 +325,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * data scoring dataset. When the error is at or below this threshold, training
      * stops.
      */
-//  @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", filter = Default.class, dmin=-1, json = true, importance = ParamImportance.EXPERT)
     public double regression_stop = 1e-6;
 
     /**
      * Enable quiet mode for less output to standard output.
      */
-//  @API(help = "Enable quiet mode for less output to standard output", filter = Default.class, json = true)
     public boolean quiet_mode = false;
 
     /**
@@ -379,13 +337,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * confusion matrix for it to be printed. This option is meant to avoid printing
      * extremely large confusion matrices.
      */
-//  @API(help = "Max. size (number of classes) for confusion matrices to be shown", filter = Default.class, json = true)
     public int max_confusion_matrix_size = 20;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-//  @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", filter = Default.class, lmin=0, json = true, importance = ParamImportance.EXPERT)
     public int max_hit_ratio_k = 10;
 
   /*Imbalanced Classes*/
@@ -393,20 +349,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
      */
-//  @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean balance_classes = false;
 
     /**
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
      */
-//  @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0)", filter = Default.class, json = true, dmin=1e-3, importance = ParamImportance.EXPERT)
     public float max_after_balance_size = 5.0f;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */
-//  @API(help = "Method used to sample validation dataset for scoring", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public ClassSamplingMethod score_validation_sampling = ClassSamplingMethod.Uniform;
 
   /*Misc*/
@@ -414,7 +367,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Gather diagnostics for hidden layers, such as mean and RMS values of learning
      * rate, momentum, weights and biases.
      */
-//  @API(help = "Enable diagnostics for hidden layers", filter = Default.class, json = true)
     public boolean diagnostics = true;
 
     /**
@@ -422,32 +374,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
-//  @API(help = "Compute variable importances for input features (Gedeon method) - can be slow for large networks", filter = Default.class, json = true)
     public boolean variable_importances = false;
 
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
      */
-//  @API(help = "Enable fast mode (minor approximation in back-propagation)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean fast_mode = true;
 
     /**
      * Ignore constant training columns (no information can be gained anyway).
      */
-//  @API(help = "Ignore constant training columns (no information can be gained anyway)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean ignore_const_cols = true;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks
      * to allow utilization of all cores.
      */
-//  @API(help = "Force extra load balancing to increase training speed for small datasets (to keep all cores busy)", filter = Default.class, json = true)
     public boolean force_load_balance = true;
 
     /**
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
-//  @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean replicate_training_data = true;
 
     /**
@@ -455,7 +402,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * checkpoint resumes after training on multiple nodes for fast initial
      * convergence.
      */
-//  @API(help = "Run on a single node for fine-tuning of model parameters", filter = Default.class, json = true)
     public boolean single_node_mode = false;
 
     /**
@@ -465,22 +411,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
      * times the dataset size or larger).
      */
-//  @API(help = "Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to #nodes x #rows)", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean shuffle_training_data = false;
 
-    //  @API(help = "Handling of missing values. Either Skip or MeanImputation.", filter= Default.class, json = true)
     public MissingValuesHandling missing_values_handling = MissingValuesHandling.MeanImputation;
 
-    //  @API(help = "Sparse data handling (Experimental).", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean sparse = false;
 
-    //  @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental).", filter = Default.class, json = true, importance = ParamImportance.EXPERT)
     public boolean col_major = false;
 
-    //  @API(help = "Average activation for sparse auto-encoder (Experimental)", filter= Default.class, json = true)
     public double average_activation = 0;
 
-    //  @API(help = "Sparsity regularization (Experimental)", filter= Default.class, json = true)
     public double sparsity_beta = 0;
 
     public enum MissingValuesHandling {
@@ -510,9 +450,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Automatic, MeanSquare, CrossEntropy
     }
 
+
     //Sanity check for Deep Learning job parameters
     public void sanityCheck() {
-      if (source.numCols() <= 1)
+      if (_training_frame.numCols() <= 1)
         throw new IllegalArgumentException("Training data must have at least 2 features (incl. response).");
 
       if (hidden == null) throw new IllegalArgumentException("There must be at least one hidden layer.");
@@ -538,7 +479,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         throw new IllegalArgumentException("Input dropout must be in [0,1).");
       }
 
-      if (response_vec.isEnum() && !classification) {
+      if (_training_frame.vec(response_column).isEnum() && !classification) {
         Log.info("Automatically switching to classification for enum response_vec.");
         classification = true;
       }
@@ -614,7 +555,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (autoencoder && classification) { classification = false; Log.info("Using regression mode for auto-encoder.");}
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (autoencoder && validation != null) throw new UnsupportedOperationException("Cannot specify a validation dataset for auto-encoder.");
+      if (autoencoder && _validation_frame != null) throw new UnsupportedOperationException("Cannot specify a validation dataset for auto-encoder.");
       if (autoencoder && activation == Activation.Maxout) throw new UnsupportedOperationException("Maxout activation is not supported for auto-encoder.");
 
       if (!sparse && col_major) {
@@ -636,41 +577,28 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // Default publically visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV2(); }
 
-//  @API(help="Model info", json = true)
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
 
-  @API(help="Training dataset used for model building", json = true)
-  public final Key _dataKey;
-
-  @API(help="Validation dataset used for model building", json = true)
-  public final Key _validationKey;
-
-//  @API(help="Time to build the model", json = true)
   private long run_time;
   final private long start_time;
 
   public long actual_train_samples_per_iteration;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
-//  @API(help="Number of training epochs", json = true)
   public double epoch_counter;
 
-//  @API(help="Number of rows in training data", json = true)
   public long training_rows;
 
-//  @API(help="Number of rows in validation data", json = true)
   public long validation_rows;
 
-//  @API(help = "Scoring during model building")
   private Errors[] errors;
   public Errors[] scoring_history() { return errors; }
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
   private float _bestError = Float.MAX_VALUE;
 
-//  @API(help = "Key to the best model so far (based on overall error on scoring data set)")
   public Key actual_best_model_key;
 
   // return the most up-to-date model metrics
@@ -694,54 +622,34 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    static final int API_WEAVER = 1;
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
-//    @API(help = "How many epochs the algorithm has processed")
     public double epoch_counter;
-//    @API(help = "How many rows the algorithm has processed")
     public long training_samples;
-//    @API(help = "How long the algorithm ran in ms")
     public long training_time_ms;
 
     //training/validation sets
-//    @API(help = "Whether a validation set was provided")
     boolean validation;
-//    @API(help = "Number of folds for cross-validation (for validation=false)")
     int num_folds;
-//    @API(help = "Number of training set samples for scoring")
     public long score_training_samples;
-//    @API(help = "Number of validation set samples for scoring")
     public long score_validation_samples;
 
-//    @API(help="Do classification or regression")
     public boolean classification;
 
-//    @API(help = "Variable importances")
     VarImp variable_importances;
 
     // classification
-//    @API(help = "Confusion matrix on training data")
     public ConfusionMatrix train_confusion_matrix;
-//    @API(help = "Confusion matrix on validation data")
     public ConfusionMatrix valid_confusion_matrix;
-//    @API(help = "Classification error on training data")
     public double train_err = 1;
-//    @API(help = "Classification error on validation data")
     public double valid_err = 1;
-//    @API(help = "AUC on training data")
     public AUCData trainAUC;
-//    @API(help = "AUC on validation data")
     public AUCData validAUC;
-//    @API(help = "Hit ratio on training data")
-    public HitRatio train_hitratio;
-//    @API(help = "Hit ratio on validation data")
-    public HitRatio valid_hitratio;
+    public HitRatio train_hitratio; // "Hit ratio on training data"
+    public HitRatio valid_hitratio; // "Hit ratio on validation data"
 
     // regression
-//    @API(help = "Training MSE")
     public double train_mse = Double.POSITIVE_INFINITY;
-//    @API(help = "Validation MSE")
     public double valid_mse = Double.POSITIVE_INFINITY;
 
-//    @API(help = "Time taken for scoring")
     public long scoring_time;
 
     Errors deep_clone() {
@@ -823,7 +731,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
 //    static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
 
-//    @API(help="Input data info")
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }
 
@@ -867,37 +774,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     //accessor to shared parameter defining avg activations
     public final Neurons.DenseVector get_avg_activations(int i) { return avg_activations[i]; }
 
-//    @API(help = "Model parameters", json = true)
     private DeepLearningParameters parameters;
     public final DeepLearningParameters get_params() { return parameters; }
 
-//    @API(help = "Mean rate", json = true)
     private float[] mean_rate;
 
-//    @API(help = "RMS rate", json = true)
     private float[] rms_rate;
 
-//    @API(help = "Mean bias", json = true)
     private float[] mean_bias;
 
-//    @API(help = "RMS bias", json = true)
     private float[] rms_bias;
 
-//    @API(help = "Mean weight", json = true)
     private float[] mean_weight;
 
-//    @API(help = "RMS weight", json = true)
     public float[] rms_weight;
 
-//    @API(help = "Mean Activation", json = true)
     public float[] mean_a;
 
-//    @API(help = "Unstable", json = true)
     private volatile boolean unstable = false;
     public boolean unstable() { return unstable; }
     public void set_unstable() { if (!unstable) computeStats(); unstable = true; }
 
-//    @API(help = "Processed samples", json = true)
     private long processed_global;
     public synchronized long get_processed_global() { return processed_global; }
     public synchronized void set_processed_global(long p) { processed_global = p; }
@@ -1297,7 +1194,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return DataInfo object
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
-    final Frame train = FrameTask.DataInfo.prepareFrame(parms.source, parms.autoencoder ? null : parms.response_vec, parms.ignored_cols, parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame train = FrameTask.DataInfo.prepareFrame(parms._training_frame, parms.autoencoder ? null : parms._training_frame.vec(parms.response_column), parms._training_frame.indices(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
@@ -1316,8 +1213,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public DeepLearningModel(final DeepLearningModel cp, final Key destKey, final Key jobKey, final DataInfo dataInfo) {
     super(destKey, dataInfo._adaptedFrame.names(), dataInfo._adaptedFrame.domains(), cp._parms, new DeepLearningOutput(), cp._priorClassDist != null ? cp._priorClassDist.clone() : null);
-    _dataKey = cp._dataKey;
-    _validationKey = cp._validationKey;
+    // _train = cp._dataKey;
+    // _validationKey = cp._validationKey;
     final boolean store_best_model = (jobKey == null);
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
@@ -1350,8 +1247,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final Key jobKey, final Key dataKey, final DataInfo dinfo, final DeepLearningParameters params, final float[] priorDist) {
     super(destKey, /*dataKey, */dinfo._adaptedFrame, params, new DeepLearningOutput(), priorDist);
-    _dataKey = dataKey;
-    _validationKey = _parms.validation != null ? _parms.validation._key : null;
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
@@ -1361,7 +1256,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (!get_params().autoencoder) {
       errors = new Errors[1];
       errors[0] = new Errors();
-      errors[0].validation = (params.validation != null);
+      errors[0].validation = (params._validation_frame != null);
       errors[0].num_folds = params.n_folds;
     }
     assert(Arrays.equals(_key._kb, destKey._kb));

@@ -222,7 +222,7 @@ test 'airlines ingest and model building flow', (t) ->
       parameters = 
         training_frame: 'allyears2k_headers.hex'
         classification: yes
-        response: 'IsDepDelayed'
+        response_column: 'IsDepDelayed'
       _.requestModelBuild 'deeplearning', parameters, (error, result) ->
         if error
           t.fail 'model build request failed'

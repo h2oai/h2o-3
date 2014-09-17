@@ -1,10 +1,9 @@
 package hex.schemas;
 
 import hex.kmeans.KMeansModel;
-import water.DKV;
-import water.api.*;
+import water.api.API;
+import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.fvec.Frame;
 import water.util.BeanUtils;
 //import water.util.DocGen.HTML;
 
@@ -57,7 +56,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
   @Override public KMeansModel createImpl() {
     KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
     KMeansModel.KMeansParameters parms = p.createImpl();
-    return new KMeansModel( key, (Frame)DKV.get(p.training_frame).get(), parms, new KMeansModel.KMeansOutput(), 0 );
+    return new KMeansModel( key, p.training_frame, parms, new KMeansModel.KMeansOutput(), 0 );
   }
 
   // Version&Schema-specific filling from the impl

@@ -125,11 +125,11 @@ public class DeepLearningIrisTest extends TestUtil {
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
                                   p = new DeepLearningParameters();
-                                  p.source = _train;
-                                  p.response_vec = _train.lastVec();
-                                  p.ignored_cols = null;
+                                  p._training_frame = _train;
+                                  p.response_column = _train.lastVecName();
+                                  p.ignored_columns = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(p.source, p.response_vec, p.ignored_cols, true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(p._training_frame, p._training_frame.vec(p.response_column), p._training_frame.indices(p.ignored_columns), true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
@@ -159,7 +159,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.initial_weight_scale = scale;
                                 p.classification = true;
                                 p.diagnostics = true;
-                                p.validation = null;
+                                p._validation_frame = null;
                                 p.quiet_mode = true;
                                 p.fast_mode = false; //to be the same as reference
 //                            p.fast_mode = true; //to be the same as old NeuralNet code

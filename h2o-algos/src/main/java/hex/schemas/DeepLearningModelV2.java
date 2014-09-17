@@ -1,11 +1,12 @@
 package hex.schemas;
 
 import hex.deeplearning.DeepLearningModel;
-import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 import water.Key;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 import water.util.BeanUtils;
+
+import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
 
@@ -39,7 +40,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
   @Override public DeepLearningModel createImpl() {
     DeepLearningV2.DeepLearningParametersV2 p = ((DeepLearningV2.DeepLearningParametersV2)this.parameters);
     DeepLearningModel.DeepLearningParameters parms = p.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, null /*Job*/, p.training_frame, prepareDataInfo(parms), parms, null);
+    return new DeepLearningModel(Key.make() /*dest*/, null /*Job*/, p.training_frame._key, prepareDataInfo(parms), parms, null);
   }
 
   // Version&Schema-specific filling from the impl

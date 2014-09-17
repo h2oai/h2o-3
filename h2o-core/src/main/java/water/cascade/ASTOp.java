@@ -6,10 +6,7 @@ import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 //import hex.la.Matrix;
 //import org.apache.commons.math3.util.*;
@@ -77,9 +74,9 @@ public abstract class ASTOp extends AST {
 
     // Unary prefix ops
     putPrefix(new ASTIsNA());
-//    putPrefix(new ASTNrow());
-//    putPrefix(new ASTNcol());
-//    putPrefix(new ASTLength());
+    putPrefix(new ASTNrow());
+    putPrefix(new ASTNcol());
+    putPrefix(new ASTLength());
     putPrefix(new ASTAbs ());
     putPrefix(new ASTSgn ());
     putPrefix(new ASTSqrt());
@@ -87,12 +84,12 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTFlr ());
     putPrefix(new ASTLog ());
     putPrefix(new ASTExp ());
-//    putPrefix(new ASTScale());
-//    putPrefix(new ASTFactor());
-//    putPrefix(new ASTIsFactor());
-//    putPrefix(new ASTAnyFactor());   // For Runit testing
-//    putPrefix(new ASTCanBeCoercedToLogical());
-//    putPrefix(new ASTAnyNA());
+    putPrefix(new ASTScale());
+    putPrefix(new ASTFactor());
+    putPrefix(new ASTIsFactor());
+    putPrefix(new ASTAnyFactor());   // For Runit testing
+    putPrefix(new ASTCanBeCoercedToLogical());
+    putPrefix(new ASTAnyNA());
 //    putPrefix(new ASTIsTRUE());
 //    putPrefix(new ASTMTrans());
 
@@ -126,9 +123,6 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar());
     putPrefix(new ASTMean());
-//    putPrefix(new ASTMinNaRm());
-//    putPrefix(new ASTMaxNaRm());
-//    putPrefix(new ASTSumNaRm());
 //    putPrefix(new ASTXorSum ());
 //
     // Misc
@@ -148,7 +142,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
 //    putPrefix(new ASTRunif ());
-//    putPrefix(new ASTCut   ());
+    putPrefix(new ASTCut   ());
 //    putPrefix(new ASTfindInterval());
 //    putPrefix(new ASTPrint ());
     putPrefix(new ASTLs    ());
@@ -295,122 +289,100 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
   }
 }
 
-//class ASTNrow extends ASTUniPrefixOp {
-//  ASTNrow() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "nrow"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numRows();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTNcol extends ASTUniPrefixOp {
-//  ASTNcol() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "ncol"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numCols();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTLength extends ASTUniPrefixOp {
-//  ASTLength() { super(VARS1, new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "length"; }
-//  @Override ASTOp make() { return this; }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTIsFactor extends ASTUniPrefixOp {
-//  ASTIsFactor() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "is.factor"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 1;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(!v[i].isEnum()) { d = 0; break; }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//// Added to facilitate Runit testing
-//class ASTAnyFactor extends ASTUniPrefixOp {
-//  ASTAnyFactor() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "any.factor"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(v[i].isEnum()) { d = 1; break; }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
-//  ASTCanBeCoercedToLogical() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "canBeCoercedToLogical"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for (Vec aV : v) {
-//      if (aV.isInt()) {
-//        if (aV.min() == 0 && aV.max() == 1) {
-//          d = 1;
-//          break;
-//        }
-//      }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTAnyNA extends ASTUniPrefixOp {
-//  ASTAnyNA() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "any.na"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(v[i].naCnt() > 0) { d = 1; break; }
-//    }
-//    env.subRef(fr, skey);
-//    env.poppush(d);
-//  }
-//}
+class ASTNrow extends ASTUniPrefixOp {
+  ASTNrow() { super(VARS1); }
+  @Override String opStr() { return "nrow"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numRows();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTNcol extends ASTUniPrefixOp {
+  ASTNcol() { super(VARS1); }
+  @Override String opStr() { return "ncol"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numCols();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTLength extends ASTUniPrefixOp {
+  ASTLength() { super(VARS1); }
+  @Override String opStr() { return "length"; }
+  @Override ASTOp make() { return this; }
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTIsFactor extends ASTUniPrefixOp {
+  ASTIsFactor() { super(VARS1); }
+  @Override String opStr() { return "is.factor"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "TRUE";
+    if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
+    if (fr.anyVec().isEnum()) res = "FALSE";
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+// Added to facilitate Runit testing
+class ASTAnyFactor extends ASTUniPrefixOp {
+  ASTAnyFactor() { super(VARS1);}
+  @Override String opStr() { return "any.factor"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
+  ASTCanBeCoercedToLogical() { super(VARS1); }
+  @Override String opStr() { return "canBeCoercedToLogical"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    Vec[] v = fr.vecs();
+    for (Vec aV : v)
+      if (aV.isInt())
+        if (aV.min() == 0 && aV.max() == 1) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+class ASTAnyNA extends ASTUniPrefixOp {
+  ASTAnyNA() { super(VARS1); }
+  @Override String opStr() { return "any.na"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
 //
 //class ASTIsTRUE extends ASTUniPrefixOp {
 //  ASTIsTRUE() {super(VARS1,new Type[]{Type.DBL,Type.unbound()});}
@@ -422,72 +394,122 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
 //    env.poppush(res);
 //  }
 //}
-//
-//class ASTScale extends ASTUniPrefixOp {
-//  ASTScale() { super(VARS1,new Type[]{Type.ARY,Type.ARY}); }
-//  @Override String opStr() { return "scale"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(Double.NaN); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    Frame fr2 = new Scale().doIt(fr.numCols(), fr).outputFrame(fr._names, fr.domains());
-//    env.subRef(fr,skey);
-//    env.pop();                  // Pop self
-//    env.push(fr2);
-//  }
-//
-//  private static class Scale extends MRTask2<Scale> {
-//    protected int _nums = 0;
-//    protected int[] _ind;    // Saves indices of numeric cols first, followed by enums
-//    protected double[] _normSub;
-//    protected double[] _normMul;
-//
-//    @Override public void map(Chunk chks[], NewChunk nchks[]) {
-//      // Normalize numeric cols only
-//      for(int k = 0; k < _nums; k++) {
-//        int i = _ind[k];
-//        NewChunk n = nchks[i];
-//        Chunk c = chks[i];
-//        int rlen = c._len;
-//        for(int r = 0; r < rlen; r++)
-//          n.addNum((c.at0(r)-_normSub[i])*_normMul[i]);
-//      }
-//
-//      for(int k = _nums; k < chks.length; k++) {
-//        int i = _ind[k];
-//        NewChunk n = nchks[i];
-//        Chunk c = chks[i];
-//        int rlen = c._len;
-//        for(int r = 0; r < rlen; r++)
-//          n.addNum(c.at0(r));
-//      }
-//    }
-//
-//    public Scale doIt(int outputs, Frame fr) { return dfork2(outputs, fr).getResult(); }
-//    public Scale dfork2(int outputs, Frame fr) {
-//      final Vec [] vecs = fr.vecs();
-//      for(int i = 0; i < vecs.length; i++) {
-//        if(!vecs[i].isEnum()) _nums++;
-//      }
-//      if(_normSub == null) _normSub = MemoryManager.malloc8d(_nums);
-//      if(_normMul == null) { _normMul = MemoryManager.malloc8d(_nums); Arrays.fill(_normMul,1); }
-//      if(_ind == null) _ind = MemoryManager.malloc4(vecs.length);
-//
-//      int ncnt = 0; int ccnt = 0;
-//      for(int i = 0; i < vecs.length; i++){
-//        if(!vecs[i].isEnum()) {
-//          _normSub[ncnt] = vecs[i].mean();
-//          _normMul[ncnt] = 1.0/vecs[i].sigma();
-//          _ind[ncnt++] = i;
-//        } else
-//          _ind[_nums+(ccnt++)] = i;
-//      }
-//      assert ncnt == _nums && (ncnt + ccnt == vecs.length);
-//      return dfork(outputs, fr, false);
-//    }
-//  }
-//}
+
+class ASTScale extends ASTUniPrefixOp {
+  boolean _center;
+  double[] _centers;
+  boolean _scale;
+  double[] _scales;
+  ASTScale() { super(new String[]{"ary", "center", "scale"});}
+  @Override String opStr() { return "scale"; }
+  @Override ASTOp make() {return this;}
+  ASTScale parse_impl(Exec E) {
+    AST ary = E.parse();
+    parseArg(E, true);  // centers parse
+    parseArg(E, false); // scales parse
+    ASTScale res = (ASTScale) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  private void parseArg(Exec E, boolean center) {
+    if (center) {
+      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (centers == null) {
+        // means `center` is boolean
+        AST a = E._env.lookup((ASTId)E.skipWS().parse());
+        _center = ((ASTNum)a).dbl() == 1;
+        _centers = null;
+      } else {
+        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
+        _centers = new double[centers.length];
+        for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
+      }
+    } else {
+      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (centers == null) {
+        // means `scale` is boolean
+        AST a = E._env.lookup((ASTId)E.skipWS().parse());
+        _scale = ((ASTNum)a).dbl() == 1;
+        _scales = null;
+      } else {
+        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
+        _scales = new double[centers.length];
+        for (int i = 0; i < centers.length; ++i) _scales[i] = Double.valueOf(centers[i]);
+      }
+    }
+  }
+
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    for (int i = 0; i < fr.numCols(); ++i) if (fr.vecs()[i].isEnum()) throw new IllegalArgumentException(("All columns must be numeric."));
+    if (!(_centers == null) && _centers.length != fr.numCols()) throw new IllegalArgumentException("`centers` must be logical or have length equal to the number of columns in the dataset.");
+    if (!(_scales  == null) && _scales.length  != fr.numCols()) throw new IllegalArgumentException("`scales` must be logical or have length equal to the number of columns in the dataset.");
+    final boolean use_mean = _centers == null && _center;
+    final double[] centers = _centers;
+    final boolean use_sig  = _scales == null && _scale;
+    final boolean use_rms  = !use_mean && _scale;
+    final double[] scales  = _scales;
+    if (!_center && !_scale && (_centers == null) && (_scales == null)) {
+      //nothing to do, return the frame as is
+      env.push0Ary(fr);
+      return;
+    }
+
+    boolean doCenter = use_mean || _centers != null;
+    boolean doScale  = use_sig || use_rms || _scales != null;
+
+    Frame centered = new Frame(fr);
+    if (doCenter) {
+      centered = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int rows = cs[0].len();
+          int cols = cs.length;
+          for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) {
+              double numer = cs[c].at0(r) - (use_mean
+                      ? cs[c].vec().mean()
+                      : centers == null ? 0 : centers[c]);
+              ncs[c].addNum(numer);
+            }
+        }
+      }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }
+
+    double[] rms_vals = null;
+    if (use_rms) {
+      rms_vals = new double[fr.numCols()];
+      double nrows = fr.numRows();
+      for (int i = 0; i < rms_vals.length; ++i) {
+        Vec v = centered.vecs()[i];
+        ASTVar.CovarTask t = new ASTVar.CovarTask(0,0).doAll(new Frame(v,v));
+        rms_vals[i] = Math.sqrt(t._ss / (nrows - 1));
+      }
+    }
+    final double[] rms = rms_vals;
+
+    Frame scaled = new Frame(centered);
+    if (doScale) {
+      scaled = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int rows = cs[0].len();
+          int cols = cs.length;
+          for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) {
+              double denom = cs[c].at0(r) / (use_rms
+                      ? rms[c] : use_sig ? cs[c].vec().sigma()
+                      : scales == null ? 1 : scales[c]);
+              ncs[c].addNum(denom);
+            }
+        }
+      }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
+    }
+    env.cleanup(fr);
+    if (doScale) env.cleanup(centered);
+    env.push(new ValFrame(scaled));
+  }
+}
 //
 //// ----
 //abstract class ASTTimeOp extends ASTOp {
@@ -1576,7 +1598,7 @@ class ASTVar extends ASTUniPrefixOp {
     return t._ss / (v.length() - 1);
   }
 
-  private static class CovarTask extends MRTask<CovarTask> {
+  static class CovarTask extends MRTask<CovarTask> {
     double _ss;
     double _xmean;
     double _ymean;
@@ -1868,96 +1890,109 @@ class ASTMean extends ASTUniPrefixOp {
 //  }
 //}
 
-//class ASTCut extends ASTOp {
-//  ASTCut() { super(new String[]{"cut", "ary", "breaks", "labels", "include.lowest", "right", "dig.lab"});}
-//  @Override String opStr() { return "cut"; }
-//  @Override ASTOp make() {return new ASTCut();}
-//  ASTCut parse_impl(Exec E) {
-//
-//  }
-//  @Override void apply(Env env) {
-//    if(env.isDbl()) {
-//      final int nbins = (int) Math.floor(env.popDbl());
-//      if(nbins < 2)
-//        throw new IllegalArgumentException("Number of intervals must be at least 2");
-//
-//      Frame fr = env.popAry();
-//      String skey = env.key();
-//      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("First argument must be a numeric column vector");
-//
-//      final double fmax = fr.vecs()[0].max();
-//      final double fmin = fr.vecs()[0].min();
-//      final double width = (fmax - fmin)/nbins;
-//      if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
-//      // Note: I think R perturbs constant vecs slightly so it can still bin values
-//
-//      // Construct domain names from bins intervals
-//      String[][] domains = new String[1][nbins];
-//      domains[0][0] = "(" + String.valueOf(fmin - 0.001*(fmax-fmin)) + "," + String.valueOf(fmin + width) + "]";
-//      for(int i = 1; i < nbins; i++)
-//        domains[0][i] = "(" + String.valueOf(fmin + i*width) + "," + String.valueOf(fmin + (i+1)*width) + "]";
-//
-//      Frame fr2 = new MRTask2() {
-//        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk._len; r++) {
-//            double x = chk.at0(r);
-//            double n = x == fmax ? nbins-1 : Math.floor((x - fmin)/width);
-//            nchk.addNum(n);
-//          }
-//        }
-//      }.doAll(1,fr).outputFrame(fr._names, domains);
-//      env.subRef(fr, skey);
-//      env.pop();
-//      env.push(fr2);
-//    } else if(env.isAry()) {
-//      Frame ary = env.popAry();
-//      String skey1 = env.key();
-//      if(ary.vecs().length != 1 || ary.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("Second argument must be a numeric column vector");
-//      Vec brks = ary.vecs()[0];
-//      // TODO: Check that num rows below some cutoff, else this will likely crash
-//
-//      // Remove duplicates and sort vector of breaks in ascending order
-//      SortedSet<Double> temp = new TreeSet<Double>();
-//      for(int i = 0; i < brks.length(); i++) temp.add(brks.at(i));
-//      int cnt = 0; final double[] cutoffs = new double[temp.size()];
-//      for(Double x : temp) { cutoffs[cnt] = x; cnt++; }
-//
-//      if(cutoffs.length < 2)
-//        throw new IllegalArgumentException("Vector of breaks must have at least 2 unique values");
-//      Frame fr = env.popAry();
-//      String skey2 = env.key();
-//      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("First argument must be a numeric column vector");
-//
-//      // Construct domain names from bin intervals
-//      final int nbins = cutoffs.length-1;
-//      String[][] domains = new String[1][nbins];
-//      for(int i = 0; i < nbins; i++)
-//        domains[0][i] = "(" + cutoffs[i] + "," + cutoffs[i+1] + "]";
-//
-//      Frame fr2 = new MRTask2() {
-//        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk._len; r++) {
-//            double x = chk.at0(r);
-//            if(Double.isNaN(x) || x <= cutoffs[0] || x > cutoffs[cutoffs.length-1])
-//              nchk.addNum(Double.NaN);
-//            else {
-//              for(int i = 1; i < cutoffs.length; i++) {
-//                if(x <= cutoffs[i]) { nchk.addNum(i-1); break; }
-//              }
-//            }
-//          }
-//        }
-//      }.doAll(1,fr).outputFrame(fr._names, domains);
-//      env.subRef(ary, skey1);
-//      env.subRef(fr, skey2);
-//      env.pop();
-//      env.push(fr2);
-//    } else throw H2O.unimpl();
-//  }
-//}
+class ASTCut extends ASTUniPrefixOp {
+  String[] _labels = null;
+  double[] _cuts;
+  boolean _includelowest = false;
+  boolean _right = true;
+  double _diglab = 3;
+  ASTCut() { super(new String[]{"cut", "ary", "breaks", "labels", "include.lowest", "right", "dig.lab"});}
+  @Override String opStr() { return "cut"; }
+  @Override ASTOp make() {return new ASTCut();}
+  ASTCut parse_impl(Exec E) {
+    AST ary = E.parse();
+    // breaks first
+    String[] cuts = E.skipWS().peek() == '{'
+            ? E.xpeek('{').parseString('}').split(";")
+            : E.peek() == '#' ? new String[]{Double.toString( ((ASTNum)E.parse()).dbl() )}
+            : new String[]{E.parseString(E.peekPlus())};
+    for (int i = 0; i < cuts.length; ++i) cuts[i] = cuts[i].replace("\"", "").replace("\'", "");
+    _cuts = new double[cuts.length];
+    for (int i = 0; i < cuts.length; ++i) _cuts[i] = Double.valueOf(cuts[i]);
+    // labels second
+    _labels = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    // cleanup _labels
+    for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
+    if (_labels.length==1 && _labels[0].equals("null")) _labels = null;
+    AST inc_lowest = E.skipWS().parse();
+    inc_lowest = E._env.lookup((ASTId)inc_lowest);
+    _includelowest = ((ASTNum)inc_lowest).dbl() == 1;
+    AST right = E.skipWS().parse();
+    right = E._env.lookup((ASTId)right);
+    _right = ((ASTNum)right).dbl() == 1;
+    ASTNum diglab = (ASTNum)E.skipWS().parse();
+    _diglab = diglab.dbl();
+    _diglab = _diglab >= 12 ? 12 : _diglab; // cap at 12 digits
+    ASTCut res = (ASTCut) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  private String left() { return _right ? "(" : "["; }
+  private String rite() { return _right ? "]" : ")"; }
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
+      throw new IllegalArgumentException("First argument must be a numeric column vector");
+
+    double fmin = fr.anyVec().min();
+    double fmax = fr.anyVec().max();
+
+    int nbins = _cuts.length - 1;  // c(0,10,100) -> 2 bins (0,10] U (10, 100]
+    double width;
+    if (nbins == 0) {
+      if (_cuts[0] < 2) throw new IllegalArgumentException("The number of cuts must be >= 2. Got: "+_cuts[0]);
+      // in this case, cut the vec into _cuts[0] many pieces of equal length
+      nbins = (int) Math.floor(_cuts[0]);
+      width = (fmax - fmin)/nbins;
+      _cuts = new double[nbins];
+      _cuts[0] = fmin - 0.001*(fmax - fmin);
+      for (int i = 1; i < _cuts.length; ++i) _cuts[i] = (i == _cuts.length-1) ? (fmax + 0.001*(fmax-fmin))  : (fmin + i*width);
+    }
+    width = (fmax - fmin)/nbins;
+    if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
+    if (_labels != null && _labels.length != nbins) throw new IllegalArgumentException("`labels` vector does not match the number of cuts.");
+
+    // Construct domain names from _labels or bin intervals if _labels is null
+    final double cuts[] = _cuts;
+
+    // first round _cuts to dig.lab decimals: example floor(2.676*100 + 0.5) / 100
+    for (int i = 0; i < _cuts.length; ++i) _cuts[i] = Math.floor(_cuts[i] * Math.pow(10,_diglab) + 0.5) / Math.pow(10,_diglab);
+
+    String[][] domains = new String[1][nbins];
+    if (_labels == null) {
+      domains[0][0] = (_includelowest ? "[" : left()) + _cuts[0] + "," + _cuts[1] + rite();
+      for (int i = 1; i < (_cuts.length - 1); ++i)  domains[0][i] = left() + _cuts[i] + "," + _cuts[i+1] + rite();
+    } else domains[0] = _labels;
+
+    final boolean incLow = _includelowest;
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        int rows = c.len();
+        for (int r = 0; r < rows; ++r) {
+          double x = c.at0(r);
+          if (Double.isNaN(x) || (incLow && x < cuts[0])
+                              || (!incLow && x <= cuts[0])
+                              || (_right && x > cuts[cuts.length-1])
+                              || (!_right && x >= cuts[cuts.length-1])) nc.addNum(Double.NaN);
+          else {
+            for (int i = 1; i < cuts.length; ++i) {
+              if (_right) {
+                if (x <= cuts[i]) {
+                  nc.addNum(i - 1);
+                  break;
+                }
+              } else if (x < cuts[i]) { nc.addNum(i-1); break; }
+            }
+          }
+        }
+      }
+    }.doAll(1, fr).outputFrame(fr.names(), domains);
+
+    env.cleanup(fr);
+    env.push(new ValFrame(fr2));
+  }
+}
 
 //class ASTfindInterval extends ASTOp {
 //  ASTfindInterval() { super(new String[]{"findInterval", "ary", "vec", "rightmost.closed"},

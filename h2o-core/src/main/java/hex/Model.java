@@ -46,7 +46,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * initial random seed.
    */
   public abstract static class Parameters<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
-    public Key _training_frame;              // Frame the Model is trained on
+    public Frame _training_frame;              // Frame the Model is trained on
+    public Frame _validation_frame;            // Frame the Model is validated on, if any
+    public String response_column;           // column name
+    public String[] ignored_columns;         // column names to ignore for training
+
+    // TODO: move to utils class
+    protected Frame sanityCheckFrameKey(Key key, String description) {
+      if (null == key)
+        throw new IllegalArgumentException(description + " key must be non-null.");
+      Value v = DKV.get(key);
+      if (null == v)
+        throw new IllegalArgumentException(description + " key not found: " + key);
+      if (! v.isFrame())
+        throw new IllegalArgumentException(description + " key points to a non-Frame object in the KV store: " + key);
+      Frame frame = v.get();
+      if (frame.numCols() <= 1)
+        throw new IllegalArgumentException(description + " must have at least 2 features (incl. response).");
+      return frame;
+    }
   }
 
   public P _parms; // TODO: move things around so that this can be protected

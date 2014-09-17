@@ -52,9 +52,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       KMeansModel model = null;
       try {
         // Fetch & read-lock source frame
-        Value val = DKV.get(_parms._training_frame);
-        if( val == null ) throw new IllegalArgumentException("Missing frame "+_parms._training_frame);
-        fr = val.get();
+        fr = _parms._training_frame;
         fr.read_lock(_key);
         if ( fr.numRows() < _parms._K) throw new IllegalArgumentException("Cannot make " + _parms._K + " clusters out of " + fr.numRows() + " rows.");
 

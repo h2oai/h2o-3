@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
+import water.Keyed;
 import water.util.BeanUtils;
 import water.util.Log;
 
@@ -13,6 +14,7 @@ import java.lang.reflect.Field;
 
 /**
  * An instance of a ModelParameters schema contains the metadata for a single Model build parameter (e.g., K for KMeans).
+ * TODO: add a superclass.
  */
 public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
   @API(help="name in the JSON, e.g. \"lambda\"")
@@ -75,6 +77,9 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
     if (String.class.isAssignableFrom(clz))
       return "string"; // lower-case, to be less Java-centric
 
+    if (clz.equals(Boolean.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
+      return clz.toString();
+
     Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
     return clz.toString();
   }
@@ -82,6 +87,11 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   private static String consValue(Object o) {
     if (null == o)
       return null;
+
+    if (water.Keyed.class.isAssignableFrom(o.getClass())) {
+      Keyed k = (Keyed)o;
+      return k._key.toString();
+    }
 
     if (! o.getClass().isArray())
       return o.toString();

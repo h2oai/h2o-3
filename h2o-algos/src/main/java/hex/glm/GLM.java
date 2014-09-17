@@ -49,7 +49,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
   @Override
   public Job<GLMModel> train() {
-    final Frame fr = DKV.get(_parms._training_frame).get();
+    final Frame fr = _parms._training_frame;
     fr.read_lock(_key);
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
