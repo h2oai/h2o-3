@@ -148,7 +148,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
 //    putPrefix(new ASTRunif ());
-//    putPrefix(new ASTCut   ());
+    putPrefix(new ASTCut   ());
 //    putPrefix(new ASTfindInterval());
 //    putPrefix(new ASTPrint ());
     putPrefix(new ASTLs    ());
@@ -1868,96 +1868,109 @@ class ASTMean extends ASTUniPrefixOp {
 //  }
 //}
 
-//class ASTCut extends ASTOp {
-//  ASTCut() { super(new String[]{"cut", "ary", "breaks", "labels", "include.lowest", "right", "dig.lab"});}
-//  @Override String opStr() { return "cut"; }
-//  @Override ASTOp make() {return new ASTCut();}
-//  ASTCut parse_impl(Exec E) {
-//
-//  }
-//  @Override void apply(Env env) {
-//    if(env.isDbl()) {
-//      final int nbins = (int) Math.floor(env.popDbl());
-//      if(nbins < 2)
-//        throw new IllegalArgumentException("Number of intervals must be at least 2");
-//
-//      Frame fr = env.popAry();
-//      String skey = env.key();
-//      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("First argument must be a numeric column vector");
-//
-//      final double fmax = fr.vecs()[0].max();
-//      final double fmin = fr.vecs()[0].min();
-//      final double width = (fmax - fmin)/nbins;
-//      if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
-//      // Note: I think R perturbs constant vecs slightly so it can still bin values
-//
-//      // Construct domain names from bins intervals
-//      String[][] domains = new String[1][nbins];
-//      domains[0][0] = "(" + String.valueOf(fmin - 0.001*(fmax-fmin)) + "," + String.valueOf(fmin + width) + "]";
-//      for(int i = 1; i < nbins; i++)
-//        domains[0][i] = "(" + String.valueOf(fmin + i*width) + "," + String.valueOf(fmin + (i+1)*width) + "]";
-//
-//      Frame fr2 = new MRTask2() {
-//        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk._len; r++) {
-//            double x = chk.at0(r);
-//            double n = x == fmax ? nbins-1 : Math.floor((x - fmin)/width);
-//            nchk.addNum(n);
-//          }
-//        }
-//      }.doAll(1,fr).outputFrame(fr._names, domains);
-//      env.subRef(fr, skey);
-//      env.pop();
-//      env.push(fr2);
-//    } else if(env.isAry()) {
-//      Frame ary = env.popAry();
-//      String skey1 = env.key();
-//      if(ary.vecs().length != 1 || ary.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("Second argument must be a numeric column vector");
-//      Vec brks = ary.vecs()[0];
-//      // TODO: Check that num rows below some cutoff, else this will likely crash
-//
-//      // Remove duplicates and sort vector of breaks in ascending order
-//      SortedSet<Double> temp = new TreeSet<Double>();
-//      for(int i = 0; i < brks.length(); i++) temp.add(brks.at(i));
-//      int cnt = 0; final double[] cutoffs = new double[temp.size()];
-//      for(Double x : temp) { cutoffs[cnt] = x; cnt++; }
-//
-//      if(cutoffs.length < 2)
-//        throw new IllegalArgumentException("Vector of breaks must have at least 2 unique values");
-//      Frame fr = env.popAry();
-//      String skey2 = env.key();
-//      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
-//        throw new IllegalArgumentException("First argument must be a numeric column vector");
-//
-//      // Construct domain names from bin intervals
-//      final int nbins = cutoffs.length-1;
-//      String[][] domains = new String[1][nbins];
-//      for(int i = 0; i < nbins; i++)
-//        domains[0][i] = "(" + cutoffs[i] + "," + cutoffs[i+1] + "]";
-//
-//      Frame fr2 = new MRTask2() {
-//        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk._len; r++) {
-//            double x = chk.at0(r);
-//            if(Double.isNaN(x) || x <= cutoffs[0] || x > cutoffs[cutoffs.length-1])
-//              nchk.addNum(Double.NaN);
-//            else {
-//              for(int i = 1; i < cutoffs.length; i++) {
-//                if(x <= cutoffs[i]) { nchk.addNum(i-1); break; }
-//              }
-//            }
-//          }
-//        }
-//      }.doAll(1,fr).outputFrame(fr._names, domains);
-//      env.subRef(ary, skey1);
-//      env.subRef(fr, skey2);
-//      env.pop();
-//      env.push(fr2);
-//    } else throw H2O.unimpl();
-//  }
-//}
+class ASTCut extends ASTUniPrefixOp {
+  String[] _labels = null;
+  double[] _cuts;
+  boolean _includelowest = false;
+  boolean _right = true;
+  double _diglab = 3;
+  ASTCut() { super(new String[]{"cut", "ary", "breaks", "labels", "include.lowest", "right", "dig.lab"});}
+  @Override String opStr() { return "cut"; }
+  @Override ASTOp make() {return new ASTCut();}
+  ASTCut parse_impl(Exec E) {
+    AST ary = E.parse();
+    // breaks first
+    String[] cuts = E.skipWS().peek() == '{'
+            ? E.xpeek('{').parseString('}').split(";")
+            : E.peek() == '#' ? new String[]{Double.toString( ((ASTNum)E.parse()).dbl() )}
+            : new String[]{E.parseString(E.peekPlus())};
+    for (int i = 0; i < cuts.length; ++i) cuts[i] = cuts[i].replace("\"", "").replace("\'", "");
+    _cuts = new double[cuts.length];
+    for (int i = 0; i < cuts.length; ++i) _cuts[i] = Double.valueOf(cuts[i]);
+    // labels second
+    _labels = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    // cleanup _labels
+    for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
+    if (_labels.length==1 && _labels[0].equals("null")) _labels = null;
+    AST inc_lowest = E.skipWS().parse();
+    inc_lowest = E._env.lookup((ASTId)inc_lowest);
+    _includelowest = ((ASTNum)inc_lowest).dbl() == 1;
+    AST right = E.skipWS().parse();
+    right = E._env.lookup((ASTId)right);
+    _right = ((ASTNum)right).dbl() == 1;
+    ASTNum diglab = (ASTNum)E.skipWS().parse();
+    _diglab = diglab.dbl();
+    _diglab = _diglab >= 12 ? 12 : _diglab; // cap at 12 digits
+    ASTCut res = (ASTCut) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  private String left() { return _right ? "(" : "["; }
+  private String rite() { return _right ? "]" : ")"; }
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
+      throw new IllegalArgumentException("First argument must be a numeric column vector");
+
+    double fmin = fr.anyVec().min();
+    double fmax = fr.anyVec().max();
+
+    int nbins = _cuts.length - 1;  // c(0,10,100) -> 2 bins (0,10] U (10, 100]
+    double width;
+    if (nbins == 0) {
+      if (_cuts[0] < 2) throw new IllegalArgumentException("The number of cuts must be >= 2. Got: "+_cuts[0]);
+      // in this case, cut the vec into _cuts[0] many pieces of equal length
+      nbins = (int) Math.floor(_cuts[0]);
+      width = (fmax - fmin)/nbins;
+      _cuts = new double[nbins];
+      _cuts[0] = fmin - 0.001*(fmax - fmin);
+      for (int i = 1; i < _cuts.length; ++i) _cuts[i] = (i == _cuts.length-1) ? (fmax + 0.001*(fmax-fmin))  : (fmin + i*width);
+    }
+    width = (fmax - fmin)/nbins;
+    if(width == 0) throw new IllegalArgumentException("Data vector is constant!");
+    if (_labels != null && _labels.length != nbins) throw new IllegalArgumentException("`labels` vector does not match the number of cuts.");
+
+    // Construct domain names from _labels or bin intervals if _labels is null
+    final double cuts[] = _cuts;
+
+    // first round _cuts to dig.lab decimals: example floor(2.676*100 + 0.5) / 100
+    for (int i = 0; i < _cuts.length; ++i) _cuts[i] = Math.floor(_cuts[i] * Math.pow(10,_diglab) + 0.5) / Math.pow(10,_diglab);
+
+    String[][] domains = new String[1][nbins];
+    if (_labels == null) {
+      domains[0][0] = (_includelowest ? "[" : left()) + _cuts[0] + "," + _cuts[1] + rite();
+      for (int i = 1; i < (_cuts.length - 1); ++i)  domains[0][i] = left() + _cuts[i] + "," + _cuts[i+1] + rite();
+    } else domains[0] = _labels;
+
+    final boolean incLow = _includelowest;
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        int rows = c.len();
+        for (int r = 0; r < rows; ++r) {
+          double x = c.at0(r);
+          if (Double.isNaN(x) || (incLow && x < cuts[0])
+                              || (!incLow && x <= cuts[0])
+                              || (_right && x > cuts[cuts.length-1])
+                              || (!_right && x >= cuts[cuts.length-1])) nc.addNum(Double.NaN);
+          else {
+            for (int i = 1; i < cuts.length; ++i) {
+              if (_right) {
+                if (x <= cuts[i]) {
+                  nc.addNum(i - 1);
+                  break;
+                }
+              } else if (x < cuts[i]) { nc.addNum(i-1); break; }
+            }
+          }
+        }
+      }
+    }.doAll(1, fr).outputFrame(fr.names(), domains);
+
+    env.cleanup(fr);
+    env.push(new ValFrame(fr2));
+  }
+}
 
 //class ASTfindInterval extends ASTOp {
 //  ASTfindInterval() { super(new String[]{"findInterval", "ary", "vec", "rightmost.closed"},
