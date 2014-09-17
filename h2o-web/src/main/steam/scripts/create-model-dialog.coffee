@@ -38,6 +38,25 @@ createDropdownControl = (parameter) ->
   help: node$ 'Help goes here.'
   isInvalid: node$ no
 
+createListControl = (parameter) ->
+  value = node$ parameter.actual_value or []
+  selection = lift$ value, (values) ->
+    caption = "#{describeCount values.length, 'column'} selected"
+    caption += " (#{values.join ', '})" if values.length > 0
+    caption
+
+  kind: 'list'
+  name: parameter.name
+  label: parameter.label
+  description: parameter.help
+  required: parameter.required
+  values: parameter.values
+  value: value
+  selection: selection
+  defaultValue: parameter.default_value
+  help: node$ 'Help goes here.'
+  isInvalid: node$ no
+
 createCheckboxControl = (parameter) ->
   value = node$ parameter.actual_value is 'true' #FIXME
 
@@ -56,6 +75,8 @@ createControlFromParameter = (parameter) ->
   switch parameter.type
     when 'enum', 'Frame', 'Column'
       createDropdownControl parameter
+    when 'Column[]'
+      createListControl parameter
     when 'boolean'
       createCheckboxControl parameter
     when 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
@@ -84,8 +105,13 @@ Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
     for controls in _controls
       for control in controls
         if control.defaultValue isnt value = control.value()
-          unless control.kind is 'dropdown' and value is ''
-            parameters[control.name] = value
+          switch control.kind
+            when 'dropdown'
+              if value
+                parameters[control.name] = value
+            when 'list'
+              if value.length
+                parameters[control.name] = "[#{value.join ','}]"
     
     _.requestModelBuild _algorithm.data.key, parameters, (error, result) ->
       if error
@@ -128,15 +154,21 @@ Steam.CreateModelDialog = (_, _frameKey, _go) ->
             if algorithm.data.key is 'deeplearning'
               validationFrameParameter = findParameter parameters, 'validation_frame'
               responseParameter = findParameter parameters, 'response_column'
-
-              #TODO HACK hard-coding DL response param for now - rework this when Vec type is supported.
-              responseParameter.type = 'Column'
+              ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
 
               validationFrameParameter.values = copy trainingFrameParameter.values
-              trainingFrame = find result.frames, (frame) -> frame.key.name is _frameKey
-              if trainingFrame
-                responseParameter.values = map trainingFrame.columns, (column) -> column.label
-                sort responseParameter.values
+
+              if trainingFrame = (find result.frames, (frame) -> frame.key.name is _frameKey)
+                columnLabels = map trainingFrame.columns, (column) -> column.label
+                sort columnLabels
+
+                #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
+
+                responseParameter.type = 'Column'
+                responseParameter.values = columnLabels
+
+                ignoredColumnsParameter.type = 'Column[]'
+                ignoredColumnsParameter.values = columnLabels
 
             _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
             _isModelCreationMode yes
