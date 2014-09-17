@@ -33,7 +33,12 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
+
         expected = str(v)
+        # Python says True; json says true
+        if actuals_dict[k]['type'] == 'boolean':
+            expected = expected.lower()
+
         assert expected == actuals_dict[k]['actual_value'], "Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actuals_dict[k]['actual_value'])
     # TODO: training_frame, validation_frame
 

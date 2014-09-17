@@ -94,12 +94,13 @@ Steam.ApplicationContext = ->
     framesLoaded: do edge$
     displayFrame: do edge$
     promptForFrame: do edge$
-    frameSelectionChanged: do edge$
+    activeFrameChanged: do edge$
 
     promptCreateModel: do edge$
 
     loadModels: do edge$
     displayModel: do edge$
+    activeModelChanged: do edge$
     modelSelectionChanged: do edge$
     modelSelectionCleared: do edge$
     deselectAllModels: do edge$

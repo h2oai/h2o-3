@@ -1,4 +1,7 @@
 .y-model-selection-view
+  // ko if:hasActiveModel
+  button.btn.btn-primary(title='Create a clone of this model' data-bind='click:cloneModel') Clone Model...
+  // /ko
   // ko if:hasSelection
   .y-caption(data-bind='text:caption')
   //- This div exists because mouse events are not triggered on disabled elements
