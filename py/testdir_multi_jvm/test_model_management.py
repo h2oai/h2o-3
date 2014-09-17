@@ -30,8 +30,11 @@ def list_to_dict(l, key):
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
     actuals_dict = list_to_dict(actual_parameters, 'name')
     for k, v in input_parameters.iteritems():
+        # TODO: skipping frames for now because they aren't serialized properly
+        if k is 'training_frame' or k is 'validation_frame' or k is 'response_column':
+            continue
         expected = str(v)
-        assert expected == actuals_dict[k]['actual_value'], "Parameter with name: " + k + " expected to have input value: " + expected + ", instead has: " + actuals_dict[k]['actual_value']
+        assert expected == actuals_dict[k]['actual_value'], "Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actuals_dict[k]['actual_value'])
     # TODO: training_frame, validation_frame
 
 

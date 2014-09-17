@@ -295,7 +295,7 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
   public String[] names() { return _names; }
 
   public int [] indices(String [] cols){
-    if(_names == null) return null;
+    if(cols == null) return null;
 
     Map<String, Integer> names_map = new HashMap();
     for(int i = 0; i < _names.length; i++)
