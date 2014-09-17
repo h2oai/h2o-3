@@ -112,6 +112,8 @@ Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
             when 'list'
               if value.length
                 parameters[control.name] = "[#{value.join ','}]"
+            else
+              parameters[control.name] = value
     
     _.requestModelBuild _algorithm.data.key, parameters, (error, result) ->
       if error
