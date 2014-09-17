@@ -529,7 +529,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     int start = 0;
     int end = nrows;
 
-    boolean contiguous = false;
     Random skip_rng = null; //random generator for skipping rows
 
     //Example:
@@ -543,15 +542,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
     if (fraction < 1.0) {
       skip_rng = RandomUtils.getDeterRNG(new Random().nextLong());
-      if (contiguous) {
-        final int howmany = (int)Math.ceil(fraction*nrows);
-        if (howmany > 0) {
-          start = skip_rng.nextInt(nrows - howmany);
-          end = start + howmany;
-        }
-        assert(start < nrows);
-        assert(end <= nrows);
-      }
     }
 
     long[] shuf_map = null;
@@ -568,7 +558,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         final int r = shuf_map != null ? (int)shuf_map[rr-start] : rr;
         final long lr = r + chunks[0].start();
         if ((_dinfo._nfolds > 0 && (lr % _dinfo._nfolds) == _dinfo._foldId)
-          || (skip_rng != null && skip_rng.nextFloat() > _useFraction))continue;
+          || (skip_rng != null && skip_rng.nextFloat() > fraction))continue;
         ++num_processed_rows; //count rows with missing values even if they are skipped
         for(Chunk c:chunks)if(skipMissing() && c.isNA0(r))continue OUTER; // skip rows with NAs!
         int i = 0, ncats = 0;
