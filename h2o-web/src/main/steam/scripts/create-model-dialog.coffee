@@ -66,6 +66,9 @@ createControlFromParameter = (parameter) ->
       console.error 'Invalid field', JSON.stringify parameter, null, 2
       null
 
+findParameter = (parameters, name) ->
+  find parameters, (parameter) -> parameter.name is name
+
 Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
   _validationError = node$ null
 
@@ -77,8 +80,7 @@ Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
 
   createModel = ->
     _validationError null
-    parameters = training_frame: _frameKey
-    console.debug _controls
+    parameters = {}
     for controls in _controls
       for control in controls
         if control.defaultValue isnt value = control.value()
@@ -111,38 +113,33 @@ Steam.CreateModelDialog = (_, _frameKey, _go) ->
       if error
         #TODO handle properly
       else
-
         parameters = result.model_builders[algorithm.data.key].parameters
+        # Fetch frame list; pick column names from training frame
+        _.requestFrames (error, result) ->
+          if error
+            #TODO handle properly
+          else
+            trainingFrameParameter = findParameter parameters, 'training_frame'
+            trainingFrameParameter.values = map result.frames, (frame) -> frame.key.name
+            if _frameKey
+              trainingFrameParameter.actual_value = _frameKey
 
-        if algorithm.data.key is 'deeplearning'
 
-          #TODO HACK remove DL source parameter - training_frame takes care of this
-          sourceParameter = find parameters, (parameter) -> parameter.name is 'source'
-          remove parameters, sourceParameter if sourceParameter
+            if algorithm.data.key is 'deeplearning'
+              validationFrameParameter = findParameter parameters, 'validation_frame'
+              responseParameter = findParameter parameters, 'response_column'
 
-          #TODO HACK hard-coding DL response param for now - rework this when Vec type is supported.
-          responseParameter = find parameters, (parameter) -> parameter.name is 'response' and parameter.type is 'string'
-          responseParameter.type = 'Column' if responseParameter
+              #TODO HACK hard-coding DL response param for now - rework this when Vec type is supported.
+              responseParameter.type = 'Column'
 
-          validationParameter = find parameters, (parameter) -> parameter.name is 'validation'
-
-          # Fetch frame list; pick column names from training frame
-          _.requestFrames (error, result) ->
-            if error
-              #TODO handle properly
-            else
-              validationParameter.values = map result.frames, (frame) -> frame.key.name
-              unshift validationParameter.values, ''
+              validationFrameParameter.values = copy trainingFrameParameter.values
               trainingFrame = find result.frames, (frame) -> frame.key.name is _frameKey
               if trainingFrame
                 responseParameter.values = map trainingFrame.columns, (column) -> column.label
                 sort responseParameter.values
-                unshift responseParameter.values, ''
-              _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
-              _isModelCreationMode yes
-        else
-          _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
-          _isModelCreationMode yes
+
+            _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
+            _isModelCreationMode yes
 
 
   _algorithms = map algorithms, (algorithm) ->
