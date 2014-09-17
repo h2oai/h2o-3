@@ -46,10 +46,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * initial random seed.
    */
   public abstract static class Parameters<M extends Model<M,P,O>, P extends Parameters<M,P,O>, O extends Output<M,P,O>> extends Iced {
-    public Frame _training_frame;              // Frame the Model is trained on
-    public Frame _validation_frame;            // Frame the Model is validated on, if any
-    public String response_column;           // column name
-    public String[] ignored_columns;         // column names to ignore for training
+    public Key<Frame> _training_frame; // Frame the Model is trained on
+    public Key<Frame> _validation_frame; // Frame the Model is validated on, if any
+    public String response_column;   // column name
+    public String[] ignored_columns; // column names to ignore for training
 
     // TODO: move to utils class
     protected Frame sanityCheckFrameKey(Key key, String description) {

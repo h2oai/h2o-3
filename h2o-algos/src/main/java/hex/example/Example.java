@@ -36,7 +36,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
       ExampleModel model = null;
       try {
         // Fetch & read-lock source frame
-        fr = _parms._training_frame;
+        fr = _parms._training_frame.get();
         fr.read_lock(_key);
 
         // The model to be built

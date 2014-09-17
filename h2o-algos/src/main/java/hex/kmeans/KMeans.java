@@ -52,7 +52,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       KMeansModel model = null;
       try {
         // Fetch & read-lock source frame
-        fr = _parms._training_frame;
+        fr = _parms._training_frame.get();
         fr.read_lock(_key);
         if ( fr.numRows() < _parms._K) throw new IllegalArgumentException("Cannot make " + _parms._K + " clusters out of " + fr.numRows() + " rows.");
 

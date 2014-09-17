@@ -568,9 +568,9 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public DeepLearningParameters createImpl() {
       DeepLearningParameters impl = new DeepLearningParameters();
       BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.CONSISTENT);
-      impl._training_frame = training_frame;
+      impl._training_frame = training_frame._key;
       if (null != validation_frame)
-        impl._validation_frame = validation_frame;
+        impl._validation_frame = validation_frame._key;
 
       impl.response_column = "CAPSULE"; // training_frame.vec(/* response_column */ "CAPSULE"); // TODO: how will a Vec get deserialized in the request parameters parsing
       return impl;
