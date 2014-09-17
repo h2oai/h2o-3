@@ -94,6 +94,7 @@ public class Env extends Iced {
 
   // pop w/o lowering ref counts
   public Val pop0() { return _stack.pop(); }
+  public void push0(Val v) { _stack.push(v); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }
 
@@ -117,6 +118,7 @@ public class Env extends Iced {
   public Frame peekAry() {return ((ValFrame)peek())._fr; }
   public double peekDbl() {return ((ValNum)peek())._d;   }
   public Frame pop0Ary() { return ((ValFrame)pop0())._fr;  }
+  public void push0Ary(Frame fr) { push0(new ValFrame(fr)); }
   //TODO: func
 
   /**

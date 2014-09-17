@@ -730,6 +730,24 @@ function(x, na.rm = FALSE) {
   ast.sd
 }
 
+scale.H2OParsedData<-
+function(x, center = TRUE, scale = TRUE) {
+  ast.scale <- .h2o.varop("scale", x, center, scale)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.scale, ID = ID, rID = 'ast.scale')
+  ast.scale
+}
+
+scale.H2OFrame<-
+function(x, center = TRUE, scale = TRUE) {
+  ast.scale <- .h2o.varop("scale", x, center, scale)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.scale@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.scale, ID = ID, rID = 'ast.scale')
+  ast.scale
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-,
 #-----------------------------------------------------------------------------------------------------------------------

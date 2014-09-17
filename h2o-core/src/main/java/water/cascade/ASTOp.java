@@ -6,10 +6,7 @@ import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 //import hex.la.Matrix;
 //import org.apache.commons.math3.util.*;
@@ -77,9 +74,9 @@ public abstract class ASTOp extends AST {
 
     // Unary prefix ops
     putPrefix(new ASTIsNA());
-//    putPrefix(new ASTNrow());
-//    putPrefix(new ASTNcol());
-//    putPrefix(new ASTLength());
+    putPrefix(new ASTNrow());
+    putPrefix(new ASTNcol());
+    putPrefix(new ASTLength());
     putPrefix(new ASTAbs ());
     putPrefix(new ASTSgn ());
     putPrefix(new ASTSqrt());
@@ -87,12 +84,12 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTFlr ());
     putPrefix(new ASTLog ());
     putPrefix(new ASTExp ());
-//    putPrefix(new ASTScale());
-//    putPrefix(new ASTFactor());
-//    putPrefix(new ASTIsFactor());
-//    putPrefix(new ASTAnyFactor());   // For Runit testing
-//    putPrefix(new ASTCanBeCoercedToLogical());
-//    putPrefix(new ASTAnyNA());
+    putPrefix(new ASTScale());
+    putPrefix(new ASTFactor());
+    putPrefix(new ASTIsFactor());
+    putPrefix(new ASTAnyFactor());   // For Runit testing
+    putPrefix(new ASTCanBeCoercedToLogical());
+    putPrefix(new ASTAnyNA());
 //    putPrefix(new ASTIsTRUE());
 //    putPrefix(new ASTMTrans());
 
@@ -126,9 +123,6 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar());
     putPrefix(new ASTMean());
-//    putPrefix(new ASTMinNaRm());
-//    putPrefix(new ASTMaxNaRm());
-//    putPrefix(new ASTSumNaRm());
 //    putPrefix(new ASTXorSum ());
 //
     // Misc
@@ -295,122 +289,100 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
   }
 }
 
-//class ASTNrow extends ASTUniPrefixOp {
-//  ASTNrow() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "nrow"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numRows();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTNcol extends ASTUniPrefixOp {
-//  ASTNcol() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "ncol"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numCols();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTLength extends ASTUniPrefixOp {
-//  ASTLength() { super(VARS1, new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "length"; }
-//  @Override ASTOp make() { return this; }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTIsFactor extends ASTUniPrefixOp {
-//  ASTIsFactor() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "is.factor"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 1;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(!v[i].isEnum()) { d = 0; break; }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//// Added to facilitate Runit testing
-//class ASTAnyFactor extends ASTUniPrefixOp {
-//  ASTAnyFactor() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "any.factor"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(v[i].isEnum()) { d = 1; break; }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
-//  ASTCanBeCoercedToLogical() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "canBeCoercedToLogical"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for (Vec aV : v) {
-//      if (aV.isInt()) {
-//        if (aV.min() == 0 && aV.max() == 1) {
-//          d = 1;
-//          break;
-//        }
-//      }
-//    }
-//    env.subRef(fr,skey);
-//    env.poppush(d);
-//  }
-//}
-//
-//class ASTAnyNA extends ASTUniPrefixOp {
-//  ASTAnyNA() { super(VARS1,new Type[]{Type.DBL,Type.ARY}); }
-//  @Override String opStr() { return "any.na"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(0); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    double d = 0;
-//    Vec[] v = fr.vecs();
-//    for(int i = 0; i < v.length; i++) {
-//      if(v[i].naCnt() > 0) { d = 1; break; }
-//    }
-//    env.subRef(fr, skey);
-//    env.poppush(d);
-//  }
-//}
+class ASTNrow extends ASTUniPrefixOp {
+  ASTNrow() { super(VARS1); }
+  @Override String opStr() { return "nrow"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numRows();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTNcol extends ASTUniPrefixOp {
+  ASTNcol() { super(VARS1); }
+  @Override String opStr() { return "ncol"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numCols();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTLength extends ASTUniPrefixOp {
+  ASTLength() { super(VARS1); }
+  @Override String opStr() { return "length"; }
+  @Override ASTOp make() { return this; }
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
+    env.cleanup(fr);
+    env.push(new ValNum(d));
+  }
+}
+
+class ASTIsFactor extends ASTUniPrefixOp {
+  ASTIsFactor() { super(VARS1); }
+  @Override String opStr() { return "is.factor"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "TRUE";
+    if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
+    if (fr.anyVec().isEnum()) res = "FALSE";
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+// Added to facilitate Runit testing
+class ASTAnyFactor extends ASTUniPrefixOp {
+  ASTAnyFactor() { super(VARS1);}
+  @Override String opStr() { return "any.factor"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
+  ASTCanBeCoercedToLogical() { super(VARS1); }
+  @Override String opStr() { return "canBeCoercedToLogical"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    Vec[] v = fr.vecs();
+    for (Vec aV : v)
+      if (aV.isInt())
+        if (aV.min() == 0 && aV.max() == 1) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
+
+class ASTAnyNA extends ASTUniPrefixOp {
+  ASTAnyNA() { super(VARS1); }
+  @Override String opStr() { return "any.na"; }
+  @Override ASTOp make() {return this;}
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    String res = "FALSE";
+    for (int i = 0; i < fr.vecs().length; ++i)
+      if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
+    env.cleanup(fr);
+    env.push(new ValStr(res));
+  }
+}
 //
 //class ASTIsTRUE extends ASTUniPrefixOp {
 //  ASTIsTRUE() {super(VARS1,new Type[]{Type.DBL,Type.unbound()});}
@@ -422,72 +394,122 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
 //    env.poppush(res);
 //  }
 //}
-//
-//class ASTScale extends ASTUniPrefixOp {
-//  ASTScale() { super(VARS1,new Type[]{Type.ARY,Type.ARY}); }
-//  @Override String opStr() { return "scale"; }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(!env.isAry()) { env.poppush(Double.NaN); return; }
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    Frame fr2 = new Scale().doIt(fr.numCols(), fr).outputFrame(fr._names, fr.domains());
-//    env.subRef(fr,skey);
-//    env.pop();                  // Pop self
-//    env.push(fr2);
-//  }
-//
-//  private static class Scale extends MRTask2<Scale> {
-//    protected int _nums = 0;
-//    protected int[] _ind;    // Saves indices of numeric cols first, followed by enums
-//    protected double[] _normSub;
-//    protected double[] _normMul;
-//
-//    @Override public void map(Chunk chks[], NewChunk nchks[]) {
-//      // Normalize numeric cols only
-//      for(int k = 0; k < _nums; k++) {
-//        int i = _ind[k];
-//        NewChunk n = nchks[i];
-//        Chunk c = chks[i];
-//        int rlen = c._len;
-//        for(int r = 0; r < rlen; r++)
-//          n.addNum((c.at0(r)-_normSub[i])*_normMul[i]);
-//      }
-//
-//      for(int k = _nums; k < chks.length; k++) {
-//        int i = _ind[k];
-//        NewChunk n = nchks[i];
-//        Chunk c = chks[i];
-//        int rlen = c._len;
-//        for(int r = 0; r < rlen; r++)
-//          n.addNum(c.at0(r));
-//      }
-//    }
-//
-//    public Scale doIt(int outputs, Frame fr) { return dfork2(outputs, fr).getResult(); }
-//    public Scale dfork2(int outputs, Frame fr) {
-//      final Vec [] vecs = fr.vecs();
-//      for(int i = 0; i < vecs.length; i++) {
-//        if(!vecs[i].isEnum()) _nums++;
-//      }
-//      if(_normSub == null) _normSub = MemoryManager.malloc8d(_nums);
-//      if(_normMul == null) { _normMul = MemoryManager.malloc8d(_nums); Arrays.fill(_normMul,1); }
-//      if(_ind == null) _ind = MemoryManager.malloc4(vecs.length);
-//
-//      int ncnt = 0; int ccnt = 0;
-//      for(int i = 0; i < vecs.length; i++){
-//        if(!vecs[i].isEnum()) {
-//          _normSub[ncnt] = vecs[i].mean();
-//          _normMul[ncnt] = 1.0/vecs[i].sigma();
-//          _ind[ncnt++] = i;
-//        } else
-//          _ind[_nums+(ccnt++)] = i;
-//      }
-//      assert ncnt == _nums && (ncnt + ccnt == vecs.length);
-//      return dfork(outputs, fr, false);
-//    }
-//  }
-//}
+
+class ASTScale extends ASTUniPrefixOp {
+  boolean _center;
+  double[] _centers;
+  boolean _scale;
+  double[] _scales;
+  ASTScale() { super(new String[]{"ary", "center", "scale"});}
+  @Override String opStr() { return "scale"; }
+  @Override ASTOp make() {return this;}
+  ASTScale parse_impl(Exec E) {
+    AST ary = E.parse();
+    parseArg(E, true);  // centers parse
+    parseArg(E, false); // scales parse
+    ASTScale res = (ASTScale) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  private void parseArg(Exec E, boolean center) {
+    if (center) {
+      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (centers == null) {
+        // means `center` is boolean
+        AST a = E._env.lookup((ASTId)E.skipWS().parse());
+        _center = ((ASTNum)a).dbl() == 1;
+        _centers = null;
+      } else {
+        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
+        _centers = new double[centers.length];
+        for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
+      }
+    } else {
+      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (centers == null) {
+        // means `scale` is boolean
+        AST a = E._env.lookup((ASTId)E.skipWS().parse());
+        _scale = ((ASTNum)a).dbl() == 1;
+        _scales = null;
+      } else {
+        for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
+        _scales = new double[centers.length];
+        for (int i = 0; i < centers.length; ++i) _scales[i] = Double.valueOf(centers[i]);
+      }
+    }
+  }
+
+  @Override void apply(Env env) {
+    Frame fr = env.pop0Ary();
+    for (int i = 0; i < fr.numCols(); ++i) if (fr.vecs()[i].isEnum()) throw new IllegalArgumentException(("All columns must be numeric."));
+    if (!(_centers == null) && _centers.length != fr.numCols()) throw new IllegalArgumentException("`centers` must be logical or have length equal to the number of columns in the dataset.");
+    if (!(_scales  == null) && _scales.length  != fr.numCols()) throw new IllegalArgumentException("`scales` must be logical or have length equal to the number of columns in the dataset.");
+    final boolean use_mean = _centers == null && _center;
+    final double[] centers = _centers;
+    final boolean use_sig  = _scales == null && _scale;
+    final boolean use_rms  = !use_mean && _scale;
+    final double[] scales  = _scales;
+    if (!_center && !_scale && (_centers == null) && (_scales == null)) {
+      //nothing to do, return the frame as is
+      env.push0Ary(fr);
+      return;
+    }
+
+    boolean doCenter = use_mean || _centers != null;
+    boolean doScale  = use_sig || use_rms || _scales != null;
+
+    Frame centered = new Frame(fr);
+    if (doCenter) {
+      centered = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int rows = cs[0].len();
+          int cols = cs.length;
+          for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) {
+              double numer = cs[c].at0(r) - (use_mean
+                      ? cs[c].vec().mean()
+                      : centers == null ? 0 : centers[c]);
+              ncs[c].addNum(numer);
+            }
+        }
+      }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }
+
+    double[] rms_vals = null;
+    if (use_rms) {
+      rms_vals = new double[fr.numCols()];
+      double nrows = fr.numRows();
+      for (int i = 0; i < rms_vals.length; ++i) {
+        Vec v = centered.vecs()[i];
+        ASTVar.CovarTask t = new ASTVar.CovarTask(0,0).doAll(new Frame(v,v));
+        rms_vals[i] = Math.sqrt(t._ss / (nrows - 1));
+      }
+    }
+    final double[] rms = rms_vals;
+
+    Frame scaled = new Frame(centered);
+    if (doScale) {
+      scaled = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int rows = cs[0].len();
+          int cols = cs.length;
+          for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) {
+              double denom = cs[c].at0(r) / (use_rms
+                      ? rms[c] : use_sig ? cs[c].vec().sigma()
+                      : scales == null ? 1 : scales[c]);
+              ncs[c].addNum(denom);
+            }
+        }
+      }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
+    }
+    env.cleanup(fr);
+    if (doScale) env.cleanup(centered);
+    env.push(new ValFrame(scaled));
+  }
+}
 //
 //// ----
 //abstract class ASTTimeOp extends ASTOp {
@@ -1576,7 +1598,7 @@ class ASTVar extends ASTUniPrefixOp {
     return t._ss / (v.length() - 1);
   }
 
-  private static class CovarTask extends MRTask<CovarTask> {
+  static class CovarTask extends MRTask<CovarTask> {
     double _ss;
     double _xmean;
     double _ymean;
