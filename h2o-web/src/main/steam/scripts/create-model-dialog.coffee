@@ -42,8 +42,8 @@ createListControl = (parameter) ->
   value = node$ parameter.actual_value or []
   selection = lift$ value, (values) ->
     caption = "#{describeCount values.length, 'column'} selected"
-    caption += " (#{values.join ', '})" if values.length > 0
-    caption
+    caption += ": #{values.join ', '}" if values.length > 0
+    "(#{caption})"
 
   kind: 'list'
   name: parameter.name
