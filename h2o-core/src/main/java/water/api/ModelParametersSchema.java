@@ -1,9 +1,9 @@
 package water.api;
 
+import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
 import water.Key;
-import water.Model;
 import water.util.BeanUtils;
 
 import java.lang.reflect.Field;

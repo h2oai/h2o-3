@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.*;
 import water.*;
 import water.fvec.Frame;
 import water.util.Log;

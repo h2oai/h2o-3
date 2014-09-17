@@ -1,9 +1,10 @@
-package water.util;
+package water.init;
 
 import java.net.InetAddress;
 import java.util.*;
 
 import water.*;
+import water.util.Log;
 
 /**
  * Wrapper around timeline snapshot. Implements iterator interface (events are

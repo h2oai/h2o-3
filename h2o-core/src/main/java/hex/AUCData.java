@@ -1,9 +1,10 @@
-package water;
+package hex;
 
 import java.util.HashSet;
 
-import static water.AUC.ThresholdCriterion;
-import static water.AUC.isBetter;
+import water.Iced;
+import static hex.AUC.ThresholdCriterion;
+import static hex.AUC.isBetter;
 
 public class AUCData extends Iced {
   public float[] thresholds;

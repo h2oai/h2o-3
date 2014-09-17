@@ -1,9 +1,9 @@
 package water.api;
 
-import water.AUCData;
+import hex.AUCData;
 import water.util.BeanUtils;
 
-import static water.AUC.ThresholdCriterion;
+import static hex.AUC.ThresholdCriterion;
 
 public class AUCBase extends Schema<AUCData, AUCBase> {
   @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).")

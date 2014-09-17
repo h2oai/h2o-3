@@ -1,13 +1,12 @@
 package hex.deeplearning;
 
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.AUC;
-import water.AUCData;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
@@ -234,7 +233,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         double CMerrorOrig;
                                         {
                                           sb = new StringBuilder();
-                                          water.ConfusionMatrix CM = new water.ConfusionMatrix();
+                                          ConfusionMatrix CM = new ConfusionMatrix();
                                           CM.actual = valid;
                                           CM.vactual = valid.vecs()[resp];
                                           CM.predict = pred;

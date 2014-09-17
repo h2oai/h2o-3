@@ -1,7 +1,7 @@
 package water.api;
 
+import hex.Model;
 import water.Key;
-import water.Model;
 import water.api.ModelsHandler.Models;
 
 abstract class ModelsBase extends Schema<Models, ModelsBase> {

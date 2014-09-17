@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.api.FramesHandler.Frames;

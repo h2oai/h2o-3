@@ -1,7 +1,7 @@
 package water.api;
 
-import water.Model;
-import water.ModelMetrics;
+import hex.Model;
+import hex.ModelMetrics;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.

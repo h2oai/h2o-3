@@ -1,8 +1,8 @@
 package water.api;
 
+import hex.Model;
 import water.AutoBuffer;
 import water.Key;
-import water.Model;
 import water.util.BeanUtils;
 
 /**

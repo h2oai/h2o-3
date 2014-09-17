@@ -60,7 +60,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
     if (is_array)
       return consType(clz.getComponentType()) + "[]";
 
-    if (water.Model.class.isAssignableFrom(clz))
+    if (hex.Model.class.isAssignableFrom(clz))
       return "Model";
 
     if (water.fvec.Frame.class.isAssignableFrom(clz))

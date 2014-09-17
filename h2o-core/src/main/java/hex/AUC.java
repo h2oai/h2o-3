@@ -1,13 +1,14 @@
-package water;
+package hex;
 
+import java.util.HashSet;
+import static java.util.Arrays.sort;
+
+import water.Iced;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-
-import java.util.HashSet;
-
-import static java.util.Arrays.sort;
 
 public class AUC extends Iced {
   public Frame actual;

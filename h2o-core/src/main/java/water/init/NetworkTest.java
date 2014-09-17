@@ -1,44 +1,22 @@
-package water;
+package water.init;
 
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.Timer;
+import water.*;
+import water.util.*;
 
 import java.util.Random;
 
 
 public class NetworkTest {
-//  static final int API_WEAVER=1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//
-//  @API(help = "Message sizes", filter = Default.class, json=true)
-  public int[] msg_sizes = new int[]{1,1<<10,1<<20}; //INPUT
-
-//  @API(help = "Repeats", filter = Default.class, json=true)
-  public int repeats = 10; //INPUT
-
-//  @API(help = "Do collective test", filter = Default.class, json=true)
-  public boolean collective = true;
-
-//  @API(help = "Do serial test", filter = Default.class, json=true)
-  public boolean serial = true;
-
-//  @API(help = "Collective broadcast/reduce times in microseconds (for each message size)", json=true)
-  public double[] microseconds_collective; //OUTPUT
-
-//  @API(help = "Collective bandwidths in Bytes/sec (for each message size, for each node)", json=true)
-  public double[] bandwidths_collective; //OUTPUT
-
-//  @API(help = "Round-trip times in microseconds (for each message size, for each node)", json=true)
-  public double[][] microseconds; //OUTPUT
-
-//  @API(help = "Bi-directional bandwidths in Bytes/sec (for each message size, for each node)", json=true)
-  public double[][] bandwidths; //OUTPUT
-
-//  @API(help = "Nodes", json=true)
-  public String[] nodes; //OUTPUT
+  public int[] msg_sizes = new int[]{1,1<<10,1<<20}; //INPUT // Message sizes
+  public int repeats = 10; //INPUT // Repeats
+  public boolean collective = true; // Do collective test
+  public boolean serial = true; // Do serial test
+  public double[] microseconds_collective; //OUTPUT // Collective broadcast/reduce times in microseconds (for each message size)
+  public double[] bandwidths_collective; //OUTPUT // Collective bandwidths in Bytes/sec (for each message size, for each node)
+  public double[][] microseconds; //OUTPUT // Round-trip times in microseconds (for each message size, for each node)
+  public double[][] bandwidths; //OUTPUT // Bi-directional bandwidths in Bytes/sec (for each message size, for each node)
+  public String[] nodes; //OUTPUT // Nodes
 
   public void execImpl() {
     microseconds = new double[msg_sizes.length][];

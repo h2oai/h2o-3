@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.util.Log;
+import water.init.NetworkTest;
 
 public class NetworkTestTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(3); }

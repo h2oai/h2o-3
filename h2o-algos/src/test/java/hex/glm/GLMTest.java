@@ -1,12 +1,14 @@
 package hex.glm;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import hex.*;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
 import hex.utils.MSETsk;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;

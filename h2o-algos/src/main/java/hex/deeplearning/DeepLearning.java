@@ -9,10 +9,9 @@ import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.PrettyPrint;
+import water.util.*;
+import water.init.NetworkTest;
+import water.init.Linpack;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

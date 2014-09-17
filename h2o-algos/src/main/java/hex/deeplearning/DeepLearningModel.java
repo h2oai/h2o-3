@@ -1,6 +1,6 @@
 package hex.deeplearning;
 
-import hex.FrameTask;
+import hex.*;
 import hex.FrameTask.DataInfo;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
@@ -731,9 +731,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    @API(help = "AUC on validation data")
     public AUCData validAUC;
 //    @API(help = "Hit ratio on training data")
-    public water.HitRatio train_hitratio;
+    public HitRatio train_hitratio;
 //    @API(help = "Hit ratio on validation data")
-    public water.HitRatio valid_hitratio;
+    public HitRatio valid_hitratio;
 
     // regression
 //    @API(help = "Training MSE")
@@ -1560,7 +1560,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 bestPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
               }
               final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-                      printme, get_params().max_confusion_matrix_size, new water.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
+                      printme, get_params().max_confusion_matrix_size, new hex.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
               if (_output.isClassifier())
                 assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
               else

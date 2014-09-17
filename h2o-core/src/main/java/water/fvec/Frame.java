@@ -560,7 +560,7 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
   //   a sorted list of negative numbers (no dups) - all BUT these
   //   an unordered list of positive - just these, allowing dups
   // The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range.
-  final int MAX_EQ2_COLS = 100000;      // FIXME.  Put this in a better spot.
+  static final int MAX_EQ2_COLS = 100000; // FIXME.  Put this in a better spot.
   public Frame deepSlice( Object orows, Object ocols ) {
     // ocols is either a long[] or a Frame-of-1-Vec
     long[] cols;

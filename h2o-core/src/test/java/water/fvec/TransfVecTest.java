@@ -3,7 +3,7 @@ package water.fvec;
 import org.junit.*;
 
 import java.util.Arrays;
-import water.Model;
+import hex.Model;
 import water.TestUtil;
 
 public class TransfVecTest extends TestUtil {
@@ -37,7 +37,7 @@ public class TransfVecTest extends TestUtil {
   private static void testModelMapping(String[] modelDomain, String[] colDomain, int[][] expectedMapping) {
     int[][] mapping = Model.getDomainMapping(modelDomain, colDomain, false);
     Assert.assertEquals("getDomainMapping should return int[2][]", 2, mapping.length);
-    Assert.assertEquals("getDomainMapping shoudl return two arrays of the same length", mapping[0].length, mapping[1].length);
+    Assert.assertEquals("getDomainMapping should return two arrays of the same length", mapping[0].length, mapping[1].length);
     Assert.assertArrayEquals("Values array differs",  expectedMapping[0], mapping[0]);
     Assert.assertArrayEquals("Indexes array differs", expectedMapping[1], mapping[1]);
     // Sanity check if we pass correct indexes

@@ -75,7 +75,7 @@ public class UDPReceiverThread extends Thread {
       RANDOM_UDP_DROP.nextInt(5) == 0 ? 2 : 0;
 
     // Record the last time we heard from any given Node
-    TimeLine.record_recv(ab,false,drop);
+    TimeLine.record_recv(ab, false, drop);
     ab._h2o._last_heard_from = System.currentTimeMillis();
 
     // Snapshots are handled *IN THIS THREAD*, to prevent more UDP packets from

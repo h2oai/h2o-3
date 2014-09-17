@@ -1,4 +1,4 @@
-package water;
+package water.init;
 
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -14,7 +14,7 @@ public class MemoryBandwidth {
   /**
    * Compute memory bandwidth in bytes / second
    */
-  static double run(int num_threads) {
+  public static double run(int num_threads) {
 
     final double membw[] = new double[num_threads];
     Thread[] threads = new Thread[num_threads];
@@ -44,7 +44,7 @@ public class MemoryBandwidth {
   double run_benchmark() {
     // use the lesser of 40MB or 10% of Heap
     final long M = Math.min(10000000l, Runtime.getRuntime().maxMemory()/10);
-    int[] vals = MemoryManager.malloc4((int)M);
+    int[] vals = water.MemoryManager.malloc4((int)M);
     double total;
     int repeats = 20;
     Timer timer = new Timer(); //ms

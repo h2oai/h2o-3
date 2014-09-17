@@ -1,16 +1,16 @@
 package hex;
 
-import hex.schemas.ModelBuilderSchema;
-import water.H2O;
-import water.Job;
-import water.Key;
-import water.Model;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+
+import hex.schemas.ModelBuilderSchema;
+import hex.Model;
+import water.H2O;
+import water.Job;
+import water.Key;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.

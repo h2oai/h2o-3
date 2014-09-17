@@ -1,6 +1,6 @@
 package water.api;
 
-import water.ConfusionMatrix2;
+import hex.ConfusionMatrix2;
 
 public class ConfusionMatrixBase extends Schema<ConfusionMatrix2, ConfusionMatrixBase> {
   @API(help="Confusion matrix (Actual/Predicted)")

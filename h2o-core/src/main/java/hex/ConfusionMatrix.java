@@ -1,4 +1,4 @@
-package water;
+package hex;
 
 import water.*;
 import water.fvec.Chunk;
@@ -31,34 +31,15 @@ import java.util.Arrays;
  *  @author cliffc
  */
 public class ConfusionMatrix extends Iced {
-//  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-
-//  @API(help = "", required = true, filter = Default.class)
   public Frame actual;
-
-//  @API(help="Column of the actual results (will display vertically)", required=true, filter=actualVecSelect.class)
-  public Vec vactual;
-//  class actualVecSelect extends VecClassSelect { actualVecSelect() { super("actual"); } }
-
-//  @API(help = "", required = true, filter = Default.class)
+  public Vec vactual; // Column of the actual results (will display vertically)
   public Frame predict;
-
-//  @API(help="Column of the predicted results (will display horizontally)", required=true, filter=predictVecSelect.class)
-  public Vec vpredict;
-//  class predictVecSelect extends VecClassSelect { predictVecSelect() { super("predict"); } }
-
-//  @API(help="domain of the actual response")
-  String [] actual_domain;
-//  @API(help="domain of the predicted response")
-  String [] predicted_domain;
-//  @API(help="union of domains")
-  private String [] domain;
-//  @API(help="Confusion Matrix (or co-occurrence matrix)")
-  public long cm[][];
-
-//  @API(help="Mean Squared Error")
-  public double mse = Double.NaN;
+  public Vec vpredict; // Column of the predicted results (will display horizontally)
+  String [] actual_domain;      // domain of the actual response
+  String [] predicted_domain;   // domain of the predicted response
+  private String [] domain;     //  union of domains
+  public long cm[][]; // Confusion Matrix (or co-occurrence matrix
+  public double mse = Double.NaN;  //Mean Squared Error
 
   private boolean classification;
 
