@@ -126,8 +126,6 @@ Steam.ModelBuilderForm = (_, _algorithm, _parameters, _go) ->
   parameterTemplateOf: parameterTemplateOf
   createModel: createModel
 
-
-
 Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
   [ _isAlgorithmSelectionMode, _isModelCreationMode ] = switch$ no, 2
   _title = node$ 'New Model'
@@ -150,9 +148,9 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
 
         if algorithm.key is 'deeplearning'
           validationFrameParameter = findParameter parameters, 'validation_frame'
-          responseParameter = findParameter parameters, 'response_column'
+          responseColumnParameter = findParameter parameters, 'response_column'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
-          responseParameter.type = 'Vec'
+          responseColumnParameter.type = 'Vec'
           ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
           ignoredColumnsParameter.type = 'Vec[]'
@@ -162,7 +160,7 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
           if trainingFrame = (find result.frames, (frame) -> frame.key.name is frameKey)
             columnLabels = map trainingFrame.columns, (column) -> column.label
             sort columnLabels
-            responseParameter.values = columnLabels
+            responseColumnParameter.values = columnLabels
             ignoredColumnsParameter.values = columnLabels
         go()
 
