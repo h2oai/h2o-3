@@ -7,7 +7,14 @@
     "test": "test"
   },
   "scripts": {
-    "test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s | faucet"
+    "build": "gulp",
+    "clean": "gulp clean",
+    "watch": "gulp watch",
+    "launch": "java -Dwebdev=1 -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar",
+    "unit-test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -u | faucet",
+    "test-raw": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s",
+    "test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s | faucet",
+    "coverage": "mkdir -p src/main/resources/www/steam/coverage && gulp build-test-script && istanbul cover --dir src/main/resources/www/steam/coverage -x \"**/lib/**\" src/main/resources/www/steam/js/steam-tests.js && istanbul report --dir src/main/resources/www/steam/coverage cobertura"
   },
   "repository": {
     "type": "git",
