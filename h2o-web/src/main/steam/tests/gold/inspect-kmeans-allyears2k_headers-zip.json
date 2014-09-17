@@ -9,6 +9,18 @@
     "key": "KMeansModel",
     "parameters": [
       {
+        "name": "training_frame",
+        "label": "training_frame",
+        "help": "Training frame.",
+        "required": false,
+        "type": "Frame",
+        "default_value": null,
+        "actual_value": "allyears2k_headers.hex",
+        "level": "critical",
+        "dependencies": [],
+        "values": []
+      },
+      {
         "name": "K",
         "label": "K",
         "help": "Number of clusters",
