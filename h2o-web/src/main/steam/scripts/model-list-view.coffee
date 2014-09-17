@@ -33,6 +33,7 @@ Steam.ModelListView = (_) ->
     else
       _.displayEmpty()
       _.activeModelChanged null
+    _.inspect null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()

@@ -7,6 +7,7 @@ Steam.NotificationListView = (_) ->
       _.displayNotification item.data
     else
       _.displayEmpty()
+    _.inspect null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()
