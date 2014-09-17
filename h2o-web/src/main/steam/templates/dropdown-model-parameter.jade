@@ -2,7 +2,7 @@ tr.y-model-parameter(data-bind="css:{'y-invalid':isInvalid}")
   td.y-shrink
     label(data-bind='text:label')
   td.y-shrink
-    select(data-bind='options:values, value:value')
+    select(data-bind="options:values, value:value, optionsCaption: '(None)'")
   td.y-expand
     span.y-description(data-bind='text:description')
           
