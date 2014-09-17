@@ -1,11 +1,10 @@
 package water.util;
 
-import static java.lang.Double.isNaN;
-import static water.util.RandomUtils.getDeterRNG;
-
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
+
+import static water.util.RandomUtils.getDeterRNG;
 
 /* Bulk Array Utilities */
 public class ArrayUtils {
@@ -449,6 +448,17 @@ public class ArrayUtils {
     return Arrays.copyOf(r, cnt);
   }
 
+  // warning: Non-Symmetric! Returns all elements in a that are not in b (but NOT the other way around)
+  static public String[] difference(String a[], String b[]) {
+    if (a == null) return new String[]{};
+    if (b == null) return a.clone();
+    String[] r = new String[a.length];
+    int cnt = 0;
+    for (int i=0; i<a.length; i++) {
+      if (!contains(b, a[i])) r[cnt++] = a[i];
+    }
+    return Arrays.copyOf(r, cnt);
+  }
 
   static public double[][] append( double[][] a, double[][] b ) {
     if( a==null ) return b;

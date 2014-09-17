@@ -1,7 +1,6 @@
 package water.api;
 
-import water.Iced;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
 
 import java.lang.reflect.Array;
@@ -118,10 +117,15 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       int mods = f.getModifiers();
       if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
         continue;             // Ignore transient & static
-      API api = (API)f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
-      if( api.required() ) {
-        if( parms.getProperty(f.getName()) == null )
-          throw new IllegalArgumentException("Required field "+f.getName()+" not specified");
+      try {
+        API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
+        if (api.required()) {
+          if (parms.getProperty(f.getName()) == null)
+            throw new IllegalArgumentException("Required field " + f.getName() + " not specified");
+        }
+      }
+      catch (ArrayIndexOutOfBoundsException e) {
+        throw new IllegalArgumentException("Missing annotation for API field: " + f.getName());
       }
       // TODO: execute "validation language" in the BackEnd, which includes a "required check", if any
     }
@@ -153,8 +157,29 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       else if (!required && (s == null || s.length() == 0)) return null;
       else if (!required) return Key.make(s);
       else return Key.make(s);
+
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
+
+    if( Frame.class.isAssignableFrom(fclz) )
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      else if (!required && (s == null || s.length() == 0)) return null;
+      else {
+        Value v = DKV.get(s);
+        if (null == v) return null; // not required
+        if (! v.isFrame()) throw new IllegalArgumentException("Frame argument points to a non-frame object.");
+        return v.get();
+      }
+
+    if( Model.class.isAssignableFrom(fclz) )
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      else if (!required && (s == null || s.length() == 0)) return null;
+      else {
+        Value v = DKV.get(s);
+        if (null == v) return null; // not required
+        if (! v.isModel()) throw new IllegalArgumentException("Model argument points to a non-model object.");
+        return v.get();
+      }
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
   }

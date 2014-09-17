@@ -112,9 +112,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                       DeepLearningParameters p = new DeepLearningParameters();
                                       p.checkpoint = null;
 
-                                      p.source = frame;
-                                      p.response_vec = frame.vecs()[resp];
-                                      p.validation = valid;
+                                      p._training_frame = frame;
+                                      p.response_column = frame._names[resp];
+                                      p._validation_frame = valid;
 
                                       p.hidden = hidden;
                                       if (i == 0 && resp == 2) p.classification = false;
@@ -170,9 +170,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.checkpoint = dest_tmp;
                                     p.n_folds = 0;
 
-                                    p.source = frame;
-                                    p.validation = valid;
-                                    p.response_vec = frame.vecs()[resp];
+                                    p._training_frame = frame;
+                                    p._validation_frame = valid;
+                                    p.response_column = frame._names[resp];
                                     if (i == 0 && resp == 2) p.classification = false;
                                     p.override_with_best_model = override_with_best_model;
                                     p.epochs = epochs;

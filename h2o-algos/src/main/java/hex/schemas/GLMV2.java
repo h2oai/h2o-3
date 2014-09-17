@@ -49,7 +49,6 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
     GLMParameters parms = parameters.createImpl();
     return new GLM(parms);
   }
-  public GLM createImpl(Frame fr) { parameters.training_frame = fr._key; return createImpl(); }
 
   // Return a URL to invoke KMeans on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }

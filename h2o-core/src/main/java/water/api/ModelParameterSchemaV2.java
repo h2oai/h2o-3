@@ -13,6 +13,7 @@ import java.lang.reflect.Field;
 
 /**
  * An instance of a ModelParameters schema contains the metadata for a single Model build parameter (e.g., K for KMeans).
+ * TODO: add a superclass.
  */
 public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
   @API(help="name in the JSON, e.g. \"lambda\"")
@@ -74,6 +75,9 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
 
     if (String.class.isAssignableFrom(clz))
       return "string"; // lower-case, to be less Java-centric
+
+    if (clz.equals(Boolean.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
+      return clz.toString();
 
     Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
     return clz.toString();
