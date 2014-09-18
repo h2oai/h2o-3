@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RollupStats;
@@ -41,7 +42,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
    */
   protected static ModelMetrics scoreOne(Frame frame, Model score_model) {
 
-    water.ModelMetrics metrics = water.ModelMetrics.getFromDKV(score_model, frame);
+    ModelMetrics metrics = ModelMetrics.getFromDKV(score_model, frame);
 
     if (null == metrics) {
       // have to compute
@@ -69,7 +70,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
       }
 
       // Now call AUC and ConfusionMatrix and maybe HitRatio
-      metrics = new water.ModelMetrics(score_model.getUniqueId(),
+      metrics = new ModelMetrics(score_model.getUniqueId(),
               score_model._output.getModelCategory(),
               frame.getUniqueId(),
               after - before,

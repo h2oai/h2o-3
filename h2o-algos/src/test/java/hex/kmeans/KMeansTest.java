@@ -38,7 +38,7 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 10;
@@ -62,7 +62,7 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 10;
@@ -88,7 +88,7 @@ public class KMeansTest extends TestUtil {
       fr = water.parser.ParseDataset2.parse(Key.make(),nfs._key);
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 7;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -116,7 +116,7 @@ public class KMeansTest extends TestUtil {
     Frame fr = frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 3;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -154,7 +154,7 @@ public class KMeansTest extends TestUtil {
     Frame fr = frame(ard(d(1,0),d(0,0),d(-1,0),d(4,0),d(1,0),d(2,0),d(0,0),d(0,0)));
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 2;
       parms._normalize = true;
       parms._max_iters = 100;
@@ -179,7 +179,7 @@ public class KMeansTest extends TestUtil {
     try {
 
       parms = new KMeansModel.KMeansParameters();
-      parms._training_frame = fr;
+      parms._training_frame = fr._key;
       parms._K = 10; //too high -> will throw
       parms._normalize = true;
       parms._max_iters = 100;

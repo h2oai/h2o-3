@@ -4,7 +4,7 @@ import hex.example.Example;
 import hex.example.ExampleModel;
 import water.api.*;
 import water.fvec.Frame;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleParametersV2> {
 
@@ -18,7 +18,7 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
     // TODO: refactor into ModelParametersSchema
     @Override public ExampleModel.ExampleParameters createImpl() {
       ExampleModel.ExampleParameters impl = new ExampleModel.ExampleParameters();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
   } // ExampleParametersV2

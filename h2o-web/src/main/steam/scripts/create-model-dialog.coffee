@@ -6,11 +6,8 @@ algorithms = [
   key: 'deeplearning'
   title: 'Deep Learning'
   description: 'Model high-level abstractions in data by using model architectures composed of multiple non-linear transformations.'
-,
-  key: 'glm'
-  title: 'GLM'
-  description: 'No description available'
 ]
+
 createTextboxControl = (parameter) ->
   value = node$ parameter.actual_value
 
@@ -38,6 +35,25 @@ createDropdownControl = (parameter) ->
   help: node$ 'Help goes here.'
   isInvalid: node$ no
 
+createListControl = (parameter) ->
+  value = node$ parameter.actual_value or []
+  selection = lift$ value, (values) ->
+    caption = "#{describeCount values.length, 'column'} selected"
+    caption += ": #{values.join ', '}" if values.length > 0
+    "(#{caption})"
+
+  kind: 'list'
+  name: parameter.name
+  label: parameter.label
+  description: parameter.help
+  required: parameter.required
+  values: parameter.values
+  value: value
+  selection: selection
+  defaultValue: parameter.default_value
+  help: node$ 'Help goes here.'
+  isInvalid: node$ no
+
 createCheckboxControl = (parameter) ->
   value = node$ parameter.actual_value is 'true' #FIXME
 
@@ -54,19 +70,22 @@ createCheckboxControl = (parameter) ->
 
 createControlFromParameter = (parameter) ->
   switch parameter.type
-    when 'enum', 'Frame', 'Column'
+    when 'enum', 'Frame', 'Vec'
       createDropdownControl parameter
+    when 'Vec[]'
+      createListControl parameter
     when 'boolean'
       createCheckboxControl parameter
-    when 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
+    when 'Key', 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
       createTextboxControl parameter
-    when 'Key'
-      # noop
     else
       console.error 'Invalid field', JSON.stringify parameter, null, 2
       null
 
-Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
+findParameter = (parameters, name) ->
+  find parameters, (parameter) -> parameter.name is name
+
+Steam.ModelBuilderForm = (_, _algorithm, _parameters, _go) ->
   _validationError = node$ null
 
   _parametersByLevel = groupBy _parameters, (parameter) -> parameter.level
@@ -77,22 +96,27 @@ Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
 
   createModel = ->
     _validationError null
-    parameters = training_frame: _frameKey
-    console.debug _controls
+    parameters = {}
     for controls in _controls
       for control in controls
         if control.defaultValue isnt value = control.value()
-          unless control.kind is 'dropdown' and value is ''
-            parameters[control.name] = value
+          switch control.kind
+            when 'dropdown'
+              if value
+                parameters[control.name] = value
+            when 'list'
+              if value.length
+                parameters[control.name] = "[#{value.join ','}]"
+            else
+              parameters[control.name] = value
     
-    _.requestModelBuild _algorithm.data.key, parameters, (error, result) ->
+    _.requestModelBuild _algorithm.key, parameters, (error, result) ->
       if error
         _validationError message: error.data.errmsg
       else
-        console.log result
         _go 'confirm'
 
-  title: "#{_algorithm.title} on #{_frameKey}"
+  title: "Configure #{_algorithm.title} Model"
   criticalControls: _criticalControls
   secondaryControls: _secondaryControls
   expertControls: _expertControls
@@ -100,57 +124,83 @@ Steam.ModelBuilderForm = (_, _frameKey, _algorithm, _parameters, _go) ->
   parameterTemplateOf: parameterTemplateOf
   createModel: createModel
 
-Steam.CreateModelDialog = (_, _frameKey, _go) ->
+Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
   [ _isAlgorithmSelectionMode, _isModelCreationMode ] = switch$ no, 2
-  _isAlgorithmSelectionMode yes
-
+  _title = node$ 'New Model'
+  _canChangeAlgorithm = node$ yes
+  _algorithms = nodes$ []
   _modelForm = node$ null
 
-  selectAlgorithm = (algorithm) ->
-    _.requestModelBuilders algorithm.data.key, (error, result) ->
+  populateFramesAndColumns = (frameKey, algorithm, parameters, go) ->
+    # Fetch frame list; pick column names from training frame
+    _.requestFrames (error, result) ->
       if error
         #TODO handle properly
       else
-
-        parameters = result.model_builders[algorithm.data.key].parameters
-
-        if algorithm.data.key is 'deeplearning'
-
-          #TODO HACK remove DL source parameter - training_frame takes care of this
-          sourceParameter = find parameters, (parameter) -> parameter.name is 'source'
-          remove parameters, sourceParameter if sourceParameter
-
-          #TODO HACK hard-coding DL response param for now - rework this when Vec type is supported.
-          responseParameter = find parameters, (parameter) -> parameter.name is 'response' and parameter.type is 'string'
-          responseParameter.type = 'Column' if responseParameter
-
-          validationParameter = find parameters, (parameter) -> parameter.name is 'validation'
-
-          # Fetch frame list; pick column names from training frame
-          _.requestFrames (error, result) ->
-            if error
-              #TODO handle properly
-            else
-              validationParameter.values = map result.frames, (frame) -> frame.key.name
-              unshift validationParameter.values, ''
-              trainingFrame = find result.frames, (frame) -> frame.key.name is _frameKey
-              if trainingFrame
-                responseParameter.values = map trainingFrame.columns, (column) -> column.label
-                sort responseParameter.values
-                unshift responseParameter.values, ''
-              _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
-              _isModelCreationMode yes
+        trainingFrameParameter = findParameter parameters, 'training_frame'
+        trainingFrameParameter.values = map result.frames, (frame) -> frame.key.name
+        if frameKey
+          trainingFrameParameter.actual_value = frameKey
         else
-          _modelForm Steam.ModelBuilderForm _, _frameKey, algorithm, parameters, _go
-          _isModelCreationMode yes
+          frameKey = trainingFrameParameter.actual_value
 
+        if algorithm.key is 'deeplearning'
+          validationFrameParameter = findParameter parameters, 'validation_frame'
+          responseColumnParameter = findParameter parameters, 'response_column'
+          #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
+          responseColumnParameter.type = 'Vec'
+          ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
+          #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
+          ignoredColumnsParameter.type = 'Vec[]'
 
-  _algorithms = map algorithms, (algorithm) ->
-    self =
-      title: algorithm.title
-      description: algorithm.description
-      data: algorithm
-      select: -> selectAlgorithm self
+          validationFrameParameter.values = copy trainingFrameParameter.values
+
+          if trainingFrame = (find result.frames, (frame) -> frame.key.name is frameKey)
+            columnLabels = map trainingFrame.columns, (column) -> column.label
+            sort columnLabels
+            responseColumnParameter.values = columnLabels
+            ignoredColumnsParameter.values = columnLabels
+        go()
+
+  # If a source model is specified, we already know the algo, so skip algo selection
+  if _sourceModel
+    _title 'Clone Model'
+    _canChangeAlgorithm no
+    _isModelCreationMode yes
+    selectAlgorithm = noop
+    console.log _sourceModel
+    parameters = _sourceModel.parameters
+
+    #TODO SUPERHACK
+    algorithm = switch _sourceModel.key
+      when 'DeepLearningModel'
+        find algorithms, (algorithm) -> algorithm.key is 'deeplearning'
+      when 'KMeansModel'
+        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
+      else
+        null
+
+    populateFramesAndColumns _frameKey, algorithm, parameters, ->
+      _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
+
+  else
+    _isAlgorithmSelectionMode yes
+    selectAlgorithm = (algorithm) ->
+      _.requestModelBuilders algorithm.key, (error, result) ->
+        if error
+          #TODO handle properly
+        else
+          parameters = result.model_builders[algorithm.key].parameters
+          populateFramesAndColumns _frameKey, algorithm, parameters, ->
+            _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
+            _isModelCreationMode yes
+
+    _algorithms map algorithms, (algorithm) ->
+      self =
+        title: algorithm.title
+        description: algorithm.description
+        data: algorithm
+        select: -> selectAlgorithm self.data
 
   backToAlgorithms = -> _isAlgorithmSelectionMode yes
 
@@ -158,11 +208,13 @@ Steam.CreateModelDialog = (_, _frameKey, _go) ->
 
   cancel = -> _go 'cancel'
 
+  title: _title
   isAlgorithmSelectionMode: _isAlgorithmSelectionMode
   isModelCreationMode: _isModelCreationMode
   algorithms: _algorithms
   modelForm: _modelForm
   cancel: cancel
+  canChangeAlgorithm: _canChangeAlgorithm
   backToAlgorithms: backToAlgorithms
   createModel: createModel
   template: 'create-model-dialog'

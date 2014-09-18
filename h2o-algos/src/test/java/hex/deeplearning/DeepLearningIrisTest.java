@@ -125,11 +125,11 @@ public class DeepLearningIrisTest extends TestUtil {
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
                                   p = new DeepLearningParameters();
-                                  p._training_frame = _train;
+                                  p._training_frame = _train._key;
                                   p.response_column = _train.lastVecName();
                                   p.ignored_columns = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(p._training_frame, p._training_frame.vec(p.response_column), p._training_frame.indices(p.ignored_columns), true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p.response_column), _train.indices(p.ignored_columns), true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
@@ -300,10 +300,10 @@ public class DeepLearningIrisTest extends TestUtil {
                                 final double testErr = ref._nn.Accuracy(ref._testData);
                                 trainPredict = mymodel.score(_train, false);
                                 final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
-                                        true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
+                                        true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                 testPredict = mymodel.score(_test, false);
                                 final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
-                                        true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
+                                        true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                 Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
                                 Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
                                 compareVal(trainErr, myTrainErr, abseps, releps);
@@ -323,7 +323,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   try {
                                     bestPredict = mymodel.score(_train, false);
                                     final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
-                                            true, p.max_confusion_matrix_size, new water.ConfusionMatrix(), null, null);
+                                            true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                     Log.info("Best_model's error : " + bestErr * 100 + "%.");
                                     compareVal(bestErr, best_err, abseps, releps);
                                   } finally {

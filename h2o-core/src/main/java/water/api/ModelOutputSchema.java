@@ -1,6 +1,6 @@
 package water.api;
 
-import water.Model;
+import hex.Model;
 
 /**
  * An instance of a ModelOutput schema contains the Model build output (e.g., the cluster centers for KMeans).

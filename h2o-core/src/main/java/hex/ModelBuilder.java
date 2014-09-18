@@ -4,7 +4,6 @@ import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Job;
 import water.Key;
-import water.Model;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
@@ -61,8 +60,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     super(jobKey,dest,desc);
     this._parms = parms;
   }
-  public ModelBuilder(Key dest, String desc, P parms) {
-    super(dest, desc);
+  public ModelBuilder(String desc, P parms) {
+    super((parms._destination_key== null ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key), desc);
     this._parms = parms;
   }
 

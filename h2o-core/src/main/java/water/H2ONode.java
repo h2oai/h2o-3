@@ -30,15 +30,15 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
-  static final class H2Okey extends InetSocketAddress implements Comparable {
+  public static final class H2Okey extends InetSocketAddress implements Comparable {
     final int _ipv4;     // cheapo ipv4 address
     H2Okey(InetAddress inet, int port) {
       super(inet,port);
       byte[] b = inet.getAddress();
       _ipv4 = ((b[0]&0xFF)<<0)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
     }
-    int htm_port() { return getPort()-1; }
-    int udp_port() { return getPort()  ; }
+    public int htm_port() { return getPort()-1; }
+    public int udp_port() { return getPort()  ; }
     @Override public String toString() { return getAddress()+":"+htm_port(); }
     AutoBuffer write( AutoBuffer ab ) {
       return ab.put4(_ipv4).put2((char)udp_port());
@@ -62,7 +62,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
   }
 
-  final int ip4() { return _key._ipv4; }
+  public final int ip4() { return _key._ipv4; }
 
   // These are INTERN'd upon construction, and are uniquely numbered within the
   // same run of a JVM.  If a remote Node goes down, then back up... it will

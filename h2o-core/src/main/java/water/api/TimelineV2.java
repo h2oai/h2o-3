@@ -6,7 +6,7 @@ import java.util.Date;
 import water.*;
 import water.api.TimelineHandler.Timeline;
 import water.util.DocGen;
-import water.util.TimelineSnapshot;
+import water.init.TimelineSnapshot;
 
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.

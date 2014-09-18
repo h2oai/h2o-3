@@ -70,7 +70,7 @@ public class JobV2 extends Schema<Job, JobV2> {
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");
     if( "DONE".equals(status) ) {
-      Job job = DKV.get(key).get();
+      Job job = key.get();
       String url = InspectV1.link(job.dest());
       ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
     } else {

@@ -1,27 +1,13 @@
-package water;
-
-import water.util.ArrayUtils;
-//import static water.util.ModelUtils.printConfusionMatrix;
+package hex;
 
 import java.util.Arrays;
+import water.util.ArrayUtils;
+import water.Iced;
 
 public class ConfusionMatrix2 extends Iced {
-//  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//  @API(help="Confusion matrix (Actual/Predicted)")
   public long[][] _arr; // [actual][predicted]
-//  @API(help = "Prediction error by class")
   public final double[] _classErr;
-//  @API(help = "Prediction error")
   public double _predErr;
-
-//  @Override public ConfusionMatrix2 clone() {
-//    ConfusionMatrix2 res = new ConfusionMatrix2(0);
-//    res._arr = _arr.clone();
-//    for( int i = 0; i < _arr.length; ++i )
-//      res._arr[i] = _arr[i].clone();
-//    return res;
-//  }
 
   public enum ErrMetric {
     MAXC, SUMC, TOTAL;
@@ -235,49 +221,4 @@ public class ConfusionMatrix2 extends Iced {
       sb.append(Arrays.toString(r) + "\n");
     return sb.toString();
   }
-
-//  public JsonArray toJson() {
-//    JsonArray res = new JsonArray();
-//    JsonArray header = new JsonArray();
-//    header.add(new JsonPrimitive("Actual / Predicted"));
-//    for( int i = 0; i < _arr.length; ++i )
-//      header.add(new JsonPrimitive("class " + i));
-//    header.add(new JsonPrimitive("Error"));
-//    res.add(header);
-//    for( int i = 0; i < _arr.length; ++i ) {
-//      JsonArray row = new JsonArray();
-//      row.add(new JsonPrimitive("class " + i));
-//      long s = 0;
-//      for( int j = 0; j < _arr.length; ++j ) {
-//        s += _arr[i][j];
-//        row.add(new JsonPrimitive(_arr[i][j]));
-//      }
-//      double err = s - _arr[i][i];
-//      err /= s;
-//      row.add(new JsonPrimitive(err));
-//      res.add(row);
-//    }
-//    JsonArray totals = new JsonArray();
-//    totals.add(new JsonPrimitive("Totals"));
-//    long S = 0;
-//    long DS = 0;
-//    for( int i = 0; i < _arr.length; ++i ) {
-//      long s = 0;
-//      for( int j = 0; j < _arr.length; ++j )
-//        s += _arr[j][i];
-//      totals.add(new JsonPrimitive(s));
-//      S += s;
-//      DS += _arr[i][i];
-//    }
-//    double err = (S - DS) / (double) S;
-//    totals.add(new JsonPrimitive(err));
-//    res.add(totals);
-//    return res;
-//  }
-
-  //public void toHTML(StringBuilder sb, String[] domain) {
-  //  long[][] cm = _arr;
-  //  printConfusionMatrix(sb, cm, domain, true);
-  //}
-
 }

@@ -4,7 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.api.TimelineHandler.Timeline;
 import water.TimeLine;
-import water.util.TimelineSnapshot;
+import water.init.TimelineSnapshot;
 
 /** UDP Timeline
  * Created by tomasnykodym on 6/5/14.

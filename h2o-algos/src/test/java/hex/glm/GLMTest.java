@@ -1,12 +1,15 @@
+
 package hex.glm;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import hex.*;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
 import hex.utils.MSETsk;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
@@ -20,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5);   jobKey = Key.make("job");}
+  @BeforeClass public static void setup() { stall_till_cloudsize(1);   jobKey = Key.make("job");}
   static Key jobKey;
 
   //------------------- simple tests on synthetic data------------------------------------
@@ -36,7 +39,7 @@ public class GLMTest  extends TestUtil {
       FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._training_frame = DKV.get(fr._key).get();
+      params._training_frame = fr._key;
       params._response = 1;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple gaussian",params).train().get();
@@ -68,7 +71,7 @@ public class GLMTest  extends TestUtil {
       Vec v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max()  + ", mean = " + v.mean());
       GLMParameters params = new GLMParameters(Family.poisson);
-      params._training_frame = DKV.get(fr._key).get();
+      params._training_frame = fr._key;
       params._response = 1;
       params.lambda = new double[]{0};
       params.higher_accuracy = true;
@@ -81,7 +84,7 @@ public class GLMTest  extends TestUtil {
       fr.delete();
       FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
       fr = ParseDataset2.parse(parsed, new Key[]{raw});
-      params._training_frame = DKV.get(fr._key).get();
+      params._training_frame = fr._key;
       params.higher_accuracy = true;
       params._standardize = false;
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
@@ -118,7 +121,7 @@ public class GLMTest  extends TestUtil {
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
       params._response = 1;
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       Key modelKey = Key.make("gamma_test");
       new GLM(jobKey,modelKey,"glm test simple gamma",params).train().get();
@@ -189,7 +192,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -210,7 +213,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -228,7 +231,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian);
       params._response = fr.find("power (hp)");
       params._ignored_cols = new int[]{fr.find("name")};
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -269,7 +272,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response = fr.find("CAPSULE");
       params._ignored_cols = new int[]{fr.find("ID")};
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey,modelKey,"glm test simple poisson",params).train().get();
       model = DKV.get(modelKey).get();
@@ -310,7 +313,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response = fr.find("response");
       params._ignored_cols = new int[]{fr.find("ID")};
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda = new double[]{0};
       new GLM(jobKey, modelKey, "glm test simple poisson", params).train().get();
       model = DKV.get(modelKey).get();
@@ -353,7 +356,7 @@ public class GLMTest  extends TestUtil {
     try{
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._response = 0;
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda_search = true;
       params.nlambdas = 35;
       params.lambda_min_ratio = 0.18;
@@ -389,7 +392,7 @@ public class GLMTest  extends TestUtil {
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
       params = new GLMParameters(Family.gaussian);
       params._response = 0;
-      params._training_frame = DKV.get(parsed).get();
+      params._training_frame = parsed;
       params.lambda_search = true;
       params.nlambdas = 35;
       params.lambda_min_ratio = 0.18;

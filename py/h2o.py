@@ -492,7 +492,7 @@ class H2O(object):
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
     '''
-    def build_model(self, algo, training_frame, parameters, timeoutSecs=60, asynchronous=False, **kwargs):
+    def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
         assert algo is not None, '"algo" parameter is null'
         assert training_frame is not None, '"training_frame" parameter is null'
         assert parameters is not None, '"parameters" parameter is null'
@@ -510,6 +510,8 @@ class H2O(object):
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
         parameters['training_frame'] = training_frame
+        if destination_key is not None:
+            parameters['destination_key'] = destination_key
         result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
 
         if asynchronous:

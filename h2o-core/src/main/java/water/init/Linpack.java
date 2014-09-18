@@ -1,4 +1,4 @@
-package water;
+package water.init;
 
   /*
 Modified 7/12/14 by Arno E. Candel arno.candel@gmail.com

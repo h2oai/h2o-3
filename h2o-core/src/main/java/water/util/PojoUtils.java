@@ -1,13 +1,18 @@
 package water.util;
 
+import water.DKV;
+import water.Key;
+import water.Keyed;
+import water.Value;
+
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Bean utilities which cover cases similar to but not the same as Aapche Commons BeanUtils.
+ * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
  */
-public class BeanUtils {
+public class PojoUtils {
   public enum FieldNaming {
     CONSISTENT,
     DEST_HAS_UNDERSCORES,
@@ -17,7 +22,7 @@ public class BeanUtils {
   /**
    * Copy properties "of the same name" from one POJO to the other.  If the fields are
    * named consistently (both sides have fields named "_foo" and/or "bar") this acts like
-   * Apache Commons BeanUtils.copyProperties(). If one side has leading underscores and
+   * Apache Commons PojoUtils.copyProperties(). If one side has leading underscores and
    * the other does not then the names are conformed according to the field_naming
    * parameter.
    *
@@ -55,7 +60,24 @@ public class BeanUtils {
 
       try {
         if (dest_fields.containsKey(dest_name)) {
-          dest_fields.get(dest_name).set(dest, f.get(origin));
+          Field dest_field = dest_fields.get(dest_name);
+          if (null == f.get(origin)) {
+            dest_field.set(dest, null);
+          } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {
+            // We are assigning a Keyed (e.g., a Frame or Model) to a Key.
+            dest_field.set(dest, ((Keyed) f.get(origin))._key);
+          } else if (f.getType() == Key.class && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            // We are assigning a Key (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
+            Value v = DKV.get((Key)f.get(origin));
+            if (null == v) {
+              dest_field.set(dest, null);
+            } else {
+              dest_field.set(dest, v.get());
+            }
+          } else {
+            // Normal case: not doing any type conversion.
+            dest_field.set(dest, f.get(origin));
+          }
         }
       }
       catch (IllegalAccessException e) {

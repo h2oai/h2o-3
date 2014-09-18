@@ -4,9 +4,21 @@
       "job": "$0301ac10025434d4ffffffff$_9229e19dd3ab53a281cf0d153ab54d53",
       "parameters": [
         {
-          "name": "source",
-          "label": "source",
-          "help": "Training frame",
+          "name": "destination_key",
+          "label": "destination_key",
+          "help": "Destination key for this model; if unset they key is auto-generated.",
+          "required": false,
+          "type": "Key",
+          "default_value": null,
+          "actual_value": null,
+          "level": "critical",
+          "dependencies": [],
+          "values": []
+        },
+        {
+          "name": "training_frame",
+          "label": "training_frame",
+          "help": "Training frame.",
           "required": false,
           "type": "Frame",
           "default_value": null,
@@ -16,8 +28,8 @@
           "values": []
         },
         {
-          "name": "validation",
-          "label": "validation",
+          "name": "validation_frame",
+          "label": "validation_frame",
           "help": "Validation frame",
           "required": false,
           "type": "Frame",
@@ -40,8 +52,8 @@
           "values": []
         },
         {
-          "name": "response",
-          "label": "response",
+          "name": "response_column",
+          "label": "response_column",
           "help": "Response column",
           "required": false,
           "type": "string",
@@ -52,11 +64,11 @@
           "values": []
         },
         {
-          "name": "ignored_cols",
-          "label": "ignored_cols",
-          "help": "List of ignored columns",
+          "name": "ignored_columns",
+          "label": "ignored_columns",
+          "help": "Ignored columns",
           "required": false,
-          "type": "int[]",
+          "type": "string[]",
           "default_value": null,
           "actual_value": null,
           "level": "critical",

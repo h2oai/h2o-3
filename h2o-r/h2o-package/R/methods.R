@@ -87,28 +87,17 @@ h2o.assign <- function(data, key) {
 
 #'
 #' Get the reference to a frame with the given key.
-#h2o.getFrame <- function(h2o, key) {
-#  col.names <- parseSetup$columnNames
-#  ncols <- parseSetup$ncols
-#  parseSetup$hex <- ifelse(key != "", key %<p0-% ".hex", parseSetup$hexName)
-#  parseSetup$srcs <- srcs
-#  parseSetup$columnNames <- .collapse(parseSetup$columnNames)
-#
-#  # remove the following from the parseSetup list: not passed to PARSE page
-#  parseSetup$hexName <- NULL
-#  parseSetup$data <- NULL
-#
-#  # Perform the parse
-#  res <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE, method = "GET", .params = parseSetup)
-#
-#  # Poll on job
-#  .h2o.__waitOnJob(data@h2o, res$job$name)
-#
-#  # Return a new H2OParsedData object
-#  nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
-#  .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
-#  .h2o.exec2(expr = key, h2o = h2o, dest_key = key)
-#}
+h2o.getFrame <- function(h2o, key) {
+  if (missing(key)) {
+    # means h2o is the one that's missing... retrieve it!
+    key <- h2o
+    h2o <- .retrieveH2O(parent.frame())
+  }
+  ast <- new("ASTNode", root = new("ASTApply", op = '$' %<p0-% key))
+  ID <- key
+  .force.eval(h2o, ast, ID = ID, rID = 'ast')
+  ast
+}
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
@@ -200,11 +189,12 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   if(missing(x)) stop("Must specify data set")
   if(missing(breaks)) stop("`breaks` must be a numeric vector")
   ast.cut <- .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
-  ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  ID <- ifelse(ID == "Last.value", ID, ast.cut@key)
-  .force.eval(.retrieveH2O(parent.frame()), ast.cut, ID = ID, rID = 'ast.cut')
-  ast.cut
+  print(ast.cut)
+#  ID  <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+#  ID <- ifelse(ID == "Last.value", ID, ast.cut@key)
+#  .force.eval(.retrieveH2O(parent.frame()), ast.cut, ID = ID, rID = 'ast.cut')
+#  ast.cut
 }
 
 match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
@@ -221,17 +211,6 @@ match.H2OFrame <-function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match
 }
 
-
-#  if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
-#  if (trim < 0) trim <- 0
-#  if (trim > .5) trim <- .5
-#  ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
-#  ID  <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
-#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
-#  ast.mean
-
 #'
 #' `match` or %in% for H2OParsedData
 #'
@@ -245,7 +224,7 @@ match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables =
 }
 
 #'
-#'
+#' %in% method
 #'
 "%in%" <- function(x, table) {
   if (x %<i-% "ASTNode") match.H2OFrame(x, table, nomatch = 0) > 0
@@ -749,6 +728,24 @@ function(x, na.rm = FALSE) {
   ID <- ifelse(ID == "Last.value", ID, ast.sd@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
   ast.sd
+}
+
+scale.H2OParsedData<-
+function(x, center = TRUE, scale = TRUE) {
+  ast.scale <- .h2o.varop("scale", x, center, scale)
+  ID <- "Last.value"
+  .force.eval(.retrieveH2O(parent.frame()), ast.scale, ID = ID, rID = 'ast.scale')
+  ast.scale
+}
+
+scale.H2OFrame<-
+function(x, center = TRUE, scale = TRUE) {
+  ast.scale <- .h2o.varop("scale", x, center, scale)
+  ID  <- as.list(match.call())$x
+  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID <- ifelse(ID == "Last.value", ID, ast.scale@key)
+  .force.eval(.retrieveH2O(parent.frame()), ast.scale, ID = ID, rID = 'ast.scale')
+  ast.scale
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

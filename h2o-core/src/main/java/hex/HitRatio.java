@@ -1,4 +1,4 @@
-package water;
+package hex;
 
 import static water.util.ModelUtils.getPredictions;
 import java.util.Arrays;
@@ -14,33 +14,14 @@ import water.util.DocGen;
 import water.util.Log;
 
 public class HitRatio extends Iced {
-//  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static private DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//  private static final String DOC_GET = "Hit Ratio";
-//
-//  @API(help = "", required = true, filter = Default.class, json=true)
   public Frame actual;
-
-//  @API(help="Column of the actual results (will display vertically)", required=true, filter=actualVecSelect.class, json=true)
-  public Vec vactual;
-//  class actualVecSelect extends VecClassSelect { actualVecSelect() { super("actual"); } }
-
-//  @API(help = "", required = true, filter = Default.class, json=true)
+  public Vec vactual; // Column of the actual results (will display vertically)
   public Frame predict;
-
-//  @API(help = "Max. number of labels (K) to use for hit ratio computation", required = false, filter = Default.class, json = true)
-  private int max_k = 10;
+  private int max_k = 10; // Max. number of labels (K) to use for hit ratio computation
   public void set_max_k(int k) { max_k = k; }
-
-//  @API(help = "Random number seed for breaking ties between equal probabilities", required = false, filter = Default.class, json = true)
-  private long seed = new Random().nextLong();
-
-//  @API(help="domain of the actual response")
-  private String [] actual_domain;
-
-//  @API(help="Hit ratios for k=1...K")
-  private float[] hit_ratios;
-//  private float[] hit_ratios() { return hit_ratios; }
+  private long seed = new Random().nextLong(); // Random number seed for breaking ties between equal probabilities
+  private String [] actual_domain; // domain of the actual response
+  private float[] hit_ratios; // Hit ratios for k=1...K
 
   public HitRatio() {}
 

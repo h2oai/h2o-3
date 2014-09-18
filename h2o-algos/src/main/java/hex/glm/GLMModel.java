@@ -2,8 +2,8 @@ package hex.glm;
 
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
+import hex.Model;
 import water.DTask.DKeyTask;
-import water.Model;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;

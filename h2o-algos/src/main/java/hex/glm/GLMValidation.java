@@ -3,10 +3,10 @@ package hex.glm;
 
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import water.ConfusionMatrix2;
+import hex.ConfusionMatrix2;
+import hex.AUC;
 import water.Iced;
 import water.Key;
-import water.AUC;
 import water.util.ModelUtils;
 
 /**

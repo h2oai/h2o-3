@@ -1,6 +1,7 @@
-package water;
+package hex;
 
-import water.Model.ModelCategory;
+import hex.Model.ModelCategory;
+import water.*;
 import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
 import water.fvec.Frame;

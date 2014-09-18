@@ -1,5 +1,6 @@
-package water;
+package hex;
 
+import water.Key;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;

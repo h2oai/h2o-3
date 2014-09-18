@@ -8,6 +8,7 @@ Steam.AdminListView = (_) ->
       item.load()
     else
       _.displayEmpty()
+    _.inspect null
 
   displayActiveItem = ->
     activeItem = find _items(), (item) -> item.isActive()

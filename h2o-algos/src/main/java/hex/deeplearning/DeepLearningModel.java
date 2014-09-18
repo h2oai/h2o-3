@@ -1,6 +1,6 @@
 package hex.deeplearning;
 
-import hex.FrameTask;
+import hex.*;
 import hex.FrameTask.DataInfo;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
@@ -453,7 +453,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     //Sanity check for Deep Learning job parameters
     public void sanityCheck() {
-      if (_training_frame.numCols() <= 1)
+      Frame fr = sanityCheckFrameKey(_training_frame,"Training Frame");
+      if( _validation_frame != null ) sanityCheckFrameKey(_validation_frame,"Validation Frame");
+      if (fr.numCols() <= 1)
         throw new IllegalArgumentException("Training data must have at least 2 features (incl. response).");
 
       if (hidden == null) throw new IllegalArgumentException("There must be at least one hidden layer.");
@@ -479,7 +481,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         throw new IllegalArgumentException("Input dropout must be in [0,1).");
       }
 
-      if (_training_frame.vec(response_column).isEnum() && !classification) {
+      if (classification) {
+        if (response_column == null)
+          throw new IllegalArgumentException("Response column must be specified.");
+        if (null == fr.vec(response_column))
+          throw new IllegalArgumentException("Response column " + response_column + " not found in frame: " + _training_frame + ".");
+      }
+
+      if (null != ignored_columns)
+        for (String ignored_column : ignored_columns)
+          if (null == fr.vec(ignored_column))
+            throw new IllegalArgumentException("Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
+
+      if (null != response_column && fr.vec(response_column).isEnum() && !classification) {
         Log.info("Automatically switching to classification for enum response_vec.");
         classification = true;
       }
@@ -643,8 +657,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public double valid_err = 1;
     public AUCData trainAUC;
     public AUCData validAUC;
-    public water.HitRatio train_hitratio;
-    public water.HitRatio valid_hitratio;
+    public HitRatio train_hitratio; // "Hit ratio on training data"
+    public HitRatio valid_hitratio; // "Hit ratio on validation data"
 
     // regression
     public double train_mse = Double.POSITIVE_INFINITY;
@@ -1194,7 +1208,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return DataInfo object
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
-    final Frame train = FrameTask.DataInfo.prepareFrame(parms._training_frame, parms.autoencoder ? null : parms._training_frame.vec(parms.response_column), parms._training_frame.indices(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame fr = parms._training_frame.get();
+    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms.response_column), fr.indices(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
@@ -1455,7 +1470,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 bestPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
               }
               final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-                      printme, get_params().max_confusion_matrix_size, new water.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
+                      printme, get_params().max_confusion_matrix_size, new hex.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
               if (_output.isClassifier())
                 assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
               else

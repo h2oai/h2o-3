@@ -29,8 +29,11 @@ Steam.ModelListView = (_) ->
   displayItem = (item) ->
     if item
       _.displayModel item.data
+      _.activeModelChanged item.data
     else
       _.displayEmpty()
+      _.activeModelChanged null
+    _.inspect null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()
@@ -118,11 +121,11 @@ Steam.ModelListView = (_) ->
 
   link$ _.deselectAllModels, deselectAllModels
 
-#   createModel = ->
-#     _.promptCreateModel null, (action) ->
-#       switch action
-#         when 'confirm'
-#           console.log 'TODO CONFIRMED'
+  createModel = ->
+    _.promptCreateModel null, null, (action) ->
+      switch action
+        when 'confirm'
+          console.log 'TODO CONFIRMED'
 
   items: _items
   hasItems: _hasItems
@@ -130,6 +133,6 @@ Steam.ModelListView = (_) ->
   clearPredicate: clearPredicate
   canClearPredicate: _canClearPredicate
   isSelectAll: _isSelectAll
-  # createModel: createModel
+  createModel: createModel
   template: 'model-list-view'
 

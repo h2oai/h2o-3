@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.Model;
 import water.*;
 import water.api.InspectHandler.InspectPojo;
 import water.fvec.Frame;

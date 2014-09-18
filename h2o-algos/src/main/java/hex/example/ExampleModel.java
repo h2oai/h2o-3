@@ -1,5 +1,6 @@
 package hex.example;
 
+import hex.*;
 import hex.schemas.ExampleModelV2;
 import water.*;
 import water.api.ModelSchema;

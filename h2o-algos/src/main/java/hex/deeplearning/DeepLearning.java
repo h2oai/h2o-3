@@ -1,3 +1,4 @@
+
 package hex.deeplearning;
 
 import hex.FrameTask.DataInfo;
@@ -9,10 +10,9 @@ import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.PrettyPrint;
+import water.util.*;
+import water.init.NetworkTest;
+import water.init.Linpack;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -26,20 +26,15 @@ import static water.util.MRUtils.sampleFrameStratified;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-  public DeepLearning(Key dest, DeepLearningModel.DeepLearningParameters parms) {
-    super(dest, "DeepLearning", parms);
-  }
-
-  // Called from an http request
-  public DeepLearning( DeepLearningModel.DeepLearningParameters parms) {
-    super(Key.make("DeepLearningModel"),"DeepLearning",parms);
+  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
+    super("DeepLearning",parms);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV2(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> train() {
-    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms._training_frame.numRows()));
+    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms._training_frame.<Frame>get().numRows()));
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
@@ -138,6 +133,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
+      Frame tra_fr = _parms._training_frame.get();
       if (_parms.checkpoint == null) cp = initModel();
       else {
         final DeepLearningModel previous = DKV.get(_parms.checkpoint).get();
@@ -149,11 +145,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         else {
 //        ((ValidatedJob)previous.job()).xval_models = null; //remove existing cross-validation keys after checkpoint restart
         }
-        if (_parms._training_frame == null || !Arrays.equals(_parms._training_frame._key._kb, previous.model_info().get_params()._training_frame._key._kb)) {
+        if (_parms._training_frame == null || !Arrays.equals(_parms._training_frame._kb, previous.model_info().get_params()._training_frame._kb)) {
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
         }
         _parms.autoencoder = previous.model_info().get_params().autoencoder;
-        if (!_parms.autoencoder && (_parms.response_column == null || !Arrays.equals(_parms._training_frame.vec(_parms.response_column)._key._kb, _parms._training_frame.vec(previous.model_info().get_params().response_column)._key._kb))) {
+        if (!_parms.autoencoder && (_parms.response_column == null || !Arrays.equals(tra_fr.vec(_parms.response_column)._key._kb, tra_fr.vec(previous.model_info().get_params().response_column)._key._kb))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
         if (ArrayUtils.difference(_parms.ignored_columns, previous.model_info().get_params().ignored_columns).length != 0
@@ -162,8 +158,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
         if ((_parms._validation_frame == null) == (previous._parms._validation_frame != null)
-                || (_parms._validation_frame != null && _parms._validation_frame._key != null && previous._parms._validation_frame != null
-                && !Arrays.equals(_parms._validation_frame._key._kb, previous._parms._validation_frame._key._kb))) {
+                || (_parms._validation_frame != null && _parms._validation_frame != null && previous._parms._validation_frame != null
+                && !Arrays.equals(_parms._validation_frame._kb, previous._parms._validation_frame._kb))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
         if (_parms.classification != previous.model_info().get_params().classification) {
@@ -207,22 +203,23 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       trainModel(cp);
 
       // clean up
-      int validlen = _parms._validation_frame!= null ? _parms._validation_frame.vecs().length : 0;
-      Key[] keep = new Key[_parms._training_frame.vecs().length+validlen+6];
+      Frame val_fr = _parms._validation_frame==null ? null : _parms._validation_frame.<Frame>get();
+      int validlen = val_fr!= null ? val_fr.vecs().length : 0;
+      Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
       //don't delete the training data
-      for (int i = 0; i< _parms._training_frame.vecs().length; ++i)
-        keep[i] = _parms._training_frame.vecs()[i]._key;
-      keep[_parms._training_frame.vecs().length] = _parms._training_frame._key;
+      for (int i = 0; i< tra_fr.vecs().length; ++i)
+        keep[i] = tra_fr.vecs()[i]._key;
+      keep[tra_fr.vecs().length] = _parms._training_frame;
       //don't delete the validation data
       for (int i = 0; i< validlen; ++i)
-        keep[i] = _parms._validation_frame.vecs()[i]._key;
-      if (_parms._validation_frame != null) keep[_parms._training_frame.vecs().length+1] = _parms._validation_frame._key;
+        keep[i] = val_fr.vecs()[i]._key;
+      if (val_fr != null) keep[tra_fr.vecs().length+1] = _parms._validation_frame;
       //don't delete the model
-      keep[_parms._training_frame.vecs().length+2] = _dest;
-      keep[_parms._training_frame.vecs().length+3] = cp.actual_best_model_key;
+      keep[tra_fr.vecs().length+2] = _dest;
+      keep[tra_fr.vecs().length+3] = cp.actual_best_model_key;
       //don't delete the job
-      keep[_parms._training_frame.vecs().length+4] = self();
-      keep[_parms._training_frame.vecs().length+5] = _progressKey;
+      keep[tra_fr.vecs().length+4] = self();
+      keep[tra_fr.vecs().length+5] = _progressKey;
       Scope.exit(keep);
     }
 
@@ -238,7 +235,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         final DataInfo dinfo = prepareDataInfo(_parms);
         final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
         float[] priorDist = _parms.classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;
-        final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms._training_frame._key, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
+        final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms._training_frame, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
         model.model_info().initializeMembers();
         return model;
       }
@@ -263,8 +260,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
+        Frame tra_fr = _parms._training_frame.get();
+        Frame val_fr = _parms._validation_frame == null ? null : _parms._validation_frame.<Frame>get();
 
-        ValidationAdapter validAdapter = new ValidationAdapter(_parms._validation_frame, _parms.classification);
+        ValidationAdapter validAdapter = new ValidationAdapter(val_fr, _parms.classification);
         validAdapter.prepareValidationWithModel(model);
 
         final long model_size = model.model_info().size();
@@ -282,16 +281,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         trainScoreFrame = sampleFrame(train, mp.score_training_samples, mp.seed); //training scoring dataset is always sampled uniformly from the training dataset
 
         if (!_parms.quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
-        if (_parms._validation_frame != null) {
-          model.validation_rows = _parms._validation_frame.numRows();
+        if (val_fr != null) {
+          model.validation_rows = val_fr.numRows();
           Frame adaptedValid = validAdapter.getValidation();
           if (validAdapter.getValidAdaptor().needsAdaptation2CM()) {
 
             int rIndex = 0;
-            for( int i = 0; i < _parms._training_frame.names().length; i++ ) {
-              if (_parms._training_frame._names[i] == _parms.response_column) rIndex = i;
+            for( int i = 0; i < tra_fr.names().length; i++ ) {
+              if (tra_fr._names[i] == _parms.response_column) rIndex = i;
             }
-            final String responseName = _parms._training_frame._names != null && rIndex >= 0 ? _parms._training_frame._names[rIndex] : "response_vec";
+            final String responseName = tra_fr._names != null && rIndex >= 0 ? tra_fr._names[rIndex] : "response_vec";
             adaptedValid.add(validAdapter.getValidAdaptor().adaptedValidationResponse(responseName), validAdapter.getValidAdaptor().getAdaptedValidationResponse2CM());
           }
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
@@ -370,18 +369,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * Lock the input datasets against deletes
      */
     private void lock_data() {
-      _parms._training_frame.read_lock(self());
-      if( _parms._validation_frame != null && _parms._training_frame._key != null && _parms._validation_frame._key !=null && !_parms._training_frame._key.equals(_parms._validation_frame._key) )
-        _parms._validation_frame.read_lock(self());
+      _parms._training_frame.<Frame>get().read_lock(self());
+      if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
+        _parms._validation_frame.<Frame>get().read_lock(self());
     }
 
     /**
      * Release the lock for the input datasets
      */
     private void unlock_data() {
-      _parms._training_frame.unlock(self());
-      if( _parms._validation_frame != null && _parms._training_frame._key != null && _parms._validation_frame._key != null && !_parms._training_frame._key.equals(_parms._validation_frame._key) )
-        _parms._validation_frame.unlock(self());
+      _parms._training_frame.<Frame>get().unlock(self());
+      if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
+        _parms._validation_frame.<Frame>get().unlock(self());
     }
 
     /**

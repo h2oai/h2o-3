@@ -1,9 +1,9 @@
 package hex.kmeans;
 
 import hex.schemas.KMeansModelV2;
+import hex.Model;
 import water.H2O;
 import water.Key;
-import water.Model;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;

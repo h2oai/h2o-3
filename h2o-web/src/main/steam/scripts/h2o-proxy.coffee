@@ -90,7 +90,6 @@ Steam.H2OProxy = (_) ->
         go error, result
       else
         #TODO remove 'filterSupportedModels' when issue with non-DONE models is resolved.
-        console.log result.models
         go error, filterSupportedModels result.models
 
   requestModel = (key, go) ->

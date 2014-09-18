@@ -1,7 +1,7 @@
 package water.api;
 
+import hex.Model;
 import water.Key;
-import water.Model;
 import water.api.ModelsHandler.Models;
 
 abstract class ModelsBase extends Schema<Models, ModelsBase> {
@@ -19,8 +19,8 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   // Non-version-specific filling into the impl
   @Override public Models createImpl() {
     Models m = new Models();
-    // TODO: this is failing in BeanUtils with an IllegalAccessException.  Why?  Different class loaders?
-    // BeanUtils.copyProperties(m, this, BeanUtils.FieldNaming.CONSISTENT);
+    // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
+    // PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT);
 
     // Shouldn't need to do this manually. . .
     m.key = this.key;
@@ -38,8 +38,8 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   }
 
   @Override public ModelsBase fillFromImpl(Models m) {
-    // TODO: this is failing in BeanUtils with an IllegalAccessException.  Why?  Different class loaders?
-    // BeanUtils.copyProperties(this, m, BeanUtils.FieldNaming.CONSISTENT);
+    // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
+    // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
     // Shouldn't need to do this manually. . .
     this.key = m.key;

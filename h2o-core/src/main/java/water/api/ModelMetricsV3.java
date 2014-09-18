@@ -1,6 +1,6 @@
 package water.api;
 
-import water.ModelMetrics;
+import hex.ModelMetrics;
 
 public class ModelMetricsV3 extends ModelMetricsBase {
   // Version-  and Schema-specific filling into the impl

@@ -1,10 +1,11 @@
 package water.api;
 
+import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
-import water.Model;
+import water.Key;
 import water.fvec.Frame;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
 
@@ -21,12 +22,18 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   abstract public String[] fields();
 
   // Parameters common to all models:
+  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false)
+  public Key destination_key;
+
   @API(help="Training frame.")
   public Frame training_frame;
 
   @API(help="Validation frame")
   public Frame validation_frame;
 
+  // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
+  // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
+  // column names are related to training_frame.
   @API(help="Response column")
   public String response_column;
 
@@ -38,7 +45,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   }
 
   public S fillFromImpl(P parms) {
-    BeanUtils.copyProperties(this, parms, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES); // Cliff models have _fields
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT); // Other people's models have no-underscore fields
     return (S)this;
   }
 

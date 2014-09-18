@@ -1,5 +1,6 @@
-package water;
+package hex;
 
+import water.Iced;
 import water.util.ArrayUtils;
 import water.util.DocGen;
 
@@ -7,9 +8,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class VarImp extends Iced {
-//  static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//  static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-
   /** Variable importance measurement method. */
   enum VarImpMethod {
     PERMUTATION_IMPORTANCE("Mean decrease accuracy"),
@@ -19,16 +17,11 @@ public class VarImp extends Iced {
     @Override public String toString() { return title; }
   }
 
-//  @API(help="Variable importance of individual variables.")
-  public float[]  varimp;
-//  @API(help="Names of variables.")
-  protected String[] variables;
-//  @API(help="Variable importance measurement method.")
-  public final VarImpMethod method;
-//  @API(help="Max. number of variables to show.")
-  public final int max_var = 100;
-//  @API(help="Scaled measurements.")
-  public final boolean scaled() { return false; }
+  public float[]  varimp; // Variable importance of individual variables.
+  protected String[] variables; // Names of variables.
+  public final VarImpMethod method; // Variable importance measurement method.
+  public final int max_var = 100; // Max. number of variables to show.
+  public final boolean scaled() { return false; } // Scaled measurements.
 
   public VarImp(float[] varimp) { this(varimp, null, VarImpMethod.RELATIVE_IMPORTANCE); }
   public VarImp(float[] varimp, String[] variables) { this(varimp, variables, VarImpMethod.RELATIVE_IMPORTANCE); }

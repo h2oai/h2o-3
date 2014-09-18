@@ -22,8 +22,7 @@ public class UnlockTask extends MRTask<UnlockTask> {
         // check that none of the locking jobs is still running
         for (Key locker : lockers) {
           if (locker != null && locker.type() == Key.JOB) {
-            final Value jobv = DKV.get(locker);
-            final Job job = jobv == null ? null : (Job)jobv.get();
+            final Job job = locker.get();
             if (job != null && job.isRunning())
               throw new UnsupportedOperationException("Cannot unlock all keys since locking jobs are still running.");
           }

@@ -2,6 +2,7 @@ package water.api;
 
 import water.*;
 import water.fvec.Frame;
+import hex.Model;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
