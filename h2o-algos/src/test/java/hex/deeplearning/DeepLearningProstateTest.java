@@ -105,10 +105,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                     else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
 
                                     // build the model, with all kinds of shuffling/rebalancing/sampling
-                                    dest_tmp = Key.make(Key.make().toString() + "first");
                                     {
                                       Log.info("Using seed: " + seed);
                                       DeepLearningParameters p = new DeepLearningParameters();
+                                      p._destination_key = Key.make(Key.make().toString() + "first");
                                       p.checkpoint = null;
 
                                       p._training_frame = frame._key;
@@ -135,7 +135,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
-                                      DeepLearning dl = new DeepLearning(dest_tmp, p);
+                                      DeepLearning dl = new DeepLearning(p);
                                       try {
                                         model1 = dl.train().get();
                                       } catch (Throwable t) {
@@ -162,8 +162,8 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     // Do some more training via checkpoint restart
                                     // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
-                                    dest = Key.make();
                                     DeepLearningParameters p = new DeepLearningParameters();
+                                    p._destination_key = Key.make();
                                     tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
                                     Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                     assert (tmp_model != null);
@@ -179,7 +179,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.epochs = epochs;
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
-                                    DeepLearning dl = new DeepLearning(dest, p);
+                                    DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();
                                     } catch (Throwable t) {

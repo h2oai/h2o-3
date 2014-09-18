@@ -39,7 +39,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   private static class TooManyPredictorsException extends RuntimeException {}
 
   public GLM(GLMModel.GLMParameters parms) {
-    super(Key.make("GLMModel"), "GLM", parms);
+    super("GLM", parms);
   }
 
   @Override

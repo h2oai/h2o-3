@@ -26,13 +26,8 @@ import static water.util.MRUtils.sampleFrameStratified;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-  public DeepLearning(Key dest, DeepLearningModel.DeepLearningParameters parms) {
-    super(dest, "DeepLearning", parms);
-  }
-
-  // Called from an http request
-  public DeepLearning( DeepLearningModel.DeepLearningParameters parms) {
-    super(Key.make("DeepLearningModel"),"DeepLearning",parms);
+  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
+    super("DeepLearning",parms);
   }
 
   public ModelBuilderSchema schema() { return new DeepLearningV2(); }

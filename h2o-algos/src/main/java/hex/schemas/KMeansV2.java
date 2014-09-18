@@ -10,7 +10,14 @@ import water.util.PojoUtils;
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
   public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
-    public String[] fields() { return new String[] {"training_frame", "K", "max_iters", "normalize", "seed", "init" }; }
+    public String[] fields() { return new String[] {
+            "destination_key",
+            "training_frame",
+            "K",
+            "max_iters",
+            "normalize",
+            "seed",
+            "init" }; }
 
     // TODO: we do defaults both here and in the impl; that's no good.
 

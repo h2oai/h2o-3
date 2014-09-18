@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
+import water.Key;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
@@ -21,6 +22,9 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   abstract public String[] fields();
 
   // Parameters common to all models:
+  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false)
+  public Key destination_key;
+
   @API(help="Training frame.")
   public Frame training_frame;
 

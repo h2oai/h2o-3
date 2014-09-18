@@ -36,6 +36,8 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
 
         expected = str(v)
         # Python says True; json says true
+        assert k in actuals_dict, "Expected key " + k + " not found in actual parameters list."
+
         if actuals_dict[k]['type'] == 'boolean':
             expected = expected.lower()
 
@@ -107,20 +109,20 @@ pp.pprint(model_builders)
 
 kmeans_builder = a_node.model_builders(algo='kmeans', timeoutSecs=240)['model_builders']['kmeans']
 
-kmeans_model_name = 'KMeansModel' # TODO: currently can't specify the target key
+kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
 
 print 'About to build a KMeans model. . .'
 kmeans_parameters = {'K': 2 }
-jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
+jobs = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
 print 'Done building KMeans model.'
 
 ##########################
 # Build DeepLearning model
-deep_learning_model_name = 'DeepLearningModel'
+deep_learning_model_name = 'prostate_DeepLearning_1'
 
 print 'About to build a DeepLearning model. . .'
 dl_parameters = {'classification': True, 'response_column': 'CAPSULE' }
-jobs = a_node.build_model(algo='deeplearning', training_frame=prostate_key, parameters=dl_parameters, timeoutSecs=240) # synchronous
+jobs = a_node.build_model(algo='deeplearning', destination_key=deep_learning_model_name, training_frame=prostate_key, parameters=dl_parameters, timeoutSecs=240) # synchronous
 print 'Done building DeepLearning model.'
 
 models = a_node.models()

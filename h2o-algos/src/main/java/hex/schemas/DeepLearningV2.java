@@ -14,6 +14,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
   public static final class DeepLearningParametersV2 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV2> {
     public String[] fields() { return new String[]{
+        "destination_key",
         "training_frame",
         "validation_frame",
         "classification",
@@ -571,6 +572,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
       impl._training_frame = training_frame._key;
       if (null != validation_frame)
         impl._validation_frame = validation_frame._key;
+      impl._destination_key = destination_key;
 
       impl.response_column = "CAPSULE"; // training_frame.vec(/* response_column */ "CAPSULE"); // TODO: how will a Vec get deserialized in the request parameters parsing
       return impl;
