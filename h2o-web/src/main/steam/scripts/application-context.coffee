@@ -99,6 +99,7 @@ Steam.ApplicationContext = ->
     promptCreateModel: do edge$
 
     loadModels: do edge$
+    refreshModels: do edge$
     displayModel: do edge$
     activeModelChanged: do edge$
     modelSelectionChanged: do edge$

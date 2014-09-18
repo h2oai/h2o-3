@@ -168,17 +168,14 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
     _canChangeAlgorithm no
     _isModelCreationMode yes
     selectAlgorithm = noop
-    console.log _sourceModel
     parameters = _sourceModel.parameters
 
-    #TODO SUPERHACK
-    algorithm = switch _sourceModel.key
-      when 'DeepLearningModel'
+    #TODO INSANE SUPERHACK
+    hasRateAnnealing = find _sourceModel.parameters, (parameter) -> parameter.name is 'rate_annealing'
+    algorithm = if hasRateAnnealing
         find algorithms, (algorithm) -> algorithm.key is 'deeplearning'
-      when 'KMeansModel'
-        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
       else
-        null
+        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
 
     populateFramesAndColumns _frameKey, algorithm, parameters, ->
       _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
