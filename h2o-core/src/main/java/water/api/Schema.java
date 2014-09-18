@@ -100,9 +100,28 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
           throw new IllegalArgumentException("Attempting to set output field: " + key);
 
         // Primitive parse by field type
-        f.set(this,parse(parms.getProperty(key),f.getType(), api.required()));
-
-      } catch( ArrayIndexOutOfBoundsException aioobe ) {
+        Object parse_result = parse(parms.getProperty(key),f.getType(), api.required());
+        if (parse_result != null && f.getType().isArray() && parse_result.getClass().isArray() && (f.getType().getComponentType() != parse_result.getClass().getComponentType())) {
+          // We have to conform an array of primitives.  There's got to be a better way. . .
+          if (parse_result.getClass().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
+            int[] from = (int[])parse_result;
+            Integer[] copy = new Integer[from.length];
+            for (int i = 0; i < from.length; i++)
+              copy[i] = from[i];
+            f.set(this, copy);
+          } else if (parse_result.getClass().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+            Integer[] from = (Integer[])parse_result;
+            int[] copy = new int[from.length];
+            for (int i = 0; i < from.length; i++)
+              copy[i] = from[i];
+            f.set(this, copy);
+          } else {
+            throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
+          }
+        } else {
+          f.set(this, parse_result);
+        }
+    } catch( ArrayIndexOutOfBoundsException aioobe ) {
         // Come here if missing annotation
         throw new RuntimeException("Broken internal schema; missing API annotation for field: " + key);
       } catch( IllegalAccessException iae ) {
@@ -148,7 +167,15 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       read(s,s.length()-1,']',fclz);
       String[] splits = s.substring(1,s.length()-1).split(",");
       Class<E> afclz = (Class<E>)fclz.getComponentType();
-      E[] a= (E[])Array.newInstance(afclz,splits.length);
+      E[] a = null;
+      // Can't cast an int[] to an Object[].  Sigh.
+      if (afclz == int.class) { // TODO: other primitive types. . .
+        a = (E[])Array.newInstance(Integer.class,splits.length);
+      } else {
+        // Fails with primitive classes; need the wrapper class.  Thanks, Java.
+        a = (E[]) Array.newInstance(afclz, splits.length);
+      }
+
       for( int i=0; i<splits.length; i++ )
         a[i] = (E)parse(splits[i].trim(),afclz, required);
       return a;

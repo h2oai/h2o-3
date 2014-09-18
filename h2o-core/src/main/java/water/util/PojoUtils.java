@@ -1,9 +1,6 @@
 package water.util;
 
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.Value;
+import water.*;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -68,11 +65,23 @@ public class PojoUtils {
             dest_field.set(dest, ((Keyed) f.get(origin))._key);
           } else if (f.getType() == Key.class && Keyed.class.isAssignableFrom(dest_field.getType())) {
             // We are assigning a Key (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
-            Value v = DKV.get((Key)f.get(origin));
+            Value v = DKV.get((Key) f.get(origin));
             if (null == v) {
               dest_field.set(dest, null);
             } else {
               dest_field.set(dest, v.get());
+            }
+          } else if (dest_field.getType().isArray() && f.getType().isArray() && (dest_field.getType().getComponentType() != f.getType().getComponentType())) {
+            // You can't use reflection to set an in[] with an Integer[].  Argh.
+            // TODO: other types. . .
+            if (dest_field.getType().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
+              int[] copy = (int[]) f.get(origin);
+              dest_field.set(dest, copy);
+            } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+              Integer[] copy = (Integer[]) f.get(origin);
+              dest_field.set(dest, copy);
+            } else {
+              throw H2O.fail("Don't know how to cast an array of: " + f.getType().getComponentType() + " to an array of: " + dest_field.getType().getComponentType());
             }
           } else {
             // Normal case: not doing any type conversion.

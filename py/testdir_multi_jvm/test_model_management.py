@@ -126,7 +126,7 @@ print 'Done building KMeans model.'
 dl_prostate_model_name = 'prostate_DeepLearning_1'
 
 print 'About to build a DeepLearning model. . .'
-dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE' }
+dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
 jobs = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name, training_frame=prostate_key, parameters=dl_prostate_1_parameters, timeoutSecs=240) # synchronous
 print 'Done building DeepLearning model.'
 
