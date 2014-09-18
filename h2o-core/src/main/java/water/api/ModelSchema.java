@@ -3,7 +3,7 @@ package water.api;
 import hex.Model;
 import water.AutoBuffer;
 import water.Key;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 /**
  * A Model schema contains all the pieces associated with a Model:
@@ -39,8 +39,8 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   }
 
   public ModelSchema(M m) {
-    BeanUtils.copyProperties(this.parameters, m._parms, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    BeanUtils.copyProperties(this.output, m._output, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this.output, m._output, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
   }
 
   //==========================

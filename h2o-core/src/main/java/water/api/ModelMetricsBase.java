@@ -44,8 +44,8 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   }
 
   @Override public ModelMetricsBase fillFromImpl(ModelMetrics m) {
-    // TODO: this is failing in BeanUtils with an IllegalAccessException.  Why?  Different class loaders?
-    // BeanUtils.copyProperties(this, m, BeanUtils.FieldNaming.CONSISTENT);
+    // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
+    // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
     // Shouldn't need to do this manually. . .
     this.model = new UniqueIdV3().fillFromImpl(m.model); // TODO: shouldn't have hardwired version

@@ -6,7 +6,7 @@ import water.Key;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 import java.util.Random;
 
@@ -567,7 +567,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     public DeepLearningParameters createImpl() {
       DeepLearningParameters impl = new DeepLearningParameters();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.CONSISTENT);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT);
       impl._training_frame = training_frame._key;
       if (null != validation_frame)
         impl._validation_frame = validation_frame._key;

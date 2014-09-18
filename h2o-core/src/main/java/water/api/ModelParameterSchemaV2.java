@@ -3,7 +3,7 @@ package water.api;
 import water.H2O;
 import water.Iced;
 import water.Keyed;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 import water.util.Log;
 
 import java.lang.reflect.Array;
@@ -147,7 +147,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   }
 
   public ModelParameterSchemaV2 fillFromImpl(Iced iced) {
-    BeanUtils.copyProperties(this, iced, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this, iced, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     return this;
   }
 

@@ -4,7 +4,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 /**
  * Created by tomasnykodym on 8/29/14.
@@ -29,7 +29,7 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
 
     public GLMParameters createImpl() {
       GLMParameters impl = new GLMParameters();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
   }

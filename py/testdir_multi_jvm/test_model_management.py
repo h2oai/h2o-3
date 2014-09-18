@@ -71,7 +71,7 @@ pp.pprint(frames)
 ####################################
 # test model_builders collection GET
 print 'Testing /ModelBuilders. . .'
-model_builders = a_node.model_builders()
+model_builders = a_node.model_builders(timeoutSecs=240)
 
 print 'ModelBuilders: '
 pp.pprint(model_builders)
@@ -86,7 +86,7 @@ for algo in algos:
 # test model_builders individual GET
 print 'Testing /ModelBuilders/{algo}. . .'
 for algo in algos:
-    model_builder = a_node.model_builders(algo=algo)
+    model_builder = a_node.model_builders(algo=algo, timeoutSecs=240)
     assert algo in model_builder['model_builders'], "Failed to find algo: " + algo
     builder = model_builders['model_builders'][algo]
     validate_builder(builder)
@@ -102,10 +102,10 @@ prostate_key = parse_result['frames'][0]['key']['name']
 
 ####################
 # Build KMeans model
-model_builders = a_node.model_builders()
+model_builders = a_node.model_builders(timeoutSecs=240)
 pp.pprint(model_builders)
 
-kmeans_builder = a_node.model_builders(algo='kmeans')['model_builders']['kmeans']
+kmeans_builder = a_node.model_builders(algo='kmeans', timeoutSecs=240)['model_builders']['kmeans']
 
 kmeans_model_name = 'KMeansModel' # TODO: currently can't specify the target key
 

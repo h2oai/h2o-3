@@ -1,7 +1,7 @@
 package water.api;
 
 import hex.AUCData;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 import static hex.AUC.ThresholdCriterion;
 
@@ -98,13 +98,13 @@ public class AUCBase extends Schema<AUCData, AUCBase> {
   // Version&Schema-specific filling into the implementation object
   public AUCData createImpl() {
     AUCData auc_data = new AUCData();
-    BeanUtils.copyProperties(auc_data, this, BeanUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(auc_data, this, PojoUtils.FieldNaming.CONSISTENT);
     return auc_data;
   }
 
   // Version&Schema-specific filling from the implementation object
   public AUCBase fillFromImpl(AUCData i) {
-    BeanUtils.copyProperties(this, i, BeanUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(this, i, PojoUtils.FieldNaming.CONSISTENT);
     return this;
   }
 }

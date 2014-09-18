@@ -4,7 +4,7 @@ import hex.kmeans.KMeansModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 //import water.util.DocGen.HTML;
 
 public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput, KMeansModelV2> {
@@ -28,7 +28,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
 
     @Override public KMeansModel.KMeansOutput createImpl() {
       KMeansModel.KMeansOutput impl = new KMeansModel.KMeansOutput();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
 
@@ -38,7 +38,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
       // if( !(h instanceof InspectHandler) ) throw H2O.unimpl();
       // InspectHandler ih = (InspectHandler)h;
       // KMeansModel kmm = ih._val.get();
-      BeanUtils.copyProperties(this, impl, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return this;
     }
 
