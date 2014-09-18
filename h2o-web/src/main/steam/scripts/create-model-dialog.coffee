@@ -76,10 +76,8 @@ createControlFromParameter = (parameter) ->
       createListControl parameter
     when 'boolean'
       createCheckboxControl parameter
-    when 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
+    when 'Key', 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
       createTextboxControl parameter
-    when 'Key'
-      # noop
     else
       console.error 'Invalid field', JSON.stringify parameter, null, 2
       null
