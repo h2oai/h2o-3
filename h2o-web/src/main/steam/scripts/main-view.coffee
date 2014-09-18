@@ -148,6 +148,8 @@ Steam.MainView = (_) ->
     switch _topic()
       when _frameTopic
         _.refreshFrames()
+      when _modelTopic
+        _.refreshModels()
       when _jobTopic
         _.refreshJobs()
     return

@@ -110,7 +110,7 @@ Steam.ModelListView = (_) ->
 
   clearPredicate = ->
     deselectAllModels()
-    _predicate type: 'all'
+    loadModels type: 'all'
 
   link$ _.loadModels, (predicate) ->
     if predicate
@@ -120,6 +120,8 @@ Steam.ModelListView = (_) ->
       displayActiveItem()
 
   link$ _.deselectAllModels, deselectAllModels
+
+  link$ _.refreshModels, -> loadModels _predicate()
 
   createModel = ->
     _.promptCreateModel null, null, (action) ->
