@@ -94,13 +94,18 @@ for algo in algos:
     validate_builder(builder)
 
 ################################################
-# Import prostate.csv and allyears2k_headers.zip
+# Import prostate.csv
 import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
-
 pp.pprint(parse_result)
-
 prostate_key = parse_result['frames'][0]['key']['name']
+
+################################################
+# Import allyears2k_headers.zip
+import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/airlines/allyears2k_headers.zip")
+parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
+pp.pprint(parse_result)
+airlines_key = parse_result['frames'][0]['key']['name']
 
 ####################
 # Build KMeans model
@@ -116,13 +121,27 @@ kmeans_parameters = {'K': 2 }
 jobs = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
 print 'Done building KMeans model.'
 
-##########################
-# Build DeepLearning model
-deep_learning_model_name = 'prostate_DeepLearning_1'
+#######################################
+# Build DeepLearning model for Prostate
+dl_prostate_model_name = 'prostate_DeepLearning_1'
 
 print 'About to build a DeepLearning model. . .'
-dl_parameters = {'classification': True, 'response_column': 'CAPSULE' }
-jobs = a_node.build_model(algo='deeplearning', destination_key=deep_learning_model_name, training_frame=prostate_key, parameters=dl_parameters, timeoutSecs=240) # synchronous
+dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE' }
+jobs = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name, training_frame=prostate_key, parameters=dl_prostate_1_parameters, timeoutSecs=240) # synchronous
+print 'Done building DeepLearning model.'
+
+models = a_node.models()
+
+print 'After Model build: Models: '
+pp.pprint(models)
+
+#######################################
+# Build DeepLearning model for Airlines
+dl_airlines_model_name = 'airlines_DeepLearning_1'
+
+print 'About to build a DeepLearning model. . .'
+dl_airline_1_parameters = {'classification': True, 'response_column': 'IsDepDelayed' }
+jobs = a_node.build_model(algo='deeplearning', destination_key=dl_airlines_model_name, training_frame=airlines_key, parameters=dl_airline_1_parameters, timeoutSecs=240) # synchronous
 print 'Done building DeepLearning model.'
 
 models = a_node.models()
@@ -142,18 +161,29 @@ for model in models['models']:
 assert found_kmeans, 'Did not find ' + kmeans_model_name + ' in the models list.'
 validate_actual_parameters(kmeans_parameters, kmeans_model['parameters'], prostate_key, None)
 
-
 ###################################
-# Check deep_learning_model_name
+# Check dl_prostate_model_name
 found_dl = False;
 dl_model = None
 for model in models['models']:
-    if model['key'] == deep_learning_model_name:
+    if model['key'] == dl_prostate_model_name:
         found_dl = True
         dl_model = model
 
-assert found_dl, 'Did not find ' + deep_learning_model_name + ' in the models list.'
-validate_actual_parameters(dl_parameters, dl_model['parameters'], prostate_key, None)
+assert found_dl, 'Did not find ' + dl_prostate_model_name + ' in the models list.'
+validate_actual_parameters(dl_prostate_1_parameters, dl_model['parameters'], prostate_key, None)
+
+###################################
+# Check dl_airlines_model_name
+found_dl = False;
+dl_model = None
+for model in models['models']:
+    if model['key'] == dl_airlines_model_name:
+        found_dl = True
+        dl_model = model
+
+assert found_dl, 'Did not find ' + dl_airlines_model_name + ' in the models list.'
+validate_actual_parameters(dl_airline_1_parameters, dl_model['parameters'], airlines_key, None)
 
 ######################################################################
 # Now look for kmeans_model_name using the one-model API, and check it
