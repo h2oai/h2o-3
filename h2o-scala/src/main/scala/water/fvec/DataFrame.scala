@@ -25,7 +25,7 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
 
   def apply( cols: Array[String] ) : DataFrame = new DataFrame(subframe(cols))
 
-  def apply( cols: Symbol* ) : DataFrame = apply(cols.toArray.map(_.toString.substring(1)))
+  def apply( cols: Symbol* ) : DataFrame = apply(cols.map(_.name).toArray)
 
   // Operators for the Map and MapLike
   override def iterator: Iterator[(Long, T)] = ???
