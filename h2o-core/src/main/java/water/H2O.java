@@ -274,6 +274,7 @@ final public class H2O {
     // Less common config options
     int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
     boolean random_udp_drop; // test only, randomly drop udp incoming
+    boolean client;          // Client-only; no work; no homing of Keys (but can cache)
 
     // HDFS & AWS
     public String hdfs; // HDFS backend
@@ -420,7 +421,7 @@ final public class H2O {
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
     // proper multicast behavior)
-    if( STATIC_H2OS != null && !STATIC_H2OS.contains(SELF)) {
+    if( !ARGS.client && STATIC_H2OS != null && !STATIC_H2OS.contains(SELF)) {
       Log.warn("Flatfile configuration does not include self: " + SELF+ " but contains " + STATIC_H2OS);
       STATIC_H2OS.add(SELF);
     }
@@ -438,8 +439,9 @@ final public class H2O {
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
+    SELF._heartbeat._client = ARGS.client;
     Paxos.doHeartbeat(SELF);
-    assert SELF._heartbeat._cloud_hash != 0;
+    assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other

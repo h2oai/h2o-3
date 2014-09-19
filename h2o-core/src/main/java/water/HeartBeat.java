@@ -11,6 +11,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   int _hb_version;
   int _cloud_hash;       // Cloud-membership hash
   boolean _common_knowledge; // Cloud shares common knowledge
+  boolean _client;       // This is a client node
   char _cloud_size;      // Cloud-size this guy is reporting
   long _jvm_boot_msec;   // Boot time of JVM
   public long jvmBootTimeMsec(){return _jvm_boot_msec;}

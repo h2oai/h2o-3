@@ -100,11 +100,12 @@ public class UDPReceiverThread extends Thread {
     // Check cloud membership; stale ex-members are "fail-stop" - we mostly
     // ignore packets from them (except paxos packets).
     boolean is_member = cloud.contains(ab._h2o);
+    boolean is_client = ab._h2o._heartbeat._client;
 
     // Paxos stateless packets & ACKs just fire immediately in a worker
     // thread.  Dups are handled by these packet handlers directly.  No
     // current membership check required for Paxos packets
-    if( UDP.udp.UDPS[ctrl]._paxos || is_member ) {
+    if( UDP.udp.UDPS[ctrl]._paxos || (is_member||is_client) ) {
       H2O.submitTask(new FJPacket(ab,ctrl));
       return;
     }

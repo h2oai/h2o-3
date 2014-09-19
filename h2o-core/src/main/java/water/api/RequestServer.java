@@ -267,7 +267,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
 
-    Log.info("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
+    Log.info_no_stdout("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
 
   // Parse version number.  Java has no ref types, bleah, so return the version

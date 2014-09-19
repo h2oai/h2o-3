@@ -660,7 +660,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                       public void callback(LMAXTask lLmax) {
                         // long nobs, double ymu, double lmax, double [] beta, double [] gradient
                         final double lmax = lLmax.lmax();
-                        Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, H2O.SELF);
+                        Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax),objval(lLmax,_params.alpha[0],lLmax.lmax()));
                         new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo,_params.family == Family.binomial), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
                         if(lLmax.lmax() > gLmax.lmax()){

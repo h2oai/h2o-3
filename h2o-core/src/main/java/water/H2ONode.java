@@ -22,7 +22,7 @@ import water.util.UnsafeUtils;
  */
 
 public class H2ONode extends Iced<H2ONode> implements Comparable {
-  int _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
+  short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   public long _last_heard_from; // Time in msec since we last heard from this Node
   public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
@@ -72,7 +72,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // if the Home#/Replica# change for a Key due to an unrelated change in Cloud
   // membership.  The unique_idx is *per Node*; not all Nodes agree on the same
   // indexes.
-  private H2ONode( H2Okey key, int unique_idx ) {
+  private H2ONode( H2Okey key, short unique_idx ) {
     _key = key;
     _unique_idx = unique_idx;
     _last_heard_from = System.currentTimeMillis();
@@ -82,7 +82,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // ---------------
   // A dense integer index for every unique IP ever seen, since the JVM booted.
   // Used to track "known replicas" per-key across Cloud change-ups.  Just use
-  // an array-of-H2ONodes, and a limit of 255 unique H2ONodes
+  // an array-of-H2ONodes
   static private final NonBlockingHashMap<H2Okey,H2ONode> INTERN = new NonBlockingHashMap<>();
   static private final AtomicInteger UNIQUE = new AtomicInteger(1);
   static H2ONode IDX[] = new H2ONode[1];
@@ -93,7 +93,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     H2ONode h2o = INTERN.get(key);
     if( h2o != null ) return h2o;
     final int idx = UNIQUE.getAndIncrement();
-    h2o = new H2ONode(key,idx);
+    assert idx < Short.MAX_VALUE;
+    h2o = new H2ONode(key,(short)idx);
     H2ONode old = INTERN.putIfAbsent(key,h2o);
     if( old != null ) return old;
     synchronized(H2O.class) {

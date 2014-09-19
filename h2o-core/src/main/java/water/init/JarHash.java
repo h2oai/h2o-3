@@ -92,16 +92,13 @@ public abstract class JarHash {
   }
 
   private static InputStream loadResource(String uri, ClassLoader cl) {
-      Log.info("Trying to load resource " + uri + " via classloader " + cl);
-      InputStream is = null;
-      is = cl.getResourceAsStream("resources/www" + uri);
-      if (is == null) {
-          is = cl.getResourceAsStream("resources/main/www" + uri);
-          if (is == null) {
-              // This is the right file location of resource inside jar bundled by gradle
-              is = cl.getResourceAsStream("www" + uri);
-          }
-      }
-      return is;
+    Log.info_no_stdout("Trying to load resource " + uri + " via classloader " + cl);
+    InputStream is = cl.getResourceAsStream("resources/www" + uri);
+    if( is != null ) return is;
+    is = cl.getResourceAsStream("resources/main/www" + uri);
+    if( is != null ) return is;
+    // This is the right file location of resource inside jar bundled by gradle
+    is = cl.getResourceAsStream("www" + uri);
+    return is;
   }
 }

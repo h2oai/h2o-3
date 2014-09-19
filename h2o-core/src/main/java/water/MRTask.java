@@ -115,6 +115,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   protected short _nxx, _nhi;   // Range of Nodes to work on - remotely
   private int addShift( int x ) { x += _nxx; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
   private int subShift( int x ) { x -= _nxx; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
+  private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._heartbeat._client; return 0; }
   /** Internal field to track the left & right remote nodes/JVMs to work on */
   transient protected RPC<T> _nleft, _nrite;
   /** Internal field to track if this is a top-level local call */
@@ -228,7 +229,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // Use first readable vector to gate home/not-home
     if((_noutputs = outputs) > 0) _vid = fr.anyVec().group().reserveKeys(outputs);
     _fr = fr;                   // Record vectors to work on
-    _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
@@ -287,7 +288,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Special mode doing 1 map per key.  No frame
   public T doAll( Key... keys ) {
     _keys = keys;
-    _nxx = (short)H2O.SELF.index(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
+    _nxx = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
     return getResult();         // Block For All
@@ -302,10 +303,22 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _profile._localstart = System.currentTimeMillis();
     _topLocal = true;
     // Check for global vs local work
-    int selfidx = H2O.SELF.index();
+    int selfidx = selfidx();
     int nlo = subShift(selfidx);
     assert nlo < _nhi;
     final int nmid = (nlo+_nhi)>>>1; // Mid-point
+    // Client mode: split left & right, but no local work
+    if( H2O.ARGS.client ) {
+      _profile._rpcLstart = System.currentTimeMillis();
+      _nleft = remote_compute(nlo ,nmid);
+      _profile._rpcRstart = System.currentTimeMillis();
+      _nrite = remote_compute(nmid,_nhi);
+      _profile._rpcRdone  = System.currentTimeMillis();
+      setupLocal();               // Setup any user's shared local structures
+      _profile._localdone = System.currentTimeMillis();
+      return;
+    }
+    // Normal server mode: split left & right excluding self
     if( !_run_local && nlo+1 < _nhi ) { // Have global work?
       _profile._rpcLstart = System.currentTimeMillis();
       _nleft = remote_compute(nlo+1,nmid);
@@ -332,7 +345,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // No remote work?
     if( !(nlo < nhi) ) return null;
     int node = addShift(nlo);
-    assert node != H2O.SELF.index();
+    assert node != H2O.SELF.index(); // Not the same as selfidx() if this is a client
     T mrt = copyAndInit();
     mrt._nhi = (short)nhi;
     addToPendingCount(1);       // Not complete until the RPC returns
@@ -464,7 +477,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _profile._localBlkDone = System.currentTimeMillis();
     // Finally, must return all results in 'this' because that is the API -
     // what the user expects
-    int nlo = subShift(H2O.SELF.index());
+    int nlo = subShift(selfidx());
     int nhi = _nhi;             // Save before copyOver crushes them
     if( _res == null ) _nhi=-1; // Flag for no local results *at all*
     else if( _res != this ) {   // There is a local result, and its not self

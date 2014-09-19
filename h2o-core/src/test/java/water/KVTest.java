@@ -99,7 +99,7 @@ public class KVTest extends TestUtil {
     H2O cloud = H2O.CLOUD;
     H2ONode target = cloud._memary[0];
     if( target == H2O.SELF ) target = cloud._memary[1];
-    Key remote_key = Key.make("test4_remote",(byte)1,Key.BUILT_IN_KEY,target); // A key homed to a specific target
+    Key remote_key = Key.make("test4_remote",(byte)1,Key.BUILT_IN_KEY,true,target); // A key homed to a specific target
     Value v0 = DKV.get(remote_key);
     assertNull(v0);
     // It's a Big Value
@@ -161,7 +161,7 @@ public class KVTest extends TestUtil {
     H2O cloud = H2O.CLOUD;
     H2ONode target = cloud._memary[0];
     if( target == H2O.SELF ) target = cloud._memary[1];
-    Key key = Key.make("test6_remote",(byte)1,Key.BUILT_IN_KEY,target);
+    Key key = Key.make("test6_remote",(byte)1,Key.BUILT_IN_KEY,true,target);
     // It's a plain empty byte array - but too big for atomic update on purpose
     Value v1 = new Value(key,new byte[16]);
     // Remote-put operation

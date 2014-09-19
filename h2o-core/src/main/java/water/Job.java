@@ -14,7 +14,7 @@ import java.util.Arrays;
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
-  public static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY);
+  public static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed { 
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -108,7 +108,7 @@ public class Job<T extends Keyed> extends Keyed {
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
-  private static Key defaultJobKey() { return Key.make((byte) 0, Key.JOB, H2O.SELF); }
+  private static Key defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
 
 
   /** Start this task based on given top-level fork-join task representing job computation.
@@ -124,7 +124,6 @@ public class Job<T extends Keyed> extends Keyed {
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
-    assert _key.home();         // Always starting on same node job was created
     _fjtask = fjtask;
 
     // Make a wrapper class that only *starts* when the fjtask completes -

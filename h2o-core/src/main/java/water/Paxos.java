@@ -49,7 +49,7 @@ public abstract class Paxos {
     }
 
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
-    if( !PROPOSED.contains(h2o) ) {
+    if( !PROPOSED.contains(h2o) && !h2o._heartbeat._client ) {
       if( _cloudLocked ) {
         Log.warn("Killing "+h2o+" because the cloud is no longer accepting new H2O nodes.");
         UDPRebooted.T.locked.send(h2o);
@@ -61,7 +61,7 @@ public abstract class Paxos {
         Log.debug("Cloud voting in progress");
       }
 
-      // Add to proposed set, update cloud hash
+      // Add to proposed set, update cloud hash.  Do not add clients
       H2ONode res = PROPOSED.putIfAbsent(h2o._key,h2o);
       assert res==null;
       H2O.SELF._heartbeat._cloud_hash += h2o.hashCode();
@@ -75,6 +75,7 @@ public abstract class Paxos {
 
     // Do we have consensus now?
     H2ONode h2os[] = PROPOSED.values().toArray(new H2ONode[PROPOSED.size()]);
+    if( H2O.ARGS.client && h2os.length == 0 ) return 0; // Client stalls until it finds *some* cloud
     for( H2ONode h2o2 : h2os )
       if( chash != h2o2._heartbeat._cloud_hash )
         return print("Heartbeat hashes differ, self=0x"+Integer.toHexString(chash)+" "+h2o2+"=0x"+Integer.toHexString(h2o2._heartbeat._cloud_hash)+" ",PROPOSED);
@@ -89,9 +90,8 @@ public abstract class Paxos {
 
     H2O.SELF._heartbeat._common_knowledge = true;
     for( H2ONode h2o2 : h2os )
-      if( !h2o2._heartbeat._common_knowledge ) {
+      if( !h2o2._heartbeat._common_knowledge )
         return print("Missing common knowledge from all nodes!" ,PROPOSED);
-      }
     _commonKnowledge = true;    // Yup!  Have global consensus
 
     Paxos.class.notifyAll(); // Also, wake up a worker thread stuck in DKV.put
@@ -104,7 +104,7 @@ public abstract class Paxos {
     int hash = 0;
     for( H2ONode h2o : PROPOSED.values() )
       hash += h2o.hashCode();
-    assert hash != 0;
+    assert hash != 0 || H2O.ARGS.client;
     return hash;
   }
 

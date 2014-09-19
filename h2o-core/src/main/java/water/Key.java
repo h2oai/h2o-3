@@ -70,8 +70,7 @@ final public class Key extends Iced implements Comparable {
   int D( int repl ) {
     int hsz = H2O.CLOUD.size();
 
-    if (0 == hsz)
-      throw H2O.fail("Cloud size is zero.");
+    if (0 == hsz) return -1;
   
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
@@ -261,19 +260,24 @@ final public class Key extends Iced implements Comparable {
   // Make a particular system key that is homed to given node and possibly
   // specifies also other 2 replicas. Works for both IPv4 and IPv6 addresses.
   // If the addresses are not specified, returns a key with no home information.
-  public static Key make(String s, byte rf, byte systemType, H2ONode... replicas) {
-    return make(decodeKeyName(s),rf,systemType,replicas);
+  public static Key make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+    return make(decodeKeyName(s),rf,systemType,hint,replicas);
   }
-  public static Key make(byte rf, byte systemType, H2ONode... replicas) {
-    return make(rand(),rf,systemType,replicas);
+  public static Key make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
+    return make(rand(),rf,systemType,hint,replicas);
   }
 
 
   // Make a Key which is homed to specific nodes.
-  static Key make(byte[] kb, byte rf, byte systemType, H2ONode... replicas) {
+  static Key make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
     // no more than 3 replicas allowed to be stored in the key
     assert 0 <=replicas.length && replicas.length<=3;
     assert systemType<32; // only system keys allowed
+    boolean inCloud=true;
+    for( H2ONode h2o : replicas ) if( !H2O.CLOUD.contains(h2o) ) inCloud = false;
+    if( required ) assert inCloud; // If required placement, error to find a client as the home
+    else if( !inCloud ) replicas = new H2ONode[0]; // If placement is a hint & cannot be placed, then ignore
+
     // Key byte layout is:
     // 0 - systemType, from 0-31
     // 1 - replica-count, plus up to 3 bits for ip4 vs ip6

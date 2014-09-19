@@ -13,7 +13,7 @@ public class AtomicTest extends TestUtil {
     H2O cloud = H2O.CLOUD;
     H2ONode target = cloud._memary[0];
     if( target == H2O.SELF ) target = cloud._memary[1];
-    return Key.make(n,(byte)1,Key.BUILT_IN_KEY,target);
+    return Key.make(n,(byte)1,Key.BUILT_IN_KEY,true,target);
   }
 
   // Simple wrapper class defining an array-of-keys that is serializable.
