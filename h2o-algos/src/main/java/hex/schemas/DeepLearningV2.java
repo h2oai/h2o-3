@@ -591,6 +591,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     return new DeepLearning(parms);
   }
 
-  // Return a URL to invoke KMeans on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }
+  // Return a URL to invoke DeepLearning on this Frame
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?training_frame="+fr._key; }
 }

@@ -88,6 +88,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   static final private String[] COOKIES = new String[] {
     "SERVER_UDP","SERVER_TCP","CLIENT_UDP","CLIENT_TCP" };
 
+
+  final static int MAX_TIMEOUT = 5000; // 5 sec max timeout cap on exponential decay of retries
+
   public static <DT extends DTask> RPC<DT> call(H2ONode target, DT dtask) {
     return new RPC(target,dtask).call();
   }
@@ -207,7 +210,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // until we try again.  Note that we come here immediately on creation,
       // so the first doubling happens before anybody does any waiting.  Also
       // note the generous 5sec cap: ping at least every 5 sec.
-      _retry += (_retry < 5000 ) ? _retry : 5000;
+      _retry += (_retry < MAX_TIMEOUT ) ? _retry : MAX_TIMEOUT;
       // Put self on the "TBD" list of tasks awaiting Timeout.
       // So: dont really 'forget' but remember me in a little bit.
       UDPTimeOutThread.PENDING.add(this);
@@ -391,7 +394,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // until we try again.  Note that we come here immediately on creation,
       // so the first doubling happens before anybody does any waiting.  Also
       // note the generous 5sec cap: ping at least every 5 sec.
-      _retry += (_retry < 5000 ) ? _retry : 5000;
+      _retry += (_retry < MAX_TIMEOUT ) ? _retry : MAX_TIMEOUT;
     }
     @Override protected byte priority() { return _dt.priority(); }
     // How long until we should do the "timeout" action?

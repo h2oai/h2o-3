@@ -27,6 +27,7 @@ public class H2OApp {
 
     // Register menu items and service handlers for algos
     H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"train","/DeepLearning","Deep Learning","Model");
+    H2O.registerGET("/GLM",hex.schemas.GLMHandler.class,"train","/GLM","GLM","Model");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model");
     H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"train","/Example","Example","Model");
 

@@ -13,6 +13,7 @@ public class ParseSetupHandler extends Handler<ParseSetup,ParseSetupV2> {
 
   // back to the handler!
   public ParseSetupV2 guessSetup(int version, ParseSetup p ) {
+    if( DKV.get(p._srcs[0]) == null ) throw new IllegalArgumentException("Key not loaded: "+p._srcs[0]);
     byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p._srcs[0]));
     ParseSetup ps = ParseSetup.guessSetup(bits, p._singleQuotes, p._checkHeader);
     // Update in-place

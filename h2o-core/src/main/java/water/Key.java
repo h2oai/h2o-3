@@ -70,7 +70,7 @@ final public class Key extends Iced implements Comparable {
   int D( int repl ) {
     int hsz = H2O.CLOUD.size();
 
-    if (0 == hsz) return -1;
+    if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
   
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?

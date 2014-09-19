@@ -21,8 +21,6 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
     public boolean normalize = true;
     public long seed;
 
-
-
     @Override public GLMParametersV2 fillFromImpl(GLMParameters parms) {
       super.fillFromImpl(parms);
       return this;
@@ -51,6 +49,6 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
     return new GLM(parms);
   }
 
-  // Return a URL to invoke KMeans on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }
+  // Return a URL to invoke GLM on this Frame
+  @Override protected String acceptsFrame( Frame fr ) { return "/v2/GLM?training_frame="+fr._key; }
 }

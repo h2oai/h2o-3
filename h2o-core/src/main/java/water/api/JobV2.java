@@ -65,7 +65,7 @@ public class JobV2 extends Schema<Job, JobV2> {
 
   //==========================
   // Helper so Jobs can link to JobPoll
-  public static String link(Key key) { return "Jobs/"+key; }
+  public static String link(Key key) { return "/Jobs/"+key; }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");

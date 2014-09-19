@@ -1,9 +1,6 @@
 package water.api;
 
-import water.AutoBuffer;
-import water.H2O;
-import water.Iced;
-import water.NanoHTTPD;
+import water.*;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
@@ -11,10 +8,7 @@ import water.util.Log;
 import water.util.RString;
 import water.api.DownloadDataHandler.DownloadData;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -354,14 +348,12 @@ public class RequestServer extends NanoHTTPD {
         maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
-    } catch( IllegalArgumentException e ) {
-      Log.warn("Caught IllegalArgumentException: " + e);
-      Log.warn("Stacktrace: " + e.getStackTrace());
-      return wrap(HTTP_BADREQUEST,new HttpErrorV1(400, e.getMessage(),uri),type);
-    } catch( Exception e ) {
-      // make sure that no Exception is ever thrown out from the request
-      Log.warn("Caught exception: " + e);
-      Log.warn("Stacktrace: " + e.getStackTrace());
+    } catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
+      StringWriter sw = new StringWriter();
+      e.printStackTrace(new PrintWriter(sw));
+      Log.warn(sw.toString());
+      if( e instanceof IllegalArgumentException ) // Common error for bad arguments
+        return wrap(HTTP_BADREQUEST,new HttpErrorV1(400, e.getMessage(),uri),type);
       return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HttpErrorV1(e),type);
     }
   }
