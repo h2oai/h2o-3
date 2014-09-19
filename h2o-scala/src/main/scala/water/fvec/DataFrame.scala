@@ -9,9 +9,6 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   with Map[Long,Array[Option[Any]]] {
   type T = Array[Option[Any]]
 
-  // Force into K/V store
-  if( key != null ) DKV.put(key,new Value(key,this))
-
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
   // underlying arrays.  Recommended that the input Java Frame be dead after
   // this call.
@@ -22,6 +19,9 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
 
   // No-args public constructor for (de)serialization
   def this() = this(null,null,new Array[Vec](0))
+
+  // Force into K/V store
+  if( key != null ) DKV.put(key,new Value(key,this))
 
   def apply( cols: Array[String] ) : DataFrame = new DataFrame(subframe(cols))
 
