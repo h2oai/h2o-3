@@ -4,6 +4,18 @@
       "job": "$0301ac10025434d4ffffffff$_9229e19dd3ab53a281cf0d153ab54d53",
       "parameters": [
         {
+          "name": "destination_key",
+          "label": "destination_key",
+          "help": "Destination key for this model; if unset they key is auto-generated.",
+          "required": false,
+          "type": "Key",
+          "default_value": null,
+          "actual_value": null,
+          "level": "critical",
+          "dependencies": [],
+          "values": []
+        },
+        {
           "name": "training_frame",
           "label": "training_frame",
           "help": "Training frame.",

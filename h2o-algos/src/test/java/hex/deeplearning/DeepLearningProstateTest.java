@@ -17,7 +17,7 @@ import java.util.Random;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -83,14 +83,14 @@ public class DeepLearningProstateTest extends TestUtil {
                             for (boolean keep_cv_splits : new boolean[]{false}) { //otherwise it leaks
                               for (boolean override_with_best_model : new boolean[]{false, true}) {
                                 for (int train_samples_per_iteration : new int[]{
-//                                        -2, //auto-tune
-//                                        -1, //N epochs per iteration
-//                                        0, //1 epoch per iteration
-//                                        rng.nextInt(100), // <1 epoch per iteration
+                                        -2, //auto-tune
+                                        -1, //N epochs per iteration
+                                        0, //1 epoch per iteration
+                                        rng.nextInt(200), // <1 epoch per iteration
                                         500, //>1 epoch per iteration
                                 }) {
                                   DeepLearningModel model1 = null, model2 = null, tmp_model = null;
-                                  Key dest = null, dest_tmp = null;
+                                  Key dest = null, dest_tmp;
                                   count++;
                                   if (fraction < rng.nextFloat()) continue;
 
@@ -105,10 +105,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                     else if (vf == -1) valid = vframe; //different validation frame (here: from the same file)
 
                                     // build the model, with all kinds of shuffling/rebalancing/sampling
-                                    dest_tmp = Key.make(Key.make().toString() + "first");
                                     {
                                       Log.info("Using seed: " + seed);
                                       DeepLearningParameters p = new DeepLearningParameters();
+                                      p._destination_key = Key.make(Key.make().toString() + "first");
+                                      dest_tmp = p._destination_key;
                                       p.checkpoint = null;
 
                                       p._training_frame = frame._key;
@@ -135,7 +136,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
-                                      DeepLearning dl = new DeepLearning(dest_tmp, p);
+                                      DeepLearning dl = new DeepLearning(p);
                                       try {
                                         model1 = dl.train().get();
                                       } catch (Throwable t) {
@@ -144,7 +145,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
-                                      assert(p.train_samples_per_iteration <= 0 || model1.epoch_counter > epochs || Math.abs(model1.epoch_counter - epochs)/epochs < 0.1);
+                                      assert( ((p.train_samples_per_iteration <= 0 || p.train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
+                                              || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 
                                       if (n_folds != 0)
                                       // test HTML of cv models
@@ -162,12 +164,13 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     // Do some more training via checkpoint restart
                                     // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
-                                    dest = Key.make();
                                     DeepLearningParameters p = new DeepLearningParameters();
                                     tmp_model = DKV.get(dest_tmp).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
                                     Assert.assertTrue(tmp_model.model_info().get_processed_total() >= frame.numRows() * epochs);
                                     assert (tmp_model != null);
 
+                                    p._destination_key = Key.make();
+                                    dest = p._destination_key;
                                     p.checkpoint = dest_tmp;
                                     p.n_folds = 0;
 
@@ -179,7 +182,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.epochs = epochs;
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
-                                    DeepLearning dl = new DeepLearning(dest, p);
+                                    DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();
                                     } catch (Throwable t) {

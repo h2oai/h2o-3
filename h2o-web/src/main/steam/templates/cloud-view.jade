@@ -74,9 +74,9 @@
           .y-node-l.y-subtle RPCs
           .y-node-r(data-bind='text:rpcs')
         .y-node-m.y-subtle Threads
-        .y-node-m(data-bind='text:threads')
+        .y-node-m(data-bind="text:threads, attr:{ 'title':threads }", style='overflow:hidden')
         .y-node-m.y-subtle Tasks
-        .y-node-m(data-bind='text:tasks')
+        .y-node-m(data-bind="text:tasks, attr:{ 'title':tasks }", style='overflow:hidden')
 
     // /ko
   // /ko

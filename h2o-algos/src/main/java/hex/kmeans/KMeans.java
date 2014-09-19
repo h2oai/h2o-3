@@ -33,7 +33,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms) {
-    super(Key.make("KMeansModel"),"K-means",parms);
+    super("K-means",parms);
   }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }

@@ -481,7 +481,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         throw new IllegalArgumentException("Input dropout must be in [0,1).");
       }
 
-      if (fr.vec(response_column).isEnum() && !classification) {
+      if (classification) {
+        if (response_column == null)
+          throw new IllegalArgumentException("Response column must be specified.");
+        if (null == fr.vec(response_column))
+          throw new IllegalArgumentException("Response column " + response_column + " not found in frame: " + _training_frame + ".");
+      }
+
+      if (null != ignored_columns)
+        for (String ignored_column : ignored_columns)
+          if (null == fr.vec(ignored_column))
+            throw new IllegalArgumentException("Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
+
+      if (null != response_column && fr.vec(response_column).isEnum() && !classification) {
         Log.info("Automatically switching to classification for enum response_vec.");
         classification = true;
       }

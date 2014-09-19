@@ -9,6 +9,18 @@
     "key": "KMeansModel",
     "parameters": [
       {
+        "name": "destination_key",
+        "label": "destination_key",
+        "help": "Destination key for this model; if unset they key is auto-generated.",
+        "required": false,
+        "type": "Key",
+        "default_value": null,
+        "actual_value": null,
+        "level": "critical",
+        "dependencies": [],
+        "values": []
+      },
+      {
         "name": "training_frame",
         "label": "training_frame",
         "help": "Training frame.",

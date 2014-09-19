@@ -76,10 +76,8 @@ createControlFromParameter = (parameter) ->
       createListControl parameter
     when 'boolean'
       createCheckboxControl parameter
-    when 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
+    when 'Key', 'int', 'long', 'float', 'double', 'int[]', 'long[]', 'float[]', 'double[]'
       createTextboxControl parameter
-    when 'Key'
-      # noop
     else
       console.error 'Invalid field', JSON.stringify parameter, null, 2
       null
@@ -126,8 +124,6 @@ Steam.ModelBuilderForm = (_, _algorithm, _parameters, _go) ->
   parameterTemplateOf: parameterTemplateOf
   createModel: createModel
 
-
-
 Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
   [ _isAlgorithmSelectionMode, _isModelCreationMode ] = switch$ no, 2
   _title = node$ 'New Model'
@@ -150,9 +146,9 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
 
         if algorithm.key is 'deeplearning'
           validationFrameParameter = findParameter parameters, 'validation_frame'
-          responseParameter = findParameter parameters, 'response_column'
+          responseColumnParameter = findParameter parameters, 'response_column'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
-          responseParameter.type = 'Vec'
+          responseColumnParameter.type = 'Vec'
           ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
           ignoredColumnsParameter.type = 'Vec[]'
@@ -162,7 +158,7 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
           if trainingFrame = (find result.frames, (frame) -> frame.key.name is frameKey)
             columnLabels = map trainingFrame.columns, (column) -> column.label
             sort columnLabels
-            responseParameter.values = columnLabels
+            responseColumnParameter.values = columnLabels
             ignoredColumnsParameter.values = columnLabels
         go()
 
@@ -172,17 +168,14 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
     _canChangeAlgorithm no
     _isModelCreationMode yes
     selectAlgorithm = noop
-    console.log _sourceModel
     parameters = _sourceModel.parameters
 
-    #TODO SUPERHACK
-    algorithm = switch _sourceModel.key
-      when 'DeepLearningModel'
+    #TODO INSANE SUPERHACK
+    hasRateAnnealing = find _sourceModel.parameters, (parameter) -> parameter.name is 'rate_annealing'
+    algorithm = if hasRateAnnealing
         find algorithms, (algorithm) -> algorithm.key is 'deeplearning'
-      when 'KMeansModel'
-        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
       else
-        null
+        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
 
     populateFramesAndColumns _frameKey, algorithm, parameters, ->
       _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go

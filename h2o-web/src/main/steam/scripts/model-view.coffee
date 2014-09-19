@@ -13,10 +13,18 @@ Steam.ModelView = (_, _model) ->
 
   kv = (key, value) -> key: key, value: stringify value
 
+  determineModelAlgorithm = (model) ->
+    hasRateAnnealing = find model.parameters, (parameter) -> parameter.name is 'rate_annealing'
+    if hasRateAnnealing
+      'Deep Learning'
+    else
+      'k-means'
+
   collateSummary = (model) ->
     [
-      kv 'Response Column', 'Unknown' #model.response_column_name
-      kv 'Model Category', 'Unknown' #model.model_category
+      kv 'Algorithm', determineModelAlgorithm model
+      #kv 'Response Column', 'Unknown' #model.response_column_name
+      #kv 'Model Category', 'Unknown' #model.model_category
       #TODO uncomment when this is functional
       # kv 'State', model.state
     ]
@@ -24,7 +32,7 @@ Steam.ModelView = (_, _model) ->
   collateParameters = (model) ->
     parameters = sortBy model.parameters, (parameter) ->
       modelParameterLevelSortCriteria[parameter.level]
-    map parameters, (parameter) -> kv parameter.label, parameter.actual_value
+    map parameters, (parameter) -> kv parameter.label, parameter.actual_value or '-'
   
   collateCompatibleFrames = (frames) ->
     map frames, (frame) ->

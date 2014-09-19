@@ -38,6 +38,7 @@ Steam.JobListView = (_) ->
       _.displayJob item
     else
       _.displayEmpty()
+    _.inspect null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()

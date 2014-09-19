@@ -1,7 +1,7 @@
 package water.api;
 
 import water.UniqueId;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 /**
  * Some properties to mix in to Frame, Model and such to make them uniquely identifiable.
@@ -28,7 +28,7 @@ public class UniqueIdBase extends Schema<UniqueId, UniqueIdBase> {
 
   // Version&Schema-specific filling from the implementation object
   public UniqueIdBase fillFromImpl(UniqueId uid) {
-    BeanUtils.copyProperties(this, uid, BeanUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(this, uid, PojoUtils.FieldNaming.CONSISTENT);
     return this;
   }
 }

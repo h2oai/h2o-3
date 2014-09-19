@@ -33,6 +33,7 @@ Steam.ModelListView = (_) ->
     else
       _.displayEmpty()
       _.activeModelChanged null
+    _.inspect null
 
   displayActiveItem = ->
     displayItem find _items(), (item) -> item.isActive()
@@ -46,12 +47,19 @@ Steam.ModelListView = (_) ->
 
     displayItem item
 
+  determineModelAlgorithm = (model) ->
+    hasRateAnnealing = find model.parameters, (parameter) -> parameter.name is 'rate_annealing'
+    if hasRateAnnealing
+      'Deep Learning'
+    else
+      'k-means'
+
   createItem = (model) ->
     self =
       data: model
       title: model.key
       #TODO 
-      caption: "Unknown response column name / category" #"#{model.response_column_name} (#{model.model_category})"
+      caption: determineModelAlgorithm model #"#{model.response_column_name} (#{model.model_category})"
       #TODO
       timestamp: Date.now() #model.creation_epoch_time_millis
       display: -> activateAndDisplayItem self
@@ -109,7 +117,7 @@ Steam.ModelListView = (_) ->
 
   clearPredicate = ->
     deselectAllModels()
-    _predicate type: 'all'
+    loadModels type: 'all'
 
   link$ _.loadModels, (predicate) ->
     if predicate
@@ -119,6 +127,8 @@ Steam.ModelListView = (_) ->
       displayActiveItem()
 
   link$ _.deselectAllModels, deselectAllModels
+
+  link$ _.refreshModels, -> loadModels _predicate()
 
   createModel = ->
     _.promptCreateModel null, null, (action) ->

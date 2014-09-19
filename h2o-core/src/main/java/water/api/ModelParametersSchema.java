@@ -5,7 +5,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
 
@@ -22,6 +22,9 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   abstract public String[] fields();
 
   // Parameters common to all models:
+  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false)
+  public Key destination_key;
+
   @API(help="Training frame.")
   public Frame training_frame;
 
@@ -42,8 +45,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   }
 
   public S fillFromImpl(P parms) {
-    BeanUtils.copyProperties(this, parms, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES); // Cliff models have _fields
-    BeanUtils.copyProperties(this, parms, BeanUtils.FieldNaming.CONSISTENT); // Other people's models have no-underscore fields
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES); // Cliff models have _fields
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT); // Other people's models have no-underscore fields
     return (S)this;
   }
 

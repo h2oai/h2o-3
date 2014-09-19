@@ -18,7 +18,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
 
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms) {
-    super(Key.make("ExampleModel"),"Example",parms);
+    super("Example",parms);
     _parms = parms;
   }
 

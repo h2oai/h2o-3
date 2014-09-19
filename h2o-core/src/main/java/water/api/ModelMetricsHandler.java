@@ -140,8 +140,8 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     }
 
     @Override public ModelMetricsListSchema fillFromImpl(ModelMetricsList mml) {
-      // TODO: this is failing in BeanUtils with an IllegalAccessException.  Why?  Different class loaders?
-      // BeanUtils.copyProperties(this, m, BeanUtils.FieldNaming.CONSISTENT);
+      // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
+      // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
       this.model = new UniqueIdV3().fillFromImpl(mml.model); // TODO: shouldn't have a hardwired version

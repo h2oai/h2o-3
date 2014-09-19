@@ -4,7 +4,7 @@ import hex.deeplearning.DeepLearningModel;
 import water.Key;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 
@@ -16,13 +16,13 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
 
     @Override public DeepLearningModel.DeepLearningOutput createImpl() {
       DeepLearningModel.DeepLearningOutput impl = new DeepLearningModel.DeepLearningOutput();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
 
     // Version&Schema-specific filling from the handler
     @Override public DeepLearningModelOutputV2 fillFromImpl( DeepLearningModel.DeepLearningOutput impl) {
-      BeanUtils.copyProperties(this, impl, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return this;
     }
 

@@ -3,7 +3,7 @@ package hex.schemas;
 import hex.example.ExampleModel;
 import water.H2O;
 import water.api.*;
-import water.util.BeanUtils;
+import water.util.PojoUtils;
 
 public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput, ExampleModelV2 > {
 
@@ -17,12 +17,12 @@ public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.Examp
 
     @Override public ExampleModel.ExampleOutput createImpl() {
       ExampleModel.ExampleOutput impl = new ExampleModel.ExampleOutput();
-      BeanUtils.copyProperties(impl, this, BeanUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
 
     @Override public ExampleModelOutputV2 fillFromImpl( ExampleModel.ExampleOutput impl) {
-      BeanUtils.copyProperties(this, impl, BeanUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return this;
     }
   } // ExampleModelOutputV2
