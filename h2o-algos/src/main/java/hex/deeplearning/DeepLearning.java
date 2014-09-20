@@ -270,9 +270,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (!_parms.quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = model.model_info().data_info()._adaptedFrame;
         if (mp.force_load_balance) train = reBalance(train, mp.replicate_training_data /*rebalance into only 4*cores per node*/);
-        float[] trainSamplingFactors;
         if (mp.classification && mp.balance_classes) {
-          trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+          float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+          if (mp.class_sampling_factors != null) {
+            if (mp.class_sampling_factors.length != train.lastVec().domain().length)
+              throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain().length + " elements");
+            trainSamplingFactors = mp.class_sampling_factors.clone(); //clone: don't modify the original
+          }
+
           train = sampleFrameStratified(
                   train, train.lastVec(), trainSamplingFactors, (long)(mp.max_after_balance_size*train.numRows()), mp.seed, true, false);
           model.setModelClassDistribution(new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist());

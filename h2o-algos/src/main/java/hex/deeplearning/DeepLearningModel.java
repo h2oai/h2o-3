@@ -351,6 +351,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
     public boolean balance_classes = false;
 
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    public float[] class_sampling_factors;
+
     /**
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
@@ -574,6 +582,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if (!sparse && col_major) {
         if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
+      }
+      if (!classification && balance_classes) {
+        throw new IllegalArgumentException("balance_classes requires classification to be enabled.");
+      }
+      if (class_sampling_factors != null && !balance_classes) {
+        throw new IllegalArgumentException("class_sampling_factors requires balance_classes to be enabled.");
       }
     }
 
