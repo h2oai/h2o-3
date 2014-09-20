@@ -59,7 +59,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       Value v = DKV.get(key);
       if (null == v)
         throw new IllegalArgumentException(description + " key not found: " + key);
-      if (! v.isFrame())
+      if (! v.isFrame() && !v.isSubclassOf(Frame.class))  // We need some notion of Frame
         throw new IllegalArgumentException(description + " key points to a non-Frame object in the KV store: " + key);
       Frame frame = v.get();
       if (frame.numCols() <= 1)
