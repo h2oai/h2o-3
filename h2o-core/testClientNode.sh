@@ -14,7 +14,7 @@ esac
 
 # Run cleanup on interrupt or exit
 function cleanup () {
-  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
+  kill SIGKILL ${PID_1} ${PID_2} ${PID_3} ${PID_4}
   exit `cat $OUTDIR/status.0`
 }
 trap cleanup SIGTERM SIGINT
@@ -45,7 +45,7 @@ $JVM water.H2O 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
 # and tee'd to stdout so we can watch.
-(sleep 1; $JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.KVTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
 
 cleanup
-
