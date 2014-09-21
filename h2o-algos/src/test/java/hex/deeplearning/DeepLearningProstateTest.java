@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -117,7 +118,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._validation_frame = valid==null ? null : valid._key;
 
                                       p.hidden = hidden;
-                                      if (i == 0 && resp == 2) p.classification = false;
+                                      p.classification = !(i == 0 && resp == 2);
 //                                      p.best_model_key = best_model_key;
                                       p.override_with_best_model = override_with_best_model;
                                       p.epochs = epochs;
@@ -132,7 +133,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.score_validation_samples = scorevalidation;
                                       p.classification_stop = -1;
                                       p.regression_stop = -1;
-                                      p.balance_classes = balance_classes;
+                                      p.balance_classes = p.classification && balance_classes;
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
@@ -177,11 +178,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p._training_frame = frame._key;
                                     p._validation_frame = valid == null ? null : valid._key;
                                     p.response_column = frame._names[resp];
-                                    if (i == 0 && resp == 2) p.classification = false;
+                                    p.classification = !(i == 0 && resp == 2);
                                     p.override_with_best_model = override_with_best_model;
                                     p.epochs = epochs;
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
+                                    p.balance_classes = p.classification && balance_classes;
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();
@@ -231,7 +233,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
 
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                          Assert.assertEquals(model2.calcError(valid, valid.lastVec(), pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
+                                          Assert.assertEquals(model2.calcError(auc.actual, auc.vactual, pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
                                         }
 
                                         // Compute CM
