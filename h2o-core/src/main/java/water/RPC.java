@@ -359,8 +359,11 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           _computedAndReplied = true;   // After the final handshake, set computed+replied bit
           break;                        // Break out of retry loop
         } catch( AutoBuffer.AutoBufferException e ) {
-          Log.info("IOException during ACK, "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
+          if( !_client._heartbeat._client ) // Report on servers only; clients allowed to be flaky
+            Log.info("IOException during ACK, "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
           try { ab.close(); } catch( Exception ignore ) {}
+          if( _client._heartbeat._client && true/*timeout*/ ) // Dead client will not accept a TCP ACK response?
+            CAS_DT.compareAndSet(this,dt,null);          // cancel the ACK
           try { Thread.sleep(100); } catch (InterruptedException ignore) {}
         } catch( Exception e ) { // Custom serializer just barfed?
           Log.err(e);            // Log custom serializer exception
@@ -408,8 +411,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       long nextTime = _started+_retry, rNextTime = r._started+r._retry;
       return nextTime == rNextTime ? 0 : (nextTime > rNextTime ? 1 : -1);
     }
-    static AtomicReferenceFieldUpdater<RPCCall,DTask> CAS_DT =
+    static private AtomicReferenceFieldUpdater<RPCCall,DTask> CAS_DT =
       AtomicReferenceFieldUpdater.newUpdater(RPCCall.class, DTask.class,"_dt");
+    boolean CAS_DT(DTask old, DTask nnn) { return CAS_DT.compareAndSet(this,old,nnn);  }
+
     // Assertion check that size is not changing between resends,
     // i.e., resends sent identical data.
     private boolean sz_check(AutoBuffer ab) {

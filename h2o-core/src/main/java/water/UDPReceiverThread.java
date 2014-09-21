@@ -119,7 +119,7 @@ public class UDPReceiverThread extends Thread {
       // If this is a recently booted client node... coming up right after a
       // prior client was shutdown, it might see leftover trash UDP packets
       // from the servers intended for the prior client.
-      if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.TIMEOUT) )
+      if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
         Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
       _unknown_packets_per_sec = 0;
       _unknown_packet_time = ab._h2o._last_heard_from;

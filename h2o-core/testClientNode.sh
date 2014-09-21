@@ -47,5 +47,6 @@ $JVM water.H2O 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 # and tee'd to stdout so we can watch.
 ($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
 ($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
 
 cleanup
