@@ -167,7 +167,6 @@ public class Job<T extends Keyed> extends Keyed {
    */
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
-    assert _key.home();         // Always blocking on same node job was created
     _barrier.join();            // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
     return _dest.get();

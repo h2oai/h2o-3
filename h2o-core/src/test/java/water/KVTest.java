@@ -198,7 +198,21 @@ public class KVTest extends TestUtil {
   
   // Speed test: takes my lappy 4msec per iteration over covtype
   @Test public void biggerTest() {
+    // Do not run this test on non-client nodes, it is too slow
+    if( !H2O.ARGS.client ) return;
+    // For a client node, start the test & then commit suicide.
+    // The goal is to check for errors on the server-side
+    new Thread() { 
+      @Override public void run() {
+        System.out.println("Client is starting timer");
+        try { Thread.sleep(8000); } catch(Exception ignore) {}
+        System.out.println("Client is committing shutting prematurely");
+        System.exit(0);
+      }
+    }.start();
+    System.out.println("Server is loading file");
     Frame fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.data");
+    System.out.println("Server loaded file");
     try {
       final int iters = 100;
       final long start = System.currentTimeMillis();
@@ -232,20 +246,4 @@ public class KVTest extends TestUtil {
     }
   }
 
-
-//  // ---
-//  // Test parsing "cars.csv" and running LinearRegression
-//  @Test public void testLinearRegression() {
-//    Key fkey = load_test_file("smalldata/cars.csv");
-//    Key okey = Key.make("cars.hex");
-//    ParseDataset.parse(okey,new Key[]{fkey});
-//    ValueArray va = DKV.get(okey).get();
-//    // Compute LinearRegression between columns 2 & 3
-//    JsonObject res = LinearRegression.run(va,2,3);
-//    assertEquals( 58.326241377521995, res.get("Beta1"      ).getAsDouble(), 0.000001);
-//    assertEquals(-124.57816399564385, res.get("Beta0"      ).getAsDouble(), 0.000001);
-//    assertEquals( 0.9058985668996267, res.get("RSquared"   ).getAsDouble(), 0.000001);
-//    assertEquals( 0.9352584499359637, res.get("Beta1StdErr").getAsDouble(), 0.000001);
-//    va.delete();
-//  }
 }
