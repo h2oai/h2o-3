@@ -13,10 +13,15 @@ import java.util.Map;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
- * Frames can reference the same Vecs.  A Frame is a lightweight object, it is
+ *
+ * <p></p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
  * meant to be cheaply created and discarded for data munging purposes.
  * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
- * references all the Vecs but this one.
+ * references all the Vecs but this one.</p>
+ *
+ * <p>Frame is referenced by a key. Nevertheless, key can be <code>null</code> and it means that
+ * frame is local and is not going into DKV</p>
+ *
  */
 public class Frame extends Lockable implements UniquelyIdentifiable {
   public String[] _names;
@@ -25,10 +30,18 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
   private UniqueId _uniqueId = null; // Way to uniquely identify this Frame with an extremely high probability
 
-  public Frame( String name ) { this(Key.make(name),null,new Vec[0]); } // Empty frame, lazily filled
+  /** Creates an empty frame with given key name.
+   * The resulting frame is intended to be filled lazily.
+   * @param keyName
+   */
+  public Frame( String keyName ) { this(Key.make(keyName),null,new Vec[0]); } // Empty frame, lazily filled
+  /** Creates an internal frame composed of given vectors. The frame has no key. */
   public Frame( Vec... vecs ){ this(null,vecs);}
+  /** Creates an internal frame. The frame has null key! */
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
+  /** Creates an empty frame with given key. */
   public Frame( Key key ) { this(key,null,new Vec[0]); }
+  /** Creates a frame with given key, names and vectors. */
   public Frame( Key key, String names[], Vec vecs[] ) {
     super(key);
 
