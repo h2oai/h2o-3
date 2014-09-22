@@ -83,6 +83,7 @@ Go to http://localhost:54321 with your browser to see the status page for your H
 Spark master can be specified via URI which can have form:
   * `local` - single JVM, single threaded execution of user code. JVM serves as a worker
   * `local[*]` - single JVM, multi threaded execution of user code
+  * `local-cluster[N,cores,memory]` - launch local cluster with `N` nodes, each having `cores`-cores and `memory`-MB of memory 
   * `spark://localhost:7070` - user code is submitted to a cluster, which will create workers JVMs controlled by user code. User code can run in JVM of submit process or in separated JVM launched by a Spark cluster (depends on *deploy mode* - see below)
   * `mesos://...` - TBD
   * `yarn://...` - TBD
@@ -99,6 +100,7 @@ Spark supports two deploy modes:
 | :---------------------| :--------| :---------|
 | *local*               | OK       | *NA*      |
 | *local[&#42;]*        | OK       | *NA*      |
+| *local-cluster[&#42;]*| TBT       | TBT      |
 | *spark://...*         | User code is launched directly inside submitter JVM | Dedicated driver-JVM is launched for user code  |
 | *mesos://...*         | TBD | TBD |
 | *yarn://...*          | TBD | TBD |
