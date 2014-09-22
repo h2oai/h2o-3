@@ -12,7 +12,6 @@ public class ClientTest extends TestUtil {
   // Run some basic tests.  Create a key, test that it does not exist, insert a
   // value for it, get the value for it, delete it.
   @Test public void testBasicCRUD() {
-    long start = System.currentTimeMillis();
     Key k1 = Key.make("key1");
     Value v0 = DKV.get(k1);
     assertNull(v0);
@@ -33,7 +32,7 @@ public class ClientTest extends TestUtil {
 
     // For a client node, start the test & then commit suicide.
     // The goal is to check for errors on the server-side
-    new Thread() { 
+    new Thread() {
       @Override public void run() {
         System.out.println("Client is starting timer");
         try { Thread.sleep(2000); } catch(Exception ignore) {}
@@ -42,7 +41,14 @@ public class ClientTest extends TestUtil {
       }
     }.start();
     System.out.println("Server is loading file");
-    Frame fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.data");
+
+    Frame fr = RPC.call(H2O.CLOUD.leader(),new DTask() {
+        Frame _fr;              // Output frame
+        @Override protected void compute2() { 
+          _fr = parse_test_file(Key.make("covtype.hex"),"../../datasets/UCI/UCI-large/covtype/covtype.data");
+          tryComplete();
+        } 
+      }).get()._fr;
     System.out.println("Server loaded file");
     try {
       final int iters = 100;

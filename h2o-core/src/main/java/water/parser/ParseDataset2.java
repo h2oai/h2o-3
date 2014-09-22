@@ -47,7 +47,8 @@ public final class ParseDataset2 extends Job<Frame> {
 
       throw ex;
     } finally {
-      job.remove(); }
+      assert DKV.get(job._key).<Job>get().isStopped();
+    }
   }
 
   public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
