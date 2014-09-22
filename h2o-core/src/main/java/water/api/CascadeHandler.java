@@ -65,6 +65,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     catch( Throwable e2 ) { Log.err(e=e2); }
     finally {
       if (e != null) cascade._error = e.getMessage() == null ? e.toString() : e.getMessage();
+      if (e != null && e instanceof ArrayIndexOutOfBoundsException) cascade._error = e.toString();
       if (env != null) {
         try {env.remove_and_unlock(); }
         catch (Exception xe) { Log.err("env.remove_and_unlock() failed", xe); }

@@ -109,6 +109,8 @@ public class Exec extends Iced {
     return sb.toString();
   }
 
+  boolean hasNext() { return _x != _ast.length; }
+
   Exec xpeek(char c) {
     assert _ast[_x] == c : "Expected '"+c+"'. Got: '"+(char)_ast[_x]+"'. unparsed: "+ unparsed() + " ; _x = "+_x;
     _x++; return this;

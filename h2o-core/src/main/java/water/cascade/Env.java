@@ -101,6 +101,7 @@ public class Env extends Iced {
   public Val peek() { return _stack.peek(); }
   public Val peekAt(int i) { return _stack.peekAt(i); }
   public int peekType() {return _stack.peekType(); }
+  public Frame peekAryAt(int i) { return ((ValFrame)_stack.peekAt(i))._fr;}
   public int peekTypeAt(int i) { return _stack.peekTypeAt(i); }
   public boolean isAry() { return peekType() == ARY; }
   public boolean isNum() { return peekType() == NUM; }
