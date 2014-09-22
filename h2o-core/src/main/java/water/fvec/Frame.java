@@ -692,10 +692,9 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
     vecs[c2.length] = vrows;
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
-    Frame sliced = new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
-//    ff.delete(); Keyed.remove(vrows._key); frows.delete();
+    //    ff.delete(); Keyed.remove(vrows._key); frows.delete();
 //    for (Vec v : vecs) Keyed.remove(v._key);
-    return sliced;
+    return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
   }
 
   // Slice and return in the form of new chunks.
@@ -824,7 +823,25 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
     return fr;
   }
 
-  // Return the entire Frame as a CSV stream
+  // Return Frame 'f' if 'f' is compatible with 'this'.
+  // Return a new Frame compatible with 'this' and a copy of 'f's data otherwise.
+  public Frame makeCompatible( Frame f) {
+    // Small data frames are always "compatible"
+    if (anyVec() == null)      // Or it is small
+      return f;                 // Then must be compatible
+    // Same VectorGroup is also compatible
+    if (f.anyVec() == null ||
+            f.anyVec().group().equals(anyVec().group()) && Arrays.equals(f.anyVec()._espc, anyVec()._espc))
+      return f;
+    // Ok, here make some new Vecs with compatible layout
+    Key k = Key.make();
+    H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
+    Frame f2 = k.get();
+    DKV.remove(k);
+    return f2;
+  }
+
+    // Return the entire Frame as a CSV stream
   public InputStream toCSV(boolean headers) {
     return new CSVStream(headers, false);
   }

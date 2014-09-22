@@ -1,12 +1,13 @@
 package water.fvec;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import jsr166y.CountedCompleter;
 import water.Futures;
 import water.H2O;
 import water.Key;
 import water.MRTask;
+
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Created by tomasnykodym on 3/28/14.
@@ -22,6 +23,24 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   Key _okey;
   Frame _out;
   final Key _jobKey;
+  final transient Vec.VectorGroup _vg;
+  transient long [] _espc;
+
+  /**
+   * Constructor for make-compatible task.
+   *
+   * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
+   */
+  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {this(modelFrame,srcFrame,dstKey,null,null);}
+  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
+    super(cmp);
+    _in = srcFrame;
+    _jobKey = jobKey;
+    _okey = dstKey;
+    _espc = modelFrame.anyVec()._espc;
+    _vg = modelFrame.anyVec().group();
+    _nchunks = modelFrame.anyVec().nChunks();
+  }
 
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks, H2O.H2OCountedCompleter cmp, Key jobKey) {
@@ -30,6 +49,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     _nchunks = nchunks;
     _jobKey = jobKey;
     _okey = dstKey;
+    _vg = Vec.VectorGroup.newVectorGroup();
   }
 
   public Frame getResult(){join(); return _out;}

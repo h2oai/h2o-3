@@ -133,7 +133,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTRepLen());
 //    putPrefix(new ASTQtile ());
 //    putPrefix(new ASTCat   ());
-//    putPrefix(new ASTCbind ());
+    putPrefix(new ASTCbind ());
 //    putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
 //    putPrefix(new ASTIfElse());
@@ -970,27 +970,57 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //}
 //
 //// TODO: Check refcnt mismatch issue: tmp = cbind(h.hex,3.5) results in different refcnts per col
-//class ASTCbind extends ASTOp {
-//  @Override String opStr() { return "cbind"; }
-//  ASTCbind( ) { super(new String[]{"cbind","ary"},
-//          new Type[]{Type.ARY,Type.varargs(Type.dblary())},
-//          OPF_PREFIX,
-//          OPP_PREFIX,OPA_RIGHT); }
-//  @Override ASTOp make() {return this;}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Vec vmax = null;
-//    for(int i = 0; i < argcnt-1; i++) {
-//      if(env.isAry(-argcnt+1+i)) {
-//        Frame tmp = env.ary(-argcnt+1+i);
-//        if(vmax == null) vmax = tmp.vecs()[0];
-//        else if(tmp.numRows() != vmax.length())
-//          // R pads shorter cols to match max rows by cycling/repeating, but we won't support that
-//          throw new IllegalArgumentException("Row mismatch! Expected " + String.valueOf(vmax.length()) + " but frame has " + String.valueOf(tmp.numRows()));
-//      }
-//    }
-//
-//    Frame fr = new Frame(new String[0],new Vec[0]);
-//    for(int i = 0; i < argcnt-1; i++) {
+class ASTCbind extends ASTUniPrefixOp {
+  int argcnt;
+  @Override String opStr() { return "cbind"; }
+  ASTCbind( ) { super(new String[]{"cbind","ary", "..."}); }
+  @Override ASTOp make() {return this;}
+  ASTCbind parse_impl(Exec E) {
+    ArrayList<AST> dblarys = new ArrayList<>();
+    AST ary = E.parse();
+    dblarys.add(ary);
+    AST a = null;
+    while (E.skipWS().hasNext()) {
+      a = E.parse();
+      if (a instanceof ASTId) {
+        AST ast = E._env.lookup((ASTId)a);
+        if (ast instanceof ASTFrame) {dblarys.add(a); continue; }
+      }
+      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
+        dblarys.add(a);
+    }
+    ASTCbind res = (ASTCbind) clone();
+    AST[] arys = new AST[dblarys.size()];
+    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    res._asts = arys;
+    argcnt = res._asts.length;
+    return res;
+  }
+  @Override void apply(Env env) {
+    argcnt = env.sp();
+    // Validate the input frames
+    Vec vmax = null;
+    for(int i = 0; i < argcnt; i++) {
+      Frame t = env.peekAryAt(-i);
+      if(vmax == null) vmax = t.vecs()[0];
+      else if(t.numRows() != vmax.length())
+        // R pads shorter cols to match max rows by cycling/repeating, but we won't support that
+        throw new IllegalArgumentException("Row mismatch! Expected " + String.valueOf(vmax.length()) + " but frame has " + String.valueOf(t.numRows()));
+    }
+
+    // loop over frames and combine
+    Frame fr = new Frame(new String[0],new Vec[0]);
+    for(int i = 0; i < argcnt; i++) {
+      Frame f = env.pop0Ary();
+      Frame new_frame = fr.makeCompatible(f);
+//      if (new_frame != f) env.cleanup(f);
+      if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
+      else fr.add(new_frame, true);
+//      env.cleanup(env.popAry());
+    }
+
+    env.push(new ValFrame(fr));
+
 //      if( env.isAry(-argcnt+1+i) ) {
 //        String name = null;
 //        Frame fr2 = env.ary(-argcnt+1+i);
@@ -1014,8 +1044,8 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //    env._sp -= argcnt-1;
 //    Arrays.fill(env._ary,env._sp,env._sp+(argcnt-1),null);
 //    assert env.check_refcnt(fr.anyVec());
-//  }
-//}
+  }
+}
 
 class ASTMin extends ASTReducerOp {
   ASTMin( ) { super( Double.POSITIVE_INFINITY); }

@@ -982,7 +982,7 @@ as.data.frame.H2OParsedData <- function(x, ...) {
 #}
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Merge Operations: ifelse, cbind
+# Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
 
 #.canBeCoercedToLogical<-
@@ -1008,10 +1008,15 @@ as.data.frame.H2OParsedData <- function(x, ...) {
 #  else
 #    new("H2OParsedData", h2o=test@h2o, key=res$dest_key, logic=FALSE)
 #})
-#
-## Note: right now, all things must be H2OParsedData
-#cbind.H2OFrame <- function(..., deparse.level = 1) {
-#  if(deparse.level != 1) stop("Unimplemented")
+
+cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod("cbind") else base::cbind(..., deparse.level)
+
+# Note: right now, all things must be H2OParsedData
+cbind.H2OFrame <- function(..., deparse.level = 1) {
+  if(deparse.level != 1) stop("Unimplemented")
+  ast <- .h2o.varop("cbind", ...)
+  ast
+
 #
 #  l <- list(...)
 #  # l_dep <- sapply(substitute(placeholderFunction(...))[-1], deparse)
@@ -1034,7 +1039,7 @@ as.data.frame.H2OParsedData <- function(x, ...) {
 #  exec_cmd <- sprintf("cbind(%s)", paste(as.vector(tmp), collapse = ","))
 #  res <- .h2o.__exec2(h2o, exec_cmd)
 #  new('H2OParsedData', h2o=h2o, key=res$dest_key)
-#}
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Work in Progress
