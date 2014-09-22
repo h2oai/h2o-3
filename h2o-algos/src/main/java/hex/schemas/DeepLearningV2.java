@@ -473,6 +473,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Only when balance_classes is enabled.
      * If not specified, they will be automatically computed to obtain class balance during training.
      */
+    @API(help="Desired over/under-sampling ratios per class (in lexicographic order).  If not specified, they will be automatically computed to obtain class balance during training.")
     // TODO: disable if !(classification && balance_classes)
     public float[] class_sampling_factors;
 
