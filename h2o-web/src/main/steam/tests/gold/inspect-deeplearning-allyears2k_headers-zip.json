@@ -45,18 +45,6 @@
         "values": []
       },
       {
-        "name": "classification",
-        "label": "classification",
-        "help": "Classification v. regression",
-        "required": false,
-        "type": "boolean",
-        "default_value": "false",
-        "actual_value": "true",
-        "level": "critical",
-        "dependencies": [],
-        "values": []
-      },
-      {
         "name": "response_column",
         "label": "response_column",
         "help": "Response column",
@@ -76,6 +64,18 @@
         "type": "string[]",
         "default_value": null,
         "actual_value": null,
+        "level": "critical",
+        "dependencies": [],
+        "values": []
+      },
+      {
+        "name": "classification",
+        "label": "classification",
+        "help": "Classification v. regression",
+        "required": false,
+        "type": "boolean",
+        "default_value": "false",
+        "actual_value": "true",
         "level": "critical",
         "dependencies": [],
         "values": []
@@ -124,6 +124,18 @@
         "type": "boolean",
         "default_value": "true",
         "actual_value": "true",
+        "level": "critical",
+        "dependencies": [],
+        "values": []
+      },
+      {
+        "name": "expert_mode",
+        "label": "expert_mode",
+        "help": "Enable expert mode (to access all options from GUI)",
+        "required": false,
+        "type": "boolean",
+        "default_value": "false",
+        "actual_value": "false",
         "level": "critical",
         "dependencies": [],
         "values": []
@@ -203,6 +215,18 @@
         "type": "long",
         "default_value": "-2",
         "actual_value": "-2",
+        "level": "secondary",
+        "dependencies": [],
+        "values": []
+      },
+      {
+        "name": "target_ratio_comm_to_comp",
+        "label": "target_ratio_comm_to_comp",
+        "help": "Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning)",
+        "required": false,
+        "type": "double",
+        "default_value": "0.02",
+        "actual_value": "0.02",
         "level": "secondary",
         "dependencies": [],
         "values": []
@@ -560,6 +584,18 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "expert",
+        "dependencies": [],
+        "values": []
+      },
+      {
+        "name": "class_sampling_factors",
+        "label": "class_sampling_factors",
+        "help": "Desired over/under-sampling ratios per class (in lexicographic order).  If not specified, they will be automatically computed to obtain class balance during training.",
+        "required": false,
+        "type": "float[]",
+        "default_value": null,
+        "actual_value": null,
+        "level": "critical",
         "dependencies": [],
         "values": []
       },
