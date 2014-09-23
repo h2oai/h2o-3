@@ -23,9 +23,6 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   protected Key key;
 
   // Output fields
-  @API(help="Unique id")
-  protected UniqueIdBase unique_id;
-
   @API(help="The build parameters for the model (e.g. K for KMeans).")
   protected ModelParametersSchema parameters;
 
@@ -34,6 +31,9 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
   @API(help="Compatible frames", direction = API.Direction.OUTPUT, json=true)
   protected FramesBase compatible_frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
+
+  @API(help="Checksum for all the things that go into building the Model.")
+  protected long checksum;
 
   public ModelSchema() {
   }
@@ -63,15 +63,13 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
     this.key = m._key;
+    this.checksum = m.checksum();
 
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
 
     output = createOutputSchema();
     output.fillFromImpl(m._output);
-
-    unique_id = new UniqueIdV3();
-    unique_id.fillFromImpl(m.getUniqueId());
 
     return (S)this; // have to cast because the definition of S doesn't include ModelSchema
   }

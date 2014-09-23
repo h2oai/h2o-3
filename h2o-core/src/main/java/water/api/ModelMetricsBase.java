@@ -2,17 +2,24 @@ package water.api;
 
 import hex.Model;
 import hex.ModelMetrics;
+import water.fvec.Frame;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.
  */
 public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetricsBase> {
   // InOut fields
-  @API(help="The unique ID (key / uuid / creation timestamp) for the model used for this scoring run.")
-  public UniqueIdBase model;
+  @API(help="The model used for this scoring run.")
+  public ModelSchema model;
 
-  @API(help="The unique ID (key / uuid / creation timestamp) for the frame used for this scoring run.")
-  public UniqueIdBase frame;
+  @API(help="The checksum for the model used for this scoring run.")
+  public long model_checksum;
+
+  @API(help="The frame used for this scoring run.")
+  public FrameV2 frame; // TODO: should use a base class!
+
+  @API(help="The checksum for the frame used for this scoring run.")
+  public long frame_checksum;
 
   // Output fields
   @API(help="The category (e.g., Clustering) for the model used for this scoring run.")
@@ -43,17 +50,21 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
     return m;
   }
 
-  @Override public ModelMetricsBase fillFromImpl(ModelMetrics m) {
+  @Override public ModelMetricsBase fillFromImpl(ModelMetrics modelMetrics) {
     // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
     // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
     // Shouldn't need to do this manually. . .
-    this.model = new UniqueIdV3().fillFromImpl(m.model); // TODO: shouldn't have hardwired version
-    this.frame = new UniqueIdV3().fillFromImpl(m.frame);
-    this.model_category = m.model_category;
-    this.duration_in_ms = m.duration_in_ms;
-    this.scoring_time = m.scoring_time;
-    this.auc = new AUCV3().fillFromImpl(m.auc); // TODO: shouldn't be version-specific
+    Model model = modelMetrics.model.get();
+    this.model = model.schema().fillFromImpl(model);
+    this.model_checksum = modelMetrics.model_checksum;
+    // TODO: remove fillFromImpl once it is refactored together with the constructor (see Frame.java)
+    this.frame = new FrameV2((Frame) modelMetrics.frame.get()).fillFromImpl((Frame) modelMetrics.frame.get());
+    this.frame_checksum = modelMetrics.frame_checksum;
+    this.model_category = modelMetrics.model_category;
+    this.duration_in_ms = modelMetrics.duration_in_ms;
+    this.scoring_time = modelMetrics.scoring_time;
+    this.auc = new AUCV3().fillFromImpl(modelMetrics.auc); // TODO: shouldn't be version-specific
 
     return this;
   }

@@ -19,6 +19,7 @@ public class Job<T extends Keyed> extends Keyed {
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
     private JobList(Key[]jobs) { super(LIST); _jobs = jobs; }
+    public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
   }
 
   // Get a list of all Jobs.  Will remove from the Jobs list any Job keys that
@@ -289,5 +290,11 @@ public class Job<T extends Keyed> extends Keyed {
   protected Futures remove_impl(Futures fs) {
     DKV.remove(_progressKey, fs);
     return fs;
+  }
+
+  public long checksum() {
+    // Not really sure what should go here. . .
+    // This isn't really being used for Job right now, so it's non-critical.
+    return _description.hashCode() * (_dest == null ? 1 : _dest.hashCode()) * _start_time;
   }
 }

@@ -6,7 +6,7 @@ import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-// Private Schema class for the Inspect handler.  Not a registered Schema.
+// TODO: need a base class!
 class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
@@ -20,8 +20,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   int len;
 
   // Output fields
-  @API(help="Unique id")
-  protected UniqueIdBase unique_id;
+  @API(help="checksum")
+  protected long checksum;
 
   @API(help="Number of rows")
   long rows;
@@ -142,6 +142,11 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
 
+  FrameV2( Frame fr ) {
+    this(fr, 1, -1);
+  }
+
+  /** TODO: refactor together with fillFromImpl(). */
   FrameV2( Frame fr, long off2, int len2 ) {
     if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
@@ -157,6 +162,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
       columns[i] = new Col(fr._names[i],vecs[i],off,len);
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_pctiles = RollupStats.PERCENTILES;
+    this.checksum = fr.checksum();
   }
 
   //==========================
@@ -171,6 +177,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
+    this.checksum = f.checksum();
     off = 0;
     rows = _fr.numRows();
     // TODO: pass in offset and column from Inspect page

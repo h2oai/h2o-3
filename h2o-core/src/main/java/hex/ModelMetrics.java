@@ -14,11 +14,13 @@ import water.util.Log;
 
 public final class ModelMetrics extends Iced {
   // @API(help="The unique ID (key / uuid / creation timestamp) for the model used for this scoring run.", required=false, filter=Default.class, json=true)
-  public UniqueId model = null;
+  public Key model = null;
+  public long model_checksum = -1;
   // @API(help="The category (e.g., Clustering) for the model used for this scoring run.", required=false, filter=Default.class, json=true)
   public Model.ModelCategory model_category = null;
   // @API(help="The unique ID (key / uuid / creation timestamp) for the frame used for this scoring run.", required=false, filter=Default.class, json=true)
-  public UniqueId frame = null;
+  public Key frame = null;
+  public long frame_checksum = -1;
 
   // @API(help="The duration in mS for this scoring run.", required=false, filter=Default.class, json=true)
   public long duration_in_ms =-1L;
@@ -30,10 +32,12 @@ public final class ModelMetrics extends Iced {
   // @API(help="The ConfusionMatrix object for this scoring run.", required=false, filter=Default.class, json=true)
   public ConfusionMatrix cm = null;
 
-  public ModelMetrics(UniqueId model, ModelCategory model_category, UniqueId frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
-    this.model = model;
+  public ModelMetrics(Model model, ModelCategory model_category, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+    this.model = model._key;
+    this.model_checksum = model.checksum();
     this.model_category = model_category;
-    this.frame = frame;
+    this.frame = frame._key;
+    this.frame_checksum = frame.checksum();
     this.duration_in_ms = duration_in_ms;
     this.scoring_time = scoring_time;
 
@@ -51,24 +55,24 @@ public final class ModelMetrics extends Iced {
   }
 
 
-  public static Key buildKey(Model model, Frame frame) {
-    return Key.make("modelmetrics_" + model.getUniqueId().getId() + "_on_" + frame.getUniqueId().getId());
+  private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+    return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
-  public static Key buildKey(UniqueId model, UniqueId frame) {
-    return Key.make("modelmetrics_" + model.getId() + "_on_" + frame.getId());
+  public static Key buildKey(Model model, Frame frame) {
+    return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
   public Key buildKey() {
-    return Key.make("modelmetrics_" + this.model.getId() + "_on_" + this.frame.getId());
+    return buildKey(this.model, this.model_checksum, this.frame, this.frame_checksum);
   }
 
   public boolean isForModel(Model m) {
-    return (null != model && model.equals(m.getUniqueId()));
+    return (null != model && this.model_checksum == m.checksum());
   }
 
   public boolean isForFrame(Frame f) {
-    return (null != frame && frame.equals(f.getUniqueId()));
+    return (null != frame && frame_checksum == f.checksum());
   }
 
   public void putInDKV() {
@@ -81,17 +85,6 @@ public final class ModelMetrics extends Iced {
   public static ModelMetrics getFromDKV(Model model, Frame frame) {
     Key metricsKey = buildKey(model, frame);
 
-    Log.debug("Getting ModelMetrics: " + metricsKey.toString());
-    Value v = DKV.get(metricsKey);
-
-    if (null == v)
-      return null;
-
-    return (ModelMetrics)v.get();
-  }
-
-  public static ModelMetrics getFromDKV(UniqueId model, UniqueId frame) {
-    Key metricsKey = buildKey(model, frame);
     Log.debug("Getting ModelMetrics: " + metricsKey.toString());
     Value v = DKV.get(metricsKey);
 

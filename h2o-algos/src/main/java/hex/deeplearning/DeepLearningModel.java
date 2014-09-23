@@ -461,8 +461,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     //Sanity check for Deep Learning job parameters
     public void sanityCheck() {
-      Frame fr = sanityCheckFrameKey(_training_frame,"Training Frame");
-      if( _validation_frame != null ) sanityCheckFrameKey(_validation_frame,"Validation Frame");
+      Frame fr = Frame.sanityCheckFrameKey(_training_frame,"Training Frame");
+      if( _validation_frame != null ) Frame.sanityCheckFrameKey(_validation_frame,"Validation Frame");
       if (fr.numCols() <= 1)
         throw new IllegalArgumentException("Training data must have at least 2 features (incl. response).");
 

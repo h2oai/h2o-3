@@ -26,4 +26,16 @@ public abstract class Keyed extends Iced {
     if( val==null ) return;
     ((Keyed)val.get()).remove(fs);
   }
+
+  /**
+   * High-quality 64-bit checksum of the <i>content</i> of the
+   * object.  Similar to hashcode(), but a long to reduce the
+   * chance of hash clashes.  For composite objects this should
+   * be defined using the subcomponents' checksums (or hashcodes
+   * if not available).  If two Keyed objects have the same
+   * checksum() there should be a 1 - 1/2^64 chance that they
+   * are the same object by value.
+   */
+  abstract public long checksum();
+
 }

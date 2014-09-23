@@ -11,8 +11,8 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
 
   /** Class which contains the internal representation of the ModelMetrics list and params. */
   public static final class ModelMetricsList extends Iced {
-    public UniqueId model;
-    public UniqueId frame;
+    public Model model;
+    public Frame frame;
     public ModelMetrics[] model_metrics;
 
     public ModelMetrics[] fetch() {
@@ -37,7 +37,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
           // If we're filtering by model filter by Model.  :-)
           if (model != null) {
             // TODO: support old model versions
-            Value v = DKV.get(model.getKey());
+            Value v = DKV.get(model._key);
             if (null == v)
               return false; // Warn that the model is gone?  TODO: allow fetch of metrics for deleted Frames and Models.
 
@@ -47,7 +47,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
           // If we're filtering by frame filter by Frame.  :-)
           if (frame != null) {
             // TODO: support old frame versions
-            Value v = DKV.get(frame.getKey());
+            Value v = DKV.get(frame._key);
             if (null == v)
               return false; // Warn that the frame is gone?  TODO: allow fetch of metrics for deleted Frames and Models.
 
@@ -114,10 +114,10 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   public static final class ModelMetricsListSchema extends Schema<ModelMetricsList, ModelMetricsListSchema> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = false)
-    public UniqueIdBase model;
+    public String model_filter;
 
     @API(help = "Key of Frame of interest (optional)", json = false)
-    public UniqueIdBase frame;
+    public String frame_filter;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -125,8 +125,18 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
 
     @Override public ModelMetricsHandler.ModelMetricsList createImpl() {
       ModelMetricsList mml = new ModelMetricsList();
-      mml.model = this.model.createImpl();
-      mml.frame = this.frame.createImpl();
+      if (null != model_filter) {
+        Value v = DKV.get(this.model_filter);
+        if (null == v)
+          throw new IllegalArgumentException("Model key not found: " + model_filter);
+        mml.model = v.get();
+      }
+      if (null != frame_filter) {
+        Value v = DKV.get(this.frame_filter);
+        if (null == v)
+          throw new IllegalArgumentException("Frame key not found: " + frame_filter);
+        mml.frame = v.get();
+      }
 
       if (null != model_metrics) {
         mml.model_metrics = new ModelMetrics[model_metrics.length];
@@ -144,8 +154,8 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model = new UniqueIdV3().fillFromImpl(mml.model); // TODO: shouldn't have a hardwired version
-      this.frame = new UniqueIdV3().fillFromImpl(mml.frame);
+      this.model_filter = mml.model._key.toString();
+      this.frame_filter = mml.frame._key.toString();
 
       if (null != mml.model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml.model_metrics.length];
@@ -169,7 +179,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
       throw new IllegalArgumentException("Did not find key: " + key.toString());
 
     Iced ice = v.get();
-    if (! (ice instanceof Model))
+    if (! (ice instanceof ModelMetrics))
       throw new IllegalArgumentException("Expected a Model for key: " + key.toString() + "; got a: " + ice.getClass());
 
     return (ModelMetrics)ice;

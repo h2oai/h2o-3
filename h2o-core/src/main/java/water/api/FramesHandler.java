@@ -70,9 +70,9 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
       }
 
       // Now call AUC and ConfusionMatrix and maybe HitRatio
-      metrics = new ModelMetrics(score_model.getUniqueId(),
+      metrics = new ModelMetrics(score_model,
               score_model._output.getModelCategory(),
-              frame.getUniqueId(),
+              frame,
               after - before,
               after,
               (auc == null ? null : auc.data()),
