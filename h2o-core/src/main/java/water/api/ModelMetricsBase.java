@@ -40,7 +40,6 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   // Non-version-specific filling into the impl
   @Override public ModelMetrics createImpl() {
     ModelMetrics m = new ModelMetrics(this.model.createImpl(),
-                                      this.model_category,
                                       this.frame.createImpl(),
                                       this.duration_in_ms,
                                       this.scoring_time,
