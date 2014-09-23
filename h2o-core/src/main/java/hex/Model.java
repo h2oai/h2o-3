@@ -253,6 +253,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *         one column with predicted values.
    */
   public final Frame score(Frame fr, boolean adapt) {
+    long start_time = System.currentTimeMillis();
     if (isSupervised()) {
       int ridx = fr.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
@@ -272,6 +273,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Frame output = scoreImpl(adaptFrm);
     // Be nice to DKV and delete vectors which i created :-)
     if (adapt) onlyAdaptFrm.delete();
+    computeModelMetrics(start_time, fr, output);
     return output;
   }
 
@@ -281,6 +283,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * @return
    */
   private Frame scoreImpl(Frame adaptFrm) {
+    long start_time = System.currentTimeMillis();
     if (isSupervised()) {
       int ridx = adaptFrm.find(_output.responseName());
       assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
@@ -312,8 +315,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
         }
       }
     }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
+
     // Return just the output columns
-    return new Frame(names,newVecs);
+    return new Frame(names, newVecs);
   }
 
   /** Single row scoring, on a compatible Frame.  */
@@ -385,6 +389,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     return map;
   }
 
+  protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
+    // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
+    if (_output.getModelCategory() == Model.ModelCategory.Binomial || _output.getModelCategory() == Model.ModelCategory.Multinomial) {
+      SupervisedModel sm = (SupervisedModel)this;
+      AUC auc = new AUC();
+      ConfusionMatrix cm = new ConfusionMatrix();
+      HitRatio hr = new HitRatio();
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, cm, auc, hr);
+      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+    } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
+      SupervisedModel sm = (SupervisedModel) this;
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, null, null, null);
+      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+    }
+
+    return null;
+  }
 
   /**
    * Type of missing columns during adaptation between train/test datasets
