@@ -54,4 +54,3 @@ function(seed = NULL, suppress = FALSE, userDefined=FALSE) {
     }
     Log.info(paste("USING SEED: ", SEED))
 }
-

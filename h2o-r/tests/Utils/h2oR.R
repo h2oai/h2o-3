@@ -59,7 +59,7 @@ function(m) {
   logging(paste("[WARN] : ",m,sep=""))
   #temp <- strsplit(as.character(Sys.time()), " ")[[1]]
   #m <- paste('[',temp[1], ' ',temp[2],']', '\t', m)
-  .h2o.__logIt("[WARN] :", m, "Error")
+  h2o.logIt("[WARN] :", m, "Error")
   traceback()
 }
 
@@ -71,7 +71,7 @@ function(m) {
   logging("[ERROR] : TEST FAILED")
   #temp <- strsplit(as.character(Sys.time()), " ")[[1]]
   #m <- paste('[',temp[1], ' ',temp[2],']', '\t', m)
-  .h2o.__logIt("[ERROR] :", m, "Error")
+  h2o.logIt("[ERROR] :", m, "Error")
   traceback()
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -242,11 +242,6 @@ function(ipPort) {
   h2o.init(ip            = ipPort[[1]], 
            port          = ipPort[[2]], 
            startH2O      = FALSE)
-  #source("../../h2o-package/R/Algorithms.R")
-  #source("../../h2o-package/R/Classes.R")
-  #source("../../h2o-package/R/ParseImport.R")
-  #source("../../h2o-package/R/Internal.R")
-  #sandbox()
 }
 
 checkNLoadPackages<-
@@ -264,36 +259,3 @@ function() {
   require(R.utils)
   require(testthat)
 }
-
-#
-#Log.info("============== Setting up R-Unit environment... ================")
-#Log.info("Branch: ")
-#system('git branch')
-#Log.info("Hash: ")
-#system('git rev-parse HEAD')
-#
-#defaultPath <- locate("../../target/R")
-#ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-#checkNLoadWrapper(ipPort)
-#checkNLoadPackages()
-
-h2o.removeAll<-
-function(object) {
-  Log.info("Throwing away any keys on the H2O cluster")
-  .h2o.__remoteSend(object, .h2o.__REMOVEALL)
-}
-
-#Log.info("Loading other required test packages")
-#if(!"glmnet" %in% rownames(installed.packages())) install.packages("glmnet")
-#if(!"gbm"    %in% rownames(installed.packages())) install.packages("gbm")
-#require(glmnet)
-#require(gbm)
-#
-##Global Variables
-#myIP   <- ipPort[[1]]
-#myPort <- ipPort[[2]]
-#PASSS <- FALSE
-#view_max <- 10000 #maximum returned by Inspect.java
-#SEED <- NULL
-#
-

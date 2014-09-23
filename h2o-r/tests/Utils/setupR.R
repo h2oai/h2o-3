@@ -31,4 +31,3 @@ PASSS <- FALSE
 view_max <- 10000 #maximum returned by Inspect.java
 SEED <- NULL
 MASTER_SEED <- FALSE
-

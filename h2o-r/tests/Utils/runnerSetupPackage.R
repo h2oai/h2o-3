@@ -1,27 +1,52 @@
-options(echo=F)
-local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
-if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
-if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
-#if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl")
-if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
-library(R.utils)
+#options(echo=F)
+options(repos = "http://cran.stat.ucla.edu")
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("h2oR.R")
-source("utilsR.R")
+usePackage<-
+function(p) {
+  if (is.element(p, installed.packages()[,1])) {
 
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-failed <<- F
-
-removePackage <- function(package) {
-    failed <<- F
-    tryCatch(remove.packages(package), error = function(e) {failed <<- T})
-    if (! failed) {
-        print(paste("Removed package", package))
-    }
+    update.packages(p, dep = TRUE)
+  } else {
+    install.packages(p, dep = TRUE)
+  }
 }
 
-removePackage('h2o')
+# what packages did the h2o_master_DEV_test need?
+usePackage("R.utils")
+usePackage("R.oo")
+usePackage("R.methodsS3")
+usePackage("RCurl")
+usePackage("rjson")
+usePackage("statmod")
+usePackage("testthat")
+usePackage("bitops")
+usePackage("tools")
+usePackage("LiblineaR")
+usePackage("gdata")
+usePackage("caTools")
+usePackage("gplots")
+usePackage("ROCR")
+usePackage("digest")
+usePackage("penalized")
+usePackage("rgl")
+usePackage("randomForest")
+usePackage("expm")
+usePackage("Matrix")
+usePackage("glmnet")
+usePackage("survival")
+usePackage("gbm")
+usePackage("lattice")
+usePackage("RUnit")
+usePackage("plyr")
+
+
+library(R.utils)
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("h2oR.R")
+
+ipPort <- get_args(commandArgs(trailingOnly = TRUE))
+
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 
 failed <<- F
 tryCatch(library(h2o), error = function(e) {failed <<- T})
@@ -34,41 +59,14 @@ dir_to_search = normalizePath("../../R/src/contrib")
 files = dir(dir_to_search)
 for (i in 1:length(files)) {
     f = files[i]
-    # print(f)
     arr = strsplit(f, '\\.')[[1]]
-    # print(arr)
     lastidx = length(arr)
     suffix = arr[lastidx]
-    # print(paste("SUFFIX", suffix))
     if (suffix == "gz") {
-        h2o_r_package_file = f #arr[lastidx]
+        h2o_r_package_file = f
         break
     }
 }
 
-# if (is.null(h2o_r_package_file)) {
-#    stop(paste("H2O package not found in", dir_to_search))
-# }
-
 install.packages(paste(dir_to_search, h2o_r_package_file, sep="/"), repos = NULL, type = "source")
-#install.packages("h2o", repos = c(H2O = paste("file://", dir_to_search, sep=""), getOption("repos")))
 library(h2o)
-
-Log.info("Trying to initialize h2o connection")
-h2o.init(ip            = ipPort[[1]], 
-         port          = ipPort[[2]], 
-         startH2O      = FALSE)
-
-# generate master_seed
-seed <- NULL
-MASTER_SEED <- FALSE
-if (file.exists("../master_seed")) {
-    MASTER_SEED <<- TRUE
-    seed <- read.table("../master_seed")[[1]]
-    SEED <<- seed
-}
-seed <- setupRandomSeed(seed, suppress = TRUE)
-if (! file.exists("../master_seed")) {
-    write.table(seed, "../master_seed", row.names = F, col.names = F)
-}
-

@@ -117,7 +117,7 @@ function(ROOT.PATH) {
 root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
 src.utils(utils.path)
-src(root.path)
+#src(root.path)
 
 
 #The master seed is set by the runnerSetup.R script.
@@ -131,7 +131,7 @@ if (file.exists(ms))  {
 }
 setupRandomSeed(seed, suppress = FALSE)
 sandbox()
-.h2o.__logIt("[SEED] :", SEED, "Command")
+h2o.logIt("[SEED] :", SEED, "Command")
 
 
 h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
@@ -139,7 +139,7 @@ h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
 h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
 h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll(new("H2OClient", ip=myIP, port=myPort))
+h2o.removeAll( new("H2OClient", ip=myIP, port=myPort))
 
 # Set up some directories.
 #if (exists("TEST_ROOT_DIR")) {
