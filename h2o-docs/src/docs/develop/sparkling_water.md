@@ -14,10 +14,11 @@ Create a git clone of the h2o-dev repository and build the software:
     cd h2o-dev
     ./gradlew install # will build h2o and push it to your local Maven artifact cache
     
+> More detailed build and installation instructions are available in https://github.com/0xdata/h2o-dev/blob/master/README.md
+    
 To do this for Java7 only, you can do this instead, which is a bit faster:
 
     ./gradlew -Pdisable.java6bytecode.gen install
-
 
 
 >If *gradle install* hangs it may be because some other process, such as IntelliJ, is holding the lock on the artifact cache.  If so, stop that process and retry *gradle install*.
@@ -83,6 +84,7 @@ Go to http://localhost:54321 with your browser to see the status page for your H
 Spark master can be specified via URI which can have form:
   * `local` - single JVM, single threaded execution of user code. JVM serves as a worker
   * `local[*]` - single JVM, multi threaded execution of user code
+  * `local-cluster[N,cores,memory]` - launch local cluster with `N` nodes, each having `cores`-cores and `memory`-MB of memory 
   * `spark://localhost:7070` - user code is submitted to a cluster, which will create workers JVMs controlled by user code. User code can run in JVM of submit process or in separated JVM launched by a Spark cluster (depends on *deploy mode* - see below)
   * `mesos://...` - TBD
   * `yarn://...` - TBD
@@ -99,6 +101,7 @@ Spark supports two deploy modes:
 | :---------------------| :--------| :---------|
 | *local*               | OK       | *NA*      |
 | *local[&#42;]*        | OK       | *NA*      |
+| *local-cluster[&#42;]*| TBT       | TBT      |
 | *spark://...*         | User code is launched directly inside submitter JVM | Dedicated driver-JVM is launched for user code  |
 | *mesos://...*         | TBD | TBD |
 | *yarn://...*          | TBD | TBD |

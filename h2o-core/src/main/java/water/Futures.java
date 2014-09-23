@@ -1,6 +1,7 @@
 package water;
 
 import java.util.Arrays;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import water.util.Log;
@@ -8,7 +9,7 @@ import water.util.Log;
 /**
  * A collection of Futures. We can add more, or block on the whole collection.
  * Undefined if you try to add Futures while blocking.
- * <p><p>
+ * <p>
  * Used as a service to sub-tasks, collect pending-but-not-yet-done future
  * tasks, that need to complete prior to *this* task completing... or if the
  * caller of this task is knowledgeable, pass these pending tasks along to him
@@ -44,9 +45,9 @@ public class Futures {
   }
 
   /** Clean out from the list any pending-tasks which are already done.  Note
-   * that this drops the algorithm from O(n) to O(1) in practice, since mostly
-   * things clean out as fast as new ones are added and the list never gets
-   * very large. */
+   *  that this drops the algorithm from O(n) to O(1) in practice, since mostly
+   *  things clean out as fast as new ones are added and the list never gets
+   *  very large. */
   synchronized private void cleanCompleted() {
     for( int i=0; i<_pending_cnt; i++ )
       if( _pending[i].isDone() ) // Done?
@@ -54,7 +55,7 @@ public class Futures {
         _pending[i--] = _pending[--_pending_cnt];
   }
 
-  /** Block until all pending futures have completed */
+  /** Block until all pending futures have completed or canceled.  */
   public final void blockForPending() {
     try {
       // Block until the last Future finishes.
@@ -64,7 +65,8 @@ public class Futures {
           if( _pending_cnt == 0 ) return;
           f = _pending[--_pending_cnt];
         }
-        f.get();
+        try { f.get(); } 
+        catch( CancellationException e ) { /*Ignore canceled tasks*/ }
       }
     } catch( ExecutionException e ) {
       // Replace ExEx with RunEx

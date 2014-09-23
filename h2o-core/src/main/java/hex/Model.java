@@ -9,6 +9,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,19 +53,29 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     public String response_column;   // column name
     public String[] ignored_columns; // column names to ignore for training
 
-    // TODO: move to utils class
-    protected Frame sanityCheckFrameKey(Key key, String description) {
-      if (null == key)
-        throw new IllegalArgumentException(description + " key must be non-null.");
-      Value v = DKV.get(key);
-      if (null == v)
-        throw new IllegalArgumentException(description + " key not found: " + key);
-      if (! v.isFrame() && !v.isSubclassOf(Frame.class))  // We need some notion of Frame
-        throw new IllegalArgumentException(description + " key points to a non-Frame object in the KV store: " + key);
-      Frame frame = v.get();
-      if (frame.numCols() <= 1)
-        throw new IllegalArgumentException(description + " must have at least 2 features (incl. response).");
-      return frame;
+    public long checksum() {
+      long field_checksum = 1L;
+
+      Field field = null; // keep around in case of exception
+      try {
+        for (Field f : this.getClass().getFields()) {
+          field = f;
+          Object v = field.get(this);
+          if (null != v) {
+            int c = v.hashCode();
+            field_checksum *= (c == 0 ? 17 : c);
+          }
+        }
+      }
+      catch (IllegalAccessException e) {
+        throw H2O.fail("Caught IllegalAccessException accessing field: " + field.toString() + " while creating checksum for: " + this.toString());
+      }
+
+      return (field_checksum == 0 ? 13 : field_checksum) *
+              _training_frame.get().checksum() *
+              (_validation_frame == null ? 17 : _validation_frame.get().checksum()) *
+              (null == response_column? 19 : response_column.hashCode()) *
+              (null == ignored_columns ? 23: Arrays.hashCode(ignored_columns));
     }
   }
 
@@ -114,6 +125,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
               (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
               ModelCategory.Regression);
     }
+
+    public long checksum() {
+      return (null == _names ? 13 : Arrays.hashCode(_names)) *
+              (null == _domains ? 17 : Arrays.hashCode(_domains)) *
+              getModelCategory().ordinal();
+    }
   } // Output
 
   public O _output; // TODO: move things around so that this can be protected
@@ -129,8 +146,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   State _state;
   public State getState() { return _state; }
    */
-
-  private UniqueId uniqueId = null;
 
   /** The start time in mS since the epoch for model training. */
   public long training_start_time = 0L;
@@ -158,8 +173,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     assert output != null;
     _output = output;
 
-    this.uniqueId = new UniqueId(_key);
-
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
     assert names.length > 1;
@@ -169,10 +182,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
     assert parms != null;
     _parms = parms;
-  }
-
-  public UniqueId getUniqueId() {
-    return this.uniqueId;
   }
 
   public void start_training(long training_start_time) {
@@ -244,6 +253,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    *         one column with predicted values.
    */
   public final Frame score(Frame fr, boolean adapt) {
+    long start_time = System.currentTimeMillis();
     if (isSupervised()) {
       int ridx = fr.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
@@ -263,6 +273,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Frame output = scoreImpl(adaptFrm);
     // Be nice to DKV and delete vectors which i created :-)
     if (adapt) onlyAdaptFrm.delete();
+    computeModelMetrics(start_time, fr, output);
     return output;
   }
 
@@ -272,6 +283,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * @return
    */
   private Frame scoreImpl(Frame adaptFrm) {
+    long start_time = System.currentTimeMillis();
     if (isSupervised()) {
       int ridx = adaptFrm.find(_output.responseName());
       assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
@@ -303,8 +315,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
         }
       }
     }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
+
     // Return just the output columns
-    return new Frame(names,newVecs);
+    return new Frame(names, newVecs);
   }
 
   /** Single row scoring, on a compatible Frame.  */
@@ -376,6 +389,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     return map;
   }
 
+  protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
+    // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
+    if (_output.getModelCategory() == Model.ModelCategory.Binomial || _output.getModelCategory() == Model.ModelCategory.Multinomial) {
+      SupervisedModel sm = (SupervisedModel)this;
+      AUC auc = new AUC();
+      ConfusionMatrix cm = new ConfusionMatrix();
+      HitRatio hr = new HitRatio();
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, cm, auc, hr);
+      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+    } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
+      SupervisedModel sm = (SupervisedModel) this;
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, null, null, null);
+      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+    }
+
+    return null;
+  }
 
   /**
    * Type of missing columns during adaptation between train/test datasets
@@ -505,4 +537,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
+
+  public long checksum() {
+    return _parms.checksum() *
+            _output.checksum();
+  }
 }

@@ -17,19 +17,21 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "destination_key",
         "training_frame",
         "validation_frame",
-        "classification",
         "response_column",
         "ignored_columns",
+        "classification",
         "n_folds",
         "keep_cross_validation_splits",
         "checkpoint",
         "override_with_best_model",
+        "expert_mode",
         "autoencoder",
         "use_all_factor_levels",
         "activation",
         "hidden",
         "epochs",
         "train_samples_per_iteration",
+        "target_ratio_comm_to_comp",
         "seed",
         "adaptive_rate",
         "rho",
@@ -59,6 +61,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_confusion_matrix_size",
         "max_hit_ratio_k",
         "balance_classes",
+        "class_sampling_factors",
         "max_after_balance_size",
         "score_validation_sampling",
         "diagnostics",
@@ -80,8 +83,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     // FIXME
     @API(help="Classification v. regression")
     public boolean classification;
-    @API(help="List of ignored columns")
-    public int[] ignored_cols;
     @API(help="Number of folds for n-fold cross-validation (0 to n)")
     public int n_folds;
     @API(help="Keep cross-validation Frames")
@@ -473,6 +474,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Only when balance_classes is enabled.
      * If not specified, they will be automatically computed to obtain class balance during training.
      */
+    @API(help="Desired over/under-sampling ratios per class (in lexicographic order).  If not specified, they will be automatically computed to obtain class balance during training.")
     // TODO: disable if !(classification && balance_classes)
     public float[] class_sampling_factors;
 

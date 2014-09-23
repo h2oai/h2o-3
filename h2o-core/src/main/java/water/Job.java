@@ -19,6 +19,7 @@ public class Job<T extends Keyed> extends Keyed {
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
     private JobList(Key[]jobs) { super(LIST); _jobs = jobs; }
+    public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
   }
 
   // Get a list of all Jobs.  Will remove from the Jobs list any Job keys that
@@ -75,6 +76,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** Returns true if this job is running
    *  @return returns true only if this job is in running state. */
   public boolean isRunning() { return _state == JobState.RUNNING; }
+  public boolean isDone   () { return _state == JobState.DONE   ; }
 
   /** Returns true if this job was started and is now stopped */
   public boolean isStopped() { return _state == JobState.DONE || isCancelledOrCrashed(); }
@@ -167,7 +169,6 @@ public class Job<T extends Keyed> extends Keyed {
    */
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
-    assert _key.home();         // Always blocking on same node job was created
     _barrier.join();            // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
     return _dest.get();
@@ -175,7 +176,6 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Marks job as finished and records job end time. */
   public void done() {
-    if (_progressKey != null && DKV.get(_progressKey) != null) DKV.get(_progressKey).<Progress>get().set_done();
     cancel(null,JobState.DONE);
   }
 
@@ -207,6 +207,7 @@ public class Job<T extends Keyed> extends Keyed {
     assert resultingState != JobState.RUNNING;
     if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
     if( _state == resultingState ) return; // No change if already done
+    _finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
 
     final long done = System.currentTimeMillis();
     _exception = msg;
@@ -230,6 +231,8 @@ public class Job<T extends Keyed> extends Keyed {
           onCancelled();
       }
     }.invoke(_key);
+    // Cleanup on a cancel (or remove)
+    DKV.remove(_progressKey);
   }
 
   /**
@@ -240,8 +243,13 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.  
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress(); }
+  public float progress() { return isStopped() ? _finalProgress : progress_impl(); }
+  // Checks the DKV for the progress Key & object
+  private float progress_impl() {
+    return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress(); 
+  }
   protected Key _progressKey; //Key to store the Progress object under
+  private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /* Report new work done for this job */
   public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
@@ -257,11 +265,9 @@ public class Job<T extends Keyed> extends Keyed {
   public static class Progress extends Iced{
     private final long _work;
     private long _worked;
-    private boolean _done;
     public Progress(long total) { _work = total; }
-    public void set_done() { _done = true; }
     public float progress() {
-      return _done ? 1.0f : _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float)_worked / (float)_work));
+      return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float)_worked / (float)_work));
     }
   }
 
@@ -284,5 +290,11 @@ public class Job<T extends Keyed> extends Keyed {
   protected Futures remove_impl(Futures fs) {
     DKV.remove(_progressKey, fs);
     return fs;
+  }
+
+  public long checksum() {
+    // Not really sure what should go here. . .
+    // This isn't really being used for Job right now, so it's non-critical.
+    return _description.hashCode() * (_dest == null ? 1 : _dest.hashCode()) * _start_time;
   }
 }

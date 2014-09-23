@@ -1,11 +1,9 @@
 package water
 
 import java.io.File
-import org.junit.Test
-import org.junit.BeforeClass
+import org.junit.{Test,BeforeClass,Ignore}
 import water.fvec.{DataFrame,MapReduce}
 import scala.reflect.ClassTag
-//import scala.language.reflectiveCalls
 
 class BasicTest extends TestUtil {
   @Test def basicTest() = {
@@ -70,7 +68,7 @@ class BasicTest extends TestUtil {
   }
 
   // test is off because of its size
-  @Test def biggerTest() = {
+  @Test @Ignore def biggerTest() = {
     //val fr = new DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
     val fr = new DataFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
     val fr2 = fr('C1,'C2)
@@ -97,4 +95,8 @@ class BasicTest extends TestUtil {
     }
   }
 
+}
+
+object BasicTest extends TestUtil {
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(5)
 }

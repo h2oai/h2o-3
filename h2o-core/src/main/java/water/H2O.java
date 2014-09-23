@@ -364,6 +364,9 @@ final public class H2O {
     "    -md5skip\n" +
     "          Skip comparing MD5 of jar path while joining cloud.\n" +
     "\n" +
+    "    -client\n" +
+    "          Launch H2O node in client mode.\n" +
+    "\n" +
     "Cloud formation behavior:\n" +
     "\n" +
     "    New H2O nodes join together to form a cloud at startup time.\n" +
@@ -392,7 +395,7 @@ final public class H2O {
    *  without unpacking the jar file and other startup stuff.  */
   static void printAndLogVersion() {
     Log.init(ARGS.log_level);
-    Log.info("----- H2O started -----");
+    Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());

@@ -13,26 +13,36 @@ import java.util.Map;
 
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
- * Frames can reference the same Vecs.  A Frame is a lightweight object, it is
+ *
+ * <p></p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
  * meant to be cheaply created and discarded for data munging purposes.
  * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
- * references all the Vecs but this one.
+ * references all the Vecs but this one.</p>
+ *
+ * <p>Frame is referenced by a key. Nevertheless, key can be <code>null</code> and it means that
+ * frame is local and is not going into DKV</p>
+ *
  */
-public class Frame extends Lockable implements UniquelyIdentifiable {
+public class Frame extends Lockable {
   public String[] _names;
   private Key[] _keys;      // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
-  private UniqueId _uniqueId = null; // Way to uniquely identify this Frame with an extremely high probability
 
-  public Frame( String name ) { this(Key.make(name),null,new Vec[0]); } // Empty frame, lazily filled
+  /** Creates an empty frame with given key name.
+   * The resulting frame is intended to be filled lazily.
+   * @param keyName
+   */
+  public Frame( String keyName ) { this(Key.make(keyName),null,new Vec[0]); } // Empty frame, lazily filled
+  /** Creates an internal frame composed of given vectors. The frame has no key. */
   public Frame( Vec... vecs ){ this(null,vecs);}
+  /** Creates an internal frame. The frame has null key! */
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
+  /** Creates an empty frame with given key. */
   public Frame( Key key ) { this(key,null,new Vec[0]); }
+  /** Creates a frame with given key, names and vectors. */
   public Frame( Key key, String names[], Vec vecs[] ) {
     super(key);
-
-    _uniqueId = new UniqueFrameId(key, this);
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
@@ -314,10 +324,6 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
     return sum;
   }
 
-  public UniqueId getUniqueId() {
-    return this._uniqueId;
-  }
-
   /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the chunks are XORed
    * together.  Since parse always parses the same pieces of files into the same offsets
    * in some chunk this checksum will be consistent across reparses.
@@ -328,7 +334,8 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
     for(int i = 0; i < _names.length; ++i) {
       long vec_checksum = vecs[i].checksum();
       _checksum ^= vec_checksum;
-      _checksum ^= (2147483647 * i);
+      long tmp = (2147483647L * i);
+      _checksum ^= tmp;
     }
     return _checksum;
   }
@@ -692,10 +699,9 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
     vecs[c2.length] = vrows;
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
-    Frame sliced = new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
-//    ff.delete(); Keyed.remove(vrows._key); frows.delete();
+    //    ff.delete(); Keyed.remove(vrows._key); frows.delete();
 //    for (Vec v : vecs) Keyed.remove(v._key);
-    return sliced;
+    return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
   }
 
   // Slice and return in the form of new chunks.
@@ -822,6 +828,41 @@ public class Frame extends Lockable implements UniquelyIdentifiable {
 //      v1.setRollupStats(v0);
     }
     return fr;
+  }
+
+  // Return Frame 'f' if 'f' is compatible with 'this'.
+  // Return a new Frame compatible with 'this' and a copy of 'f's data otherwise.
+  public Frame makeCompatible( Frame f) {
+    // Small data frames are always "compatible"
+    if (anyVec() == null)      // Or it is small
+      return f;                 // Then must be compatible
+    // Same VectorGroup is also compatible
+    if (f.anyVec() == null ||
+            f.anyVec().group().equals(anyVec().group()) && Arrays.equals(f.anyVec()._espc, anyVec()._espc))
+      return f;
+    // Ok, here make some new Vecs with compatible layout
+    Key k = Key.make();
+    H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
+    Frame f2 = k.get();
+    DKV.remove(k);
+    return f2;
+  }
+
+  /**
+   * Check to see if a Key is a valid Frame key; if so, return the Frame, if not throw an IllegalArgumentException.
+   */
+  public static Frame sanityCheckFrameKey(Key key, String description) {
+    if (null == key)
+      throw new IllegalArgumentException(description + " key must be non-null.");
+    Value v = DKV.get(key);
+    if (null == v)
+      throw new IllegalArgumentException(description + " key not found: " + key);
+    if (! v.isFrame() && !v.isSubclassOf(Frame.class))  // We need some notion of Frame
+      throw new IllegalArgumentException(description + " key points to a non-Frame object in the KV store: " + key);
+    Frame frame = v.get();
+    if (frame.numCols() <= 1)
+      throw new IllegalArgumentException(description + " must have at least 2 features (incl. response).");
+    return frame;
   }
 
   // Return the entire Frame as a CSV stream

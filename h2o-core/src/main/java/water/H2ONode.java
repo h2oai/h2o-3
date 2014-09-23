@@ -304,7 +304,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     // to client and we received the ACKACK), but the rpc might need to stick
     // around a long time - and the dt might be big.
     DTask dt = rpc._dt;         // The existing DTask, if any
-    if( dt != null && RPC.RPCCall.CAS_DT.compareAndSet(rpc,dt,null) ) {
+    if( dt != null && rpc.CAS_DT(dt,null) ) {
       assert rpc._computed : "Still not done #"+task+" "+dt.getClass()+" from "+rpc._client;
       AckAckTimeOutThread.PENDING.remove(rpc);
       dt.onAckAck();            // One-time call on stop-tracking
@@ -341,13 +341,10 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         // Blow it off and go wait again...
         catch( InterruptedException e ) { continue; }
         assert r._computed : "Found RPCCall not computed "+r._tsknum;
-
-        if( r._client._heartbeat._client && // Client-mode?
-            r._retry >= RPC.MAX_TIMEOUT ) { // And timed-out (disconnected client)
-          System.out.println("=== Disconnected client and attempting RPC ACK === ?");
-          r._client.remove_task_tracking(r._tsknum);
-        } else if( !H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client ) {
-          // RPC from somebody who dropped out of cloud?
+        // RPC from somebody who dropped out of cloud?
+        if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
+            // Timedout client?
+            (r._client._heartbeat._client && r._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
           r._client.remove_task_tracking(r._tsknum);
         } else if( r._dt != null ) { // Not yet seen the ACKACK?
           r.resend_ack();            // Resend ACK, hoping for ACKACK
@@ -360,6 +357,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // This Node rebooted recently; we can quit tracking prior work history
   void rebooted() {
     _work.clear();
+    _removed_task_ids.set(0);
   }
 
   // Custom Serialization Class: H2OKey need to be built.

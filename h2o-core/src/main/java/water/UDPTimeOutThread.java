@@ -24,13 +24,11 @@ public class UDPTimeOutThread extends Thread {
       try {
         RPC t = PENDING.take();
         // One-shot timeout effect.  Retries need to re-insert back in the queue
-        if( H2O.CLOUD.contains(t._target) ) {
+        if( H2O.CLOUD.contains(t._target) ||
+            // Also retry clients who do not appear to be shutdown
+            (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
           if( !t.isDone() ) t.call();
-        } else if( t._target._heartbeat._client ) {
-          if( t._retry >= RPC.MAX_TIMEOUT )
-            System.out.println("=== Disconnected client and attempting RPC call === ?");
-          if( !t.isDone() ) t.call();
-        } else {
+        } else {                // Target is dead, nobody to retry to
           t.cancel(true);
         }
       } catch( InterruptedException e ) {

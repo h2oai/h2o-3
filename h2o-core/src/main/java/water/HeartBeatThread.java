@@ -39,6 +39,11 @@ public class HeartBeatThread extends Thread {
   // uniquely number heartbeats for better timelines
   static private int HB_VERSION;
 
+  // Timeout in msec for all kinds of I/O operations on unresponsive clients.
+  // Endlessly retry until this timeout, and then declare the client "dead", 
+  // and toss out all in-flight client ops
+  static public final int CLIENT_TIMEOUT=1000;
+
   // The Run Method.
   // Started by main() on a single thread, this code publishes Cloud membership
   // to the Cloud once a second (across all members).  If anybody disagrees

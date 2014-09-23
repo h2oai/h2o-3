@@ -1,10 +1,12 @@
 package water.api;
 
-import hex.*;
+import hex.Model;
+import hex.ModelMetrics;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RollupStats;
 import water.fvec.Vec;
+import water.util.Log;
 
 class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   @Override protected int min_ver() { return 2; }
@@ -42,50 +44,17 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
    */
   protected static ModelMetrics scoreOne(Frame frame, Model score_model) {
 
+    // NOTE: ModelMetrics are now always being created by model.score. . .
+
     ModelMetrics metrics = ModelMetrics.getFromDKV(score_model, frame);
 
-    if (null == metrics) {
-      // have to compute
-      water.util.Log.debug("Cache miss: computing ModelMetrics. . .");
-      long before = System.currentTimeMillis();
-      Frame predictions = score_model.score(frame, true); // TODO: for now we're always calling adapt inside score
-      long after = System.currentTimeMillis();
-
-      ConfusionMatrix cm = new ConfusionMatrix(); // for regression this computes the MSE
-      AUC auc = null;
-      HitRatio hr = null;
-
-      if (score_model._output.getModelCategory() == Model.ModelCategory.Binomial || score_model._output.getModelCategory() == Model.ModelCategory.Multinomial) {
-        SupervisedModel sm = (SupervisedModel)score_model;
-        auc = new AUC();
-//      hr = new HitRatio();
-        sm.calcError(frame, frame.vec(score_model._output.responseName()), predictions, predictions, "Prediction error:",
-                true, 20, cm, auc, hr);
-      } else if (score_model._output.getModelCategory() == Model.ModelCategory.Regression) {
-        SupervisedModel sm = (SupervisedModel)score_model;
-        sm.calcError(frame, frame.vec(score_model._output.responseName()), predictions, predictions, "Prediction error:",
-                true, 20, cm, null, null);
-      } else {
-        // TODO: currently we don't do error metrics for clustering.  Need to return an MSE/etc ModelMetrics.
-      }
-
-      // Now call AUC and ConfusionMatrix and maybe HitRatio
-      metrics = new ModelMetrics(score_model.getUniqueId(),
-              score_model._output.getModelCategory(),
-              frame.getUniqueId(),
-              after - before,
-              after,
-              (auc == null ? null : auc.data()),
-              cm);
-
-      // Put the metrics into the KV store
-      metrics.putInDKV();
-    } else {
-      // it's already cached in the DKV
-      water.util.Log.debug("using ModelMetrics from the cache. . .");
+    if (null != metrics) {
+      Log.debug("using ModelMetrics from the cache. . .");
+      return metrics;
     }
-
-    return metrics;
+    Log.debug("Cache miss: computing ModelMetrics. . .");
+    score_model.score(frame, true);
+    return ModelMetrics.getFromDKV(score_model, frame);
   }
 
 

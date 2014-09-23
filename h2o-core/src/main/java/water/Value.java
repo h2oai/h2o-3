@@ -221,6 +221,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
   public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
   public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof hex.Model; }
+  public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
 
   /** Creates a Stream for reading bytes */
   private InputStream openStream(Job p) throws IOException {

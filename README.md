@@ -136,6 +136,8 @@ Step 4. Run the top-level gradle build:
 
 If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
+> Make sure that you are not running as root since `bower` will reject such a run
+
 ### Setup on Ubuntu 13.10
 
 Step 1. Install Node.js and npm

@@ -51,8 +51,11 @@ public class TestUtil extends Iced {
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
-        // Ok to leak VectorGroups
-        if( value.isVecGroup() || k == Job.LIST ) leaked_keys--;
+        // Ok to leak VectorGroups and the Jobs list
+        if( value.isVecGroup() || k == Job.LIST ||
+            // Also leave around all attempted Jobs for the Jobs list
+            (value.isJob() && value.<Job>get().isStopped()) ) 
+          leaked_keys--;
         else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
       }
     }

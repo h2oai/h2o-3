@@ -76,7 +76,7 @@ public class UDPReceiverThread extends Thread {
 
     // Record the last time we heard from any given Node
     TimeLine.record_recv(ab, false, drop);
-    ab._h2o._last_heard_from = System.currentTimeMillis();
+    final long now = ab._h2o._last_heard_from = System.currentTimeMillis();
 
     // Snapshots are handled *IN THIS THREAD*, to prevent more UDP packets from
     // being handled during the dump.  Also works for packets from outside the
@@ -116,7 +116,11 @@ public class UDPReceiverThread extends Thread {
     _unknown_packets_per_sec++;
     long timediff = ab._h2o._last_heard_from - _unknown_packet_time;
     if( timediff > 1000 ) {
-      Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
+      // If this is a recently booted client node... coming up right after a
+      // prior client was shutdown, it might see leftover trash UDP packets
+      // from the servers intended for the prior client.
+      if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
+        Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
       _unknown_packets_per_sec = 0;
       _unknown_packet_time = ab._h2o._last_heard_from;
     }

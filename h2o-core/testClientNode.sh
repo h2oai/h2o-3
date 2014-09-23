@@ -14,7 +14,7 @@ esac
 
 # Run cleanup on interrupt or exit
 function cleanup () {
-  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
+  kill SIGKILL ${PID_1} ${PID_2} ${PID_3} ${PID_4}
   exit `cat $OUTDIR/status.0`
 }
 trap cleanup SIGTERM SIGINT
@@ -23,7 +23,7 @@ trap cleanup SIGTERM SIGINT
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-core.jar${SEP}build/libs/h2o-core-test.jar${SEP}../lib/*"
+JVM="nice java -ea -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
@@ -38,14 +38,15 @@ JUNIT_TESTS_SLOW="water.parser.ParseProgressTest\|water.fvec.WordCountBigTest"
 (cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
-$JVM water.H2O 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O 1> $OUTDIR/out.3 2>&1 & PID_3=$!
-$JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+$JVM water.H2OApp 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2OApp 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2OApp 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+#$JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
 # and tee'd to stdout so we can watch.
-(sleep 2; $JVM org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
+($JVM -Dh2o.arg.client=true org.junit.runner.JUnitCore water.ClientTest 2>&1 ; echo $? > $OUTDIR/status.0) | tee --append $OUTDIR/out.0 
 
 cleanup
-
