@@ -60,8 +60,8 @@ class CsvParser extends Parser {
     final boolean forceable = dout instanceof ParseDataset2.FVecDataOut && ((ParseDataset2.FVecDataOut)dout)._ctypes != null && _setup._ctypes != null;
 MAIN_LOOP:
     while (true) {
-      boolean forcedEnum = forceable && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.ECOL;
-      boolean forcedString = forceable && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.SCOL;
+      boolean forcedEnum = forceable && colIdx < _setup._ctypes.length && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.ECOL;
+      boolean forcedString = forceable && colIdx < _setup._ctypes.length && _setup._ctypes[colIdx] == ParseDataset2.FVecDataOut.SCOL;
 
       switch (state) {
         // ---------------------------------------------------------------------
