@@ -76,7 +76,11 @@ task installBowerPackages(type: Exec) {
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
     commandLine 'cmd', '/c', 'node_modules\\.bin\\bower', 'install'
   } else {
-    commandLine 'node_modules/.bin/bower', 'install'
+    if (project.hasProperty("h2o.web.allow.root")) {
+        commandLine 'node_modules/.bin/bower', 'install', '--allow-root'
+    } else {
+        commandLine 'node_modules/.bin/bower', 'install'
+    }
   }
 }
 
