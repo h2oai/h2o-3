@@ -35,6 +35,29 @@ h2o.ls <- function(object) {
 }
 
 #'
+#' Remove All Keys on the H2O Cluster
+#'
+#' Removes the data from the h2o cluster, but does not remove the local references.
+h2o.removeAll<-
+function(object) {
+  if (missing(object)) object <- .retrieveH2O(parent.frame())
+  Log.info("Throwing away any keys on the H2O cluster")
+  .h2o.__remoteSend(object, .h2o.__REMOVEALL)
+}
+
+#'
+#' Log a message.
+#'
+#' Log a message `m`.
+h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, commandOrErr, isPost)
+
+#'
+#' Make an HTTP request to the H2O backend.
+#'
+#' Useful for sending a REST command to H2O that is not currently supported.
+h2o.remoteSend <- function(client, page, method = "GET", ..., .params = list()) .h2o.__remoteSend(client, page, method, ..., .params)
+
+#'
 #' Delete Objects In H2O
 #'
 #' Remove the h2o Big Data object(s) having the key name(s) from keys.
@@ -875,7 +898,6 @@ function(x, center = TRUE, scale = TRUE) {
 #
 #setMethod("names<-", "H2OParsedData", function(x, value) { colnames(x) <- value; return(x) })
 
-
 #'
 #' AST -> R data.frame
 #'
@@ -952,8 +974,9 @@ as.data.frame.H2OParsedData <- function(x, ...) {
   return(df)
 }
 
-#as.matrix.H2OFrame <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
-#
+as.matrix.H2OParsedData <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
+as.matrix.H2OFrame      <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
+
 #setMethod("as.factor", "H2OParsedData", function(x) { .h2o.__unop2("factor", x) })
 
 #-----------------------------------------------------------------------------------------------------------------------
