@@ -1,0 +1,12 @@
+@RELATION myfactorcol 
+
+@ATTRIBUTE class {0,4,10,levelA,levelB} 
+
+@DATA 
+4 
+10 
+0 
+levelA 
+levelB 
+levelA 
+10 

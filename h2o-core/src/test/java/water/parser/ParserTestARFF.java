@@ -122,6 +122,15 @@ public class ParserTestARFF extends TestUtil {
     }
   }
 
+  @Test public void testFactorCol() {
+    Frame k2 = null;
+    try {
+      k2 = parse_test_file("smalldata/junit/arff/myfactorcol.arff");
+    } finally {
+      if( k2 != null ) k2.delete();
+    }
+  }
+
   // check lower/uppercase markers
   @Test public void testUpperLowerCase() {
     String[] data = new String[] {
@@ -169,6 +178,38 @@ public class ParserTestARFF extends TestUtil {
             "numeric"
     };
     final int len = 3;
+
+    String[] dataset = ParserTest.getDataForSeparator(',', data);
+
+    testTypes(dataset, exp_types, len, "\n");
+    testTypes(dataset, exp_types, len, "\r\n");
+    testColNames(dataset, exp_names, len, "\n");
+    testColNames(dataset, exp_names, len, "\r\n");
+  }
+
+  // force numbers to be enums //PUBDEV-17
+  @Test public void testType1() {
+    String[] data = new String[] {
+            "@RELATION myfactorcol",
+            "",
+            "@ATTRIBUTE class  {0,4.10,levelA,levelB}", //dictionary
+            "",
+            "@DATA",
+            "4",
+            "10",
+            "0",
+            "levelA",
+            "levelB",
+            "levelA",
+            "10",
+    };
+    byte[] exp_types = new byte[]{
+            ParseDataset2.FVecDataOut.ECOL
+    };
+    String[] exp_names = new String[]{
+            "class"
+    };
+    final int len = 7;
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
