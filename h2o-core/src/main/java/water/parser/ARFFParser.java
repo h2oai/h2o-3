@@ -3,11 +3,15 @@ package water.parser;
 import java.util.ArrayList;
 
 class ARFFParser extends CsvParser {
+  private static final int FIRST_ROW_IS_HEADER = 1;
+  private static final int FIRST_ROW_IS_NOT_HEADER = -1;
   private static final byte AUTO_SEP = ParseSetup.AUTO_SEP;
   ARFFParser(ParseSetup ps) { super(ps); }
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+    checkHeader = FIRST_ROW_IS_NOT_HEADER;   // ARFF file by definition has no header as the first row of the data file.
+
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
     final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
 
