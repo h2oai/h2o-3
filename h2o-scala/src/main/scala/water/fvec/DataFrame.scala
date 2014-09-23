@@ -21,7 +21,8 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   def this() = this(null,null,new Array[Vec](0))
 
   // Force into K/V store
-  if( key != null ) DKV.put(key,new Value(key,this))
+  assert(key!=null)
+  DKV.put(key,new Value(key,this))
 
   def apply( cols: Array[String] ) : DataFrame = new DataFrame(subframe(cols))
 
