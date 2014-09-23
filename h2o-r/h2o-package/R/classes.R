@@ -589,11 +589,19 @@ function(env) {
   g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %<i-% "H2OClient"))
   e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) %<i-% "H2OClient"))
   if (any(g_list)) {
-    if (sum(g_list) > 1) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+    if (sum(g_list) > 1) {
+      x <- g_list[1]
+      for (y in g_list[1])
+        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+    }
     return(get(ls(globalenv())[which(g_list)[1]], envir=globalenv()))
   }
-  if (any(g_list)) {
-      if (sum(e_list) > 1) { stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.") }
+  if (any(e_list)) {
+    if (sum(e_list) > 1) {
+      x <- e_list[1]
+      for (y in e_list[1])
+        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+    }
       return(get(ls(env)[which(e_list)[1]], envir=env))
   }
   stop("Could not find any H2OClient. Do you have an active connection to H2O from R? Please specify the h2o connection.")
