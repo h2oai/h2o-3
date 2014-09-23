@@ -13,43 +13,43 @@ source('../../h2o-runit.R')
 
 test.nonexistent_rhs_col <- function(conn) {
 
-    a_initial = as.data.frame(cbind(
-    c(1,0,1,0,1,0,1,0,1,0),
-    c(2,2,2,2,2,2,2,2,2,2),
-    c(3,3,3,3,3,3,3,3,3,3),
-    c(3,2,3,2,3,2,3,2,3,2)
-    ))
+    a_initial <- data.frame(
+    v1=c(1,0,1,0,1,0,1,0,1,0),
+    v2=c(2,2,2,2,2,2,2,2,2,2),
+    v3=c(3,3,3,3,3,3,3,3,3,3),
+    v4=c(3,2,3,2,3,2,3,2,3,2)
+    )
 
-    a = a_initial
+    a <- a_initial
 
-    b = a$"13"
+    b <- a$"13"
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o = a.h2o$"3"
-    b.h2o.R = as.matrix(b.h2o)
+    b.h2o <- a.h2o$"3"
+    b.h2o.R <- as.data.frame(b.h2o)
     b
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
 
-    b = a$C13
+    b <- a$C13
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o = a.h2o$C13
-    b.h2o.R = as.matrix(b.h2o)
+    b.h2o <- a.h2o$C13
+    b.h2o.R <- as.data.frame(b.h2o)
     b
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
 
-    b = a[,"13"]
+    b <- a[,"13"]
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o = a.h2o[,"13"]
-    b.h2o.R = as.matrix(b.h2o)
+    b.h2o <- a.h2o[,"13"]
+    b.h2o.R <- as.data.frame(b.h2o)
     b
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
 
-    b = a[,"C13"]
+    b <- a[,"C13"]
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o = a.h2o[,"C13"]
-    b.h2o.R = as.matrix(b.h2o)
+    b.h2o <- a.h2o[,"C13"]
+    b.h2o.R <- as.data.frame(b.h2o)
     b
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
@@ -59,4 +59,3 @@ test.nonexistent_rhs_col <- function(conn) {
 }
 
 doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)
-

@@ -8,27 +8,27 @@ source('../../h2o-runit.R')
 #       h2o.setLogPath(getwd(), "Command")
 #       h2o.setLogPath(getwd(), "Error")
 #       h2o.startLogging()
-#       conn = h2o.init()
+#       conn <- h2o.init()
 
 test.cbind <- function(conn) {
 
-    a = c(0,0,0)
-    b = a
-    h = cbind(a,b)
+    a <- c(0,0,0)
+    b <- a
+    h <- cbind(a,b)
     a.h2o <- c(0,0,0)
-    b.h2o = a.h2o
-    h.h2o = cbind(a.h2o,b.h2o)
-    h.h2o.R = as.matrix(h.h2o)
+    b.h2o <- a.h2o
+    h.h2o <- cbind(a.h2o,b.h2o)
+    h.h2o.R <- as.data.frame(h.h2o)
     expect_that(all(h == h.h2o.R), equals(T))
 
 
-    a = c(0,0,0)
-    b = c(0,0,0)
-    h = cbind(a,b)
-    a.h2o = c(0,0,0)
-    b.h2o = c(0,0,0)
-    h.h2o = cbind(a.h2o,b.h2o)
-    h.h2o.R = as.matrix(h.h2o)
+    a <- c(0,0,0)
+    b <- c(0,0,0)
+    h <- cbind(a,b)
+    a.h2o <- c(0,0,0)
+    b.h2o <- c(0,0,0)
+    h.h2o <- cbind(a.h2o,b.h2o)
+    h.h2o.R <- as.data.frame(h.h2o)
     expect_that(all(h == h.h2o.R), equals(T))
 
 
@@ -48,7 +48,7 @@ test.cbind <- function(conn) {
     h.h2o <- cbind(a.h2o, b.h2o, d.h2o, e.h2o)
     h.h2o <- cbind(a.h2o, b.h2o, d.h2o, e.h2o, f.h2o)
     h.h2o <- cbind(a.h2o, b.h2o, d.h2o, e.h2o, f.h2o, g.h2o)
-    h.h2o.R = as.matrix(h.h2o)
+    h.h2o.R <- as.data.frame(h.h2o)
     expect_that(all(h == h.h2o.R), equals(T))
 
 

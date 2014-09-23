@@ -13,18 +13,18 @@ source('../../h2o-runit.R')
 
 test.apply_w_quantile <- function(conn) {
 
-    a_initial = as.data.frame(cbind(
-    c(1,0,1,0,1,0,1,0,1,0),
-    c(2,2,2,2,2,2,2,2,2,2),
-    c(3,3,3,3,3,3,3,3,3,3),
-    c(3,2,3,2,3,2,3,2,3,2)
+    a_initial <- data.frame(cbind(
+    v1=c(1,0,1,0,1,0,1,0,1,0),
+    v2=c(2,2,2,2,2,2,2,2,2,2),
+    v3=c(3,3,3,3,3,3,3,3,3,3),
+    v4=c(3,2,3,2,3,2,3,2,3,2)
     ))
 
-    a = a_initial
+    a <- a_initial
     # two ways to do it
 
     # func6 = function(x) { quantile(x[,1] , c(0.9) ) }
-    func6 = function(x) { quantile(x , c(0.9) ) }
+    func6 <- function(x) { quantile(x , c(0.9) ) }
     # push the function to h2o also!, with same name
     h2o.addFunction(conn, func6)
     b = apply(a, c(2), func6)
