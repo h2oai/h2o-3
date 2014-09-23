@@ -1,9 +1,7 @@
 package hex;
 
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.Value;
+import hex.Model.ModelCategory;
+import water.*;
 import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
 import water.fvec.Frame;
@@ -34,10 +32,10 @@ public final class ModelMetrics extends Iced {
   // @API(help="The ConfusionMatrix object for this scoring run.", required=false, filter=Default.class, json=true)
   public ConfusionMatrix cm = null;
 
-  public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+  public ModelMetrics(Model model, ModelCategory model_category, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
     this.model = model._key;
     this.model_checksum = model.checksum();
-    this.model_category = model._output.getModelCategory();
+    this.model_category = model_category;
     this.frame = frame._key;
     this.frame_checksum = frame.checksum();
     this.duration_in_ms = duration_in_ms;
@@ -45,15 +43,6 @@ public final class ModelMetrics extends Iced {
 
     this.auc = auc;
     this.cm = cm;
-  }
-
-  /**
-   * Factory method for creating a ModelMetrics and storing it in the DKV for later.
-   */
-  public static ModelMetrics createModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
-    ModelMetrics mm = new ModelMetrics(model, frame, duration_in_ms, scoring_time, auc, cm);
-    DKV.put(mm.buildKey(), mm);
-    return mm;
   }
 
   /**
