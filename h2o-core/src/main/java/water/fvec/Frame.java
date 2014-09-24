@@ -633,6 +633,11 @@ public class Frame extends Lockable {
 
     // Do Da Slice
     // orows is either a long[] or a Vec
+    if (numRows() == 0) {
+      return new MRTask() {
+        @Override public void map(Chunk[] chks, NewChunk[] nchks) { for (NewChunk nc : nchks) nc.addNA(); }
+      }.doAll(c2.length, this).outputFrame(names(c2), domains(c2));
+    }
     if (orows == null)
       return new DeepSlice(null,c2,vecs()).doAll(c2.length,this).outputFrame(names(c2),domains(c2));
     else if (orows instanceof long[]) {
