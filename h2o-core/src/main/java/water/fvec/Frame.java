@@ -621,7 +621,7 @@ public class Frame extends Lockable {
       c2 = new int[numCols()-cols.length];
       int j=0;
       for( int i=0; i<numCols(); i++ ) {
-        if( j >= cols.length || i < (-cols[j]) ) c2[i-j] = i;
+        if( j >= cols.length || i < (-(1+cols[j])) ) c2[i-j] = i;
         else j++;
       }
     }

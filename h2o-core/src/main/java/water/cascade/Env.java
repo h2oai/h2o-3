@@ -8,9 +8,7 @@ import water.util.IcedHashMap;
 import water.util.IcedInt;
 import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 /** Execute a set of instructions in the context of an H2O cloud.
 *
@@ -573,7 +571,10 @@ class ValSpan extends Val {
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ValSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
-  boolean contains(long a) { return _min <= a && a <= _max; }
+  boolean contains(long a) {
+    if (all_neg()) return _max <= a && a <= _min;
+    return _min <= a && a <= _max;
+  }
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
@@ -582,44 +583,78 @@ class ValSpan extends Val {
   @Override public String toString() { return _min + ":" + _max; }
 
   long[] toArray() {
-    long[] res = new long[(int)_max - (int)_min + 1];
+    long[] res = new long[Math.abs((int)_max) - Math.abs((int)_min) + 1];
     long min = _min;
     for (int i = 0; i < res.length; ++i) res[i] = min++;
+    Arrays.sort(res);
     return res;
   }
+
+  boolean isValid() { return (_min < 0 && _max < 0) || (_min >= 0 && _max >= 0); }
+
+  boolean all_neg() { return _min < 0; }
+  boolean all_pos() { return !all_neg(); }
 }
 
 //TODO: add in a boolean field for exclusion
 class ValSeries extends Val {
   final long[] _idxs;
   final ASTSpan[] _spans;
-  boolean _isCol; boolean _isRow;
-  ValSeries(long[] idxs, ASTSpan[] spans) { _idxs = idxs; _spans = spans;}
+  boolean _isCol;
+  boolean _isRow;
+
+  ValSeries(long[] idxs, ASTSpan[] spans) {
+    _idxs = idxs;
+    _spans = spans;
+  }
+
   boolean contains(long a) {
     if (_spans != null)
-      for (ASTSpan s:_spans) if(s.contains(a)) return true;
+      for (ASTSpan s : _spans) if (s.contains(a)) return true;
     if (_idxs != null)
       for (long l : _idxs) if (l == a) return true;
     return false;
   }
-  boolean isColSelector() { return _isCol; }
-  boolean isRowSelector() { return _isRow; }
-  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
-  @Override String value() { return null; }
-  @Override int type() { return Env.SERIES; }
-  @Override public String toString() {
+
+  boolean isColSelector() {
+    return _isCol;
+  }
+
+  boolean isRowSelector() {
+    return _isRow;
+  }
+
+  void setSlice(boolean row, boolean col) {
+    _isRow = row;
+    _isCol = col;
+  }
+
+  @Override
+  String value() {
+    return null;
+  }
+
+  @Override
+  int type() {
+    return Env.SERIES;
+  }
+
+  @Override
+  public String toString() {
     String res = "c(";
     if (_spans != null) {
       for (ASTSpan s : _spans) {
-        res += s.toString(); res += ",";
+        res += s.toString();
+        res += ",";
       }
-      if (_idxs == null) res = res.substring(0, res.length()-1); // remove last comma?
+      if (_idxs == null) res = res.substring(0, res.length() - 1); // remove last comma?
     }
     if (_idxs != null) {
       for (long l : _idxs) {
-        res += l; res += ",";
+        res += l;
+        res += ",";
       }
-      res = res.substring(0, res.length()-1); // remove last comma.
+      res = res.substring(0, res.length() - 1); // remove last comma.
     }
     res += ")";
     return res;
@@ -627,8 +662,8 @@ class ValSeries extends Val {
 
   long[] toArray() {
     int res_length = 0;
-    if (_spans != null) for (ASTSpan s : _spans) res_length += (int)s._max - (int)s._min + 1;
-    if ( _idxs != null) res_length += _idxs.length;
+    if (_spans != null) for (ASTSpan s : _spans) res_length += Math.abs((int) s._max) - Math.abs((int) s._min) + 1;
+    if (_idxs != null) res_length += _idxs.length;
     long[] res = new long[res_length];
     int cur = 0;
     if (_spans != null) {
@@ -640,8 +675,34 @@ class ValSeries extends Val {
     if (_idxs != null) {
       for (long _idx : _idxs) res[cur++] = _idx;
     }
+    Arrays.sort(res);
+    if (all_neg()) reverse(res);
     return res;
   }
+
+  private static void reverse(long[] r) {
+    Long[] l =  new Long[r.length];
+    for (int i = 0 ; i < l.length; ++i) l[i] = r[i];
+    List<Long> list = Arrays.asList(l);
+    Collections.reverse(list);
+    for (int i = 0; i < list.size(); ++i) r[i] = list.get(i);
+//    list = null;
+//    return r;
+  }
+
+  boolean isValid() {
+//    long[] ary = toArray();
+//    boolean all_neg = false, all_pos = false, first=true;
+//    for (long l : ary) {
+//      if (first) { if (l < 0) all_neg = true; else all_pos = true; first = false; }
+//      if (all_neg && l >= 0) return false;
+//      if (all_pos && l < 0) return false;
+//    }
+    return true;
+  }
+
+  boolean all_neg() { return (_idxs != null && _idxs.length > 0) ?_idxs[0] < 0 : _spans[0].all_neg(); }
+  boolean all_pos() { return !all_neg(); }
 }
 
 class ValNull extends Val {

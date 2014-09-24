@@ -96,7 +96,7 @@ public class Vec extends Keyed {
   public Vec makeZero(String[] domain) { return makeCon(0, domain); }
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to a constant. */
-  private Vec makeCon( final long l ) { return makeCon(l, null); }
+  public Vec makeCon( final long l ) { return makeCon(l, null); }
   private Vec makeCon( final long l, String[] domain ) { return makeCon(l,domain,group(),_espc); }
   static public Vec makeCon( final long l, String[] domain, final long len ) {
     int nchunks = (int)Math.max(1,(len>>LOG_CHK)-1);
