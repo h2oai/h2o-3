@@ -162,7 +162,10 @@ class ASTSpan extends AST {
     AST r = E.skipWS().parse();
     return new ASTSpan((ASTNum)l, (ASTNum)r);
   }
-  boolean contains(long a) { return _min <= a && a <= _max; }
+  boolean contains(long a) {
+    if (all_neg()) return _max <= a && a <= _min;
+    return _min <= a && a <= _max;
+  }
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
   void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
@@ -177,6 +180,8 @@ class ASTSpan extends AST {
     for (int i = 0; i < res.length; ++i) res[i] = min++;
     return res;
   }
+  boolean all_neg() { return _min < 0; }
+  boolean all_pos() { return !all_neg(); }
 }
 
 class ASTSeries extends AST {
@@ -525,8 +530,8 @@ class ASTSlice extends AST {
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
       Frame ary= env.peekAry(); // Get without popping
-      Object colSelect = select(ary.numCols(),cols,env);
-      Object rowSelect = select(ary.numRows(),rows,env);
+      Object colSelect = select(ary.numCols(),cols,env, true);
+      Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
@@ -540,49 +545,71 @@ class ASTSlice extends AST {
   // Error to mix negatives & positive.  Negative list is sorted, with dups
   // removed.  Positive list can have dups (which replicates cols) and is
   // ordered.  numbers.  1-based numbering; 0 is ignored & removed.
-  static Object select( long len, Val v, Env env ) {
+  static Object select( long len, Val v, Env env, boolean isCol) {
     if( v.type() == Env.NULL ) return null; // Trivial "all"
     env.push(v);
     long cols[];
     if( env.isNum()) {
       int col = (int)env.popDbl(); // Pop double; Silent truncation (R semantics)
       if( col < 0 && col < -len ) col=0; // Ignore a non-existent column
-//      if( col == 0 ) return new long[0];
+      if (col < 0) {
+        ValSeries s = new ValSeries(new long[]{col}, null);
+        s.setSlice(!isCol, isCol);
+        return select(len, s, env, isCol);
+      }
       return new long[]{col};
     }
     if (env.isSeries()) {
       ValSeries a = env.popSeries();
+      if (!a.isValid()) throw new IllegalArgumentException("Cannot mix negative and positive array selection.");
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
-      Vec v0 = ary.anyVec().makeZero();
+      Vec v0 = a.all_neg() ? ary.anyVec().makeCon(1) : ary.anyVec().makeZero();
       final ValSeries a0 = a;
-      Frame fr = new MRTask() {
-        @Override public void map(Chunk cs) {
-          for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
-            if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
-          }
-        }
-      }.doAll(v0).getResult()._fr;
+
+      Frame fr = a0.all_neg()
+        ? new MRTask() {
+            @Override public void map(Chunk cs) {
+              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+                if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
+            }
+          }.doAll(v0).getResult()._fr
+        : new MRTask() {
+            @Override public void map(Chunk cs) {
+              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+            }
+          }.doAll(v0).getResult()._fr;
+//      Keyed.remove(v0._key);
       return fr;
     }
     if (env.isSpan()) {
       ValSpan a = env.popSpan();
+      if (!a.isValid()) throw new IllegalArgumentException("Cannot mix negative and positive array selection.");
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
       final ValSpan a0 = a;
-      Frame fr = new MRTask() {
-        @Override public void map(Chunk cs) {
-          for (long i = cs.start(); i < cs.len() + cs.start(); ++i) {
-            if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
-          }
-        }
-      }.doAll(ary.anyVec().makeZero()).getResult()._fr;
+      Vec v0 = a.all_neg() ? ary.anyVec().makeCon(1) : ary.anyVec().makeZero();
+      Frame fr = a0.all_neg()
+        ? new MRTask() {
+            @Override public void map(Chunk cs) {
+              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+                if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
+            }
+          }.doAll(v0).getResult()._fr
+        : new MRTask() {
+            @Override public void map(Chunk cs) {
+              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+              }
+          }.doAll(v0).getResult()._fr;
+//      Keyed.remove(v0._key);
       return fr;
     }
     // Got a frame/list of results.

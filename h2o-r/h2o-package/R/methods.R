@@ -379,9 +379,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
   if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
   op <- new("ASTApply", op='[')
-  if (!missing(i) && (i %<i-% "ASTNode")) {
-    i <- eval(i)
-  }
+  if (!missing(i) && (i %<i-% "ASTNode")) { i <- eval(i) }
 
   rows <- if(missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
@@ -417,7 +415,7 @@ nrow.H2OParsedData     <- function(x) x@nrows
 ncol.H2OParsedData     <- function(x) x@ncols
 colnames.H2OParsedData <- function(x) x@col_names
 names.H2OParsedData    <- function(x) colnames(x)
-length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrows else ncol(x)
+length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
 dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
 
 #'

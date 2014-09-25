@@ -621,7 +621,7 @@ public class Frame extends Lockable {
       c2 = new int[numCols()-cols.length];
       int j=0;
       for( int i=0; i<numCols(); i++ ) {
-        if( j >= cols.length || i < (-cols[j]) ) c2[i-j] = i;
+        if( j >= cols.length || i < (-(1+cols[j])) ) c2[i-j] = i;
         else j++;
       }
     }
@@ -633,6 +633,11 @@ public class Frame extends Lockable {
 
     // Do Da Slice
     // orows is either a long[] or a Vec
+    if (numRows() == 0) {
+      return new MRTask() {
+        @Override public void map(Chunk[] chks, NewChunk[] nchks) { for (NewChunk nc : nchks) nc.addNA(); }
+      }.doAll(c2.length, this).outputFrame(names(c2), domains(c2));
+    }
     if (orows == null)
       return new DeepSlice(null,c2,vecs()).doAll(c2.length,this).outputFrame(names(c2),domains(c2));
     else if (orows instanceof long[]) {
