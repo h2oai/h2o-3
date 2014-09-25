@@ -30,7 +30,7 @@ test 'empty cloud', (t) ->
     async.waterfall operations, -> t.end(); go()
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 43
+  t.plan 64
 
   createCloud (_, go) ->
     ensureNoFramesExist = (go) ->
@@ -65,10 +65,10 @@ test 'airlines ingest and model building flow', (t) ->
             src: null
             limit: 0
           tdiff t, expectedGlobResponse, result, exclude: [ 'matches' ]
-          t.ok isArray result.matches, 'has matches'
-          t.ok result.matches.length > 0, 'has matches'
+          t.ok (isArray result.matches), 'has matches'
+          t.ok (result.matches.length > 0), 'has matches'
           airlinesZip = find result.matches, (match) -> (/allyears2k_headers\.zip$/).test match
-          t.ok airlinesZip isnt null, 'found airlines zip'
+          t.ok (airlinesZip isnt null), 'found airlines zip'
           go null, airlinesZip
 
     importAirlinesFrame = (airlinesZip, go) ->
@@ -96,9 +96,9 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got parse setup reply'
           tdiff t, (readGoldJson 'parse-setup-allyears2k_headers-zip.json'), result, exclude: [ 'srcs' ]
-          t.ok isArray result.srcs, 'has srcs'
+          t.ok (isArray result.srcs), 'has srcs'
           t.equal result.srcs.length, 1, 'has 1 src'
-          t.ok isString result.srcs[0].name, 'has src name'
+          t.ok (isString result.srcs[0].name), 'has src name'
           go null, result
 
     parseAirlinesFrame = (parseSetup, go) ->
@@ -110,7 +110,7 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got parse reply'
           tdiff t, (readGoldJson 'parse-allyears2k_headers-zip.json'), result, exclude: [ 'job' ]
-          t.ok isString result.job.name, 'has job name'
+          t.ok (isString result.job.name), 'has job name'
           go null, result.job.name
 
     fetchJobs = (jobKey, go) ->
@@ -190,7 +190,7 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got model build reply'
           tdiff t, (readGoldJson 'kmeans-allyears2k_headers-zip.json'), result, include: [ 'jobs.#.description', 'jobs.#.dest', 'jobs.#.exception' ]
-          t.ok isString result.key.name, 'has job name'
+          t.ok (isString result.key.name), 'has job name'
           go null, result.key.name
 
     inspectAirlinesKmeansModel = (modelKey, go) ->
@@ -230,7 +230,7 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got model build reply'
           tdiff t, (readGoldJson 'deeplearning-allyears2k_headers-zip.json'), result, include: [ 'jobs.#.description', 'jobs.#.dest', 'jobs.#.exception' ]
-          t.ok isString result.key.name, 'has job name'
+          t.ok (isString result.key.name), 'has job name'
           go null, result.key.name
 
     inspectAirlinesDeepLearningModel = (modelKey, go) ->
@@ -244,6 +244,40 @@ test 'airlines ingest and model building flow', (t) ->
           seedParameter.default_value = seedParameter.actual_value = 'random'
           #tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
           tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'key.name', 'schema.key' ]
+          go null, modelKey
+    
+    scoreAirlinesDeepLearningModel = (modelKey, go) ->
+      _.requestModelMetrics modelKey, 'allyears2k_headers.hex', (error, result) ->
+        if error
+          t.fail 'model metrics request failed'
+          go error
+        else
+          t.pass 'got model metrics reply'
+          metric = result.model_metrics[0]
+          parameters = metric.model.parameters
+          seedParameter = find parameters, (parameter) -> parameter.name is 'seed'
+          seedParameter.default_value = seedParameter.actual_value = 'random'
+          t.equal metric.model.key, modelKey
+          t.ok (isNumber metric.model_checksum), 'isNumber metric.model_checksum'
+          t.ok (isNumber metric.frame_checksum), 'isNumber metric.frame_checksum'
+          t.ok (isNumber metric.duration_in_ms), 'isNumber metric.duration_in_ms'
+          t.ok (isNumber metric.scoring_time), 'isNumber metric.scoring_time'
+          t.ok (isArray metric.auc.thresholds), 'isArray metric.auc.thresholds'
+          t.ok (isNumber metric.auc.AUC), 'isNumber metric.auc.AUC'
+          t.ok (isNumber metric.auc.Gini), 'isNumber metric.auc.Gini'
+          t.ok (isArray metric.auc.confusion_matrices), 'isArray metric.auc.confusion_matrices'
+          t.ok (isArray metric.auc.F1), 'isArray metric.auc.F1'
+          t.ok (isArray metric.auc.F2), 'isArray metric.auc.F2'
+          t.ok (isArray metric.auc.F0point5), 'isArray metric.auc.F0point5'
+          t.ok (isArray metric.auc.accuracy), 'isArray metric.auc.accuracy'
+          t.ok (isArray metric.auc.errorr), 'isArray metric.auc.errorr'
+          t.ok (isArray metric.auc.precision), 'isArray metric.auc.precision'
+          t.ok (isArray metric.auc.recall), 'isArray metric.auc.recall'
+          t.ok (isArray metric.auc.specificity), 'isArray metric.auc.specificity'
+          t.ok (isArray metric.auc.mcc), 'isArray metric.auc.mcc'
+          t.ok (isArray metric.auc.max_per_class_error), 'isArray metric.auc.max_per_class_error'
+
+          tdiff t, (readGoldJson 'score-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'model_metrics.#.model.key', 'model_metrics.#.model_checksum', 'model_metrics.#.frame_checksum', 'model_metrics.#.duration_in_ms', 'model_metrics.#.scoring_time', 'model_metrics.#.auc.thresholds', 'model_metrics.#.auc.AUC', 'model_metrics.#.auc.Gini' , 'model_metrics.#.auc.confusion_matrices', 'model_metrics.#.auc.F1', 'model_metrics.#.auc.F2', 'model_metrics.#.auc.F0point5', 'model_metrics.#.auc.accuracy', 'model_metrics.#.auc.errorr', 'model_metrics.#.auc.precision', 'model_metrics.#.auc.recall', 'model_metrics.#.auc.specificity', 'model_metrics.#.auc.mcc', 'model_metrics.#.auc.max_per_class_error' ]
           go null, modelKey
 
     operations = [
@@ -265,6 +299,7 @@ test 'airlines ingest and model building flow', (t) ->
       buildAirlinesDeepLearningModel
       pollJob
       inspectAirlinesDeepLearningModel
+      scoreAirlinesDeepLearningModel
     ]
     async.waterfall operations, -> t.end(); go()
 

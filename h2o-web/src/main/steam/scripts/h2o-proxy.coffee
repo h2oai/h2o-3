@@ -100,6 +100,8 @@ Steam.H2OProxy = (_) ->
         #TODO remove 'filterSupportedModels' when issue with non-DONE models is resolved.
         go error, head filterSupportedModels result.models
 
+  requestModelMetrics = (modelKey, frameKey, go) ->
+    post "/3/ModelMetrics.json/models/#{encodeURIComponent modelKey}/frames/#{encodeURIComponent frameKey}", {}, go
 
   requestJobs = (go) ->
     request '/Jobs.json', go
@@ -138,6 +140,7 @@ Steam.H2OProxy = (_) ->
   link$ _.requestScoringOnFrame, (frameKey, modelKey, go) -> requestFrames go, key: (encodeURIComponent frameKey), score_model: modelKey
   link$ _.requestModels, requestModels
   link$ _.requestModel, requestModel
+  link$ _.requestModelMetrics, requestModelMetrics
   link$ _.requestModelsAndCompatibleFrames, (go) -> requestModels go, find_compatible_frames: yes
   link$ _.requestModelAndCompatibleFrames, (key, go) -> requestModels go, key: (encodeURIComponent key), find_compatible_frames: yes
   link$ _.requestJobs, requestJobs
