@@ -545,7 +545,8 @@ public class Frame extends Lockable {
 
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
-  public void finalizePartialFrame( long[] espc ) {
+  // FIXME: have proper representation of column type
+  public void finalizePartialFrame( long[] espc, Class[] colTypes, String[][] domains ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
@@ -562,7 +563,12 @@ public class Frame extends Lockable {
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
-      Vec vec = _vecs[i] = new Vec(_keys[i], espc2, null/*no enum*/, false/*not UUID*/, false/*not String*/, (byte)-1/*not Time*/);
+      Vec vec = _vecs[i] = new Vec(_keys[i],
+              espc2,
+              domains!=null ? domains[i] : null,
+              false/*not UUID*/,
+              colTypes[i].equals(String.class),
+              (byte)-1/*not Time*/);
       DKV.put(_keys[i],vec,fs);             // Inject the header
     }
     fs.blockForPending();
