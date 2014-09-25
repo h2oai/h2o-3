@@ -18,9 +18,43 @@
 #' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
 #' and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
 
-# TODO: Section for the *ply methods.
-# lapply -> apply to each column
-# ldply, ddply, etc.
+#'
+#' Important Developer Notes on the Lazy Evaluators:
+#' --------------------------
+#'
+#' The H2OFrame "lazy" evaluators: Evaulate an AST.
+#'
+#' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
+#' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
+#' calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
+#' and then all the way back up the scopes.
+#' Here's the example pattern: Number of columns
+#'
+#' Num Columns of an AST.
+#'
+#' Evaluate the AST and produce the ncol of the eval'ed AST.
+#'
+#'       ncol.H2OFrame <- function(x) {
+#'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
+#'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
+#'         .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')  # call the force eval
+#'         ID <- ifelse(ID == "Last.value", ID, x@key)                       # bridge the IDs between the force.eval and the parent frame
+#'         assign(ID, x, parent.frame())                                     # assign the eval'ed frame into the parent env
+#'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
+#'       }
+#'
+#' Take this line-by-line:
+#'    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
+#'    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
+#'    Line 3:
+#'          1. Get a handle to h2o (see classes.R::.retrieveH2O)
+#'          2. x is the ast we want to eval
+#'          3. ID is the identifier we want the eventual object to have at the end of the day
+#'          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
+#'    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OParsedData
+#'             *NB: x is _guaranteed_ to be an H2OParsedData object at this point (this is post .force.eval)
+#'    Line 5: assign from *this* scope, into the parent scope
+#'    Line 6: Do
 
 #-----------------------------------------------------------------------------------------------------------------------
 # H2O Methods
@@ -73,27 +107,6 @@ h2o.rm <- function(object, keys) {
 
   for(i in 1:length(keys))
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
-}
-
-#'
-#' Import a local R data frame to the H2O cloud.
-#'
-as.h2o <- function(client, object, key = "", header, sep = "") {
-  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
-#  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
-  if(!is.character(key)) stop("key must be of class character")
-  if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
-  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
-
-  # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(is.numeric(object) && is.vector(object)) {
-    object <- as.data.frame(object)
-  }
-    tmpf <- tempfile(fileext=".csv")
-    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-    h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
-    unlink(tmpf)
-    return(h2f)
 }
 
 h2o.assign <- function(data, key) {
@@ -213,6 +226,8 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   if(missing(breaks)) stop("`breaks` must be a numeric vector")
   ast.cut <- .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
   print(ast.cut)
+
+  #FIXME: Finish up here!
 #  ID  <- as.list(match.call())$x
 #  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
 #  ID <- ifelse(ID == "Last.value", ID, ast.cut@key)
@@ -250,9 +265,9 @@ match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables =
 #' %in% method
 #'
 "%in%" <- function(x, table) {
-  if (x %<i-% "ASTNode") match.H2OFrame(x, table, nomatch = 0) > 0
-  else if (x %<i-% "H2OParsedData") match.H2OParsedData(x, table, nomatch = 0) > 0
-  else match(x, table, nomatch = 0) > 0
+  if (x %<i-% "ASTNode") match.H2OFrame(x, table, nomatch = 0) > 0                  # ASTNode case
+  else if (x %<i-% "H2OParsedData") match.H2OParsedData(x, table, nomatch = 0) > 0  # H2OParsedData case
+  else match(x, table, nomatch = 0) > 0                                             # base:: case
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -289,65 +304,6 @@ match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables =
 
 
 #
-#h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
-#  if( missing(.data) ) stop('must specify .data')
-#  if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
-#  if( missing(.variables) ) stop('must specify .variables')
-#  if( missing(.fun) ) stop('must specify .fun')
-#
-#  mm <- match.call()
-#
-#  # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
-#  # as column names.  This is a bit complicated
-#  if( class(.variables) == 'character'){
-#    vars <- .variables
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'H2Oquoted' ){
-#    vars <- as.character(.variables)
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'quoted' ){ # plyr overwrote our . fn
-#    vars <- names(.variables)
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'integer' ){
-#    vars <- .variables
-#    idx <- .variables
-#  } else if( class(.variables) == 'numeric' ){   # this will happen eg c(1,2,3)
-#    vars <- .variables
-#    idx <- as.integer(.variables)
-#  }
-#
-#  #TODO: Put these on the back end
-#  #  bad <- is.na(idx) | idx < 1 | idx > ncol(.data)
-#  #  if( any(bad) ) stop( sprintf('can\'t recognize .variables %s', paste(vars[bad], sep=',')) )
-#
-#  .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
-#}
-#
-#ddply <- h2o.ddply
-
-# TODO: how to avoid masking plyr?
-#`h2o..` <- function(...) {
-#  mm <- match.call()
-#  mm <- mm[-1]
-#  structure( as.list(mm), class='H2Oquoted')
-#}
-#
-#`.` <- `h2o..`
-#
-#h2o.unique <- function(x, incomparables = FALSE, ...) {
-#  # NB: we do nothing with incomparables right now
-#  # NB: we only support MARGIN = 2 (which is the default)
-#
-#  if(!class(x) %in% c('H2OFrame', 'H2OParsedData', 'H2OParsedDataVA')) stop('h2o.unique: x is of the wrong type. Got: ', class(x))
-##  if( nrow(x) == 0 | ncol(x) == 0) return(NULL) #TODO: Do this on the back end.
-##  if( nrow(x) == 1) return(x)  #TODO: Do this on the back end.
-#
-#  args <- list(...)
-#  if( 'MARGIN' %in% names(args) && args[['MARGIN']] != 2 ) stop('h2o unique: only MARGIN 2 supported')
-#  .h2o.unop("unique", x)
-#}
-#unique.H2OFrame <- h2o.unique
-#
 #h2o.runif <- function(x, min = 0, max = 1, seed = -1) {
 #  if(missing(x)) stop("Must specify data set")
 #  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
@@ -377,10 +333,15 @@ match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables =
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
+  if (!missing(i) && (i %<i-% "ASTNode")) i <- eval(i)
+  if (!missing(j) && is.character(j)) {
+    col_names <- colnames(x)  # this is a bit expensive since we have to force the eval on x
+    if (! any(j %in% col_names)) stop("Undefined column names specified")
+    j <- match(j, col_names)
+  }
   if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
-  op <- new("ASTApply", op='[')
-  if (!missing(i) && (i %<i-% "ASTNode")) { i <- eval(i) }
 
+  op <- new("ASTApply", op='[')
   rows <- if(missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
@@ -399,6 +360,99 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(!(i %in% colnames(x)) ) return(NULL)
   do.call("[", list(x = x, j = match(i, colnames(x))))
 })
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
+#-----------------------------------------------------------------------------------------------------------------------
+
+setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
+   # TODO: Error checking on backend
+#  numRows = nrow(x); numCols = ncol(x)
+
+  if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j))) stop("Row/column types not supported!")
+  if(!inherits(value, "H2OFrame") && !is.numeric(value)) stop("value can only be numeric or a H2OParsedData object")
+#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows) stop("value must be either a single number or a vector of length ", numRows)
+
+  if(!missing(i) && is.numeric(i)) {
+    if(any(i == 0)) stop("Array index out of bounds")
+#    if(any(i < 0 && abs(i) > numRows)) stop("Unimplemented: can't extend rows")
+#    if(min(i) > numRows+1) stop("new rows would leave holes after existing rows")
+  }
+  if(!missing(j) && is.numeric(j)) {
+    if(any(j == 0)) stop("Array index out of bounds")
+#    if(any(j < 0 && abs(j) > numCols)) stop("Unimplemented: can't extend columns")
+#    if(min(j) > numCols+1) stop("new columns would leave holes after existing columns")
+  }
+
+  if (missing(i) && missing(j)) {
+    if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+    lhs <- x
+  } else if (missing(i)) lhs <- do.call("[", list(x=x, j=substitute(j)))
+    else if (missing(j)) lhs <- do.call("[", list(x=x, i=substitute(i)))
+    else lhs <- do.call("[", list(x=x, i=substitute(i), j=substitute(j)))
+
+  if (value %<i-% "ASTNode") rhs <- eval(value)
+  else if(value %<i-% "H2OFrame") rhs <- value
+  else rhs <- .eval(substitute(value), parent.frame(), FALSE)
+
+  op <- new("ASTApply", op='=')
+  new("ASTNode", root=op, children=list(lhs, rhs))
+})
+
+setMethod("$<-", "H2OParsedData", function(x, name, value) {
+  if(missing(name) || !is.character(name) || nchar(name) == 0)
+    stop("name must be a non-empty string")
+  if(!inherits(value, "H2OFrame") && !is.numeric(value))
+    stop("value can only be numeric or a H2OFrame object")
+
+    # TODO: Error checking on backend
+#  numCols = ncol(x); numRows = nrow(x)
+#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows)
+#    stop("value must be either a single number or a vector of length ", numRows)
+
+  col_names <- colnames(x)
+  if (!(name %in% col_names)) idx <- length(col_names) + 1     # new column
+  else idx <- match(name, col_names)                           # re-assign existing column
+  lhs <- do.call("[", list(x=x, j=idx))                        # create the lhs ast
+
+  if (value %<i-% "ASTNode") rhs <- eval(value)                # rhs is already ast, eval it
+  else if(value %<i-% "H2OFrame") rhs <- value                 # rhs is some H2OFrame object
+  else rhs <- .eval(substitute(value), parent.frame(), FALSE)  # rhs is R generic
+  res <- new("ASTNode", root=op, children=list(lhs, rhs))      # create the rhs ast
+
+  # TODO: force eval res, and then set column names ... return an H2OParsedData object
+#
+#  if(is.na(idx))
+#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, cols=numCols, comma_separated_list=name)
+#  return(new("H2OParsedData", h2o=x@h2o, key=x@key))
+})
+
+setMethod("[[<-", "H2OParsedData", function(x, i, value) {
+  if( !( value %<i-% "H2OFrame")) stop('Can only append H2O data to H2O data')
+#  if( ncol(value) > 1 ) stop('May only set a single column')
+#  if( nrow(value) != nrow(x) ) stop(sprintf('Replacement has %d row, data has %d', nrow(value), nrow(x)))
+  do.call("$<-", list(x=x, name=i, value=value)
+})
+
+#setMethod("colnames<-", signature(x="H2OParsedData", value="H2OParsedData"),
+#  function(x, value) {
+#    if(class(value) == "H2OParsedDataVA") stop("value must be a FluidVecs object")
+#    else if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
+#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, copy_from=value@key)
+#    return(x)
+#})
+#
+#setMethod("colnames<-", signature(x="H2OParsedData", value="character"),
+#  function(x, value) {
+#    if(any(nchar(value) == 0)) stop("Column names must be of non-zero length")
+#    else if(any(duplicated(value))) stop("Column names must be unique")
+#    else if(length(value) != (num = ncol(x))) stop(paste("Must specify a vector of exactly", num, "column names"))
+#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, comma_separated_list=value)
+#    return(x)
+#})
+#
+#setMethod("names<-", "H2OParsedData", function(x, value) { colnames(x) <- value; return(x) })
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
@@ -728,6 +782,10 @@ function(x, y = NULL, na.rm = FALSE, use = "everything") {
   ast.var
 }
 
+#'
+#' Standard Deviation of a column of data.
+#'
+#' Obtain the standard deviation of a column of data.
 sd.H2OParsedData<-
 function(x, na.rm = FALSE) {
   if(ncol(x) != 1) stop("Can only compute sd of a single column.")
@@ -770,131 +828,30 @@ function(x, center = TRUE, scale = TRUE) {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Assignment Operations: [<-, $<-, [[<-,
+# Casting Operations: as.data.frame, as.factor,
 #-----------------------------------------------------------------------------------------------------------------------
 
-#setMethod("[<-", "H2OParsedData", function(x, i, j, ..., value) {
-#  numRows = nrow(x); numCols = ncol(x)
-#  # if((!missing(i) && is.numeric(i) && any(abs(i) < 1 || abs(i) > numRows)) ||
-#  #     (!missing(j) && is.numeric(j) && any(abs(j) < 1 || abs(j) > numCols)))
-#  #  stop("Array index out of bounds!")
-#  if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j)))
-#    stop("Row/column types not supported!")
-#  if(!inherits(value, "H2OParsedData") && !is.numeric(value))
-#    stop("value can only be numeric or a H2OParsedData object")
-#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows)
-#    stop("value must be either a single number or a vector of length ", numRows)
-#
-#  if(!missing(i) && is.numeric(i)) {
-#    if(any(i == 0)) stop("Array index out of bounds")
-#    if(any(i < 0 && abs(i) > numRows)) stop("Unimplemented: can't extend rows")
-#    if(min(i) > numRows+1) stop("new rows would leave holes after existing rows")
-#  }
-#  if(!missing(j) && is.numeric(j)) {
-#    if(any(j == 0)) stop("Array index out of bounds")
-#    if(any(j < 0 && abs(j) > numCols)) stop("Unimplemented: can't extend columns")
-#    if(min(j) > numCols+1) stop("new columns would leaves holes after existing columns")
-#  }
-#
-#  if(missing(i) && missing(j))
-#    lhs = x@key
-#  else if(missing(i) && !missing(j)) {
-#    if(is.character(j)) {
-#      myNames = colnames(x)
-#      if(any(!(j %in% myNames))) {
-#        if(length(j) == 1)
-#          return(do.call("$<-", list(x, j, value)))
-#        else stop("Unimplemented: undefined column names specified")
-#      }
-#      cind = match(j, myNames)
-#      # cind = match(j[j %in% myNames], myNames)
-#    } else cind = j
-#    cind = paste("c(", paste(cind, collapse = ","), ")", sep = "")
-#    lhs = paste(x@key, "[,", cind, "]", sep = "")
-#  } else if(!missing(i) && missing(j)) {
-#      rind = paste("c(", paste(i, collapse = ","), ")", sep = "")
-#      lhs = paste(x@key, "[", rind, ",]", sep = "")
-#  } else {
-#    if(is.character(j)) {
-#      myNames = colnames(x)
-#      if(any(!(j %in% myNames))) stop("Unimplemented: undefined column names specified")
-#      cind = match(j, myNames)
-#      # cind = match(j[j %in% myNames], myNames)
-#    } else cind = j
-#    cind = paste("c(", paste(cind, collapse = ","), ")", sep = "")
-#    rind = paste("c(", paste(i, collapse = ","), ")", sep = "")
-#    lhs = paste(x@key, "[", rind, ",", cind, "]", sep = "")
-#  }
-#
-#  # rhs = ifelse(class(value) == "H2OParsedData", value@key, paste("c(", paste(value, collapse = ","), ")", sep=""))
-#  if(inherits(value, "H2OParsedData"))
-#    rhs = value@key
-#  else
-#    rhs = ifelse(length(value) == 1, value, paste("c(", paste(value, collapse = ","), ")", sep=""))
-#  res = .h2o.__exec2(x@h2o, paste(lhs, "=", rhs))
-#  return(new("H2OParsedData", h2o=x@h2o, key=x@key))
-#})
-#
-#setMethod("$<-", "H2OParsedData", function(x, name, value) {
-#  if(missing(name) || !is.character(name) || nchar(name) == 0)
-#    stop("name must be a non-empty string")
-#  if(!inherits(value, "H2OParsedData") && !is.numeric(value))
-#    stop("value can only be numeric or a H2OParsedData object")
-#  numCols = ncol(x); numRows = nrow(x)
-#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows)
-#    stop("value must be either a single number or a vector of length ", numRows)
-#  myNames = colnames(x); idx = match(name, myNames)
-#
-#  lhs = paste(x@key, "[,", ifelse(is.na(idx), numCols+1, idx), "]", sep = "")
-#  # rhs = ifelse(class(value) == "H2OParsedData", value@key, paste("c(", paste(value, collapse = ","), ")", sep=""))
-#  if(inherits(value, "H2OParsedData"))
-#    rhs = value@key
-#  else
-#    rhs = ifelse(length(value) == 1, value, paste("c(", paste(value, collapse = ","), ")", sep=""))
-#  res = .h2o.__exec2(x@h2o, paste(lhs, "=", rhs))
-#
-#  if(is.na(idx))
-#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, cols=numCols, comma_separated_list=name)
-#  return(new("H2OParsedData", h2o=x@h2o, key=x@key))
-#})
-#
-#setMethod("[[<-", "H2OParsedData", function(x, i, value) {
-#  if( !inherits(value, 'H2OParsedData')) stop('Can only append H2O data to H2O data')
-#  if( ncol(value) > 1 ) stop('May only set a single column')
-#  if( nrow(value) != nrow(x) ) stop(sprintf('Replacement has %d row, data has %d', nrow(value), nrow(x)))
-#
-#  mm <- match.call()
-#  col_name <- as.list(i)[[1]]
-#
-#  cc <- colnames(x)
-#  if( col_name %in% cc ){
-#    x[, match( col_name, cc ) ] <- value
-#  } else {
-#    x <- cbind(x, value)
-#    cc <- c( cc, col_name )
-#    colnames(x) <- cc
-#  }
-#  x
-#})
-#
-#setMethod("colnames<-", signature(x="H2OParsedData", value="H2OParsedData"),
-#  function(x, value) {
-#    if(class(value) == "H2OParsedDataVA") stop("value must be a FluidVecs object")
-#    else if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
-#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, copy_from=value@key)
-#    return(x)
-#})
-#
-#setMethod("colnames<-", signature(x="H2OParsedData", value="character"),
-#  function(x, value) {
-#    if(any(nchar(value) == 0)) stop("Column names must be of non-zero length")
-#    else if(any(duplicated(value))) stop("Column names must be unique")
-#    else if(length(value) != (num = ncol(x))) stop(paste("Must specify a vector of exactly", num, "column names"))
-#    res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_SETCOLNAMES2, source=x@key, comma_separated_list=value)
-#    return(x)
-#})
-#
-#setMethod("names<-", "H2OParsedData", function(x, value) { colnames(x) <- value; return(x) })
+#'
+#' R data.frame -> H2OParsedData
+#'
+#' Import a local R data frame to the H2O cloud.
+as.h2o <- function(client, object, key = "", header, sep = "") {
+  if(missing(client) || class(client) != "H2OClient") stop("client must be a H2OClient object")
+#  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
+  if(!is.character(key)) stop("key must be of class character")
+  if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
+  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
+
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  if(is.numeric(object) && is.vector(object)) {
+    object <- as.data.frame(object)
+  }
+    tmpf <- tempfile(fileext=".csv")
+    write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
+    h2f <- h2o.importFile(client, tmpf, key = key, header = header, sep = sep)
+    unlink(tmpf)
+    return(h2f)
+}
 
 #'
 #' AST -> R data.frame
@@ -1063,8 +1020,69 @@ cbind.H2OFrame <- function(..., deparse.level = 1) {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Work in Progress
+# *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
+
+#
+#h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
+#  if( missing(.data) ) stop('must specify .data')
+#  if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
+#  if( missing(.variables) ) stop('must specify .variables')
+#  if( missing(.fun) ) stop('must specify .fun')
+#
+#  mm <- match.call()
+#
+#  # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
+#  # as column names.  This is a bit complicated
+#  if( class(.variables) == 'character'){
+#    vars <- .variables
+#    idx <- match(vars, colnames(.data))
+#  } else if( class(.variables) == 'H2Oquoted' ){
+#    vars <- as.character(.variables)
+#    idx <- match(vars, colnames(.data))
+#  } else if( class(.variables) == 'quoted' ){ # plyr overwrote our . fn
+#    vars <- names(.variables)
+#    idx <- match(vars, colnames(.data))
+#  } else if( class(.variables) == 'integer' ){
+#    vars <- .variables
+#    idx <- .variables
+#  } else if( class(.variables) == 'numeric' ){   # this will happen eg c(1,2,3)
+#    vars <- .variables
+#    idx <- as.integer(.variables)
+#  }
+#
+#  #TODO: Put these on the back end
+#  #  bad <- is.na(idx) | idx < 1 | idx > ncol(.data)
+#  #  if( any(bad) ) stop( sprintf('can\'t recognize .variables %s', paste(vars[bad], sep=',')) )
+#
+#  .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
+#}
+#
+#ddply <- h2o.ddply
+
+# TODO: how to avoid masking plyr?
+#`h2o..` <- function(...) {
+#  mm <- match.call()
+#  mm <- mm[-1]
+#  structure( as.list(mm), class='H2Oquoted')
+#}
+#
+#`.` <- `h2o..`
+#
+#h2o.unique <- function(x, incomparables = FALSE, ...) {
+#  # NB: we do nothing with incomparables right now
+#  # NB: we only support MARGIN = 2 (which is the default)
+#
+#  if(!class(x) %in% c('H2OFrame', 'H2OParsedData', 'H2OParsedDataVA')) stop('h2o.unique: x is of the wrong type. Got: ', class(x))
+##  if( nrow(x) == 0 | ncol(x) == 0) return(NULL) #TODO: Do this on the back end.
+##  if( nrow(x) == 1) return(x)  #TODO: Do this on the back end.
+#
+#  args <- list(...)
+#  if( 'MARGIN' %in% names(args) && args[['MARGIN']] != 2 ) stop('h2o unique: only MARGIN 2 supported')
+#  .h2o.unop("unique", x)
+#}
+#unique.H2OFrame <- h2o.unique
+
 
 ## TODO: Need to change ... to environment variables and pass to substitute method,
 ##       Can't figure out how to access outside environment from within lapply
