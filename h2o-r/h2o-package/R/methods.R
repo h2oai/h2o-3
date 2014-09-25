@@ -367,7 +367,7 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
 
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
    # TODO: Error checking on backend
-#  numRows = nrow(x); numCols = ncol(x)
+   # numRows = nrow(x); numCols = ncol(x)
 
   if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j))) stop("Row/column types not supported!")
   if(!inherits(value, "H2OFrame") && !is.numeric(value)) stop("value can only be numeric or a H2OParsedData object")
@@ -431,7 +431,7 @@ setMethod("[[<-", "H2OParsedData", function(x, i, value) {
   if( !( value %<i-% "H2OFrame")) stop('Can only append H2O data to H2O data')
 #  if( ncol(value) > 1 ) stop('May only set a single column')
 #  if( nrow(value) != nrow(x) ) stop(sprintf('Replacement has %d row, data has %d', nrow(value), nrow(x)))
-  do.call("$<-", list(x=x, name=i, value=value)
+  do.call("$<-", list(x=x, name=i, value=value))
 })
 
 #setMethod("colnames<-", signature(x="H2OParsedData", value="H2OParsedData"),
