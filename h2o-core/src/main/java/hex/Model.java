@@ -106,6 +106,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
      *  The last column holds the response col enums.  */
     public String _domains[][];
 
+    /** List of all the associated ModelMetrics objects, so we can delete them when we delete this model. */
+    public Key[] model_metrics = new Key[0];
+
     /** The names of all the columns, including the response column (which comes last). */
     public String[] allNames() { return _names; }
     /** The name of the response column (which is always the last column). */
@@ -124,6 +127,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       return (isClassifier() ?
               (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
               ModelCategory.Regression);
+    }
+
+    protected void addModelMetrics(ModelMetrics mm) {
+      model_metrics = Arrays.copyOf(model_metrics, model_metrics.length + 1);
+      model_metrics[model_metrics.length - 1] = mm._key;
     }
 
     public long checksum() {
@@ -254,19 +262,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    */
   public final Frame score(Frame fr, boolean adapt) {
     long start_time = System.currentTimeMillis();
+    Frame fr_hacked = new Frame(fr);
     if (isSupervised()) {
       int ridx = fr.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
-        fr = new Frame(fr);
-        fr.remove(ridx);
+        fr_hacked.remove(ridx);
       }
     }
     // Adapt the Frame layout - returns adapted frame and frame containing only
     // newly created vectors
-    Frame[] adaptFrms = adapt ? adapt(fr,false) : null;
+    Frame[] adaptFrms = adapt ? adapt(fr_hacked,false) : null;
     // Adapted frame containing all columns - mix of original vectors from fr
     // and newly created vectors serving as adaptors
-    Frame adaptFrm = adapt ? adaptFrms[0] : fr;
+    Frame adaptFrm = adapt ? adaptFrms[0] : fr_hacked;
     // Contains only newly created vectors. The frame eases deletion of these vectors.
     Frame onlyAdaptFrm = adapt ? adaptFrms[1] : null;
     // Invoke scoring
@@ -391,19 +399,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
 
   protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
     // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
-    if (_output.getModelCategory() == Model.ModelCategory.Binomial || _output.getModelCategory() == Model.ModelCategory.Multinomial) {
+    // TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
+    if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
+      if (! (this instanceof SupervisedModel)) {
+        Log.warn("Classification model is not a subclass of SupervisedModel; don't know how to calcError!");
+        return null;
+      }
       SupervisedModel sm = (SupervisedModel)this;
       AUC auc = new AUC();
       ConfusionMatrix cm = new ConfusionMatrix();
       HitRatio hr = new HitRatio();
       sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
               true, 20, cm, auc, hr);
-      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+      ModelMetrics mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+      _output.addModelMetrics(mm);
+      return mm;
     } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
+      if (! (this instanceof SupervisedModel)) {
+        Log.warn("Classification model is not a subclass of SupervisedModel; don't know how to calcError!");
+        return null;
+      }
       SupervisedModel sm = (SupervisedModel) this;
       sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
               true, 20, null, null, null);
-      return ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+      ModelMetrics mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+      _output.addModelMetrics(mm);
+      return mm;
     }
 
     return null;
@@ -537,6 +558,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
+
+  protected Futures remove_impl( Futures fs ) {
+    for (Key k : _output.model_metrics)
+      k.remove();
+    return fs;
+  }
 
   public long checksum() {
     return _parms.checksum() *

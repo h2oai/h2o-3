@@ -1443,8 +1443,8 @@ public final class AutoBuffer {
   public AutoBuffer putJSONEnum( String name, Enum e ) { return putJSONStr(name).put1(':').putJSONEnum(e); }
 
   public AutoBuffer putJSONA8( String name, long ary[] ) { return putJSONStr(name).put1(':').putJSONA8(ary); }
-  AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
-  AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
+  public AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
+  public AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
   AutoBuffer putJSON4 ( int i ) { return putJStr(Integer.toString(i)); }
   public AutoBuffer putJSON4 ( String name, int i ) { return putJSONStr(name).put1(':').putJSON4(i); }
   AutoBuffer putJSONA4( int[] a) {
@@ -1482,7 +1482,7 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  AutoBuffer putJSONA4f(String name, float[] a) {
+  public AutoBuffer putJSONA4f(String name, float[] a) {
     putJSONStr(name).put1(':');
     return putJSONA4f(a);
   }

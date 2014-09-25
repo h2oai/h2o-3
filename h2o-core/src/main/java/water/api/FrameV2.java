@@ -33,7 +33,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   boolean isText;
 
   @API(help="Default percentiles, from 0 to 1")
-  final double[] default_pctiles;
+  double[] default_pctiles;
 
   @API(help="Columns")
   Col[] columns;
@@ -142,8 +142,11 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
 
+  /* Key-only constructor, for the times we only want to return the key. */
+  FrameV2( Key key ) { this.key = key; }
+
   FrameV2( Frame fr ) {
-    this(fr, 1, -1);
+    this(fr, 1, (int)fr.vec(0).length()); // NOTE: possible len truncation
   }
 
   /** TODO: refactor together with fillFromImpl(). */

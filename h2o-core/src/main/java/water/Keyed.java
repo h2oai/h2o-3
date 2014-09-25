@@ -2,7 +2,7 @@ package water;
 
 /* Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed extends Iced {
-  /** Key mapping a Value which holds this Vec.  */
+  /** Key mapping a Value which holds this object.  */
   public final Key _key;        // Top-level key; may be null
   public Keyed( Key key ) { _key = key; }
 

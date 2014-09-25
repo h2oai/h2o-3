@@ -1,8 +1,8 @@
 package hex;
 
 import water.DKV;
-import water.Iced;
 import water.Key;
+import water.Keyed;
 import water.Value;
 import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
@@ -14,7 +14,7 @@ import water.util.Log;
  * Container to hold the metric for a model as scored on a specific frame.
  */
 
-public final class ModelMetrics extends Iced {
+public final class ModelMetrics extends Keyed {
   // @API(help="The unique ID (key / uuid / creation timestamp) for the model used for this scoring run.", required=false, filter=Default.class, json=true)
   public Key model = null;
   public long model_checksum = -1;
@@ -35,6 +35,7 @@ public final class ModelMetrics extends Iced {
   public ConfusionMatrix cm = null;
 
   public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+    super(buildKey(model, frame));
     this.model = model._key;
     this.model_checksum = model.checksum();
     this.model_category = model._output.getModelCategory();
@@ -87,10 +88,8 @@ public final class ModelMetrics extends Iced {
   }
 
   public void putInDKV() {
-    Key metricsKey = this.buildKey();
-
-    Log.debug("Putting ModelMetrics: " + metricsKey.toString());
-    DKV.put(metricsKey, this);
+    Log.debug("Putting ModelMetrics: " + _key.toString());
+    DKV.put(_key, this);
   }
 
   public static ModelMetrics getFromDKV(Model model, Frame frame) {
@@ -103,5 +102,9 @@ public final class ModelMetrics extends Iced {
       return null;
 
     return (ModelMetrics)v.get();
+  }
+
+  public long checksum() {
+    return frame_checksum * 13 + model_checksum * 17;
   }
 }

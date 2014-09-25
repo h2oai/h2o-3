@@ -293,6 +293,12 @@ final public class Key extends Iced implements Comparable {
     return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
   }
 
+  public void remove() {
+    Value val = DKV.get(this);
+    if( val==null ) return;
+    ((Keyed)val.get()).remove();
+  }
+
   // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
   public static Key makeUserHidden(final Key orig) {
     if (!orig.user_allowed()) return orig; //already hidden
@@ -384,5 +390,5 @@ final public class Key extends Iced implements Comparable {
   @Override public final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
   @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
   @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
-  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); }
+  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); } // TODO: this is ugly; do just a String
 }

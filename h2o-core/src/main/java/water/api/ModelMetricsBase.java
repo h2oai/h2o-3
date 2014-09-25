@@ -2,7 +2,6 @@ package water.api;
 
 import hex.Model;
 import hex.ModelMetrics;
-import water.fvec.Frame;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.
@@ -53,18 +52,25 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
     // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
     // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
-    // Shouldn't need to do this manually. . .
+    // TODO: fix PojoUtils.copyProperties so we don't need the boilerplate here:
+    // For the Model we want the key and the parameters, but no output.
     Model model = modelMetrics.model.get();
     this.model = model.schema().fillFromImpl(model);
+    this.model.output = null;
     this.model_checksum = modelMetrics.model_checksum;
-    // TODO: remove fillFromImpl once it is refactored together with the constructor (see Frame.java)
-    this.frame = new FrameV2((Frame) modelMetrics.frame.get()).fillFromImpl((Frame) modelMetrics.frame.get());
+    this.frame = new FrameV2(modelMetrics.frame);
     this.frame_checksum = modelMetrics.frame_checksum;
     this.model_category = modelMetrics.model_category;
     this.duration_in_ms = modelMetrics.duration_in_ms;
     this.scoring_time = modelMetrics.scoring_time;
     this.auc = new AUCV3().fillFromImpl(modelMetrics.auc); // TODO: shouldn't be version-specific
+    // TODO: need to have only one Iced CM class. . .
+    // this.cm = new ConfusionMatrixV3().fillFromImpl(modelMetrics.cm);  // TODO: shouldn't be version-specific
 
     return this;
+  }
+
+  public static ModelMetricsBase schema(int version) {
+    return new ModelMetricsV3();
   }
 }

@@ -3,11 +3,11 @@ package hex.glm;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.Model;
-import water.DTask.DKeyTask;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
+import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
@@ -17,6 +17,7 @@ import java.util.HashMap;
 
 /**
  * Created by tomasnykodym on 8/27/14.
+ * TODO: should be a subclass of SupervisedModel.
  */
 public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
   final DataInfo _dinfo;

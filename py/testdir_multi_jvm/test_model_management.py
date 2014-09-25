@@ -93,6 +93,18 @@ for algo in algos:
     builder = model_builders['model_builders'][algo]
     validate_builder(builder)
 
+####################################
+# test model_metrics collection GET
+print 'Testing /ModelMetrics. . .'
+model_metrics = a_node.model_metrics(timeoutSecs=240)
+
+print 'ModelMetrics: '
+pp.pprint(model_metrics)
+
+####################################
+# test model_metrics individual GET
+# TODO
+
 ################################################
 # Import prostate.csv
 import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
@@ -135,6 +147,15 @@ models = a_node.models()
 print 'After Model build: Models: '
 pp.pprint(models)
 
+
+# TODO: remove fail-early test
+# print 'About to score. . .'
+# mm = a_node.score(model=dl_prostate_model_name, frame=prostate_key)
+# assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
+# assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
+# assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
+# print "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + ":  " + repr(mm)
+
 #######################################
 # Build DeepLearning model for Airlines
 dl_airlines_model_name = 'airlines_DeepLearning_1'
@@ -172,6 +193,12 @@ for model in models['models']:
 
 assert found_dl, 'Did not find ' + dl_prostate_model_name + ' in the models list.'
 validate_actual_parameters(dl_prostate_1_parameters, dl_model['parameters'], prostate_key, None)
+
+mm = a_node.score(model=dl_prostate_model_name, frame=prostate_key)
+assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
+assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
+assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
+print "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + ":  " + repr(mm)
 
 ###################################
 # Check dl_airlines_model_name

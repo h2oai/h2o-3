@@ -1,12 +1,9 @@
 package water.api;
 
-import hex.Model;
-import hex.ModelMetrics;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RollupStats;
 import water.fvec.Vec;
-import water.util.Log;
 
 class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   @Override protected int min_ver() { return 2; }
@@ -38,28 +35,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     }
   }
 
-
-  /**
-   * Score a frame with the given model.
-   */
-  protected static ModelMetrics scoreOne(Frame frame, Model score_model) {
-
-    // NOTE: ModelMetrics are now always being created by model.score. . .
-
-    ModelMetrics metrics = ModelMetrics.getFromDKV(score_model, frame);
-
-    if (null != metrics) {
-      Log.debug("using ModelMetrics from the cache. . .");
-      return metrics;
-    }
-    Log.debug("Cache miss: computing ModelMetrics. . .");
-    score_model.score(frame, true);
-    return ModelMetrics.getFromDKV(score_model, frame);
-  }
-
-
-
-  // /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all.
+  /* /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
   public Schema list_or_fetch(int version, Frames f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);

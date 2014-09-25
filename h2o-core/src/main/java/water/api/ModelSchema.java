@@ -38,6 +38,9 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   public ModelSchema() {
   }
 
+  /* Key-only constructor, for the times we only want to return the key. */
+  ModelSchema( Key key ) { this.key = key; }
+
   public ModelSchema(M m) {
     PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this.output, m._output, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
@@ -83,8 +86,11 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
     ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema());
     ab.put1(',');
 
+    if (null == output) { // allow key-only output
+      output = createOutputSchema();
+    }
     // Let output render itself:
-    ab.putJSON ("output", output);
+    ab.putJSON("output", output);
     ab.put1(',');
 
     // TODO: compatible_frames should only have the list of keys; the containing request should contain all the frames.

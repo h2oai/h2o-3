@@ -5,7 +5,7 @@ import water.*;
 import water.fvec.Frame;
 import water.util.Log;
 
-class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, ModelMetricsHandler.ModelMetricsListSchema> {
+class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, ModelMetricsHandler.ModelMetricsListSchemaV3> {
   @Override protected int min_ver() { return 3; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -66,7 +66,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
           Log.warn("ModelMetrics key not found in DKV: " + key.toString());
           continue;
         }
-        if (!"water.ModelMetrics".equals(v.className())) {
+        if (!ModelMetrics.class.getCanonicalName().equals(v.className())) {
           Log.warn("ModelMetrics key: " + key.toString() + " points to a value of some other class: " + v.className());
           continue;
         }
@@ -97,10 +97,10 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     }
     */
 
-    protected ModelMetricsListSchema schema(int version) {
+    protected ModelMetricsListSchemaV3 schema(int version) {
       switch (version) {
         case 3:
-          return new ModelMetricsListSchema();
+          return new ModelMetricsListSchemaV3();
         default:
           throw H2O.fail("Bad version for ModelMetrics schema: " + version);
       }
@@ -111,13 +111,13 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
    * Schema for a list of ModelMetricsBase.
    * This should be common across all versions of ModelMetrics schemas, so it lives here.
    */
-  public static final class ModelMetricsListSchema extends Schema<ModelMetricsList, ModelMetricsListSchema> {
+  public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = false)
-    public String model_filter;
+    public String model;
 
     @API(help = "Key of Frame of interest (optional)", json = false)
-    public String frame_filter;
+    public String frame;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -125,16 +125,16 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
 
     @Override public ModelMetricsHandler.ModelMetricsList createImpl() {
       ModelMetricsList mml = new ModelMetricsList();
-      if (null != model_filter) {
-        Value v = DKV.get(this.model_filter);
+      if (null != model) {
+        Value v = DKV.get(this.model);
         if (null == v)
-          throw new IllegalArgumentException("Model key not found: " + model_filter);
+          throw new IllegalArgumentException("Model key not found: " + model);
         mml.model = v.get();
       }
-      if (null != frame_filter) {
-        Value v = DKV.get(this.frame_filter);
+      if (null != frame) {
+        Value v = DKV.get(this.frame);
         if (null == v)
-          throw new IllegalArgumentException("Frame key not found: " + frame_filter);
+          throw new IllegalArgumentException("Frame key not found: " + frame);
         mml.frame = v.get();
       }
 
@@ -149,13 +149,13 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
       return mml;
     }
 
-    @Override public ModelMetricsListSchema fillFromImpl(ModelMetricsList mml) {
+    @Override public ModelMetricsListSchemaV3 fillFromImpl(ModelMetricsList mml) {
       // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model_filter = mml.model._key.toString();
-      this.frame_filter = mml.frame._key.toString();
+      this.model = (null == mml.model ? null : mml.model._key.toString());
+      this.frame = (null == mml.frame ? null : mml.frame._key.toString());
 
       if (null != mml.model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml.model_metrics.length];
@@ -164,10 +164,12 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
         for (ModelMetrics mm : mml.model_metrics) {
           this.model_metrics[i++] = mm.schema().fillFromImpl(mm);
         }
+      } else {
+        this.model_metrics = new ModelMetricsBase[0];
       }
       return this;
     }
-  } // ModelMetricsListSchema
+  } // ModelMetricsListSchemaV3
 
   // TODO: almost identical to ModelsHandler; refactor
   public static ModelMetrics getFromDKV(Key key) {
@@ -187,8 +189,8 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
 
   /** Return a single ModelMetrics. */
   public Schema fetch(int version, ModelMetricsList m) {
-    ModelMetrics[] mm = m.fetch();
-    ModelMetricsListSchema schema = this.schema(version).fillFromImpl(m);
+    m.model_metrics = m.fetch();
+    ModelMetricsListSchemaV3 schema = this.schema(version).fillFromImpl(m);
     return schema;
   }
 
@@ -200,6 +202,21 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     return fetch(version, mm);
   }
 
+  /**
+   * Score a frame with the given model.
+   */
+  public Schema score(int version, ModelMetricsList parms) {
+    // NOTE: ModelMetrics are now always being created by model.score. . .
+    ModelMetrics metrics = ModelMetrics.getFromDKV(parms.model, parms.frame);
+
+    if (null != metrics) {
+      Log.debug("using ModelMetrics from the cache. . .");
+      return this.fetch(version, parms);
+    }
+    Log.debug("Cache miss: computing ModelMetrics. . .");
+    parms.model.score(parms.frame, true);
+    return this.fetch(version, parms);
+  }
 
   /*
   NOTE: copy-pasted from Models, not yet munged for ModelMetrics:
@@ -244,9 +261,9 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   */
 
 
-  @Override protected ModelMetricsListSchema schema(int version) {
+  @Override protected ModelMetricsListSchemaV3 schema(int version) {
     switch (version) {
-    case 3:   return new ModelMetricsListSchema();
+    case 3:   return new ModelMetricsListSchemaV3();
     default:  throw H2O.fail("Bad version for ModelMetrics schema: " + version);
     }
   }

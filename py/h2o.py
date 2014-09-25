@@ -456,7 +456,6 @@ class H2O(object):
     def frames(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
 #            'find_compatible_models': 0,
-#            'score_model': None
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
         
@@ -525,6 +524,38 @@ class H2O(object):
 
 
     '''
+    Score a model on the h2o cluster on the given Frame. 
+    '''
+    def score(self, model, frame, timeoutSecs=60, **kwargs):
+        assert model is not None, '"model" parameter is null'
+        assert frame is not None, '"frame" parameter is null'
+
+        models = self.models(key=model, timeoutSecs=timeoutSecs)
+        assert models is not None, "/Models REST call failed"
+        assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+
+        # TODO: test this assert, I don't think this is working. . .
+        frames = self.frames(key=frame)
+        assert frames is not None, "/Frames/{0} REST call failed".format(frame)
+        assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+
+        result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+
+        mm = result['model_metrics'][0]
+        H2O.verboseprint("model metrics: " + repr(mm))
+        return mm
+
+
+    '''
+    ModelMetrics list. 
+    '''
+    def model_metrics(self, timeoutSecs=60, **kwargs):
+        result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+
+        return result
+
+
+    '''
     Delete a model on the h2o cluster, given its key.
     '''
     def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
@@ -561,7 +592,6 @@ class H2O(object):
     def models(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_frames': False
-#            'score_frame': None
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)
 
