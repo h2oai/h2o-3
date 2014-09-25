@@ -110,10 +110,18 @@ public class NewChunk extends Chunk {
     public Value(int lid, int gid){_lId = lid; _gId = gid;}
     public final int rowId0(){return _gId;}
     public void add2Chunk(NewChunk c){
-      if(_ds == null) c.addNum(_ls[_lId],_xs[_lId]);
-      else {
-        if( _ls != null ) c.addUUID(_ls[_lId], Double.doubleToRawLongBits(_ds[_lId]));
-        else c.addNum(_ds[_lId]);
+      if (_ds == null && _ss == null) {
+          c.addNum(_ls[_lId],_xs[_lId]);
+      } else {
+        if (_ls != null) {
+          c.addUUID(_ls[_lId], Double.doubleToRawLongBits(_ds[_lId]));
+        } else if (_ss != null) {
+          int sidx = _is[_lId];
+          int slen = _lId+1 < _is.length ? _is[_lId+1]-sidx : _sslen - sidx;
+          ValueString vstr = new ValueString().set(_ss, sidx, slen);
+          c.addStr(vstr);
+        } else
+          c.addNum(_ds[_lId]);
       }
     }
   }
@@ -447,6 +455,7 @@ public class NewChunk extends Chunk {
       _is = MemoryManager.malloc4 (4);
         /* initialize everything with -1s */
       for (int i = 0; i < _is.length; i++) _is[i] = -1;
+      if (sparse()) alloc_indices(4);
     }
     assert sparseLen() == 0 || _is.length > sparseLen():"_ls.length = " + _is.length + ", len() = " + sparseLen();
 
