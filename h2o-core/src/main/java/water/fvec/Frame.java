@@ -567,7 +567,7 @@ public class Frame extends Lockable {
               espc2,
               domains!=null ? domains[i] : null,
               false/*not UUID*/,
-              colTypes[i].equals(String.class),
+              colTypes[i].equals(String.class) && (domains==null || domains[i]==null),
               (byte)-1/*not Time*/);
       DKV.put(_keys[i],vec,fs);             // Inject the header
     }
