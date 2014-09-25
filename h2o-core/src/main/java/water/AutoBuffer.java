@@ -350,16 +350,19 @@ public final class AutoBuffer {
   // close the channel and let the other side to deal with it and figure out
   // the task has been cancelled (still sending ack ack back).
   void drainClose() {
-    try {
-      // Appears to work reasonably now; removing noisy printout
-      //try {              Log.info("drainClose channel to " + ((SocketChannel) _chan).socket().getInetAddress()); }
-      //catch(Throwable t){Log.info("drainClose channel to unknown node");}
-      _chan.close();
-      restorePriority();        // And if we raised priority, lower it back
-      bbFree();
-    } catch( IOException e ) {  // Dunno how to handle so crash-n-burn
-      throw Log.throwErr(e);
+    if( isClosed() ) return;              // Already closed
+    assert _h2o != null || _chan != null; // Byte-array backed should not be closed
+    if( _chan != null ) {                 // Channel assumed sick from prior IOException
+      ByteChannel chan = _chan;           // Read before closing
+      try { chan.close(); } catch( IOException ignore ) {} // Silently close
+      _chan = null;                       // No channel now!
+      if( !_read && chan instanceof SocketChannel) _h2o.freeTCPSocket((SocketChannel)chan); // Recycle writable TCP channel
     }
+    restorePriority();          // And if we raised priority, lower it back
+    bbFree();
+    _time_close_ms = System.currentTimeMillis();
+    TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
+    assert isClosed();
   }
 
   // True if we opened a TCP channel, or will open one to close-and-send
