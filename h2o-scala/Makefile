@@ -2,8 +2,8 @@
 # Source code
 main_scalas = $(wildcard src/main/scala/water/*scala src/main/scala/water/*/*scala)
 test_scalas = $(wildcard src/test/scala/water/*scala src/test/scala/water/*/*scala src/test/scala/water/*/*/*scala)
-main_classes = $(patsubst src/main/scala/%scala,build/classes/%class,$(main_scalas))
-test_classes = $(patsubst src/test/scala/%scala,build/classes/%class,$(test_scalas))
+main_classes = $(patsubst src/main/scala/%scala,build/classes/main/%class,$(main_scalas))
+test_classes = $(patsubst src/test/scala/%scala,build/classes/test/%class,$(test_scalas))
 test_clazzes = $(patsubst src/test/scala/%.scala,%,$(wildcard src/test/scala/water/*scala src/test/scala/water/*/*scala))
 classes = $(main_classes) $(test_classes)
 
@@ -68,20 +68,20 @@ check_slow: $(classes)
 	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
-$(main_classes): build/classes/%class: src/main/scala/%scala
+$(main_classes): build/classes/main/%class: src/main/scala/%scala
 	@echo "compiling " $@ " because " $?
-	@[ -d build/classes ] || mkdir -p build/classes
-	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes $(main_scalas)
+	@[ -d build/classes/main ] || mkdir -p build/classes/main
+	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/main $(main_scalas)
 
-$(test_classes): build/classes/%class: src/test/scala/%scala $(main_classes)
+$(test_classes): build/classes/test/%class: src/test/scala/%scala $(main_classes)
 	@echo "compiling " $@ " because " $?
-	@[ -d build/classes ] || mkdir -p build/classes
-	@scalac $(SCALAC_ARGS) -cp "build/classes$(SEP)$(jars)" -sourcepath src/test/scala -d build/classes $(test_scalas)
+	@[ -d build/classes/test ] || mkdir -p build/classes/test
+	@scalac $(SCALAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/main/scala -d build/classes/test $(test_scalas)
 
 # Build the h2o-scala.jar file
 build/h2o-scala.jar: $(classes)
 	@echo "jarring " $@ " because " $?
-	@jar -cf build/h2o-scala.jar -C build/classes .
+	@jar -cf build/h2o-scala.jar -C build/classes/main .
 
 
 .PHONY: clean
