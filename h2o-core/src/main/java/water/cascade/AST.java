@@ -219,13 +219,8 @@ class ASTSeries extends AST {
     return false;
   }
 
-  boolean isColSelector() {
-    return _isCol;
-  }
-
-  boolean isRowSelector() {
-    return _isRow;
-  }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
 
   void setSlice(boolean row, boolean col) {
     _isRow = row;
@@ -239,15 +234,8 @@ class ASTSeries extends AST {
     e.push(v);
   }
 
-  @Override
-  String value() {
-    return null;
-  }
-
-  @Override
-  int type() {
-    return Env.SERIES;
-  }
+  @Override String value() { return null; }
+  @Override int type() { return Env.SERIES; }
 
   @Override
   public String toString() {
