@@ -1,11 +1,10 @@
 package water.cascade;
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
@@ -182,6 +181,8 @@ class ASTSpan extends AST {
   }
   boolean all_neg() { return _min < 0; }
   boolean all_pos() { return !all_neg(); }
+  boolean isNum() { return _min == _max; }
+  long toNum() { return _min; }
 }
 
 class ASTSeries extends AST {
@@ -295,6 +296,29 @@ class ASTNull extends AST {
   @Override int type() { return Env.NULL; }
 }
 
+/**
+ *  The ASTAssign Class
+ *
+ *  Handle the four cases of assignment:
+ *
+ *     1. Whole frame assignment:  hexA = RHS
+ *     2. Three flavors of slot assignment:
+ *        A. hex[,col(s)]       = RHS       // column(s) re-assign
+ *        B. hex[row(s),]       = RHS       // row(s) re-assign
+ *        C. hex[row(s),col(s)] = RHS       // row(s) AND col(s) re-assign
+ *
+ *     NB: RHS is any arbitrary (but valid) AST
+ *
+ *     This also supports adding a new column.
+ *     (e.g., hex$new_column <- 10, creates "new_column" vector in hex with values set to 10)
+ *
+ *     The RHS is already on the stack, the LHS is not yet on the stack.
+ *
+ *     Note about Enum/Non-Enum Vecs:
+ *
+ *       If the vec is enum, then the RHS must also be enum (if enum is not in domain of LHS produce NAs).
+ *       If the vec is numeric, then the RHS must also be numeric (if enum, then produce NAs or throw IAE).
+ */
 class ASTAssign extends AST {
   ASTAssign parse_impl(Exec E) {
     AST l = E.parse();            // parse the ID on the left, or could be a column, or entire frame, or a row
@@ -306,13 +330,169 @@ class ASTAssign extends AST {
 
   @Override int type () { throw H2O.fail(); }
   @Override String value() { throw H2O.fail(); }
+  private static boolean in(String s, String[] matches) { return Arrays.asList(matches).contains(s); }
+
+  private static void replaceRow(Chunk[] chks, int row, double d0, String s0, long[] cols) {
+    for (int c = 0; c < cols.length; ++c) {
+      int col = (int)cols[c];
+      // have an enum column
+      if (chks[col].vec().isEnum()) {
+        if (s0 == null) { chks[col].setNA0(row); continue; }
+        String[] dom = chks[col].vec().domain();
+        if (in(s0, dom)) { chks[col].set0(row, Arrays.asList(dom).indexOf(s0)); continue; }
+        chks[col].setNA0(row); continue;
+
+        // have a numeric column
+      } else if (chks[col].vec().isNumeric()) {
+        if (Double.isNaN(d0) || s0 != null) { chks[col].setNA0(row); continue; }
+        chks[col].set(row, d0); continue;
+      }
+    }
+  }
+
+  private static void assignRows(Env e, Object rows, Frame lhs_ary, Object cols) {
+    // For every col at the range of indexes, set the value to be the rhs, which is expected to be a scalar (or possibly a string).
+    // If the rhs is a double or str, then fill with doubles or NA when type is Enum.
+    final long[] cols0 = cols == null ? new long[lhs_ary.numCols()] : (long[])cols;
+    if (cols == null) for (int i = 0; i < lhs_ary.numCols(); ++i) cols0[i] = i;
+
+    if (!e.isAry()) {
+
+      String s = null;
+      double d = Double.NaN;
+      if (e.isStr()) s = e.popStr();
+      else if (e.isNum()) d = e.popDbl();
+      else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
+      final double d0 = d;
+      final String s0 = s;
+
+      // Case: Have a long[] of rows
+      if (rows instanceof long[]) {
+        final long[] rows0 = (long[]) rows;
+
+        // MRTask over the lhs array
+        new MRTask() {
+          @Override public void map(Chunk[] chks) {
+            for (int row = 0; row < chks[0].len(); ++row)
+              if (Arrays.asList(rows0).contains(row)) replaceRow(chks, row, d0, s0, cols0);
+          }
+        }.doAll(lhs_ary.numCols(), lhs_ary);
+        e.push0(new ValFrame(lhs_ary));
+        return;
+
+        // Case: rows is a Frame -- in this case it's expected to be a predicate vec
+      } else if (rows instanceof Frame) {
+        Frame rr = new Frame(lhs_ary).add((Frame) rows);
+        if (rr.numCols() != lhs_ary.numCols() + 1)
+          throw new IllegalArgumentException("Got multiple columns for row predicate.");
+
+        // treat rows as a bit vec, nonzeros mean rows should be replaced with s0 or d0, 0s mean continue
+        new MRTask() {
+          @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+            Chunk pred = cs[cs.length - 1];
+            int rows = cs[0].len();
+            for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
+          }
+        }.doAll(rr.numCols() - 1, rr);
+        e.cleanup(rr, (Frame) rows);
+        e.push0(new ValFrame(lhs_ary));
+        return;
+      } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was a constant)");
+
+      // If the rhs is an array, then fail if `height` of the rhs != rows.length. Otherwise, fetch-n-fill! (expensive)
+    } else {
+      // RHS shape must match LHS shape...
+      // Example: hex[1:50,] <- hex2[90:100,] will fail, but swap out 90:100 w/ 101:150 should pass
+      // LHS.numCols() == RHS.numCols()
+      // mismatch in types results in NA
+
+      final Frame rhs_ary = e.pop0Ary();
+      if (rhs_ary.numCols() != lhs_ary.numCols())
+        throw new IllegalArgumentException("Right-hand frame has " + (rhs_ary.numCols() > lhs_ary.numCols() ? "more " : "fewer ") + "columns than the left-hand side." );
+      if (rhs_ary.numRows() > lhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side frame has more rows than the left-hand side.");
+
+      // case where rows is a long[]
+      if (rows instanceof long[]) {
+        final long[] rows0 = (long[])rows;
+        if (rows0.length != rhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side array does not match the number of rows selected in the left-hand side.");
+        // rows0 will have access to the index of the row to grab, use this to get the correct row from the rhs ary
+
+        // MRTask over the lhs array
+        new MRTask() {
+          @Override public void map(Chunk[] chks) {
+            for (int row = 0; row < chks[0].len(); ++row) {
+              if (Arrays.asList(rows0).contains(row)) {
+                long row_id = (long)Arrays.asList(rows0).indexOf(row);
+                for (int c = 0; c < cols0.length; ++c) {
+                  int col = (int)cols0[c];
+                  // vec is enum
+                  if (chks[col].vec().isEnum())
+                    if (!rhs_ary.vecs()[col].isEnum()) { chks[col].setNA0(row); continue; }
+                    // else vec is numeric
+                    else if (chks[col].vec().isNumeric())
+                      if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
+                  chks[col].set0(row, rhs_ary.vecs()[col].at(row_id));
+                }
+              }
+            }
+          }
+        }.doAll(lhs_ary.numCols(), lhs_ary);
+        e.cleanup(rhs_ary);
+        e.push0(new ValFrame(lhs_ary));
+        return;
+
+        // case where rows is a Frame
+      } else if (rows instanceof Frame) {
+
+        // MRTask over the lhs frame + rows predicate vec. the value of the predicate vec will be 1 + the row index
+        // in the corresponding rhs frame
+
+        Frame rr = new Frame(lhs_ary).add((Frame) rows);
+        if (rr.numCols() != lhs_ary.numCols() + 1)
+          throw new IllegalArgumentException("Got multiple columns for row predicate.");
+
+        int num_rows = (int)rr.lastVec().max();
+        if (num_rows - 1 != rhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side array does not match the number of rows selected in the left-hand side.");
+
+        // treat rows as a bit vec, nonzeros mean rows should be replaced with s0 or d0, 0s mean continue
+        Frame lhs = new MRTask() {
+          @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+            Chunk pred = cs[cs.length - 1];
+            int rows = cs[0].len();
+            for (int r = 0; r < rows; ++r) {
+              long row_id = (long)pred.at0(r);
+              if (row_id != 0) {
+                row_id--;
+                for (int c = 0; c < cols0.length; ++c) {
+                  int col = (int)cols0[c];
+                  // vec is enum
+                  if (cs[col].vec().isEnum())
+                    if (!rhs_ary.vecs()[col].isEnum()) { cs[col].setNA0(r); continue; }
+                    // else vec is numeric
+                    else if (cs[col].vec().isNumeric())
+                      if (!rhs_ary.vecs()[col].isNumeric()) { cs[col].setNA0(r); continue; }
+                  cs[col].set0(r, rhs_ary.vecs()[col].at(row_id));
+                }
+              }
+            }
+          }
+        }.doAll(rr.numCols() - 1, rr).outputFrame(lhs_ary.names(), lhs_ary.domains());
+        e.cleanup(lhs_ary, rr, (Frame) rows);
+        e.push(new ValFrame(lhs));
+        return;
+      } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was Frame");
+    }
+  }
 
   @Override void exec(Env e) {
 
+    // Case 1: Whole Frame assignment
     // Check if lhs is ID, update the symbol table; Otherwise it's a slice!
     if( this._asts[0] instanceof ASTId ) {
       ASTId id = (ASTId)this._asts[0];
       assert id.isSet() : "Expected to set result into the LHS!.";
+
+      // RHS is a frame
       if (e.isAry()) {
         Frame f = e.pop0Ary();  // pop without lowering counts
         Key k = Key.make(id._id);
@@ -322,146 +502,148 @@ class ASTAssign extends AST {
         e.push(new ValFrame(fr));
         e.put(id._id, Env.ARY, id._id);
       }
-    }
 
-    // Peel apart a slice assignment
-//    ASTSlice slice = (ASTSlice)_lhs;
-//    ASTId id = (ASTId)slice._ast;
-//    assert id._depth==0;        // Can only modify in the local scope.
-//    // Simple assignment using the slice syntax
-//    if( slice._rows==null & slice._cols==null ) {
-//      env.tos_into_slot(id._depth,id._num,id._id);
-//      return;
-//    }
-//    // Pull the LHS off the stack; do not lower the refcnt
-//    Frame ary = env.frId(id._depth,id._num);
-//    // Pull the RHS off the stack; do not lower the refcnt
-//    Frame ary_rhs=null;  double d=Double.NaN;
-//    if( env.isDbl() ) d = env._d[env._sp-1];
-//    else        ary_rhs = env.peekAry(); // Pop without deleting
-//
-//    // Typed as a double ==> the row & col selectors are simple constants
-//    if( slice._t == Type.DBL ) { // Typed as a double?
-//      assert ary_rhs==null;
-//      long row = (long)((ASTNum)slice._rows)._d-1;
-//      int  col = (int )((ASTNum)slice._cols)._d-1;
-//      Chunk c = ary.vecs()[col].chunkForRow(row);
-//      c.set(row,d);
-//      Futures fs = new Futures();
-//      c.close(c.cidx(),fs);
-//      fs.blockForPending();
-//      env.push(d);
-//      return;
-//    }
-//
-//    // Execute the slice LHS selection operators
-//    Object cols = ASTSlice.select(ary.numCols(),slice._cols,env);
-//    Object rows = ASTSlice.select(ary.numRows(),slice._rows,env);
-//
-//    long[] cs1; long[] rs1;
-//    if(cols != null && rows != null && (cs1 = (long[])cols).length == 1 && (rs1 = (long[])rows).length == 1) {
-//      assert ary_rhs == null;
-//      long row = rs1[0]-1;
-//      int col = (int)cs1[0]-1;
-//      if(col >= ary.numCols() || row >= ary.numRows())
-//        throw H2O.unimpl();
-//      if(ary.vecs()[col].isEnum())
-//        throw new IllegalArgumentException("Currently can only set numeric columns");
-//      ary.vecs()[col].set(row,d);
-//      env.push(d);
-//      return;
-//    }
-//
-//    // Partial row assignment?
-//    if( rows != null ) {
-//
-//      // Only have partial row assignment
-//      if (cols == null) {
-//
-//        // For every col at the range of indexes, set the value to be the rhs.
-//        // If the rhs is a double, then fill with doubles, NA where type is Enum.
-//        if (ary_rhs == null) {
-//          // Make a new Vec where each row to be written over has the value d
-//          final long[] rows0 = (long[]) rows;
-//          final double d0 = d;
-//          Vec v = new MRTask2() {
-//            @Override
-//            public void map(Chunk cs) {
-//              for (long er : rows0) {
-//                er = Math.abs(er) - 1; // 1-based -> 0-based
-//                if (er < cs._start || er > (cs._len + cs._start - 1)) continue;
-//                cs.set0((int) (er - cs._start), d0);
-//              }
-//            }
-//          }.doAll(ary.anyVec().makeZero()).getResult()._fr.anyVec();
-//
-//          // MRTask over the lhs array
-//          new MRTask2() {
-//            @Override public void map(Chunk[] chks) {
-//              // Replace anything that is non-zero in the rep_vec.
-//              Chunk rep_vec = chks[chks.length-1];
-//              for (int row = 0; row < chks[0]._len; ++row) {
-//                if (rep_vec.at0(row) == 0) continue;
-//                for (Chunk chk : chks) {
-//                  if (chk._vec.isEnum()) { chk.setNA0(row); } else { chk.set0(row, d0); }
-//                }
-//              }
-//            }
-//          }.doAll(ary.numCols(), ary.add("rep_vec",v));
-//          UKV.remove(v._key);
-//          UKV.remove(ary.remove(ary.numCols()-1)._key);
-//
-//          // If the rhs is an array, then fail if `height` of the rhs != rows.length. Otherwise, fetch-n-fill! (expensive)
-//        } else {
-//          throw H2O.unimpl();
-//        }
-//
-//        // Have partial row and col assignment
-//      } else {
-//        throw H2O.unimpl();
-//      }
-////      throw H2O.unimpl();
-//    } else {
-//      assert cols != null; // all/all assignment uses simple-assignment
-//
-//      // Convert constant into a whole vec
-//      if (ary_rhs == null)
-//        ary_rhs = new Frame(ary.anyVec().makeCon(d));
-//      // Make sure we either have 1 col (repeated) or exactly a matching count
-//      long[] cs = (long[]) cols;  // Columns to act on
-//      if (ary_rhs.numCols() != 1 &&
-//              ary_rhs.numCols() != cs.length)
-//        throw new IllegalArgumentException("Can only assign to a matching set of columns; trying to assign " + ary_rhs.numCols() + " cols over " + cs.length + " cols");
-//      // Replace the LHS cols with the RHS cols
-//      Vec rvecs[] = ary_rhs.vecs();
-//      Futures fs = new Futures();
-//      for (int i = 0; i < cs.length; i++) {
-//        int cidx = (int) cs[i] - 1;      // Convert 1-based to 0-based
-//        Vec rv = env.addRef(rvecs[rvecs.length == 1 ? 0 : i]);
-//        if (cidx == ary.numCols()) {
-//          if (!rv.group().equals(ary.anyVec().group())) {
-//            env.subRef(rv);
-//            rv = ary.anyVec().align(rv);
-//            env.addRef(rv);
-//          }
-//          ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
-//        }
-//        else {
-//          if (!(rv.group().equals(ary.anyVec().group())) && rv.length() == ary.anyVec().length()) {
-//            env.subRef(rv);
-//            rv = ary.anyVec().align(rv);
-//            env.addRef(rv);
-//          }
-//          fs = env.subRef(ary.replace(cidx, rv), fs);
-//        }
-//      }
-//      fs.blockForPending();
-//    }
-//    // After slicing, pop all expressions (cannot lower refcnt till after all uses)
-//    int narg = 0;
-//    if( rows!= null ) narg++;
-//    if( cols!= null ) narg++;
-//    env.pop(narg);
+    // The other three cases of assignment follow
+    } else {
+
+      // Peel apart a slice assignment
+      ASTSlice lhs_slice = (ASTSlice) this._asts[0];  // asts of ASTSlice => AST[]{hex, rows, cols}
+
+      // push the slice onto the stack
+      lhs_slice._asts[0].treeWalk(e);   // push hex
+      lhs_slice._asts[1].treeWalk(e);   // push rows
+      lhs_slice._asts[2].treeWalk(e);   // push cols
+
+      // Case C: Simple case where we have a single row and a single column
+      if (e.isNum() && e.peekTypeAt(-1) == Env.NUM) {
+        long row = (long) e.popDbl();
+        int col = (int) e.popDbl();
+        Frame ary = e.pop0Ary();
+        if (Math.abs(row) > ary.numRows())
+          throw new IllegalArgumentException("New rows would leave holes after existing rows.");
+        if (Math.abs(col) > ary.numCols())
+          throw new IllegalArgumentException("New columnss would leave holes after existing columns.");
+        if (row < 0 && Math.abs(row) > ary.numRows()) throw new IllegalArgumentException("Cannot extend rows.");
+        if (col < 0 && Math.abs(col) > ary.numCols()) throw new IllegalArgumentException("Cannot extend columns.");
+        if (e.isNum()) {
+          double d = e.popDbl();
+          if (ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set numeric columns");
+          Chunk c = ary.vecs()[col].chunkForRow(row);
+          c.set(row, d);
+          Futures fs = new Futures();
+          c.close(c.cidx(), fs);
+          fs.blockForPending();
+          e.push0(new ValFrame(ary));
+          return;
+        } else if (e.isStr()) {
+          if (!ary.vecs()[col].isEnum())
+            throw new IllegalArgumentException("Currently can only set categorical columns.");
+          String s = e.popStr();
+          String[] dom = ary.vecs()[col].domain();
+          if (in(s, dom)) ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
+          else ary.vecs()[col].set(row, Double.NaN);
+          e.push0(new ValFrame(ary));
+          return;
+        } else
+          throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
+      }
+
+      // Get the LHS slicing rows/cols. This is a more complex case than the simple 1x1 re-assign
+      Val colSelect = e.pop();
+      int rows_type = e.peekType();
+      Val rowSelect = rows_type == Env.ARY ? e.pop0() : e.pop();
+
+      Frame lhs_ary = e.peekAry(); // Now the stack looks like [ ..., RHS, LHS_FRAME]
+      Object cols = ASTSlice.select(lhs_ary.numCols(), colSelect, e, true);
+      Object rows = ASTSlice.select(lhs_ary.numRows(), rowSelect, e, false);
+      lhs_ary = e.pop0Ary(); // Now the stack looks like [ ..., RHS]
+
+      long[] cs1;
+      long[] rs1;
+
+      // Repeat of case C with a single col and row specified, but possibly packaged into ASTSeries objects.
+      if (cols != null && rows != null
+              && (cols instanceof long[]) && (rows instanceof long[])
+              && (cs1 = (long[]) cols).length == 1 && (rs1 = (long[]) rows).length == 1) {
+        long row = rs1[0];
+        int col = (int) cs1[0];
+        if (Math.abs(row) > lhs_ary.numRows())
+          throw new IllegalArgumentException("New rows would leave holes after existing rows.");
+        if (Math.abs(col) > lhs_ary.numCols())
+          throw new IllegalArgumentException("New columnss would leave holes after existing columns.");
+        if (row < 0 && Math.abs(row) > lhs_ary.numRows()) throw new IllegalArgumentException("Cannot extend rows.");
+        if (col < 0 && Math.abs(col) > lhs_ary.numCols()) throw new IllegalArgumentException("Cannot extend columns.");
+        if (e.isNum()) {
+          if (lhs_ary.vecs()[col].isEnum())
+            throw new IllegalArgumentException("Currently can only set numeric columns");
+          lhs_ary.vecs()[col].set(row, e.popDbl());
+          e.push0(new ValFrame(lhs_ary));
+          return;
+        } else if (e.isStr()) {
+          if (!lhs_ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set categorical columns.");
+          String s = e.popStr();
+          String[] dom = lhs_ary.vecs()[col].domain();
+          if (in(s, dom)) lhs_ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
+          else lhs_ary.vecs()[col].set(row, Double.NaN);
+          e.push0(new ValFrame(lhs_ary));
+          return;
+        } else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
+      }
+
+      // Partial row assignment? Cases B and C
+      if (rows != null) {
+
+        // Only have partial row assignment, Case B
+        if (cols == null) {
+          assignRows(e, rows, lhs_ary, null);
+
+          // Have partial row and col assignment? Case C
+        } else {
+          assignRows(e, rows, lhs_ary, cols);
+        }
+
+      // Case A, just cols
+      } else if (cols != null) {
+        Frame rhs_ary;
+        // convert constant into a whole vec
+        if (e.isNum()) rhs_ary = new Frame(lhs_ary.anyVec().makeCon(e.popDbl()));
+        else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeSimpleTransf(new long[]{0L}, new String[]{e.popStr()}));
+        else if (e.isAry()) rhs_ary = e.pop0Ary();
+        else throw new IllegalArgumentException("Bad RHS on the stack: " + e.peekType() + " : " + e.toString());
+
+        long[] cs = (long[]) cols;
+        if (rhs_ary.numCols() != 1 && rhs_ary.numCols() != cs.length)
+          throw new IllegalArgumentException("Can only assign to a matching set of columns; trying to assign " + rhs_ary.numCols() + " cols over " + cs.length + " cols");
+
+        // Replace the LHS cols with the RHS cols
+        Vec rvecs[] = rhs_ary.vecs();
+        Futures fs = new Futures();
+        for (int i = 0; i < cs.length; i++) {
+          int cidx = (int) cs[i];
+          Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
+          e.addVec(rv);
+          if (cidx == lhs_ary.numCols()) {
+            if (!rv.group().equals(lhs_ary.anyVec().group())) {
+              e.subVec(rv);
+              rv = lhs_ary.anyVec().align(rv);
+              e.addVec(rv);
+            }
+            lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
+          } else {
+            if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
+              e.subVec(rv);
+              rv = lhs_ary.anyVec().align(rv);
+              e.addVec(rv);
+            }
+            fs = e.subVec(lhs_ary.replace(cidx, rv), fs);
+          }
+        }
+        fs.blockForPending();
+        e.cleanup(rhs_ary);
+        e.push0(new ValFrame(lhs_ary));
+        return;
+      } else throw new IllegalArgumentException("Invalid row/col selections.");
+    }
   }
 
 //  String argName() { return this._asts[0] instanceof ASTId ? ((ASTId)this._asts[0])._id : null; }
@@ -474,7 +656,7 @@ class ASTAssign extends AST {
 //  }
 }
 
-// AST SLICE
+// AST Slice
 class ASTSlice extends AST {
   ASTSlice() {}
 
@@ -553,6 +735,9 @@ class ASTSlice extends AST {
       // if selecting out columns, build a long[] cols and return that.
       if (a.isColSelector()) return a.toArray();
 
+      // Check the case where we have c(1), e.g., a series of a single digit...
+      if (a.isNum()) return select(len, new ValNum(a.toNum()), env, isCol);
+
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
       Vec v0 = a.all_neg() ? ary.anyVec().makeCon(1) : ary.anyVec().makeZero();
@@ -568,10 +753,9 @@ class ASTSlice extends AST {
         : new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
-                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
             }
           }.doAll(v0).getResult()._fr;
-//      Keyed.remove(v0._key);
       return fr;
     }
     if (env.isSpan()) {
@@ -597,7 +781,6 @@ class ASTSlice extends AST {
                 if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
               }
           }.doAll(v0).getResult()._fr;
-//      Keyed.remove(v0._key);
       return fr;
     }
     // Got a frame/list of results.
