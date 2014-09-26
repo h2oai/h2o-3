@@ -25,7 +25,7 @@ public class RandomUtils {
   }
 
   /* Returns the configured random generator */
-  public synchronized static Random getRNG(long... seed) {
+  public static Random getRNG(long... seed) {
     assert _rngType != null : "Random generator type has to be configured";
     switch (_rngType) {
       case JavaRNG:
@@ -35,11 +35,8 @@ public class RandomUtils {
         // do not copy the seeds - use them, and initialize the first two ints by seeds based given argument
         // the call is locked, and also MersenneTwisterRNG will just copy the seeds into its datastructures
         assert seed.length == 1;
-        int[] seeds    = MersenneTwisterRNG.SEEDS;
         int[] inSeeds = ArrayUtils.unpackInts(seed);
-        seeds[0] = inSeeds[0];
-        seeds[1] = inSeeds[1];
-        return new MersenneTwisterRNG(seeds);
+        return new MersenneTwisterRNG(inSeeds);
       case XorShiftRNG:
         assert seed.length >= 1;
         return new XorShiftRNG(seed[0]);
@@ -234,16 +231,18 @@ public class RandomUtils {
       // This section is translated from the init_by_array code in the C version.
       int i = 1;
       int j = 0;
-      for( int k = Math.max(N, seedInts.length); k > 0; k-- ) {
+      for( int k = Math.max(N, SEEDS.length); k > 0; k-- ) {
+        int jseeds = (j == 0 || j == 1) ? seedInts[j] : SEEDS[j];
+
         mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >>> 30)) * SEED_FACTOR1))
-            + seedInts[j] + j;
+            + jseeds + j;
         i++;
         j++;
         if( i >= N ) {
           mt[0] = mt[N - 1];
           i = 1;
         }
-        if( j >= seedInts.length ) {
+        if( j >= SEEDS.length ) {
           j = 0;
         }
       }
