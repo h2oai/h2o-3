@@ -122,7 +122,7 @@ public class Vec extends Keyed {
     DKV.put(v0._key,v0);        // Header last
     return v0;
   }
-  protected Vec makeCon( final double d ) {
+  public Vec makeCon( final double d ) {
     if( (long)d==d ) return makeCon((long)d);
     final int nchunks = nChunks();
     final Vec v0 = new Vec(group().addVec(),_espc);
@@ -707,7 +707,7 @@ public class Vec extends Keyed {
    *  @return a new transformation vector providing mapping between given values and target domain.
    *  @see Vec#makeTransf(int[], int[], String[])
    */
-  Vec makeSimpleTransf(long[] values, String[] domain) {
+  public Vec makeSimpleTransf(long[] values, String[] domain) {
     int is[] = new int[values.length];
     for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
     return makeTransf(is, null, domain);
