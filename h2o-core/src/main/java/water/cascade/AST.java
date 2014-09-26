@@ -350,7 +350,32 @@ class ASTAssign extends AST {
     }
   }
 
-  private static void assignRows(Env e, Object rows, Frame lhs_ary, Object cols) {
+  private static void replaceRow(Chunk[] cs, int row0, long row_id, long[] cols, Frame ary) {
+    for (int c = 0; c < cols.length; ++c) {
+      int col = (int)cols[c];
+      // got an enum trying to set into enum
+      // got an enum trying to set into something else -> NA
+      if (cs[col].vec().isEnum()) {
+        if (ary.vecs()[col].isEnum()) {
+          ary.vecs()[col].set(row_id, cs[col].at0(row0));
+        } else {
+          ary.vecs()[col].set(row_id, Double.NaN);
+        }
+      }
+
+      // got numeric trying to set into something non-numeric -> NA
+      // got numeric trying to set into numeric
+      if (cs[col].vec().isNumeric()) {
+        if (ary.vecs()[col].isNumeric()) {
+          ary.vecs()[col].set(row_id, cs[col].at0(row0));
+        } else {
+          ary.vecs()[col].set(row_id, Double.NaN);
+        }
+      }
+    }
+  }
+
+  private static void assignRows(Env e, Object rows, final Frame lhs_ary, Object cols) {
     // For every col at the range of indexes, set the value to be the rhs, which is expected to be a scalar (or possibly a string).
     // If the rhs is a double or str, then fill with doubles or NA when type is Enum.
     final long[] cols0 = cols == null ? new long[lhs_ary.numCols()] : (long[])cols;
@@ -407,8 +432,8 @@ class ASTAssign extends AST {
       // mismatch in types results in NA
 
       final Frame rhs_ary = e.pop0Ary();
-      if (rhs_ary.numCols() != lhs_ary.numCols())
-        throw new IllegalArgumentException("Right-hand frame has " + (rhs_ary.numCols() > lhs_ary.numCols() ? "more " : "fewer ") + "columns than the left-hand side." );
+      if ( ( cols == null && rhs_ary.numCols() != lhs_ary.numCols()) || (cols != null && rhs_ary.numCols() != ((long[]) cols).length ) )
+        throw new IllegalArgumentException("Right-hand frame has does not match the number of columns required in the assignment to the left-hand side." );
       if (rhs_ary.numRows() > lhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side frame has more rows than the left-hand side.");
 
       // case where rows is a long[]
@@ -447,38 +472,36 @@ class ASTAssign extends AST {
         // MRTask over the lhs frame + rows predicate vec. the value of the predicate vec will be 1 + the row index
         // in the corresponding rhs frame
 
-        Frame rr = new Frame(lhs_ary).add((Frame) rows);
-        if (rr.numCols() != lhs_ary.numCols() + 1)
-          throw new IllegalArgumentException("Got multiple columns for row predicate.");
-
-        int num_rows = (int)rr.lastVec().max();
-        if (num_rows - 1 != rhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side array does not match the number of rows selected in the left-hand side.");
-
-        // treat rows as a bit vec, nonzeros mean rows should be replaced with s0 or d0, 0s mean continue
-        Frame lhs = new MRTask() {
-          @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-            Chunk pred = cs[cs.length - 1];
-            int rows = cs[0].len();
-            for (int r = 0; r < rows; ++r) {
-              long row_id = (long)pred.at0(r);
-              if (row_id != 0) {
-                row_id--;
-                for (int c = 0; c < cols0.length; ++c) {
-                  int col = (int)cols0[c];
-                  // vec is enum
-                  if (cs[col].vec().isEnum())
-                    if (!rhs_ary.vecs()[col].isEnum()) { cs[col].setNA0(r); continue; }
-                    // else vec is numeric
-                    else if (cs[col].vec().isNumeric())
-                      if (!rhs_ary.vecs()[col].isNumeric()) { cs[col].setNA0(r); continue; }
-                  cs[col].set0(r, rhs_ary.vecs()[col].at(row_id));
-                }
-              }
+        // MRTask over the pred vec to collapse to a dense set of row IDs
+        if (((Frame)rows).numCols() != 1) throw new IllegalArgumentException("Got multiple columns for row predicate.");
+        Frame pred = new MRTask() {
+          @Override public void map(Chunk c, NewChunk nc) {
+            for (int r = 0; r < c.len(); ++r) {
+              double d = c.at0(r);
+              if (d != 0) nc.addNum(d);
             }
           }
-        }.doAll(rr.numCols() - 1, rr).outputFrame(lhs_ary.names(), lhs_ary.domains());
-        e.cleanup(lhs_ary, rr, (Frame) rows);
-        e.push(new ValFrame(lhs));
+        }.doAll(1, (Frame)rows).outputFrame(null, null);
+
+        if (pred.numRows() != rhs_ary.numRows())
+          throw new IllegalArgumentException("Right-hand side array does not match the number of rows selected in the left-hand side.");
+
+        Frame rr = new Frame(rhs_ary).add(pred);
+
+        // MRTask over the RHS ary, pushing data out to the LHS ary based on the pred vec
+        new MRTask() {
+          @Override public void map(Chunk[] cs) {
+            Chunk pred = cs[cs.length-1];
+            int rows = cs[0].len();
+            for (int r=0; r<rows; ++r) {
+              long row_id = (long)pred.at0(r) - 1;
+              replaceRow(cs, r, row_id, cols0, lhs_ary);
+            }
+          }
+        }.doAll(rr.numCols(), rr);
+
+        e.cleanup(pred, rr, (Frame) rows);
+        e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was Frame");
     }
@@ -516,23 +539,19 @@ class ASTAssign extends AST {
 
       // Case C: Simple case where we have a single row and a single column
       if (e.isNum() && e.peekTypeAt(-1) == Env.NUM) {
-        long row = (long) e.popDbl();
         int col = (int) e.popDbl();
+        long row = (long) e.popDbl();
         Frame ary = e.pop0Ary();
         if (Math.abs(row) > ary.numRows())
           throw new IllegalArgumentException("New rows would leave holes after existing rows.");
         if (Math.abs(col) > ary.numCols())
-          throw new IllegalArgumentException("New columnss would leave holes after existing columns.");
+          throw new IllegalArgumentException("New columns would leave holes after existing columns.");
         if (row < 0 && Math.abs(row) > ary.numRows()) throw new IllegalArgumentException("Cannot extend rows.");
         if (col < 0 && Math.abs(col) > ary.numCols()) throw new IllegalArgumentException("Cannot extend columns.");
         if (e.isNum()) {
           double d = e.popDbl();
           if (ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set numeric columns");
-          Chunk c = ary.vecs()[col].chunkForRow(row);
-          c.set(row, d);
-          Futures fs = new Futures();
-          c.close(c.cidx(), fs);
-          fs.blockForPending();
+          ary.vecs()[col].set(row, d);
           e.push0(new ValFrame(ary));
           return;
         } else if (e.isStr()) {
@@ -778,7 +797,7 @@ class ASTSlice extends AST {
         : new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
-                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),1);
+                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
               }
           }.doAll(v0).getResult()._fr;
       return fr;
@@ -805,10 +824,10 @@ class ASTSlice extends AST {
   @Override public StringBuilder toString( StringBuilder sb, int d ) {
     indent(sb,d).append(this).append('\n');
     _asts[0].toString(sb,d+1).append("\n");
-    if( _asts[2]==null ) indent(sb,d+1).append("all\n");
-    else      _asts[2].toString(sb,d+1).append("\n");
-    if( _asts[1]==null ) indent(sb,d+1).append("all");
-    else      _asts[1].toString(sb,d+1);
+    if(  _asts[2]==null ) indent(sb,d+1).append("all\n");
+    else _asts[2].toString(sb,d+1).append("\n");
+    if(  _asts[1]==null ) indent(sb,d+1).append("all");
+    else _asts[1].toString(sb,d+1);
     return sb;
   }
 }

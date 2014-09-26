@@ -213,6 +213,7 @@ public class Env extends Iced {
   Futures subVec(Vec v, Futures fs) {
     assert fs != null : "Future should not be null!";
 //    if ( v.masterVec() != null ) subRef(v.masterVec(), fs);
+    if (!_refcnt.containsKey(v)) return fs;
     int cnt = _refcnt.get(v)._val-1;
     if ( cnt > 0 ) {
       _refcnt.put(v,new IcedInt(cnt));
@@ -639,21 +640,15 @@ class ValSeries extends Val {
     return false;
   }
 
-  boolean isColSelector() {
-    return _isCol;
-  }
-
-  boolean isRowSelector() {
-    return _isRow;
-  }
+  boolean isColSelector() { return _isCol; }
+  boolean isRowSelector() { return _isRow; }
 
   void setSlice(boolean row, boolean col) {
     _isRow = row;
     _isCol = col;
   }
 
-  @Override
-  String value() {
+  @Override String value() {
     return null;
   }
 
@@ -709,8 +704,6 @@ class ValSeries extends Val {
     List<Long> list = Arrays.asList(l);
     Collections.reverse(list);
     for (int i = 0; i < list.size(); ++i) r[i] = list.get(i);
-//    list = null;
-//    return r;
   }
 
   boolean isValid() {
