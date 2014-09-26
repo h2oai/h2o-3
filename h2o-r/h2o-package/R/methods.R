@@ -847,7 +847,7 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
   if(!is.character(key)) stop("key must be of class character")
   if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
-  else key <- "Last.value"
+  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(is.numeric(object) && is.vector(object)) {

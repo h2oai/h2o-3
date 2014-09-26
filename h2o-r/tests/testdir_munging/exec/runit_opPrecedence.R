@@ -22,6 +22,10 @@ test.op.precedence <- function(conn) {
 
     Log.info("Check A + B * C.")
     S1 <- as.data.frame(A + B * C)
+
+    print(S1)
+    print(s1)
+
     expect_that(all(S1 == s1), equals(T))
 
     Log.info("Check A - B - C.")
