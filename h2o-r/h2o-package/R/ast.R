@@ -104,6 +104,8 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   if (length(expr) == 1) {
     if (is.symbol(expr)) expr <- get(deparse(expr), envir)
     if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - sub))
+    if (is.character(expr[[1]])) return(deparse(expr[[1]]))
+    if (is.character(expr)) return(deparse(expr))
   }
   if (isGeneric(deparse(expr[[1]]))) {
     # Have a vector => ASTSeries
