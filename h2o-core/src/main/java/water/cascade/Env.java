@@ -148,16 +148,23 @@ public class Env extends Iced {
     if (_refcnt.get(v) == null) return;
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0) {
-      removeVec(v);
-      _refcnt.remove(v);
+      removeVec(v, null);
+      extinguishCounts(v);
     } else { _refcnt.put(v, new IcedInt(cnt)); }
   }
 
-  void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
-  static void removeVec(Vec v) {
-    Futures fs = new Futures();
-    DKV.remove(v._key, fs);
-    fs.blockForPending();
+  void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }  // MUST be called in conjunction w/ push(frame) or addRef
+  void addVec(Vec v) { _locked.add(v._key);  addRef(v); }
+  static Futures removeVec(Vec v, Futures fs) {
+    if (fs == null) {
+      fs = new Futures();
+      DKV.remove(v._key, fs);
+      fs.blockForPending();
+      return null;
+    } else {
+      DKV.remove(v._key, fs);
+      return fs;
+    }
   }
 
   void cleanup(Frame ... frames) {
@@ -200,6 +207,22 @@ public class Env extends Iced {
         default : pop(); break;
       }
     }
+  }
+
+  void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
+  Futures subVec(Vec v, Futures fs) {
+    assert fs != null : "Future should not be null!";
+//    if ( v.masterVec() != null ) subRef(v.masterVec(), fs);
+    int cnt = _refcnt.get(v)._val-1;
+    if ( cnt > 0 ) {
+      _refcnt.put(v,new IcedInt(cnt));
+    } else {
+      if (!_locked.contains(v._key)) {
+        extinguishCounts(v);
+        fs = removeVec(v, fs);
+      }
+    }
+    return fs;
   }
 
   void remove(Object o, boolean popped) {
@@ -699,6 +722,21 @@ class ValSeries extends Val {
 //      if (all_pos && l < 0) return false;
 //    }
     return true;
+  }
+
+  boolean isNum() {
+    boolean ret = false;
+    if (_idxs != null && _idxs.length > 0)
+      if (_idxs.length == 1) ret = true;
+    if (_spans != null && _spans.length > 0)
+      for (ASTSpan s : _spans) ret &= s.isNum();
+    return ret;
+  }
+
+  long toNum() {
+    if (_idxs != null && _idxs.length > 0) return _idxs[0];
+    if (_spans != null && _spans.length > 0) return _spans[0].toNum();
+    throw new IllegalArgumentException("Could not convert ASTSeries to a single number.");
   }
 
   boolean all_neg() { return (_idxs != null && _idxs.length > 0) ?_idxs[0] < 0 : _spans[0].all_neg(); }
