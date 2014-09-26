@@ -18,7 +18,7 @@ h2o.kmeans <- function(data, centers, cols = '', key = "", iter.max = 10, normal
   if(h2o.anyFactor(data[,args$cols_ind])) stop("Unimplemented: K-means can only model on numeric data")
   myInit = switch(init, none = "None", plusplus = "PlusPlus", furthest = "Furthest")
 
-  res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_KMEANS2, source=data@key, destination_key=key, ignored_cols=args$cols_ignore, k=centers, max_iter=iter.max, normalize=as.numeric(normalize), initialization=myInit, seed=seed, drop_na_cols=as.numeric(dropNACols))
+  res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_KMEANS2, source=data@key, destination_key=key, ignored_columns=args$cols_ignore, k=centers, max_iter=iter.max, normalize=as.numeric(normalize), initialization=myInit, seed=seed, drop_na_cols=as.numeric(dropNACols))
   params = list(cols=args$cols, centers=centers, iter.max=iter.max, normalize=normalize, init=myInit, seed=seed)
 
   if(.is_singlerun("KM", params)) {
@@ -109,8 +109,8 @@ h2o.deeplearning <- function(x, y, data, key = "",
 
   parms$'training_frame' = data@key
 #  parms$'training_frame' = data@key
-  parms$response = colargs$y
-  parms$ignored_cols = colargs$x_ignore
+  parms$response_column = colargs$y
+  parms$ignored_columns = colargs$x_ignore
   #parms$expert_mode = ifelse(!missing(autoencoder) && autoencoder, 1, 0)
   parms$expert_mode = 1 #always enable expert mode from R, since all options can be set
 
