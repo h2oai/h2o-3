@@ -11,37 +11,28 @@ source('../../h2o-runit.R')
 #setupRandomSeed(1689636624)
 
 test.column.assignment <- function(conn) {
-  dataSet <- select()
-  dataName <- names(dataSet)
-  dd <- dataSet[[1]]$ATTRS
-  Log.info(paste("Importing ", dataName, " data..."))
-  hex <- h2o.importFile(conn, locate(dataSet[[1]]$PATHS[1]), paste("r", gsub('-','_',dataName),".hex", sep = ""))
 
-  #could replace these with h2o-R call, but not testing that here
-  colnames <- dd$NAMES
-  numCols  <- as.numeric(dd$NUMCOLS)
-  numRows  <- as.numeric(dd$NUMROWS)
-  colTypes <- dd$TYPES
-  colRange <- dd$RANGE
-  Log.info(numRows)
+  hex <- as.h2o(h, iris)
 
-  Log.info("Select 1 column, change some values, re-assign with [<-")
-  col <- sample(colnames, 1)
-  col <- ifelse(is.na(suppressWarnings(as.numeric(col))), col, paste("C", col, sep = "", collapse = ""))
-  Log.info(paste("Using column: ", col))
-  type <- colTypes[colnames == col]
+  colsToSelect <- 1 #sample(ncol(hex), 1)
 
-  numToReplace <- sample(numRows,1)
-  rowsToReplace <- sample(numRows, numToReplace)
+  col <- sample(ncol(hex), colsToSelect)
+
+  numToReplace <- sample(nrow(hex),1)
+  rowsToReplace <- sample(nrow(hex), numToReplace)
 
   hexOriginal <- data.frame(col = as.data.frame(hex)[rowsToReplace,col])
-  Log.info(paste("Original Column: ", col, sep = ""))
+  #Log.info(paste("Original Column: ", col, sep = ""))
   print(head(hexOriginal))
 
-  replacement <- ifelse(type == "enum", sapply(rowsToReplace, genString), rnorm(rowsToReplace))
-  Log.info("Replacing rows for column selected")
+  replacement <- rnorm(rowsToReplace)
+  #Log.info("Replacing rows for column selected")
+
+  replacement <- as.h2o(conn, replacement)
 
   hex[rowsToReplace,col] <- replacement
+
+  head(hex)
 
   hexReplaced <- data.frame(col = as.data.frame(hex)[rowsToReplace,col]) 
   expect_false(hexReplaced, equals(hexOriginal))

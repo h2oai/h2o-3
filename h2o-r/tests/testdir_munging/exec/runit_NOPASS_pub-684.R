@@ -11,6 +11,9 @@ source('../../h2o-runit.R')
 #    conn = h2o.init()
 
 
+
+# IFELSE is unimpl
+
 test.ifelse <- function(conn) {
 
     a_initial <- data.frame(

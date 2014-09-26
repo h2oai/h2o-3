@@ -45,6 +45,6 @@ test.op.precedence <- function(conn) {
     expect_that(all(S6 == s6), equals(T))
 
     testEnd()
-}s
+}
 
 doTest("Test operator precedence.", test.op.precedence)

@@ -18,13 +18,11 @@ test.basic.slot.assignment <- function(conn) {
   Log.info(head(oldVal))
 
   hex[1,1] <- 48
-  hex$sepal_len[2] <- 90
+  print(head(hex))
+  hex$sepal_len <- 90  # new column
+  print(head(hex))
 
-  expect_false(hex[1,1], equals(oldVal))
-  expect_that(hex[1,1], equals(48))
-  expect_that(hex$sepal_len[2], equals(90))
   testEnd()
-
 }
 
 doTest("EQ2 Tests: [<- and $<-", test.basic.slot.assignment)

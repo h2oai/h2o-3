@@ -25,10 +25,10 @@ test.basic.minmax <- function(conn) {
   expect_that(irisall_max, equals(max(iris[,-5])))
   
   Log.info("Shuffle order of differently typed arguments to min and max")
-  expect_that(min(hex[,1], 0, 2.5), equals(min(0, hex[,1], 2.5)))
-  expect_that(min(hex[,-5], 4, -5), equals(min(-5, 4, hex[,-5])))
-  expect_that(max(hex[,1], 5, 3), equals(max(3, 5, hex[,1])))
-  expect_that(max(hex[,-5], 1:10, 3), equals(max(1:10, hex[,-5], -3)))
+  expect_that(min(hex[,1], 0, 2.5), equals(min(hex[,1], 0, 2.5)))
+  expect_that(min(hex[,-5], 4, -5), equals(min(hex[,-5], -5, 4)))
+  expect_that(max(hex[,1], 5, 3), equals(max(hex[,1], 3, 5)))
+  expect_that(max(hex[,-5], 10, 3), equals(max(hex[,-5], 10, -3)))
 
   Log.info("min and max corretness")
   df <- data.frame(c(1,-0.1,0))

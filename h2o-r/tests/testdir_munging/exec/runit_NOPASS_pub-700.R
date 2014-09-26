@@ -6,6 +6,9 @@ get.eval.result <- function(conn, expr) {
   return(new("H2OParsedData", h2o=conn, key=res$dest_key))
 }
 
+
+# UNIMPL: round, trunc, signif
+
 # use this for interactive setup
 #        library(h2o)
 #        library(testthat)
@@ -26,28 +29,28 @@ test.round_prec <- function(conn) {
     
     Log.info(paste("A =", paste(a, collapse <- ", ")))
     Log.info("Check trunc(A) matches R")
-    S1_t <- as.data.frame(get.eval.result(conn, "trunc(A)"))
+    S1_t <- as.data.frame(trunc(A))
     expect_true(all(S1_t == s1_t))
     
     Log.info("Check round(A, 0) matches R")
-    S1_r <- as.data.frame(get.eval.result(conn, "round(A, 0)"))
+    S1_r <- as.data.frame(round(A, 0))
     expect_true(all(S1_r == s1_r))
     
     Log.info("Check signif(A, 6) matches R")
-    S1_s <- as.data.frame(get.eval.result(conn, "signif(A, 6)"))
+    S1_s <- as.data.frame(signif(A, 6))
     expect_true(all(S1_s == s1_s))
     
     Log.info(paste("B =", paste(b, collapse <- ", ")))
     Log.info("Check trunc(B) matches R")
-    S2_t <- as.data.frame(get.eval.result(conn, "trunc(B)"))
+    S2_t <- as.data.frame(trunc(B))
     expect_true(all(S2_t == s2_t))
     
     Log.info("Check round(B, 3) matches R")
-    S2_r <- as.data.frame(get.eval.result(conn, "round(B, 3)"))
+    S2_r <- as.data.frame(round(B, 3))
     expect_true(all(S2_r == s2_r))
     
     Log.info("Check signif(B, 3) matches R")
-    S2_s <- as.data.frame(get.eval.result(conn, "signif(B, 3)"))
+    S2_s <- as.data.frame(signif(B, 3))
     expect_true(all(S2_s == s2_s))
     testEnd()
 }

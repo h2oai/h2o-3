@@ -7,8 +7,8 @@ source('../../h2o-runit.R')
 test.cbind <- function(conn) {
   Log.info('test cbind')
 
-  hdf <- h2o.importFile(conn, locate('../../../smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile(conn, locate('../../../smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
 
   ##### WORKS #####
   # cbind self to self
@@ -29,7 +29,7 @@ test.cbind <- function(conn) {
   expect_that(colnames(hdf_names), equals(c("colX", "colY")))
   
   # cbind unequal rows fails
-  expect_that(cbind(hdf, otherhdf), throws_error())
+  expect_that(head(cbind(hdf, otherhdf)), throws_error())
   
   ##### BROKEN #####
   # cbind a df to a slice

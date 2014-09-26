@@ -24,10 +24,6 @@ test.columndereference <- function(conn) {
   ldf <- as.data.frame( hdf[[ column ]] )[,1]
   expect_that(ldf, equals(c(2,4,6,11,3,4,6,11,2,4,6,11)) )
 
-  # don't overwrite with the wrong number of rows
-  expect_that( hdf[[column]] <- otherhdf[['ds1']], throws_error())
-  expect_that( hdf[[column]] <- hdf[,2:3], throws_error() )
-
   testEnd()
 }
 
