@@ -500,8 +500,15 @@ setClass("ASTNode", representation(root="Node", children="list"), contains="Node
 
 setMethod("show", "ASTNode", function(object) {
    cat(visitor(object)$ast, "\n")
-   print(head(object))
-   h2o.rm("object")
+   assign.to.parent <- FALSE
+   if (object@root@op == '=') assign.to.parent <- TRUE
+   name <- .getFrameName(object@children[[1]])
+   if (assign.to.parent) {
+    print(head(object, n = 6L, ID = name))
+   } else {
+    print(head(object))
+    h2o.rm("object")
+   }
 })
 
 #'
@@ -605,4 +612,20 @@ function(env) {
       return(get(ls(env)[which(e_list)[1]], envir=env))
   }
   stop("Could not find any H2OClient. Do you have an active connection to H2O from R? Please specify the h2o connection.")
+}
+
+.getFrameName<-
+function(child) {
+  # recurse down the LHS children
+  if (is.character(child)) {
+    if (grepl("^\\$", child)) return(gsub("\\$", "", child))
+  }
+  if (.hasSlot(child, "children")) {
+    if (is.character(child@children[[1]])) {
+      if (grepl("^\\$", child@children[[1]])) return(gsub("\\$", "", child@children[[1]]))
+    } else {
+      return(.getFrameName(child@children[[1]]))
+    }
+  }
+  NULL
 }

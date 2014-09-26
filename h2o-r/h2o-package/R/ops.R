@@ -116,10 +116,12 @@ setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )
 setMethod("log",   "H2OFrame", function(x, ...) .h2o.varop("log", x, ...))
 setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))
 
+
+
+## WORK IN PROGRESS: Get these to work? (if possible...)
 #'
 #' These cannot be overriden: ‘"&&"’, ‘"||"’
 #'
-
 #`&&` <- function(e1, e2) UseMethod("&&", c(e1,e2))
 #`&&.default`  <- function(e1, e2) {
 #  if (e2 %<i-% "H2OFrame") .binops.fun(e1, e2)

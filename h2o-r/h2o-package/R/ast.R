@@ -72,7 +72,7 @@ function(expr, envir) {
  l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
  a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
  b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
- any(a | b)
+ any(a|b)
 }
 
 #'
@@ -102,7 +102,7 @@ function(x, envir, sub_one = TRUE) {
 function(expr, envir, neg = FALSE, sub_one = TRUE) {
   sub <- ifelse(sub_one, 1, 0)
   if (length(expr) == 1) {
-    if (is.symbol(expr)) expr <- get(deparse(expr), envir)
+    if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
     if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - sub))
     if (is.character(expr[[1]])) return(deparse(expr[[1]]))
     if (is.character(expr)) return(deparse(expr))

@@ -75,8 +75,8 @@ h2o.ls <- function(object) {
 h2o.removeAll<-
 function(object) {
   if (missing(object)) object <- .retrieveH2O(parent.frame())
-  Log.info("Throwing away any keys on the H2O cluster")
-  .h2o.__remoteSend(object, .h2o.__REMOVEALL)
+  print("Throwing away any keys on the H2O cluster")
+  invisible(.h2o.__remoteSend(object, .h2o.__REMOVEALL))
 }
 
 #'
@@ -383,6 +383,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     else lhs <- do.call("[", list(x=x, i=substitute(i), j=substitute(j)))
 
   if (value %<i-% "ASTNode") rhs <- eval(value)
+  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key
   else if(value %<i-% "H2OFrame") rhs <- value
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
@@ -390,26 +391,22 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   new("ASTNode", root=op, children=list(lhs, rhs))
 })
 
-setMethod("$<-", "H2OParsedData", function(x, name, value) {
+setMethod("$<-", "H2OFrame", function(x, name, value) {
   if(missing(name) || !is.character(name) || nchar(name) == 0)
     stop("name must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
     stop("value can only be numeric or a H2OFrame object")
 
-    # TODO: Error checking on backend
-#  numCols = ncol(x); numRows = nrow(x)
-#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows)
-#    stop("value must be either a single number or a vector of length ", numRows)
-
   col_names <- colnames(x)
-  if (!(name %in% col_names)) idx <- length(col_names) + 1     # new column
-  else idx <- match(name, col_names)                           # re-assign existing column
-  lhs <- do.call("[", list(x=x, j=idx))                        # create the lhs ast
+  if (!(name %in% col_names)) idx <- length(col_names) + 1          # new column
+  else idx <- match(name, col_names)                                # re-assign existing column
+  lhs <- do.call("[", list(x=x, j=idx))                             # create the lhs ast
 
-  if (value %<i-% "ASTNode") rhs <- eval(value)                # rhs is already ast, eval it
-  else if(value %<i-% "H2OFrame") rhs <- value                 # rhs is some H2OFrame object
-  else rhs <- .eval(substitute(value), parent.frame(), FALSE)  # rhs is R generic
-  res <- new("ASTNode", root=op, children=list(lhs, rhs))      # create the rhs ast
+  if (value %<i-% "ASTNode") rhs <- eval(value)                     # rhs is already ast, eval it
+  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key  # swap out object for keyname
+  else if(value %<i-% "H2OFrame") rhs <- value                      # rhs is some H2OFrame object
+  else rhs <- .eval(substitute(value), parent.frame(), FALSE)       # rhs is R generic
+  res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
 
   # TODO: force eval res, and then set column names ... return an H2OParsedData object
 #
@@ -418,10 +415,8 @@ setMethod("$<-", "H2OParsedData", function(x, name, value) {
 #  return(new("H2OParsedData", h2o=x@h2o, key=x@key))
 })
 
-setMethod("[[<-", "H2OParsedData", function(x, i, value) {
+setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if( !( value %<i-% "H2OFrame")) stop('Can only append H2O data to H2O data')
-#  if( ncol(value) > 1 ) stop('May only set a single column')
-#  if( nrow(value) != nrow(x) ) stop(sprintf('Replacement has %d row, data has %d', nrow(value), nrow(x)))
   do.call("$<-", list(x=x, name=i, value=value))
 })
 
@@ -590,9 +585,21 @@ dim.H2OFrame <- function(x) {
 #'
 #' Evaluate the AST and produce the head of the eval'ed AST.
 head.H2OFrame <- function(x, n = 6L, ...) {
-  ID  <- as.list(match.call())$x
+  ID <- NULL
+  dots <- list(...)
+  if (!length(dots) == 0) {
+    ID <- dots$ID
+  }
+  if (x@root@op == '=' && is.null(ID)) {
+    name <- .getFrameName(x@children[[1]])
+    if (!is.null(name)) ID <- name
+  }
+  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
+  if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
+  ID <- as.list(match.call())$x
+#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
   assign(ID, x, parent.frame())
   head(get(ID, parent.frame()))
@@ -603,7 +610,16 @@ head.H2OFrame <- function(x, n = 6L, ...) {
 #'
 #' Evaluate the AST and produce the tail of the eval'ed AST.
 tail.H2OFrame <- function(x, n = 6L, ...) {
-  ID  <- as.list(match.call())$x
+  ID <- NULL
+  dots <- list(...)
+  if (!length(dots) == 0) {
+    ID <- dots$ID
+  }
+  if (x@root@op == '=' && is.null(ID)) {
+    name <- .getFrameName(x@children[[1]])
+    if (!is.null(name)) ID <- name
+  }
+  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
@@ -831,7 +847,7 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
   if(!is.character(key)) stop("key must be of class character")
   if( (missing(key) || nchar(key) == 0)  && !is.atomic(object)) key <- deparse(substitute(object))
-  else if (missing(key) || nchar(key) == 0) key <- "Last.value"
+  else key <- "Last.value"
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(is.numeric(object) && is.vector(object)) {
