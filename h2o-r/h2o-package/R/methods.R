@@ -366,22 +366,13 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
-   # TODO: Error checking on backend
-   # numRows = nrow(x); numCols = ncol(x)
-
   if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j))) stop("Row/column types not supported!")
-  if(!inherits(value, "H2OFrame") && !is.numeric(value)) stop("value can only be numeric or a H2OParsedData object")
-#  if(is.numeric(value) && length(value) != 1 && length(value) != numRows) stop("value must be either a single number or a vector of length ", numRows)
-
+  if(!inherits(value, "H2OFrame") && !is.numeric(value) && !is.character(value)) stop("value can only be numeric, character, or a H2OParsedData object")
   if(!missing(i) && is.numeric(i)) {
     if(any(i == 0)) stop("Array index out of bounds")
-#    if(any(i < 0 && abs(i) > numRows)) stop("Unimplemented: can't extend rows")
-#    if(min(i) > numRows+1) stop("new rows would leave holes after existing rows")
   }
   if(!missing(j) && is.numeric(j)) {
     if(any(j == 0)) stop("Array index out of bounds")
-#    if(any(j < 0 && abs(j) > numCols)) stop("Unimplemented: can't extend columns")
-#    if(min(j) > numCols+1) stop("new columns would leave holes after existing columns")
   }
 
   if (missing(i) && missing(j)) {
