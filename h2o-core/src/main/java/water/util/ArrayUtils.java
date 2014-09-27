@@ -489,4 +489,12 @@ public class ArrayUtils {
     System.arraycopy(b,0,c,a.length,b.length);
     return c;
   }
+
+  static public String[] prepend(String[] ary, String s) {
+    if (ary==null) return new String[] { s };
+    String[] nary = new String[ary.length+1];
+    nary[0] = s;
+    System.arraycopy(ary,0,nary,1,ary.length);
+    return nary;
+  }
 }
