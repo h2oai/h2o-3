@@ -22,6 +22,12 @@ public class H2OApp {
     // Fire up the H2O Cluster
     H2O.main(args);
 
+    // Register REST API
+    register(relpath);
+  }
+
+  static void register(String relpath) {
+
     H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-web/src/main/resources/www"));
     H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/src/main/resources/www"));
 
