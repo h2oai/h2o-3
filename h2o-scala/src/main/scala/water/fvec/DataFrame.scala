@@ -59,4 +59,6 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
       }
     }.doAll(this)
   }
+
+  override def toString(): String = super[Frame].toString()
 }
