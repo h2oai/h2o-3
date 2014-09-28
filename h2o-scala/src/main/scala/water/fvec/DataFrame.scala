@@ -61,4 +61,6 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   }
 
   override def toString(): String = super[Frame].toString()
+
+  override def hashCode(): Int = super[Frame].hashCode()
 }
