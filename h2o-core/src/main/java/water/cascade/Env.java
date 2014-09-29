@@ -234,6 +234,7 @@ public class Env extends Iced {
     if(!popped) pop();
   }
 
+  // NOTE: this extinguishCounts is slightly suspicious, but might be OK here... Will matter in UDFs
   private void remove_and_unlock(Frame fr) {
     extinguishCounts(fr);
     if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();

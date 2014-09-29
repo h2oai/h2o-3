@@ -6,7 +6,13 @@ import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Set;
 
 //import hex.la.Matrix;
 //import org.apache.commons.math3.util.*;
@@ -90,6 +96,9 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTAnyFactor());   // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
     putPrefix(new ASTAnyNA());
+    putPrefix(new ASTRound());
+    putPrefix(new ASTSignif());
+    putPrefix(new ASTTrun());
 //    putPrefix(new ASTIsTRUE());
 //    putPrefix(new ASTMTrans());
 
@@ -222,7 +231,7 @@ abstract class ASTUniOp extends ASTOp {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
 //    if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
-    Frame fr = env.popAry();
+    Frame fr = env.pop0Ary();
     final ASTUniOp uni = this;  // Final 'this' so can use in closure
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk[] chks, NewChunk[] nchks ) {
@@ -239,8 +248,8 @@ abstract class ASTUniOp extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.push(new ValFrame(fr2));
     env.cleanup(fr);
+    env.push(new ValFrame(fr2));
   }
 }
 
@@ -261,6 +270,7 @@ class ASTTanh extends ASTUniPrefixOp { @Override String opStr(){ return "tanh"; 
 class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  } @Override ASTOp make() {return new ASTAbs ();} @Override double op(double d) { return Math.abs(d);}}
 class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sgn" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
+class ASTTrun extends ASTUniPrefixOp { @Override String opStr(){ return "trunc"; } @Override ASTOp make() {return new ASTTrun();} @Override double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
 class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceil"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
 class ASTFlr  extends ASTUniPrefixOp { @Override String opStr(){ return "floor";} @Override ASTOp make() {return new ASTFlr ();} @Override double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniPrefixOp { @Override String opStr(){ return "log";  } @Override ASTOp make() {return new ASTLog ();} @Override double op(double d) { return Math.log(d);}}
@@ -271,7 +281,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
     //if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
-    Frame fr = env.popAry();
+    Frame fr = env.pop0Ary();
     final ASTUniOp uni = this;  // Final 'this' so can use in closure
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -284,8 +294,105 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.push(new ValFrame(fr2));
     env.cleanup(fr);
+    env.push(new ValFrame(fr2));
+  }
+}
+
+class ASTRound extends ASTUniPrefixOp {
+  int _digits = 0;
+  @Override String opStr() { return "round"; }
+  ASTRound() { super(new String[]{"round", "x", "digits"}); }
+  @Override ASTRound parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the digits
+    _digits = (int)((ASTNum)(E.skipWS().parse())).dbl();
+    ASTRound res = (ASTRound) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override ASTOp make() { return this; }
+  @Override void apply(Env env) {
+    final int digits = _digits;
+    if(env.isAry()) {
+      Frame fr = env.pop0Ary();
+      for(int i = 0; i < fr.vecs().length; i++) {
+        if(fr.vecs()[i].isEnum())
+          throw new IllegalArgumentException("Non-numeric column " + String.valueOf(i+1) + " in data frame");
+      }
+      Frame fr2 = new MRTask() {
+        @Override public void map(Chunk chks[], NewChunk nchks[]) {
+          for(int i = 0; i < nchks.length; i++) {
+            NewChunk n = nchks[i];
+            Chunk c = chks[i];
+            int rlen = c.len();
+            for(int r = 0; r < rlen; r++)
+              n.addNum(roundDigits(c.at0(r),digits));
+          }
+        }
+      }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
+      env.cleanup(fr);
+      env.push(new ValFrame(fr2));
+    }
+    else
+      env.push(new ValNum(roundDigits(env.popDbl(), digits)));
+  }
+
+  // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
+  static double roundDigits(double x, int digits) {
+    if(Double.isNaN(x)) return x;
+    return Math.floor(x * digits + 0.5) / (double)digits;
+  }
+}
+
+class ASTSignif extends ASTUniPrefixOp {
+  int _digits = 6;  // R default
+  @Override String opStr() { return "signif"; }
+  ASTSignif() { super(new String[]{"signif", "x", "digits"}); }
+  @Override ASTRound parse_impl(Exec E) {
+    // Get the ary
+    AST ary = E.parse();
+    // Get the digits
+    _digits = (int)((ASTNum)(E.skipWS().parse())).dbl();
+    ASTRound res = (ASTRound) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override ASTOp make() { return this; }
+  @Override void apply(Env env) {
+    final int digits = _digits;
+    if(digits < 0)
+      throw new IllegalArgumentException("Error in signif: argument digits must be a non-negative integer");
+
+    if(env.isAry()) {
+      Frame fr = env.pop0Ary();
+      for(int i = 0; i < fr.vecs().length; i++) {
+        if(fr.vecs()[i].isEnum())
+          throw new IllegalArgumentException("Non-numeric column " + String.valueOf(i+1) + " in data frame");
+      }
+      Frame fr2 = new MRTask() {
+        @Override public void map(Chunk chks[], NewChunk nchks[]) {
+          for(int i = 0; i < nchks.length; i++) {
+            NewChunk n = nchks[i];
+            Chunk c = chks[i];
+            int rlen = c.len();
+            for(int r = 0; r < rlen; r++)
+              n.addNum(signifDigits(c.at0(r),digits));
+          }
+        }
+      }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
+      env.cleanup(fr);
+      env.push(new ValFrame(fr2));
+    }
+    else
+      env.push(new ValNum(signifDigits(env.popDbl(), digits)));
+  }
+  static double signifDigits(double x, int digits) {
+    if(Double.isNaN(x)) return x;
+    BigDecimal bd = new BigDecimal(x);
+    bd = bd.round(new MathContext(digits, RoundingMode.HALF_EVEN));
+    return bd.doubleValue();
   }
 }
 
@@ -968,8 +1075,8 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //  @Override ASTOp make() {return this;}
 //  @Override void apply(Env env, int argcnt, ASTApply apply) { throw H2O.unimpl(); }
 //}
-//
-//// TODO: Check refcnt mismatch issue: tmp = cbind(h.hex,3.5) results in different refcnts per col
+
+// Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {
   int argcnt;
   @Override String opStr() { return "cbind"; }
@@ -1013,37 +1120,11 @@ class ASTCbind extends ASTUniPrefixOp {
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.pop0Ary();
       Frame new_frame = fr.makeCompatible(f);
-//      if (new_frame != f) env.cleanup(f);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame, true);
-//      env.cleanup(env.popAry());
     }
 
     env.push(new ValFrame(fr));
-
-//      if( env.isAry(-argcnt+1+i) ) {
-//        String name = null;
-//        Frame fr2 = env.ary(-argcnt+1+i);
-//        Frame fr3 = fr.makeCompatible(fr2);
-//        if( fr3 != fr2 ) {      // If copied into a new Frame, need to adjust refs
-//          env.addRef(fr3);
-//          env.subRef(fr2,null);
-//        }
-//        // Take name from an embedded assign: "cbind(colNameX = some_frame, ...)"
-//        if( fr2.numCols()==1 && apply != null && (name = apply._args[i+1].argName()) != null )
-//          fr.add(name,fr3.anyVec());
-//        else fr.add(fr3,true);
-//      } else {
-//        double d = env.dbl(-argcnt+1+i);
-//        Vec v = vmax == null ? Vec.make1Elem(d) : vmax.makeCon(d);
-//        fr.add("C" + String.valueOf(i+1), v);
-//        env.addRef(v);
-//      }
-//    }
-//    env._ary[env._sp-argcnt] = fr;  env._fcn[env._sp-argcnt] = null;
-//    env._sp -= argcnt-1;
-//    Arrays.fill(env._ary,env._sp,env._sp+(argcnt-1),null);
-//    assert env.check_refcnt(fr.anyVec());
   }
 }
 
