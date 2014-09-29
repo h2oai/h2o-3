@@ -1,7 +1,7 @@
 # Development Notes 
 
 ## Coding convention
- TBD
+  * Every assertion in code should have error message
  
 ## Data entities
 
