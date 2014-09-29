@@ -202,7 +202,8 @@ h2o.clusterInfo <- function(client) {
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
              finally = setTxtProgressBar(pb, 1.0))
     close(pb)
-    Sys.sleep(2)
+    threeSeconds <- 3
+    Sys.sleep(threeSeconds)
   } else
     tryCatch(while(prog<- .h2o.__poll(client, job_key) != -1 && !prog$DONE) { Sys.sleep(pollInterval) },
              finally = .h2o.__cancelJob(client, job_key))
