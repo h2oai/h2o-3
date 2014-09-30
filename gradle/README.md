@@ -60,6 +60,16 @@ To release H2O artifacts please type:
 gradle release
 ``` 
 
+### Maven Central Repository
+
+To publish artifacts to Maven central repository, use instructions for publishing into
+Sonatype release repository. 
+Then go to http://oss.sonatype.org/ and publish the artifacts.
+
+They should be available via Maven central in a few minutes.
+To check them please use the following search link: http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+
+
 ## Jenkins Pipelines
 
 ### Building
