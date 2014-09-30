@@ -15,4 +15,8 @@ final public class H2OClient {
         }
         H2O.main(nargs);
     }
+
+    public static void waitForCloudSize(int x, long ms) {
+      H2O.waitForCloudSize(x, ms);
+    }
 }

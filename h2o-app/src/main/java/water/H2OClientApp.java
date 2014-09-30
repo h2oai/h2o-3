@@ -17,4 +17,8 @@ public class H2OClientApp {
 
     register(relpath);
   }
+
+  public static void waitForCloudSize(int x, long ms) {
+    H2O.waitForCloudSize(x, ms);
+  }
 }
