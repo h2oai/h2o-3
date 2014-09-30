@@ -63,6 +63,8 @@ public class KeySnapshot {
     public boolean isLockable(){
       return TypeMap.theFreezable(_type) instanceof Lockable;
     }
+
+    public boolean isSubclassOf(Class clz) { return Value.isSubclassOf(_type, clz); }
   }
   private static final long _updateInterval = 1000;
   private static volatile KeySnapshot _cache;

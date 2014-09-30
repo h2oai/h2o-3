@@ -23,7 +23,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
       final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override
         public boolean filter(KeySnapshot.KeyInfo k) {
-          return k._type == TypeMap.FRAME;
+          return k.isSubclassOf(Frame.class);
         }
       }).keys();
       Frame[] frames = new Frame[frameKeys.length];
