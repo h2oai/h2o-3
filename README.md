@@ -40,6 +40,10 @@ Extensions
 One of our first powerful extension will be a small tool belt of stats and math legos for Fraud Detection. Dealing with Unbalanced Datasets is a key focus for this.
 Users will use JSON/REST-api via H2O.R through connects the Analytics Engine into R-IDE/RStudio.
 
+Using H2O Dev Artifacts
+--------------------------------
+Find H2O Dev on Maven Central via http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+
 Building H2O Dev
 --------------------------------
 
