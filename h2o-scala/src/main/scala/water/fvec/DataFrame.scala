@@ -15,7 +15,7 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make(), fr._names, fr.vecs())
 
   // Create DataFrame from existing Frame
-  def this(k : Key) = this ( DKV.get(k).get[Frame] )
+  def this(k : Key) = this ( DKV.get(k).get.asInstanceOf[Frame] )
 
   def this(s : String) = this ( Key.make(s) )
 
