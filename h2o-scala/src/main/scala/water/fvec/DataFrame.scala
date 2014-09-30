@@ -14,6 +14,11 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   // this call.
   def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make(), fr._names, fr.vecs())
 
+  // Create DataFrame from existing Frame
+  def this(k : Key) = this ( DKV.get(k).get[Frame] )
+
+  def this(s : String) = this ( Key.make(s) )
+
   // Scala DataFrame by reading a CSV file
   def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(water.parser.ParseSetup.hex(file.getName)),file))
 
