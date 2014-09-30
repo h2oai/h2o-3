@@ -70,9 +70,9 @@ Download and update h2o-dev source codes:
 Step 4. Run the top-level gradle build:
 
     cd h2o-dev
-    gradlew.bat build -x test
+    gradlew.bat build
 
-If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
 ### Setup on OS X
 If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It makes package management for OS X easy.
@@ -101,9 +101,9 @@ OS X should have come with Git installed, so just download and update h2o-dev so
 Step 4. Run the top-level gradle build:
 
     cd h2o-dev
-    ./gradlew build -x test
+    ./gradlew build
 
-If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
 ### Setup on Ubuntu 14.04
 
@@ -132,9 +132,9 @@ Download and update h2o-dev source codes:
 Step 4. Run the top-level gradle build:
 
     cd h2o-dev
-    ./gradlew build -x test
+    ./gradlew build
 
-If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
 > Make sure that you are not running as root since `bower` will reject such a run
 
@@ -154,13 +154,7 @@ Step 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 ### Setting up your preferred build environment
 
-For the command-line developer:
-
-    ./gradlew make
-    make clean
-    make
-    
-For users of Intellij's IDEAJ, project files can be generated with:
+For users of Intellij's IDEA, project files can be generated with:
 
     ./gradlew idea
 
