@@ -171,33 +171,35 @@ Community
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
 Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
 
-Team
+Team & Committers
 
 ```
 SriSatish Ambati
 Cliff Click
 Tom Kraljevic
-Earl Hathaway
 Tomas Nykodym
 Michal Malohlava
 Kevin Normoyle
-Irene Lang
 Spencer Aiello
 Anqi Fu
 Nidhi Mehta
 Arno Candel
-Nikole Sanchez
 Josephine Wang
 Amy Wang
 Max Schloemer
 Ray Peck
+Prithvi Prabhu
+Patrick Aboyoun
+Brandon Hill
+Radu Munteanu
+Jeff Gambera
+Ariel Rao
+Viraj Parmar
+Kendall Harris
+Anna Chavez
 Anand Avati
-
-Opensource:
-Jan Vitek
-Mr.Jenkins
-Petr Maj
-Matt Fowles
+Joel Horwitz
+Jessica Lanford
 ```
 
 Advisors
@@ -223,5 +225,7 @@ Investors
 Jishnu Bhattacharjee, Nexus Venture Partners
 Anand Babu Periasamy
 Anand Rajaraman
-Dipchand Nishar
+Ash Bhardwaj
+Rakesh Mathur
+Michael Marks
 ```
