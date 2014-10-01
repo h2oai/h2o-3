@@ -30,7 +30,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
-  public static final class H2Okey extends InetSocketAddress implements Comparable {
+  static final class H2Okey extends InetSocketAddress implements Comparable {
     final int _ipv4;     // cheapo ipv4 address
     H2Okey(InetAddress inet, int port) {
       super(inet,port);

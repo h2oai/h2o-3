@@ -8,17 +8,41 @@ import water.util.Log;
 import water.nbhm.NonBlockingSetInt;
 import water.persist.*;
 
-/**
- * The core Value stored in the distributed K/V store.  It contains an
- * underlying byte[] which may be spilled to disk and freed by the
- * {@link MemoryManager}.
+/** The core Value stored in the distributed K/V store, used to cache Plain Old
+ *  Java Objects, and maintain coherency around the cluster.  It contains an
+ *  underlying byte[] which may be spilled to disk and freed by the {@link
+ *  MemoryManager}, which is the {@link Iced} serialized version of the POJO,
+ *  and a cached copy of the POJO itself.
+ *  <p>
+ *  Requests to extract the POJO from the Value object first try to return the
+ *  cached POJO.  If that is missing, then they will re-inflate the POJO from
+ *  the {@link Iced} byte[].  If that is missing it is only because the byte[]
+ *  was swapped to disk by the {@link Cleaner}.  It will be reloaded from disk
+ *  and then inflated as normal.
+ *  <p>
+ *  The H2O {@link DKV} supports the full <em>Java Memory Model</em> coherency
+ *  but only with Gets and Puts.  Normal Java updates to the cached POJO are
+ *  local-node visible (due to X86 & Java coherency rules) but NOT cluster-wide
+ *  visible until a Put completes after the update.
+ *  <p>
+ *  By the same token, updates ot the POJO are not reflected in the serialized
+ *  form nor the disk-spill copy unless a Put is triggered.  As long as a local
+ *  thread keeps a pointer to the POJO, they can update it at will.  If they
+ *  wish to recover the POJO from the DKV at a later time with all updates
+ *  intact, they <em>must</em> do a final Put after all updates.
+ *  <p>
+ *  Value objects maintain the needed coherency state, as well as any cached
+ *  copies, plus a bunch of utility & convenience functoins.
  */
 public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
-  // ---
-  // The Key part of a Key/Value store.  Transient, because the Value is
-  // typically found via its Key, and so the Key is available before we
-  // get the Value.
+  /** The Key part of a Key/Value store.  Transient, because the Value is
+   *  typically found via its Key, and so the Key is available before we get
+   *  the Value and does not need to be passed around the wire.  Not final,
+   *  because Keys are interned slowly (for faster compares) and periodically a
+   *  Value's Key will be updated to an interned but equivalent Key.  
+   *  <p>
+   *  Should not be set by any user code.  */
   public transient Key _key;
 
   // ---
@@ -26,6 +50,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Might be a primitive array type, or a Iced POJO
   private short _type;
   int type() { return _type; }
+  /** Class name of the embedded POJO, without needing an actual POJO. */
   public String className() { return TypeMap.className(_type); }
 
   // Max size of Values before we start asserting.
@@ -35,14 +60,14 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // service a single request, causing starvation of other requests).
   private static final int MAX = 20*1024*1024;
 
-  // ---
-  // Values are wads of bits; known small enough to 'chunk' politely on disk,
-  // or fit in a Java heap (larger Values are built via arraylets) but (much)
-  // larger than a UDP packet.  Values can point to either the disk or ram
-  // version or both.  There's no caching smarts, nor compression nor de-dup
-  // smarts.  This is just a local placeholder for some user bits being held at
-  // this local Node.
-  public int _max; // Max length of Value bytes
+  /** Size of the serialized wad of bits.  Values are wads of bits; known small
+   *  enough to 'chunk' politely on disk, or fit in a Java heap (larger Vecs
+   *  are built via Chunks) but (much) larger than a UDP packet.  Values can
+   *  point to either the disk or ram version or both.  There's no compression
+   *  smarts (done by the big data Chunks) nor de-dup smarts (done by the
+   *  nature of a K/V).  This is just a local placeholder for some user bits
+   *  being held at this local Node. */
+  public int _max;
 
   // ---
   // A array of this Value when cached in DRAM, or NULL if not cached.  The
@@ -66,22 +91,24 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // - the POJO might be dropped by the MemoryManager and reconstituted from
   //   disk and/or the byte array back to it's original form, losing your changes.
   private volatile Freezable _pojo;
-  public Freezable rawPOJO() { return _pojo; }
+  Freezable rawPOJO() { return _pojo; }
 
-  // Free array (but always be able to rebuild the array)
+  /** Invalidate byte[] cache.  Only used to eagerly free memory, for data
+   *  which is expected to be read-once. */
   public final void freeMem() {
-    assert isPersisted() || _pojo != null || _key._kb[0]==Key.DVEC;
+    assert isPersisted() || _pojo != null || _key.isChunkKey();
     _mem = null;
   }
-  // Free POJO (but always be able to rebuild the POJO)
+  /** Invalidate POJO cache.  Only used to eagerly free memory, for data
+   *  which is expected to be read-once. */
   public final void freePOJO() {
     assert isPersisted() || _mem != null;
     _pojo = null;
   }
 
-  // The FAST path get-byte-array - final method for speed.
-  // Will (re)build the mem array from either the POJO or disk.
-  // Never returns NULL.
+  /** The FAST path get-byte-array - final method for speed.  Will (re)build
+   *  the mem array from either the POJO or disk.  Never returns NULL.
+   *  @return byte[] holding the serialized POJO  */
   public final byte[] memOrLoad() {
     byte[] mem = _mem;          // Read once!
     if( mem != null ) return mem;
@@ -97,10 +124,10 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Any attempt to look at the Value will require a remote fetch.
   final boolean isEmpty() { return _max > 0 && _mem==null && _pojo == null && !isPersisted(); }
 
-  // The FAST path get-POJO - final method for speed.
-  // Will (re)build the POJO from the _mem array.
-  // Never returns NULL.
-  public <T extends Iced> T get() {
+  /** The FAST path get-POJO as an {@link Iced} subclass - final method for
+   *  speed.  Will (re)build the POJO from the _mem array.  Never returns NULL.
+   *  @return The POJO, probably the cached instance.  */
+  public final <T extends Iced> T get() {
     touch();
     Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
@@ -108,12 +135,19 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     pojo.read(new AutoBuffer(memOrLoad()));
     return (T)(_pojo = pojo);
   }
-  public <T extends Freezable> T get(Class<T> fc) {
+  /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
+   *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
+   *  version has more type-checking.
+   *  @return The POJO, probably the cached instance.  */
+  public final <T extends Freezable> T get(Class<T> fc) {
     T pojo = getFreezable();
     assert fc.isAssignableFrom(pojo.getClass());
     return pojo;
   }
-  public <T extends Freezable> T getFreezable() {
+  /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
+   *  Will (re)build the POJO from the _mem array.  Never returns NULL.  
+   *  @return The POJO, probably the cached instance.  */
+  public final <T extends Freezable> T getFreezable() {
     touch();
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null ) return (T)pojo;
@@ -153,7 +187,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
   private final static byte ON_dsk = 1<<3;
   private void clrdsk() { _persist &= ~ON_dsk; } // note: not atomic
+  /** Used by the persistance subclass to mark this Value as saved-on-disk. */
   public final void setdsk() { _persist |=  ON_dsk; } // note: not atomic
+  /** Check if the backing byte[] has been saved-to-disk */
   public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
 
@@ -189,6 +225,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
+  /** One of ICE, HDFS, S3, NFS or TCP, according to where this Value is persisted.
+   *  @return Short String of the persitance name */
   public static String nameOfPersist(int x) {
     switch( x ) {
     case ICE : return "ICE";
@@ -211,16 +249,33 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _mem = mem; // Close a race with the H2O cleaner zapping _mem while removing from ice
   }
 
+  /** Check if the Value's POJO is a subtype of clz.  Does not require the POJO.
+   *  @return True if the Value's POJO is a subtype of clz. */
   public boolean isSubclassOf(Class clz) { return isSubclassOf(_type, clz); }
-  // In KeySnapshot we don't have the value, only the type:
+  /** Check if the Value's POJO is a subtype of given type integer.  Does not require the POJO.
+   *  @return True if the Value's POJO is a subtype. */
   public static boolean isSubclassOf(int type, Class clz) { return clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
 
+  /** Check if the Value's POJO is a {@link Key} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link Key} subtype. */
   public boolean isKey()      { return _type == TypeMap.KEY; }
+  /** Check if the Value's POJO is a {@link Frame} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link Frame} subtype. */
   public boolean isFrame()    { return _type == TypeMap.FRAME; }
+  /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
+  /** Check if the Value's POJO is a {@link Lockable} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link Lockable} subtype. */
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
+  /** Check if the Value's POJO is a {@link Vec} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link Vec} subtype. */
   public boolean isVec()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Vec; }
+  /** Check if the Value's POJO is a {@link hex.Model} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link hex.Model} subtype. */
   public boolean isModel()    { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof hex.Model; }
+  /** Check if the Value's POJO is a {@link Job} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link Job} subtype. */
   public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
 
   /** Creates a Stream for reading bytes */
@@ -234,7 +289,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   // --------------------------------------------------------------------------
-  // Set just the initial fields
+
+  /** Construct a Value from all parts; not needed for most uses.  This special
+   *  constructor is used by {@link fvec.FileVec} to build Value objects over
+   *  already-existing Files, so that the File contents will be lazily
+   *  swapped-in as the Values are first used.  */
   public Value(Key k, int max, byte[] mem, short type, byte be ) {
     assert mem==null || mem.length==max;
     assert max < MAX : "Value size=0x"+Integer.toHexString(max);
@@ -251,8 +310,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
-  public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
-  public Value(Key k, String s ) { this(k, s.getBytes()); }
+  Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {
     _key = k;
@@ -269,8 +328,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(0);
     _replicas = k.home() ? new NonBlockingSetInt() : null;
   }
+  /** Standard constructor to build a Value from a POJO and a Key.  */
   public Value(Key k, Freezable pojo) { this(k,pojo,ICE); }
-  public Value(Key k, Freezable pojo, byte be) {
+  Value(Key k, Freezable pojo, byte be) {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();

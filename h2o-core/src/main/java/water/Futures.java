@@ -6,21 +6,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import water.util.Log;
 
-/**
- * A collection of Futures. We can add more, or block on the whole collection.
- * Undefined if you try to add Futures while blocking.
- * <p>
- * Used as a service to sub-tasks, collect pending-but-not-yet-done future
- * tasks, that need to complete prior to *this* task completing... or if the
- * caller of this task is knowledgeable, pass these pending tasks along to him
- * to block on before he completes. */
+/** A collection of Futures that can be extended, or blocked on the whole
+ *  collection.  Undefined if you try to add Futures while blocking.
+ *  <p>
+ *  Used as a service to sub-tasks, collect pending-but-not-yet-done future
+ *  tasks that need to complete prior to *this* task completing... or if the
+ *  caller of this task is knowledgeable, pass these pending tasks along to him
+ *  to block on before he completes. 
+ *  <p>
+ *  Highly efficient under a high load of short-completion-time Futures.  Safe
+ *  to call with e.g. millions of Futures per second, as long as they all
+ *  complete in roughly the same rate. */
 public class Futures {
   // implemented as an exposed array mostly because ArrayList doesn't offer
   // synchronization and constant-time removal.
   Future[] _pending = new Future[1];
   int _pending_cnt;
 
-  /** Some Future task which needs to complete before this task completes */
+  /** Some Future task which needs to complete before this Futures completes */
   synchronized public Futures add( Future f ) {
     if( f == null ) return this;
     if( f.isDone() ) return this;
@@ -35,7 +38,7 @@ public class Futures {
     return this;
   }
 
-  /** Merge pending-task lists as part of doing a 'reduce' step */
+  /** Merge pending-task lists (often as part of doing a 'reduce' step) */
   public void add( Futures fs ) {
     if( fs == null ) return;
     assert fs != this;          // No recursive death, please

@@ -2,18 +2,19 @@ package water;
 
 import java.util.*;
 
-// A "scope" for tracking Key lifetimes.
-//
-// A Scope defines a *SINGLE THREADED* local lifetime management context,
-// stored in Thread Local Storage.  Scopes can be explicitly entered or exited.
-// User keys created by this thread are tracked, and deleted when the scope is
-// exited.  Since enter & exit are explicit, failure to exit means the Keys
-// leak (there is no reliable thread-on-exit cleanup action).  You must call
-// Scope.exit() at some point.  Only user keys & Vec keys are tracked.
-//
-// Scopes support nesting.  Scopes support partial cleanup: you can list Keys
-// you'd like to keep in the exit() call.  These will be "bumped up" to the
-// higher nested scope - or escaped and become untracked at the top-level.
+/** A "scope" for tracking Key lifetimes; an experimental API.
+ * 
+ *  A Scope defines a <em>SINGLE THREADED</em> local lifetime management context,
+ *  stored in Thread Local Storage.  Scopes can be explicitly entered or exited.
+ *  User keys created by this thread are tracked, and deleted when the scope is
+ *  exited.  Since enter & exit are explicit, failure to exit means the Keys
+ *  leak (there is no reliable thread-on-exit cleanup action).  You must call
+ *  Scope.exit() at some point.  Only user keys & Vec keys are tracked.
+ * 
+ *  Scopes support nesting.  Scopes support partial cleanup: you can list Keys
+ *  you'd like to keep in the exit() call.  These will be "bumped up" to the
+ *  higher nested scope - or escaped and become untracked at the top-level.
+ */
 
 public class Scope {
   // Thread-based Key lifetime tracking
@@ -22,8 +23,12 @@ public class Scope {
   };
   private final Stack<HashSet<Key>> _keys = new Stack<>();
 
+  /** Enter a new Scope */
   static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
 
+  /** Exit the inner-most Scope, remove all Keys created since the matching
+   *  enter call except for the listed Keys.
+   *  @return Returns the list of kept keys. */
   static public Key[] exit(Key... keep) {
     List<Key> keylist = new ArrayList<>();
     if (keep != null) {
@@ -44,7 +49,7 @@ public class Scope {
     return keep;
   }
 
-  static public void track( Key k ) {
+  static void track( Key k ) {
     if( !k.user_allowed() && !k.isVec() ) return; // Not tracked
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if( scope == null ) return; // Not tracking this thread

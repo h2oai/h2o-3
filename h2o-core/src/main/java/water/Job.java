@@ -8,13 +8,16 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 
-/** 
- *  Jobs are Keyed, because they need to Key to control e.g. atomic updates.
- *  Jobs produce a Keyed result, such as a Frame (from Parsing), or a Model.
+/** Jobs are used to do minimal tracking of long-lifetime user actions,
+ *  including progress-bar updates and the ability to review in progress or
+ *  completed Jobs, and cancel currently running Jobs.
+ *  <p>
+ *  Jobs are {@link Keyed}, because they need to Key to control e.g. atomic updates.
+ *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
-  public static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed { 
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -22,8 +25,8 @@ public class Job<T extends Keyed> extends Keyed {
     public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
   }
 
-  // Get a list of all Jobs.  Will remove from the Jobs list any Job keys that
-  // no longer map to Jobs.
+  /** The list of all Jobs, past and present. 
+   *  @return The list of all Jobs, past and present */
   public static Job[] jobs() {
     Value val = DKV.get(LIST);
     if( val==null ) return new Job[0];
@@ -48,12 +51,17 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Jobs produce a single DKV result into Key _dest */
   public final Key _dest;   // Key for result
+  /** Since _dest is public final, not sure why we have a getter but some
+   *  people like 'em. */
   public final Key dest() { return _dest; }
 
-  /** Basic metadata about the Job */
+  /** User description */
   public final String _description;
+  /** Job start_time using Sys.CTM */
   public long _start_time;     // Job started
+  /** Job end_time using Sys.CTM, or 0 if not ended */
   public long   _end_time;     // Job end time, or 0 if not ended
+  /** Any exception thrown by this Job, or null if none */
   public String _exception;    // Unpacked exception & stack trace
 
   /** Possible job states. */
@@ -76,6 +84,8 @@ public class Job<T extends Keyed> extends Keyed {
   /** Returns true if this job is running
    *  @return returns true only if this job is in running state. */
   public boolean isRunning() { return _state == JobState.RUNNING; }
+  /** Returns true if this job is done
+   *  @return  true if the job is in state {@link JobState#DONE} */
   public boolean isDone   () { return _state == JobState.DONE   ; }
 
   /** Returns true if this job was started and is now stopped */
@@ -95,7 +105,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  public Job(Key jobKey, Key dest, String desc) {
+  protected Job(Key jobKey, Key dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -160,16 +170,17 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Blocks and get result of this job.
    * <p>
-   * The call blocks on working task which was passed via {@link #start(H2OCountedCompleter, long)} method
-   * and returns the result which is fetched from UKV based on job destination key.
+   * This call blocks on working task which was passed via {@link #start}
+   * method and returns the result which is fetched from UKV based on job
+   * destination key.
    * </p>
    * @return result of this job fetched from UKV by destination key.
-   * @see #start(H2OCountedCompleter, long)
+   * @see #start
    * @see DKV
    */
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
-    _barrier.join();            // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
     return _dest.get();
   }
@@ -251,10 +262,10 @@ public class Job<T extends Keyed> extends Keyed {
   protected Key _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
-  /* Report new work done for this job */
+  /** Report new work done for this job */
   public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
 
-  /* Report new work done for a given job key */
+  /** Report new work done for a given job key */
   public static void update(final long newworked, Key jobkey) {
     jobkey.<Job>get().update(newworked);
   }
@@ -266,6 +277,7 @@ public class Job<T extends Keyed> extends Keyed {
     private final long _work;
     private long _worked;
     public Progress(long total) { _work = total; }
+    /** Report Job progress from 0 to 1.  Completed jobs are always 1.0 */
     public float progress() {
       return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float)_worked / (float)_work));
     }
@@ -277,6 +289,7 @@ public class Job<T extends Keyed> extends Keyed {
   protected static class ProgressUpdate extends TAtomic<Progress> {
     final long _newwork;
     public ProgressUpdate(long newwork) { _newwork = newwork; }
+    /** Update progress with new work */
     @Override public Progress atomic(Progress old) {
       if(old == null) return old;
       old._worked += _newwork;
@@ -284,15 +297,16 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
+  /** Simple named exception class */
   public static class JobCancelledException extends RuntimeException{}
 
-  @Override
-  protected Futures remove_impl(Futures fs) {
+  @Override protected Futures remove_impl(Futures fs) {
     DKV.remove(_progressKey, fs);
     return fs;
   }
 
-  public long checksum() {
+  /** Default checksum; not really used by Jobs.  */
+  @Override public long checksum() {
     // Not really sure what should go here. . .
     // This isn't really being used for Job right now, so it's non-critical.
     return _description.hashCode() * (_dest == null ? 1 : _dest.hashCode()) * _start_time;

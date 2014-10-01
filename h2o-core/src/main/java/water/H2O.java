@@ -154,19 +154,20 @@ final public class H2O {
     }
   }
 
-  // Simple wrapper over F/J CountedCompleter to support priority queues.  F/J
-  // queues are simple unordered (and extremely light weight) queues.  However,
-  // we frequently need priorities to avoid deadlock and to promote efficient
-  // throughput (e.g. failure to respond quickly to TaskGetKey can block an
-  // entire node for lack of some small piece of data).  So each attempt to do
-  // lower-priority F/J work starts with an attempt to work & drain the
-  // higher-priority queues.
+  /** Simple wrapper over F/J {@link CountedCompleter} to support priority
+   *  queues.  F/J queues are simple unordered (and extremely light weight)
+   *  queues.  However, we frequently need priorities to avoid deadlock and to
+   *  promote efficient throughput (e.g. failure to respond quickly to {@link
+   *  TaskGetKey} can block an entire node for lack of some small piece of
+   *  data).  So each attempt to do lower-priority F/J work starts with an
+   *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
     public H2OCountedCompleter(){}
     protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
-    // Once per F/J task, drain the high priority queue before doing any low
-    // priority work.
+    /** Used by the F/J framework internally to do work.  Once per F/J task,
+     *  drain the high priority queue before doing any low priority work. 
+     *  Calls {@link #compute2} which contains actual work. */
     @Override public final void compute() {
       FJWThr t = (FJWThr)Thread.currentThread();
       int pp = ((ForkJoinPool2)t.getPool())._priority;
@@ -198,8 +199,11 @@ final public class H2O {
       // Now run the task as planned
       compute2();
     }
-    // Do the actually intended work
+
+    /** Override to specify actual work to do */
     protected abstract void compute2();
+    /** Exceptional completion path; mostly does printing if the exception was
+     *  not handled earlier in the stack.  */
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       if(!(ex instanceof RuntimeException) && this.getCompleter() == null) {
         System.err.println("onExCompletion for "+this);
@@ -216,9 +220,10 @@ final public class H2O {
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
 
-    // If this is a F/J thread, return it's priority+1 - used to lift the
-    // priority of a blocking remote call, so the remote node runs it at a
-    // higher priority - so we don't deadlock when we burn the local thread.
+    /** If this is a F/J thread, return it's priority+1 - used to lift the
+     *  priority of a blocking remote call, so the remote node runs it at a
+     *  higher priority - so we don't deadlock when we burn the local
+     *  thread. */
     protected final byte nextThrPriority() {
       Thread cThr = Thread.currentThread();
       return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority+1 : priority());
@@ -227,7 +232,7 @@ final public class H2O {
     // The serialization flavor / delegate.  Lazily set on first use.
     private transient short _ice_id;
 
-    // Return the icer for this instance+class.  Will set on 1st use.
+    /** Find the serializatoin delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
@@ -257,31 +262,52 @@ final public class H2O {
   // --------------------------------------------------------------------------
   // List of arguments.
   public static final OptArgs ARGS = new OptArgs();
+  /** Parsed command line arguments, as Java primitives. */
   public static class OptArgs extends Arguments.Opt {
+    private OptArgs(){}
+    /** -h, -h=true; print help and exit */
     boolean h = false;
+    /** -help, -help=true; print help and exit*/
     boolean help = false;
+    /** -version, -version=true; print version and exit */
     boolean version = false;
 
     // Common config options
+    /** -name=name; Set cloud name */
     public String name = System.getProperty("user.name"); // Cloud name
-    public String flatfile;     // List of cluster IP addresses
-    public int    port;         // Browser/API/HTML port
-    public String ip;           // Named IP4/IP6 address instead of the default
-    public String network;      // Network specification for acceptable interfaces to bind to.
-    String ice_root;     // ice root directory; where temp files go
-    String log_level;    // One of DEBUG, INFO, WARN, ERRR.  Null is INFO.
+    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
+    public String flatfile;
+    /** -port=####; Browser/API/HTML port */
+    public int    port;
+    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    public String ip;
+    /** -network=network; Network specification for acceptable interfaces to bind to */
+    public String network;
+    /** -ice_root=ice_root; ice root directory; where temp files go */
+    String ice_root;
+    /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
+    String log_level;
 
     // Less common config options
-    int nthreads=Math.max(99,10*NUMCPUS); // Max number of F/J threads in the low-priority batch queue
-    boolean random_udp_drop; // test only, randomly drop udp incoming
-    boolean client;          // Client-only; no work; no homing of Keys (but can cache)
+    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
+    int nthreads=Math.max(99,10*NUMCPUS);
+    /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
+    boolean random_udp_drop;
+    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
+    boolean client;
 
     // HDFS & AWS
-    public String hdfs; // HDFS backend
-    String hdfs_version; // version of the filesystem
-    public String hdfs_config; // configuration file of the HDFS
-    String hdfs_skip = null; // used by hadoop driver to not unpack and load any hdfs jar file at runtime.
-    public String aws_credentials; // properties file for aws credentials
+    /** -hdfs=hdfs; HDFS backend */
+    public String hdfs;
+    /** -hdfs_version=hdfs_version; version of the filesystem */
+    String hdfs_version;
+    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
+    public String hdfs_config;
+    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
+    String hdfs_skip = null;
+    /** -aws_credentials=aws_credentials; properties file for aws credentials */
+    public String aws_credentials;
+    /** -md5skip, -md5skip=true; test-only; Skip the MD5 Jar checksum; allows jars from different builds to mingle in the same cloud */
     public boolean md5skip;
   }
 

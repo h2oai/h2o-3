@@ -1,7 +1,7 @@
 package water;
 
 // Helper to fetch class IDs from class Strings from the leader
-public class FetchId extends DTask<FetchId> {
+class FetchId extends DTask<FetchId> {
   final String _clazz;
   int _id;
   private FetchId(String s) { _clazz=s; }

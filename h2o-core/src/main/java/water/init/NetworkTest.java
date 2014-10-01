@@ -44,7 +44,7 @@ public class NetworkTest {
     // populate node names
     nodes = new String[H2O.CLOUD.size()];
     for (int i=0; i<nodes.length; ++i)
-      nodes[i] = H2O.CLOUD._memary[i]._key.toString();
+      nodes[i] = H2O.CLOUD._memary[i].toString();
     StringBuilder sb = new StringBuilder();
     toASCII(sb);
     Log.info(sb);

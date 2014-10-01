@@ -4,6 +4,9 @@ import java.util.Arrays;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
+/** Internal H2O class used to build and maintain the cloud-wide type mapping.
+ *  Only public to expose a few constants to subpackages.  No exposed user
+ *  calls. */
 public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, KEY;
   static final String BOOTSTRAP_CLASSES[] = {
@@ -42,7 +45,7 @@ public class TypeMap {
   // Unique IDs
   static private int IDS;
   // JUnit helper flag
-  static public volatile boolean _check_no_locking;
+  static volatile boolean _check_no_locking;
   static {
     CLAZZES = BOOTSTRAP_CLASSES;
     GOLD = new Icer[BOOTSTRAP_CLASSES.length];
@@ -87,7 +90,7 @@ public class TypeMap {
   // During first Icing, get a globally unique class ID for a className
   static int onIce(Iced ice) { return onIce(ice.getClass().getName()); }
   static int onIce(Freezable ice) { return onIce(ice.getClass().getName()); }
-  public static int onIce(String className) {
+  static int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
     // Need to install a new cloud-wide type ID for className.

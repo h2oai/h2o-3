@@ -8,7 +8,8 @@ import water.nbhm.UtilUnsafe;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-public class Weaver {
+/** Class to auto-gen serielizer delegate classes.  No user-exposed calls. */
+class Weaver {
   private static final ClassPool _pool;
   private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();

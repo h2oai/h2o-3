@@ -6,7 +6,7 @@ import water.H2O.H2OCountedCompleter;
 import water.util.DocGen;
 import water.util.Log;
 
-/** Objects which are passed and remotely executed.<p>
+/** Objects which are passed and {@link #dinvoke} is remotely executed.<p>
  * <p>
  * Efficient serialization methods for subclasses will be automatically
  * generated, but explicit ones can be provided.  Transient fields will
@@ -27,10 +27,15 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   protected DTask(){}
   public DTask(H2OCountedCompleter completer){super(completer);}
 
-  // Return a distributed-exception
+  /** A distributable exception object, thrown by {@link #dinvoke}.  */
   protected DException _ex;
+  /** True if {@link #dinvoke} threw an exception.
+   *  @return True if _ex is non-null */
   public final boolean hasException() { return _ex != null; }
+  /** Capture the first exception in _ex.  Later setException attempts are ignored. */
   public synchronized void setException(Throwable ex) { if( _ex==null ) _ex = new DException(ex,getClass()); }
+  /** The _ex field as a RuntimeException or null.
+   *  @return The _ex field as a RuntimeException or null. */
   public DistributedException getDException() { return _ex==null ? null : _ex.toEx(); }
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP
@@ -38,14 +43,9 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   // needs more time to process the TCP result.
   transient boolean _repliedTcp; // Any return/reply/result was sent via TCP
 
-//  protected abstract void computeImpl();
   /** Top-level remote execution hook.  Called on the <em>remote</em>. */
   public void dinvoke( H2ONode sender ) { compute2(); }
   
-//  protected final void compute2(){
-//    computeImpl();
-//    tryComplete();
-//  }
   /** 2nd top-level execution hook.  After the primary task has received a
    * result (ACK) and before we have sent an ACKACK, this method is executed on
    * the <em>local vm</em>.  Transients from the local vm are available here. */
@@ -63,11 +63,10 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
 
   // For MRTasks, we need to copyOver
   protected void copyOver( T src ) { icer().copyOver(this,src); }
-  /**
-   * Task to be executed at home of the given key.
-   * Basically a wrapper around DTask which enables us to bypass
-   * remote/local distinction (RPC versus submitTask).
-   */
+
+  /** Task to be executed at the home node of the given key.
+   *  Basically a wrapper around DTask which enables us to bypass
+   *  remote/local distinction (RPC versus submitTask).  */
   public static abstract class DKeyTask<T extends DKeyTask,V extends Keyed> extends DTask<DKeyTask>{
     private final Key _key;
     public DKeyTask(final Key k) {this(null,k);}
@@ -75,25 +74,25 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
       super(cmp);
       _key = k;
     }
-    // override this
+
+    /** Override map(); will be run on Key's home node */
     protected abstract void map(V v);
 
     @Override public final void compute2(){
       if(_key.home()){
         Value val = H2O.get(_key);
-        if(val != null) {
-          V v = val.get();
-          map(v);
-        }
+        if( val != null )
+          map(val.<V>get());    // Call map locally
         tryComplete();
-      } else {
+      } else {                  // Else call remotely
         new RPC(_key.home_node(),this).addCompleter(this).call();
       }
     }
     // onCompletion must be empty here, may be invoked twice (on remote and local)
-    @Override public void onCompletion(CountedCompleter cc){}
-
+    @Override public final void onCompletion(CountedCompleter cc){}
+    /** Convenience non-blocking submit to work queues */
     public void submitTask() {H2O.submitTask(this);}
+    /** Convenience blocking submit to work queues */
     public T invokeTask() {
       H2O.submitTask(this);
       join();
@@ -101,13 +100,11 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
     }
   }
 
-  /**
-   * Task to cleanly remove value from the K/V (i.e. call it's remove() destructor) without the need to fetch it locally first.
-   */
+  /** Task to cleanly remove value from the K/V (call it's remove()
+   *  destructor) without the need to fetch it locally first.  */
   public static class RemoveCall extends DKeyTask {
     public RemoveCall(H2OCountedCompleter cmp, Key k) { super(cmp, k);}
-    @Override
-    protected void map(Keyed val) { val.remove();}
+    @Override protected void map(Keyed val) { val.remove();}
   }
 
 }

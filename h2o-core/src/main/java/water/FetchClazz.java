@@ -1,7 +1,7 @@
 package water;
 
 // Helper to fetch classForName strings from IDs from the leader
-public class FetchClazz extends DTask<FetchClazz> {
+class FetchClazz extends DTask<FetchClazz> {
   final int _id;
   String _clazz;
   private FetchClazz(int id) { _id=id; }

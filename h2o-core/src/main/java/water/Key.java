@@ -2,27 +2,41 @@ package water;
 
 import water.util.DocGen.HTML;
 import water.util.UnsafeUtils;
+import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
- * Keys
- *
- * This class defines:
- * - A Key's bytes (name) & hash
- * - Known Disk & memory replicas.
- * - A cache of somewhat expensive to compute stuff related to the current
- * Cloud, plus a byte of the desired replication factor.
- *
- * Keys are expected to be a high-count item, hence the care about size.
- *
- * Keys are *interned* in the local K/V store, a non-blocking hash set and are
- * kept pointer equivalent (via the interning) for cheap compares. The
- * interning only happens after a successful insert in the local H2O.STORE via
- * H2O.put_if_later.
- *
+ * Keys!  H2O supports a distributed Key/Value store, with exact Java Memory
+ * Model consistency.  Keys are a means to find a {@link Value} somewhere in
+ * the Cloud, to cache it locally, to allow globally consistent updates to a
+ * {@link Value}.  Keys have a *home*, a specific Node in the Cloud, which is
+ * computable from the Key itself.  The Key's home node breaks ties on racing
+ * updates, and tracks caching copies (via a hardware-like MESI protocol), but
+ * otherwise is not involved in the DKV.  All operations on the DKV, including
+ * Gets and Puts, are found in {@link DKV}.
+ * <p>
+ * Keys are defined as a simple byte-array, plus a hashCode and a small cache
+ * of Cloud-specific information.  The first byte of the byte-array determines
+ * if this is a user-visible Key or an internal system Key; an initial byte of
+ * <32 is a system Key.  User keys are generally externally visible, system
+ * keys are generally limited to things kept internal to the H2O Cloud.  Keys
+ * might be a high-count item, hence we care about the size.
+ * <p>
+ * System keys for {@link Job}, {@link Vec}, {@link Chunk} and {@link
+ * water.fvec.Vec.VectorGroup} have special initial bytes; Keys for these classes can be
+ * determined without loading the underlying Value.  Layout for {@link Vec} and
+ * {@link Chunk} is further restricted, so there is an efficient mapping
+ * between a numbered Chunk and it's associated Vec.
+ * <p>
+ * System keys (other than the restricted Vec and Chunk keys) can have their
+ * home node forced, by setting the desired home node in the first few Key
+ * bytes.  Otherwise home nodes are selected by pseudo-random hash.  Selecting
+ * a home node is sometimes useful for Keys with very high update rates coming
+ * from a specific Node.
+ * <p>
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
@@ -30,8 +44,8 @@ final public class Key extends Iced implements Comparable {
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
-  public byte[] _kb;            // Key bytes, wire-line protocol
-  transient int _hash;          // Hash on key alone (and not value)
+  public final byte[] _kb;      // Key bytes, wire-line protocol
+  transient final int _hash;    // Hash on key alone (and not value)
 
   // The user keys must be ASCII, so the values 0..31 are reserved for system
   // keys. When you create a system key, please do add its number to this list
@@ -51,11 +65,20 @@ final public class Key extends Iced implements Comparable {
   // 4 - Chunk # for DVEC, or 0xFFFFFFFF for VEC
   static final int VEC_PREFIX_LEN = 1+1+4+4;
 
+  /** True is this is a {@link Vec} Key.
+   *  @return True is this is a {@link Vec} Key */
   public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
+
+  /** True is this is a {@link Chunk} Key.
+   *  @return True is this is a {@link Chunk} Key */
   public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == DVEC; }
+
+  /** Returns the {@link Vec} Key from a {@link Chunk} Key.
+   *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
   public final Key getVecKey() { assert isChunkKey(); return water.fvec.Vec.getVecKey(this); }
 
-  // Fetch key contents
+  /** Convenience function to fetch key contents from the DKV. 
+   * @return null if the Key is not mapped, or an instance of {@link Keyed} */
   public final <T extends Keyed> T get() {
     Value val = DKV.get(this);
     return val == null ? null : (T)val.get(); 
@@ -162,7 +185,12 @@ final public class Key extends Iced implements Comparable {
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }
   int replica( H2O cloud ) { return replica(cloud_info(cloud)); }
   int desired( ) { return desired(_cache); }
+
+  /** True if the {@link #home_node} is the current node.
+   *  @return True if the {@link #home_node} is the current node */
   public boolean home() { return home_node()==H2O.SELF; }
+  /** The home node for this Key.
+   *  @return The home node for this Key. */
   public H2ONode home_node( ) {
     H2O cloud = H2O.CLOUD;
     return cloud._memary[home(cloud)];
@@ -244,7 +272,8 @@ final public class Key extends Iced implements Comparable {
     return key;
   }
 
-  // A random string, useful as a Key name or partial Key suffix.
+  /** A random string, useful as a Key name or partial Key suffix.
+   *  @return A random short string */
   public static String rand() {
     UUID uid = UUID.randomUUID();
     long l1 = uid.getLeastSignificantBits();
@@ -252,17 +281,34 @@ final public class Key extends Iced implements Comparable {
     return "_"+Long.toHexString(l1)+Long.toHexString(l2);
   }
 
+  /** Factory making a Key from a byte[]
+   *  @return Desired Key */ 
   public static Key make(byte[] kb) { return make(kb,DEFAULT_DESIRED_REPLICA_FACTOR); }
+  /** Factory making a Key from a String
+   *  @return Desired Key */ 
   public static Key make(String s) { return make(decodeKeyName(s));}
   static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
+  /** Factory making a random Key
+   *  @return Desired Key */ 
   public static Key make() { return make(rand()); }
 
-  // Make a particular system key that is homed to given node and possibly
-  // specifies also other 2 replicas. Works for both IPv4 and IPv6 addresses.
-  // If the addresses are not specified, returns a key with no home information.
+  /** Factory making a homed system Key.  Requires the initial system byte but
+   *  then allows a String for the remaining bytes.  Requires a list of exactly
+   *  one H2ONode to home at.  The hint specifies if it is an error to name an
+   *  H2ONode that is NOT in the Cloud, or if some other H2ONode can be
+   *  substituted.  The rf parameter and passing more than 1 H2ONode are both
+   *  depreciated.
+   *  @return the desired Key   */
   public static Key make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(decodeKeyName(s),rf,systemType,hint,replicas);
   }
+  /** Factory making a homed system Key.  Requires the initial system byte and
+   *  uses {@link #rand} for the remaining bytes.  Requires a list of exactly
+   *  one H2ONode to home at.  The hint specifies if it is an error to name an
+   *  H2ONode that is NOT in the Cloud, or if some other H2ONode can be
+   *  substituted.  The rf parameter and passing more than 1 H2ONode are both
+   *  depreciated.
+   *  @return the desired Key   */
   public static Key make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
     return make(rand(),rf,systemType,hint,replicas);
   }
@@ -293,6 +339,8 @@ final public class Key extends Iced implements Comparable {
     return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
   }
 
+  /** Remove a Key from the DKV, including any embedded Keys.
+   */
   public void remove() {
     Value val = DKV.get(this);
     if( val==null ) return;
@@ -307,9 +355,12 @@ final public class Key extends Iced implements Comparable {
     return Key.make(kb);
   }
 
-  // User keys must be all ASCII, but we only check the 1st byte
+  /** True if a {@link #USER_KEY} and not a system key.
+   * @return True if a {@link #USER_KEY} and not a system key */
   public boolean user_allowed() { return type()==USER_KEY; }
 
+  /** System type/byte of a Key, or the constant {@link #USER_KEY}
+   *  @return Key type */
   // Returns the type of the key.
   public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
 
@@ -378,17 +429,26 @@ final public class Key extends Iced implements Comparable {
   @Override public boolean equals( Object o ) {
     if( this == o ) return true;
     Key k = (Key)o;
+    if( _hash != k._hash ) return false;
     return Arrays.equals(k._kb,_kb);
   }
 
+  /** Lexically ordered Key comparison, so Keys can be sorted.  Modestly expensive. */
   @Override public int compareTo(Object o) {
     assert (o instanceof Key);
     return this.toString().compareTo(o.toString());
   }
 
-  // Custom Serialization Class: Keys need to be interned
+  /** Implementation of the {@link Iced} serialization protocol, only called by
+   * auto-genned code.  Not intended to be called by user code. */
   @Override public final AutoBuffer write_impl( AutoBuffer ab ) { return ab.putA1(_kb); }
+  /** Implementation of the {@link Iced} serialization protocol, only called by
+   * auto-genned code.  Not intended to be called by user code. */
   @Override public final Key read_impl( AutoBuffer ab ) { return make(ab.getA1()); }
+  /** Implementation of the {@link Iced} serialization protocol, only called by
+   * auto-genned code.  Not intended to be called by user code. */
   @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
+  /** Implementation of the {@link Iced} serialization protocol, only called by
+   * auto-genned code.  Not intended to be called by user code. */
   @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); } // TODO: this is ugly; do just a String
 }

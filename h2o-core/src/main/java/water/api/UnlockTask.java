@@ -14,10 +14,8 @@ public class UnlockTask extends MRTask<UnlockTask> {
       if(!k.isLockable()) continue;
       final Value val = DKV.get(k._key);
       if( val == null ) continue;
-      final Object obj = val.rawPOJO();
-      if( obj == null ) continue; //need to have a POJO to be locked
-      final Lockable<?> lockable = (Lockable<?>)(obj);
-      final Key[] lockers = ((Lockable) obj)._lockers;
+      final Lockable<?> lockable = val.<Lockable<?>>get();
+      final Key[] lockers = lockable._lockers;
       if (lockers != null) {
         // check that none of the locking jobs is still running
         for (Key locker : lockers) {

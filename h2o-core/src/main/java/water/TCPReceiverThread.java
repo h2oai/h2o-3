@@ -61,7 +61,7 @@ public class TCPReceiverThread extends Thread {
   }
 
   // A private thread for reading from this open socket.
-  public static class TCPReaderThread extends Thread {
+  static class TCPReaderThread extends Thread {
     public SocketChannel _sock;
     public AutoBuffer _ab;
     public TCPReaderThread(SocketChannel sock, AutoBuffer ab) {
