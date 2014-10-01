@@ -12,7 +12,7 @@ source('../../h2o-runit.R')
 
 test.column.assignment <- function(conn) {
 
-  hex <- as.h2o(h, iris)
+  hex <- as.h2o(conn, iris)
 
   colsToSelect <- 1 #sample(ncol(hex), 1)
 
