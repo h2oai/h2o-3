@@ -1,4 +1,4 @@
-# Developing with Sparkling Water (H2O <-> Apache Spark integration)
+# Developing with Sparkling Water
 
 ## Setting Up Your Development Environment
 
@@ -21,7 +21,7 @@ To do this for Java7 only, you can do this instead, which is a bit faster:
     ./gradlew -Pdisable.java6bytecode.gen install
 
 
->If *gradle install* hangs it may be because some other process, such as IntelliJ, is holding the lock on the artifact cache.  If so, stop that process and retry *gradle install*.
+> If *gradlew install* hangs it may be because some other process, such as IntelliJ, is holding the lock on the artifact cache.  If so, stop that process and retry *gradlew install*.
 
 Create a git clone of the Perrier repository.
 
