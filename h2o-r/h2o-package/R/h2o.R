@@ -54,7 +54,7 @@
         #
         tryCatch(
         temp <- invisible(getURLContent(myURL))
-        , error = function(e) { print("Error!"); print(myURL); print(getURLContent(myURL)); })
+        , error = function(e) { print("Error!"); print(myURL); print("Keys in H2O:"); print(h2o.ls(client)); print(getURLContent(myURL)); })
         temp <- invisible(getURLContent(myURL))
 
       } else
