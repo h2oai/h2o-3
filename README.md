@@ -47,7 +47,7 @@ Find H2O Dev on Maven Central via http://search.maven.org/#search%7Cga%7C1%7Cai.
 Building H2O Dev
 --------------------------------
 
-Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper ( gradlew ) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
 ### Setup on Windows
 
