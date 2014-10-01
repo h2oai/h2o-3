@@ -53,6 +53,67 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     public String response_column;   // column name
     public String[] ignored_columns; // column names to ignore for training
 
+    /** A list of field validation issues. */
+    public ValidationMessage[] validation_messages = new ValidationMessage[0];
+    public int validation_error_count = 0;
+
+    public static final class ValidationMessage extends Iced {
+      public enum MessageType {
+        HIDE,
+        INFO,
+        WARN,
+        ERROR
+      }
+
+      public MessageType message_type;
+      public String field_name;
+      public String message;
+
+      public ValidationMessage(MessageType message_type, String field_name, String message) {
+        this.message_type = message_type;
+        this.field_name = field_name;
+        this.message = message;
+      }
+
+      public String toString() {
+        return message_type + " on field: " + field_name + ": " + message;
+      }
+    }
+
+    public void hide(String field_name, String message) {
+      validation_message(ValidationMessage.MessageType.HIDE, field_name, message);
+    }
+
+    public void validation_info(String field_name, String message) {
+      validation_message(ValidationMessage.MessageType.INFO, field_name, message);
+    }
+
+    public void validation_warn(String field_name, String message) {
+      validation_message(ValidationMessage.MessageType.WARN, field_name, message);
+    }
+
+    public void validation_error(String field_name, String message) {
+      validation_error_count++;
+      validation_message(ValidationMessage.MessageType.ERROR, field_name, message);
+    }
+
+    private void validation_message(ValidationMessage.MessageType message_type, String field_name, String message) {
+      validation_messages = Arrays.copyOf(validation_messages, validation_messages.length + 1);
+      validation_messages[validation_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
+    }
+
+    public String validationErrors() {
+      StringBuilder sb = new StringBuilder();
+      for (ValidationMessage vm : validation_messages)
+        if (vm.message_type == ValidationMessage.MessageType.ERROR)
+          sb.append((sb.length() > 0 ? "" : "; ")).append(vm.toString());
+
+      return sb.toString();
+    }
+
+    // TODO: this really needs to be called from a common place in ModelBuilder or Model. . .
+    abstract public int sanityCheckParameters();
+
     public long checksum() {
       long field_checksum = 1L;
 

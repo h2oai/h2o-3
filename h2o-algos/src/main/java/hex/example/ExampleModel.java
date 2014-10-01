@@ -10,6 +10,12 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
 
   public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleParameters,ExampleOutput> {
     public int _max_iters;        // Max iterations
+
+    @Override
+    public int sanityCheckParameters() {
+      if (_max_iters < 0) validation_error("max_iters", "max_iters must be > 0");
+      return validation_error_count;
+    }
   }
 
   public static class ExampleOutput extends Model.Output<ExampleModel,ExampleParameters,ExampleOutput> {

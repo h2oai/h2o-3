@@ -231,7 +231,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final DeepLearningModel initModel() {
       try {
         lock_data();
-        _parms.sanityCheck();
+        if (_parms.sanityCheckParameters() > 0)
+          throw new IllegalArgumentException("Error(s) in model parameters: " + _parms.validationErrors());
+
         final DataInfo dinfo = prepareDataInfo(_parms);
         final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
         float[] priorDist = _parms.classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;

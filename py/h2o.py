@@ -468,6 +468,42 @@ class H2O(object):
 
     # TODO: remove .json
     '''
+    Return the columns for a single Frame in the h2o cluster.  
+    '''
+    def columns(self, key, timeoutSecs=10, **kwargs):
+        params_dict = { }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
+        
+        result = self.__do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    # TODO: remove .json
+    '''
+    Return a single column for a single Frame in the h2o cluster.  
+    '''
+    def column(self, key, column, timeoutSecs=10, **kwargs):
+        params_dict = { }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', True)
+        
+        result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    # TODO: remove .json
+    '''
+    Return the summary for a single column for a single Frame in the h2o cluster.  
+    '''
+    def summary(self, key, column, timeoutSecs=10, **kwargs):
+        params_dict = { }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
+        
+        result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    # TODO: remove .json
+    '''
     Return a model builder or all of the model builders known to the
     h2o cluster.  The model builders are contained in a dictionary
     called "model_builders" at the top level of the result.  The
@@ -524,9 +560,9 @@ class H2O(object):
 
 
     '''
-    Score a model on the h2o cluster on the given Frame. 
+    Score a model on the h2o cluster on the given Frame and return only the model metrics. 
     '''
-    def score(self, model, frame, timeoutSecs=60, **kwargs):
+    def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
         assert model is not None, '"model" parameter is null'
         assert frame is not None, '"frame" parameter is null'
 

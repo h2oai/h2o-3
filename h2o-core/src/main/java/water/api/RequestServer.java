@@ -121,12 +121,13 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", new String[] {"key"});
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list");
-    register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
-    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
+    // TODO: register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
+    // TODO: register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
 
+    // TODO: filtering isn't working for these first four; we get all results:
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"});
     register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"model"});
     register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"});
@@ -134,7 +135,6 @@ public class RequestServer extends NanoHTTPD {
     register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "list");
 
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"});
-    register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"frame", "model"});
 
     // TODO: register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"});
     // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"});
@@ -142,7 +142,7 @@ public class RequestServer extends NanoHTTPD {
     // TODO: register("/3/ModelMetrics/models/(?<model>.*)"                        ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model"});
     // TODO: register("/3/ModelMetrics"                                            ,"DELETE",ModelMetricsHandler.class, "delete");
 
-
+    // TODO: register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "predict", new String[] {"model", "frame"});
 
 
 
@@ -208,6 +208,10 @@ public class RequestServer extends NanoHTTPD {
       Pattern p = Pattern.compile(url_pattern);
       Route route = new Route(http_method, p, handler_class, meth, path_params);
       _routes.put(p, route);
+
+      // TODO: render documentation markdown
+      // Serve them from /2/Docs/<route> in either Markdown or HTML
+      // _routes.put(p_prime, route. . .)
       return route;
     }
 

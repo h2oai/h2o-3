@@ -159,6 +159,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
       if(l == Link.family_default)
         link = family.defaultLink;
       else { // check we have compatible link
+        // TODO: refactor these checks into sanityCheckParameters():
         this.link = l;
         switch (family) {
           case gaussian:
@@ -193,6 +194,12 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
       this.tweedie_link_power = twLnk;
       family = f;
       link = f.defaultLink;
+    }
+
+    @Override
+    public int sanityCheckParameters() {
+      // TODO: fill in!
+      return validation_error_count;
     }
 
     public final double variance(double mu){

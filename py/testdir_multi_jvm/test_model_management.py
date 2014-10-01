@@ -6,7 +6,7 @@ import h2o, h2o_util
 #########
 # Config:
 algos = ['example', 'kmeans', 'deeplearning', 'glm']
-
+clean_up = False
 
 ###########
 # Utilities
@@ -50,16 +50,6 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
 ################
 
 a_node = h2o.H2O("127.0.0.1", 54321)
-
-# TODO: remove die fast test case:
-if False:
-    import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
-    parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
-    prostate_key = parse_result['frames'][0]['key']['name']
-
-    a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240)
-
-    sys.exit()
 
 models = a_node.models()
 print 'Models: '
@@ -113,6 +103,50 @@ pp.pprint(parse_result)
 prostate_key = parse_result['frames'][0]['key']['name']
 
 ################################################
+# Test /Frames for prostate.csv
+frames = a_node.frames()['frames']
+frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
+
+# Test /Frames/{key} for prostate.csv
+frames = a_node.frames(key='prostate.hex')['frames']
+frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
+
+columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
+assert 'CAPSULE' in columns_dict, "Failed to find CAPSULE in Frames/prostate.hex."
+
+# Test /Frames/{key}/columns for prostate.csv
+frames = a_node.columns(key='prostate.hex')['frames']
+columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
+assert 'ID' in columns_dict, "Failed to find ID in Frames/prostate.hex/columns."
+
+# Test /Frames/{key}/columns/{label} for prostate.csv
+frames = a_node.column(key='prostate.hex', column='AGE')['frames']
+columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
+assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns/AGE."
+
+# Test /Frames/{key}/columns/{label}/summary for prostate.csv
+frames = a_node.summary(key='prostate.hex', column='AGE')['frames']
+columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
+assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns/AGE/summary."
+col = columns_dict['AGE']
+h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing', 'zeros', 'pinfs', 'ninfs', 'mins', 'maxs', 'mean', 'sigma', 'type', 'data', 'precision', 'bins', 'base', 'stride', 'pctiles'])
+h2o_util.assertKeysExist(col, '', ['domain', 'str_data'])
+assert col['mins'][0] == 43, 'Failed to find 43 as the first min for AGE.'
+assert col['maxs'][0] == 79, 'Failed to find 79 as the first max for AGE.'
+assert col['mean'] == 66.03947368421052, 'Failed to find 66.03947368421052 as the mean for AGE.'
+assert col['sigma'] == 6.527071269173308, 'Failed to find 6.527071269173308 as the sigma for AGE.'
+assert col['type'] == 'int', 'Failed to find int as the type for AGE.'
+assert col['data'][0] == 65, 'Failed to find 65 as the first data for AGE.'
+assert col['precision'] == -1, 'Failed to find -1 as the precision for AGE.'
+assert col['bins'][0] == 1, 'Failed to find 1 as the first bin for AGE.'
+assert col['base'] == 43, 'Failed to find 43 as the base for AGE.'
+assert col['stride'] == 1, 'Failed to find 1 as the stride for AGE.'
+assert col['pctiles'][0] == 50.5, 'Failed to find 50.5 as the first pctile for AGE.'
+
+
+################################################
 # Import allyears2k_headers.zip
 import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/airlines/allyears2k_headers.zip")
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
@@ -147,14 +181,6 @@ models = a_node.models()
 print 'After Model build: Models: '
 pp.pprint(models)
 
-
-# TODO: remove fail-early test
-# print 'About to score. . .'
-# mm = a_node.score(model=dl_prostate_model_name, frame=prostate_key)
-# assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
-# assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
-# assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
-# print "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + ":  " + repr(mm)
 
 #######################################
 # Build DeepLearning model for Airlines
@@ -194,11 +220,25 @@ for model in models['models']:
 assert found_dl, 'Did not find ' + dl_prostate_model_name + ' in the models list.'
 validate_actual_parameters(dl_prostate_1_parameters, dl_model['parameters'], prostate_key, None)
 
-mm = a_node.score(model=dl_prostate_model_name, frame=prostate_key)
+###################################
+# Compute and check ModelMetrics for dl_prostate_model_name
+mm = a_node.compute_model_metrics(model=dl_prostate_model_name, frame=prostate_key)
 assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
 assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
 assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
 print "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + ":  " + repr(mm)
+
+###################################
+# Check for ModelMetrics for dl_prostate_model_name in full list
+mms = a_node.model_metrics() # fetch all
+assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
+found_mm = False
+for mm in mms['model_metrics']:
+    model_key = mm['model']['key']
+    frame_key = mm['frame']['key']['name'] # TODO: should match
+    if model_key == dl_prostate_model_name and frame_key == prostate_key:
+        found_mm = True
+assert found_mm, "Failed to find ModelMetrics object for model: " + dl_prostate_model_name + " and frame: " + prostate_key
 
 ###################################
 # Check dl_airlines_model_name
@@ -225,6 +265,9 @@ for frame in model['models'][0]['compatible_frames']['frames']:
         found = True
 assert found, "Failed to find " + prostate_key + " in compatible_frames list."
 
+
+if not clean_up:
+    sys.exit()
 
 ###################
 # test delete_model

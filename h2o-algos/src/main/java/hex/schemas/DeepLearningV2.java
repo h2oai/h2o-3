@@ -597,7 +597,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
   // TODO: refactor ModelBuilder creation
   @Override public DeepLearning createImpl() {
     DeepLearningParameters parms = parameters.createImpl();
-    parms.sanityCheck();
+    parms.sanityCheckParameters();
     return new DeepLearning(parms);
   }
 

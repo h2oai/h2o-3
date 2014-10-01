@@ -460,87 +460,88 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
 
     //Sanity check for Deep Learning job parameters
-    public void sanityCheck() {
+    @Override
+    public int sanityCheckParameters() {
       Frame fr = Frame.sanityCheckFrameKey(_training_frame,"Training Frame");
       if( _validation_frame != null ) Frame.sanityCheckFrameKey(_validation_frame,"Validation Frame");
       if (fr.numCols() <= 1)
-        throw new IllegalArgumentException("Training data must have at least 2 features (incl. response).");
+        validation_error("_validation_frame", "Training data must have at least 2 features (incl. response).");
 
-      if (hidden == null) throw new IllegalArgumentException("There must be at least one hidden layer.");
+      if (hidden == null) validation_error("hidden", "There must be at least one hidden layer.");
 
       for (int i=0;i<hidden.length;++i) {
         if (hidden[i]==0)
-          throw new IllegalArgumentException("Hidden layer size must be >0.");
+          validation_error("hidden", "Hidden layer size must be >0.");
       }
 
-      //Auto-fill defaults
+      // Auto-fill defaults
       if (hidden_dropout_ratios == null) {
         if (activation == Activation.TanhWithDropout || activation == Activation.MaxoutWithDropout || activation == Activation.RectifierWithDropout) {
           hidden_dropout_ratios = new double[hidden.length];
-          if (!quiet_mode) Log.info("Automatically setting all hidden dropout ratios to 0.5.");
+          if (!quiet_mode) validation_info("hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
           Arrays.fill(hidden_dropout_ratios, 0.5);
         }
       }
-      else if (hidden_dropout_ratios.length != hidden.length) throw new IllegalArgumentException("Must have " + hidden.length + " hidden layer dropout ratios.");
+      else if (hidden_dropout_ratios.length != hidden.length) validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
       else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
-        if (!quiet_mode) Log.info("Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
+        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
       }
       if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
-        throw new IllegalArgumentException("Input dropout must be in [0,1).");
+        validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
 
       if (classification) {
         if (response_column == null)
-          throw new IllegalArgumentException("Response column must be specified.");
+          validation_error("response_column", "Response column must be specified.");
         if (null == fr.vec(response_column))
-          throw new IllegalArgumentException("Response column " + response_column + " not found in frame: " + _training_frame + ".");
+          validation_error("response_column", "Response column " + response_column + " not found in frame: " + _training_frame + ".");
       }
 
       if (null != ignored_columns)
         for (String ignored_column : ignored_columns)
           if (null == fr.vec(ignored_column))
-            throw new IllegalArgumentException("Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
+            validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
 
       if (null != response_column && fr.vec(response_column).isEnum() && !classification) {
-        Log.info("Automatically switching to classification for enum response_vec.");
+        validation_error("classification", "Must choose classification for a categorical response column.");
         classification = true;
       }
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
-        Log.info("Disabling replicate_training_data on 1 node.");
+        validation_info("replicate_training_data", "Disabling replicate_training_data on 1 node.");
         replicate_training_data = false;
       }
       if (single_node_mode && (H2O.CLOUD.size() == 1 || !replicate_training_data)) {
-        Log.info("Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        validation_info("single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
         single_node_mode = false;
       }
       if (!use_all_factor_levels && autoencoder ) {
-        Log.info("Enabling all_factor_levels for auto-encoders.");
+        validation_warn("use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
         use_all_factor_levels = true;
       }
       if(override_with_best_model && n_folds != 0) {
-        Log.info("Disabling override_with_best_model in combination with n-fold cross-validation.");
+        validation_warn("override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
         override_with_best_model = false;
       }
 
       if (!quiet_mode) {
         if (adaptive_rate) {
-          Log.info("Using automatic learning rate.  Ignoring the following input parameters:");
-          Log.info("  rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+          validation_info("adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
+          + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
           momentum_start = 0;
           momentum_stable = 0;
         } else {
-          Log.info("Using manual learning rate.  Ignoring the following input parameters:");
-          Log.info("  rho, epsilon.");
+          validation_info("adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
+          + "rho, epsilon.");
           rho = 0;
           epsilon = 0;
         }
 
         if (initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
-          Log.info("Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
+          validation_info("initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (n_folds != 0) {
           if (override_with_best_model) {
-            Log.info("Automatically setting override_with_best_model to false, since the final model is the only scored model with n-fold cross-validation.");
+            validation_warn("override_with_best_model","Automatically setting override_with_best_model to false, since the final model is the only scored model with n-fold cross-validation.");
             override_with_best_model = false;
           }
         }
@@ -548,15 +549,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if(loss == Loss.Automatic) {
         if (!classification) {
-          if (!quiet_mode) Log.info("Automatically setting loss to MeanSquare for regression.");
+          if (!quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for regression.");
           loss = Loss.MeanSquare;
         }
         else if (autoencoder) {
-          if (!quiet_mode) Log.info("Automatically setting loss to MeanSquare for auto-encoder.");
+          if (!quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for auto-encoder.");
           loss = Loss.MeanSquare;
         }
         else {
-          if (!quiet_mode) Log.info("Automatically setting loss to Cross-Entropy for classification.");
+          if (!quiet_mode) validation_info("loss", "Automatically setting loss to Cross-Entropy for classification.");
           loss = Loss.CrossEntropy;
         }
       }
@@ -564,33 +565,34 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if(autoencoder && sparsity_beta > 0) {
         if (activation == Activation.Tanh || activation == Activation.TanhWithDropout) {
           if (average_activation >= 1 || average_activation <= -1)
-            throw new IllegalArgumentException("Tanh average activation must be in (-1,1).");
+            validation_error("average_activation", "Tanh average activation must be in (-1,1).");
         }
         else if (activation == Activation.Rectifier || activation == Activation.RectifierWithDropout) {
           if (average_activation <= 0)
-            throw new IllegalArgumentException("Rectifier average activation must be positive.");
+            validation_error("average_activation", "Rectifier average activation must be positive.");
         }
       }
 
-      if (!classification && loss == Loss.CrossEntropy) throw new IllegalArgumentException("Cannot use CrossEntropy loss function for regression.");
-      if (autoencoder && loss != Loss.MeanSquare) throw new IllegalArgumentException("Must use MeanSquare loss function for auto-encoder.");
-      if (autoencoder && classification) { classification = false; Log.info("Using regression mode for auto-encoder.");}
+      if (!classification && loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
+      if (autoencoder && loss != Loss.MeanSquare) validation_error("loss", "Must use MeanSquare loss function for auto-encoder.");
+      if (autoencoder && classification) { classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (autoencoder && _validation_frame != null) throw new UnsupportedOperationException("Cannot specify a validation dataset for auto-encoder.");
-      if (autoencoder && activation == Activation.Maxout) throw new UnsupportedOperationException("Maxout activation is not supported for auto-encoder.");
+      if (autoencoder && _validation_frame != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
+      if (autoencoder && activation == Activation.Maxout) validation_error("activation", "Maxout activation is not supported for auto-encoder.");
 
       if (!sparse && col_major) {
-        if (!quiet_mode) throw new IllegalArgumentException("Cannot use column major storage for non-sparse data handling.");
+        if (!quiet_mode) validation_error("col_major", "Cannot use column major storage for non-sparse data handling.");
       }
       if (!classification && balance_classes) {
-        throw new IllegalArgumentException("balance_classes requires classification to be enabled.");
+        validation_error("balance_classes", "balance_classes requires classification to be enabled.");
       }
       if (class_sampling_factors != null && !balance_classes) {
-        throw new IllegalArgumentException("class_sampling_factors requires balance_classes to be enabled.");
+        validation_error("class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
       }
-    }
 
+      return validation_error_count;
+    }
   }
 
   public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {

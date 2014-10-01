@@ -27,6 +27,15 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
         print "%s parameters:" % function + repr(params_dict)
         sys.stdout.flush()
 
+def list_to_dict(l, key):
+    result = {}
+    for v in l:
+        # print 'v: ', repr(v)
+        # print 'key: ', key
+        k = followPath(v, key.split("/"))
+        # print 'k: ', k
+        result[k] = v
+    return result
 
 ######################
 # Assertion-type stuff
