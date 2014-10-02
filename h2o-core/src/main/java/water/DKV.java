@@ -4,7 +4,6 @@ package water;
  *  <p>
  *  Functions to Get and Put Values into the K/V store by Key.
  *  <p>
-
  *  The <em>Java Memory Model</em> is observed for all operations.  Reads/Gets
  *  will block until the data is available, and will pull from the local cache
  *  is possible.

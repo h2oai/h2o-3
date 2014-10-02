@@ -13,7 +13,7 @@ classes = $(main_classes) $(test_classes)
 libs = $(wildcard ../lib/*jar)
 jars = $(subst $(space),$(SEP),$(libs))
 
-# Fun Args to javac.  Mostly limit to java6 source definitions, and fairly
+# Fun Args to javac.  Mostly limit to java7 source definitions, and fairly
 # agressive lint warnings.
 JAVAC_ARGS = -g -source 1.7 -target 1.7 -XDignore.symbol.file -Xlint:all -Xlint:-deprecation -Xlint:-serial -Xlint:-rawtypes -Xlint:-unchecked
 
@@ -105,8 +105,23 @@ build/test-h2o-core.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
 	@jar -cfm build/test-h2o-core.jar manifest.txt -C build/classes/test .
 
-javadoc: $(main_classes) $(test_classes)
-	@javadoc -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(main_javas)
+# JavaDoc!
+# Exclude the C*Chunk files, as they are specific kinds of compression.
+chunk_javas = $(wildcard src/main/java/water/fvec/C*Chunk.java)
+javadoc_javas = $(filter-out $(chunk_javas),$(main_javas))
+javadoc_htmls = $(patsubst src/main/java/%java,build/docs/javadoc/%html,$(javadoc_javas))
+
+#javadoc: $(javadoc_htmls)
+#
+#$(javadoc_htmls): build/docs/javadoc/%html: src/main/java/%java
+#	@grep public $? || true
+#	@[ ! `grep --quiet public $?` ] || (echo CRUNK $? ; javadoc -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $?)
+#	@echo CRUNK $?
+#	-@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $?
+
+javadoc: $(javadoc_javas)
+	@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(javadoc_javas)
+
 
 .PHONY: clean
 clean:
