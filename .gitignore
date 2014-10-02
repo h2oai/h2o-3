@@ -25,6 +25,7 @@ out/
 *.ipr
 *.iws
 .settings/*
+gradle-app.setting
 .gradle
 src/main/java/water/BuildVersion.java
 .Rproj.user
