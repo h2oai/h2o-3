@@ -7,21 +7,27 @@ import java.util.Arrays;
 import water.*;
 import water.util.Log;
 
-abstract public class Persist {
-  // All available back-ends, C.f. Value for indexes
+/** Abstract class describing various persistence targets.
+ *  <p><ul>
+ *  <li>{@link #store(Value v)} - Store a Value, using storage space.</li>
+ *  <li>{@link #load(Value v)} - Load a previously stored Value.</li>
+ *  <li>{@link #delete(Value v)} - Free storage from a previously store Value.</li>
+ *  </ul>
+ *  This class is used to implement both user-mode swapping, and the initial
+ *  load of files - typically raw text for parsing.
+ */
+public abstract class Persist {
+  /** All available back-ends, C.f. Value for indexes */
   public static final Persist[] I = new Persist[8];
-  public static final long UNKNOWN = 0;
 
-  // Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file"
-  public static class Schemes {
+  /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
+  public abstract static class Schemes {
     public static final String FILE = "file";
     public static final String HDFS = "hdfs";
     public static final String S3 = "s3";
     public static final String NFS = "nfs";
   }
 
-
-  public static void initialize() {}
 
   static {
     URI uri = H2O.ICE_ROOT;
@@ -37,29 +43,25 @@ abstract public class Persist {
     }
   }
 
+  /** Get the current Persist flavor for user-mode swapping. */
   public static Persist getIce() { return I[Value.ICE]; }
 
-  public static Persist get( byte p ) { return I[p]; }
+  static Persist get( byte p ) { return I[p]; }
 
-  abstract public String getPath();
-
-  // Clear any prior leftover ICE 
-  abstract public void clear();
-
-  /**
-   * Value should already be persisted to disk. A racing delete can trigger a failure where we get a
-   * null return, but no crash (although one could argue that a racing load and delete is a bug no
-   * matter what).
-   */
-  abstract public byte[] load(Value v) throws IOException;
-
+  /** Store a Value into persistent storage, consuming some storage space. */
   abstract public void store(Value v);
 
+  /** Load a previously stored Value */
+  abstract public byte[] load(Value v) throws IOException;
+
+  /** Reclaim space from a previously stored Value */
   abstract public void delete(Value v);
 
-  public long getUsableSpace() { return UNKNOWN; }
+  /** Usuable storage space, or -1 for unknown */
+  public long getUsableSpace() { return /*UNKNOWN*/-1; }
 
-  public long getTotalSpace() { return UNKNOWN; }
+  /** Total storage space, or -1 for unknown */
+  public long getTotalSpace() { return /*UNKNOWN*/-1; }
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
@@ -180,16 +182,5 @@ abstract public class Persist {
     }
     // now in kb we have the key name
     return Key.make(Arrays.copyOf(kb, j));
-  }
-
-
-  // Convenience utility
-  public static byte[] toByteArray(InputStream is) throws IOException {
-    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-        byte[] buffer = new byte[0x2000];
-        for( int len; (len = is.read(buffer)) != -1; )
-          os.write(buffer, 0, len);
-        return os.toByteArray();
-      }
   }
 }

@@ -643,7 +643,6 @@ final public class H2O {
       try { water.persist.PersistS3.getClient(); }
       catch( IllegalArgumentException e ) { Log.err(e); }
     }
-    water.persist.Persist.initialize();
   }
 
   // --------------------------------------------------------------------------

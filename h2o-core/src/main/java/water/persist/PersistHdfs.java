@@ -67,42 +67,7 @@ public final class PersistHdfs extends Persist {
     }
   }
   
-  @Override public String getPath() {
-    throw H2O.unimpl();
-    //return _iceRoot != null ? _iceRoot.toString() : null;
-  }
-
-  @Override public void clear() {
-    throw H2O.unimpl();
-  //  assert this == getIce();
-  //  run(new Callable() {
-  //    @Override public Object call() throws Exception {
-  //      FileSystem fs = FileSystem.get(_iceRoot.toUri(), CONF);
-  //      fs.delete(_iceRoot, true);
-  //      return null;
-  //    }
-  //  }, false, 0);
-  }
-
-  //private static class H2OHdfsInputStream extends RIStream {
-  //  final FileSystem _fs;
-  //  final Path _path;
-  //
-  //  public H2OHdfsInputStream(Path p, long offset, ProgressMonitor pmon) throws IOException {
-  //    super(offset, pmon);
-  //    _path = p;
-  //    _fs = FileSystem.get(p.toUri(), CONF);
-  //    setExpectedSz(_fs.getFileStatus(p).getLen());
-  //    open();
-  //  }
-  //
-  //  @Override protected InputStream open(long offset) throws IOException {
-  //    FSDataInputStream is = _fs.open(_path);
-  //    is.seek(offset);
-  //    return is;
-  //  }
-  //}
-  //
+  /** InputStream from a HDFS-based Key */
   public static InputStream openStream(Key k, Job pmon) throws IOException {
     throw H2O.unimpl();
   //  H2OHdfsInputStream res = null;
@@ -118,8 +83,7 @@ public final class PersistHdfs extends Persist {
   //  }
   //  return res;
   }
-  //
-  //
+
   @Override public byte[] load(final Value v) {
     final byte[] b = MemoryManager.malloc1(v._max);
     long skip = 0;

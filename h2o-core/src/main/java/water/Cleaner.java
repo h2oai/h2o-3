@@ -53,7 +53,7 @@ class Cleaner extends Thread {
   }
   static boolean isDiskFull(){ // free disk space < 5K?
     long space = Persist.getIce().getUsableSpace();
-    return space != Persist.UNKNOWN && space < (5 << 10);
+    return space >= 0 && space < (5 << 10);
   }
 
   @Override public void run() {
@@ -144,7 +144,7 @@ class Cleaner extends Thread {
             if( m != null ) cleaned += m.length;
           } catch(IOException e) {
             if( isDiskFull() )
-              Log.warn("Disk full! Disabling swapping to disk." + (force?" Memory low! Please free some space in " + Persist.getIce().getPath() + "!":""));
+              Log.warn("Disk full! Disabling swapping to disk." + (force?" Memory low! Please free some space in " + H2O.ICE_ROOT + "!":""));
             else
               Log.warn("Disk swapping failed! " + e.getMessage());
             // Something is wrong so mark disk as full anyways so we do not

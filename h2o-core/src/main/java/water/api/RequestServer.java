@@ -416,7 +416,7 @@ public class RequestServer extends NanoHTTPD {
       // Try-with-resource
       try (InputStream resource = water.init.JarHash.getResource2(uri)) {
           if( resource != null ) {
-            try { bytes = water.persist.Persist.toByteArray(resource); }
+            try { bytes = toByteArray(resource); }
             catch( IOException e ) { Log.err(e); }
 
             // PP 06-06-2014 Disable caching for now so that the browser
@@ -444,6 +444,16 @@ public class RequestServer extends NanoHTTPD {
     return res;
   }
 
+  // Convenience utility
+  private static byte[] toByteArray(InputStream is) throws IOException {
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        byte[] buffer = new byte[0x2000];
+        for( int len; (len = is.read(buffer)) != -1; )
+          os.write(buffer, 0, len);
+        return os.toByteArray();
+      }
+  }
+
   // html template and navbar handling -----------------------------------------
 
   private static String loadTemplate(String name) {
@@ -451,7 +461,7 @@ public class RequestServer extends NanoHTTPD {
     water.H2O.registerResourceRoot(new File("h2o-core/training_frame/main/resources/www"));
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
-      return new String(water.persist.Persist.toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
+      return new String(toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);
     }
     catch( IOException ioe ) { Log.err(ioe); return null; }
   }

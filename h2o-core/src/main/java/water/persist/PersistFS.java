@@ -21,18 +21,6 @@ final class PersistFS extends Persist {
       H2O.die("ice_root not a read/writable directory");
   }
 
-  @Override public String getPath() { return _dir.toString(); }
-  @Override public void clear() { clear(_dir); }
-  private void clear(File f) {
-    File[] cs = f.listFiles();
-    if( cs != null ) {
-      for( File c : cs ) {
-        if( c.isDirectory() ) clear(c);
-        c.delete();
-      }
-    }
-  }
-
   private File getFile(Value v) {
     return new File(_dir, getIceName(v));
   }

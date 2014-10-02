@@ -17,7 +17,7 @@ public final class PersistNFS extends Persist {
 
   // file implementation -------------------------------------------------------
 
-  // Key from file
+  /** Key from file */
   public static Key decodeFile(File f) {
     return Key.make(KEY_PREFIX + f.toString());
   }
@@ -30,14 +30,11 @@ public final class PersistNFS extends Persist {
     return new File(s);
   }
 
+  /** InputStream from a NFS-based Key */
   public static InputStream openStream(Key k) throws IOException {
     return new FileInputStream(getFileForKey(k));
   }
 
-  // Read up to 'len' bytes of Value. Value should already be persisted to
-  // disk.  A racing delete can trigger a failure where we get a null return,
-  // but no crash (although one could argue that a racing load&delete is a bug
-  // no matter what).
   @Override public byte[] load(Value v) throws IOException {
     assert v.isPersisted();
     // Convert a file chunk into a long-offset from the base file.
@@ -53,7 +50,6 @@ public final class PersistNFS extends Persist {
     }
   }
 
-  // Store Value v to disk.
   @Override public void store(Value v) {
     // Only the home node does persistence on NFS
     if( !v._key.home() ) return;
@@ -71,7 +67,5 @@ public final class PersistNFS extends Persist {
     } catch( IOException e ) { Log.err(e); }
   }
 
-  @Override public String getPath() { throw H2O.fail(); }
-  @Override public void clear() { throw H2O.fail(); }
   @Override public void delete(Value v) { throw H2O.fail(); }
 }

@@ -29,6 +29,7 @@ public final class PersistS3 extends Persist {
   private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
   private static class AmazonS3 { }
+  /** Initialize the AWS S3 client */
   public static AmazonS3 getClient() {
     if( _s3 == null ) {
       synchronized( _lock ) {
@@ -71,6 +72,7 @@ public final class PersistS3 extends Persist {
   //  }
   //}
   //
+  /** InputStream from a S3-based Key */
   public static InputStream openStream(Key k, Job pmon) throws IOException {
     throw H2O.unimpl();
   //  return new H2SO3InputStream(k, pmon);
@@ -100,12 +102,9 @@ public final class PersistS3 extends Persist {
   //  return k;
   //}
   //
-  //// file implementation -------------------------------------------------------
-  //
-  //// Read up to 'len' bytes of Value. Value should already be persisted to
-  //// disk. A racing delete can trigger a failure where we get a null return,
-  //// but no crash (although one could argue that a racing load&delete is a bug
-  //// no matter what).
+
+  // file implementation -------------------------------------------------------
+
   @Override public byte[] load(Value v) {
     throw H2O.unimpl();
   //  long start_io_ms = System.currentTimeMillis();
@@ -157,8 +156,7 @@ public final class PersistS3 extends Persist {
   //    Thread.sleep(500);
   //  } catch( InterruptedException ie ) {}
   //}
-  //
-  // Store Value v to disk.
+
   @Override public void store(Value v) {
     throw H2O.unimpl();
   //  if( !v._key.home() ) return;
@@ -259,9 +257,6 @@ public final class PersistS3 extends Persist {
   //  return cfg;
   //}
   //
-  //// TODO needed if storing ice to S3
-  //
-  @Override public String getPath() { throw H2O.fail(); }
-  @Override public void clear() { throw H2O.fail(); }
+
   @Override public void delete(Value v) { throw H2O.fail(); }
 }
