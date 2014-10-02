@@ -8,15 +8,15 @@ import water.fvec.Vec.VectorGroup;
 
 /**
  * Map/Reduce style distributed computation.
- * <nl>
+ * <p>
  * MRTask provides several <code>map</code> and <code>reduce</code> methods that can be
  * overriden to specify a computation. Several instances of this class will be
  * created to distribute the computation over F/J threads and machines.  Non-transient
  * fields are copied and serialized to instances created for map invocations. Reduce
  * methods can store their results in fields. Results are serialized and reduced all the
  * way back to the invoking node. When the last reduce method has been called, fields
- * of the initial MRTask instance contains the computation results.
- * <nl>
+ * of the initial MRTask instance contains the computation results.</p>
+ * <p>
  * Apart from small reduced POJO returned to the calling node, MRtask2 can
  * produce output vector(s) as a result.  These will have chunks co-located
  * with the input dataset, however, their number of lines will generally
@@ -24,7 +24,7 @@ import water.fvec.Vec.VectorGroup;
  * output vectors, call doAll.dfork version with required number of outputs and
  * override appropriate <code>map</code> call taking required number of
  * NewChunks.  MRTask will automatically close the new Appendable vecs and
- * produce an output frame with newly created Vecs.
+ * produce an output frame with newly created Vecs.</p>
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
   public MRTask() {}
@@ -116,13 +116,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private int addShift( int x ) { x += _nxx; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
   private int subShift( int x ) { x -= _nxx; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
   private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._heartbeat._client; return 0; }
-  /** Internal field to track the left & right remote nodes/JVMs to work on */
+  /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
   transient protected RPC<T> _nleft, _nrite;
   /** Internal field to track if this is a top-level local call */
   transient protected boolean _topLocal; // Top-level local call, returning results over the wire
   /** Internal field to track a range of local Chunks to work on */
   transient protected int _lo, _hi;   // Range of Chunks to work on - locally
-  /** Internal field to track the left & right sub-range of chunks to work on */
+  /** Internal field to track the left &amp; right sub-range of chunks to work on */
   transient protected T _left, _rite; // In-progress execution tree
 
   transient private T _res;           // Result
@@ -251,7 +251,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return self();
   }
 
-  /** Block for & get any final results from a dfork'd MRTask.
+  /** Block for &amp; get any final results from a dfork'd MRTask.
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
     try { ForkJoinPool.managedBlock(this); }
@@ -438,7 +438,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     tryComplete();
   }
 
-  /** OnCompletion - reduce the left & right into self.  Called internal by
+  /** OnCompletion - reduce the left &amp; right into self.  Called internal by
    *  F/J.  Not expected to be user-called. */
   @Override public final void onCompletion( CountedCompleter caller ) {
     _profile._onCstart = System.currentTimeMillis();

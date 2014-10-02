@@ -3,17 +3,17 @@ package water;
 import java.util.*;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
- * 
- *  A Scope defines a <em>SINGLE THREADED</em> local lifetime management context,
+ *
+ *  <p>A Scope defines a <em>SINGLE THREADED</em> local lifetime management context,
  *  stored in Thread Local Storage.  Scopes can be explicitly entered or exited.
  *  User keys created by this thread are tracked, and deleted when the scope is
- *  exited.  Since enter & exit are explicit, failure to exit means the Keys
+ *  exited.  Since enter &amp; exit are explicit, failure to exit means the Keys
  *  leak (there is no reliable thread-on-exit cleanup action).  You must call
- *  Scope.exit() at some point.  Only user keys & Vec keys are tracked.
+ *  <code>Scope.exit()</code> at some point.  Only user keys &amp; Vec keys are tracked.</p>
  * 
- *  Scopes support nesting.  Scopes support partial cleanup: you can list Keys
+ *  <p>Scopes support nesting.  Scopes support partial cleanup: you can list Keys
  *  you'd like to keep in the exit() call.  These will be "bumped up" to the
- *  higher nested scope - or escaped and become untracked at the top-level.
+ *  higher nested scope - or escaped and become untracked at the top-level.</p>
  */
 
 public class Scope {

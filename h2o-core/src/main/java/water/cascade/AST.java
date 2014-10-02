@@ -310,7 +310,7 @@ class ASTNull extends AST {
  *     NB: RHS is any arbitrary (but valid) AST
  *
  *     This also supports adding a new column.
- *     (e.g., hex$new_column <- 10, creates "new_column" vector in hex with values set to 10)
+ *     (e.g., hex$new_column &lt;- 10, creates "new_column" vector in hex with values set to 10)
  *
  *     The RHS is already on the stack, the LHS is not yet on the stack.
  *

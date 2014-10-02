@@ -14,12 +14,12 @@ import water.*;
  *           starts.  Sometimes the data comes from an InputStream - probably a
  *           GZIP stream.
  *  DataOut- Interface for writing results of parsing, accumulating numbers and
- *           strings (enums) or handling invalid lines & parse errors.
+ *           strings (enums) or handling invalid lines &amp; parse errors.
  *
  *  static classes:
  *  StreamData  - Class implementing DataIn from a Stream (probably a GZIP stream)
  *  InspectDataOut - Class implementing DataOut, on behalf of the GUI, for
- *                parsing & previewing the first few lines & columns of a file.
+ *                parsing &amp; previewing the first few lines &amp; columns of a file.
  */
 public abstract class Parser extends Iced {
   static final byte CHAR_TAB = '\t';
@@ -186,8 +186,8 @@ public abstract class Parser extends Iced {
     }
   }
 
-  /** Class implementing DataOut, on behalf of the GUI, for parsing &
-   *  previewing the first few lines & columns of a file.
+  /** Class implementing DataOut, on behalf of the GUI, for parsing &amp;
+   *  previewing the first few lines &amp; columns of a file.
    */
   protected static class InspectDataOut extends Iced implements DataOut {
     protected int _nlines;

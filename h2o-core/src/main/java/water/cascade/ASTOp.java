@@ -719,7 +719,7 @@ class ASTScale extends ASTUniPrefixOp {
 
 
 /**
- *  ASTBinOp: E x E -> E
+ *  ASTBinOp: E x E -&gt; E
  *
  *  This covers the class of operations that produce an array, scalar, or string from the cartesian product
  *  of the set E = {x | x is a string, scalar, or array}.

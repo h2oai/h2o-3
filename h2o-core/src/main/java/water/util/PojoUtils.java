@@ -23,12 +23,12 @@ public class PojoUtils {
    * the other does not then the names are conformed according to the field_naming
    * parameter.
    *
-   * TODO: support automagic key-name <-> Model / Frame / Vec translation.
    *
    * @param dest Destination POJO
    * @param origin Origin POJO
    * @param field_naming Are the fields named consistently, or does one side have underscores?
    */
+  // TODO: support automagic key-name <-> Model / Frame / Vec translation.
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming) {
     if (null == dest || null == origin) return;
 

@@ -22,7 +22,7 @@ import water.persist.*;
  *  <p>
  *  The H2O {@link DKV} supports the full <em>Java Memory Model</em> coherency
  *  but only with Gets and Puts.  Normal Java updates to the cached POJO are
- *  local-node visible (due to X86 & Java coherency rules) but NOT cluster-wide
+ *  local-node visible (due to X86 &amp; Java coherency rules) but NOT cluster-wide
  *  visible until a Put completes after the update.
  *  <p>
  *  By the same token, updates ot the POJO are not reflected in the serialized
@@ -32,7 +32,7 @@ import water.persist.*;
  *  intact, they <em>must</em> do a final Put after all updates.
  *  <p>
  *  Value objects maintain the needed coherency state, as well as any cached
- *  copies, plus a bunch of utility & convenience functoins.
+ *  copies, plus a bunch of utility &amp; convenience functions.
  */
 public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
@@ -291,7 +291,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // --------------------------------------------------------------------------
 
   /** Construct a Value from all parts; not needed for most uses.  This special
-   *  constructor is used by {@link fvec.FileVec} to build Value objects over
+   *  constructor is used by {@link water.fvec.FileVec} to build Value objects over
    *  already-existing Files, so that the File contents will be lazily
    *  swapped-in as the Values are first used.  */
   public Value(Key k, int max, byte[] mem, short type, byte be ) {
