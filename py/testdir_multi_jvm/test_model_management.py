@@ -3,10 +3,9 @@ import sys, pprint
 sys.path.extend(['.','..','py'])
 import h2o, h2o_util
 
-#########
-# Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm']
-clean_up = False
+#################
+# Config is below
+#################
 
 ###########
 # Utilities
@@ -50,6 +49,14 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
 ################
 
 a_node = h2o.H2O("127.0.0.1", 54321)
+
+#########
+# Config:
+algos = ['example', 'kmeans', 'deeplearning', 'glm']
+clean_up = False
+
+h2o.H2O.verbose = True
+h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
 
 models = a_node.models()
 print 'Models: '
@@ -241,6 +248,26 @@ for mm in mms['model_metrics']:
 assert found_mm, "Failed to find ModelMetrics object for model: " + dl_prostate_model_name + " and frame: " + prostate_key
 
 ###################################
+# Predict and check ModelMetrics for dl_prostate_model_name
+p = a_node.predict(model=dl_prostate_model_name, frame=prostate_key)
+assert p is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
+assert 'model_metrics' in p, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a model_metrics object."
+mm = p['model_metrics'][0]
+h2o.H2O.verboseprint('mm: ', repr(mm))
+assert 'auc' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
+assert 'cm' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
+assert 'predictions' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an predictions section."
+predictions = mm['predictions']
+h2o.H2O.verboseprint ('p: ', repr(p))
+assert 'columns' in predictions, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an columns section."
+assert len(predictions['columns']) > 0, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain any columns."
+assert 'label' in predictions['columns'][0], "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " column 0 has no label element."
+assert 'predict' == predictions['columns'][0]['label'], "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " column 0 is not 'predict'."
+assert 380 == predictions['rows'], "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " has an unexpected number of rows."
+
+print "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + ":  " + repr(p)
+
+###################################
 # Check dl_airlines_model_name
 found_dl = False;
 dl_model = None
@@ -288,3 +315,7 @@ a_node.delete_models()
 models = a_node.models()
 
 assert 'models' in models and 0 == len(models['models']), "Called delete_models and the models list isn't empty: " + h2o_util.dump_json(models)
+
+####################
+# test delete_frames
+# TODO

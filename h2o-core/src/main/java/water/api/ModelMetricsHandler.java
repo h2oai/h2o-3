@@ -188,14 +188,14 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   }
 
   /** Return a single ModelMetrics. */
-  public Schema fetch(int version, ModelMetricsList m) {
+  public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsList m) {
     m.model_metrics = m.fetch();
     ModelMetricsListSchemaV3 schema = this.schema(version).fillFromImpl(m);
     return schema;
   }
 
   /** Return all ModelMetrics. */
-  public Schema list(int version, ModelMetricsList ignore) {
+  public ModelMetricsListSchemaV3 list(int version, ModelMetricsList ignore) {
     ModelMetricsList mm = new ModelMetricsList();
     mm.model = null;
     mm.frame = null;
@@ -203,9 +203,9 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   }
 
   /**
-   * Score a frame with the given model.
+   * Score a frame with the given model and return just the metrics.
    */
-  public Schema score(int version, ModelMetricsList parms) {
+  public ModelMetricsListSchemaV3 score(int version, ModelMetricsList parms) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetrics metrics = ModelMetrics.getFromDKV(parms.model, parms.frame);
 
@@ -214,8 +214,19 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
       return this.fetch(version, parms);
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
-    parms.model.score(parms.frame, true);
+    parms.model.score(parms.frame, true); // throw away predictions
     return this.fetch(version, parms);
+  }
+
+  /**
+   * Score a frame with the given model and return the metrics AND the prediction frame.
+   */
+  public ModelMetricsListSchemaV3 predict(int version, ModelMetricsList parms) {
+    // No caching for predict()
+    Frame predictions = parms.model.score(parms.frame, true);
+    ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+    mm.model_metrics[0].predictions = new FrameV2(predictions); // TODO: Should call schema(version)
+    return mm;
   }
 
   /*
