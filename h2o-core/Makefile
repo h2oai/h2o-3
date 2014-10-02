@@ -105,6 +105,8 @@ build/test-h2o-core.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
 	@jar -cfm build/test-h2o-core.jar manifest.txt -C build/classes/test .
 
+javadoc: $(main_classes) $(test_classes)
+	@javadoc -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(main_javas)
 
 .PHONY: clean
 clean:

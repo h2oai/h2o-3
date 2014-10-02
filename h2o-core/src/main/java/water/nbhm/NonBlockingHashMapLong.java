@@ -2,18 +2,7 @@ package water.nbhm;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.AbstractCollection;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.ConcurrentModificationException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -27,21 +16,21 @@ import sun.misc.Unsafe;
 
 
 /**
- * A lock-free alternate implementation of {@link java.util.ConcurrentHashMap}
- * with <strong>primitive long keys</strong>, better scaling properties and
- * generally lower costs.  The use of {@code long} keys allows for faster
- * compares and lower memory costs.  The Map provides identical correctness
- * properties as ConcurrentHashMap.  All operations are non-blocking and
- * multi-thread safe, including all update operations.  {@link
- * NonBlockingHashMapLong} scales substatially better than {@link
- * java.util.ConcurrentHashMap} for high update rates, even with a large
- * concurrency factor.  Scaling is linear up to 768 CPUs on a 768-CPU Azul
- * box, even with 100% updates or 100% reads or any fraction in-between.
- * Linear scaling up to all cpus has been observed on a 32-way Sun US2 box,
- * 32-way Sun Niagra box, 8-way Intel box and a 4-way Power box.
+ * A lock-free alternate implementation of {@link
+ * java.util.concurrent.ConcurrentHashMap} with <strong>primitive long
+ * keys</strong>, better scaling properties and generally lower costs.  The use
+ * of {@code long} keys allows for faster compares and lower memory costs.  The
+ * Map provides identical correctness properties as ConcurrentHashMap.  All
+ * operations are non-blocking and multi-thread safe, including all update
+ * operations.  {@link NonBlockingHashMapLong} scales substatially better than
+ * {@link java.util.concurrent.ConcurrentHashMap} for high update rates, even
+ * with a large concurrency factor.  Scaling is linear up to 768 CPUs on a
+ * 768-CPU Azul box, even with 100% updates or 100% reads or any fraction
+ * in-between.  Linear scaling up to all cpus has been observed on a 32-way Sun
+ * US2 box, 32-way Sun Niagra box, 8-way Intel box and a 4-way Power box.
  *
- * <p><strong>The main benefit of this class</strong> over using plain {@link
- * org.cliffc.high_scale_lib.NonBlockingHashMap} with {@link Long} keys is
+ * <p><strong>The main benefit of this class</strong> over using plain 
+ * org.cliffc.high_scale_lib.NonBlockingHashMap with {@link Long} keys is
  * that it avoids the auto-boxing and unboxing costs.  Since auto-boxing is
  * <em>automatic</em>, it is easy to accidentally cause auto-boxing and negate
  * the space and speed benefits.
@@ -1169,7 +1158,7 @@ public class NonBlockingHashMapLong<TypeV>
    *
    *  <p><strong>Warning:</strong> the iterator associated with this Set
    *  requires the creation of {@link java.util.Map.Entry} objects with each
-   *  iteration.  The {@link org.cliffc.high_scale_lib.NonBlockingHashMap}
+   *  iteration.  The org.cliffc.high_scale_lib.NonBlockingHashMap
    *  does not normally create or using {@link java.util.Map.Entry} objects so
    *  they will be created soley to support this iteration.  Iterating using
    *  {@link #keySet} or {@link #values} will be more efficient.  In addition,

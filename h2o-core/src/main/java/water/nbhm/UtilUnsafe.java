@@ -6,7 +6,7 @@ import sun.misc.Unsafe;
 /**
  * Simple class to obtain access to the {@link Unsafe} object.  {@link Unsafe}
  * is required to allow efficient CAS operations on arrays.  Note that the
- * versions in {@link java.util.concurrent.atomic}, such as {@link
+ * versions in java.util.concurrent.atomic, such as {@link
  * java.util.concurrent.atomic.AtomicLongArray}, require extra memory ordering
  * guarantees which are generally not needed in these algorithms and are also
  * expensive on most processors.

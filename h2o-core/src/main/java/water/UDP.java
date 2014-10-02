@@ -11,7 +11,7 @@ import water.util.UnsafeUtils;
  */
 
 public abstract class UDP {
-  // Types of UDP packets I grok
+  /** UDP packet types, and their handlers */
   public static enum udp {
     bad(false,null), // Do not use the zero packet, too easy to make mistakes
       // Some health-related packet types.  These packets are all stateless, in

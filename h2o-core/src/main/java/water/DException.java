@@ -48,6 +48,7 @@ public class DException extends Iced {
     }
     public StackTraceElement toSTE() { return new StackTraceElement(_cls,_mth,_fname,_line); }
   }
+  /** Simple named exception class, inflated from a deserialized {@link DException}. */
   public static class DistributedException extends RuntimeException {
     DistributedException( String msg, Throwable cause ) { super(msg,cause); }
   }
