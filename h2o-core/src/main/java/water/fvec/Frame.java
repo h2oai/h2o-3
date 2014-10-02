@@ -11,17 +11,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
- *
- * <p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
- * meant to be cheaply created and discarded for data munging purposes.
- * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
- * references all the Vecs but this one.</p>
- *
- * <p>Frame is referenced by a key. Nevertheless, key can be <code>null</code> and it means that
- * frame is local and is not going into DKV</p>
- *
+/** A collection of named Vecs, essentially an R-like Distributed Data Frame.  
+ *  <p>
+ *  Multiple Frames can reference the same Vecs.  A Frame is a lightweight
+ *  object, it is meant to be cheaply created and discarded for data munging
+ *  purposes.  E.g. to exclude a Vec from a computation on a Frame, create a
+ *  new Frame that references all the Vecs but this one.
+ *  <p>
+ *  Frame is referenced by a key.  Nevertheless, key can be <code>null</code>
+ *  and it means that frame is local and is not going into DKV
  */
 public class Frame extends Lockable {
   public String[] _names;

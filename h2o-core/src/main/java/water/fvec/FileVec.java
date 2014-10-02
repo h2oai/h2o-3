@@ -3,7 +3,7 @@ package water.fvec;
 import water.*;
 import water.util.UnsafeUtils;
 
-public abstract class FileVec extends ByteVec {
+abstract class FileVec extends ByteVec {
   long _len;                    // File length
   final byte _be;
   public static final int CHUNK_SZ = 1 << LOG_CHK;

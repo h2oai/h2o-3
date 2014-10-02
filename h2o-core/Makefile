@@ -111,16 +111,17 @@ chunk_javas = $(wildcard src/main/java/water/fvec/C*Chunk.java)
 javadoc_javas = $(filter-out $(chunk_javas),$(main_javas))
 javadoc_htmls = $(patsubst src/main/java/%java,build/docs/javadoc/%html,$(javadoc_javas))
 
-#javadoc: $(javadoc_htmls)
-#
-#$(javadoc_htmls): build/docs/javadoc/%html: src/main/java/%java
-#	@grep public $? || true
-#	@[ ! `grep --quiet public $?` ] || (echo CRUNK $? ; javadoc -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $?)
-#	@echo CRUNK $?
-#	-@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $?
+build/docs/javadoc/%.html : src/main/java/%.java
+	@if grep --quiet "public .*class " $? ; then echo $< >> build/tmp.javas; fi
+
+# Build JUST the javadoc for changed javas
+javadoc_fast: $(javadoc_htmls)
+	@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc `cat build/tmp.javas`
+	@rm -f build/tmp.javas
 
 javadoc: $(javadoc_javas)
 	@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(javadoc_javas)
+	@rm -f build/tmp.javas
 
 
 .PHONY: clean
