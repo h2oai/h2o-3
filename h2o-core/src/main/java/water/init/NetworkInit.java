@@ -183,7 +183,7 @@ public class NetworkInit {
       return null;
     } finally {
       Log.warn(m);
-      if( s != null ) try { s.close(); } catch( java.io.IOException _ ) { }
+      if( s != null ) try { s.close(); } catch( java.io.IOException ie ) { }
     }
   }
 
@@ -333,7 +333,7 @@ public class NetworkInit {
         break;
       } catch (IOException e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
-        if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException _ ) { }
+        if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         _apiSocket = null;
         _udpSocket = null;
         if( H2O.ARGS.port != 0 )
@@ -386,7 +386,7 @@ public class NetworkInit {
   // disabled).
   public static void multicast( ByteBuffer bb ) {
     try { multicast2(bb); }
-    catch (Exception _) {}
+    catch (Exception ie) {}
   }
 
   static private void multicast2( ByteBuffer bb ) {
@@ -554,7 +554,7 @@ public class NetworkInit {
       }
     } catch( Exception e ) { H2O.die(e.toString()); }
     finally { 
-      if( br != null ) try { br.close(); } catch( IOException _ ) { }
+      if( br != null ) try { br.close(); } catch( IOException ie ) { }
     }
     return list;
   }

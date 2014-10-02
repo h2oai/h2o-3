@@ -22,7 +22,7 @@ import java.util.Properties;
  *  Schema Fields must have a single API annotation describing in they are an
  *  input field or not (all fields will be output by default), and any extra
  *  requirements on the input (prior field dependencies and other validation
- *  checks).  Transient & Static fields are ignored.
+ *  checks).  Transient &amp; Static fields are ignored.
  */
 public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private final transient int _version;

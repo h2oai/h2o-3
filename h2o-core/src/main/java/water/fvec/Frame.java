@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
  *
- * <p></p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
+ * <p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
  * meant to be cheaply created and discarded for data munging purposes.
  * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
  * references all the Vecs but this one.</p>

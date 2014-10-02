@@ -30,7 +30,7 @@ public abstract class JarHash {
       File f = new File(ownJar + stem);
       if( !f.exists() ) return null; // Still not a jar
       return URLDecoder.decode(ownJar + stem, "UTF-8");
-    } catch( IOException _ ) {
+    } catch( IOException ie ) {
       return null;
     }
   }

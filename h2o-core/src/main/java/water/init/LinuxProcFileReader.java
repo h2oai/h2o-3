@@ -79,7 +79,7 @@ public class LinuxProcFileReader {
    */
   public String getProcessID() { return _pid; }
   /**
-   * Read and parse data from /proc/stat and /proc/<pid>/stat.
+   * Read and parse data from /proc/stat and /proc/&lt;pid&gt;/stat.
    * If this doesn't work for some reason, the values will be -1.
    */
   public void read() {

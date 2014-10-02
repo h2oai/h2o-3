@@ -52,25 +52,25 @@ package water;
  */
 public abstract class DKV {
 
-  /** Make the mapping <em>key -> v</em>.  Blocking, caching.  */
+  /** Make the mapping <em>key -&gt; v</em>.  Blocking, caching.  */
   static public Value put( Key key, Iced v ) { return put(key,new Value(key,v)); }
-  /** Make the mapping <em>key -> v</em>.  Caching.  */
+  /** Make the mapping <em>key -&gt; v</em>.  Caching.  */
   static public Value put( Key key, Iced v, Futures fs ) { return put(key,new Value(key,v),fs); }
-  /** Make the mapping <em>key -> v</em>.  */
+  /** Make the mapping <em>key -&gt; v</em>.  */
   static public Value put( Key key, Iced v, Futures fs,boolean donCache ) {
     return put(key,new Value(key,v),fs,donCache);
   }
 
-  /** Make the mapping <em>key -> val</em>.  Blocking, caching.  */
+  /** Make the mapping <em>key -&gt; val</em>.  Blocking, caching.  */
   static public Value put( Key key, Value val ) { 
     Futures fs = new Futures(); 
     Value old = put(key,val,fs);
     fs.blockForPending();
     return old;
   }
-  /** Make the mapping <em>key -> val</em>.  Caching.  */
+  /** Make the mapping <em>key -&gt; val</em>.  Caching.  */
   static public Value put( Key key, Value val, Futures fs ) { return put(key,val,fs,false);}
-  /** Make the mapping <em>key -> val</em>.  */
+  /** Make the mapping <em>key -&gt; val</em>.  */
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
     assert val==null || val._key == key:"non-matching keys " + key.toString() + " != " + val._key.toString();

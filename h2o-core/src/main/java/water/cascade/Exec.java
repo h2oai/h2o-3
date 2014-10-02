@@ -18,13 +18,13 @@ import java.util.HashSet;
  *     "'"  signals the parser to parse a String (single quote): attached_token
  *     '$'  signals a variable lookup: attached_token
  *     '!'  signals a variable set: attached_token
- *     '['  signals a column slice by index -> R handles all named to int conversions (as well as 1-based to 0-based)
+ *     '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
  *     'f'  signals the parser to a parse a function: (f ( args ) ( body ).
  *     '='  signals the parser to assign the RHS to the LHS.
- *     'g'  signals >
- *     'G'  signals >=
- *     'l'  signals >
- *     'L'  signals >=
+ *     'g'  signals &gt;
+ *     'G'  signals &gt;=
+ *     'l'  signals &lt;
+ *     'L'  signals &lt;=
  *     'n'  signals ==
  *     'N'  signals !=
  *     '_'  signals negation (!)

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * Keys are defined as a simple byte-array, plus a hashCode and a small cache
  * of Cloud-specific information.  The first byte of the byte-array determines
  * if this is a user-visible Key or an internal system Key; an initial byte of
- * <32 is a system Key.  User keys are generally externally visible, system
+ * &lt;32 is a system Key.  User keys are generally externally visible, system
  * keys are generally limited to things kept internal to the H2O Cloud.  Keys
  * might be a high-count item, hence we care about the size.
  * <p>

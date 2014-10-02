@@ -42,7 +42,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
   /**
    * Model-specific parameter class.  Each model sub-class contains an instance of one of
    * these containing its builder parameters, with model-specific parameters.
-   * E.g. KMeansModel extends Model & has a KMeansParameters extending Model.Parameters;
+   * E.g. KMeansModel extends Model &amp; has a KMeansParameters extending Model.Parameters;
    * sample parameters include K, whether or not to normalize, max iterations and the
    * initial random seed.
    */

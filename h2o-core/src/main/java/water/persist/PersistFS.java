@@ -57,7 +57,7 @@ final class PersistFS extends Persist {
       new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
       v.setdsk();             // Set as write-complete to disk
     } finally {
-      if( s!=null ) try { s.close(); } catch( IOException _ ) { }
+      if( s!=null ) try { s.close(); } catch( IOException ie ) { }
     }
   }
 
