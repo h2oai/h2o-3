@@ -19,27 +19,8 @@ abstract class FileVec extends ByteVec {
   @Override public int nChunks() { return (int)Math.max(1,_len>>LOG_CHK); }
   @Override public boolean writable() { return false; }
 
-  //NOTE: override ALL rollups-related methods or ALL files will be loaded after import.
-  @Override
-  public double min()  { return Double.NaN; }
-  /** Return column max - lazily computed as needed. */
-  @Override
-  public double max()  { return Double.NaN; }
-  /** Return column mean - lazily computed as needed. */
-  @Override
-  public double mean() { return Double.NaN; }
-  /** Return column standard deviation - lazily computed as needed. */
-  @Override
-  public double sigma(){ return Double.NaN; }
-  /** Return column missing-element-count - lazily computed as needed. */
-  @Override
-  public long  naCnt() { return 0; }
-  /** Is all integers? */
-  @Override
-  public boolean isInt(){return false; }
-  /** Size of compressed vector data. */
-  @Override
-  public long byteSize(){return length(); }
+  /** Size of vector data. */
+  @Override public long byteSize(){return length(); }
 
   // Convert a row# to a chunk#.  For constant-sized chunks this is a little
   // shift-and-add math.  For variable-sized chunks this is a binary search,
@@ -57,8 +38,11 @@ abstract class FileVec extends ByteVec {
   // (except for the last, which might be a little larger), and size-1 rows so
   // this is a little shift-n-add math.
   @Override long chunk2StartElem( int cidx ) { return (long)cidx <<LOG_CHK; }
-  // Convert a chunk-key to a file offset. Size 1 rows, so this is a direct conversion.
-  static public long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)<<LOG_CHK; }
+
+  /** Convert a chunk-key to a file offset. Size 1-byte "rows", so this is a
+   *  direct conversion.
+   *  @return The file offset corresponding to this Chunk index */
+  public static long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)<<LOG_CHK; }
   // Reverse: convert a chunk-key into a cidx
   static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.DVEC; return UnsafeUtils.get4(ckey._kb, 1 + 1 + 4); }
 
