@@ -549,7 +549,7 @@ public class Env extends Iced {
       case ARY: return new ASTFrame(id.value());
       case STR: return new ASTString('\"', id.value());
       // case for FUN
-      default: throw H2O.fail("Could not find appropriate node for identifier "+id);
+      default: throw H2O.fail("Could not find appropriate type for identifier "+id);
     }
   }
 }

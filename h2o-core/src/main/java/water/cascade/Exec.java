@@ -111,6 +111,9 @@ public class Exec extends Iced {
 
   boolean hasNext() { return _x != _ast.length; }
 
+  double nextDbl() { return ((ASTNum) this.skipWS().parse()).dbl(); }
+  String nextStr() { return ((ASTString) this.skipWS().parse())._s; }
+
   Exec xpeek(char c) {
     assert _ast[_x] == c : "Expected '"+c+"'. Got: '"+(char)_ast[_x]+"'. unparsed: "+ unparsed() + " ; _x = "+_x;
     _x++; return this;

@@ -9,7 +9,7 @@ import water.fvec.Vec;
 import water.util.Log;
 
 public class QuantilesHandler extends Handler<QuantilesHandler.Quantiles,QuantilesV1> {
-  protected static final class Quantiles extends Iced {
+  public static final class Quantiles extends Iced {
 
     // IN
     Frame source_key;

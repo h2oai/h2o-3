@@ -57,6 +57,7 @@ public class Vec extends Keyed {
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
   final long[] _espc;
+  public long[] espc() { return _espc; }
 
   /** Enum/factor/categorical names. */
   protected String [] _domain;
