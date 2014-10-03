@@ -81,10 +81,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     return preds;
   }
 
-  @Override protected String errStr() {
-    throw H2O.unimpl();
-  }
-
 //  public static class KMeans2ModelView extends Request2 {
 //    static final int API_WEAVER = 1;
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
