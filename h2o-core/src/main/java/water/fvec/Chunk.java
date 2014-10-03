@@ -3,13 +3,48 @@ package water.fvec;
 import water.*;
 import water.parser.ValueString;
 
-/** A compression scheme, over a chunk - a single array of bytes.  The *actual*
- *  vector header info is in the Vec struct - which contains info to find all
- *  the bytes of the distributed vector.  This struct is basically a 1-entry
- *  chunk cache of the total vector.  Subclasses of this abstract class
- *  implement (possibly empty) compression schemes.  */
+/** A compression scheme, over a chunk of data - a single array of bytes.
+ *  Chunks are mapped many-to-1 to a {@link Vec}.  The <em>actual</em> vector
+ *  header info is in the Vec - which contains info to find all the bytes of
+ *  the distributed vector.  Subclasses of this abstract class implement
+ *  (possibly empty) compression schemes.
+ *  <p>
+
+ *  Chunks are collections of elements, and support an array-like API.  Chunks
+ *  are subsets of a Vec; while the elements in a Vec are numbered starting at
+ *  0, any given Chunk has some (probably non-zero) starting row, and a length
+ *  which is smaller than the whole Vec.  Chunks are limited to a single Java
+ *  byte array in a single JVM heap, and only an int's worth of elements.
+ *  Chunks support both the notions of a global row-number and a chunk-local
+ *  numbering.  The chunk-local numbering supports the common {@code for-loop}
+ *  iterator pattern, using calls that end in a '{@code 0}':
+ *  <pre>{@code
+for( int row=0; row < chunk._len; row++ )
+  ...chunk.at0(row)...
+}</pre>
+ *  <p>
+
+ *  The array-like API allows loading and storing elements in and out of
+ *  Chunks.  When loading, values are decompressed.  When storing, an attempt
+ *  to compress back into the actual underlying Chunk subclass is made; if this
+ *  fails the Chunk is "inflated" into a {@link NewChunk}, and the store
+ *  completed there.  Later the NewChunk will be compressed (probably into a
+ *  different underlying Chunk subclass) and put back in the K/V store under
+ *  the same Key - effectively replacing the original Chunk.  Chunks are not
+
+ *  <p>
+ *  In addition to normal load and store operations, Chunks support the notion
+ *  a missing element via the {@code isNA()} calls, and a "next non-zero"
+ *  notion for rapidly iterating over sparse data.
+ *  <p>
+ *  
+ * 
+ *  <p>
+ */
 public abstract class Chunk extends Iced implements Cloneable {
+  /** Starting row */
   protected long _start = -1;    // Start element; filled after AutoBuffer.read
+
   public final long start() { return _start; } // Start element; filled after AutoBuffer.read
   private int _len;            // Number of elements in this chunk
   public int len() { return _len; }
