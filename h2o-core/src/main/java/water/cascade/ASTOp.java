@@ -137,9 +137,9 @@ public abstract class ASTOp extends AST {
     // Misc
     putPrefix(new ASTMatch());
 //    putPrefix(new ASTRename());
-//    putPrefix(new ASTSeq   ());
-//    putPrefix(new ASTSeqLen());
-//    putPrefix(new ASTRepLen());
+    putPrefix(new ASTSeq   ());
+    putPrefix(new ASTSeqLen());
+    putPrefix(new ASTRepLen());
 //    putPrefix(new ASTQtile ());
 //    putPrefix(new ASTCat   ());
     putPrefix(new ASTCbind ());
@@ -1357,106 +1357,172 @@ class ASTOR extends ASTBinOp {
 //}
 //
 //// Similar to R's seq_len
-//class ASTSeqLen extends ASTOp {
-//  @Override String opStr() { return "seq_len"; }
-//  ASTSeqLen( ) {
-//    super(new String[]{"seq_len", "n"},
-//            new Type[]{Type.ARY,Type.DBL},
-//            OPF_PREFIX,
-//            OPP_PREFIX,
-//            OPA_RIGHT);
-//  }
-//  @Override ASTOp make() { return this; }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    int len = (int)env.popDbl();
-//    if (len <= 0)
-//      throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
-//    env.poppush(1,new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)}),null);
-//  }
-//}
+class ASTSeqLen extends ASTUniPrefixOp {
+  double _length;
+  @Override String opStr() { return "seq_len"; }
+  ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
+  @Override ASTOp make() { return this; }
+  @Override ASTSeqLen parse_impl(Exec E) {
+    _length = ((ASTNum)E.skipWS().parse()).dbl();
+    ASTSeqLen res = (ASTSeqLen) clone();
+    res._asts = new AST[]{};
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    int len = (int) Math.ceil(_length);
+    if (len <= 0)
+      throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
+    Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)});
+    env.push(new ValFrame(fr));
+  }
+}
 
 // Same logic as R's generic seq method
-//class ASTSeq extends ASTOp {
-//  @Override String opStr() { return "seq"; }
-//  ASTSeq() { super(new String[]{"seq", "from", "to", "by"},
-//          new Type[]{Type.dblary(), Type.DBL, Type.DBL, Type.DBL},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT);
-//  }
-//  @Override ASTOp make() { return this; }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    double by = env.popDbl();
-//    double to = env.popDbl();
-//    double from = env.popDbl();
-//
-//    double delta = to - from;
-//    if(delta == 0 && to == 0)
-//      env.poppush(to);
-//    else {
-//      double n = delta/by;
-//      if(n < 0)
-//        throw new IllegalArgumentException("wrong sign in 'by' argument");
-//      else if(n > Double.MAX_VALUE)
-//        throw new IllegalArgumentException("'by' argument is much too small");
-//
-//      double dd = Math.abs(delta)/Math.max(Math.abs(from), Math.abs(to));
-//      if(dd < 100*Double.MIN_VALUE)
-//        env.poppush(from);
-//      else {
-//        Key k = new Vec.VectorGroup().addVec();
-//        Futures fs = new Futures();
-//        AppendableVec av = new AppendableVec(k);
-//        NewChunk nc = new NewChunk(av, 0);
-//        int len = (int)n + 1;
-//        for (int r = 0; r < len; r++) nc.addNum(from + r*by);
-//        // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
-//        nc.close(0, fs);
-//        Vec vec = av.close(fs);
-//        fs.blockForPending();
-//        vec._domain = null;
-//        env.poppush(1, new Frame(new String[] {"C1"}, new Vec[] {vec}), null);
-//      }
-//    }
-//  }
-//}
+class ASTSeq extends ASTUniPrefixOp {
+  double _from;
+  double _to;
+  double _by;
 
-//class ASTRepLen extends ASTOp {
-//  @Override String opStr() { return "rep_len"; }
-//  ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"},
-//          new Type[]{Type.dblary(), Type.DBL, Type.DBL},
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT);
-//  }
-//  @Override ASTOp make() { return this; }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    if(env.isAry(-2)) H2O.unimpl();
-//    else {
-//      int len = (int)env.popDbl();
-//      if(len <= 0)
-//        throw new IllegalArgumentException("Error in rep_len: argument length.out must be coercible to a positive integer");
-//      double x = env.popDbl();
-//      env.poppush(1,new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(x, len)}),null);
-//    }
-//  }
-//}
+  @Override String opStr() { return "seq"; }
+  ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
+  @Override ASTOp make() { return this; }
+  @Override ASTSeq parse_impl(Exec E) {
+    // *NOTE*: This function creates a frame, there is no input frame!
+//    AST ary = E.parse();
+    // Get the from
+    _from = ((ASTNum)E.skipWS().parse()).dbl();
+    // Get the to
+    _to = ((ASTNum)E.skipWS().parse()).dbl();
+    // Get the by
+    _by = ((ASTNum)E.skipWS().parse()).dbl();
+    // Finish the rest
+    ASTSeq res = (ASTSeq) clone();
+    res._asts = new AST[]{}; // in reverse order so they appear correctly on the stack.
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    double delta = _to - _from;
+    if(delta == 0 && _to == 0)
+      env.push(new ValNum(_to));
+    else {
+      double n = delta/_by;
+      if(n < 0)
+        throw new IllegalArgumentException("wrong sign in 'by' argument");
+      else if(n > Double.MAX_VALUE)
+        throw new IllegalArgumentException("'by' argument is much too small");
+
+      double dd = Math.abs(delta)/Math.max(Math.abs(_from), Math.abs(_to));
+      if(dd < 100*Double.MIN_VALUE)
+        env.push(new ValNum(_from));
+      else {
+        Key k = new Vec.VectorGroup().addVec();
+        Futures fs = new Futures();
+        AppendableVec av = new AppendableVec(k);
+        NewChunk nc = new NewChunk(av, 0);
+        int len = (int)n + 1;
+        for (int r = 0; r < len; r++) nc.addNum(_from + r*_by);
+        // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
+        nc.close(0, fs);
+        Vec vec = av.close(fs);
+        fs.blockForPending();
+        vec.set_factors(null);
+        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{vec});
+        env.push(new ValFrame(fr));
+      }
+    }
+  }
+}
+
+class ASTRepLen extends ASTUniPrefixOp {
+  double _length;
+  @Override String opStr() { return "rep_len"; }
+  ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
+  @Override ASTOp make() { return this; }
+  @Override void apply(Env env) {
+
+    // two cases if x is a frame: x is a single vec, x is a list of vecs
+    if (env.isAry()) {
+      final Frame fr = env.pop0Ary();
+      if (fr.numCols() == 1) {
+
+        // In this case, create a new vec of length _length using the elements of x
+        Vec v = Vec.makeRepSeq((long)_length, fr.numRows());  // vec of "indices" corresponding to rows in x
+        new MRTask() {
+          @Override public void map(Chunk c) {
+            for (int i = 0; i < c.len(); ++i)
+              c.set0(i, fr.anyVec().at((long)c.at0(i)));
+          }
+        }.doAll(v);
+        v.set_factors(fr.anyVec().factors());
+        Frame f = new Frame(new String[]{"C1"}, new Vec[]{v});
+        env.cleanup(fr);
+        env.push(new ValFrame(f));
+
+      } else {
+
+        // In this case, create a new frame with numCols = _length using the vecs of fr
+        // this is equivalent to what R does, but by additionally calling "as.data.frame"
+        String[] col_names = new String[(int)_length];
+        for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
+        Frame f = new Frame(col_names, new Vec[(int)_length]);
+        for (int i = 0; i < f.numCols(); ++i)
+          f.add(fr.vec( i % fr.numCols() ));
+
+        env.cleanup(fr);
+        env.push(new ValFrame(f));
+      }
+    }
+
+    // x is a number or a string
+    else {
+      int len = (int)_length;
+      if(len <= 0)
+        throw new IllegalArgumentException("Error in rep_len: argument length.out must be coercible to a positive integer");
+      if (env.isStr()) {
+        // make a constant enum vec with domain[] = []{env.popStr()}
+        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(0, len)});
+        fr.anyVec().set_factors(new String[]{env.popStr()});
+        env.push(new ValFrame(fr));
+      } else if (env.isNum()) {
+        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(env.popDbl(), len)});
+        env.push(new ValFrame(fr));
+      } else throw new IllegalArgumentException("Unkown input. Type: "+env.peekType() + " Stack: " + env.toString());
+    }
+  }
+}
 
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
-//class ASTQtile extends ASTOp {
+//class ASTQtile extends ASTUniPrefixOp {
+//  boolean _narm = false;
+//  boolean _names= true;
+//  int     _type = 7;
+//
 //  @Override String opStr() { return "quantile"; }
 //
-//  ASTQtile( ) {
-//    super(new String[]{"quantile","x","probs"},
-//            new Type[]{Type.ARY, Type.ARY, Type.ARY},
-//            OPF_PREFIX,
-//            OPP_PREFIX,
-//            OPA_RIGHT);
-//  }
+//  ASTQtile( ) { super(new String[]{"quantile","x","probs", "na.rm", "names", "type"});}
 //  @Override ASTQtile make() { return new ASTQtile(); }
+//  @Override ASTQtile parse_impl(Exec E) {
+//    // Get the ary
+//    AST ary = E.parse();
+//    // Get the na.rm
+//    AST a = E._env.lookup((ASTId)E.skipWS().parse());
+//    _narm = ((ASTNum)a).dbl() == 1;
+//    // Get the names
+//    AST b = E._env.lookup((ASTId)E.skipWS().parse());
+//    _names = ((ASTNum)b).dbl() == 1;
+//    //Get the type
+//    _type = (int)((ASTNum)E.skipWS().parse()).dbl();
+//    // Finish the rest
+//    ASTQtile res = (ASTQtile) clone();
+//    res._asts = new AST[]{ary}; // in reverse order so they appear correctly on the stack.
+//    return res;
+//  }
 //
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    Frame x = env.ary(-2);
+//
+//  @Override void apply(Env env) {
+//    Frame x = env.pop0Ary();
 //    Vec xv  = x          .theVec("Argument #1 in Quantile contains more than 1 column.");
 //    Vec pv  = env.ary(-1).theVec("Argument #2 in Quantile contains more than 1 column.");
 //    double p[] = new double[(int)pv.length()];
@@ -1846,7 +1912,7 @@ class ASTMean extends ASTUniPrefixOp {
 //  ASTTable() { super(new String[]{"table", "ary"}); }
 //  @Override String opStr() { return "table"; }
 //  @Override ASTOp make() { return new ASTTable(); }
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
+//  @Override void apply(Env env) {
 //    int ncol;
 //    Frame fr = env.ary(-1);
 //    if ((ncol = fr.vecs().length) > 2)

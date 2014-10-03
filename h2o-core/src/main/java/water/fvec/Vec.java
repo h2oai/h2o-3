@@ -168,6 +168,18 @@ public class Vec extends Keyed {
     return vs;
   }
 
+  // make a seq vec mod repeat
+  public static Vec makeRepSeq( long len, final long repeat ) {
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs) {
+          for (int r = 0; r < c.len(); r++)
+            c.set0(r, (r + 1 + c._start) % repeat);
+        }
+      }
+    }.doAll(makeConSeq(0, len))._fr.vecs()[0];
+  }
+
   public static Vec makeSeq( long len) {
     return new MRTask() {
       @Override
