@@ -454,8 +454,8 @@ class ASTAssign extends AST {
                   if (chks[col].vec().isEnum())
                     if (!rhs_ary.vecs()[col].isEnum()) { chks[col].setNA0(row); continue; }
                     // else vec is numeric
-                    else if (chks[col].vec().isNumeric())
-                      if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
+                  else if (chks[col].vec().isNumeric())
+                    if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
                   chks[col].set0(row, rhs_ary.vecs()[col].at(row_id));
                 }
               }

@@ -159,6 +159,7 @@ public class RequestServer extends NanoHTTPD {
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove");
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove");
     register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo");
+    register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {
