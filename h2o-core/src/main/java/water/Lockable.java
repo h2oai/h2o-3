@@ -3,29 +3,37 @@ package water;
 import java.util.Arrays;
 import water.util.Log;
 
-/** Lockable Keys - locked during long running jobs, to prevent overwriting
- *  in-use keys.  e.g. model-building: expected to read-lock input ValueArray
- *  and Frames, and write-lock the output Model.  Parser should write-lock the
- *  output VA/Frame, to guard against double-parsing.
+/** Lockable Keys - Keys locked during long running {@link Job}s, to prevent
+ *  overwriting in-use keys.  E.g. model-building: expected to read-lock input
+ *  {@link water.fvec.Frame}s, and write-lock the output {@link hex.Model}.
+ *  Parser should write-lock the output Frame, to guard against double-parsing.
+ *  This is a simple cooperative distributed locking scheme.  Because we need
+ *  <em>distributed</em> locking, the normal Java locks do not work.  Because
+ *  we cannot enforce good behavior, this is a <em>cooperative</em> scheme
+ *  only.
  *  
- *  Supports:
- *    lock-and-delete-old-and-update (for new Keys)
- *    lock-and-delete                (for removing old Keys)
- *    unlock
+ *  Supports: <ul>
+ *    <li>lock-and-delete-old-and-update (for new Keys)</li>
+ *    <li>lock-and-delete                (for removing old Keys)</li>
+ *    <li>unlock</li>
+ *  </ul>
  *  
  *  @author <a href="mailto:cliffc@0xdata.com"></a>
  *  @version 1.0
  */
 public abstract class Lockable<T extends Lockable<T>> extends Keyed {
-  /** Write-locker job  is  in _jobs[0 ].  Can be null locker.
-   *  Read -locker jobs are in _jobs[1+].
-   *  Unlocked has _jobs equal to null.
-   *  Only 1 situation will be true at a time; atomically updated.
-   *  Transient, because this data is only valid on the master node.
+  /** List of Job Keys locking this Key.
+   *  <ul>
+   *  <li>Write-locker job  is  in {@code _lockers[0 ]}.  Can be null locker.</li>
+   *  <li>Read -locker jobs are in {@code _lockers[1+]}.</li>
+   *  <li>Unlocked has _lockers equal to null.</li>
+   *  <li>Only 1 situation will be true at a time; atomically updated.</li>
+   *  <li>Transient, because this data is only valid on the master node.</li>
+   *  </ul>
    */
-  //@API(help="Jobs locking this key")
   public transient Key _lockers[];
 
+  /** Create a Lockable object, if it has a {@link Key}. */
   public Lockable( Key key ) { super(key); }
 
   // -----------
@@ -42,12 +50,17 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   // (3)                                            old.remove onSuccess
   // (4)  new        <--update success <--       new+job-locked
 
-  // Write-lock 'this', returns OLD guy
+  /** Write-lock {@code this._key} by {@code job_key}.  
+   *  Throws IAE if the Key is already locked.
+   *  @return the old POJO mapped to this Key, generally for deletion. */
   public Lockable write_lock( Key job_key ) {
     Log.debug("write-lock "+_key+" by job "+job_key);
     return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
   }
-  // Write-lock 'this', delete any old thing, returns NEW guy
+
+  /** Write-lock {@code this._key} by {@code job_key}, and delete any prior mapping.  
+   *  Throws IAE if the Key is already locked.
+   *  @return self, locked by job_key */
   public T delete_and_lock( Key job_key ) {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
@@ -57,27 +70,27 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     return (T)this;
   }
 
-  // Will fail if locked by anybody.
+  /** Write-lock key and delete; blocking.
+   *  Throws IAE if the key is already locked.  
+   */
   public static void delete( Key key ) { 
     Value val = DKV.get(key);
     if( val==null ) return;
     ((Lockable)val.get()).delete();
   }
+  /** Write-lock 'this' and delete; blocking.
+   *  Throws IAE if the _key is already locked.  
+   */
   public void delete( ) { delete(null,new Futures()).blockForPending(); }
-  // Will fail if locked by anybody other than 'job_key'
+  /** Write-lock 'this' and delete. 
+   *  Throws IAE if the _key is already locked.  
+   */
   public Futures delete( Key job_key, Futures fs ) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
     }
     return remove(fs);
-  }
-
-  public static void unlock_lockable(final Key lockable, final Key job){
-    new DTask.DKeyTask<DTask.DKeyTask,Lockable>(null,lockable){
-      @Override
-      public void map(Lockable l) { l.unlock(job);}
-    }.invokeTask();
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
@@ -92,7 +105,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
         if( old.is_locked(_job_key) ) // read-locked by self? (double-write-lock checked above)
           old.set_unlocked(old._lockers,_job_key); // Remove read-lock; will atomically upgrade to write-lock
         if( !old.is_unlocked() ) // Blocking for some other Job to finish???
-          throw new IllegalArgumentException(old.errStr()+" "+_key+" is already in use.  Unable to use it now.  Consider using a different destination name.");
+          throw new IllegalArgumentException(old.getClass()+" "+_key+" is already in use.  Unable to use it now.  Consider using a different destination name.");
       }
       // Update & set the new value
       set_write_lock(_job_key);
@@ -101,12 +114,13 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   }
 
   // -----------
-  // Atomically get a read-lock, preventing future deletes or updates
+  /** Atomically get a read-lock on Key k, preventing future deletes or updates */
   public static void read_lock( Key k, Key job_key ) {
     Value val = DKV.get(k);
     if( val.isLockable() )
       ((Lockable)val.get()).read_lock(job_key); // Lockable being locked
   }
+  /** Atomically get a read-lock on this, preventing future deletes or updates */
   public void read_lock( Key job_key ) { 
     if( _key != null ) {
       Log.debug("shared-read-lock "+_key+" by job "+job_key);
@@ -121,14 +135,15 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     @Override public Lockable atomic(Lockable old) {
       if( old == null ) throw new IllegalArgumentException("Nothing to lock!");
       if( old.is_wlocked() )
-        throw new IllegalArgumentException( old.errStr()+" "+_key+" is being created;  Unable to read it now.");
+        throw new IllegalArgumentException( old.getClass()+" "+_key+" is being created;  Unable to read it now.");
       old.set_read_lock(_job_key);
       return old;
     }
   }
 
   // -----------
-  // Atomically set a new version of self
+  /** Atomically set a new version of self, without changing the locking.  Typically used
+   *  to upgrade a write-locked Model to a newer version with more training iterations. */
   public T update( Key job_key ) { 
     Log.debug("update write-locked "+_key+" by job "+job_key);
     new Update(job_key).invoke(_key); 
@@ -148,7 +163,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   }
 
   // -----------
-  // Atomically set a new version of self & unlock.
+  /** Atomically set a new version of self & unlock. */
   public void unlock( Key job_key ) { 
     if( _key != null ) {
       Log.debug("unlock "+_key+" by job "+job_key);
@@ -213,7 +228,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     assert !is_locked(job_key);
   }
 
-  // Unlock from all lockers
+  /** Force-unlock (break a lock); useful in some debug situations. */
+  //public static void unlock_lockable(final Key lockable, final Key job) {
+  //  new DTask.DKeyTask<DTask.DKeyTask,Lockable>(null,lockable){
+  //    @Override public void map(Lockable l) { l.unlock(job);}
+  //  }.invokeTask();
+  //}
+
+  /** Force-unlock (break a lock) all lockers; useful in some debug situations. */
   public void unlock_all() {
     if( _key != null )
       for (Key k : _lockers) new UnlockSafe(k).invoke(_key);
@@ -229,6 +251,6 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
     }
   }
 
-  // Pretty string when locking fails
-  protected abstract String errStr();
+  /** Pretty string when locking fails */
+  //protected abstract String errStr();
 }

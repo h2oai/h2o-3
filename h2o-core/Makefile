@@ -2,7 +2,7 @@
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
-main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java src/main/java/jsr166y/*java)
+main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java src/main/java/jsr166y/*java src/main/java/hex/*java src/main/java/hex/*/*java )
 test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java src/test/java/water/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/main/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/test/%class,$(test_javas))

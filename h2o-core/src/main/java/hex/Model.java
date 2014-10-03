@@ -346,10 +346,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     return output;
   }
 
-  /** Score already adapted frame.
+  /** Score an already adapted frame.
    *
    * @param adaptFrm
-   * @return
+   * @return A Frame containing the prediction column, and class distribution
    */
   private Frame scoreImpl(Frame adaptFrm) {
     long start_time = System.currentTimeMillis();
@@ -570,7 +570,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
    * @param colName name of column which is mapped, can be null.
    * @param modelDom
    * @param logNonExactMapping
-   * @return
+   * @return A mapping for given column according to given <code>modelDom</code>.
    */
   public static int[][] getDomainMapping(String colName, String[] modelDom, String[] colDom, boolean logNonExactMapping) {
     int emap[] = new int[modelDom.length];

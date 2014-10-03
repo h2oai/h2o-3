@@ -8,7 +8,7 @@ public abstract class Keyed extends Iced {
   public final Key _key;
   public Keyed( Key key ) { _key = key; }
 
-  /** Remove this Keyed object, and all subparts.  Blocking. */
+  /** Remove this Keyed object, and all subparts; blocking. */
   public final void remove( ) { remove(new Futures()).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
   public final Futures remove( Futures fs ) {
@@ -21,7 +21,7 @@ public abstract class Keyed extends Iced {
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
   protected Futures remove_impl( Futures fs ) { return fs; }
 
-  /** Remove this Keyed object, and all subparts.  Blocking. */
+  /** Remove this Keyed object, and all subparts; blocking. */
   public static void remove( Key k ) {
     Value val = DKV.get(k);
     if( val==null ) return;
