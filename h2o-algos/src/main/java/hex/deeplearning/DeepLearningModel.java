@@ -600,10 +600,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     //add output fields
   }
 
-  @Override protected String errStr() {
-    return "Locking of DeepLearningModel failed.";
-  }
-
   // Default publically visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV2(); }
 
