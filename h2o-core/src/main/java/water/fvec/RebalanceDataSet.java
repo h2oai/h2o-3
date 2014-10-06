@@ -111,7 +111,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         assert src.len() == srcRaw.len();
         int srcFrom = (int)(chk._start+ dst.len() - src._start);
         // check if the result is sparse (not exact since we only take subset of training_frame in general)
-        if((src.sparse() && dst.sparse()) || (src.sparseLen() + dst.sparseLen() < NewChunk.MIN_SPARSE_RATIO*(src.len() + dst.len()))){
+        if ((src.sparse() && dst.sparse()) || ((src.sparseLen() + dst.sparseLen()) * NewChunk.MIN_SPARSE_RATIO < (src.len() + dst.len()))) {
           src.set_sparse(src.sparseLen());
           dst.set_sparse(dst.sparseLen());
         }
