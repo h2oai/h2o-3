@@ -286,7 +286,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link close} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -302,7 +302,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link close} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -311,12 +311,51 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
-  /** Write element the slow way, as a float.  Float.NaN will be treated as
-   *  a set of a missing element. */
+
+  /** Write a {@code float} using absolute row numbers; NaN will be treated as
+   *  a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
   public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
-  /** Set the element as missing the slow way.  */
+
+  /** Set the element as missing, using absolute row numbers.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
   final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
 
+  /** Set a {@code String}, using absolute row numbers.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
   public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,str); else _vec.set(i,str); }
   
   private void setWrite() {
@@ -327,15 +366,19 @@ public abstract class Chunk extends Iced implements Cloneable {
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }
 
-  /**
-   * Set a long element in a chunk given a 0-based chunk local index.
+  /** Write a {@code long} with check-relative indexing.  There is no way to
+   *  write a missing value with this call.  Under rare circumstances this can
+   *  throw: if the long does not fit in a double (value is larger magnitude
+   *  than 2^52), AND float values are stored in Vector.  In this case, there
+   *  is no common compatible data representation.
    *
-   * Write into a chunk.
-   * May rewrite/replace chunks if the chunk needs to be
-   * "inflated" to hold larger values.  Returns the input value.
-   *
-   * Note that the idx is an int (instead of a long), which tells you
-   * that index 0 is the first row in the chunk, not the whole Vec.
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
    */
   public final long set0(int idx, long l) {
     setWrite();
@@ -344,7 +387,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return l;
   }
 
-  /** Set a double element in a chunk given a 0-based chunk local index. */
+  /** Write a {@code double} with check-relative indexing.  NaN will be treated
+   *  as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final double set0(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
@@ -352,7 +405,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return d;
   }
 
-  /** Set a floating element in a chunk given a 0-based chunk local index. */
+  /** Write a {@code float} with check-relative indexing.  NaN will be treated
+   *  as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final float set0(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
@@ -360,7 +423,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     return f;
   }
 
-  /** Set the element in a chunk as missing given a 0-based chunk local index. */
+  /** Set a value as missing.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final boolean setNA0(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
@@ -368,6 +440,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return true;
   }
 
+  /** Write a {@code String} with check-relative indexing.  {@code null} will
+   *  be treated as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final String set0(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
@@ -375,7 +458,13 @@ public abstract class Chunk extends Iced implements Cloneable {
     return str;
   }
 
-  /** After writing we must call close() to register the bulk changes */
+  /** After writing we must call close() to register the bulk changes.  If a
+   *  NewChunk was needed, it will be compressed into some other kind of Chunk.
+   *  The resulting Chunk (either a modified self, or a compressed NewChunk)
+   *  will be written to the DKV.  Only after that {@code DKV.put} completes
+   *  will all readers of this Chunk witness the changes.
+   *  @return the passed-in {@link Futures}, for flow-coding.
+   */
   public Futures close( int cidx, Futures fs ) {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
