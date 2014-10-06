@@ -49,7 +49,7 @@ public class C2SChunk extends Chunk {
     assert water.util.PrettyPrint.fitsIntoInt(dx);
     nc.set_sparseLen(0);
     nc.set_len(0);
-    final int len = len();
+    final int len = _len;
     for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
       if( res == C2Chunk._NA ) nc.addNA();

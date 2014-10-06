@@ -24,19 +24,19 @@ public class C0LChunk extends Chunk {
   @Override boolean setNA_impl(int i) { return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     if(_con != 0) {
-      nc.alloc_mantissa(len());
+      nc.alloc_mantissa(_len);
       Arrays.fill(nc.mantissa(), _con);
-      nc.alloc_exponent(len());
-      nc.set_len(nc.set_sparseLen(len()));
+      nc.alloc_exponent(_len);
+      nc.set_len(nc.set_sparseLen(_len));
     } else {
       nc.set_len(nc.set_sparseLen(0));
       nc.set_sparse(0);
-      nc.addZeros(len());
+      nc.addZeros(_len);
       assert(nc.sparseLen() == 0);
     }
     return nc;
   }
-  @Override public int sparseLen(){return _con == 0?0: len();}
+  @Override public int sparseLen(){return _con == 0?0: _len;}
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C0LChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();

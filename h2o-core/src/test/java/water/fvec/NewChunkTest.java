@@ -41,7 +41,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_regular() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(4.32433);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(4.32433, cc.at0(k), Math.ulp(4.32433));
       Assert.assertTrue(cc instanceof C0DChunk);
@@ -50,7 +50,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_NA() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNA();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA0(k));
       Assert.assertTrue(cc instanceof C0DChunk);
@@ -59,7 +59,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_PosInf() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(Double.POSITIVE_INFINITY);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.POSITIVE_INFINITY, cc.at0(k),0.0001);
       Assert.assertTrue(cc instanceof C0DChunk);
@@ -68,7 +68,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_NegInf() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(Double.NEGATIVE_INFINITY);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NEGATIVE_INFINITY, cc.at0(k),0.0001);
       Assert.assertTrue(cc instanceof C0DChunk);
@@ -77,7 +77,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_NaN() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(Double.NaN); //TODO: should this be disallowed?
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NaN, cc.at0(k), 0.0001);
       for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA0(k));
@@ -87,11 +87,11 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_inflateFromNA() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNA();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       cc.set0(K-1, 342.34); //should inflate
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA0(k));
       Assert.assertEquals(342.34, cc.at0(K - 1),Math.ulp(342.34));
       Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
@@ -100,11 +100,11 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_inflateToNA() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(3.1415);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       cc.setNA0(K - 1); //should inflate
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.at0(k), Math.ulp(3.1415));
       Assert.assertTrue(cc.isNA0(K-1));
       Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
@@ -113,11 +113,11 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0DChunk_inflateToLarger() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(3.1415);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       cc.set0(K-1, 9.9999); //should inflate
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.at0(k),Math.ulp(3.1415));
       Assert.assertEquals(9.9999, cc.at0(K-1), Math.ulp(9.9999));
       Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
@@ -130,9 +130,9 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0LChunk_zero() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(0,0); //handled as sparse
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
-      assertEquals(K, cc.len());
+      assertEquals(K, cc._len);
       for (int k = 0; k < K; ++k) Assert.assertEquals(0, cc.at80(k));
       Assert.assertTrue(cc instanceof C0LChunk);
     } finally { remove(); }
@@ -140,7 +140,7 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0LChunk_regular() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(4,0);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(4, cc.at80(k));
       Assert.assertTrue(cc instanceof C0LChunk);
@@ -149,11 +149,11 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0LChunk_inflateFromNA() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNA();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       cc.set0(K - 1, 342l); //should inflate
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA0(k));
       Assert.assertEquals(342, cc.at80(K - 1));
       Assert.assertTrue(! (cc instanceof C0LChunk)); //no longer constant
@@ -163,10 +163,10 @@ public class NewChunkTest extends TestUtil {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(4,0);
       post();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       cc.setNA0(K - 1); //should inflate
       post_write();
-      assertEquals(cc.len(), K);
+      assertEquals(cc._len, K);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(4, cc.at80(k));
       Assert.assertTrue(cc.isNA0(K-1));
       Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
@@ -175,11 +175,11 @@ public class NewChunkTest extends TestUtil {
   @Test public void testC0LChunk_inflateRegular() {
     try { pre();
       for (int k = 0; k < K; ++k) nc.addNum(12345,0);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       cc.set0(K-1, 0.1); //should inflate
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(12345, cc.at80(k));
       Assert.assertEquals(0.1, cc.at0(K - 1), Math.ulp(0.1));
       Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
@@ -193,7 +193,7 @@ public class NewChunkTest extends TestUtil {
     try { pre();
       nc.addNA();
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       post();
       Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K; ++k) Assert.assertEquals(k%254, cc.at80(k));
@@ -205,10 +205,10 @@ public class NewChunkTest extends TestUtil {
       nc.addNA();
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       post();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       cc.set0(K - 1, 256); //should inflate (bigger than max. capacity of 255)
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at80(k));
       Assert.assertEquals(256, cc.at80(K-1));
@@ -220,10 +220,10 @@ public class NewChunkTest extends TestUtil {
       nc.addNA();
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       post();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       cc.set0(K - 1, 255); //255 is internal NA, so it should inflate, since we're not trying to write a NA
       post_write();
-      assertEquals(K, nc.len());
+      assertEquals(K, nc._len);
       Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at80(k));
       Assert.assertEquals(255, cc.at80(K-1));

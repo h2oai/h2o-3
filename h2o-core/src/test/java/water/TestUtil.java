@@ -238,7 +238,7 @@ public class TestUtil extends Iced {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
-        for( int rows = 0; rows < chks[0].len(); rows++ ) {
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
           if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
             if (! (c0.isNA0(rows) && c1.isNA0(rows))) {
               long lo0 = c0.at16l0(rows), lo1 = c1.at16l0(rows);
@@ -279,7 +279,7 @@ public class TestUtil extends Iced {
         if( _unequal ) return;
         Chunk c0 = chks[cols];
         Vec v1 = _fr.vecs()[cols];
-        for( int rows = 0; rows < chks[0].len(); rows++ ) {
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
           double d0 = c0.at0(rows), d1 = v1.at(c0.start() + rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;

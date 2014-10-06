@@ -376,7 +376,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[num_features];
         float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
-        int len = chks[0].len();
+        int len = chks[0]._len;
         for( int row=0; row<len; row++ ) {
           float p[] = score0(chks,row,tmp,preds);
           for( int c=0; c<preds.length; c++ )

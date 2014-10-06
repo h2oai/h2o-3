@@ -398,7 +398,7 @@ class ASTAssign extends AST {
         // MRTask over the lhs array
         new MRTask() {
           @Override public void map(Chunk[] chks) {
-            for (int row = 0; row < chks[0].len(); ++row)
+            for (int row = 0; row < chks[0]._len; ++row)
               if (Arrays.asList(rows0).contains(row)) replaceRow(chks, row, d0, s0, cols0);
           }
         }.doAll(lhs_ary.numCols(), lhs_ary);
@@ -415,7 +415,7 @@ class ASTAssign extends AST {
         new MRTask() {
           @Override public void map(Chunk[] cs, NewChunk[] ncs) {
             Chunk pred = cs[cs.length - 1];
-            int rows = cs[0].len();
+            int rows = cs[0]._len;
             for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
         }.doAll(rr.numCols() - 1, rr);
@@ -445,7 +445,7 @@ class ASTAssign extends AST {
         // MRTask over the lhs array
         new MRTask() {
           @Override public void map(Chunk[] chks) {
-            for (int row = 0; row < chks[0].len(); ++row) {
+            for (int row = 0; row < chks[0]._len; ++row) {
               if (Arrays.asList(rows0).contains(row)) {
                 long row_id = (long)Arrays.asList(rows0).indexOf(row);
                 for (int c = 0; c < cols0.length; ++c) {
@@ -476,7 +476,7 @@ class ASTAssign extends AST {
         if (((Frame)rows).numCols() != 1) throw new IllegalArgumentException("Got multiple columns for row predicate.");
         Frame pred = new MRTask() {
           @Override public void map(Chunk c, NewChunk nc) {
-            for (int r = 0; r < c.len(); ++r) {
+            for (int r = 0; r < c._len; ++r) {
               double d = c.at0(r);
               if (d != 0) nc.addNum(d);
             }
@@ -492,7 +492,7 @@ class ASTAssign extends AST {
         new MRTask() {
           @Override public void map(Chunk[] cs) {
             Chunk pred = cs[cs.length-1];
-            int rows = cs[0].len();
+            int rows = cs[0]._len;
             for (int r=0; r<rows; ++r) {
               long row_id = (long)pred.at0(r) - 1;
               replaceRow(cs, r, row_id, cols0, lhs_ary);
@@ -765,13 +765,13 @@ class ASTSlice extends AST {
       Frame fr = a0.all_neg()
         ? new MRTask() {
             @Override public void map(Chunk cs) {
-              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+              for (long i = cs.start(); i < cs._len + cs.start(); ++i)
                 if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
             @Override public void map(Chunk cs) {
-              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+              for (long i = cs.start(); i < cs._len + cs.start(); ++i)
                 if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
             }
           }.doAll(v0).getResult()._fr;
@@ -790,13 +790,13 @@ class ASTSlice extends AST {
       Frame fr = a0.all_neg()
         ? new MRTask() {
             @Override public void map(Chunk cs) {
-              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+              for (long i = cs.start(); i < cs._len + cs.start(); ++i)
                 if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
             @Override public void map(Chunk cs) {
-              for (long i = cs.start(); i < cs.len() + cs.start(); ++i)
+              for (long i = cs.start(); i < cs._len + cs.start(); ++i)
                 if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
               }
           }.doAll(v0).getResult()._fr;

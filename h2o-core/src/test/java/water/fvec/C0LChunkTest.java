@@ -13,18 +13,18 @@ public class C0LChunkTest extends TestUtil {
     for (long l : new long[]{Long.MIN_VALUE, Long.MAX_VALUE, 23420384l, 0l, -23423423400023l}) {
       NewChunk nc = new NewChunk(null, 0);
       for (int i=0;i<K;++i) nc.addNum(l,0);
-      Assert.assertEquals(K, nc.len());
+      Assert.assertEquals(K, nc._len);
       if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc.sparseLen()); //special case for sparse length
 
       Chunk cc = nc.compress();
-      Assert.assertEquals(K, cc.len());
+      Assert.assertEquals(K, cc._len);
       Assert.assertTrue(cc instanceof C0LChunk);
       for (int i=0;i<K;++i) Assert.assertEquals(l, cc.at80(i));
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
-      nc.values(0, nc.len());
-      Assert.assertEquals(K, nc.len());
+      nc.values(0, nc._len);
+      Assert.assertEquals(K, nc._len);
       Assert.assertEquals(l == 0 ? 0 : K, nc.sparseLen());
 
       Iterator<NewChunk.Value> it = nc.values(0, K);
@@ -35,7 +35,7 @@ public class C0LChunkTest extends TestUtil {
       for (int i = 0; i < K; ++i) Assert.assertEquals(l, nc.at80(i));
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(K, cc2.len());
+      Assert.assertEquals(K, cc2._len);
       Assert.assertTrue(cc2 instanceof C0LChunk);
       for (int i=0;i<K;++i) Assert.assertEquals(l, cc2.at80(i));
 

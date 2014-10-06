@@ -198,7 +198,7 @@ public class Frame extends Lockable {
         for( int col = 0; col < cs.length; col++ ) {
           Chunk c = cs[col];
           NewChunk nc = ncs[col];
-          for( int row = 0; row < c.len(); row++ )
+          for( int row = 0; row < c._len; row++ )
             if( c._vec.isUUID() ) nc.addUUID(c,row);
             else nc.addNum(c.at0(row));
         }
@@ -676,7 +676,7 @@ public class Frame extends Lockable {
               for (long er : rows) {
                 if (er >= 0) continue;
                 er = Math.abs(er);
-                if (er < cs._start || er > (cs.len() + cs._start - 1)) continue;
+                if (er < cs._start || er > (cs._len + cs._start - 1)) continue;
                 cs.set0((int) (er - cs._start), 1);
               }
             }
@@ -749,7 +749,7 @@ public class Frame extends Lockable {
         vecs[c] = _base.vecs()[_cols[c]];
         last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
       }
-      for (int i = 0; i < ix[0].len(); i++) {
+      for (int i = 0; i < ix[0]._len; i++) {
         // select one row
         r = ix[0].at80(i);   // next row to select
         if (r < 0) continue;
@@ -788,8 +788,8 @@ public class Frame extends Lockable {
     @Override public boolean logVerbose() { return false; }
 
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      long rstart = chks[0].start();
-      int rlen = chks[0].len();  // Total row count
+      long rstart = chks[0]._start;
+      int rlen = chks[0]._len;  // Total row count
       int rx = 0;               // Which row to in/ex-clude
       int rlo = 0;              // Lo/Hi for this block of rows
       int rhi = rlen;
@@ -832,7 +832,7 @@ public class Frame extends Lockable {
   private static class DeepSelect extends MRTask<DeepSelect> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
-      for(int i = 0; i < pred.len(); ++i) {
+      for(int i = 0; i < pred._len; ++i) {
         if(pred.at0(i) != 0) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];

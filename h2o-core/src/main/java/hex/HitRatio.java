@@ -138,7 +138,7 @@ public class HitRatio extends Iced {
       float [] preds = new float[cs.length];
 
       // rows
-      for( int r=0; r < cs[0].len(); r++ ) {
+      for( int r=0; r < cs[0]._len; r++ ) {
         if (cs[0].isNA0(r)) {
           _count--;
           continue;
@@ -151,7 +151,7 @@ public class HitRatio extends Iced {
 
         if (actual_label < cs.length-1) updateHits(_hits, actual_label, pred_labels);
       }
-      _count += cs[0].len();
+      _count += cs[0]._len;
     }
 
     @Override public void reduce( HitRatioTask other ) {

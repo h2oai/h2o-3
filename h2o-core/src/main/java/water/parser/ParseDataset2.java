@@ -225,13 +225,13 @@ public final class ParseDataset2 extends Job<Frame> {
       for(int i = 0; i < chks.length; ++i) {
         Chunk chk = chks[i];
         if(_gDomain[i] == null) // killed, replace with all NAs
-          DKV.put(chk.vec().chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk.len()));
+          DKV.put(chk.vec().chunkKey(chk.cidx()),new C0DChunk(Double.NaN,chk._len));
         else if (!(chk instanceof CStrChunk)) {
-          for( int j = 0; j < chk.len(); ++j){
+          for( int j = 0; j < chk._len; ++j){
             if( chk.isNA0(j) )continue;
             long l = chk.at80(j);
             if (l < 0 || l >= emap[i].length)
-              reportBrokenEnum(chk, i, j, l, emap);
+              chk.reportBrokenEnum(i, j, l, emap, _gDomain[i].length);
             if(emap[i][(int)l] < 0)
               throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName());
             chk.set0(j, emap[i][(int)l]);
@@ -239,23 +239,6 @@ public final class ParseDataset2 extends Job<Frame> {
         }
         chk.close(cidx, _fs);
       }
-    }
-    // TODO: Move this into Chunk
-    private void reportBrokenEnum( Chunk chk, int i, int j, long l, int[][] emap ) {
-      Chunk chk2 = chk.chk2();
-      StringBuilder sb = new StringBuilder("Enum renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + _gDomain[i].length + " levels) pulled from " + chk.getClass().getSimpleName() +  "\n");
-      int k = 0;
-      for(; k < Math.min(5,chk.len()); ++k)
-        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
-      k = Math.max(k,j-2);
-      sb.append("...\n");
-      for(; k < Math.min(chk.len(),j+2); ++k)
-        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
-      sb.append("...\n");
-      k = Math.max(k,chk.len()-5);
-      for(; k < chk.len(); ++k)
-        sb.append("at8[" + (k+chk.start()) + "] = " + chk.at80(k) + ", chk2 = " + (chk2 != null?chk2.at80(k):"") + "\n");
-      throw new RuntimeException(sb.toString());
     }
   }
 
@@ -317,7 +300,7 @@ public final class ParseDataset2 extends Job<Frame> {
         for( Vec vec : _f.vecs() ) {
           Value val = H2O.get(vec.chunkKey(i)); // Local-get only
           if( val != null ) {
-            nlines = ((Chunk)val.get()).len();
+            nlines = ((Chunk)val.get())._len;
             break;
           }
         }
@@ -345,7 +328,7 @@ public final class ParseDataset2 extends Job<Frame> {
         if (v.isString() && c instanceof C4Chunk) {
           Key k = v.chunkKey(c.cidx());
           NewChunk nc = new NewChunk(v, c.cidx());
-          for (int j = 0; j < c.len(); ++j)
+          for (int j = 0; j < c._len; ++j)
             if (c.isNA0(j)) nc.addNA();
             else nc.addStr(new ValueString(v.domain()[(int) c.at80(j)]));
 
@@ -570,7 +553,7 @@ public final class ParseDataset2 extends Job<Frame> {
         }
         p.parallelParse(in.cidx(),din,dout);
         (_dout = dout).close(_fs);
-        Job.update(in.len(),_job_key); // Record bytes parsed
+        Job.update(in._len,_job_key); // Record bytes parsed
 
         // remove parsed data right away (each chunk is used by 2)
         freeMem(in,0);

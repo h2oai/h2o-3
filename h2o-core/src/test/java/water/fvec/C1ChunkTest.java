@@ -19,7 +19,7 @@ public class C1ChunkTest extends TestUtil {
       nc.addNA();
 
       Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc.len());
+      Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at80(l+i));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l+i));
@@ -28,10 +28,10 @@ public class C1ChunkTest extends TestUtil {
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
-      nc.values(0, nc.len());
+      nc.values(0, nc._len);
       if (l==1) Assert.assertTrue(cc.isNA0(0));
       Assert.assertEquals(vals.length+l+1, nc.sparseLen());
-      Assert.assertEquals(vals.length+l+1, nc.len());
+      Assert.assertEquals(vals.length+l+1, nc._len);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
       for (int i = 0; i < vals.length+1+l; ++i) Assert.assertTrue(it.next().rowId0() == i);
       Assert.assertTrue(!it.hasNext());
@@ -40,7 +40,7 @@ public class C1ChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA0(vals.length+l));
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc.len());
+      Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C1Chunk);
       if (l==1) Assert.assertTrue(cc2.isNA0(0));
       if (l==1) Assert.assertTrue(cc2.isNA(0));
@@ -81,9 +81,9 @@ public class C1ChunkTest extends TestUtil {
 
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
-    nc.values(0, nc.len());
+    nc.values(0, nc._len);
     Assert.assertEquals(vals.length+1, nc.sparseLen());
-    Assert.assertEquals(vals.length+1, nc.len());
+    Assert.assertEquals(vals.length+1, nc._len);
 
     Iterator<NewChunk.Value> it = nc.values(0, vals.length);
     for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
@@ -95,7 +95,7 @@ public class C1ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
     Chunk cc2 = nc.compress();
-    Assert.assertEquals(vals.length+1, cc.len());
+    Assert.assertEquals(vals.length+1, cc._len);
     Assert.assertTrue(cc2 instanceof C1Chunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));

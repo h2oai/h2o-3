@@ -22,7 +22,7 @@ public class CXIChunkTest extends TestUtil {
       nc.addNA();
 
       Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc.len());
+      Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CXIChunk);
       if (l==1) {
         Assert.assertTrue(cc.isNA0(0));
@@ -35,7 +35,7 @@ public class CXIChunkTest extends TestUtil {
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
-      Assert.assertEquals(vals.length+l+1, nc.len());
+      Assert.assertEquals(vals.length+l+1, nc._len);
       Assert.assertEquals(2+1+l, nc.sparseLen());
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
       if (l==1) Assert.assertTrue(it.next().rowId0() == 0);
@@ -53,7 +53,7 @@ public class CXIChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA(vals.length+l));
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length+1+l, cc.len());
+      Assert.assertEquals(vals.length+1+l, cc._len);
       Assert.assertTrue(cc2 instanceof CXIChunk);
       if (l==1) {
         Assert.assertTrue(cc2.isNA0(0));

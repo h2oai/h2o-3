@@ -30,8 +30,8 @@ public class MRUtils {
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getDeterRNG(seed + cs[0].cidx());
         int count = 0;
-        for (int r = 0; r < cs[0].len(); r++)
-          if (rng.nextFloat() < fraction || (count == 0 && r == cs[0].len()-1) ) {
+        for (int r = 0; r < cs[0]._len; r++)
+          if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
               ncs[i].addNum(cs[i].at0(r));
@@ -56,7 +56,7 @@ public class MRUtils {
     return new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        long[] idx = new long[cs[0].len()];
+        long[] idx = new long[cs[0]._len];
         for (int r=0; r<idx.length; ++r) idx[r] = r;
         ArrayUtils.shuffleArray(idx, seed);
         for (long anIdx : idx) {
@@ -105,7 +105,7 @@ public class MRUtils {
     protected long[] _ys;
     @Override public void map(Chunk ys) {
       _ys = new long[_nclass];
-      for( int i=0; i<ys.len(); i++ )
+      for( int i=0; i<ys._len; i++ )
         if( !ys.isNA0(i) )
           _ys[(int)ys.at80(i)]++;
     }
@@ -210,7 +210,7 @@ public class MRUtils {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getDeterRNG(seed + cs[0].cidx());
-        for (int r = 0; r < cs[0].len(); r++) {
+        for (int r = 0; r < cs[0]._len; r++) {
           if (cs[labelidx].isNA0(r)) continue; //skip missing labels
           final int label = (int)cs[labelidx].at80(r);
           assert(sampling_ratios.length > label && label >= 0);

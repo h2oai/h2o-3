@@ -66,7 +66,7 @@ public class RollupStats extends DTask<RollupStats> {
     boolean isString = c._vec.isString();
     if (isString) _isInt = false;
     // Walk the non-zeros
-    for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
+    for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
         _naCnt++;
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
@@ -89,7 +89,7 @@ public class RollupStats extends DTask<RollupStats> {
 
     // Sparse?  We skipped all the zeros; do them now
     if( c.isSparse() ) {
-      int zeros = c.len() - c.sparseLen();
+      int zeros = c._len - c.sparseLen();
       for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
       _rows += zeros;
     }
@@ -99,7 +99,7 @@ public class RollupStats extends DTask<RollupStats> {
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
-      for( int i=0; i< c.len(); i++ ) {
+      for( int i=0; i< c._len; i++ ) {
         if( !c.isNA0(i) ) {
           double d = c.at0(i)-_mean;
           _sigma += d*d;
@@ -313,14 +313,14 @@ public class RollupStats extends DTask<RollupStats> {
     Histo( RollupStats rs, int nbins ) { _base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
     @Override public void map( Chunk c ) {
       _bins = new long[_nbins];
-      for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.at0(i);
         if( Double.isNaN(d) ) continue;
         _bins[idx(d)]++;
       }
       // Sparse?  We skipped all the zeros; do them now
       if( c.isSparse() )
-        _bins[idx(0.0)] += (c.len() - c.sparseLen());
+        _bins[idx(0.0)] += (c._len - c.sparseLen());
     }
     private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
 

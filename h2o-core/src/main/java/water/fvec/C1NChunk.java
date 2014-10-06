@@ -17,11 +17,11 @@ public class C1NChunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_exponent(len());
-    nc.alloc_mantissa(len());
-    for( int i=0; i< len(); i++ )
+    nc.alloc_exponent(_len);
+    nc.alloc_mantissa(_len);
+    for( int i=0; i< _len; i++ )
       nc.mantissa()[i] = 0xFF&_mem[i+_OFF];
-    nc.set_sparseLen(nc.set_len(len()));
+    nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
   // Custom serializers: the _mem field contains ALL the fields already.

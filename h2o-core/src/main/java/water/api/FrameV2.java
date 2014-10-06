@@ -269,7 +269,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     if( (double)l == d ) return Long.toString(l);
     if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
     Chunk chk = c._vec.chunkForRow(off);
-    Class Cc = chk.vec().chunkForRow(off).getClass();
+    Class Cc = chk.getClass();
     if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk).scale());
     if( Cc == C2SChunk.class ) return x2(d,((C2SChunk)chk).scale());
     if( Cc == C4SChunk.class ) return x2(d,((C4SChunk)chk).scale());

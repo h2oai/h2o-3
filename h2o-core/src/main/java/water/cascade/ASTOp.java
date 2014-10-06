@@ -243,7 +243,7 @@ abstract class ASTUniOp extends ASTOp {
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
           Chunk c = chks[i];
-          int rlen = c.len();
+          int rlen = c._len;
           if (c.vec().isEnum() || c.vec().isUUID() || c.vec().isString()) {
             for (int r = 0; r <rlen;r++) n.addNum(Double.NaN);
           } else {
@@ -293,7 +293,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n = nchks[i];
           Chunk c = chks[i];
-          int rlen = c.len();
+          int rlen = c._len;
           for( int r=0; r<rlen; r++ )
             n.addNum( c.isNA0(r) ? 1 : 0);
         }
@@ -331,7 +331,7 @@ class ASTRound extends ASTUniPrefixOp {
           for(int i = 0; i < nchks.length; i++) {
             NewChunk n = nchks[i];
             Chunk c = chks[i];
-            int rlen = c.len();
+            int rlen = c._len;
             for(int r = 0; r < rlen; r++)
               n.addNum(roundDigits(c.at0(r),digits));
           }
@@ -381,7 +381,7 @@ class ASTSignif extends ASTUniPrefixOp {
           for(int i = 0; i < nchks.length; i++) {
             NewChunk n = nchks[i];
             Chunk c = chks[i];
-            int rlen = c.len();
+            int rlen = c._len;
             for(int r = 0; r < rlen; r++)
               n.addNum(signifDigits(c.at0(r),digits));
           }
@@ -575,7 +575,7 @@ class ASTScale extends ASTUniPrefixOp {
       centered = new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int rows = cs[0].len();
+          int rows = cs[0]._len;
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
@@ -605,7 +605,7 @@ class ASTScale extends ASTUniPrefixOp {
       scaled = new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int rows = cs[0].len();
+          int rows = cs[0]._len;
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
@@ -826,7 +826,7 @@ abstract class ASTBinOp extends ASTOp {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
-          int rlen = chks[0].len();
+          int rlen = chks[0]._len;
           Chunk c0 = chks[i];
           if( (!c0.vec().isEnum() &&
                   !(lf && rf && chks[i+nchks.length].vec().isEnum())) ||
@@ -1042,7 +1042,7 @@ abstract class ASTReducerOp extends ASTOp {
     RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
-      int rows = chks[0].len();
+      int rows = chks[0]._len;
       for (Chunk C : chks) {
         if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
         for (int r = 0; r < rows; r++)
@@ -1058,7 +1058,7 @@ abstract class ASTReducerOp extends ASTOp {
     NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
-      int rows = chks[0].len();
+      int rows = chks[0]._len;
       for (Chunk C : chks) {
         if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
         for (int r = 0; r < rows; r++)
@@ -1272,7 +1272,7 @@ class ASTMatch extends ASTUniPrefixOp {
     Frame rez = new MRTask() {
       private int in(String s) { return Arrays.asList(matches).contains(s) ? 1 : 0; }
       @Override public void map(Chunk c, NewChunk n) {
-        int rows = c.len();
+        int rows = c._len;
         for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at80(r)]));
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
@@ -1418,7 +1418,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         Vec v = Vec.makeRepSeq((long)_length, fr.numRows());  // vec of "indices" corresponding to rows in x
         new MRTask() {
           @Override public void map(Chunk c) {
-            for (int i = 0; i < c.len(); ++i)
+            for (int i = 0; i < c._len; ++i)
               c.set0(i, fr.anyVec().at((long)c.at0(i)));
           }
         }.doAll(v);
@@ -1619,7 +1619,7 @@ class ASTRunif extends ASTUniPrefixOp {
     new MRTask() {
       @Override public void map(Chunk c){
         Random rng = new Random(seed*c.cidx());
-        for(int i = 0; i < c.len(); ++i)
+        for(int i = 0; i < c._len; ++i)
           c.set0(i, (float)rng.nextDouble());
       }
     }.doAll(randVec);
@@ -1761,7 +1761,7 @@ class ASTVar extends ASTUniPrefixOp {
     double _ymean;
     CovarTask(double xmean, double ymean) { _xmean = xmean; _ymean = ymean; }
     @Override public void map(Chunk[] cs) {
-      int len = cs[0].len();
+      int len = cs[0]._len;
       Chunk x = cs[0];
       Chunk y = cs[1];
       if (Double.isNaN(_xmean) || Double.isNaN(_ymean)) { _ss = Double.NaN; return; }
@@ -1841,10 +1841,10 @@ class ASTMean extends ASTUniPrefixOp {
     @Override public void map(Chunk c) {
       if (c.vec().isEnum() || c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
       if (_narm) {
-        for (int r = 0; r < c.len(); r++)
+        for (int r = 0; r < c._len; r++)
           if (!c.isNA0(r)) { _sum += c.at0(r); _rowcnt++;}
       } else {
-        for (int r = 0; r < c.len(); r++)
+        for (int r = 0; r < c._len; r++)
           if (c.isNA0(r)) { _rowcnt = 0; _sum = Double.NaN; return; } else { _sum += c.at0(r); _rowcnt++; }
       }
     }
@@ -2092,7 +2092,7 @@ class ASTCut extends ASTUniPrefixOp {
     final boolean incLow = _includelowest;
     Frame fr2 = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
-        int rows = c.len();
+        int rows = c._len;
         for (int r = 0; r < rows; ++r) {
           double x = c.at0(r);
           if (Double.isNaN(x) || (incLow  && x <  cuts[0])
@@ -2384,7 +2384,7 @@ class ASTLs extends ASTOp {
 //
 //      Frame fr2 = new MRTask() {
 //        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk.len(); r++) {
+//          for(int r = 0; r < chk._len; r++) {
 //            double x = chk.at0(r);
 //            if(Double.isNaN(x))
 //              nchk.addNum(Double.NaN);

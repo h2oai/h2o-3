@@ -47,13 +47,13 @@ public class AppendableVec extends Vec {
       _espc   = Arrays.copyOf(_espc,_espc.length<<1);
       _chunkTypes = Arrays.copyOf(_chunkTypes,_chunkTypes.length<<1);
     }
-    _espc[cidx] = chk.len();
+    _espc[cidx] = chk._len;
     _chunkTypes[cidx] = chk.type();
     _naCnt += chk.naCnt();
     _enumCnt += chk.enumCnt();
     _strCnt += chk.strCnt();
     for( int i=0; i<_timCnt.length; i++ ) _timCnt[i] += chk._timCnt[i];
-    _totalCnt += chk.len();
+    _totalCnt += chk._len;
   }
 
   // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?

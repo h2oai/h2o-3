@@ -22,7 +22,9 @@ import water.parser.ValueString;
  *  dataset will be pulled local (possibly triggering an OutOfMemory).  
  *
  *  <p>The chunk-local numbering supports the common {@code for} loop iterator
- *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}':
+ *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
+ *  and is faster than the global row-numbering for tight loops (because it 
+ *  avoids some range checks):
  *  <pre>{@code
 for( int row=0; row < chunk._len; row++ )
   ...chunk.at0(row)...
@@ -35,12 +37,13 @@ for( int row=0; row < chunk._len; row++ )
  *  completed there.  Later the NewChunk will be compressed (probably into a
  *  different underlying Chunk subclass) and put back in the K/V store under
  *  the same Key - effectively replacing the original Chunk; this is done when
- *  {@link #close} is called.
+ *  {@link #close} is called, and is taken care of by the standard {@link
+ *  MRTask} calls.
  *
  *  <p>Chunk updates are not multi-thread safe; the caller must do correct
- *  synchronization.  This is already handled by the Map/Reduce ({@link
- *  MRTask}) framework.  Chunk updates are not visible cross-cluster until
- *  a {@link #close} is made; again this is handled by MRTask directly.
+ *  synchronization.  This is already handled by the Map/Reduce {MRTask)
+ *  framework.  Chunk updates are not visible cross-cluster until the {@link
+ *  #close} is made; again this is handled by MRTask directly.
  * 
  *  <p>In addition to normal load and store operations, Chunks support the
  *  notion a missing element via the {@code isNA()} calls, and a "next
@@ -58,10 +61,12 @@ for( int row=0; row < chunk._len; row++ )
  *  format will not "blow up" the in-memory representation.  Factors or Enums
  *  are held as small integers, with a shared String lookup table on the side.
  *
- *  <p>Missing float and double data is always treated as a NaN, both if read
- *  or written.  There is no equivalent for integer data; reading a missing
- *  integer value is a coding error and will be flagged.  First check for
- *  a missing integer value before loading it:
+ *  <p>Chunks support the notion of <em>missing</em> data.  Missing float and
+ *  double data is always treated as a NaN, both if read or written.  There is
+ *  no equivalent of NaN for integer data; reading a missing integer value is a
+ *  coding error and will be flagged.  If you are working with integer data
+ *  with missing elements, you must first check for a missing value before
+ *  loading it:
  *  <pre>{@code
 if( !chk.isNA0(row) ) ...chk.at80(row)....
 }</pre>
@@ -78,42 +83,72 @@ if( !chk.isNA0(row) ) ...chk.at80(row)....
  *  aligned together (the common use-case of looking a whole rows of a
  *  dataset).  Again, typically such a code pattern is memory-bandwidth bound
  *  although the X86 will stop being able to prefetch well beyond 100 or 200
- *  Chunks.  Note that such Chunk alignment is guaranteed within all the Vecs
- *  of a Frame.
+ *  Chunks.  
+ *
+ *  <p>Note that Chunk alignment is guaranteed within all the Vecs of a Frame:
+ *  Same numbered Chunks of <em>different</em> Vecs will have the same global
+ *  row numbering and the same length, enabling a particularly simple way to
+ *  iterate over all rows.
  *
  *  <p>This example computes the Euclidean distance between all the columns and
  *  a given point, and stores the squared distance back in the last column.
  *  Note that due "NaN poisoning" if any row element is missing, the entire
  *  distance calculated will be NaN.
  *  <pre>{@code
-final double[] _point; // The given point
-public void map( Chunk[] chks ) {
-  for( int row=0; row < chks[0]._len; row++ ) {
-    double dist=0; // Squared distance
-    for( int col=0; col < chks.length-1; col++ ) {
-      double d = chks[col].at0(row) - _point[col];
-      dist += d*d*;
+final double[] _point;                             // The given point
+public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
+  for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
+    double dist=0;                                 // Squared distance
+    for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
+      double d = chks[col].at0(row) - _point[col]; // Distance along this dimension
+      dist += d*d*;                                // Sum-squared-distance
     }
-    chks[chks.length-1].set0( row, dist );
+    chks[chks.length-1].set0( row, dist );         // Store back the distance in the last col
   }
 }}</pre>
  */
 
 public abstract class Chunk extends Iced implements Cloneable {
-  /** Starting row */
-  protected long _start = -1;    // Start element; filled after AutoBuffer.read
+  /** Global starting row for this local Chunk; a read-only field. */
+  protected long _start = -1;
+  /** Global starting row for this local Chunk */
+  public final long start() { return _start; }
 
-  public final long start() { return _start; } // Start element; filled after AutoBuffer.read
-  private int _len;            // Number of elements in this chunk
-  public int len() { return _len; }
-  public int set_len(int _len) { return this._len = _len; }
-  private Chunk _chk2;       // Normally==null, changed if chunk is written to
-  public final Chunk chk2() { return _chk2; } // Normally==null, changed if chunk is written to
-  protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
-  public final Vec vec() { return _vec; }   // Owning Vec; filled after AutoBuffer.read
-  protected byte[] _mem;  // Short-cut to the embedded memory; WARNING: holds onto a large array
-  public final byte[] getBytes() { return _mem; } // Short-cut to the embedded memory; WARNING: holds onto a large array
-  // Used by a ParseExceptionTest to break the Chunk invariants & trigger an NPE
+  /** Number of rows in this Chunk; publically a read-only field.  Odd API
+   *  design choice: public, not-final, read-only, NO-ACCESSOR.
+   *
+   *  <p>NO-ACCESSOR: This is a high-performance field, and must have a known
+   *  zero-cost cost-model; accessors hide that cost model, and make it
+   *  not-obvious that a loop will be properly optimized or not.
+   *
+   *  <p>not-final: set in various deserializers.
+   *  <p>Proper usage: read the field, probably in a hot loop.
+   *  <pre>{@code
+   for( int row=0; row < chunk._len; row++ )
+     ...chunk.at0(row)...
+   }</pre>
+   **/
+  public int _len;
+  /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
+  protected int set_len(int _len) { return this._len = _len; }
+
+  /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
+  private Chunk _chk2;
+  /** Exposed for internal testing only.  Not a publically visible API. */
+  public Chunk chk2() { return _chk2; }
+
+  /** Owning Vec; a read-only field */
+  protected Vec _vec;
+  /** Owning Vec */
+  public Vec vec() { return _vec; }
+
+  /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
+  protected byte[] _mem;
+  /** Short-cut to the embedded big-data memory */
+  public byte[] getBytes() { return _mem; }
+
+  /** Used by a ParseExceptionTest to break the Chunk invariants & trigger an
+   *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
   /** Load a long value.  Floating point values are silently rounded to an
@@ -127,8 +162,8 @@ public abstract class Chunk extends Iced implements Cloneable {
     * Slightly slower than 'at0' since it range checks within a chunk. */
   final long  at8( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at80((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at80((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
   /** Load a double value.  Returns Double.NaN if value is missing.
@@ -141,30 +176,30 @@ public abstract class Chunk extends Iced implements Cloneable {
    * Slightly slower than 'at80' since it range checks within a chunk. */
   public final double at( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
   /** Fetch the missing-status the slow way. */
   final boolean isNA(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return isNA0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return isNA0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
   public final long at16l( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at16l0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at16l0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
   public final long at16h( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at16h0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at16h0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
   public final ValueString atStr( ValueString vstr, long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return atStr0(vstr,(int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return atStr0(vstr,(int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
 
@@ -185,17 +220,17 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  if the long does not fit in a double (value is larger magnitude than
    *  2^52), AND float values are stored in Vector.  In this case, there is no
    *  common compatible data representation. */
-  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,l); else _vec.set(i,l); }
+  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element. */
-  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,d); else _vec.set(i,d); }
+  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element. */
-  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,f); else _vec.set(i,f); }
+  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < len()) setNA0((int)x); else _vec.setNA(i); }
+  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
 
-  public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,str); else _vec.set(i,str); }
+  public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,str); else _vec.set(i,str); }
   
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
@@ -283,15 +318,15 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   int nextNZ(int rid){return rid+1;}
   public boolean isSparse() {return false;}
-  public int sparseLen(){return len();}
+  public int sparseLen() {return _len;}
 
   /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
    *  For dense chunks, this will contain indices of all the rows in this chunk.
    *  @return array of chunk-relative indices of values stored in this chunk.
    */
   public int nonzeros(int [] res) {
-    for( int i = 0; i < len(); ++i) res[i] = i;
-    return len();
+    for( int i = 0; i < _len; ++i) res[i] = i;
+    return _len;
   }
 
   /**
@@ -334,7 +369,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   // -----------------
   // Support for fixed-width format printing
 //  private String pformat () { return pformat0(); }
-//  private int pformat_len() { return pformat_len0(); }
+//  private int pformat__len { return pformat_len0(); }
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
 //  protected String pformat0() {
 //    long min = (long)_vec.min();
@@ -360,4 +395,21 @@ public abstract class Chunk extends Iced implements Cloneable {
 //    //int w=1/*blank/sign*/+lg/*compression limits digits*/+1/*dot*/+1/*e*/+1/*neg exp*/+2/*digits of exp*/;
 //    //return w;
 //  }
+
+  /** Used by the parser to help report various internal bugs.  Not intended for public use. */
+  public final void reportBrokenEnum( int i, int j, long l, int[][] emap, int levels ) {
+    StringBuilder sb = new StringBuilder("Enum renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
+    int k = 0;
+    for(; k < Math.min(5,_len); ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    k = Math.max(k,j-2);
+    sb.append("...\n");
+    for(; k < Math.min(_len,j+2); ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    sb.append("...\n");
+    k = Math.max(k,_len-5);
+    for(; k < _len; ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    throw new RuntimeException(sb.toString());
+  }
 }

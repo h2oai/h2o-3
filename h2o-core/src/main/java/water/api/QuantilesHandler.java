@@ -195,7 +195,7 @@ public class QuantilesHandler extends Handler<QuantilesHandler.Quantiles,Quantil
     }
 
     public Quantiles add(Chunk chk) {
-      for (int i = 0; i < chk.len(); i++)
+      for (int i = 0; i < chk._len; i++)
         add(chk.at0(i));
       return this;
     }
