@@ -110,7 +110,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 
 public abstract class Chunk extends Iced implements Cloneable {
   /** Global starting row for this local Chunk; a read-only field. */
-  protected long _start = -1;
+  long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
 
@@ -130,7 +130,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    **/
   public int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
-  protected int set_len(int _len) { return this._len = _len; }
+  protected int set_len(int len) { return _len = len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
   private Chunk _chk2;
@@ -138,80 +138,142 @@ public abstract class Chunk extends Iced implements Cloneable {
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  protected Vec _vec;
+  Vec _vec;
   /** Owning Vec */
   public Vec vec() { return _vec; }
 
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
-  protected byte[] _mem;
-  /** Short-cut to the embedded big-data memory */
+  byte[] _mem;
+  /** Short-cut to the embedded big-data memory.  Generally not useful for
+   *  public consumption, since the data remains compressed and holding on to a
+   *  pointer to this array defeats the user-mode spill-to-disk. */
   public byte[] getBytes() { return _mem; }
 
   /** Used by a ParseExceptionTest to break the Chunk invariants & trigger an
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
-  /** Load a long value.  Floating point values are silently rounded to an
-    * integer.  Throws if the value is missing.
-    * <p>
-    * Loads from the 1-entry chunk cache, or misses-out.  This version uses
-    * absolute element numbers, but must convert them to chunk-relative indices
-    * - requiring a load from an aliasing local var, leading to lower quality
-    * JIT'd code (similar issue to using iterator objects).
-    * <p>
-    * Slightly slower than 'at0' since it range checks within a chunk. */
-  final long  at8( long i ) {
+  /** Load a {@code long} value using absolute row numbers.  Floating point
+   *  values are silently rounded to a long.  Throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at80} since it range-checks within a chunk. 
+   *  @return long value at the given row, or throw if the value is missing */
+  final long at8( long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return at80((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-  /** Load a double value.  Returns Double.NaN if value is missing.
-   *  <p>
-   * Loads from the 1-entry chunk cache, or misses-out.  This version uses
-   * absolute element numbers, but must convert them to chunk-relative indices
-   * - requiring a load from an aliasing local var, leading to lower quality
-   * JIT'd code (similar issue to using iterator objects).
-   * <p>
-   * Slightly slower than 'at80' since it range checks within a chunk. */
+  /** Load a {@code double} value using absolute row numbers.  Returns
+   *  Double.NaN if value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at0} since it range-checks within a chunk.
+   *  @return double value at the given row, or NaN if the value is missing */
   public final double at( long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return at0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-  /** Fetch the missing-status the slow way. */
-  final boolean isNA(long i) {
+  /** Missing value status.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #isNA0} since it range-checks within a chunk.
+   *  @return true if the value is missing */
+  public final boolean isNA(long i) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return isNA0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** Low half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16l0} since it range-checks within a chunk.
+   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
   public final long at16l( long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return at16l0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** High half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16h0} since it range-checks within a chunk.
+   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
   public final long at16h( long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return at16h0((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** String value using absolute row numbers, or null if missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #atStr0} since it range-checks within a chunk.
+   *  @return String value using absolute row numbers, or null if missing. */
   public final ValueString atStr( ValueString vstr, long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return atStr0(vstr,(int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-
-  /** The zero-based API.  Somewhere between 10% to 30% faster in a tight-loop
-   *  over the data than the generic at() API.  Probably no gain on larger
-   *  loops.  The row reference is zero-based on the chunk, and should
-   *  range-check by the JIT as expected.  */
+  /** Load a {@code double} value using chunk-relative row numbers.  Returns Double.NaN
+   *  if value is missing.
+   *  @return double value at the given row, or NaN if the value is missing */
   public final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
+
+  /** Load a {@code long} value using chunk-relative row numbers.  Floating
+   *  point values are silently rounded to a long.  Throws if the value is
+   *  missing.
+   *  @return long value at the given row, or throw if the value is missing */
   public final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
+
+  /** Missing value status using chunk-relative row numbers.
+   *
+   *  @return true if the value is missing */
   public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
+
+  /** Low half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
   public final long   at16l0( int i ) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
+
+  /** High half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
   public final long   at16h0( int i ) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
+
+  /** String value using chunk-relative row numbers, or null if missing.
+   *
+   *  @return String value or null if missing. */
   public final ValueString atStr0( ValueString vstr, int i ) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
 
 
