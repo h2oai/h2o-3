@@ -21,7 +21,7 @@ public class GLMValidationTsk extends MRTask<GLMValidationTsk> {
   @Override
   public void map(Chunk actual, Chunk predict){
     GLMValidation val = new GLMValidation(null,_ymu,_params,_rank);
-    for(int i = 0; i < actual.len(); ++i) {
+    for(int i = 0; i < actual._len; ++i) {
       double predicted = predict.at0(i);
       double real = actual.at0(i);
       if(!Double.isNaN(real) && !Double.isNaN(predicted))

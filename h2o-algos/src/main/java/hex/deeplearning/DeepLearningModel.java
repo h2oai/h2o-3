@@ -1583,7 +1583,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           double tmp [] = new double[_output._names.length];
           float preds[] = new float [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-          for( int row=0; row<chks[0].len(); row++ ) {
+          for( int row=0; row<chks[0]._len; row++ ) {
             float p[] = score_autoencoder(chks, row, tmp, preds, neurons);
             for( int c=0; c<preds.length; c++ )
               chks[_output._names.length+c].set0(row,p[c]);
@@ -1652,7 +1652,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0].len(); row++ ) {
+        for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<_output._names.length; i++ )
             tmp[i] = chks[i].at0(row); //original data
           chks[len].set0(row, score_autoencoder(tmp, null, neurons)); //store the per-row reconstruction error (MSE) in the last column

@@ -224,7 +224,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     @Override public void map(Chunk[] cs) {
       double[] values = new double[cs.length];
       ClusterDist cd = new ClusterDist();
-      for( int row = 0; row < cs[0].len(); row++ ) {
+      for( int row = 0; row < cs[0]._len; row++ ) {
         data(values, cs, row, _means, _mults);
         _sqr += minSqr(_clusters, values, _ncats, cd);
       }
@@ -266,7 +266,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       Random rand = RandomUtils.getRNG(_seed + cs[0].start());
       ClusterDist cd = new ClusterDist();
 
-      for( int row = 0; row < cs[0].len(); row++ ) {
+      for( int row = 0; row < cs[0]._len; row++ ) {
         data(values, cs, row, _means, _mults);
         double sqr = minSqr(_clusters, values, _ncats, cd);
         if( _probability * sqr > rand.nextDouble() * _sqr )
@@ -329,7 +329,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       // Find closest cluster for each row
       double[] values = new double[N];
       ClusterDist cd = new ClusterDist();
-      for( int row = 0; row < cs[0].len(); row++ ) {
+      for( int row = 0; row < cs[0]._len; row++ ) {
         data(values, cs, row, _means, _mults);
         closest(_clusters, values, _ncats, cd);
         int clu = cd._cluster;
