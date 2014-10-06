@@ -130,7 +130,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    **/
   public int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
-  protected int set_len(int len) { return _len = len; }
+  int set_len(int len) { return _len = len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
   private Chunk _chk2;
@@ -163,7 +163,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *
    *  <p>Slightly slower than {@link #at80} since it range-checks within a chunk. 
    *  @return long value at the given row, or throw if the value is missing */
-  final long at8( long i ) {
+  public final long at8( long i ) {
     long x = i - (_start>0 ? _start : 0);
     if( 0 <= x && x < _len) return at80((int)x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
@@ -277,14 +277,39 @@ public abstract class Chunk extends Iced implements Cloneable {
   public final ValueString atStr0( ValueString vstr, int i ) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
 
 
-  /** Write element the slow way, as a long.  There is no way to write a
-   *  missing value with this call.  Under rare circumstances this can throw:
-   *  if the long does not fit in a double (value is larger magnitude than
-   *  2^52), AND float values are stored in Vector.  In this case, there is no
-   *  common compatible data representation. */
+  /** Write a {@code long} using absolute row numbers.  There is no way to
+   *  write a missing value with this call.  Under rare circumstances this can
+   *  throw: if the long does not fit in a double (value is larger magnitude
+   *  than 2^52), AND float values are stored in Vector.  In this case, there
+   *  is no common compatible data representation.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
   public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
-  /** Write element the slow way, as a double.  Double.NaN will be treated as
-   *  a set of a missing element. */
+
+  /** Write a {@code double} using absolute row numbers; NaN will be treated as
+   *  a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
   public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
   /** Write element the slow way, as a float.  Float.NaN will be treated as
    *  a set of a missing element. */
@@ -360,15 +385,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     return fs;
   }
 
+  /** @return Chunk index */
   public int cidx() { return _vec.elem2ChunkIdx(_start); }
 
-  /** Chunk-specific readers.  */ 
-  abstract protected double   atd_impl(int idx);
-  abstract protected long     at8_impl(int idx);
-  abstract protected boolean isNA_impl(int idx);
-  protected long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  protected long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  protected ValueString atStr_impl(ValueString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
+  /** Chunk-specific readers.  Not a public API */ 
+  abstract double   atd_impl(int idx);
+  abstract long     at8_impl(int idx);
+  abstract boolean isNA_impl(int idx);
+  long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  ValueString atStr_impl(ValueString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
   
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */
@@ -379,31 +405,37 @@ public abstract class Chunk extends Iced implements Cloneable {
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
   int nextNZ(int rid){return rid+1;}
+
+  /** Sparse Chunks have a significant number of zeros, and support for
+   *  skipping over large runs of zeros in a row.
+   *  @return true if this Chunk is sparse.  */
   public boolean isSparse() {return false;}
+
+  /** Sparse Chunks have a significant number of zeros, and support for
+   *  skipping over large runs of zeros in a row.
+   *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
   public int sparseLen() {return _len;}
 
-  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
-   *  For dense chunks, this will contain indices of all the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk.
-   */
+  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
+   *  stored in this chunk.  For dense chunks, this will contain indices of all
+   *  the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk. */
   public int nonzeros(int [] res) {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
   }
 
-  /**
-   * Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
-   * For dense chunks, this will contain indices of all the rows in this chunk.
-   *
-   * @return array of chunk-relative indices of values stored in this chunk.
-   */
+  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
+   *  stored in this chunk.  For dense chunks, this will contain indices of all
+   *  the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk.  */
   public final int [] nonzeros () {
     int [] res = MemoryManager.malloc4(sparseLen());
     nonzeros(res);
     return res;
   }
 
-/** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
+  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
   abstract NewChunk inflate_impl(NewChunk nc);
@@ -413,8 +445,10 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  Chunk, but in a highly optimized way. */
   Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
+  /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
 
+  /** Size in bytes of the Chunk plus embedded array. */
   public long byteSize() {
     long s= _mem == null ? 0 : _mem.length;
     s += (2+5)*8 + 12; // 2 hdr words, 5 other words, @8bytes each, plus mem array hdr
@@ -422,17 +456,24 @@ public abstract class Chunk extends Iced implements Cloneable {
     return s;
   }
 
-  // Custom serializers: the _mem field contains ALL the fields already.
-  // Init _start to -1, so we know we have not filled in other fields.
-  // Leave _vec & _chk2 null, leave _len unknown.
+  /** Custom serializers implemented by Chunk subclasses: the _mem field
+   *  contains ALL the fields already. */
   abstract public AutoBuffer write_impl( AutoBuffer ab );
+
+  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
+   *  contains ALL the fields already.  Init _start to -1, so we know we have
+   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
+   *  unknown. */
   abstract public Chunk read_impl( AutoBuffer ab );
 
   // -----------------
   // Support for fixed-width format printing
 //  private String pformat () { return pformat0(); }
 //  private int pformat__len { return pformat_len0(); }
+
+  /** Fixed-width format printing support.  Filled in by the subclasses. */
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
+
 //  protected String pformat0() {
 //    long min = (long)_vec.min();
 //    if( min < 0 ) return "% "+pformat_len0()+"d";
