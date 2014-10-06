@@ -27,7 +27,7 @@ test 'empty cloud', (t) ->
       ensureNoFramesExist
       ensureNoJobsExist
     ]
-    async.waterfall operations, -> t.end(); go()
+    async.waterfall operations, -> go t
 
 test 'airlines ingest and model building flow', (t) ->
   t.plan 64
@@ -301,7 +301,7 @@ test 'airlines ingest and model building flow', (t) ->
       inspectAirlinesDeepLearningModel
       scoreAirlinesDeepLearningModel
     ]
-    async.waterfall operations, -> t.end(); go()
+    async.waterfall operations, -> go t
 
   return
 

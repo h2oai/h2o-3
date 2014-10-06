@@ -173,12 +173,14 @@ createContext = (host) ->
 
 createCloud = (go) ->
   cloud = _spawnCloud()
-  done = -> killCloud cloud
+  _test = null
 
   runTests = (host) ->
     ->
       diag "Executing tests..."
-      go (createContext host), done
+      go (createContext host), (t) ->
+        _test = t
+        killCloud cloud
 
   _isStarted = no
   cloud.stdout.on 'data', (data) ->
@@ -191,7 +193,9 @@ createCloud = (go) ->
         setTimeout (runTests host), 1000
 
   cloud.stderr.on 'data', (data) -> diag data
-  cloud.on 'close', (code, signal) -> diag "H2O exited with code #{code}, signal #{signal}."
+  cloud.on 'close', (code, signal) ->
+    diag "H2O exited with code #{code}, signal #{signal}."
+    _test.end() if _test
 
 tapediff = (x, y, opts) ->
   _compile = (pattern) ->
