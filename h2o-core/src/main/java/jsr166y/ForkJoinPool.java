@@ -69,24 +69,24 @@ import java.util.concurrent.locks.Condition;
  * async event-style tasks that are not usually joined, in which case
  * there is little difference among choice of methods.
  *
- * <table BORDER CELLPADDING=3 CELLSPACING=1>
+ * <table BORDER CELLPADDING=3 CELLSPACING=1 summary="">
  *  <tr>
  *    <td></td>
  *    <td ALIGN=CENTER> <b>Call from non-fork/join clients</b></td>
  *    <td ALIGN=CENTER> <b>Call from within fork/join computations</b></td>
  *  </tr>
  *  <tr>
- *    <td> <b>Arrange async execution</td>
+ *    <td> <b>Arrange async execution</b></td>
  *    <td> {@link #execute(ForkJoinTask)}</td>
  *    <td> {@link ForkJoinTask#fork}</td>
  *  </tr>
  *  <tr>
- *    <td> <b>Await and obtain result</td>
+ *    <td> <b>Await and obtain result</b></td>
  *    <td> {@link #invoke(ForkJoinTask)}</td>
  *    <td> {@link ForkJoinTask#invoke}</td>
  *  </tr>
  *  <tr>
- *    <td> <b>Arrange exec and obtain Future</td>
+ *    <td> <b>Arrange exec and obtain Future</b></td>
  *    <td> {@link #submit(ForkJoinTask)}</td>
  *    <td> {@link ForkJoinTask#fork} (ForkJoinTasks <em>are</em> Futures)</td>
  *  </tr>

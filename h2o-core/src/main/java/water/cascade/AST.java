@@ -310,7 +310,7 @@ class ASTNull extends AST {
  *     NB: RHS is any arbitrary (but valid) AST
  *
  *     This also supports adding a new column.
- *     (e.g., hex$new_column <- 10, creates "new_column" vector in hex with values set to 10)
+ *     (e.g., hex$new_column &lt;- 10, creates "new_column" vector in hex with values set to 10)
  *
  *     The RHS is already on the stack, the LHS is not yet on the stack.
  *
@@ -454,8 +454,8 @@ class ASTAssign extends AST {
                   if (chks[col].vec().isEnum())
                     if (!rhs_ary.vecs()[col].isEnum()) { chks[col].setNA0(row); continue; }
                     // else vec is numeric
-                    else if (chks[col].vec().isNumeric())
-                      if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
+                  else if (chks[col].vec().isNumeric())
+                    if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
                   chks[col].set0(row, rhs_ary.vecs()[col].at(row_id));
                 }
               }

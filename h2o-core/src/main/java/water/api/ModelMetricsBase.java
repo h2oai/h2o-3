@@ -36,6 +36,9 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   @API(help="The ConfusionMatrix object for this scoring run.")
   public ConfusionMatrixBase cm;
 
+  @API(help="Predictions Frame.")
+  public FrameV2 predictions;
+
   // Non-version-specific filling into the impl
   @Override public ModelMetrics createImpl() {
     ModelMetrics m = new ModelMetrics(this.model.createImpl(),

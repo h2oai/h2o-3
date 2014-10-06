@@ -36,5 +36,4 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     throw H2O.unimpl();
   }
 
-  @Override protected String errStr() { throw H2O.unimpl(); }
 }

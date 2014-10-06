@@ -2,7 +2,7 @@
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
 # makes in this directory will endlessly use the same BuildVersion.
-main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java src/main/java/jsr166y/*java)
+main_javas = $(wildcard src/main/java/water/*java src/main/java/water/*/*java src/main/java/jsr166y/*java src/main/java/hex/*java src/main/java/hex/*/*java )
 test_javas = $(wildcard src/test/java/water/*java src/test/java/water/*/*java src/test/java/water/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/main/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/test/%class,$(test_javas))
@@ -13,7 +13,7 @@ classes = $(main_classes) $(test_classes)
 libs = $(wildcard ../lib/*jar)
 jars = $(subst $(space),$(SEP),$(libs))
 
-# Fun Args to javac.  Mostly limit to java6 source definitions, and fairly
+# Fun Args to javac.  Mostly limit to java7 source definitions, and fairly
 # agressive lint warnings.
 JAVAC_ARGS = -g -source 1.7 -target 1.7 -XDignore.symbol.file -Xlint:all -Xlint:-deprecation -Xlint:-serial -Xlint:-rawtypes -Xlint:-unchecked
 
@@ -105,8 +105,24 @@ build/test-h2o-core.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
 	@jar -cfm build/test-h2o-core.jar manifest.txt -C build/classes/test .
 
-javadoc: $(main_classes) $(test_classes)
-	@javadoc -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(main_javas)
+# JavaDoc!
+# Exclude the C*Chunk files, as they are specific kinds of compression.
+chunk_javas = $(wildcard src/main/java/water/fvec/C*Chunk.java)
+javadoc_javas = $(filter-out $(chunk_javas),$(main_javas))
+javadoc_htmls = $(patsubst src/main/java/%java,build/docs/javadoc/%html,$(javadoc_javas))
+
+build/docs/javadoc/%.html : src/main/java/%.java
+	@if grep --quiet "public .*class " $? ; then echo $< >> build/tmp.javas; fi
+
+# Build JUST the javadoc for changed javas
+javadoc_fast: $(javadoc_htmls)
+	@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc `cat build/tmp.javas`
+	@rm -f build/tmp.javas
+
+javadoc: $(javadoc_javas)
+	@javadoc -quiet -source 1.7 -classpath "build/classes/main$(SEP)$(jars)" -sourcepath src/main/java -d build/docs/javadoc $(javadoc_javas)
+	@rm -f build/tmp.javas
+
 
 .PHONY: clean
 clean:

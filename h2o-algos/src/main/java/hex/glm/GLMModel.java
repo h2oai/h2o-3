@@ -122,11 +122,6 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     return preds;
   }
 
-  @Override
-  protected String errStr() {
-    return "GLMModel";
-  }
-
   public static class GLMParameters extends Model.Parameters<GLMModel,GLMParameters,GLMOutput> {
     public int _response;
     public int [] _ignored_cols;

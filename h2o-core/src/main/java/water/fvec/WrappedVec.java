@@ -2,10 +2,9 @@ package water.fvec;
 
 import water.*;
 
-/** 
- * A simple wrapper over another Vec.  Transforms either data values or rows.
+/**  A simple wrapper over another Vec.  Transforms either data values or rows.
  */
-public abstract class WrappedVec extends Vec {
+abstract class WrappedVec extends Vec {
   /** A key for underlying vector which contains values which are transformed by this vector. */
   final Key  _masterVecKey;
   /** Cached instances of underlying vector. */

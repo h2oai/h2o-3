@@ -11,19 +11,37 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A collection of named Vecs.  Essentially an R-like data-frame.  Multiple
- *
- * <p></p>Frames can reference the same Vecs.  A Frame is a lightweight object, it is
- * meant to be cheaply created and discarded for data munging purposes.
- * E.g. to exclude a Vec from a computation on a Frame, create a new Frame that
- * references all the Vecs but this one.</p>
- *
- * <p>Frame is referenced by a key. Nevertheless, key can be <code>null</code> and it means that
- * frame is local and is not going into DKV</p>
- *
+/** A collection of named Vecs, essentially an R-like Distributed Data Frame.
+ *  <p>
+ *  Frames represent a large distributed 2-D table with named columns (Vecs)
+ *  and numbered rows.  A reasonable column limit is 100K columns, but theres
+ *  no hard-coded limit.  There's no real row limit except memory; Frames (and
+ *  Vecs) with many billions of rows are used routinely.
+ *  <p>
+ *  A Frame is a collection of named Vecs; a Vec is a collection of numbered
+ *  Chunks.  Multiple Frames can reference the same Vecs.  A Frame is small,
+ *  cheaply and easily manipulated, it is commonly passed-by-Value.  It exists
+ *  on one node, and may be stored in the DKV.  Vecs, on the otherhand,
+ *  <b>must</b> be stored in the DKV, as they represent the shared common
+ *  management state for a collection of distributed Chunks.
+ *  <p>
+ *  Example: Make a Frame from a CSV file:
+ *  <pre> {@code
+ * File file = ...
+ * NFSFileVec nfs = NFSFileVec.make(file);
+ * Frame fr = water.parser.ParseDataset2.parse(Key.make("myKey"),nfs._key);
+ *  }</pre>
+ *  <p>
+ *  Find and remove the Vec called "unique_id" from the Frame:
+ *  <pre> {@code
+ *  Vec uid = fr.remove("unique_id");
+ *  }</pre>
+ *  <p>
+ *  Frame is referenced by a key.  Nevertheless, key can be <code>null</code>
+ *  and it means that frame is local and is not going into DKV
  */
 public class Frame extends Lockable {
+  /** Vec names */
   public String[] _names;
   private Key[] _keys;      // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
@@ -377,8 +395,6 @@ public class Frame extends Lockable {
   Frame subframe(int startIdx, int endIdx) {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
-
-  @Override public String errStr() { return "Dataset"; }
 
   public int  numCols() { return _keys.length; }
   public long numRows() { return anyVec().length(); }

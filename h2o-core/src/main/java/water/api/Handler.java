@@ -14,7 +14,7 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
-  /** Dumb Version->Schema mapping */
+  /** Dumb Version-&gt;Schema mapping */
   abstract protected S schema(int version); // TODO: should be static
   abstract protected int min_ver();         // TODO: should be static
   abstract protected int max_ver();         // TODO: should be static

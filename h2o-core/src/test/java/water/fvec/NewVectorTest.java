@@ -83,6 +83,9 @@ public class NewVectorTest extends TestUtil {
     testImpl(new long[] {1234,2345678,31415},
              new int [] {  40,     10,  -40},
              C8DChunk.class, true);
+    testImpl(new long[] {-581504,-477862,342349},
+             new int[]  {-5,-18,-5},
+             C8DChunk.class,true);
   }
 
   // Testing writes to an existing Chunk causing inflation

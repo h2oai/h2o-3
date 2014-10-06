@@ -9,11 +9,10 @@ import water.util.PojoUtils;
  * A Model schema contains all the pieces associated with a Model:
  * <p>
  * <ul>
- * <li> an instance of a ModelParameters schema containing the build parameters
- * <li> an instance of a ModelResults schema containing the f00 b4r b4z
- * <li> an instance of a ModelMetrics schema
- * <ul>
- *
+ * <li> an instance of a ModelParameters schema containing the build parameters</li>
+ * <li> an instance of a ModelResults schema containing the f00 b4r b4z</li>
+ * <li> an instance of a ModelMetrics schema</li>
+ * </ul>
  *
  */
 abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O extends Model.Output, S extends ModelSchema<M, P, O, S>> extends Schema<M, S> {

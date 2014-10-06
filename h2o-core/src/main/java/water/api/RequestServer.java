@@ -135,6 +135,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "list");
 
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"});
+    register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict", new String[] {"model", "frame"});
 
     // TODO: register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"});
     // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"});
@@ -158,6 +159,7 @@ public class RequestServer extends NanoHTTPD {
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove");
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove");
     register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo");
+    register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles");
   }
 
   public static Route register(String url_pattern, String http_method, Class handler_class, String handler_method) {

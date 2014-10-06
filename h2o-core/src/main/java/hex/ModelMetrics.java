@@ -15,23 +15,16 @@ import water.util.Log;
  */
 
 public final class ModelMetrics extends Keyed {
-  // @API(help="The unique ID (key / uuid / creation timestamp) for the model used for this scoring run.", required=false, filter=Default.class, json=true)
   public Key model = null;
   public long model_checksum = -1;
-  // @API(help="The category (e.g., Clustering) for the model used for this scoring run.", required=false, filter=Default.class, json=true)
   public Model.ModelCategory model_category = null;
-  // @API(help="The unique ID (key / uuid / creation timestamp) for the frame used for this scoring run.", required=false, filter=Default.class, json=true)
   public Key frame = null;
   public long frame_checksum = -1;
 
-  // @API(help="The duration in mS for this scoring run.", required=false, filter=Default.class, json=true)
   public long duration_in_ms =-1L;
-  // @API(help="The time in mS since the epoch for the start of this scoring run.", required=false, filter=Default.class, json=true)
   public long scoring_time = -1L;
 
-  // @API(help="The AUC object for this scoring run.", required=false, filter=Default.class, json=true)
   public AUCData auc = null;
-  // @API(help="The ConfusionMatrix object for this scoring run.", required=false, filter=Default.class, json=true)
   public ConfusionMatrix cm = null;
 
   public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {

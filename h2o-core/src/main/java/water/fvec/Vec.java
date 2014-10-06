@@ -32,7 +32,7 @@ import java.util.UUID;
  *   long    at8 ( long row );  // Returns the value expressed as a long.  Throws if missing.
  *   boolean isNA( long row );  // True if the value is missing.
  *   set( long row, double d ); // Stores a double; NaN will be treated as missing.
- *   set( long row, long l );   // Stores a long; throws if l exceeds what fits in a double & any floats are ever set.
+ *   set( long row, long l );   // Stores a long; throws if l exceeds what fits in a double &amp; any floats are ever set.
  *   setNA( long row );         // Sets the value as missing.
  * </pre>
  *
@@ -57,6 +57,7 @@ public class Vec extends Keyed {
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
   final long[] _espc;
+  public long[] espc() { return _espc; }
 
   /** Enum/factor/categorical names. */
   protected String [] _domain;
@@ -166,6 +167,18 @@ public class Vec extends Keyed {
       }
     }.doAllNodes();
     return vs;
+  }
+
+  // make a seq vec mod repeat
+  public static Vec makeRepSeq( long len, final long repeat ) {
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs) {
+          for (int r = 0; r < c.len(); r++)
+            c.set0(r, (r + 1 + c._start) % repeat);
+        }
+      }
+    }.doAll(makeConSeq(0, len))._fr.vecs()[0];
   }
 
   public static Vec makeSeq( long len) {
@@ -540,7 +553,7 @@ public class Vec extends Keyed {
 
   /** Write element the slow way, as a double.  Double.NaN will be treated as
    *  a set of a missing element.
-   *  Slow to do this for every set -> use Writer if writing many values
+   *  Slow to do this for every set - use Writer if writing many values
    *  */
   public final void set( long i, double d) {
     Chunk ck = chunkForRow(i);

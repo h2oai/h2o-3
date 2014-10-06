@@ -9,7 +9,7 @@ class H2O(object):
     debugger = False
     json_url_history = []
     python_test_name = inspect.stack()[1][1]
-    verbose = True
+    verbose = False
 
 
     # TODO: ensure that all of this is really necessary:
@@ -502,6 +502,31 @@ class H2O(object):
         return result
 
 
+    '''
+    Delete a frame on the h2o cluster, given its key.
+    '''
+    def delete_frame(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
+        assert key is not None, '"key" parameter is null'
+
+        result = self.__do_json_request('/3/Frames.json/' + key, cmd='delete', timeout=timeoutSecs)
+
+        # TODO: look for what?
+        if not ignoreMissingKey and 'f00b4r' in result:
+            raise ValueError('Frame key not found: ' + key)
+
+        return result
+
+
+    '''
+    Delete all frames on the h2o cluster.
+    '''
+    def delete_frames(self, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/3/Frames.json', cmd='delete', timeout=timeoutSecs)
+
+        return result
+
+
     # TODO: remove .json
     '''
     Return a model builder or all of the model builders known to the
@@ -582,12 +607,52 @@ class H2O(object):
         return mm
 
 
+    def predict(self, model, frame, timeoutSecs=60, **kwargs):
+        assert model is not None, '"model" parameter is null'
+        assert frame is not None, '"frame" parameter is null'
+
+        models = self.models(key=model, timeoutSecs=timeoutSecs)
+        assert models is not None, "/Models REST call failed"
+        assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+
+        # TODO: test this assert, I don't think this is working. . .
+        frames = self.frames(key=frame)
+        assert frames is not None, "/Frames/{0} REST call failed".format(frame)
+        assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+
+        result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+        return result
+
+
     '''
     ModelMetrics list. 
     '''
     def model_metrics(self, timeoutSecs=60, **kwargs):
         result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
 
+        return result
+
+
+    # TODO: remove .json
+    '''
+    Return all of the models in the h2o cluster, or a single model given its key.  
+    The models are contained in a list called "models" at the top level of the
+    result.  Currently the list is unordered.
+    TODO:
+    When find_compatible_frames is implemented then the top level 
+    dict will also contain a "frames" list.
+    '''
+
+    def models(self, key=None, timeoutSecs=10, **kwargs):
+        params_dict = {
+            'find_compatible_frames': False
+        }
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)
+
+        if key:
+            result = self.__do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
+        else:
+            result = self.__do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -613,28 +678,6 @@ class H2O(object):
         parameters = { }
         result = self.__do_json_request('/3/Models.json', cmd='delete', timeout=timeoutSecs)
 
-        return result
-
-
-    # TODO: remove .json
-    '''
-    Return all of the models in the h2o cluster.  The models are
-    contained in a list called "models" at the top level of the
-    result.  Currently the list is unordered.
-    TODO:
-    When find_compatible_frames is implemented then the top level 
-    dict will also contain a "frames" list.
-    '''
-    def models(self, key=None, timeoutSecs=10, **kwargs):
-        params_dict = {
-            'find_compatible_frames': False
-        }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)
-
-        if key:
-            result = self.__do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
-        else:
-            result = self.__do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
