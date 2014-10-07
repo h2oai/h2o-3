@@ -33,7 +33,9 @@ import java.util.UUID;
  *  the containing Chunk data to be cached locally (and network traffic to
  *  bring it local); accessing all rows from a single machine will force all
  *  the Big Data to be pulled local typically resulting in swapping and very
- *  poor performance.
+ *  poor performance.  The main API is provided for ease of small-data
+ *  manipulations and is fairly slow for writing; when touching ALL the data
+ *  you are much better off using e.g. {@link MRTask}.
  *
  *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
  *<pre>
@@ -43,14 +45,7 @@ import java.util.UUID;
  *   set( long row, double d ); // Stores a double; NaN will be treated as missing.
  *   set( long row, long l );   // Stores a long; throws if l exceeds what fits in a double &amp; any floats are ever set.
  *   setNA( long row );         // Sets the value as missing.
- * </pre>
- *
- * <p>Note this dangerous scenario: loading a missing value as a double, and
- * setting it as a long: <pre>
- *   set(row,(long)at(row)); // Danger!
  *</pre>
- * The cast from a Double.NaN to a long produces a zero!  This code will
- * replace a missing value with a zero.
  *
  *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
  *  or {@link String}.  Numeric types are further broken down into integral
@@ -62,8 +57,9 @@ import java.util.UUID;
  *  treated as an integral type when doing math but it has special time-based
  *  printout formating.  All types support the notion of a missing element; for
  *  real types this is always NaN.  It is an error to attempt to fetch a
- *  missing integral type.  Integral types are losslessly compressed.  Real
- *  types may lose 1 or 2 ULPS due to compression.
+ *  missing integral type, and {@link #isNA} must be called first.  Integral
+ *  types are losslessly compressed.  Real types may lose 1 or 2 ULPS due to
+ *  compression.
  *
  *  <p>Reading elements as doubles, or checking for an element missing is
  *  always safe.  Reading a missing integral type throws an exception, since
@@ -71,21 +67,42 @@ import java.util.UUID;
  *  elements may throw if the backing data is read-only (file backed), and
  *  otherwise is fully supported.
  *
+ *  <p>Note this dangerous scenario: loading a missing value as a double, and
+ *  setting it as a long: <pre>
+ *   set(row,(long)at(row)); // Danger!
+ *</pre>
+ *  The cast from a Double.NaN to a long produces a zero!  This code will
+ *  silently replace a missing value with a zero.
+ *
  *  <p>Vecs have lazily computed {@link RollupStats} object and Key.  The
- *  RollupStats give fast access to common metrics: min, max, mean, stddev;
- *  count of missing elements and non-zeros.  They are cleared if the Vec is
- *  modified, and recomputed after the modified Vec is closed.  This is
- *  normally handled by the MRTask framework; the {@link Writer} framework
- *  single-threaded efficient batch writing for smaller Vec.s
+ *  RollupStats give fast access to the common metrics: min, max, mean, stddev,
+ *  the count of missing elements and non-zeros.  They are cleared if the Vec
+ *  is modified, and lazily recomputed after the modified Vec is closed.
+ *  Clearing the RollupStats cache is fairly expensive for individual {@link
+ *  #set} calls but is easy to amortize over a large count of writes; i.e.,
+ *  batch writing is efficient.  This is normally handled by the MRTask
+ *  framework; the {@link Writer} framework allows <em>single-threaded</em>
+ *  efficient batch writing for smaller Vecs.
+ *
+ *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
+ *  same Chunk and row alignment - that is, Chunks with the same index are
+ *  homed to the same Node and have the same count of rows-per-Chunk.  {@link
+ *  Frame}s are only composed of Vecs of the same VectorGroup (or very small
+ *  Vecs) guaranteeing that all elements of each row are homed to the same Node
+ *  and set of Chunks - such that a simple {@code for} loop over a set of
+ *  Chunks all operates locally.  See the example in the {@link Chunk} class.
  * 
  *  <p>Vec {@link Key}s have a special layout (enforced by the various Vec
  *  constructors) so there is a direct Key mapping from a Vec to a numbered
  *  Chunk and vice-versa.  This mapping is crucially used in all sorts of
  *  places, basically representing a global naming scheme across a Vec and the
- *  Chunks that make it up.
+ *  Chunks that make it up.  The basic layout created by {@link #newKey}:
  * <pre>
- *  Vec Key format is: Key. VEC - byte, 0 - byte,   0    - int, normal Key bytes.
- * DVec Key format is: Key.DVEC - byte, 0 - byte, chunk# - int, normal Key bytes.
+ *              byte:    0      1   2 3 4 5  6 7 8 9  10+
+ *  Vec   Key layout: Key.VEC  -1   vec#grp    -1     normal Key bytes; often e.g. a function of original file name
+ *  Chunk Key layout: Key.CHK  -1   vec#grp  chunk#   normal Key bytes; often e.g. a function of original file name
+ *  Group Key layout: Key.GRP  -1     -1       -1     normal Key bytes; often e.g. a function of original file name
+ *  RollupStats Key : Key.CHK  -1   vec#grp    -2     normal Key bytes; often e.g. a function of original file name
  * </pre>
  *
  * @author Cliff Click
@@ -94,7 +111,7 @@ public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
   static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
   /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
-   * increases fine-grained parallelism. */
+   *  increases fine-grained parallelism. */
   public static final int CHUNK_SZ = 1 << LOG_CHK;
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
@@ -466,7 +483,7 @@ public class Vec extends Keyed {
 
   /** Get a Vec Key from Chunk Key, without loading the Chunk */
   public static Key getVecKey( Key key ) {
-    assert key._kb[0]==Key.DVEC;
+    assert key._kb[0]==Key.CHK;
     byte [] bits = key._kb.clone();
     bits[0] = Key.VEC;
     UnsafeUtils.set4(bits, 6, -1); // chunk#
@@ -477,7 +494,7 @@ public class Vec extends Keyed {
   public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
   static public Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
-    bits[0] = Key.DVEC;
+    bits[0] = Key.CHK;
     UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
@@ -527,7 +544,7 @@ public class Vec extends Keyed {
   /** Make a Vector-group key.  */
   private Key groupKey(){
     byte [] bits = _key._kb.clone();
-    bits[0] = Key.VGROUP;
+    bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
     UnsafeUtils.set4(bits, 6, -1);
     return Key.make(bits);
@@ -815,7 +832,7 @@ public class Vec extends Keyed {
     private VectorGroup(Key key, int len){_key = key;_len = len;}
     public VectorGroup() {
       byte[] bits = new byte[26];
-      bits[0] = Key.VGROUP;
+      bits[0] = Key.GRP;
       bits[1] = -1;
       UnsafeUtils.set4(bits, 2, -1);
       UnsafeUtils.set4(bits, 6, -1);

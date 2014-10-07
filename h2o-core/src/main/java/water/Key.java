@@ -51,18 +51,18 @@ final public class Key extends Iced implements Comparable {
   // keys. When you create a system key, please do add its number to this list
   static final byte BUILT_IN_KEY = 2;
   public static final byte JOB = 3;
-  public static final byte VEC = 4;
-  public static final byte DVEC = 5;
-  public static final byte VGROUP = 6; // vector group
+  public static final byte VEC = 4; // Vec
+  public static final byte CHK = 5; // Chunk
+  public static final byte GRP = 6; // Vec.VectorGroup
 
   public static final byte HIDDEN_USER_KEY = 31;
   public static final byte USER_KEY = 32;
 
   // For Fluid Vectors, we have a special Key layout.
-  // 0 - key type byte, one of VEC, DVEC or VGROUP
+  // 0 - key type byte, one of VEC, CHK or GRP
   // 1 - homing byte, always -1/0xFF as these keys use the hash to figure their home out
   // 4 - Vector Group
-  // 4 - Chunk # for DVEC, or 0xFFFFFFFF for VEC
+  // 4 - Chunk # for CHK, or 0xFFFFFFFF for VEC
   static final int VEC_PREFIX_LEN = 1+1+4+4;
 
   /** True is this is a {@link Vec} Key.
@@ -71,7 +71,7 @@ final public class Key extends Iced implements Comparable {
 
   /** True is this is a {@link Chunk} Key.
    *  @return True is this is a {@link Chunk} Key */
-  public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == DVEC; }
+  public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == CHK; }
 
   /** Returns the {@link Vec} Key from a {@link Chunk} Key.
    *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
@@ -97,7 +97,7 @@ final public class Key extends Iced implements Comparable {
   
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
-      assert _kb[0] != Key.DVEC;
+      assert _kb[0] != Key.CHK;
       H2ONode h2o = H2ONode.intern(_kb,2+repl*(4+2/*serialized bytesize of H2OKey*/));
       // Reverse the home to the index
       int idx = h2o.index();
@@ -116,7 +116,7 @@ final public class Key extends Iced implements Comparable {
     // hash.  Apart from that, we keep the previous mode of operation, so that
     // ByteVec would have first 64MB distributed around cloud randomly and then
     // go round-robin in 64MB chunks.
-    if( _kb[0] == DVEC ) {
+    if( _kb[0] == CHK ) {
       // Homed Chunk?
       if( _kb[1] != -1 ) throw H2O.unimpl();
       // For round-robin on Chunks in the following pattern:
