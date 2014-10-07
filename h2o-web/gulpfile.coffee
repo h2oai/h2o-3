@@ -59,6 +59,8 @@ config =
     repljs: [
       'lib/jquery/dist/jquery.js'
       'lib/lodash/dist/lodash.js'
+      'lib/esprima/esprima.js'
+      'lib/coffeescript/extras/coffee-script.js'
       'lib/bootstrap/dist/js/bootstrap.js'
       'lib/d3/d3.js'
       'lib/knockout/knockout.js'

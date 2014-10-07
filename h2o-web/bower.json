@@ -35,7 +35,9 @@
     "stacktrace": "~0.6.0",
     "momentjs": "~2.6.0",
     "typeahead.js": "~0.10.2",
-    "fontawesome": "~4.2.0"
+    "fontawesome": "~4.2.0",
+    "esprima": "~1.2.2",
+    "coffeescript": "~1.8.0"
   },
   "devDependencies": {}
 }
