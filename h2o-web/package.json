@@ -14,6 +14,7 @@
     "unit-test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -u | faucet",
     "test-raw": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s",
     "test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s | faucet",
+    "test-shorthand": "coffee src/main/steam/tools/shorthand/test.coffee | faucet",
     "coverage": "mkdir -p src/main/resources/www/steam/coverage && gulp build-test-script && istanbul cover --dir src/main/resources/www/steam/coverage -x \"**/lib/**\" src/main/resources/www/steam/js/steam-tests.js && istanbul report --dir src/main/resources/www/steam/coverage cobertura"
   },
   "repository": {
