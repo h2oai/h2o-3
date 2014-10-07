@@ -3,8 +3,7 @@ package water.util;
 import water.*;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
@@ -28,19 +27,40 @@ public class PojoUtils {
    * @param origin Origin POJO
    * @param field_naming Are the fields named consistently, or does one side have underscores?
    */
-  // TODO: support automagic key-name <-> Model / Frame / Vec translation.
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming) {
+    copyProperties(dest, origin, field_naming, null);
+  }
+
+  /**
+   * Copy properties "of the same name" from one POJO to the other.  If the fields are
+   * named consistently (both sides have fields named "_foo" and/or "bar") this acts like
+   * Apache Commons PojoUtils.copyProperties(). If one side has leading underscores and
+   * the other does not then the names are conformed according to the field_naming
+   * parameter.
+   *
+   * @param dest Destination POJO
+   * @param origin Origin POJO
+   * @param field_naming Are the fields named consistently, or does one side have underscores?
+   * @param skip_fields Array of origin or destination field names to skip
+   */
+  // TODO: support automagic key-name <-> Model / Frame / Vec translation.
+  public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields) {
     if (null == dest || null == origin) return;
 
     Map<String, Field> dest_fields = new HashMap<>();
     Map<String, Field> origin_fields = new HashMap<>();
+    Set<String> skip = new HashSet();
+    if (null != skip_fields)
+      skip.addAll(Arrays.asList(skip_fields));
 
     for (Field f : dest.getClass().getFields())
-      dest_fields.put(f.getName(), f);
+      if (! skip.contains(f.getName()))
+        dest_fields.put(f.getName(), f);
 
 
     for (Field f : origin.getClass().getFields())
-      origin_fields.put(f.getName(), f);
+      if (! skip.contains(f.getName()))
+        origin_fields.put(f.getName(), f);
 
     for (Map.Entry<String, Field> entry : origin_fields.entrySet()) {
       String origin_name = entry.getKey();
@@ -58,6 +78,7 @@ public class PojoUtils {
       try {
         if (dest_fields.containsKey(dest_name)) {
           Field dest_field = dest_fields.get(dest_name);
+
           if (null == f.get(origin)) {
             dest_field.set(dest, null);
           } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {
@@ -66,23 +87,40 @@ public class PojoUtils {
           } else if (f.getType() == Key.class && Keyed.class.isAssignableFrom(dest_field.getType())) {
             // We are assigning a Key (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
             Value v = DKV.get((Key) f.get(origin));
-            if (null == v) {
-              dest_field.set(dest, null);
-            } else {
-              dest_field.set(dest, v.get());
-            }
+            dest_field.set(dest, (null == v ? null : v.get()));
           } else if (dest_field.getType().isArray() && f.getType().isArray() && (dest_field.getType().getComponentType() != f.getType().getComponentType())) {
-            // You can't use reflection to set an in[] with an Integer[].  Argh.
-            // TODO: other types. . .
+            // You can't use reflection to set an int[] with an Integer[].  Argh.
+            // TODO: other types of arrays. . .
             if (dest_field.getType().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
               int[] copy = (int[]) f.get(origin);
               dest_field.set(dest, copy);
             } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
               Integer[] copy = (Integer[]) f.get(origin);
               dest_field.set(dest, copy);
+/**
+ * TODO: finish later. . .
+
+            } else if (dest_field.getType().getComponentType().isAssignableFrom(Iced.class) && f.getType().getComponentType().isAssignableFrom(Schema.class)) {
+              Class dest_class = dest_field.getType().getComponentType();
+              Iced[] translation = (Iced[]) Array.newInstance(dest_class);
+
+              dest_field.set(dest, copy);
+            } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+              Integer[] copy = (Integer[]) f.get(origin);
+              dest_field.set(dest, copy);
+ */
             } else {
               throw H2O.fail("Don't know how to cast an array of: " + f.getType().getComponentType() + " to an array of: " + dest_field.getType().getComponentType());
             }
+            // end of array handling
+          } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(f.getType())) {
+            // assign a String into an enum field
+            Class<Enum> dest_class = (Class<Enum>)dest_field.getType();
+            dest_field.set(dest, Enum.valueOf(dest_class, (String)f.get(origin)));
+          } else if (Enum.class.isAssignableFrom(f.getType()) && String.class.isAssignableFrom(dest_field.getType())) {
+            // assign an enum field into a String
+            dest_field.set(dest, f.get(origin).toString());
+
           } else {
             // Normal case: not doing any type conversion.
             dest_field.set(dest, f.get(origin));

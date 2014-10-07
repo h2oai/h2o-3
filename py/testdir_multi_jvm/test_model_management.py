@@ -175,6 +175,28 @@ jobs = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, trai
 print 'Done building KMeans model.'
 
 #######################################
+# Test DeepLearning parameters validation
+#
+# Good parameters:
+dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
+h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
+assert 0 == parameters_validation['validation_error_count'], "0 == validation_error_count in good-parameters parameters validation result."
+
+# Bad parameters (hidden is null):
+dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters parameters validation result."
+h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
+assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters parameters validation result."
+found_error = False
+for validation_message in parameters_validation['validation_messages']:
+    if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        found_error = True
+assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
+
+#######################################
 # Build DeepLearning model for Prostate
 dl_prostate_model_name = 'prostate_DeepLearning_1'
 

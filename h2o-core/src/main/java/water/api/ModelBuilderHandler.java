@@ -15,6 +15,12 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
     return JobsHandler.jobToSchemaHelper(version, j);
   }
 
+  public P validate_parameters(int version, B builder) {
+    builder._parms.sanityCheckParameters();
+    S builder_schema = (S) builder.schema().fillFromImpl(builder);
+    return builder_schema.parameters;
+  }
+
   abstract protected S schema(int version);
   /*
   Children must override, because we can't create a new instance from the type parameter.  :-(

@@ -467,7 +467,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (fr.numCols() <= 1)
         validation_error("_validation_frame", "Training data must have at least 2 features (incl. response).");
 
-      if (hidden == null) validation_error("hidden", "There must be at least one hidden layer.");
+      if (hidden == null || hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
 
       for (int i=0;i<hidden.length;++i) {
         if (hidden[i]==0)
@@ -482,10 +482,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           Arrays.fill(hidden_dropout_ratios, 0.5);
         }
       }
-      else if (hidden_dropout_ratios.length != hidden.length) validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
+      else if (hidden_dropout_ratios.length != hidden.length) {
+        validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
+      }
       else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
         if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
       }
+
       if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }

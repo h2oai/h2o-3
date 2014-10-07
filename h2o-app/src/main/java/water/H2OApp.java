@@ -48,6 +48,7 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("deeplearning", DeepLearning.class);
     H2O.registerPOST("/2/ModelBuilders/deeplearning", DeepLearningBuilderHandler.class, "train");
+    H2O.registerPOST("/2/ModelBuilders/deeplearning/parameters", DeepLearningBuilderHandler.class, "validate_parameters");
 
     ModelBuilder.registerModelBuilder("glm", GLM.class);
     H2O.registerPOST("/2/ModelBuilders/glm", GLMBuilderHandler.class, "train");
