@@ -101,7 +101,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Only applicable if training is not cancelled.
      */
     @API(help = "If enabled, override the final model with the best model found during training")
-    // TODO: disable if n_folds == 0
     public boolean override_with_best_model = true;
 
     /**
@@ -117,7 +116,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public boolean autoencoder = false;
 
     @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary)
-    // TODO: disable if autoencoder
     public boolean use_all_factor_levels = true;
 
     /*Neural Net Topology*/
@@ -217,7 +215,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is enabled.
      */
     @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", /* dmin = 0.01, dmax = 1, */ level = API.Level.secondary)
-    // TODO: disable if !adaptive
     public double rho = 0.99;
 
     /**
@@ -228,7 +225,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is enabled.
      */
     @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", /* dmin = 1e-15, dmax = 1, */ level = API.Level.secondary)
-    // TODO: disable if !adaptive
     public double epsilon = 1e-8;
 
     /*Learning Rate*/
@@ -247,7 +243,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Learning rate (higher => less stable, lower => slower convergence)", /* dmin = 1e-10, dmax = 1, */ level = API.Level.secondary)
-    // TODO: disable if adaptive
     public double rate = .005;
 
     /**
@@ -258,7 +253,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Learning rate annealing: rate / (1 + rate_annealing * samples)", /* dmin = 0, dmax = 1, */ level = API.Level.secondary)
-    // TODO: disable if adaptive
     public double rate_annealing = 1e-6;
 
     /**
@@ -270,7 +264,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Learning rate decay factor between layers (N-th layer: rate*alpha^(N-1))", /* dmin = 0, */ level = API.Level.expert)
-    // TODO: disable if adaptive
     public double rate_decay = 1.0;
 
     /*Momentum*/
@@ -279,7 +272,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Initial momentum at the beginning of training (try 0.5)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.secondary)
-    // TODO: disable if adaptive
     public double momentum_start = 0;
 
     /**
@@ -289,7 +281,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Number of training samples for which momentum increases", /* dmin = 1, */ level = API.Level.secondary)
-    // TODO: disable if adaptive
     public double momentum_ramp = 1e6;
 
     /**
@@ -298,7 +289,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Final momentum after the ramp is over (try 0.99)", /* dmin = 0, dmax = 0.9999999999, */ level = API.Level.secondary)
-    // TODO: disable if adaptive
     public double momentum_stable = 0;
 
     /**
@@ -309,7 +299,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(help = "Use Nesterov accelerated gradient (recommended)", level = API.Level.secondary)
-    // TODO: disable if adaptive
     public boolean nesterov_accelerated_gradient = true;
 
     /*Regularization*/
@@ -325,7 +314,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
     @API(help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5", /* dmin = 0, dmax = 1, */ level = API.Level.secondary)
-    // TODO: disable if activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout
     public double[] hidden_dropout_ratios;
 
     /**
@@ -370,7 +358,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
      */
     @API(help = "Uniform: -value...value, Normal: stddev)", /* dmin = 0, */ level = API.Level.expert)
-    // TODO: disable if initial_weight_distribution == InitialWeightDistribution.UniformAdaptive
     public double initial_weight_scale = 1.0;
 
     /**
@@ -385,7 +372,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * output classes, not just for the actual class).
      */
     @API(help = "Loss function", values = { "Automatic", "MeanSquare", "CrossEntropy" }, level = API.Level.expert)
-
     public DeepLearningParameters.Loss loss = DeepLearningParameters.Loss.Automatic;
 
     /*Scoring*/
@@ -410,7 +396,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * training dataset.
      */
     @API(help = "Number of validation set samples for scoring (0 for all)", /* lmin = 0, */ level = API.Level.expert)
-    // TODO: disable if validation == null
     public long score_validation_samples = 0l;
 
     /**
@@ -426,7 +411,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * training stops.
      */
     @API(help = "Stopping criterion for classification error fraction on training data (-1 to disable)", /* dmin=-1, dmax=1, */ level = API.Level.expert)
-    // TODO: disable if !classification
     public double classification_stop = 0;
 
     /**
@@ -435,7 +419,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * stops.
      */
     @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", /* dmin=-1, */ level = API.Level.expert)
-    // TODO: disable if classification
     public double regression_stop = 1e-6;
 
     /**
@@ -450,14 +433,12 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * extremely large confusion matrices.
      */
     @API(help = "Max. size (number of classes) for confusion matrices to be shown")
-    // TODO: disable if !classification
     public int max_confusion_matrix_size = 20;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
     @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", /* lmin=0, */ level = API.Level.expert)
-    // TODO: disable if !classification
     public int max_hit_ratio_k = 10;
 
     /*Imbalanced Classes*/
@@ -466,7 +447,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * over/under-sampling. This can result in improved predictive accuracy.
      */
     @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data)", level = API.Level.expert)
-    // TODO: disable if !classification
     public boolean balance_classes = false;
 
     /**
@@ -475,7 +455,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * If not specified, they will be automatically computed to obtain class balance during training.
      */
     @API(help="Desired over/under-sampling ratios per class (in lexicographic order).  If not specified, they will be automatically computed to obtain class balance during training.")
-    // TODO: disable if !(classification && balance_classes)
     public float[] class_sampling_factors;
 
     /**
@@ -483,16 +462,12 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * specified multiple of the original dataset size.
      */
     @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0)", /* dmin=1e-3, */ level = API.Level.expert)
-    // TODO: disable if classification && !balance_classes
-    // TODO: disable if !classification
     public float max_after_balance_size = 5.0f;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */
     @API(help = "Method used to sample validation dataset for scoring", values = { "Uniform", "Stratified" }, level = API.Level.expert)
-    // TODO: disable if !classification && validation != null
-    // TODO: disable if validation == null
     public DeepLearningParameters.ClassSamplingMethod score_validation_sampling = DeepLearningParameters.ClassSamplingMethod.Uniform;
 
     /*Misc*/
@@ -534,7 +509,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
     @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", level = API.Level.expert)
-    // TODO: disable if cloud size == 1
     public boolean replicate_training_data = true;
 
     /**
@@ -543,7 +517,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * convergence.
      */
     @API(help = "Run on a single node for fine-tuning of model parameters")
-    // TODO: disable if cloud size > 1 && !replicate_training_data
     public boolean single_node_mode = false;
 
     /**
