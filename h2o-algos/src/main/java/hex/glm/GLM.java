@@ -9,6 +9,9 @@ import hex.glm.GLMTask.*;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.ModelBuilder;
+import hex.optimization.L_BFGS;
+import hex.optimization.L_BFGS.GradientInfo;
+import hex.optimization.L_BFGS.GradientSolver;
 import hex.schemas.GLMV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
@@ -338,7 +341,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       final double [] grad = _lastResult._grad;
       // line search
       double f_hat = 0;
-//    ADMMSolver.subgrad(alpha[0],_currentLambda,beta,grad);
       final double [] oldBeta = _lastResult == null?contractVec(_taskInfo._beta,_activeCols):_lastResult._beta;
       if(oldBeta == null) for(int i = 0; i < beta.length; ++i)
         f_hat += step*grad[i] * beta[i] + 0.5*beta[i]*beta[i];
@@ -346,7 +348,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         double diff = (beta[i] - oldBeta[i]);
         f_hat += step * grad[i] * diff + .5*diff*diff;
       }
-      f_hat = f_hat + _lastResult._objval;
+      f_hat = 1e-4*f_hat + _lastResult._objval;
       return objval > f_hat;
     }
 
@@ -777,5 +779,42 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   }
   private static double  objval(GLMIterationTask glmt, double alpha, double lambda){
     return glmt._val.residual_deviance / glmt._nobs + penalty(glmt._beta,alpha,lambda);
+  }
+
+  public final static class GLMGradientInfo extends GradientInfo {
+    public final GLMValidation _val;
+    public GLMGradientInfo(GLMIterationTask t, double lambda) {
+      super(t._val.residualDeviance()/t._nobs, t.gradient(0,lambda));
+      _val = t._val;
+    }
+  }
+
+
+  public final static class GLMGradientSolver extends GradientSolver {
+    final Key _jobKey = null;
+    final GLMParameters _glmp;
+    final DataInfo _dinfo;
+    final double _ymu;
+    final double _lambda;
+    final long _nobs;
+
+    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
+      _glmp = glmp;
+      _dinfo = dinfo;
+      _ymu = ymu;
+      _nobs = nobs;
+      _lambda = lambda;
+    }
+
+
+    @Override
+    public GradientInfo[] getGradient(double[][] betas) {
+      final double reg = 1.0/_nobs;
+      GLMIterationTask [] glmts =  new GLMLineSearchTask(_jobKey,_dinfo,_glmp,betas,_ymu,_nobs,null).doAll(_dinfo._adaptedFrame)._glmts;
+      GradientInfo [] ginfos = new GradientInfo[glmts.length];
+      for(int i = 0; i < ginfos.length; ++i)
+        ginfos[i] = new GLMGradientInfo(glmts[i],_lambda);
+      return ginfos;
+    }
   }
 }

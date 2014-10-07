@@ -119,4 +119,33 @@ public class MathUtils {
     return absdiff_a_b <= small_ulp;
   }
 
+  // some common Vec ops
+
+  public static final double innerProduct(double [] x, double [] y){
+    double result = 0;
+    for (int i = 0; i < x.length; i++)
+      result += x[i] * y[i];
+    return result;
+  }
+  public static final double l2norm2(double [] x){
+    double sum = 0;
+    for(double d:x)
+      sum += d*d;
+    return sum;
+  }
+  public static final double l1norm(double [] x){
+    double sum = 0;
+    for(double d:x)
+      sum += d >= 0?d:-d;
+    return sum;
+  }
+  public static final double l2norm(double [] x){
+    return Math.sqrt(l2norm2(x));
+  }
+
+  public static final double [] wadd(double [] x, double [] y, double w){
+    for(int i = 0; i < x.length; ++i)
+      x[i] += w*y[i];
+    return x;
+  }
 }

@@ -31,6 +31,28 @@ public class ArrayUtils {
     return result;
   }
 
+  public static final double innerProduct(double [] x, double [] y){
+    double result = 0;
+    for (int i = 0; i < x.length; i++)
+      result += x[i] * y[i];
+    return result;
+  }
+  public static final double l2norm2(double [] x){
+    double sum = 0;
+    for(double d:x)
+      sum += d*d;
+    return sum;
+  }
+  public static final double l1norm(double [] x){
+    double sum = 0;
+    for(double d:x)
+      sum += d >= 0?d:-d;
+    return sum;
+  }
+  public static final double l2norm(double [] x){
+    return Math.sqrt(l2norm2(x));
+  }
+
   // Add arrays, element-by-element
   public static byte[] add(byte[] a, byte[] b) {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
@@ -66,9 +88,24 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
   }
+
+  public static final  double [][] deepClone(double [][] ary){
+    double [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = ary[i].clone();
+    return res;
+  }
+
   public static double[] add(double[] a, double[] b) {
     if( a==null ) return b;
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
+    return a;
+  }
+
+  // a <- b + c
+  public static double[] add(double[] a, double[] b, double [] c) {
+    for(int i = 0; i < a.length; i++ )
+      a[i] = b[i] + c[i];
     return a;
   }
   public static double[][] add(double[][] a, double[][] b) {

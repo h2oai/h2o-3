@@ -172,6 +172,17 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       for(int i = 0; i < _glmts.length; ++i)
         _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas.get(i),ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
     }
+
+    public GLMLineSearchTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double [][] betas, double ymu, long nobs, H2OCountedCompleter cmp) {
+      super(jobKey, dinfo, glm, cmp);
+
+      // public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMParams glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
+      _glmts = new GLMIterationTask[betas.length];
+      for(int i = 0; i < _glmts.length; ++i)
+        _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas[i],ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
+    }
+
+
     GLMIterationTask [] _glmts;
     @Override public void chunkInit(){
       _glmts = _glmts.clone();
