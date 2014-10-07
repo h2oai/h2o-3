@@ -752,8 +752,15 @@ final public class H2O {
     // Start the local node.  Needed before starting logging.
     startLocalNode();
 
-    String logDir = Log.getLogDir();
-    Log.info("Log dir: '"+(logDir==null ? "(unknown)" : Log.getLogDir())+"'");
+    try {
+      String logDir = Log.getLogDir();
+      Log.info("Log dir: '" + logDir + "'");
+    }
+    catch (Exception e) {
+      System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
+      e.printStackTrace();
+      H2O.exit(1);
+    }
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();
