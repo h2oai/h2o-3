@@ -62,7 +62,10 @@
     "gulp-ignore": "~1.1.0",
     "through2": "~0.6.1",
     "minimist": "~1.1.0",
-    "async": "~0.9.0"
+    "async": "~0.9.0",
+    "esprima": "~1.2.2",
+    "escodegen": "~1.4.1",
+    "js-yaml": "~3.2.2"
   },
   "dependencies": {}
 }

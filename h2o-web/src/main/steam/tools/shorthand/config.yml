@@ -1,0 +1,579 @@
+concat:
+  type: invoke
+indexOf:
+  type: invoke
+join:
+  type: invoke
+lastIndexOf:
+  type: invoke
+pop:
+  type: invoke
+push:
+  type: invoke
+reverse:
+  type: invoke
+shift:
+  type: invoke
+slice:
+  type: invoke
+sort:
+  type: invoke
+toString:
+  type: invoke
+string:
+  type: invoke
+  property: toString
+toLocaleString:
+  type: invoke
+unshift:
+  type: invoke
+charAt:
+  type: invoke
+charCodeAt:
+  type: invoke
+match:
+  type: invoke
+replace:
+  type: invoke
+search:
+  type: invoke
+split:
+  type: invoke
+substr:
+  type: invoke
+substring:
+  type: invoke
+toLocaleLowerCase:
+  type: invoke
+toLocaleUpperCase:
+  type: invoke
+toLowerCase:
+  type: invoke
+toUpperCase:
+  type: invoke
+trim:
+  type: invoke
+valueOf:
+  type: invoke
+debug:
+  type: qualify
+  object: console
+assert:
+  type: qualify
+  object: console
+trace:
+  type: qualify
+  object: console
+warn:
+  type: qualify
+  object: console
+E:
+  type: qualify
+  object: Math
+PI:
+  type: qualify
+  object: Math
+SQRT2:
+  type: qualify
+  object: Math
+SQRT1_2:
+  type: qualify
+  object: Math
+LN2:
+  type: qualify
+  object: Math
+LN10:
+  type: qualify
+  object: Math
+LOG2E:
+  type: qualify
+  object: Math
+LOG10E:
+  type: qualify
+  object: Math
+abs:
+  type: qualify
+  object: Math
+acos:
+  type: qualify
+  object: Math
+asin:
+  type: qualify
+  object: Math
+atan:
+  type: qualify
+  object: Math
+atan2:
+  type: qualify
+  object: Math
+ceil:
+  type: qualify
+  object: Math
+cos:
+  type: qualify
+  object: Math
+exp:
+  type: qualify
+  object: Math
+floor:
+  type: qualify
+  object: Math
+log:
+  type: qualify
+  object: Math
+max:
+  type: qualify
+  object: Math
+min:
+  type: qualify
+  object: Math
+pow:
+  type: qualify
+  object: Math
+random:
+  type: qualify
+  object: Math
+round:
+  type: qualify
+  object: Math
+sin:
+  type: qualify
+  object: Math
+sqrt:
+  type: qualify
+  object: Math
+tan:
+  type: qualify
+  object: Math
+globalAlpha:
+  type: qualify
+  object: context
+globalCompositeOperation:
+  type: qualify
+  object: context
+lineWidth:
+  type: qualify
+  object: context
+lineCap:
+  type: qualify
+  object: context
+lineJoin:
+  type: qualify
+  object: context
+miterLimit:
+  type: qualify
+  object: context
+strokeStyle:
+  type: qualify
+  object: context
+fillStyle:
+  type: qualify
+  object: context
+shadowOffsetX:
+  type: qualify
+  object: context
+shadowOffsetY:
+  type: qualify
+  object: context
+shadowBlur:
+  type: qualify
+  object: context
+shadowColor:
+  type: qualify
+  object: context
+font:
+  type: qualify
+  object: context
+textAlign:
+  type: qualify
+  object: context
+textBaseline:
+  type: qualify
+  object: context
+save:
+  type: qualify
+  object: context
+restore:
+  type: qualify
+  object: context
+scale:
+  type: qualify
+  object: context
+rotate:
+  type: qualify
+  object: context
+translate:
+  type: qualify
+  object: context
+transform:
+  type: qualify
+  object: context
+setTransform:
+  type: qualify
+  object: context
+drawImage:
+  type: qualify
+  object: context
+createLinearGradient:
+  type: qualify
+  object: context
+createRadialGradient:
+  type: qualify
+  object: context
+createPattern:
+  type: qualify
+  object: context
+beginPath:
+  type: qualify
+  object: context
+closePath:
+  type: qualify
+  object: context
+fill:
+  type: qualify
+  object: context
+stroke:
+  type: qualify
+  object: context
+clip:
+  type: qualify
+  object: context
+moveTo:
+  type: qualify
+  object: context
+lineTo:
+  type: qualify
+  object: context
+quadraticCurveTo:
+  type: qualify
+  object: context
+bezierCurveTo:
+  type: qualify
+  object: context
+arcTo:
+  type: qualify
+  object: context
+arc:
+  type: qualify
+  object: context
+rect:
+  type: qualify
+  object: context
+isPointInPath:
+  type: qualify
+  object: context
+fillText:
+  type: qualify
+  object: context
+strokeText:
+  type: qualify
+  object: context
+clearRect:
+  type: qualify
+  object: context
+fillRect:
+  type: qualify
+  object: context
+strokeRect:
+  type: qualify
+  object: context
+createImageData:
+  type: qualify
+  object: context
+getImageData:
+  type: qualify
+  object: context
+putImageData:
+  type: qualify
+  object: context
+forEach:
+  type: qualify
+  object: lodash
+map:
+  type: qualify
+  object: lodash
+reduce:
+  type: qualify
+  object: lodash
+reduceRight:
+  type: qualify
+  object: lodash
+find:
+  type: qualify
+  object: lodash
+filter:
+  type: qualify
+  object: lodash
+where:
+  type: qualify
+  object: lodash
+findWhere:
+  type: qualify
+  object: lodash
+reject:
+  type: qualify
+  object: lodash
+every:
+  type: qualify
+  object: lodash
+some:
+  type: qualify
+  object: lodash
+contains:
+  type: qualify
+  object: lodash
+invoke:
+  type: qualify
+  object: lodash
+pluck:
+  type: qualify
+  object: lodash
+maxBy:
+  type: qualify
+  object: lodash
+  property: max
+minBy:
+  type: qualify
+  object: lodash
+  property: min
+sortBy:
+  type: qualify
+  object: lodash
+groupBy:
+  type: qualify
+  object: lodash
+indexBy:
+  type: qualify
+  object: lodash
+countBy:
+  type: qualify
+  object: lodash
+shuffle:
+  type: qualify
+  object: lodash
+sample:
+  type: qualify
+  object: lodash
+toArray:
+  type: qualify
+  object: lodash
+sizeOf:
+  type: qualify
+  object: lodash
+partition:
+  type: qualify
+  object: lodash
+head:
+  type: qualify
+  object: lodash
+initial:
+  type: qualify
+  object: lodash
+last:
+  type: qualify
+  object: lodash
+tail:
+  type: qualify
+  object: lodash
+compact:
+  type: qualify
+  object: lodash
+flatten:
+  type: qualify
+  object: lodash
+without:
+  type: qualify
+  object: lodash
+union:
+  type: qualify
+  object: lodash
+intersection:
+  type: qualify
+  object: lodash
+difference:
+  type: qualify
+  object: lodash
+unique:
+  type: qualify
+  object: lodash
+zip:
+  type: qualify
+  object: lodash
+toObject:
+  type: qualify
+  object: lodash
+  property: object
+indexOf:
+  type: qualify
+  object: lodash
+lastIndexOf:
+  type: qualify
+  object: lodash
+sortedIndex:
+  type: qualify
+  object: lodash
+range:
+  type: qualify
+  object: lodash
+bind:
+  type: qualify
+  object: lodash
+bindAll:
+  type: qualify
+  object: lodash
+partial:
+  type: qualify
+  object: lodash
+memoize:
+  type: qualify
+  object: lodash
+delay:
+  type: qualify
+  object: lodash
+defer:
+  type: qualify
+  object: lodash
+throttle:
+  type: qualify
+  object: lodash
+debounce:
+  type: qualify
+  object: lodash
+once:
+  type: qualify
+  object: lodash
+after:
+  type: qualify
+  object: lodash
+before:
+  type: qualify
+  object: lodash
+wrap:
+  type: qualify
+  object: lodash
+negate:
+  type: qualify
+  object: lodash
+compose:
+  type: qualify
+  object: lodash
+keys:
+  type: qualify
+  object: lodash
+values:
+  type: qualify
+  object: lodash
+pairs:
+  type: qualify
+  object: lodash
+invert:
+  type: qualify
+  object: lodash
+functions:
+  type: qualify
+  object: lodash
+extend:
+  type: qualify
+  object: lodash
+pick:
+  type: qualify
+  object: lodash
+omit:
+  type: qualify
+  object: lodash
+defaults:
+  type: qualify
+  object: lodash
+clone:
+  type: qualify
+  object: lodash
+tap:
+  type: qualify
+  object: lodash
+has:
+  type: qualify
+  object: lodash
+matches:
+  type: qualify
+  object: lodash
+property:
+  type: qualify
+  object: lodash
+isEqual:
+  type: qualify
+  object: lodash
+isEmpty:
+  type: qualify
+  object: lodash
+isElement:
+  type: qualify
+  object: lodash
+isArray:
+  type: qualify
+  object: lodash
+isObject:
+  type: qualify
+  object: lodash
+isArguments:
+  type: qualify
+  object: lodash
+isFunction:
+  type: qualify
+  object: lodash
+isString:
+  type: qualify
+  object: lodash
+isNumber:
+  type: qualify
+  object: lodash
+isFinite:
+  type: qualify
+  object: lodash
+isBoolean:
+  type: qualify
+  object: lodash
+isDate:
+  type: qualify
+  object: lodash
+isRegExp:
+  type: qualify
+  object: lodash
+isNaN:
+  type: qualify
+  object: lodash
+isNull:
+  type: qualify
+  object: lodash
+isUndefined:
+  type: qualify
+  object: lodash
+identity:
+  type: qualify
+  object: lodash
+constant:
+  type: qualify
+  object: lodash
+noop:
+  type: qualify
+  object: lodash
+times:
+  type: qualify
+  object: lodash
+random:
+  type: qualify
+  object: lodash
+iteratee:
+  type: qualify
+  object: lodash
+uniqueId:
+  type: qualify
+  object: lodash
+escape:
+  type: qualify
+  object: lodash
+unescape:
+  type: qualify
+  object: lodash
+now:
+  type: qualify
+  object: lodash

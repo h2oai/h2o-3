@@ -1,3 +1,4 @@
+fs = require 'fs'
 gulp = require 'gulp'
 path = require 'path'
 through = require 'through2'
@@ -14,10 +15,29 @@ coffee = require 'gulp-coffee'
 jade = require 'gulp-jade'
 stylus = require 'gulp-stylus'
 nib = require 'nib'
+yaml = require 'js-yaml'
+shorthand = require './src/main/steam/tools/shorthand/shorthand.coffee'
 
 clog = through.obj (file, enc, cb) ->
   console.log file.path
   cb()
+
+expand = (yml) ->
+  through.obj (file, enc, cb) ->
+    if file.isNull()
+      cb null, file
+      return
+    if file.isStream()
+      cb new gutil.PluginError 'gulp-shorthand', 'Streaming not supported'
+      return
+
+    symbols = yaml.safeLoad fs.readFileSync yml, encoding: 'utf8'
+    implicits = [ 'console', 'Math', 'context', 'lodash' ]
+    try
+      file.contents = new Buffer shorthand symbols, file.contents.toString(), implicits: implicits
+      cb null, file
+    catch error
+      cb new gutil.PluginError 'gulp-shorthand', error, fileName: file.path
 
 config =
   dir:
@@ -80,6 +100,7 @@ gulp.task 'build-repl-script', ->
     .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
     .pipe order [ 'global.prelude.js', 'global.*.js', '*.js' ]
     .pipe concat 'flow.js'
+    .pipe expand 'src/main/steam/tools/shorthand/config.yml'
     .pipe header '"use strict";(function(){'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
