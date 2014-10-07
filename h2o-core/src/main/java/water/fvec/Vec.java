@@ -12,21 +12,30 @@ import water.util.UnsafeUtils;
 import java.util.Arrays;
 import java.util.UUID;
 
-/**
- * A single distributed vector column.
- * <p>
- * A distributed vector has a count of elements, an element-to-chunk mapping, a
- * Java type (mostly determines rounding on store and display), and functions
- * to directly load elements without further indirections.  The data is
- * compressed, or backed by disk or both.  *Writing* to elements may throw if the
- * backing data is read-only (file backed).
- * <p>
- * <pre>
- *  Vec Key format is: Key. VEC - byte, 0 - byte,   0    - int, normal Key bytes.
- * DVec Key format is: Key.DVEC - byte, 0 - byte, chunk# - int, normal Key bytes.
- * </pre>
+/** A distributed vector/array/column of uniform data.
+ *  
+ *  <p>A distributed vector has a count of elements, an element-to-chunk
+ *  mapping, a Java-like type (mostly determines rounding on store and
+ *  display), and functions to directly load elements without further
+ *  indirections.  The data is compressed, or backed by disk or both.
  *
- * The main API is at, set, and isNA:<br>
+ *  <p>A Vec is a collection of {@link Chunk}s, each of which holds between 1e3
+ *  and 1e6 elements.  Operations on a Chunk are intended to be
+ *  single-threaded; operations on a Vec are intended to be parallel and
+ *  distributed on Chunk granularities, with each Chunk being manipulated by a
+ *  seperate CPU.  The standard Map/Reduce ({@link MRTask}) paradigm handles
+ *  parallel and distributed Chunk access well.
+ *
+ *  <p>Individual elements can be directly accessed like a (very large and
+ *  distributed) array - however this is not the fastest way to access the
+ *  data.  Direct access from Chunks is faster, avoiding several layers of
+ *  indirection.  In particular accessing a random row from the Vec will force
+ *  the containing Chunk data to be cached locally (and network traffic to
+ *  bring it local); accessing all rows from a single machine will force all
+ *  the Big Data to be pulled local typically resulting in swapping and very
+ *  poor performance.
+ *
+ *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
  *<pre>
  *   double  at  ( long row );  // Returns the value expressed as a double.  NaN if missing.
  *   long    at8 ( long row );  // Returns the value expressed as a long.  Throws if missing.
@@ -36,12 +45,48 @@ import java.util.UUID;
  *   setNA( long row );         // Sets the value as missing.
  * </pre>
  *
- * Note this dangerous scenario: loading a missing value as a double, and
+ * <p>Note this dangerous scenario: loading a missing value as a double, and
  * setting it as a long: <pre>
  *   set(row,(long)at(row)); // Danger!
  *</pre>
  * The cast from a Double.NaN to a long produces a zero!  This code will
  * replace a missing value with a zero.
+ *
+ *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
+ *  or {@link String}.  Numeric types are further broken down into integral
+ *  ({@code long}) and real ({@code double}) types.  The {@code enum} type is
+ *  an integral type, with a String mapping side-array.  Most of the math
+ *  algorithms will treat enums as small dense integers, and most enum
+ *  printouts will use the String mapping.  Time is another special integral
+ *  type: it is represented as milliseconds since the unix epoch, and is mostly
+ *  treated as an integral type when doing math but it has special time-based
+ *  printout formating.  All types support the notion of a missing element; for
+ *  real types this is always NaN.  It is an error to attempt to fetch a
+ *  missing integral type.  Integral types are losslessly compressed.  Real
+ *  types may lose 1 or 2 ULPS due to compression.
+ *
+ *  <p>Reading elements as doubles, or checking for an element missing is
+ *  always safe.  Reading a missing integral type throws an exception, since
+ *  there is no NaN equivalent in the integer domain.  <em>Writing</em> to
+ *  elements may throw if the backing data is read-only (file backed), and
+ *  otherwise is fully supported.
+ *
+ *  <p>Vecs have lazily computed {@link RollupStats} object and Key.  The
+ *  RollupStats give fast access to common metrics: min, max, mean, stddev;
+ *  count of missing elements and non-zeros.  They are cleared if the Vec is
+ *  modified, and recomputed after the modified Vec is closed.  This is
+ *  normally handled by the MRTask framework; the {@link Writer} framework
+ *  single-threaded efficient batch writing for smaller Vec.s
+ * 
+ *  <p>Vec {@link Key}s have a special layout (enforced by the various Vec
+ *  constructors) so there is a direct Key mapping from a Vec to a numbered
+ *  Chunk and vice-versa.  This mapping is crucially used in all sorts of
+ *  places, basically representing a global naming scheme across a Vec and the
+ *  Chunks that make it up.
+ * <pre>
+ *  Vec Key format is: Key. VEC - byte, 0 - byte,   0    - int, normal Key bytes.
+ * DVec Key format is: Key.DVEC - byte, 0 - byte, chunk# - int, normal Key bytes.
+ * </pre>
  *
  * @author Cliff Click
  */
