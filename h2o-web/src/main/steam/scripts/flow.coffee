@@ -3,8 +3,8 @@ Flow = if exports? then exports else @Flow = {}
 marked.setOptions
   smartypants: yes
   highlight: (code, lang) ->
-    if highlight
-      (highlight.highlightAuto code, [ lang ]).value
+    if window.hljs
+      (window.hljs.highlightAuto code, [ lang ]).value
     else
       code
 
@@ -39,7 +39,7 @@ Flow.Raw = (_) ->
   isCode: no
   render: (input, go) ->
     go null,
-      html: input
+      text: input
       template: 'flow-raw'
 
 Flow.Markdown = (_) ->
@@ -129,6 +129,7 @@ Flow.Repl = (_) ->
         if error
           _hasError yes
           #XXX display error
+          debug error
         else
           _hasError no
           _output result
@@ -204,10 +205,10 @@ Flow.Repl = (_) ->
     cell
 
   insertCellAbove = ->
-    insertCell _selectedCellIndex, createCell 'cs', uniqueId()
+    insertCell _selectedCellIndex, createCell 'cs'
 
   insertCellBelow = ->
-    insertCell _selectedCellIndex + 1, createCell 'cs', uniqueId()
+    insertCell _selectedCellIndex + 1, createCell 'cs'
 
   moveCellDown = ->
     cells = _cells()
@@ -370,7 +371,7 @@ Flow.Repl = (_) ->
 
   initialize = ->
     setupKeyboardHandling 'normal'
-    cell = createCell 'cs', uniqueId()
+    cell = createCell 'cs'
     push _cells, cell
     selectCell cell
 

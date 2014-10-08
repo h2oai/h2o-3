@@ -6,10 +6,11 @@ html(lang='en')
     meta(name='viewport', content='width=device-width, initial-scale=1')
     title H2O Flow
     meta(name='description', content='H2O REPL')
-    link(rel='stylesheet', href='css/lib-flow.css')
-    link(rel='stylesheet', href='css/flow.css')
-    link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/tomorrow.min.css')
-    link(href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,300', rel='stylesheet', type='text/css')
+    link(rel='stylesheet', href='css/lib-flow.css', type='text/css')
+    link(rel='stylesheet', href='css/flow.css', type='text/css')
+    link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/tomorrow.min.css', type='text/css')
+    //- link(rel='stylesheet', href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,700italic,300,700,400', type='text/css')
+    link(rel='stylesheet', href='http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic', type='text/css')
 
     //- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
     //- WARNING: Respond.js doesn't work if you view the page via file://
@@ -26,38 +27,57 @@ html(lang='en')
     <![endif]-->
     
     //- Recursively include other .jade files
-    include repl
+    //- include repl
+
+    // ko with:view
+    .container
+      .f-header
+        img.f-logo(src="img/flow.png")
+      .f-repl(data-bind='template:{ name:template, foreach:cells }')
+    // /ko
     
     script(type="text/html" id="flow-h1")
-      h1(data-bind="text:text")
+      .f-html
+        h1(data-bind="text:text")
 
     script(type="text/html" id="flow-h2")
-      h2(data-bind="text:text")
+      .f-html
+        h2(data-bind="text:text")
 
     script(type="text/html" id="flow-h3")
-      h3(data-bind="text:text")
+      .f-html
+        h3(data-bind="text:text")
 
     script(type="text/html" id="flow-h4")
-      h4(data-bind="text:text")
+      .f-html
+        h4(data-bind="text:text")
 
     script(type="text/html" id="flow-h5")
-      h5(data-bind="text:text")
+      .f-html
+        h5(data-bind="text:text")
 
     script(type="text/html" id="flow-h6")
-      h6(data-bind="text:text")
+      .f-html
+        h6(data-bind="text:text")
 
     script(type="text/html" id="flow-md")
-      div(data-bind="html:html")
+      .f-html(data-bind="html:html")
 
     script(type="text/html" id="flow-raw")
-      pre(data-bind="html:html")
+      .f-raw
+        pre(data-bind="text:text")
 
     script(type="text/html" id="flow-help")
 
     script(type="text/html" id="flow-cell")
       .f-cell(data-bind="click:select, css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive, 'f-cell-ready':isReady, 'f-cell-busy':isBusy, 'f-cell-error':hasError }")
         .f-cell-input(data-bind='visible:hasInput')
-          textarea(rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }, cursorPosition:_cursorPosition")
+          textarea(placeholder='Expression...' rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }, cursorPosition:_cursorPosition")
+        // ko if:isBusy
+        .progress(style='height:9px')
+          .progress-bar.progress-bar-striped.progress-bar-warning.active(role='progressbar' style='width:100%')
+            span.sr-only Computing&hellip;
+        // /ko
         // ko with:output
         .f-cell-output(data-bind='template:template, data:$data')
         // /ko
