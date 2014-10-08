@@ -501,7 +501,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       // Auto-fill defaults
       if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout)
-        hide("hidden_dropout_ratios", "hidden_dropout_ratios is used only with a non-dropout activation function.");
+        hide("hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       if (hidden_dropout_ratios == null) {
         if (activation == Activation.TanhWithDropout || activation == Activation.MaxoutWithDropout || activation == Activation.RectifierWithDropout) {
           hidden_dropout_ratios = new double[hidden.length];
@@ -513,7 +513,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
       }
       else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
-        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
+        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
 
       if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
@@ -569,13 +569,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
         hide("momentum_stable", "momentum_stable is not used with adaptive_rate.");
         hide("nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
-
-
       } else {
         // ! adaptive_rate
         hide("rho", "rho is only used with adaptive_rate.");
         hide("epsilon", "epsilon is only used with adaptive_rate.");
-
       }
       if (!quiet_mode) {
         if (adaptive_rate) {
@@ -596,7 +593,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
         if (n_folds != 0) {
           if (override_with_best_model) {
-            validation_warn("override_with_best_model","Automatically setting override_with_best_model to false, since the final model is the only scored model with n-fold cross-validation.");
+            validation_warn("override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
             override_with_best_model = false;
           }
         }
