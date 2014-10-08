@@ -36,8 +36,6 @@ public class AppendableVec extends Vec {
     _chunkTypes = new byte[4];
   }
 
-  public void setDomain( String domain[] ) { _domain = domain; }
-
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
@@ -138,7 +136,7 @@ public class AppendableVec extends Vec {
             DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
 
     }
-    assert t<0 || _domain == null;
+    assert t<0 || !isEnum();
 
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -150,7 +148,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, _domain, hasUUID, hasString, (byte)t);
+    Vec vec = new Vec(_key, espc, factors(), hasUUID, hasString, (byte)t);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

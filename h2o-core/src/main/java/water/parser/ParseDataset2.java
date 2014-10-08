@@ -151,7 +151,7 @@ public final class ParseDataset2 extends Job<Frame> {
       Enum[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];
       int j = 0;
-      for( int i : ecols ) mfpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
+      for( int i : ecols ) mfpt._dout._vecs[i].set_factors(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
       eut = new EnumUpdateTask(ds, eft._lEnums, mfpt._chunk2Enum, ecols);
     }
     Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());

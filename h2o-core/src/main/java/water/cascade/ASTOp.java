@@ -1608,22 +1608,7 @@ class ASTRunif extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
     Frame fr = env.pop0Ary();
-    long [] espc = fr.anyVec().espc();
-    long rem = fr.numRows();
-    if(rem > espc[espc.length-1]) throw H2O.unimpl();
-    for(int i = 0; i < espc.length; ++i){
-      if(rem <= espc[i]){
-        espc = Arrays.copyOf(espc, i+1);
-        break;
-      }
-    }
-    espc[espc.length-1] = rem;
-    Vec randVec = new Vec(fr.anyVec().group().addVecs(1)[0],espc);
-    Futures fs = new Futures();
-    DKV.put(randVec._key,randVec, fs);
-    for(int i = 0; i < espc.length-1; ++i)
-      DKV.put(randVec.chunkKey(i),new C0DChunk(0,(int)(espc[i+1]-espc[i])),fs);
-    fs.blockForPending();
+    Vec randVec = fr.anyVec().makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
         Random rng = new Random(seed*c.cidx());
@@ -1738,7 +1723,6 @@ class ASTVar extends ASTUniPrefixOp {
         for (int i = 0; i < covars.length; i++) {
           AppendableVec v = new AppendableVec(keys[i]);
           NewChunk c = new NewChunk(v, 0);
-          v.setDomain(null);
           for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
           c.close(0, null);
           vecs[i] = v.close(null);

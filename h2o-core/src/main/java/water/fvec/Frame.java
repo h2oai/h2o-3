@@ -308,7 +308,7 @@ public class Frame extends Lockable {
     Vec [] vecs = vecs();
     String [][] res = new String[cols.length][];
     for(int i = 0; i < cols.length; ++i)
-      res[i] = vecs[cols[i]]._domain;
+      res[i] = vecs[cols[i]].factors();
     return res;
   }
 
@@ -929,7 +929,7 @@ public class Frame extends Lockable {
         for( int i = 0; i < vs.length; i++ ) {
           if(i > 0) sb.append(',');
           if(!vs[i].isNA(_row)) {
-            if( vs[i].isEnum() ) sb.append('"').append(vs[i]._domain[(int) vs[i].at8(_row)]).append('"');
+            if( vs[i].isEnum() ) sb.append('"').append(vs[i].factors()[(int) vs[i].at8(_row)]).append('"');
             else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
             else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
             else {

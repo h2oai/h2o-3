@@ -30,10 +30,9 @@ public class TransfVec extends WrappedVec {
     this(mapping[0], mapping[1], domain, masterVecKey, key, espc);
   }
   public TransfVec(int[] values, int[] indexes, String[] domain, Key masterVecKey, Key key, long[] espc) {
-    super(masterVecKey, key, espc);
+    super(masterVecKey, key, espc, domain);
     _values  =  values;
     _indexes =  indexes;
-    _domain = domain;
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {

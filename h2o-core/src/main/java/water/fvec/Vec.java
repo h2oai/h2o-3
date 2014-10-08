@@ -110,8 +110,9 @@ import java.util.UUID;
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
   static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
-  /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
-   *  increases fine-grained parallelism. */
+  /** Default Chunk size in bytes, useful when breaking up large arrays into
+   *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
+   *  costs, lower increases fine-grained parallelism. */
   public static final int CHUNK_SZ = 1 << LOG_CHK;
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
@@ -119,12 +120,16 @@ public class Vec extends Keyed {
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
   final long[] _espc;
-  public long[] espc() { return _espc; }
 
-  /** Enum/factor/categorical names. */
-  protected String [] _domain;
-  final public String [] factors() { return _domain; }
-  final public void set_factors(String[] factors) { _domain = factors; }
+  private String [] _factors;
+  /** Returns the enum toString mapping array, not a defensive clone (to
+   *  expensive to clone; coding error to change the contents).
+   *  @return the enum / factor / categorical mapping array */
+  final public String [] factors() { return _factors; }
+  /** Set the Enum/factor/categorical names.  No range-checking on the actual
+   *  underlying numeric domain; user is responsible for maintaining a mapping
+   *  which is coherent with the Vec contents. */
+  final public void set_factors(String[] factors) { _factors = factors; }
 
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
   protected byte _time;
@@ -148,7 +153,7 @@ public class Vec extends Keyed {
     _time = time;               // is-a-time, or not (and what flavor used to parse time)
     _isUUID = hasUUID;          // all-or-nothing UUIDs
     _isString = hasString;
-    _domain = domain;
+    _factors = domain;
   }
 
   protected Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
@@ -307,7 +312,7 @@ public class Vec extends Keyed {
 
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
-  public final boolean isEnum(){return _domain != null && !_isString;}
+  public final boolean isEnum(){return _factors != null && !_isString;}
   public final boolean isUUID(){return _isUUID;}
   public final boolean isString(){return _isString;}
   public final boolean isNumeric(){return !_isUUID && !_isString; }
@@ -327,14 +332,14 @@ public class Vec extends Keyed {
 
   /** Map the integer value for a enum/factor/categorical to it's String.
    *  Error if it is not an ENUM.  */
-  private String domain(long i) { return _domain[(int)i]; }
+  private String domain(long i) { return _factors[(int)i]; }
 
   /** Return an array of domains.  This is eagerly manifested for enum or
    *  categorical columns.  Returns null for non-Enum/factor columns. */
-  public String[] domain() { return _domain; }
+  public String[] domain() { return _factors; }
 
   /** Returns cardinality for enum domain or -1 for other types. */
-  public int cardinality() { return isEnum() ? _domain.length : -1; }
+  public int cardinality() { return isEnum() ? _factors.length : -1; }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -728,7 +733,7 @@ public class Vec extends Keyed {
         for (int r = 0; r < c0._len; r++) c0.set0(r, vec.at(srow + r));
       }
     }.doAll(avec);
-    avec._domain = _domain;
+    avec._factors = _factors;
     return avec;
   }
 
@@ -772,8 +777,8 @@ public class Vec extends Keyed {
    *  @see Vec#makeTransf(int[], int[], String[])
    */
   private Vec makeIdentityTransf() {
-    assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
-    return makeTransf(ArrayUtils.seq(0, _domain.length), null, _domain);
+    assert _factors != null : "Cannot make an identity transformation of non-enum vector!";
+    return makeTransf(ArrayUtils.seq(0, _factors.length), null, _factors);
   }
 
   /** Makes a new transformation vector from given values to values 0..domain size

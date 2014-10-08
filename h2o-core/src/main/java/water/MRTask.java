@@ -57,7 +57,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       if( _appendables==null )  // Zero rows?
         vecs[i] = _fr.anyVec().makeZero();
       else {
-        _appendables[i].setDomain(domains==null ? null : domains[i]);
+        _appendables[i].set_factors(domains==null ? null : domains[i]);
         vecs[i] = _appendables[i].close(fs);
       }
     }
