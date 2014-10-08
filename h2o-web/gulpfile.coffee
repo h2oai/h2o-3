@@ -15,29 +15,10 @@ coffee = require 'gulp-coffee'
 jade = require 'gulp-jade'
 stylus = require 'gulp-stylus'
 nib = require 'nib'
-yaml = require 'js-yaml'
-shorthand = require './src/main/steam/tools/shorthand/shorthand.coffee'
 
 clog = through.obj (file, enc, cb) ->
   console.log file.path
   cb()
-
-expand = (yml) ->
-  through.obj (file, enc, cb) ->
-    if file.isNull()
-      cb null, file
-      return
-    if file.isStream()
-      cb new gutil.PluginError 'gulp-shorthand', 'Streaming not supported'
-      return
-
-    symbols = yaml.safeLoad fs.readFileSync yml, encoding: 'utf8'
-    implicits = [ 'console', 'Math', 'context', 'lodash' ]
-    try
-      file.contents = new Buffer shorthand symbols, file.contents.toString(), implicits: implicits
-      cb null, file
-    catch error
-      cb new gutil.PluginError 'gulp-shorthand', error, fileName: file.path
 
 config =
   dir:
@@ -56,24 +37,7 @@ config =
       'lib/d3/d3.js'
       'lib/knockout/knockout.js'
     ]
-    repljs: [
-      'lib/jquery/dist/jquery.js'
-      'lib/jquery-textrange/jquery-textrange.js'
-      'lib/mousetrap/mousetrap.js'
-      'lib/mousetrap/plugins/global-bind/mousetrap-global-bind.js'
-      'lib/lodash/dist/lodash.js'
-      'lib/esprima/esprima.js'
-      'lib/coffeescript/extras/coffee-script.js'
-      'lib/bootstrap/dist/js/bootstrap.js'
-      'lib/d3/d3.js'
-      'lib/marked/lib/marked.js'
-      'lib/knockout/knockout.js'
-    ]
     css: [
-      'lib/fontawesome/css/font-awesome.css'
-      'lib/bootstrap/dist/css/bootstrap.css'
-    ]
-    replcss: [
       'lib/fontawesome/css/font-awesome.css'
       'lib/bootstrap/dist/css/bootstrap.css'
     ]
@@ -91,23 +55,11 @@ config =
 
 gulp.task 'build-browser-script', ->
   gulp.src 'src/main/steam/scripts/*.coffee'
-    .pipe ignore.exclude /^flow$/
     .pipe ignore.exclude /tests.coffee$/
     .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
     .pipe order [ 'global.prelude.js', 'global.*.js', '*.js' ]
     .pipe concat 'steam.js'
     .pipe header '"use strict";(function(){'
-    .pipe footer '}).call(this);'
-    .pipe gulp.dest config.dir.deploy + 'js/'
-
-gulp.task 'build-repl-script', ->
-  gulp.src [ 'src/main/steam/scripts/global.hypergraph.coffee', 'src/main/steam/scripts/flow*.coffee' ]
-    .pipe ignore.exclude /tests.coffee$/
-    .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
-    .pipe order [ 'global.prelude.js', 'global.*.js', '*.js' ]
-    .pipe concat 'flow.js'
-    .pipe expand 'src/main/steam/tools/shorthand/config.yml'
-    .pipe header '"use strict";(function(){ var lodash = window._; window.Steam={};'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
 
@@ -126,31 +78,15 @@ gulp.task 'build-templates', ->
     .pipe jade pretty: yes
     .pipe gulp.dest config.dir.deploy
 
-gulp.task 'build-repl-templates', ->
-  gulp.src 'src/main/steam/templates/*.jade'
-    .pipe ignore.include /flow.jade$/
-    .pipe jade pretty: yes
-    .pipe gulp.dest config.dir.deploy
-
 gulp.task 'build-styles', ->
   gulp.src 'src/main/steam/styles/*.styl'
     .pipe ignore.include /steam.styl$/
     .pipe stylus use: [ nib() ]
     .pipe gulp.dest config.dir.deploy + 'css/'
 
-gulp.task 'build-repl-styles', ->
-  gulp.src 'src/main/steam/styles/*.styl'
-    .pipe ignore.include /flow.styl$/
-    .pipe stylus use: [ nib() ]
-    .pipe gulp.dest config.dir.deploy + 'css/'
-
 gulp.task 'compile-browser-assets', ->
   gulp.src config.lib.js
     .pipe concat 'lib.js'
-    .pipe gulp.dest config.dir.deploy + 'js/'
-
-  gulp.src config.lib.repljs
-    .pipe concat 'lib-flow.js'
     .pipe gulp.dest config.dir.deploy + 'js/'
 
   gulp.src config.lib.img
@@ -163,17 +99,13 @@ gulp.task 'compile-browser-assets', ->
     .pipe concat 'lib.css'
     .pipe gulp.dest config.dir.deploy + 'css/'
 
-  gulp.src config.lib.replcss
-    .pipe concat 'lib-flow.css'
-    .pipe gulp.dest config.dir.deploy + 'css/'
-
   gulp.src config.lib.cssmap
     .pipe gulp.dest config.dir.deploy + 'css/'
 
 gulp.task 'watch', ->
-  gulp.watch 'src/main/steam/scripts/*.coffee', [ 'build-browser-script', 'build-repl-script' ]
-  gulp.watch 'src/main/steam/templates/*.jade', [ 'build-templates', 'build-repl-templates' ]
-  gulp.watch 'src/main/steam/styles/*.styl', [ 'build-styles', 'build-repl-styles' ]
+  gulp.watch 'src/main/steam/scripts/*.coffee', [ 'build-browser-script' ]
+  gulp.watch 'src/main/steam/templates/*.jade', [ 'build-templates' ]
+  gulp.watch 'src/main/steam/styles/*.styl', [ 'build-styles' ]
 
 gulp.task 'clean', ->
   gulp.src config.dir.deploy, read: no
@@ -187,9 +119,6 @@ gulp.task 'build', [
   'build-browser-script'
   'build-templates'
   'build-styles'
-  'build-repl-script'
-  'build-repl-templates'
-  'build-repl-styles'
 ]
 
 gulp.task 'default', [ 'build' ]
