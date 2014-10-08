@@ -71,7 +71,8 @@ html(lang='en')
 
     script(type="text/html" id="flow-cell")
       .f-cell(data-bind="click:select, css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive, 'f-cell-ready':isReady, 'f-cell-busy':isBusy, 'f-cell-error':hasError }")
-        .f-cell-input(data-bind='visible:hasInput')
+        .f-cell-type(data-bind="text:type")
+        .f-cell-input(data-bind="visible:hasInput")
           textarea(placeholder='Expression...' rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }, cursorPosition:_cursorPosition")
         // ko if:isBusy
         .progress(style='height:9px')
