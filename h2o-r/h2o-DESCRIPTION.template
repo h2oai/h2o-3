@@ -34,3 +34,4 @@ Collate:
          'edicts.R'
          'models.R'
          'algorithms.R'
+         'astfun.R'
