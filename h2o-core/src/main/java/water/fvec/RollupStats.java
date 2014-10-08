@@ -27,19 +27,19 @@ class RollupStats extends DTask<RollupStats> {
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
-  public long _naCnt;
+  long _naCnt;
   // Computed in 1st pass
-  public double _mean, _sigma;
-  public long _rows, _nzCnt, _size, _pinfs, _ninfs;
-  public boolean _isInt=true;
-  public double[] _mins, _maxs;
+  double _mean, _sigma;
+  long _rows, _nzCnt, _size, _pinfs, _ninfs;
+  boolean _isInt=true;
+  double[] _mins, _maxs;
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private static final int MAX_SIZE = 1024;
-  volatile public long[] _bins;
+  private static final int MAX_SIZE = 1024; // Standard bin count; enums can have more bins
+  volatile long[] _bins;
   // Approximate data value closest to the Xth percentile
-  public double[] _pctiles;
+  double[] _pctiles;
 
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
@@ -223,7 +223,7 @@ class RollupStats extends DTask<RollupStats> {
 
   // ----------------------------
   // Compute the expensive histogram on-demand
-  public static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
+  static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
   // Version that allows histograms to be computed in parallel
   static Futures computeHisto(Vec vec, Futures fs) {
     while( true ) {
@@ -276,8 +276,8 @@ class RollupStats extends DTask<RollupStats> {
   }
 
   // Histogram base & stride
-  public double h_base() { return _mins[0]; }
-  public double h_stride() { return h_stride(_bins.length); }
+  double h_base() { return _mins[0]; }
+  double h_stride() { return h_stride(_bins.length); }
   private double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
 
   // Compute expensive histogram
