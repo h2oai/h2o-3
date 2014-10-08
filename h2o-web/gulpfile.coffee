@@ -58,6 +58,7 @@ config =
     ]
     repljs: [
       'lib/jquery/dist/jquery.js'
+      'lib/jquery-textrange/jquery-textrange.js'
       'lib/mousetrap/mousetrap.js'
       'lib/mousetrap/plugins/global-bind/mousetrap-global-bind.js'
       'lib/lodash/dist/lodash.js'

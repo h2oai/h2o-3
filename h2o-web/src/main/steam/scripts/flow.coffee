@@ -1,5 +1,12 @@
 Flow = if exports? then exports else @Flow = {}
 
+ko.bindingHandlers.cursorPosition =
+  init: (element, valueAccessor, allBindings, viewModel, bindingContext) ->
+    if arg = ko.unwrap valueAccessor()
+      # Bit of a hack. Attaches a method to the bound object that returns the cursor position. Uses dwieeb/jquery-textrange.
+      arg.read = -> $(element).textrange 'get', 'position'
+    return
+
 Flow.Application = (_) ->
   _view = Flow.Repl _
   Flow.DialogManager _
@@ -48,6 +55,10 @@ Flow.Repl = (_) ->
     _input = node$ input
     _lineCount = lift$ _input, countLines
 
+    # This is a shim.
+    # The ko 'cursorPosition' custom binding attaches a read() method to this.
+    _cursorPosition = {}
+
     execute = (go) ->
       go() if go
 
@@ -57,6 +68,8 @@ Flow.Repl = (_) ->
     input: _input
     lineCount: _lineCount
     execute: execute
+    _cursorPosition: _cursorPosition
+    cursorPosition: -> _cursorPosition.read()
     template: 'flow-cell'
 
   cloneCell = (cell) ->
@@ -106,11 +119,11 @@ Flow.Repl = (_) ->
     selectCell cell
     cell
 
-  insertCellAbove = ->
-    insertCell _selectedCellIndex, createCell 'code', uniqueId()
+  insertCellAbove = (input) ->
+    insertCell _selectedCellIndex, createCell 'code', input
 
-  insertCellBelow = ->
-    insertCell _selectedCellIndex + 1, createCell 'code', uniqueId()
+  insertCellBelow = (input) ->
+    insertCell _selectedCellIndex + 1, createCell 'code', input
 
   moveCellDown = ->
     cells = _cells()
@@ -138,7 +151,18 @@ Flow.Repl = (_) ->
     return
 
   splitCell = ->
-    debug 'splitCell'
+    if _selectedCell.isActive()
+      input = _selectedCell.input()
+      if input.length > 1
+        cursorPosition = _selectedCell.cursorPosition()
+        if 0 < cursorPosition < input.length - 1
+          left = substr input, 0, cursorPosition
+          right = substr input, cursorPosition
+          _selectedCell.input left
+          #_selectedCell.isActive no
+          insertCellBelow right
+          #_selectedCell.isActive yes
+    return
 
   pasteCellAbove = ->
     insertCell _selectedCellIndex, _clipboardCell if _clipboardCell
