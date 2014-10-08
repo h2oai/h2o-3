@@ -372,10 +372,12 @@ public class Vec extends Keyed {
    *  base - start of bin 0
    *  stride - relative start of next bin
    */
-  public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins;  }
-  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base();  }
+  public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins; }
+  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base(); }
   public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
   public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
+  /** Optimistically return the histogram bins, or null if not computed */
+  public long[] lazy_bins() { return rollupStats()._bins; }
 
   /** Compute the roll-up stats as-needed */
   private RollupStats rollupStats() { return RollupStats.get(this); }

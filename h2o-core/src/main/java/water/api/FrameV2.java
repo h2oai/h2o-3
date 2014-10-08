@@ -134,7 +134,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      bins  = vec.bins();
+      bins  = vec.lazy_bins();
       base  = bins==null ? 0 : vec.base();
       stride= bins==null ? 0 : vec.stride();
       pctiles=vec.pctiles();
