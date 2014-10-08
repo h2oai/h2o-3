@@ -71,7 +71,7 @@ Flow.Repl = (_) ->
 
   convertCellToCode = -> _selectedCell.type 'code'
 
-  convertCellToHeading = (level) -> -> _selectedCell.type "h#{1}"
+  convertCellToHeading = (level) -> -> _selectedCell.type "h#{level}"
 
   convertCellToMarkdown = -> _selectedCell.type 'md'
 
