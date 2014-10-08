@@ -41,6 +41,13 @@ diag = (message) ->
 bailout = (message) ->
   console.log 'Bail out! ' + message
 
+# Pretty-print errors, etc.
+pp = (error) ->
+  if _.isObject error
+    JSON.stringify error
+  else
+    error
+
 dumpAssertion = (path, value) ->
   if isUndefined value
     console.log "t.ok (isUndefined #{path}), '#{path} is undefined'"

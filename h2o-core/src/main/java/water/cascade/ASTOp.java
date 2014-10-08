@@ -28,11 +28,11 @@ import java.util.*;
 // --------------------------------------------------------------------------
 public abstract class ASTOp extends AST {
   // Tables of operators by arity
-  static final public HashMap<String,ASTOp> UNI_INFIX_OPS = new HashMap<>();
-  static final public HashMap<String,ASTOp> BIN_INFIX_OPS = new HashMap<>();
-  static final public HashMap<String,ASTOp> PREFIX_OPS    = new HashMap<>();
-  static final public HashMap<String,ASTOp> UDF_OPS       = new HashMap<>();
-  static final public HashMap<String, AST>  SYMBOLS       = new HashMap<>();
+  static final public HashMap<String,ASTOp> UNI_INFIX_OPS  = new HashMap<>();
+  static final public HashMap<String,ASTOp> BIN_INFIX_OPS  = new HashMap<>();
+  static final public HashMap<String,ASTOp> PREFIX_OPS     = new HashMap<>();
+  static final public HashMap<String,ASTOp> UDF_OPS        = new HashMap<>();
+  static final public HashMap<String, AST>  SYMBOLS        = new HashMap<>();
   // Too avoid a cyclic class-loading dependency, these are init'd before subclasses.
   static final String VARS1[] = new String[]{ "", "x"};
   static final String VARS2[] = new String[]{ "", "x","y"};
@@ -54,6 +54,14 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
     SYMBOLS.put("_", new ASTNot());
+    SYMBOLS.put("elif", new ASTElseIf());
+    SYMBOLS.put("if", new ASTIf());
+    SYMBOLS.put("else", new ASTElse());
+    SYMBOLS.put("for", new ASTFor());
+    SYMBOLS.put("while", new ASTWhile());
+
+    //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
+
     // Unary infix ops
     putUniInfix(new ASTNot());
     // Binary infix ops
@@ -90,7 +98,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
-    putPrefix(new ASTAnyFactor());   // For Runit testing
+    putPrefix(new ASTAnyFactor());              // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
     putPrefix(new ASTAnyNA());
     putPrefix(new ASTRound());
@@ -118,11 +126,11 @@ public abstract class ASTOp extends AST {
 
     // Misc
     putPrefix(new ASTMatch());
-    putPrefix(new ASTRename());
-    putPrefix(new ASTSeq   ());
-    putPrefix(new ASTSeqLen());
-    putPrefix(new ASTRepLen());
-    putPrefix(new ASTQtile ());
+    putPrefix(new ASTRename());  //TODO
+    putPrefix(new ASTSeq   ());  //TODO
+    putPrefix(new ASTSeqLen());  //TODO
+    putPrefix(new ASTRepLen());  //TODO
+    putPrefix(new ASTQtile ());  //TODO
     putPrefix(new ASTCbind ());
 //    putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
@@ -135,9 +143,6 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
-
-
-
 
 //Classes that may not come back:
 
@@ -164,11 +169,14 @@ public abstract class ASTOp extends AST {
   static private void putUniInfix(ASTOp ast) { UNI_INFIX_OPS.put(ast.opStr(),ast); }
   static private void putBinInfix(ASTOp ast) { BIN_INFIX_OPS.put(ast.opStr(),ast); SYMBOLS.put(ast.opStr(), ast); }
   static private void putPrefix  (ASTOp ast) { PREFIX_OPS.put(ast.opStr(),ast);    SYMBOLS.put(ast.opStr(), ast); }
-  static         void putUDF     (ASTOp ast, String fn) { UDF_OPS.put(fn,ast); }
+  static         void putUDF     (ASTOp ast, String fn) {
+    UDF_OPS.put(fn, ast);
+  }
   static         void removeUDF  (String fn) { UDF_OPS.remove(fn); }
   static public ASTOp isOp(String id) {
     // This order matters. If used as a prefix OP, `+` and `-` are binary only.
-    ASTOp op4 = UDF_OPS.get(id); if( op4 != null ) return op4;
+    ASTOp op4 = UDF_OPS.get(id);
+    if( op4 != null ) return op4;
     return isBuiltinOp(id);
   }
   static public ASTOp isBuiltinOp(String id) {
@@ -243,7 +251,7 @@ abstract class ASTUniOp extends ASTOp {
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
           Chunk c = chks[i];
-          int rlen = c.len();
+          int rlen = c._len;
           if (c.vec().isEnum() || c.vec().isUUID() || c.vec().isString()) {
             for (int r = 0; r <rlen;r++) n.addNum(Double.NaN);
           } else {
@@ -293,7 +301,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n = nchks[i];
           Chunk c = chks[i];
-          int rlen = c.len();
+          int rlen = c._len;
           for( int r=0; r<rlen; r++ )
             n.addNum( c.isNA0(r) ? 1 : 0);
         }
@@ -331,7 +339,7 @@ class ASTRound extends ASTUniPrefixOp {
           for(int i = 0; i < nchks.length; i++) {
             NewChunk n = nchks[i];
             Chunk c = chks[i];
-            int rlen = c.len();
+            int rlen = c._len;
             for(int r = 0; r < rlen; r++)
               n.addNum(roundDigits(c.at0(r),digits));
           }
@@ -381,7 +389,7 @@ class ASTSignif extends ASTUniPrefixOp {
           for(int i = 0; i < nchks.length; i++) {
             NewChunk n = nchks[i];
             Chunk c = chks[i];
-            int rlen = c.len();
+            int rlen = c._len;
             for(int r = 0; r < rlen; r++)
               n.addNum(signifDigits(c.at0(r),digits));
           }
@@ -575,7 +583,7 @@ class ASTScale extends ASTUniPrefixOp {
       centered = new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int rows = cs[0].len();
+          int rows = cs[0]._len;
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
@@ -605,7 +613,7 @@ class ASTScale extends ASTUniPrefixOp {
       scaled = new MRTask() {
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          int rows = cs[0].len();
+          int rows = cs[0]._len;
           int cols = cs.length;
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c) {
@@ -826,7 +834,7 @@ abstract class ASTBinOp extends ASTOp {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
-          int rlen = chks[0].len();
+          int rlen = chks[0]._len;
           Chunk c0 = chks[i];
           if( (!c0.vec().isEnum() &&
                   !(lf && rf && chks[i+nchks.length].vec().isEnum())) ||
@@ -1042,7 +1050,7 @@ abstract class ASTReducerOp extends ASTOp {
     RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
-      int rows = chks[0].len();
+      int rows = chks[0]._len;
       for (Chunk C : chks) {
         if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
         for (int r = 0; r < rows; r++)
@@ -1058,7 +1066,7 @@ abstract class ASTReducerOp extends ASTOp {
     NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
-      int rows = chks[0].len();
+      int rows = chks[0]._len;
       for (Chunk C : chks) {
         if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
         for (int r = 0; r < rows; r++)
@@ -1272,7 +1280,7 @@ class ASTMatch extends ASTUniPrefixOp {
     Frame rez = new MRTask() {
       private int in(String s) { return Arrays.asList(matches).contains(s) ? 1 : 0; }
       @Override public void map(Chunk c, NewChunk n) {
-        int rows = c.len();
+        int rows = c._len;
         for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at80(r)]));
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
@@ -1394,7 +1402,6 @@ class ASTSeq extends ASTUniPrefixOp {
         nc.close(0, fs);
         Vec vec = av.close(fs);
         fs.blockForPending();
-        vec.set_factors(null);
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{vec});
         env.push(new ValFrame(fr));
       }
@@ -1418,11 +1425,11 @@ class ASTRepLen extends ASTUniPrefixOp {
         Vec v = Vec.makeRepSeq((long)_length, fr.numRows());  // vec of "indices" corresponding to rows in x
         new MRTask() {
           @Override public void map(Chunk c) {
-            for (int i = 0; i < c.len(); ++i)
+            for (int i = 0; i < c._len; ++i)
               c.set0(i, fr.anyVec().at((long)c.at0(i)));
           }
         }.doAll(v);
-        v.set_factors(fr.anyVec().factors());
+        v.setDomain(fr.anyVec().domain());
         Frame f = new Frame(new String[]{"C1"}, new Vec[]{v});
         env.cleanup(fr);
         env.push(new ValFrame(f));
@@ -1450,7 +1457,7 @@ class ASTRepLen extends ASTUniPrefixOp {
       if (env.isStr()) {
         // make a constant enum vec with domain[] = []{env.popStr()}
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(0, len)});
-        fr.anyVec().set_factors(new String[]{env.popStr()});
+        fr.anyVec().setDomain(new String[]{env.popStr()});
         env.push(new ValFrame(fr));
       } else if (env.isNum()) {
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(env.popDbl(), len)});
@@ -1531,7 +1538,7 @@ class ASTQtile extends ASTUniPrefixOp {
     // create output vec
     Vec res = Vec.makeCon((long)Double.NaN, null, p.length);
     Vec p_names = Vec.makeSeq(res.length());
-    p_names.set_factors(names);
+    p_names.setDomain(names);
 
 
     final int MAX_ITERATIONS = 16;
@@ -1600,26 +1607,11 @@ class ASTRunif extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
     Frame fr = env.pop0Ary();
-    long [] espc = fr.anyVec().espc();
-    long rem = fr.numRows();
-    if(rem > espc[espc.length-1]) throw H2O.unimpl();
-    for(int i = 0; i < espc.length; ++i){
-      if(rem <= espc[i]){
-        espc = Arrays.copyOf(espc, i+1);
-        break;
-      }
-    }
-    espc[espc.length-1] = rem;
-    Vec randVec = new Vec(fr.anyVec().group().addVecs(1)[0],espc);
-    Futures fs = new Futures();
-    DKV.put(randVec._key,randVec, fs);
-    for(int i = 0; i < espc.length-1; ++i)
-      DKV.put(randVec.chunkKey(i),new C0DChunk(0,(int)(espc[i+1]-espc[i])),fs);
-    fs.blockForPending();
+    Vec randVec = fr.anyVec().makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
         Random rng = new Random(seed*c.cidx());
-        for(int i = 0; i < c.len(); ++i)
+        for(int i = 0; i < c._len; ++i)
           c.set0(i, (float)rng.nextDouble());
       }
     }.doAll(randVec);
@@ -1730,7 +1722,6 @@ class ASTVar extends ASTUniPrefixOp {
         for (int i = 0; i < covars.length; i++) {
           AppendableVec v = new AppendableVec(keys[i]);
           NewChunk c = new NewChunk(v, 0);
-          v.setDomain(null);
           for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
           c.close(0, null);
           vecs[i] = v.close(null);
@@ -1761,7 +1752,7 @@ class ASTVar extends ASTUniPrefixOp {
     double _ymean;
     CovarTask(double xmean, double ymean) { _xmean = xmean; _ymean = ymean; }
     @Override public void map(Chunk[] cs) {
-      int len = cs[0].len();
+      int len = cs[0]._len;
       Chunk x = cs[0];
       Chunk y = cs[1];
       if (Double.isNaN(_xmean) || Double.isNaN(_ymean)) { _ss = Double.NaN; return; }
@@ -1841,10 +1832,10 @@ class ASTMean extends ASTUniPrefixOp {
     @Override public void map(Chunk c) {
       if (c.vec().isEnum() || c.vec().isUUID()) { _sum = Double.NaN; _rowcnt = 0; return;}
       if (_narm) {
-        for (int r = 0; r < c.len(); r++)
+        for (int r = 0; r < c._len; r++)
           if (!c.isNA0(r)) { _sum += c.at0(r); _rowcnt++;}
       } else {
-        for (int r = 0; r < c.len(); r++)
+        for (int r = 0; r < c._len; r++)
           if (c.isNA0(r)) { _rowcnt = 0; _sum = Double.NaN; return; } else { _sum += c.at0(r); _rowcnt++; }
       }
     }
@@ -2092,7 +2083,7 @@ class ASTCut extends ASTUniPrefixOp {
     final boolean incLow = _includelowest;
     Frame fr2 = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
-        int rows = c.len();
+        int rows = c._len;
         for (int r = 0; r < rows; ++r) {
           double x = c.at0(r);
           if (Double.isNaN(x) || (incLow  && x <  cuts[0])
@@ -2167,7 +2158,7 @@ class ASTLs extends ASTOp {
     fs.blockForPending();
     String[] key_domain = new String[domain.size()];
     for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
-    c0.set_factors(key_domain);
+    c0.setDomain(key_domain);
     Frame ls = new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0});
     env.push(new ValFrame(ls));
   }
@@ -2384,7 +2375,7 @@ class ASTLs extends ASTOp {
 //
 //      Frame fr2 = new MRTask() {
 //        @Override public void map(Chunk chk, NewChunk nchk) {
-//          for(int r = 0; r < chk.len(); r++) {
+//          for(int r = 0; r < chk._len; r++) {
 //            double x = chk.at0(r);
 //            if(Double.isNaN(x))
 //              nchk.addNum(Double.NaN);

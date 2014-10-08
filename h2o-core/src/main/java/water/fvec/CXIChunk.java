@@ -74,7 +74,7 @@ public class CXIChunk extends Chunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
-    nc.set_len(len());
+    nc.set_len(_len);
     nc.set_sparseLen(slen);
     nc.alloc_mantissa(slen);
     nc.alloc_exponent(slen);
@@ -112,7 +112,7 @@ public class CXIChunk extends Chunk {
 
   // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
   protected final int findOffset(int idx) {
-    if(idx >= len())throw new IndexOutOfBoundsException();
+    if(idx >= _len)throw new IndexOutOfBoundsException();
     final byte [] mem = _mem;
     int sparseLen = sparseLen();
     if(sparseLen == 0)return 0;
@@ -146,7 +146,7 @@ public class CXIChunk extends Chunk {
     if(x > rid)return x;
     if(off < _mem.length - _ridsz - _valsz)
       return getId(off + _ridsz + _valsz);
-    return len();
+    return _len;
   }
 
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }

@@ -38,6 +38,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   @API(help="Columns")
   Col[] columns;
 
+  @API(help="Compatible models, if requested")
+  String[] compatible_models;
+
   // Output fields one-per-column
   private static class Col extends Iced {
     @API(help="label")
@@ -98,15 +101,14 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
     Col( String name, Vec vec, long off, int len ) {
       label=name;
-      RollupStats rs = vec.rollupStats();
-      missing = rs._naCnt;
-      zeros = vec.length()-rs._nzCnt;
-      pinfs = rs._pinfs;
-      ninfs = rs._ninfs;
-      mins  = rs._mins;
-      maxs  = rs._maxs;
-      mean  = rs._mean;
-      sigma = rs._sigma;
+      missing = vec.naCnt();
+      zeros = vec.length()-vec.nzCnt();
+      pinfs = vec.pinfs();
+      ninfs = vec.ninfs();
+      mins  = vec.mins();
+      maxs  = vec.maxs();
+      mean  = vec.mean();
+      sigma = vec.sigma();
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
@@ -132,10 +134,10 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      bins  = rs._bins;
-      base  = bins==null ? 0 : rs.h_base();
-      stride= bins==null ? 0 : rs.h_stride();
-      pctiles=rs._pctiles;
+      bins  = vec.bins();
+      base  = bins==null ? 0 : vec.base();
+      stride= bins==null ? 0 : vec.stride();
+      pctiles=vec.pctiles();
     }
   }
 
@@ -164,7 +166,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     for( int i=0; i<columns.length; i++ )
       columns[i] = new Col(fr._names[i],vecs[i],off,len);
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_pctiles = RollupStats.PERCENTILES;
+    default_pctiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
   }
 
@@ -269,7 +271,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     if( (double)l == d ) return Long.toString(l);
     if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
     Chunk chk = c._vec.chunkForRow(off);
-    Class Cc = chk.vec().chunkForRow(off).getClass();
+    Class Cc = chk.getClass();
     if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk).scale());
     if( Cc == C2SChunk.class ) return x2(d,((C2SChunk)chk).scale());
     if( Cc == C4SChunk.class ) return x2(d,((C4SChunk)chk).scale());

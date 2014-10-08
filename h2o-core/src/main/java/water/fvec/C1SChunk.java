@@ -42,7 +42,7 @@ public class C1SChunk extends Chunk {
     assert water.util.PrettyPrint.fitsIntoInt(dx);
     nc.set_sparseLen(0);
     nc.set_len(0);
-    final int len = len();
+    final int len = _len;
     for( int i=0; i<len; i++ ) {
       int res = 0xFF&_mem[i+_OFF];
       if( res == C1Chunk._NA ) nc.addNA();

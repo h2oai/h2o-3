@@ -11,22 +11,34 @@ import water.util.UnsafeUtils;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
-/**
- * A single distributed vector column.
- * <p>
- * A distributed vector has a count of elements, an element-to-chunk mapping, a
- * Java type (mostly determines rounding on store and display), and functions
- * to directly load elements without further indirections.  The data is
- * compressed, or backed by disk or both.  *Writing* to elements may throw if the
- * backing data is read-only (file backed).
- * <p>
- * <pre>
- *  Vec Key format is: Key. VEC - byte, 0 - byte,   0    - int, normal Key bytes.
- * DVec Key format is: Key.DVEC - byte, 0 - byte, chunk# - int, normal Key bytes.
- * </pre>
+/** A distributed vector/array/column of uniform data.
+ *  
+ *  <p>A distributed vector has a count of elements, an element-to-chunk
+ *  mapping, a Java-like type (mostly determines rounding on store and
+ *  display), and functions to directly load elements without further
+ *  indirections.  The data is compressed, or backed by disk or both.
  *
- * The main API is at, set, and isNA:<br>
+ *  <p>A Vec is a collection of {@link Chunk}s, each of which holds between 1e3
+ *  and 1e6 elements.  Operations on a Chunk are intended to be
+ *  single-threaded; operations on a Vec are intended to be parallel and
+ *  distributed on Chunk granularities, with each Chunk being manipulated by a
+ *  seperate CPU.  The standard Map/Reduce ({@link MRTask}) paradigm handles
+ *  parallel and distributed Chunk access well.
+ *
+ *  <p>Individual elements can be directly accessed like a (very large and
+ *  distributed) array - however this is not the fastest way to access the
+ *  data.  Direct access from Chunks is faster, avoiding several layers of
+ *  indirection.  In particular accessing a random row from the Vec will force
+ *  the containing Chunk data to be cached locally (and network traffic to
+ *  bring it local); accessing all rows from a single machine will force all
+ *  the Big Data to be pulled local typically resulting in swapping and very
+ *  poor performance.  The main API is provided for ease of small-data
+ *  manipulations and is fairly slow for writing; when touching ALL the data
+ *  you are much better off using e.g. {@link MRTask}.
+ *
+ *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
  *<pre>
  *   double  at  ( long row );  // Returns the value expressed as a double.  NaN if missing.
  *   long    at8 ( long row );  // Returns the value expressed as a long.  Throws if missing.
@@ -34,22 +46,74 @@ import java.util.UUID;
  *   set( long row, double d ); // Stores a double; NaN will be treated as missing.
  *   set( long row, long l );   // Stores a long; throws if l exceeds what fits in a double &amp; any floats are ever set.
  *   setNA( long row );         // Sets the value as missing.
- * </pre>
+ *</pre>
  *
- * Note this dangerous scenario: loading a missing value as a double, and
- * setting it as a long: <pre>
+ *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
+ *  or {@link String}.  Numeric types are further broken down into integral
+ *  ({@code long}) and real ({@code double}) types.  The {@code enum} type is
+ *  an integral type, with a String mapping side-array.  Most of the math
+ *  algorithms will treat enums as small dense integers, and most enum
+ *  printouts will use the String mapping.  Time is another special integral
+ *  type: it is represented as milliseconds since the unix epoch, and is mostly
+ *  treated as an integral type when doing math but it has special time-based
+ *  printout formating.  All types support the notion of a missing element; for
+ *  real types this is always NaN.  It is an error to attempt to fetch a
+ *  missing integral type, and {@link #isNA} must be called first.  Integral
+ *  types are losslessly compressed.  Real types may lose 1 or 2 ULPS due to
+ *  compression.
+ *
+ *  <p>Reading elements as doubles, or checking for an element missing is
+ *  always safe.  Reading a missing integral type throws an exception, since
+ *  there is no NaN equivalent in the integer domain.  <em>Writing</em> to
+ *  elements may throw if the backing data is read-only (file backed), and
+ *  otherwise is fully supported.
+ *
+ *  <p>Note this dangerous scenario: loading a missing value as a double, and
+ *  setting it as a long: <pre>
  *   set(row,(long)at(row)); // Danger!
  *</pre>
- * The cast from a Double.NaN to a long produces a zero!  This code will
- * replace a missing value with a zero.
+ *  The cast from a Double.NaN to a long produces a zero!  This code will
+ *  silently replace a missing value with a zero.
+ *
+ *  <p>Vecs have lazily computed {@link RollupStats} object and Key.  The
+ *  RollupStats give fast access to the common metrics: min, max, mean, stddev,
+ *  the count of missing elements and non-zeros.  They are cleared if the Vec
+ *  is modified, and lazily recomputed after the modified Vec is closed.
+ *  Clearing the RollupStats cache is fairly expensive for individual {@link
+ *  #set} calls but is easy to amortize over a large count of writes; i.e.,
+ *  batch writing is efficient.  This is normally handled by the MRTask
+ *  framework; the {@link Writer} framework allows <em>single-threaded</em>
+ *  efficient batch writing for smaller Vecs.
+ *
+ *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
+ *  same Chunk and row alignment - that is, Chunks with the same index are
+ *  homed to the same Node and have the same count of rows-per-Chunk.  {@link
+ *  Frame}s are only composed of Vecs of the same VectorGroup (or very small
+ *  Vecs) guaranteeing that all elements of each row are homed to the same Node
+ *  and set of Chunks - such that a simple {@code for} loop over a set of
+ *  Chunks all operates locally.  See the example in the {@link Chunk} class.
+ * 
+ *  <p>Vec {@link Key}s have a special layout (enforced by the various Vec
+ *  constructors) so there is a direct Key mapping from a Vec to a numbered
+ *  Chunk and vice-versa.  This mapping is crucially used in all sorts of
+ *  places, basically representing a global naming scheme across a Vec and the
+ *  Chunks that make it up.  The basic layout created by {@link #newKey}:
+ * <pre>
+ *              byte:    0      1   2 3 4 5  6 7 8 9  10+
+ *  Vec   Key layout: Key.VEC  -1   vec#grp    -1     normal Key bytes; often e.g. a function of original file name
+ *  Chunk Key layout: Key.CHK  -1   vec#grp  chunk#   normal Key bytes; often e.g. a function of original file name
+ *  Group Key layout: Key.GRP  -1     -1       -1     normal Key bytes; often e.g. a function of original file name
+ *  RollupStats Key : Key.CHK  -1   vec#grp    -2     normal Key bytes; often e.g. a function of original file name
+ * </pre>
  *
  * @author Cliff Click
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
   static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
-  /** Chunk size.  Bigger increases batch sizes, lowers overhead costs, lower
-   * increases fine-grained parallelism. */
+  /** Default Chunk size in bytes, useful when breaking up large arrays into
+   *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
+   *  costs, lower increases fine-grained parallelism. */
   public static final int CHUNK_SZ = 1 << LOG_CHK;
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
@@ -57,23 +121,34 @@ public class Vec extends Keyed {
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
   final long[] _espc;
-  public long[] espc() { return _espc; }
 
-  /** Enum/factor/categorical names. */
-  protected String [] _domain;
-  final public String [] factors() { return _domain; }
-  final public void set_factors(String[] factors) { _domain = factors; }
+  private String [] _domain;
+  /** Returns the enum toString mapping array, or null if not an Enum column.
+   *  Not a defensive clone (to expensive to clone; coding error to change the
+   *  contents).
+   *  @return the enum / factor / categorical mapping array, or null if not a Enum column */
+  public final String[] domain() { return _domain; }
+  /** Returns the {@code i}th factor for this enum column.
+   *  @return The {@code i}th factor */
+  public final String factor( long i ) { return _domain[(int)i]; }
+  /** Set the Enum/factor/categorical names.  No range-checking on the actual
+   *  underlying numeric domain; user is responsible for maintaining a mapping
+   *  which is coherent with the Vec contents. */
+  public final void setDomain(String[] domain) { _domain = domain; }
+  /** True if this is an Enum column.  All enum columns are also isInt(), but
+   *  not vice-versa.
+   *  @return true if this is an Enum column.  */
+  public final boolean isEnum(){return _domain != null && !_isString;}
+  /** Returns cardinality for enum domain or -1 for other types. */
+  public final int cardinality() { return isEnum() ? _domain.length : -1; }
+
 
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
-  protected byte _time;
+  byte _time;
   /** UUID flag */
-  protected boolean _isUUID;    // All UUIDs (or zero or missing)
+  boolean _isUUID;    // All UUIDs (or zero or missing)
   /** String flag */
-  protected boolean _isString;    // All Strings
-
-  private long _last_write_timestamp = System.currentTimeMillis();
-  private long _checksum_timestamp = -1;
-  private long _checksum = 0;
+  boolean _isString;    // All Strings
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
@@ -174,7 +249,7 @@ public class Vec extends Keyed {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {
-          for (int r = 0; r < c.len(); r++)
+          for (int r = 0; r < c._len; r++)
             c.set0(r, (r + 1 + c._start) % repeat);
         }
       }
@@ -187,7 +262,7 @@ public class Vec extends Keyed {
       public void map(Chunk[] cs) {
         for (int i = 0; i < cs.length; i++) {
           Chunk c = cs[i];
-          for (int r = 0; r < c.len(); r++)
+          for (int r = 0; r < c._len; r++)
             c.set0(r, r+1+c._start);
         }
       }
@@ -245,7 +320,6 @@ public class Vec extends Keyed {
 
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
-  public final boolean isEnum(){return _domain != null && !_isString;}
   public final boolean isUUID(){return _isUUID;}
   public final boolean isString(){return _isString;}
   public final boolean isNumeric(){return !_isUUID && !_isString; }
@@ -262,17 +336,6 @@ public class Vec extends Keyed {
    * <p>Returns true if the column is full of NAs.</p>
    */
   private final boolean isBad() { return naCnt() == length(); }
-
-  /** Map the integer value for a enum/factor/categorical to it's String.
-   *  Error if it is not an ENUM.  */
-  private String domain(long i) { return _domain[(int)i]; }
-
-  /** Return an array of domains.  This is eagerly manifested for enum or
-   *  categorical columns.  Returns null for non-Enum/factor columns. */
-  public String[] domain() { return _domain; }
-
-  /** Returns cardinality for enum domain or -1 for other types. */
-  public int cardinality() { return isEnum() ? _domain.length : -1; }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -302,7 +365,9 @@ public class Vec extends Keyed {
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
 
-  /** Histogram bins.  Computed on-demand to 1st call to these methods.
+  /** Default Histogram bins. */
+  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  /**  Computed on-demand to 1st call to these methods.
    *  bins[] are row-counts in each bin
    *  base - start of bin 0
    *  stride - relative start of next bin
@@ -310,9 +375,18 @@ public class Vec extends Keyed {
   public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins;  }
   public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base();  }
   public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
+  public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
 
   /** Compute the roll-up stats as-needed */
-  public RollupStats rollupStats() { return RollupStats.get(this).getResult(); }
+  private RollupStats rollupStats() { return RollupStats.get(this); }
+
+  /** Begin execution of RollupStats; useful when launching a bunch of them in
+   *  parallel right after a parse. */
+  public Future startRollupStats() { return RollupStats.start(this); }
+
+  private long _last_write_timestamp = System.currentTimeMillis();
+  private long _checksum_timestamp = -1;
+  private long _checksum = 0;
 
   /** A private class to compute the rollup stats */
   private static class ChecksummerTask extends MRTask<ChecksummerTask> {
@@ -322,7 +396,7 @@ public class Vec extends Keyed {
     @Override public void map( Chunk c ) {
       long _start = c._start;
 
-      for( int i=0; i<c.len(); i++ ) {
+      for( int i=0; i<c._len; i++ ) {
         long l = 81985529216486895L; // 0x0123456789ABCDEF
         if (! c.isNA0(i)) {
           if (c instanceof C16Chunk) {
@@ -421,7 +495,7 @@ public class Vec extends Keyed {
 
   /** Get a Vec Key from Chunk Key, without loading the Chunk */
   public static Key getVecKey( Key key ) {
-    assert key._kb[0]==Key.DVEC;
+    assert key._kb[0]==Key.CHK;
     byte [] bits = key._kb.clone();
     bits[0] = Key.VEC;
     UnsafeUtils.set4(bits, 6, -1); // chunk#
@@ -432,11 +506,11 @@ public class Vec extends Keyed {
   public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
   static public Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
-    bits[0] = Key.DVEC;
+    bits[0] = Key.CHK;
     UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
-  public Key rollupStatsKey() { return chunkKey(-2); }
+  Key rollupStatsKey() { return chunkKey(-2); }
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map,
    *  plus the {@code DKV.get()}.  Warning: this pulls the data locally;
@@ -465,6 +539,8 @@ public class Vec extends Keyed {
   /** Make a new random Key that fits the requirements for a Vec key. */
   public static Key newKey(){return newKey(Key.make());}
 
+  /** Internally used to help build Vec and Chunk Keys; public to help
+   * PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
@@ -482,7 +558,7 @@ public class Vec extends Keyed {
   /** Make a Vector-group key.  */
   private Key groupKey(){
     byte [] bits = _key._kb.clone();
-    bits[0] = Key.VGROUP;
+    bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
     UnsafeUtils.set4(bits, 6, -1);
     return Key.make(bits);
@@ -521,7 +597,7 @@ public class Vec extends Keyed {
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
   public final Chunk chunkForRow(long i) {
     Chunk c = _cache;
-    return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c.len()) ? c : (_cache = chunkForRow_impl(i));
+    return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow_impl(i));
   }
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. */
@@ -663,7 +739,7 @@ public class Vec extends Keyed {
     new MRTask() {
       @Override public void map(Chunk c0) {
         long srow = c0._start;
-        for (int r = 0; r < c0.len(); r++) c0.set0(r, vec.at(srow + r));
+        for (int r = 0; r < c0._len; r++) c0.set0(r, vec.at(srow + r));
       }
     }.doAll(avec);
     avec._domain = _domain;
@@ -770,7 +846,7 @@ public class Vec extends Keyed {
     private VectorGroup(Key key, int len){_key = key;_len = len;}
     public VectorGroup() {
       byte[] bits = new byte[26];
-      bits[0] = Key.VGROUP;
+      bits[0] = Key.GRP;
       bits[1] = -1;
       UnsafeUtils.set4(bits, 2, -1);
       UnsafeUtils.set4(bits, 6, -1);
@@ -845,10 +921,10 @@ public class Vec extends Keyed {
 
   /** Collect numeric domain of given vector */
   private static class CollectDomain extends MRTask<CollectDomain> {
-    transient NonBlockingHashMapLong<Object> _uniques;
-    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong(); }
+    transient NonBlockingHashMapLong<String> _uniques;
+    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk ys) {
-      for( int row=0; row< ys.len(); row++ )
+      for( int row=0; row< ys._len; row++ )
         if( !ys.isNA0(row) )
           _uniques.put(ys.at80(row),"");
     }
@@ -864,7 +940,7 @@ public class Vec extends Keyed {
     @Override public CollectDomain read_impl( AutoBuffer ab ) {
       assert _uniques == null || _uniques.size()==0;
       long ls[] = ab.getA8();
-      _uniques = new NonBlockingHashMapLong();
+      _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l,"");
       return this;
     }

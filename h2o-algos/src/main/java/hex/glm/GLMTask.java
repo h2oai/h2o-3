@@ -172,6 +172,17 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       for(int i = 0; i < _glmts.length; ++i)
         _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas.get(i),ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
     }
+
+    public GLMLineSearchTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double [][] betas, double ymu, long nobs, H2OCountedCompleter cmp) {
+      super(jobKey, dinfo, glm, cmp);
+
+      // public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMParams glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
+      _glmts = new GLMIterationTask[betas.length];
+      for(int i = 0; i < _glmts.length; ++i)
+        _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas[i],ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
+    }
+
+
     GLMIterationTask [] _glmts;
     @Override public void chunkInit(){
       _glmts = _glmts.clone();
@@ -389,7 +400,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     public GLMValidationTask(GLMModel model, double lambda, H2OCountedCompleter completer){super(completer); _lambda = lambda; _model = model;}
     @Override public void map(Chunk[] chunks){
       _res = new GLMValidation(null,_model._ymu,_model._parms,_model.rank(_lambda));
-      final int nrows = chunks[0].len();
+      final int nrows = chunks[0]._len;
       double [] row   = MemoryManager.malloc8d(_model._output._names.length);
       float  [] preds = MemoryManager.malloc4f(_model._parms.family == Family.binomial?3:1);
       OUTER:
@@ -428,7 +439,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       _xvals = new GLMValidation[_xmodels.length];
       for(int i = 0; i < _xmodels.length; ++i)
         _xvals[i] = new GLMValidation(null,_xmodels[i]._ymu,_xmodels[i]._parms,_xmodels[i]._output.rank(),_thresholds);
-      final int nrows = chunks[0].len();
+      final int nrows = chunks[0]._len;
       double [] row   = MemoryManager.malloc8d(_xmodels[0]._output._names.length);
       float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms.family == Family.binomial?3:1);
       OUTER:

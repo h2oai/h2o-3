@@ -46,7 +46,7 @@ public class CStrChunk extends Chunk {
   }
 
   @Override public boolean isSparse() { return false; }
-  @Override public int sparseLen() { return len(); }
+  @Override public int sparseLen() { return _len; }
 
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length);  }
   @Override public CStrChunk read_impl(AutoBuffer bb) {
@@ -57,10 +57,10 @@ public class CStrChunk extends Chunk {
     return this;
   }
   @Override NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(len());
+    nc.set_len(_len);
     nc.set_sparseLen(sparseLen());
-    nc._is = MemoryManager.malloc4(len());
-    for( int i = 0; i < len(); i++ )
+    nc._is = MemoryManager.malloc4(_len);
+    for( int i = 0; i < _len; i++ )
       nc._is[i] = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
     nc._sslen = _mem.length - _valstart;
     nc._ss = MemoryManager.malloc1(nc._sslen);

@@ -9,8 +9,9 @@ import org.joda.time.format.DateTimeFormatter;
  **/
 public class Timer {
 
-  private static final DateTimeFormatter longFormat = DateTimeFormat.forPattern("dd-MMM hh:mm:ss.SSS");
-  private static final DateTimeFormatter shortFormat= DateTimeFormat.forPattern(       "hh:mm:ss.SSS");
+  private static final DateTimeFormatter longFormat = DateTimeFormat.forPattern("dd-MMM HH:mm:ss.SSS");
+  private static final DateTimeFormatter shortFormat= DateTimeFormat.forPattern(       "HH:mm:ss.SSS");
+  private static final DateTimeFormatter logFormat  = DateTimeFormat.forPattern( "MM-dd HH:mm:ss.SSS");
 
   final long _start = System.currentTimeMillis();
   final long _nanos = System.nanoTime();
@@ -31,5 +32,8 @@ public class Timer {
   /** return the start time of this timer.**/
   String startAsShortString() { return shortFormat.print(_start); }
 
-  static String nowAsString() { return shortFormat.print(DateTime.now()); }
+  /**
+   * Used by Logging (Log.java) for creating a timestamp in front of each output line.
+   */
+  static String nowAsLogString() { return logFormat.print(DateTime.now()); }
 }

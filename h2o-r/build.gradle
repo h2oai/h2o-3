@@ -167,7 +167,7 @@ task cpH2OAppJar << {
 task buildPKG(type: Exec) { commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package']) }
 task cpToR << {
     new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
-    copyFile([T, "README.txt"], [T, "R", "README.txt"])
+    copyFile([T, "README.md"], [T, "R", "README.md"])
     copyFile([T, "h2o-package", "DESCRIPTION"], [T, "PACKAGES"])
     gzip(new File([T,"PACKAGES"].join(File.separator)).text, [T,"PACKAGES.gz"].join(File.separator))
     copyFile([T, "PACKAGES.gz"], [T, "R", "src", "contrib", "PACKAGES.gz"])

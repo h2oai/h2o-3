@@ -30,10 +30,9 @@ public class TransfVec extends WrappedVec {
     this(mapping[0], mapping[1], domain, masterVecKey, key, espc);
   }
   public TransfVec(int[] values, int[] indexes, String[] domain, Key masterVecKey, Key key, long[] espc) {
-    super(masterVecKey, key, espc);
+    super(masterVecKey, key, espc, domain);
     _values  =  values;
     _indexes =  indexes;
-    _domain = domain;
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
@@ -48,7 +47,7 @@ public class TransfVec extends WrappedVec {
     protected static final long MISSING_VALUE = -1L;
     final Chunk _c;
 
-    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c.len()); _start = _c._start; _vec = vec; }
+    protected AbstractTransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; }
 
     @Override protected double atd_impl(int idx) { double d = 0; return _c.isNA0(idx) ? Double.NaN : ( (d=at8_impl(idx)) == MISSING_VALUE ? Double.NaN : d ) ;  }
     @Override protected boolean isNA_impl(int idx) {
@@ -61,10 +60,10 @@ public class TransfVec extends WrappedVec {
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
     @Override NewChunk inflate_impl(NewChunk nc) {
-      for( int i=0; i< len(); i++ )
+      nc.set_sparseLen(nc.set_len(0));
+      for( int i=0; i< _len; i++ )
         if(isNA0(i))nc.addNA();
         else nc.addNum(at80(i),0);
-      nc.set_sparseLen(nc.set_len(len()));
       return nc;
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw new UnsupportedOperationException(); }

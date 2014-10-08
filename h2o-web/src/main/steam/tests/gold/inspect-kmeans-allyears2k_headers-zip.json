@@ -23,7 +23,7 @@
       {
         "name": "training_frame",
         "label": "training_frame",
-        "help": "Training frame.",
+        "help": "Training frame",
         "required": false,
         "type": "Frame",
         "default_value": null,

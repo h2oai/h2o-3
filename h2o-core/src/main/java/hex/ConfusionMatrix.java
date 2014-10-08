@@ -66,9 +66,9 @@ public class ConfusionMatrix extends Iced {
       if (classification) {
         // Create a new vectors - it is cheap since vector are only adaptation vectors
         va = vactual .toEnum(); // always returns TransfVec
-        actual_domain = va.factors();
+        actual_domain = va.domain();
         vp = vpredict.toEnum(); // always returns TransfVec
-        predicted_domain = vp.factors();
+        predicted_domain = vp.domain();
         if (!Arrays.equals(actual_domain, predicted_domain)) {
           domain = ArrayUtils.domainUnion(actual_domain, predicted_domain);
           int[][] vamap = Model.getDomainMapping(domain, actual_domain, true);
@@ -105,23 +105,23 @@ public class ConfusionMatrix extends Iced {
       //classification
       if (_c_len > 1) {
         _cm = new long[_c_len+1][_c_len+1];
-        int len = Math.min(ca.len(),cp.len()); // handle different lenghts, but the vectors should have been rejected already
+        int len = Math.min(ca._len,cp._len); // handle different lenghts, but the vectors should have been rejected already
         for( int i=0; i < len; i++ ) {
           int a=ca.isNA0(i) ? _c_len : (int)ca.at80(i);
           int p=cp.isNA0(i) ? _c_len : (int)cp.at80(i);
           _cm[a][p]++;
         }
-        if( len < ca.len() )
-          for( int i=len; i < ca.len(); i++ )
+        if( len < ca._len )
+          for( int i=len; i < ca._len; i++ )
             _cm[ca.isNA0(i) ? _c_len : (int)ca.at80(i)][_c_len]++;
-        if( len < cp.len() )
-          for( int i=len; i < cp.len(); i++ )
+        if( len < cp._len )
+          for( int i=len; i < cp._len; i++ )
             _cm[_c_len][cp.isNA0(i) ? _c_len : (int)cp.at80(i)]++;
       } else {
         _cm = null;
         _mse = 0;
-        assert(ca.len() == cp.len());
-        int len = ca.len();
+        assert(ca._len == cp._len);
+        int len = ca._len;
         for( int i=0; i < len; i++ ) {
           if (ca.isNA0(i) || cp.isNA0(i)) continue; //TODO: Improve
           final double a=ca.at0(i);

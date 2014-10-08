@@ -27,7 +27,7 @@ public final class PersistHdfs extends Persist {
   // Returns String with path for given key.
   private static String getPathForKey(Key k) {
     throw H2O.unimpl();
-    //final int off = k._kb[0]==Key.DVEC ? Vec.KEY_PREFIX_LEN : 0;
+    //final int off = k._kb[0]==Key.CHK ? Vec.KEY_PREFIX_LEN : 0;
     //return new String(k._kb,off,k._kb.length-off);
   }
   
@@ -89,7 +89,7 @@ public final class PersistHdfs extends Persist {
     long skip = 0;
     Key k = v._key;
     throw H2O.unimpl();
-  //  if(k._kb[0] == Key.DVEC){
+  //  if(k._kb[0] == Key.CHK){
   //    skip = water.fvec.NFSFileVec.chunkOffset(k); // The offset
   //  }
   //  final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));

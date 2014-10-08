@@ -31,7 +31,7 @@ public class C1Chunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     nc.set_sparseLen(0);
     nc.set_len(0);
-    final int len = len();
+    final int len = _len;
     for( int i=0; i<len; i++ ) {
       int res = 0xFF&_mem[i+_OFF];
       if( res == _NA ) nc.addNA();

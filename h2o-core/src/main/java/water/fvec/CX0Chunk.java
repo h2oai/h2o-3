@@ -14,7 +14,7 @@ public final class CX0Chunk extends CXIChunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
-    nc.set_len(len());
+    nc.set_len(_len);
     nc.set_sparseLen(slen);
     nc.alloc_mantissa(slen);
     Arrays.fill(nc.mantissa(),1);

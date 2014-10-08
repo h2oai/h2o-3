@@ -56,7 +56,7 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
       override def map( chks : Array[Chunk] ) = {
         val start = chks(0)._start
         val row = new T(chks.length)
-        val len = chks(0).len
+        val len = chks(0)._len
         (0 until len).foreach{ i =>
           (0 until chks.length).foreach{ col => row(col) = if( chks(col).isNA0(i) ) None else Some(chks(col).at0(i)) }
           f(start+i,row)

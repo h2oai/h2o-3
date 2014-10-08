@@ -1,6 +1,8 @@
 package water.api;
 
 import hex.Model;
+import hex.Model.Parameters.ValidationMessage;
+import hex.Model.Parameters.ValidationMessage.MessageType;
 import water.AutoBuffer;
 import water.H2O;
 import water.Key;
@@ -25,7 +27,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false)
   public Key destination_key;
 
-  @API(help="Training frame.")
+  @API(help="Training frame")
   public Frame training_frame;
 
   @API(help="Validation frame")
@@ -40,15 +42,48 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Ignored columns")
   public String[] ignored_columns;         // column names to ignore for training
 
+  @API(help="Parameter validation messages")
+  public ValidationMessageBase validation_messages[];
+
+  @API(help="Count of parameter validation errors")
+  public int validation_error_count;
 
   public ModelParametersSchema() {
   }
 
   public S fillFromImpl(P parms) {
-    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES); // Cliff models have _fields
-    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT); // Other people's models have no-underscore fields
+    // TODO: change impl classes so that they are consistent in terms of not having leading _
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "validation_messages"} ); // Cliff models have _fields
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT, new String[] { "validation_messages"} ); // Other people's models have no-underscore fields
+
+    this.validation_messages = new ValidationMessageBase[parms.validation_messages.length];
+    int i = 0;
+    for (ValidationMessage vm : parms.validation_messages)
+      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
+
     return (S)this;
   }
+
+  // Version&Schema-specific filling into the implementation object
+  abstract public P createImpl();
+
+  public static class ValidationMessageBase extends Schema<Model.Parameters.ValidationMessage, ValidationMessageBase> {
+    @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)")
+    public String message_type;
+
+    @API(help="Field to which the message applies")
+    public String field_name;
+
+    @API(help="Message text")
+    public String message;
+
+    public Model.Parameters.ValidationMessage createImpl() { return new Model.Parameters.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
+
+    // Version&Schema-specific filling from the implementation object
+    public ValidationMessageBase fillFromImpl(ValidationMessage vm) { PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT); return this; }
+  }
+
+  public static final class ValidationMessageV2 extends ValidationMessageBase {  }
 
   /**
    * Write the parameters, including their metadata, into an AutoBuffer.  Used by
@@ -77,6 +112,4 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     ab.putJSONA("parameters", metadata);
     return ab;
   }
-
-
 }

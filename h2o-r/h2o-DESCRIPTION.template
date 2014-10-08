@@ -28,6 +28,7 @@ Collate:
          'ops.R'
          'methods.R'
          'ast.R'
+         'astfun.R'
          'import.R'
          'parse.R'
          'export.R'

@@ -35,7 +35,7 @@ public class C2Chunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     nc.set_sparseLen(0);
     nc.set_len(0);
-    final int len = len();
+    final int len = _len;
     for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
       if( res == _NA ) nc.addNA();
@@ -48,7 +48,7 @@ public class C2Chunk extends Chunk {
     _mem = bb.bufClose();
     _start = -1;
     set_len(_mem.length>>1);
-    assert _mem.length == len() <<1;
+    assert _mem.length == _len <<1;
     return this;
   }
 }

@@ -28,7 +28,7 @@ public class C16Chunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem, (idx << 4), _LO_NA); UnsafeUtils.set8(_mem,(idx<<4),_HI_NA); return true; }
   @Override NewChunk inflate_impl(NewChunk nc) {
     nc.set_len(nc.set_sparseLen(0));
-    for( int i=0; i< len(); i++ ) {
+    for( int i=0; i< _len; i++ ) {
       long lo = UnsafeUtils.get8(_mem,(i<<4)  );
       long hi = UnsafeUtils.get8(_mem,(i << 4) + 8);
       nc.addUUID(lo, hi);
@@ -40,7 +40,7 @@ public class C16Chunk extends Chunk {
     _mem = bb.bufClose();
     _start = -1;
     set_len(_mem.length>>4);
-    assert _mem.length == len() <<4;
+    assert _mem.length == _len <<4;
     return this;
   }
 //  @Override protected int pformat_len0() { return 36; }

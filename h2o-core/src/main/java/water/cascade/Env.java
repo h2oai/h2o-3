@@ -62,8 +62,7 @@ public class Env extends Iced {
   Env capture() { return new Env(this); }
   private Env(Env e) {
     _stack  = e._stack;
-    _refcnt = new IcedHashMap<>();
-    _refcnt.putAll(e._refcnt);
+    _refcnt = new IcedHashMap<>(); // gets a new reference counter
     _sb     = null;
     _locked = e._locked;
     _global = e._global;
@@ -71,6 +70,8 @@ public class Env extends Iced {
     _parent = e;
     _isGlobal = false;
   }
+
+  SymbolTable newTable() { return new SymbolTable(); }
 
   public boolean isGlobal() { return _isGlobal; }
 
@@ -132,7 +133,9 @@ public class Env extends Iced {
 
   private void subRef(Val o) {
     assert o instanceof ValFrame;
-    if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr._key)) return;
+    if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr._key)) {
+      for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
+    }
     for(Vec v: ((ValFrame) o)._fr.vecs()) subRef(v);
   }
 
@@ -153,6 +156,13 @@ public class Env extends Iced {
     } else { _refcnt.put(v, new IcedInt(cnt)); }
   }
 
+  private void subRefLocked(Vec v) {
+    if (_refcnt.get(v) == null) return;
+    int cnt = _refcnt.get(v)._val -1;
+    if (cnt <= 0) extinguishCounts(v);
+    else _refcnt.put(v, new IcedInt(cnt));
+  }
+
   void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }  // MUST be called in conjunction w/ push(frame) or addRef
   void addVec(Vec v) { _locked.add(v._key);  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
@@ -167,10 +177,7 @@ public class Env extends Iced {
     }
   }
 
-  void cleanup(Frame ... frames) {
-    for (Frame f : frames) remove(f,true);
-//      if (f != null && f._key != null && !_locked.contains(f._key)) f.delete();
-  }
+  void cleanup(Frame ... frames) { for (Frame f : frames) unload(f,true); }
 
   private void extinguishCounts(Object o) {
     if (o instanceof Vec) { extinguishCounts((Vec) o); }
@@ -232,6 +239,30 @@ public class Env extends Iced {
     if (o instanceof ValFrame) remove_and_unlock(((ValFrame)o)._fr);
     else remove_and_unlock((Frame)o);
     if(!popped) pop();
+  }
+
+  void unload(Object o, boolean popped) {
+    assert o instanceof ValFrame || o instanceof Frame || o == null;
+    if (o == null) return;
+    if (o instanceof ValFrame) subref_and_unlock(((ValFrame)o)._fr);
+    else subref_and_unlock((Frame)o);
+    if(!popped) pop();
+  }
+
+  private void subref_and_unlock(Frame fr) {
+    if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
+    subRef(new ValFrame(fr));
+  }
+
+  void popScope() {
+    _local.clear();  // clear the symbol table
+    Futures fs = new Futures();
+    for (Vec v : _refcnt.keySet()) {  // wiping the reference counts
+      if (!_locked.contains(v._key)) fs = removeVec(v, fs);
+      extinguishCounts(v);
+    }
+    fs.blockForPending();
+    _stack.popAll(); // dump the stack, unlock any frames
   }
 
   // NOTE: this extinguishCounts is slightly suspicious, but might be OK here... Will matter in UDFs
@@ -402,6 +433,18 @@ public class Env extends Iced {
     }
 
     /**
+     * Pop all of the values off the stack.
+     * @return void
+     */
+    public void popAll() {
+      if (isEmpty()) return;
+      while(size() != -1) {
+        Val v = pop();
+        if (v instanceof ValFrame) ((ValFrame)v)._fr.unlock_all();
+      }
+    }
+
+    /**
      * Push an Object onto the stack
      * @param t is the Val to be pushed onto the stack.
      */
@@ -443,7 +486,8 @@ public class Env extends Iced {
   class SymbolTable extends Iced {
 
     HashMap<String, SymbolAttributes> _table;
-    SymbolTable() { _table = new HashMap<>(); }
+    public SymbolTable() { _table = new HashMap<>(); }
+    void clear() { _table.clear(); }
 
     public void put(String name, int type, String value) {
       if (_table.containsKey(name)) {
@@ -590,7 +634,6 @@ class ValStr extends Val {
   @Override String value() { return _s; }
 }
 
-//TODO: add in a boolean field for exclusion
 class ValSpan extends Val {
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;

@@ -19,7 +19,7 @@ import java.util.HashSet;
  *     '$'  signals a variable lookup: attached_token
  *     '!'  signals a variable set: attached_token
  *     '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
- *     'f'  signals the parser to a parse a function: (f ( args ) ( body ).
+ *     'f'  signals the parser to a parse a function: (f  name args body).
  *     '='  signals the parser to assign the RHS to the LHS.
  *     'g'  signals &gt;
  *     'G'  signals &gt;=
@@ -84,10 +84,20 @@ public class Exec extends Iced {
     // Parse a token --> look for a function or a special char.
     String tok = parseID();
     //lookup of the token
-    AST ast = ASTOp.SYMBOLS.get(tok);
-    if (ast == null) throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
+    AST ast = lookup(tok);
     return ast.parse_impl(this);
   }
+
+
+  private AST lookup(String tok) {
+    AST sym = ASTOp.SYMBOLS.get(tok);
+    if (sym != null) return sym;
+    sym = ASTOp.UDF_OPS.get(tok);
+    if (sym != null) return sym;
+    throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
+  }
+
+  protected AST parseAST(String ast, Env env) { return (new Exec(ast, env)).parse(); }
 
   String parseID() {
     StringBuilder sb = new StringBuilder();
@@ -144,7 +154,6 @@ public class Exec extends Iced {
   private static boolean _inited;       // One-shot init
   static void cluster_init() {
     if( _inited ) return;
-    new ASTPlus();
     new MRTask() {
       @Override public void setupLocal() {
         new ASTPlus(); // Touch a common class to force loading

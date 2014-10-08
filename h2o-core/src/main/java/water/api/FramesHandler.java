@@ -1,9 +1,12 @@
 package water.api;
 
+import hex.Model;
 import water.*;
+import water.api.ModelsHandler.Models;
 import water.fvec.Frame;
-import water.fvec.RollupStats;
 import water.fvec.Vec;
+
+import java.util.*;
 
 class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   @Override protected int min_ver() { return 2; }
@@ -14,6 +17,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     Key key;
     Frame[] frames;
     String column;
+    public boolean find_compatible_models = false;
 
     /**
      * Fetch all Frames from the KV store.
@@ -32,6 +36,62 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
         frames[i] = frame;
       }
       return frames;
+    }
+
+    /**
+     * Fetch all the Models so we can see if they are compatible with our Frame(s).
+     */
+    protected Map<Model, Set<String>> fetchModelCols() {
+      Model[] all_models = null;
+      Map<Model, Set<String>> all_models_cols = null;
+
+      if (this.find_compatible_models) {
+        // caches for this request
+        all_models = Models.fetchAll();
+        all_models_cols = new HashMap<Model, Set<String>>();
+
+        for (Model m : all_models) {
+          all_models_cols.put(m, new HashSet<String>(Arrays.asList(m._output._names)));
+        }
+      }
+      return all_models_cols;
+    }
+
+    /**
+     * For a given frame return an array of the compatible models.
+     *
+     * @param frame The frame to fetch the compatible models for.
+     * @param all_models An array of all the Models in the DKV.
+     * @param all_models_cols A Map of Model to a Set of its column names.
+     * @return
+     */
+    private static Model[] findCompatibleModels(Frame frame, Model[] all_models, Map<Model, Set<String>> all_models_cols) {
+      List<Model> compatible_models = new ArrayList<Model>();
+
+      Set<String> frame_column_names = new HashSet(Arrays.asList(frame._names));
+
+      for (Map.Entry<Model, Set<String>> entry : all_models_cols.entrySet()) {
+        Model model = entry.getKey();
+        Set<String> model_cols = entry.getValue();
+
+        if (model_cols.containsAll(frame_column_names)) {
+          /// See if adapt throws an exception or not.
+          try {
+            Frame[] outputs = model.adapt(frame, false); // TODO: this does too much work; write canAdapt()
+            Frame adapted = outputs[0];
+            Frame trash = outputs[1];
+            // adapted.delete();  // TODO: shouldn't we clean up adapted vecs?  But we can't delete() the model as a whole. . .
+            trash.delete();
+
+            // A-Ok
+            compatible_models.add(model);
+          }
+          catch (Exception e) {
+            // skip
+          }
+        }
+      }
+      return compatible_models.toArray(new Model[0]);
     }
   }
 
@@ -103,9 +163,8 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     if (null == vec)
       throw new IllegalArgumentException("Did not find column: " + frames.column + " in frame: " + frames.key.toString());
 
-    // Compute second pass of rollups: the histograms.  Side-effects the Vec.
-    // TODO: side effects, ugh.
-    RollupStats.computeHisto(vec);
+    // Compute second pass of rollups: the histograms.
+    vec.bins();
 
     // Cons up our result
     frames.frames = new Frame[1];
@@ -118,7 +177,19 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     Frame frame = getFromDKV(f.key);
     f.frames = new Frame[1];
     f.frames[0] = frame;
-    return this.schema(version).fillFromImpl(f);
+
+    FramesBase schema = this.schema(version).fillFromImpl(f);
+    if (f.find_compatible_models) {
+      Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll(), f.fetchModelCols());
+      schema.compatible_models = new ModelSchema[compatible.length];
+      schema.frames[0].compatible_models = new String[compatible.length];
+      int i = 0;
+      for (Model m : compatible) {
+        schema.compatible_models[i] = m.schema().fillFromImpl(m);
+        schema.frames[0].compatible_models[i++] = m._key.toString();
+      }
+    }
+    return schema;
   }
 
   // Remove an unlocked frame.  Fails if frame is in-use

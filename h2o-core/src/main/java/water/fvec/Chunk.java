@@ -22,7 +22,9 @@ import water.parser.ValueString;
  *  dataset will be pulled local (possibly triggering an OutOfMemory).  
  *
  *  <p>The chunk-local numbering supports the common {@code for} loop iterator
- *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}':
+ *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
+ *  and is faster than the global row-numbering for tight loops (because it 
+ *  avoids some range checks):
  *  <pre>{@code
 for( int row=0; row < chunk._len; row++ )
   ...chunk.at0(row)...
@@ -35,12 +37,13 @@ for( int row=0; row < chunk._len; row++ )
  *  completed there.  Later the NewChunk will be compressed (probably into a
  *  different underlying Chunk subclass) and put back in the K/V store under
  *  the same Key - effectively replacing the original Chunk; this is done when
- *  {@link #close} is called.
+ *  {@link #close} is called, and is taken care of by the standard {@link
+ *  MRTask} calls.
  *
  *  <p>Chunk updates are not multi-thread safe; the caller must do correct
- *  synchronization.  This is already handled by the Map/Reduce ({@link
- *  MRTask}) framework.  Chunk updates are not visible cross-cluster until
- *  a {@link #close} is made; again this is handled by MRTask directly.
+ *  synchronization.  This is already handled by the Map/Reduce {MRTask)
+ *  framework.  Chunk updates are not visible cross-cluster until the {@link
+ *  #close} is made; again this is handled by MRTask directly.
  * 
  *  <p>In addition to normal load and store operations, Chunks support the
  *  notion a missing element via the {@code isNA()} calls, and a "next
@@ -58,10 +61,12 @@ for( int row=0; row < chunk._len; row++ )
  *  format will not "blow up" the in-memory representation.  Factors or Enums
  *  are held as small integers, with a shared String lookup table on the side.
  *
- *  <p>Missing float and double data is always treated as a NaN, both if read
- *  or written.  There is no equivalent for integer data; reading a missing
- *  integer value is a coding error and will be flagged.  First check for
- *  a missing integer value before loading it:
+ *  <p>Chunks support the notion of <em>missing</em> data.  Missing float and
+ *  double data is always treated as a NaN, both if read or written.  There is
+ *  no equivalent of NaN for integer data; reading a missing integer value is a
+ *  coding error and will be flagged.  If you are working with integer data
+ *  with missing elements, you must first check for a missing value before
+ *  loading it:
  *  <pre>{@code
 if( !chk.isNA0(row) ) ...chk.at80(row)....
 }</pre>
@@ -78,124 +83,280 @@ if( !chk.isNA0(row) ) ...chk.at80(row)....
  *  aligned together (the common use-case of looking a whole rows of a
  *  dataset).  Again, typically such a code pattern is memory-bandwidth bound
  *  although the X86 will stop being able to prefetch well beyond 100 or 200
- *  Chunks.  Note that such Chunk alignment is guaranteed within all the Vecs
- *  of a Frame.
+ *  Chunks.  
+ *
+ *  <p>Note that Chunk alignment is guaranteed within all the Vecs of a Frame:
+ *  Same numbered Chunks of <em>different</em> Vecs will have the same global
+ *  row numbering and the same length, enabling a particularly simple way to
+ *  iterate over all rows.
  *
  *  <p>This example computes the Euclidean distance between all the columns and
  *  a given point, and stores the squared distance back in the last column.
  *  Note that due "NaN poisoning" if any row element is missing, the entire
  *  distance calculated will be NaN.
  *  <pre>{@code
-final double[] _point; // The given point
-public void map( Chunk[] chks ) {
-  for( int row=0; row < chks[0]._len; row++ ) {
-    double dist=0; // Squared distance
-    for( int col=0; col < chks.length-1; col++ ) {
-      double d = chks[col].at0(row) - _point[col];
-      dist += d*d*;
+final double[] _point;                             // The given point
+public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
+  for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
+    double dist=0;                                 // Squared distance
+    for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
+      double d = chks[col].at0(row) - _point[col]; // Distance along this dimension
+      dist += d*d*;                                // Sum-squared-distance
     }
-    chks[chks.length-1].set0( row, dist );
+    chks[chks.length-1].set0( row, dist );         // Store back the distance in the last col
   }
 }}</pre>
  */
 
 public abstract class Chunk extends Iced implements Cloneable {
-  /** Starting row */
-  protected long _start = -1;    // Start element; filled after AutoBuffer.read
+  /** Global starting row for this local Chunk; a read-only field. */
+  long _start = -1;
+  /** Global starting row for this local Chunk */
+  public final long start() { return _start; }
 
-  public final long start() { return _start; } // Start element; filled after AutoBuffer.read
-  private int _len;            // Number of elements in this chunk
-  public int len() { return _len; }
-  public int set_len(int _len) { return this._len = _len; }
-  private Chunk _chk2;       // Normally==null, changed if chunk is written to
-  public final Chunk chk2() { return _chk2; } // Normally==null, changed if chunk is written to
-  protected Vec _vec;            // Owning Vec; filled after AutoBuffer.read
-  public final Vec vec() { return _vec; }   // Owning Vec; filled after AutoBuffer.read
-  protected byte[] _mem;  // Short-cut to the embedded memory; WARNING: holds onto a large array
-  public final byte[] getBytes() { return _mem; } // Short-cut to the embedded memory; WARNING: holds onto a large array
-  // Used by a ParseExceptionTest to break the Chunk invariants & trigger an NPE
+  /** Number of rows in this Chunk; publically a read-only field.  Odd API
+   *  design choice: public, not-final, read-only, NO-ACCESSOR.
+   *
+   *  <p>NO-ACCESSOR: This is a high-performance field, and must have a known
+   *  zero-cost cost-model; accessors hide that cost model, and make it
+   *  not-obvious that a loop will be properly optimized or not.
+   *
+   *  <p>not-final: set in various deserializers.
+   *  <p>Proper usage: read the field, probably in a hot loop.
+   *  <pre>{@code
+   for( int row=0; row < chunk._len; row++ )
+     ...chunk.at0(row)...
+   }</pre>
+   **/
+  public int _len;
+  /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
+  int set_len(int len) { return _len = len; }
+
+  /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
+  private Chunk _chk2;
+  /** Exposed for internal testing only.  Not a publically visible API. */
+  public Chunk chk2() { return _chk2; }
+
+  /** Owning Vec; a read-only field */
+  Vec _vec;
+  /** Owning Vec */
+  public Vec vec() { return _vec; }
+
+  /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
+  byte[] _mem;
+  /** Short-cut to the embedded big-data memory.  Generally not useful for
+   *  public consumption, since the data remains compressed and holding on to a
+   *  pointer to this array defeats the user-mode spill-to-disk. */
+  public byte[] getBytes() { return _mem; }
+
+  /** Used by a ParseExceptionTest to break the Chunk invariants & trigger an
+   *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
-  /** Load a long value.  Floating point values are silently rounded to an
-    * integer.  Throws if the value is missing.
-    * <p>
-    * Loads from the 1-entry chunk cache, or misses-out.  This version uses
-    * absolute element numbers, but must convert them to chunk-relative indices
-    * - requiring a load from an aliasing local var, leading to lower quality
-    * JIT'd code (similar issue to using iterator objects).
-    * <p>
-    * Slightly slower than 'at0' since it range checks within a chunk. */
-  final long  at8( long i ) {
+  /** Load a {@code long} value using absolute row numbers.  Floating point
+   *  values are silently rounded to a long.  Throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at80} since it range-checks within a chunk. 
+   *  @return long value at the given row, or throw if the value is missing */
+  public final long at8( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at80((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at80((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-  /** Load a double value.  Returns Double.NaN if value is missing.
-   *  <p>
-   * Loads from the 1-entry chunk cache, or misses-out.  This version uses
-   * absolute element numbers, but must convert them to chunk-relative indices
-   * - requiring a load from an aliasing local var, leading to lower quality
-   * JIT'd code (similar issue to using iterator objects).
-   * <p>
-   * Slightly slower than 'at80' since it range checks within a chunk. */
+  /** Load a {@code double} value using absolute row numbers.  Returns
+   *  Double.NaN if value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at0} since it range-checks within a chunk.
+   *  @return double value at the given row, or NaN if the value is missing */
   public final double at( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-  /** Fetch the missing-status the slow way. */
-  final boolean isNA(long i) {
+  /** Missing value status.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #isNA0} since it range-checks within a chunk.
+   *  @return true if the value is missing */
+  public final boolean isNA(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return isNA0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return isNA0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** Low half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16l0} since it range-checks within a chunk.
+   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
   public final long at16l( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at16l0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at16l0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** High half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16h0} since it range-checks within a chunk.
+   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
   public final long at16h( long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return at16h0((int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return at16h0((int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
+
+  /** String value using absolute row numbers, or null if missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #atStr0} since it range-checks within a chunk.
+   *  @return String value using absolute row numbers, or null if missing. */
   public final ValueString atStr( ValueString vstr, long i ) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < len()) return atStr0(vstr,(int)x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ len()));
+    if( 0 <= x && x < _len) return atStr0(vstr,(int)x);
+    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
-
-  /** The zero-based API.  Somewhere between 10% to 30% faster in a tight-loop
-   *  over the data than the generic at() API.  Probably no gain on larger
-   *  loops.  The row reference is zero-based on the chunk, and should
-   *  range-check by the JIT as expected.  */
+  /** Load a {@code double} value using chunk-relative row numbers.  Returns Double.NaN
+   *  if value is missing.
+   *  @return double value at the given row, or NaN if the value is missing */
   public final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
+
+  /** Load a {@code long} value using chunk-relative row numbers.  Floating
+   *  point values are silently rounded to a long.  Throws if the value is
+   *  missing.
+   *  @return long value at the given row, or throw if the value is missing */
   public final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
+
+  /** Missing value status using chunk-relative row numbers.
+   *
+   *  @return true if the value is missing */
   public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
+
+  /** Low half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
   public final long   at16l0( int i ) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
+
+  /** High half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
   public final long   at16h0( int i ) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
+
+  /** String value using chunk-relative row numbers, or null if missing.
+   *
+   *  @return String value or null if missing. */
   public final ValueString atStr0( ValueString vstr, int i ) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
 
 
-  /** Write element the slow way, as a long.  There is no way to write a
-   *  missing value with this call.  Under rare circumstances this can throw:
-   *  if the long does not fit in a double (value is larger magnitude than
-   *  2^52), AND float values are stored in Vector.  In this case, there is no
-   *  common compatible data representation. */
-  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,l); else _vec.set(i,l); }
-  /** Write element the slow way, as a double.  Double.NaN will be treated as
-   *  a set of a missing element. */
-  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,d); else _vec.set(i,d); }
-  /** Write element the slow way, as a float.  Float.NaN will be treated as
-   *  a set of a missing element. */
-  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,f); else _vec.set(i,f); }
-  /** Set the element as missing the slow way.  */
-  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < len()) setNA0((int)x); else _vec.setNA(i); }
+  /** Write a {@code long} using absolute row numbers.  There is no way to
+   *  write a missing value with this call.  Under rare circumstances this can
+   *  throw: if the long does not fit in a double (value is larger magnitude
+   *  than 2^52), AND float values are stored in Vector.  In this case, there
+   *  is no common compatible data representation.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
+  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
 
-  public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < len()) set0((int)x,str); else _vec.set(i,str); }
+  /** Write a {@code double} using absolute row numbers; NaN will be treated as
+   *  a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
+  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
+
+  /** Write a {@code float} using absolute row numbers; NaN will be treated as
+   *  a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
+  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
+
+  /** Set the element as missing, using absolute row numbers.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
+  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
+
+  /** Set a {@code String}, using absolute row numbers.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects). */
+  public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,str); else _vec.set(i,str); }
   
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
@@ -205,15 +366,19 @@ public abstract class Chunk extends Iced implements Cloneable {
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }
 
-  /**
-   * Set a long element in a chunk given a 0-based chunk local index.
+  /** Write a {@code long} with check-relative indexing.  There is no way to
+   *  write a missing value with this call.  Under rare circumstances this can
+   *  throw: if the long does not fit in a double (value is larger magnitude
+   *  than 2^52), AND float values are stored in Vector.  In this case, there
+   *  is no common compatible data representation.
    *
-   * Write into a chunk.
-   * May rewrite/replace chunks if the chunk needs to be
-   * "inflated" to hold larger values.  Returns the input value.
-   *
-   * Note that the idx is an int (instead of a long), which tells you
-   * that index 0 is the first row in the chunk, not the whole Vec.
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
    */
   public final long set0(int idx, long l) {
     setWrite();
@@ -222,7 +387,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return l;
   }
 
-  /** Set a double element in a chunk given a 0-based chunk local index. */
+  /** Write a {@code double} with check-relative indexing.  NaN will be treated
+   *  as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final double set0(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
@@ -230,7 +405,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return d;
   }
 
-  /** Set a floating element in a chunk given a 0-based chunk local index. */
+  /** Write a {@code float} with check-relative indexing.  NaN will be treated
+   *  as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final float set0(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
@@ -238,7 +423,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     return f;
   }
 
-  /** Set the element in a chunk as missing given a 0-based chunk local index. */
+  /** Set a value as missing.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final boolean setNA0(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
@@ -246,6 +440,17 @@ public abstract class Chunk extends Iced implements Cloneable {
     return true;
   }
 
+  /** Write a {@code String} with check-relative indexing.  {@code null} will
+   *  be treated as a missing value.
+   *
+   *  <p>As with all the {@code set} calls, if the value written does not fit
+   *  in the current compression scheme, the Chunk will be inflated into a
+   *  NewChunk and the value written there.  Later, the NewChunk will be
+   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  i.e., there is some interesting cost if Chunk compression-types need to
+   *  change.
+   *  @return the set value
+   */
   public final String set0(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
@@ -253,7 +458,13 @@ public abstract class Chunk extends Iced implements Cloneable {
     return str;
   }
 
-  /** After writing we must call close() to register the bulk changes */
+  /** After writing we must call close() to register the bulk changes.  If a
+   *  NewChunk was needed, it will be compressed into some other kind of Chunk.
+   *  The resulting Chunk (either a modified self, or a compressed NewChunk)
+   *  will be written to the DKV.  Only after that {@code DKV.put} completes
+   *  will all readers of this Chunk witness the changes.
+   *  @return the passed-in {@link Futures}, for flow-coding.
+   */
   public Futures close( int cidx, Futures fs ) {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
@@ -263,15 +474,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     return fs;
   }
 
+  /** @return Chunk index */
   public int cidx() { return _vec.elem2ChunkIdx(_start); }
 
-  /** Chunk-specific readers.  */ 
-  abstract protected double   atd_impl(int idx);
-  abstract protected long     at8_impl(int idx);
-  abstract protected boolean isNA_impl(int idx);
-  protected long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  protected long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  protected ValueString atStr_impl(ValueString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
+  /** Chunk-specific readers.  Not a public API */ 
+  abstract double   atd_impl(int idx);
+  abstract long     at8_impl(int idx);
+  abstract boolean isNA_impl(int idx);
+  long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  ValueString atStr_impl(ValueString vstr, int idx) { throw new IllegalArgumentException("Not a String"); }
   
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */
@@ -282,31 +494,37 @@ public abstract class Chunk extends Iced implements Cloneable {
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
   int nextNZ(int rid){return rid+1;}
-  public boolean isSparse() {return false;}
-  public int sparseLen(){return len();}
 
-  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
-   *  For dense chunks, this will contain indices of all the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk.
-   */
+  /** Sparse Chunks have a significant number of zeros, and support for
+   *  skipping over large runs of zeros in a row.
+   *  @return true if this Chunk is sparse.  */
+  public boolean isSparse() {return false;}
+
+  /** Sparse Chunks have a significant number of zeros, and support for
+   *  skipping over large runs of zeros in a row.
+   *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
+  public int sparseLen() {return _len;}
+
+  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
+   *  stored in this chunk.  For dense chunks, this will contain indices of all
+   *  the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk. */
   public int nonzeros(int [] res) {
-    for( int i = 0; i < len(); ++i) res[i] = i;
-    return len();
+    for( int i = 0; i < _len; ++i) res[i] = i;
+    return _len;
   }
 
-  /**
-   * Get chunk-relative indices of values (nonzeros for sparse, all for dense) stored in this chunk.
-   * For dense chunks, this will contain indices of all the rows in this chunk.
-   *
-   * @return array of chunk-relative indices of values stored in this chunk.
-   */
+  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
+   *  stored in this chunk.  For dense chunks, this will contain indices of all
+   *  the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk.  */
   public final int [] nonzeros () {
     int [] res = MemoryManager.malloc4(sparseLen());
     nonzeros(res);
     return res;
   }
 
-/** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
+  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
   abstract NewChunk inflate_impl(NewChunk nc);
@@ -316,8 +534,10 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  Chunk, but in a highly optimized way. */
   Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
+  /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
 
+  /** Size in bytes of the Chunk plus embedded array. */
   public long byteSize() {
     long s= _mem == null ? 0 : _mem.length;
     s += (2+5)*8 + 12; // 2 hdr words, 5 other words, @8bytes each, plus mem array hdr
@@ -325,17 +545,24 @@ public abstract class Chunk extends Iced implements Cloneable {
     return s;
   }
 
-  // Custom serializers: the _mem field contains ALL the fields already.
-  // Init _start to -1, so we know we have not filled in other fields.
-  // Leave _vec & _chk2 null, leave _len unknown.
+  /** Custom serializers implemented by Chunk subclasses: the _mem field
+   *  contains ALL the fields already. */
   abstract public AutoBuffer write_impl( AutoBuffer ab );
+
+  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
+   *  contains ALL the fields already.  Init _start to -1, so we know we have
+   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
+   *  unknown. */
   abstract public Chunk read_impl( AutoBuffer ab );
 
   // -----------------
   // Support for fixed-width format printing
 //  private String pformat () { return pformat0(); }
-//  private int pformat_len() { return pformat_len0(); }
+//  private int pformat__len { return pformat_len0(); }
+
+  /** Fixed-width format printing support.  Filled in by the subclasses. */
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
+
 //  protected String pformat0() {
 //    long min = (long)_vec.min();
 //    if( min < 0 ) return "% "+pformat_len0()+"d";
@@ -360,4 +587,21 @@ public abstract class Chunk extends Iced implements Cloneable {
 //    //int w=1/*blank/sign*/+lg/*compression limits digits*/+1/*dot*/+1/*e*/+1/*neg exp*/+2/*digits of exp*/;
 //    //return w;
 //  }
+
+  /** Used by the parser to help report various internal bugs.  Not intended for public use. */
+  public final void reportBrokenEnum( int i, int j, long l, int[][] emap, int levels ) {
+    StringBuilder sb = new StringBuilder("Enum renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
+    int k = 0;
+    for(; k < Math.min(5,_len); ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    k = Math.max(k,j-2);
+    sb.append("...\n");
+    for(; k < Math.min(_len,j+2); ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    sb.append("...\n");
+    k = Math.max(k,_len-5);
+    for(; k < _len; ++k)
+      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+    throw new RuntimeException(sb.toString());
+  }
 }

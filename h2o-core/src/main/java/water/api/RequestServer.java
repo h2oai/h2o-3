@@ -121,8 +121,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", new String[] {"key"});
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list");
-    // TODO: register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
-    // TODO: register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
+    register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
+    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
@@ -257,7 +257,18 @@ public class RequestServer extends NanoHTTPD {
     return run;
   }
 
-  // Log all requests except the overly common ones
+  void alwaysLogRequest(String uri, String method, Properties parms) {
+    String log = String.format("%-4s %s", method, uri);
+    for( Object arg : parms.keySet() ) {
+      String value = parms.getProperty((String) arg);
+      if( value != null && value.length() != 0 )
+        log += " " + arg + "=" + value;
+    }
+
+    Log.httpd(log);
+  }
+
+    // Log all requests except the overly common ones
   void maybeLogRequest(String uri, String versioned_path, String pattern, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
@@ -338,6 +349,7 @@ public class RequestServer extends NanoHTTPD {
     RequestType type = RequestType.requestType(uripath);
     String path = type.requestName(uripath); // Strip suffix type from middle of URI
     String versioned_path = "/" + version + path;
+    alwaysLogRequest(path, method, parms);
 
     // Load resources, or dispatch on handled requests
     try {

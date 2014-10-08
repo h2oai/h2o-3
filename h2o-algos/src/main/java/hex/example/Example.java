@@ -87,7 +87,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
       _maxs = new double[cs.length];
       Arrays.fill(_maxs,-Double.MAX_VALUE);
       for( int col = 0; col < cs.length; col++ )
-        for( int row = 0; row < cs[col].len(); row++ )
+        for( int row = 0; row < cs[col]._len; row++ )
           _maxs[col] = Math.max(_maxs[col],cs[col].at0(row));
     }
 

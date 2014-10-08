@@ -1,17 +1,13 @@
 package water.fvec;
 
-import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
 import water.util.ArrayUtils;
-import water.H2O.H2OFuture;
+
+import java.util.Arrays;
+import java.util.concurrent.Future;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
@@ -24,27 +20,26 @@ import water.H2O.H2OFuture;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-public class RollupStats extends DTask<RollupStats> {
+class RollupStats extends DTask<RollupStats> {
   final Key _rskey;
   final private byte _priority;
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
-  public long _naCnt;
+  long _naCnt;
   // Computed in 1st pass
-  public double _mean, _sigma;
-  public long _rows, _nzCnt, _size, _pinfs, _ninfs;
-  public boolean _isInt=true;
-  public double[] _mins, _maxs;
+  double _mean, _sigma;
+  long _rows, _nzCnt, _size, _pinfs, _ninfs;
+  boolean _isInt=true;
+  double[] _mins, _maxs;
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private final int MAX_SIZE = 1024;
-  volatile public long[] _bins;
+  private static final int MAX_SIZE = 1024; // Standard bin count; enums can have more bins
+  volatile long[] _bins;
   // Approximate data value closest to the Xth percentile
-  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
-  public double[] _pctiles;
+  double[] _pctiles;
 
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
@@ -66,7 +61,7 @@ public class RollupStats extends DTask<RollupStats> {
     boolean isString = c._vec.isString();
     if (isString) _isInt = false;
     // Walk the non-zeros
-    for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
+    for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
         _naCnt++;
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
@@ -89,7 +84,7 @@ public class RollupStats extends DTask<RollupStats> {
 
     // Sparse?  We skipped all the zeros; do them now
     if( c.isSparse() ) {
-      int zeros = c.len() - c.sparseLen();
+      int zeros = c._len - c.sparseLen();
       for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
       _rows += zeros;
     }
@@ -99,7 +94,7 @@ public class RollupStats extends DTask<RollupStats> {
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
-      for( int i=0; i< c.len(); i++ ) {
+      for( int i=0; i< c._len; i++ ) {
         if( !c.isNA0(i) ) {
           double d = c.at0(i)-_mean;
           _sigma += d*d;
@@ -161,48 +156,28 @@ public class RollupStats extends DTask<RollupStats> {
     return rs;                  // In progress
   }
 
-
-  public static H2OFuture<RollupStats> get(Vec v){
-    final Key rskey = v.rollupStatsKey();
-    final RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-    if( rs.isReady() ) return new H2OFuture<RollupStats>(){
-      @Override public boolean cancel(boolean mayInterruptIfRunning) {return false;}
-      @Override public boolean isCancelled() { return false;}
-      @Override public boolean isDone() {return true;}
-      @Override public RollupStats get() throws InterruptedException, ExecutionException {return rs; }
-      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {return rs;}
-    };                 // All good
+  static Future start(Vec vec) {
+    final Key rskey = vec.rollupStatsKey();
+    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+    if( rs.isReady() ) return rs;                      // All good
     assert rs.isComputing();
-    // No local cached Rollups; go ask Master for a copy
-    H2ONode h2o = rskey.home_node();
-    final Future fs;
-    if( h2o.equals(H2O.SELF) )
-      fs = (H2O.submitTask(rs));
-    else                        // Run remotely
-      fs = (RPC.call(h2o,rs)); // Run remote
-    return new H2OFuture<RollupStats>() {
-      @Override public boolean cancel(boolean mayInterruptIfRunning) { return fs.cancel(mayInterruptIfRunning);}
-      @Override public boolean isCancelled() { return fs.isCancelled();}
-      @Override public boolean isDone() { return fs.isDone();}
-      @Override public RollupStats get() throws InterruptedException, ExecutionException { fs.get(); return rs;}
-      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException { fs.get(timeout, unit); return rs;}
-    };
+    return rskey.home() ? H2O.submitTask(rs) : RPC.call(rskey.home_node(),rs);
   }
 
   // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
   // the rollup in the background and do not return.
-//  public static RollupStats get(Vec vec) {
-//    final Key rskey = vec.rollupStatsKey();
-//    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-//    if( rs.isReady() ) return rs;                 // All good
-//    assert rs.isComputing();
-//    // No local cached Rollups; go ask Master for a copy
-//    if( rskey.home() ) {
-//      rs.compute2();
-//      return rs;  // Block till ready
-//    } else                                    // Run remotely
-//      return RPC.call(rskey.home_node(),rs).get(); // Run remote
-//  }
+  static RollupStats get(Vec vec) {
+    final Key rskey = vec.rollupStatsKey();
+    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+    if( rs.isReady() ) return rs;                 // All good
+    assert rs.isComputing();
+    // No local cached Rollups; go ask Master for a copy
+    if( rskey.home() ) {
+      H2O.submitTask(rs).join();  // Run at home, wait till the onCompletion code runs
+      return rs;
+    } else
+      return RPC.call(rskey.home_node(),rs).get(); // Run remote
+  }
 
   // Fetch if present, but do not compute
   static RollupStats getOrNull(Vec vec) {
@@ -248,11 +223,11 @@ public class RollupStats extends DTask<RollupStats> {
 
   // ----------------------------
   // Compute the expensive histogram on-demand
-  public static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
+  static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
   // Version that allows histograms to be computed in parallel
   static Futures computeHisto(Vec vec, Futures fs) {
     while( true ) {
-      RollupStats rs = get(vec).getResult(); // Block for normal histogram
+      RollupStats rs = get(vec); // Block for normal histogram
       if( rs._bins != null ) return fs;
       rs.computeHisto_impl(vec);
       Value old = DKV.get(rs._rskey);
@@ -283,13 +258,13 @@ public class RollupStats extends DTask<RollupStats> {
     _bins = new Histo(this,nbins).doAll(vec)._bins;
 
     // Compute percentiles from histogram
-    _pctiles = new double[PERCENTILES.length];
+    _pctiles = new double[Vec.PERCENTILES.length];
     int j=0;                    // Histogram bin number
     long hsum=0;                // Rolling histogram sum
     double base = h_base();
     double stride = h_stride();
-    for( int i=0; i<PERCENTILES.length; i++ ) {
-      final double P = PERCENTILES[i];
+    for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
+      final double P = Vec.PERCENTILES[i];
       long pint = (long)(P*rows);
       while( hsum < pint ) hsum += _bins[j++];
       // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
@@ -301,8 +276,8 @@ public class RollupStats extends DTask<RollupStats> {
   }
 
   // Histogram base & stride
-  public double h_base() { return _mins[0]; }
-  public double h_stride() { return h_stride(_bins.length); }
+  double h_base() { return _mins[0]; }
+  double h_stride() { return h_stride(_bins.length); }
   private double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
 
   // Compute expensive histogram
@@ -313,14 +288,14 @@ public class RollupStats extends DTask<RollupStats> {
     Histo( RollupStats rs, int nbins ) { _base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
     @Override public void map( Chunk c ) {
       _bins = new long[_nbins];
-      for( int i=c.nextNZ(-1); i< c.len(); i=c.nextNZ(i) ) {
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.at0(i);
         if( Double.isNaN(d) ) continue;
         _bins[idx(d)]++;
       }
       // Sparse?  We skipped all the zeros; do them now
       if( c.isSparse() )
-        _bins[idx(0.0)] += (c.len() - c.sparseLen());
+        _bins[idx(0.0)] += (c._len - c.sparseLen());
     }
     private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
 

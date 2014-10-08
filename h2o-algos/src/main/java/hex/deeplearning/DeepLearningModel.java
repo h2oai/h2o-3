@@ -467,14 +467,41 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (fr.numCols() <= 1)
         validation_error("_validation_frame", "Training data must have at least 2 features (incl. response).");
 
-      if (hidden == null) validation_error("hidden", "There must be at least one hidden layer.");
+      if (hidden == null || hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
 
       for (int i=0;i<hidden.length;++i) {
         if (hidden[i]==0)
           validation_error("hidden", "Hidden layer size must be >0.");
       }
 
+      if (_validation_frame == null)
+        hide("score_validation_samples", "score_validation_samples requires a validation frame.");
+
+      if (classification) {
+        hide("regression_stop", "regression_stop is used only with regression.");
+      } else {
+        hide("classification_stop", "classification_stop is used only with classification.");
+        hide("max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
+        hide("max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+        hide("balance_classes", "balance_classes is used only with classification.");
+      }
+
+      if (classification && balance_classes) {
+
+      } else {
+        hide("class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+      }
+
+      if (classification && !balance_classes || !classification)
+        hide("max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
+
+
+      if (!classification && _validation_frame != null || _validation_frame == null)
+        hide("score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
+
       // Auto-fill defaults
+      if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout)
+        hide("hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       if (hidden_dropout_ratios == null) {
         if (activation == Activation.TanhWithDropout || activation == Activation.MaxoutWithDropout || activation == Activation.RectifierWithDropout) {
           hidden_dropout_ratios = new double[hidden.length];
@@ -482,10 +509,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           Arrays.fill(hidden_dropout_ratios, 0.5);
         }
       }
-      else if (hidden_dropout_ratios.length != hidden.length) validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
-      else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
-        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-Dropout activation function was specified.");
+      else if (hidden_dropout_ratios.length != hidden.length) {
+        validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
       }
+      else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
+        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+      }
+
       if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
@@ -507,22 +537,43 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         classification = true;
       }
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
+        hide("replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
         validation_info("replicate_training_data", "Disabling replicate_training_data on 1 node.");
         replicate_training_data = false;
       }
       if (single_node_mode && (H2O.CLOUD.size() == 1 || !replicate_training_data)) {
+        hide("single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
         validation_info("single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
         single_node_mode = false;
       }
+
+      if (autoencoder)
+        hide("use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
       if (!use_all_factor_levels && autoencoder ) {
         validation_warn("use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
         use_all_factor_levels = true;
       }
+
+      if (n_folds != 0)
+        hide("override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
       if(override_with_best_model && n_folds != 0) {
         validation_warn("override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
         override_with_best_model = false;
       }
 
+      if (adaptive_rate) {
+        hide("rate", "rate is not used with adaptive_rate.");
+        hide("rate_annealing", "rate_annealing is not used with adaptive_rate.");
+        hide("rate_decay", "rate_decay is not used with adaptive_rate.");
+        hide("momentum_start", "momentum_start is not used with adaptive_rate.");
+        hide("momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
+        hide("momentum_stable", "momentum_stable is not used with adaptive_rate.");
+        hide("nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
+      } else {
+        // ! adaptive_rate
+        hide("rho", "rho is only used with adaptive_rate.");
+        hide("epsilon", "epsilon is only used with adaptive_rate.");
+      }
       if (!quiet_mode) {
         if (adaptive_rate) {
           validation_info("adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
@@ -537,11 +588,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
 
         if (initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
+          hide("initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
           validation_info("initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (n_folds != 0) {
           if (override_with_best_model) {
-            validation_warn("override_with_best_model","Automatically setting override_with_best_model to false, since the final model is the only scored model with n-fold cross-validation.");
+            validation_warn("override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
             override_with_best_model = false;
           }
         }
@@ -1583,7 +1635,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           double tmp [] = new double[_output._names.length];
           float preds[] = new float [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-          for( int row=0; row<chks[0].len(); row++ ) {
+          for( int row=0; row<chks[0]._len; row++ ) {
             float p[] = score_autoencoder(chks, row, tmp, preds, neurons);
             for( int c=0; c<preds.length; c++ )
               chks[_output._names.length+c].set0(row,p[c]);
@@ -1652,7 +1704,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0].len(); row++ ) {
+        for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<_output._names.length; i++ )
             tmp[i] = chks[i].at0(row); //original data
           chks[len].set0(row, score_autoencoder(tmp, null, neurons)); //store the per-row reconstruction error (MSE) in the last column

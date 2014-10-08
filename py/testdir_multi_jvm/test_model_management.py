@@ -44,6 +44,49 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
+def cleanup(a_node, models=None, frames=None):
+    ###################
+    # test delete_model
+    if models is None:
+        a_node.delete_models()
+    else:
+        for model in models:
+            a_node.delete_model(model)
+
+    ms = a_node.models()
+    if models is None:
+        assert 'models' in ms and 0 == len(ms['models']), "Called delete_models and the models list isn't empty: " + h2o_util.dump_json(ms)
+    else:
+        for model in models:
+            for m in ms['models']:
+                assert m['key'] != model, 'Found model that we tried to delete in the models list: ' + model
+
+    ###################
+    # test delete_frame
+    if frames is not None:
+        for frame in frames:
+            a_node.delete_frame(frame)
+            ms = a_node.frames()
+
+            found = False;
+            for m in ms['frames']:
+                assert m['key'] != frame, 'Found frame that we tried to delete in the frames list: ' + frame
+            
+
+    # TODO
+    ####################
+    # test delete_models
+    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
+    # a_node.delete_models()
+    # models = a_node.models()
+
+    # assert 'models' in models and 0 == len(models['models']), "Called delete_models and the models list isn't empty: " + h2o_util.dump_json(models)
+
+    # TODO
+    ####################
+    # test delete_frames
+
+
 ################
 # The test body:
 ################
@@ -53,7 +96,7 @@ a_node = h2o.H2O("127.0.0.1", 54321)
 #########
 # Config:
 algos = ['example', 'kmeans', 'deeplearning', 'glm']
-clean_up = False
+clean_up_after = False
 
 h2o.H2O.verbose = True
 h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
@@ -101,6 +144,10 @@ pp.pprint(model_metrics)
 ####################################
 # test model_metrics individual GET
 # TODO
+
+# Clean up frames
+print 'Cleaning up old stuff. . .'
+cleanup(a_node)
 
 ################################################
 # Import prostate.csv
@@ -175,6 +222,28 @@ jobs = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, trai
 print 'Done building KMeans model.'
 
 #######################################
+# Test DeepLearning parameters validation
+#
+# Good parameters:
+dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
+h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
+assert 0 == parameters_validation['validation_error_count'], "0 == validation_error_count in good-parameters parameters validation result."
+
+# Bad parameters (hidden is null):
+dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters parameters validation result."
+h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
+assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters parameters validation result."
+found_error = False
+for validation_message in parameters_validation['validation_messages']:
+    if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        found_error = True
+assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
+
+#######################################
 # Build DeepLearning model for Prostate
 dl_prostate_model_name = 'prostate_DeepLearning_1'
 
@@ -187,6 +256,24 @@ models = a_node.models()
 
 print 'After Model build: Models: '
 pp.pprint(models)
+
+
+#######################################
+# Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
+dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
+
+print 'About to try to build a DeepLearning model with bad parameters. . .'
+dl_prostate_bad_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
+parameters_validation = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad, training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+print 'Done trying to build DeepLearning model with bad parameters.'
+
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters build result."
+assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters build validation result."
+found_error = False
+for validation_message in parameters_validation['validation_messages']:
+    if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        found_error = True
+assert found_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
 
 
 #######################################
@@ -280,9 +367,11 @@ assert found_dl, 'Did not find ' + dl_airlines_model_name + ' in the models list
 validate_actual_parameters(dl_airline_1_parameters, dl_model['parameters'], airlines_key, None)
 
 ######################################################################
-# Now look for kmeans_model_name using the one-model API, and check it
+# Now look for kmeans_model_name using the one-model API and find_compatible_frames, and check it
 model = a_node.models(key=kmeans_model_name, find_compatible_frames=True)
 found_kmeans = False;
+print 'k-means model with find_compatible_frames output: '
+pp.pprint(model)
 h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
 h2o_util.assertKeysExist(model['models'][0]['compatible_frames'], '', ['frames'])
 
@@ -292,30 +381,22 @@ for frame in model['models'][0]['compatible_frames']['frames']:
         found = True
 assert found, "Failed to find " + prostate_key + " in compatible_frames list."
 
+######################################################################
+# Now look for prostate_key using the one-frame API and find_compatible_models, and check it
+result = a_node.frames(key='prostate.hex', find_compatible_models=True)
+frames = result['frames']
+frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
 
-if not clean_up:
-    sys.exit()
+compatible_models = result['compatible_models']
+models_dict = h2o_util.list_to_dict(compatible_models, 'key')
+assert dl_prostate_model_name in models_dict, "Failed to find " + dl_prostate_model_name + " in compatible models list."
 
-###################
-# test delete_model
-a_node.delete_model(kmeans_model_name)
-models = a_node.models()
+assert dl_prostate_model_name in frames[0]['compatible_models']
+assert kmeans_model_name in frames[0]['compatible_models']
+print '/Frames/prosate.hex?find_compatible_models=true: ', repr(result)
 
-found_kmeans = False;
-for model in models['models']:
-    if model['key'] == 'KMeansModel':
-        found_kmeans = True
+if clean_up_after:
+    cleanup(models=[dl_airlines_model_name, dl_prostate_model_name, kmeans_model_name], frames=[prostate_key, airlines_key])
 
-assert not found_kmeans, 'Found KMeansModel in the models list: ' + h2o_util.dump_json(models)
 
-####################
-# test delete_models
-jobs = a_node.build_model(algo='kmeans', training_frame=prostate_key, parameters={'K': 2 }, timeoutSecs=240) # synchronous
-a_node.delete_models()
-models = a_node.models()
-
-assert 'models' in models and 0 == len(models['models']), "Called delete_models and the models list isn't empty: " + h2o_util.dump_json(models)
-
-####################
-# test delete_frames
-# TODO

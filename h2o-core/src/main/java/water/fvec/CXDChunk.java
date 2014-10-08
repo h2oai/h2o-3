@@ -35,7 +35,7 @@ public class CXDChunk extends CXIChunk {
 
   @Override NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
-    nc.set_len(len());
+    nc.set_len(_len);
     nc.set_sparseLen(slen);
     nc.alloc_doubles(slen);
     nc.alloc_indices(slen);

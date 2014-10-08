@@ -520,7 +520,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    */
   @Override public final void map(Chunk [] chunks, NewChunk [] outputs){
     if(_jobKey != null && !Job.isRunning(_jobKey))throw new JobCancelledException();
-    final int nrows = chunks[0].len();
+    final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     chunkInit();
     double [] nums = MemoryManager.malloc8d(_dinfo._nums);

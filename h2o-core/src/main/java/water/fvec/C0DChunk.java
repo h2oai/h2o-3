@@ -30,9 +30,9 @@ public class C0DChunk extends Chunk {
   @Override NewChunk inflate_impl(NewChunk nc) {
     nc.set_sparseLen(nc.set_len(0));
     if(_con == 0) {
-      nc.addZeros(len());
+      nc.addZeros(_len);
     } else {
-      for (int i=0; i<len(); ++i) nc.addNum(_con);
+      for (int i=0; i<_len; ++i) nc.addNum(_con);
     }
     return nc;
   }

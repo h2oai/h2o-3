@@ -9,10 +9,27 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  /** Create a model by launching a ModelBuilder algo. */
+  /**
+   * Create a model by launching a ModelBuilder algo.  If the model
+   * parameters pass validation this returns a Job schema; if not it
+   * returns a ModelParametersSchema containing the validation messages.
+   */
   public Schema train(int version, B builder) {
+    builder._parms.sanityCheckParameters();
+
+    if (builder._parms.validation_error_count > 0) {
+      S builder_schema = (S) builder.schema().fillFromImpl(builder);
+      return builder_schema.parameters;
+    }
+
     Job j = builder.train();
     return JobsHandler.jobToSchemaHelper(version, j);
+  }
+
+  public P validate_parameters(int version, B builder) {
+    builder._parms.sanityCheckParameters();
+    S builder_schema = (S) builder.schema().fillFromImpl(builder);
+    return builder_schema.parameters;
   }
 
   abstract protected S schema(int version);

@@ -211,7 +211,7 @@ public final class PersistS3 extends Persist {
   //}
   //
   //private static String[] decodeKeyImpl(Key k) {
-  //  String s = new String((k._kb[0] == Key.DVEC)?Arrays.copyOfRange(k._kb, Vec.KEY_PREFIX_LEN, k._kb.length):k._kb);
+  //  String s = new String((k._kb[0] == Key.CHK)?Arrays.copyOfRange(k._kb, Vec.KEY_PREFIX_LEN, k._kb.length):k._kb);
   //  assert s.startsWith(KEY_PREFIX) && s.indexOf('/') >= 0 : "Attempting to decode non s3 key: " + k;
   //  s = s.substring(KEY_PREFIX_LEN);
   //  int dlm = s.indexOf('/');

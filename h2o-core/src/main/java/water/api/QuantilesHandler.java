@@ -195,7 +195,7 @@ public class QuantilesHandler extends Handler<QuantilesHandler.Quantiles,Quantil
     }
 
     public Quantiles add(Chunk chk) {
-      for (int i = 0; i < chk.len(); i++)
+      for (int i = 0; i < chk._len; i++)
         add(chk.at0(i));
       return this;
     }
@@ -648,7 +648,6 @@ public class QuantilesHandler extends Handler<QuantilesHandler.Quantiles,Quantil
     init(q);
     String[] names = new String[1];
 
-    q.column.rollupStats();
     boolean multiPass;
     Quantiles[] qbins;
 

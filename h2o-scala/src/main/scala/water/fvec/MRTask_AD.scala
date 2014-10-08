@@ -7,7 +7,7 @@ class MRTask_AD[tmr <: MapReduce[Array[Double],tmr]](val mr : tmr) extends MRTas
   var res : tmr = mr // junk assignment because scala demands initialization
   override def map( chks : Array[Chunk] ) : Unit = {
     val start = chks(0)._start
-    val len = chks(0).len
+    val len = chks(0)._len
     if( len == 0 ) return
     // Specialize user map to double[]
     res = mr.clone

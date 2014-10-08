@@ -43,7 +43,7 @@ public class C4SChunk extends Chunk {
     assert water.util.PrettyPrint.fitsIntoInt(dx);
     nc.set_sparseLen(0);
     nc.set_len(0);
-    final int len = len();
+    final int len = _len;
     for( int i=0; i<len; i++ ) {
       int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       if( res == _NA ) nc.addNA();

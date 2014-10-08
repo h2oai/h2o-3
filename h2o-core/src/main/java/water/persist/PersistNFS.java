@@ -24,7 +24,7 @@ public final class PersistNFS extends Persist {
 
   // Returns the file for given key.
   private static File getFileForKey(Key k) {
-    final int off = k._kb[0]==Key.DVEC ? water.fvec.Vec.KEY_PREFIX_LEN : 0;
+    final int off = k._kb[0]==Key.CHK ? water.fvec.Vec.KEY_PREFIX_LEN : 0;
     assert new String(k._kb,off,KEY_PREFIX_LENGTH).equals(KEY_PREFIX) : "Not an NFS key: "+k;
     String s = new String(k._kb,KEY_PREFIX_LENGTH+off,k._kb.length-(KEY_PREFIX_LENGTH+off));
     return new File(s);
