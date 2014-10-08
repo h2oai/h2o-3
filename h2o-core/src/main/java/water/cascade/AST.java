@@ -43,6 +43,8 @@ abstract public class AST extends Iced {
         ((ASTReducerOp) this).apply(e);
       } else if (this instanceof ASTLs) {
         ((ASTLs) this).apply(e);
+      } else if (this instanceof ASTFunc) {
+        ((ASTFunc)this).apply(e);
       } else {
         throw H2O.fail("Unknown AST: " + this.getClass());
         // TODO: do the udf op thing: capture env...
@@ -277,6 +279,147 @@ class ASTSeries extends AST {
     return res;
   }
 }
+
+class ASTStatement extends AST {
+
+  // must parse all statements: {(ast);(ast);(ast);...;(ast)}
+  @Override ASTStatement parse_impl( Exec E ) {
+    ArrayList<AST> ast_ary = new ArrayList<AST>();
+
+    // an ASTStatement is an array of ASTs. If the array is null, the statement is null -> return null.
+    String[] asts = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+    if (asts == null) return null;
+    for (int i = 0; i < asts.length; ++i) {
+      AST ast = E.parseAST(asts[i], E._env);
+      ast_ary.add(ast);
+    }
+    ASTStatement res = (ASTStatement) clone();
+    res._asts = ast_ary.toArray(new AST[ast_ary.size()]);
+    return res;
+  }
+  @Override void exec(Env env) {
+    for( int i=0; i<_asts.length-1; i++ ) {
+      _asts[i].exec(env);       // Exec all statements
+      env.pop();                // Pop all intermediate results
+    }
+    _asts[_asts.length-1].exec(env); // Return final statement as result
+  }
+
+  @Override String value() { return null; }
+  @Override int type() {return 0; }
+
+  @Override public String toString() { return ";;;"; }
+  @Override public StringBuilder toString( StringBuilder sb, int d ) {
+    for (int i = 0; i < _asts.length - 1; i++)
+      _asts[i].toString(sb, d + 1).append(";\n");
+    return _asts[_asts.length - 1].toString(sb, d + 1);
+  }
+}
+
+class ASTIf extends ASTStatement {
+  protected AST _pred;
+  ASTIf() {}
+
+  // (if pred body)
+  @Override ASTIf parse_impl(Exec E) {
+    // parse the predicate
+    AST pred = E.parse();
+    ASTStatement statement = super.parse_impl(E);
+    ASTIf res = (ASTIf) clone();
+    res._pred = pred;
+    res._asts = statement._asts;
+    return res;
+  }
+
+  @Override void exec(Env e) {
+    Env captured = e.capture();
+    captured = _pred.treeWalk(captured);
+    double v = captured.popDbl();
+    captured.popScope();
+    if (v == 0) return;
+    super.exec(e);  // run the statements
+  }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+}
+
+class ASTElse extends ASTStatement {
+  // (else body)
+  ASTElse() {}
+  @Override ASTElse parse_impl(Exec E) {
+    ASTStatement statements = super.parse_impl(E);
+    ASTElse res = (ASTElse)clone();
+    res._asts = statements._asts;
+    return res;
+  }
+  void exec(Env e, boolean exec) {if (exec) super.exec(e); }
+  @Override void exec(Env e) { throw H2O.fail(); }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+}
+
+class ASTElseIf extends ASTIf {
+  // (elif pred body)
+  ASTElseIf(){}
+}
+
+class ASTFor extends ASTStatement {
+  protected int _start;
+  protected int _end;
+
+  // (for #start #end body)
+  @Override ASTFor parse_impl(Exec E) {
+    int s = (int)((ASTNum)E.parse())._d;
+    int e = (int)((ASTNum)E.skipWS().parse())._d;
+    ASTStatement stmts = super.parse_impl(E);
+    ASTFor res = (ASTFor)clone();
+    res._asts = stmts._asts;
+    res._start = s;
+    res._end = e;
+    return res;
+  }
+
+  @Override void exec(Env e) { for (int i = _start; i < _end; ++i) super.exec(e); }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+}
+
+class ASTWhile extends ASTStatement {
+  protected AST _pred;
+
+  // (while pred body)
+  @Override
+  ASTWhile parse_impl(Exec E) {
+    throw H2O.unimpl("while loops are not supported.");
+  }
+}
+
+//    AST pred = E.parse();
+//    ASTStatement statement = super.parse_impl(E);
+//    ASTWhile res = (ASTWhile) clone();
+//    res._pred = pred;
+//    res._asts = statement._asts;
+//    return res;
+//  }
+//
+//  @Override void exec(Env e) {
+//    while(checkPred(e)) {
+//
+//    }
+//  }
+//
+//  private boolean checkPred(Env e) {
+//    Env captured = e.capture();
+//    captured = _pred.treeWalk(captured);
+//    double v = captured.popDbl();
+//    captured.popScope();
+//    if (v == 0) return false;
+//    return true;
+//  }
+//
+//  @Override String value() { return null; }
+//  @Override int type() { return 0; }
+//}
 
 class ASTString extends AST {
   final String _s;

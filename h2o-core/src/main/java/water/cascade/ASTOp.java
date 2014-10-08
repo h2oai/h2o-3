@@ -28,11 +28,11 @@ import java.util.*;
 // --------------------------------------------------------------------------
 public abstract class ASTOp extends AST {
   // Tables of operators by arity
-  static final public HashMap<String,ASTOp> UNI_INFIX_OPS = new HashMap<>();
-  static final public HashMap<String,ASTOp> BIN_INFIX_OPS = new HashMap<>();
-  static final public HashMap<String,ASTOp> PREFIX_OPS    = new HashMap<>();
-  static final public HashMap<String,ASTOp> UDF_OPS       = new HashMap<>();
-  static final public HashMap<String, AST>  SYMBOLS       = new HashMap<>();
+  static final public HashMap<String,ASTOp> UNI_INFIX_OPS  = new HashMap<>();
+  static final public HashMap<String,ASTOp> BIN_INFIX_OPS  = new HashMap<>();
+  static final public HashMap<String,ASTOp> PREFIX_OPS     = new HashMap<>();
+  static final public HashMap<String,ASTOp> UDF_OPS        = new HashMap<>();
+  static final public HashMap<String, AST>  SYMBOLS        = new HashMap<>();
   // Too avoid a cyclic class-loading dependency, these are init'd before subclasses.
   static final String VARS1[] = new String[]{ "", "x"};
   static final String VARS2[] = new String[]{ "", "x","y"};
@@ -54,6 +54,14 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
     SYMBOLS.put("_", new ASTNot());
+    SYMBOLS.put("elif", new ASTElseIf());
+    SYMBOLS.put("if", new ASTIf());
+    SYMBOLS.put("else", new ASTElse());
+    SYMBOLS.put("for", new ASTFor());
+    SYMBOLS.put("while", new ASTWhile());
+
+    //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
+
     // Unary infix ops
     putUniInfix(new ASTNot());
     // Binary infix ops
@@ -90,7 +98,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
-    putPrefix(new ASTAnyFactor());   // For Runit testing
+    putPrefix(new ASTAnyFactor());              // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
     putPrefix(new ASTAnyNA());
     putPrefix(new ASTRound());
@@ -118,11 +126,11 @@ public abstract class ASTOp extends AST {
 
     // Misc
     putPrefix(new ASTMatch());
-    putPrefix(new ASTRename());
-    putPrefix(new ASTSeq   ());
-    putPrefix(new ASTSeqLen());
-    putPrefix(new ASTRepLen());
-    putPrefix(new ASTQtile ());
+    putPrefix(new ASTRename());  //TODO
+    putPrefix(new ASTSeq   ());  //TODO
+    putPrefix(new ASTSeqLen());  //TODO
+    putPrefix(new ASTRepLen());  //TODO
+    putPrefix(new ASTQtile ());  //TODO
     putPrefix(new ASTCbind ());
 //    putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
@@ -135,9 +143,6 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
-
-
-
 
 //Classes that may not come back:
 
@@ -164,11 +169,14 @@ public abstract class ASTOp extends AST {
   static private void putUniInfix(ASTOp ast) { UNI_INFIX_OPS.put(ast.opStr(),ast); }
   static private void putBinInfix(ASTOp ast) { BIN_INFIX_OPS.put(ast.opStr(),ast); SYMBOLS.put(ast.opStr(), ast); }
   static private void putPrefix  (ASTOp ast) { PREFIX_OPS.put(ast.opStr(),ast);    SYMBOLS.put(ast.opStr(), ast); }
-  static         void putUDF     (ASTOp ast, String fn) { UDF_OPS.put(fn,ast); }
+  static         void putUDF     (ASTOp ast, String fn) {
+    UDF_OPS.put(fn, ast);
+  }
   static         void removeUDF  (String fn) { UDF_OPS.remove(fn); }
   static public ASTOp isOp(String id) {
     // This order matters. If used as a prefix OP, `+` and `-` are binary only.
-    ASTOp op4 = UDF_OPS.get(id); if( op4 != null ) return op4;
+    ASTOp op4 = UDF_OPS.get(id);
+    if( op4 != null ) return op4;
     return isBuiltinOp(id);
   }
   static public ASTOp isBuiltinOp(String id) {
