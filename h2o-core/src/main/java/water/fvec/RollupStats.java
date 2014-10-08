@@ -270,7 +270,7 @@ class RollupStats extends DTask<RollupStats> {
       // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
       _pctiles[i] = base+stride*(j-1);
       // linear interpolate stride, based on fraction of bin
-      _pctiles[i] += stride*((double)(pint-(hsum-_bins[j-1]))/_bins[j-1]);
+      if (j > 0) _pctiles[i] += stride*((double)(pint-(hsum-_bins[j-1]))/_bins[j-1]);
     }
 
   }
