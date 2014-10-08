@@ -1,6 +1,38 @@
 @import 'nib'
 
-.foo
-  background-color red
+f-color-yellow = #FAF185
+f-color-yellow-dk = #F6E76A
+f-color-orange = #F5A623
+
+monospace()
+  font-family Menlo,Monaco,Consolas,"Courier New",monospace
+
+textarea
+  &:focus
+    outline none
+
+input
+  &:focus
+    outline none
+
+.f-cell
+  margin-bottom 20px
+  padding 5px 0
+  border 1px solid transparent
+  .f-cell-input
+    border-left 5px solid f-color-yellow-dk
+    padding 0 10px
+    textarea
+      width 100%
+      border none
+      monospace()
+  &.f-cell-selected
+    border 1px solid f-color-orange
+    .f-cell-input
+      border-color f-color-orange
+  &.f-cell-active
+    border 1px solid red
+    .f-cell-input
+      border-color red
 
 

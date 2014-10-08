@@ -58,11 +58,14 @@ config =
     ]
     repljs: [
       'lib/jquery/dist/jquery.js'
+      'lib/mousetrap/mousetrap.js'
+      'lib/mousetrap/plugins/global-bind/mousetrap-global-bind.js'
       'lib/lodash/dist/lodash.js'
       'lib/esprima/esprima.js'
       'lib/coffeescript/extras/coffee-script.js'
       'lib/bootstrap/dist/js/bootstrap.js'
       'lib/d3/d3.js'
+      'lib/marked/lib/marked.js'
       'lib/knockout/knockout.js'
     ]
     css: [
@@ -97,13 +100,13 @@ gulp.task 'build-browser-script', ->
     .pipe gulp.dest config.dir.deploy + 'js/'
 
 gulp.task 'build-repl-script', ->
-  gulp.src 'src/main/steam/scripts/flow*.coffee'
+  gulp.src [ 'src/main/steam/scripts/global.hypergraph.coffee', 'src/main/steam/scripts/flow*.coffee' ]
     .pipe ignore.exclude /tests.coffee$/
     .pipe iff /global\..+\.coffee$/, (coffee bare: yes), (coffee bare: no)
     .pipe order [ 'global.prelude.js', 'global.*.js', '*.js' ]
     .pipe concat 'flow.js'
     .pipe expand 'src/main/steam/tools/shorthand/config.yml'
-    .pipe header '"use strict";(function(){'
+    .pipe header '"use strict";(function(){ var lodash = window._; window.Steam={};'
     .pipe footer '}).call(this);'
     .pipe gulp.dest config.dir.deploy + 'js/'
 

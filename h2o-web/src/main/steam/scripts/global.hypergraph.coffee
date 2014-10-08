@@ -9,7 +9,7 @@ Steam.Hypergraph = do ->
 
     self = (args...) ->
       if arrow
-        apply arrow.func, args
+        arrow.func.apply null, args
       else
         undefined
 
@@ -31,7 +31,7 @@ Steam.Hypergraph = do ->
     arrows = []
 
     self = (args...) ->
-      map arrows, (arrow) -> apply arrow.func, args
+      map arrows, (arrow) -> arrow.func.apply null, args
 
     self.subscribe = (func) ->
       console.assert isFunction func
@@ -140,7 +140,7 @@ Steam.Hypergraph = do ->
   #
 
   _apply = (sources, func) ->
-    apply func, map sources, (source) -> source()
+    func.apply null, map sources, (source) -> source()
 
   callOnChange = (sources..., func) ->
     func()

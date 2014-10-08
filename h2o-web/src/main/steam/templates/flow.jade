@@ -27,8 +27,12 @@ html(lang='en')
     //- Recursively include other .jade files
     include repl
 
-    script(type="text/html" id="help")
-      include help
+    script(type="text/html" id="flow-help")
+
+    script(type="text/html" id="flow-cell")
+      .f-cell(data-bind="css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive }")
+        .f-cell-input
+          textarea(rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }")
 
     script(src='js/lib-flow.js')
     script(src='js/flow.js')

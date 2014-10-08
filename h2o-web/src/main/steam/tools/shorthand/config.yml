@@ -1,3 +1,7 @@
+apply:
+  type: invoke
+call:
+  type: invoke
 concat:
   type: invoke
 indexOf:
@@ -15,6 +19,8 @@ reverse:
 shift:
   type: invoke
 slice:
+  type: invoke
+splice:
   type: invoke
 sort:
   type: invoke
