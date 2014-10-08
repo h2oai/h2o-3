@@ -150,7 +150,7 @@ public class Env extends Iced {
   private void subRef(Vec v) {
     if (_refcnt.get(v) == null) return;
     int cnt = _refcnt.get(v)._val - 1;
-    if (cnt <= 0) {
+    if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       removeVec(v, null);
       extinguishCounts(v);
     } else { _refcnt.put(v, new IcedInt(cnt)); }
