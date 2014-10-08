@@ -8,6 +8,7 @@ html(lang='en')
     meta(name='description', content='H2O REPL')
     link(rel='stylesheet', href='css/lib-flow.css')
     link(rel='stylesheet', href='css/flow.css')
+    link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/tomorrow.min.css')
     link(href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,300', rel='stylesheet', type='text/css')
 
     //- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
@@ -26,14 +27,42 @@ html(lang='en')
     
     //- Recursively include other .jade files
     include repl
+    
+    script(type="text/html" id="flow-h1")
+      h1(data-bind="text:text")
+
+    script(type="text/html" id="flow-h2")
+      h2(data-bind="text:text")
+
+    script(type="text/html" id="flow-h3")
+      h3(data-bind="text:text")
+
+    script(type="text/html" id="flow-h4")
+      h4(data-bind="text:text")
+
+    script(type="text/html" id="flow-h5")
+      h5(data-bind="text:text")
+
+    script(type="text/html" id="flow-h6")
+      h6(data-bind="text:text")
+
+    script(type="text/html" id="flow-md")
+      div(data-bind="html:html")
+
+    script(type="text/html" id="flow-raw")
+      pre(data-bind="html:html")
 
     script(type="text/html" id="flow-help")
 
     script(type="text/html" id="flow-cell")
-      .f-cell(data-bind="click:select, css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive }")
-        .f-cell-input
+      .f-cell(data-bind="click:select, css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive, 'f-cell-ready':isReady, 'f-cell-busy':isBusy, 'f-cell-error':hasError }")
+        .f-cell-input(data-bind='visible:hasInput')
           textarea(rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }, cursorPosition:_cursorPosition")
+        // ko with:output
+        .f-cell-output(data-bind='template:template, data:$data')
+        // /ko
 
+    script(src='//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/highlight.min.js')
     script(src='js/lib-flow.js')
     script(src='js/flow.js')
 

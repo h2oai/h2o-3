@@ -1,5 +1,13 @@
 Flow = if exports? then exports else @Flow = {}
 
+marked.setOptions
+  smartypants: yes
+  highlight: (code, lang) ->
+    if highlight
+      (highlight.highlightAuto code, [ lang ]).value
+    else
+      code
+
 ko.bindingHandlers.cursorPosition =
   init: (element, valueAccessor, allBindings, viewModel, bindingContext) ->
     if arg = ko.unwrap valueAccessor()
@@ -19,6 +27,34 @@ Flow.ApplicationContext = (_) ->
     ready: do edges$
 
 Flow.DialogManager = (_) ->
+
+Flow.HtmlTag = (_, level) ->
+  isCode: no
+  render: (input, go) ->
+    go null,
+      text: input.trim() or '(Untitled)'
+      template: "flow-#{level}"
+
+Flow.Raw = (_) ->
+  isCode: no
+  render: (input, go) ->
+    go null,
+      html: input
+      template: 'flow-raw'
+
+Flow.Markdown = (_) ->
+  isCode: no
+  render: (input, go) ->
+    try
+      html = marked input.trim() or '(No content)'
+      go null,
+        html: html
+        template: 'flow-md'
+    catch error
+      go error
+
+Flow.Coffeescript = (_) ->
+  render: (input, go) ->
 
 Flow.Repl = (_) ->
   _cells = nodes$ []
@@ -48,26 +84,58 @@ Flow.Repl = (_) ->
     checkConsistency()
     return
 
-  createCell = (type='code', input='') ->
+  createCell = (type='cs', input='') ->
     _type = node$ type
+    _renderer = lift$ _type, (type) ->
+      switch type
+        when 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+          Flow.HtmlTag _, type
+        when 'md'
+          Flow.Markdown _
+        when 'cs'
+          Flow.Coffeescript _
+        else
+          Flow.Raw _
+
     _isSelected = node$ no
     _isActive = node$ no
+    _hasError = node$ no
+    _isBusy = node$ no
+    _isReady = lift$ _isBusy, (isBusy) -> not isBusy
+    _hasInput = node$ yes
     _input = node$ input
+    _output = node$ null
     _lineCount = lift$ _input, countLines
 
     # This is a shim.
     # The ko 'cursorPosition' custom binding attaches a read() method to this.
     _cursorPosition = {}
 
-    # select when activated
-    apply$ _isActive, (isActive) -> selectCell self if isActive
+    # select and display input when activated
+    apply$ _isActive, (isActive) ->
+      selectCell self if isActive
+      _hasInput yes if isActive
 
     # deactivate when deselected
-    apply$ _isSelected, (isSelected) -> _isActive no unless isSelected
+    apply$ _isSelected, (isSelected) ->
+      _isActive no unless isSelected
 
     select = -> selectCell self
 
     execute = (go) ->
+      renderer = _renderer()
+      _isBusy yes
+      renderer.render _input(), (error, result) ->
+        if error
+          _hasError yes
+          #XXX display error
+        else
+          _hasError no
+          _output result
+          _hasInput renderer.isCode is yes
+
+        _isBusy no
+
       _isActive no
       go() if go
 
@@ -75,7 +143,12 @@ Flow.Repl = (_) ->
       type: _type
       isSelected: _isSelected
       isActive: _isActive
+      hasError: _hasError
+      isBusy: _isBusy
+      isReady: _isReady
+      hasInput: _hasInput
       input: _input
+      output: _output
       lineCount: _lineCount
       select: select
       execute: execute
@@ -93,7 +166,7 @@ Flow.Repl = (_) ->
     _selectedCell.isActive yes
     no
 
-  convertCellToCode = -> _selectedCell.type 'code'
+  convertCellToCode = -> _selectedCell.type 'cs'
 
   convertCellToHeading = (level) -> -> _selectedCell.type "h#{level}"
 
@@ -131,10 +204,10 @@ Flow.Repl = (_) ->
     cell
 
   insertCellAbove = ->
-    insertCell _selectedCellIndex, createCell 'code', uniqueId()
+    insertCell _selectedCellIndex, createCell 'cs', uniqueId()
 
   insertCellBelow = ->
-    insertCell _selectedCellIndex + 1, createCell 'code', uniqueId()
+    insertCell _selectedCellIndex + 1, createCell 'cs', uniqueId()
 
   moveCellDown = ->
     cells = _cells()
@@ -170,7 +243,7 @@ Flow.Repl = (_) ->
           left = substr input, 0, cursorPosition
           right = substr input, cursorPosition
           _selectedCell.input left
-          insertCell _selectedCellIndex + 1, createCell 'code', right
+          insertCell _selectedCellIndex + 1, createCell 'cs', right
           _selectedCell.isActive yes
     return
 
@@ -297,7 +370,7 @@ Flow.Repl = (_) ->
 
   initialize = ->
     setupKeyboardHandling 'normal'
-    cell = createCell 'code', uniqueId()
+    cell = createCell 'cs', uniqueId()
     push _cells, cell
     selectCell cell
 
