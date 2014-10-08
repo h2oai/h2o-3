@@ -59,11 +59,16 @@ Flow.Repl = (_) ->
     # The ko 'cursorPosition' custom binding attaches a read() method to this.
     _cursorPosition = {}
 
+    # select when activated
     apply$ _isActive, (isActive) -> selectCell self if isActive
+
+    # deactivate when deselected
+    apply$ _isSelected, (isSelected) -> _isActive no unless isSelected
 
     select = -> selectCell self
 
     execute = (go) ->
+      _isActive no
       go() if go
 
     self =
@@ -181,12 +186,16 @@ Flow.Repl = (_) ->
 
   runCell = ->
     _selectedCell.execute()
+    no
 
   runCellAndInsertBelow = ->
     _selectedCell.execute -> insertCellBelow()
+    no
 
+  #TODO ipython has inconsistent behavior here. seems to be doing runCellAndInsertBelow if executed on the lowermost cell.
   runCellAndSelectBelow = ->
     _selectedCell.execute -> selectNextCell()
+    no
 
   saveFlow = ->
     debug 'saveFlow'
