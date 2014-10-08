@@ -30,7 +30,7 @@ html(lang='en')
     script(type="text/html" id="flow-help")
 
     script(type="text/html" id="flow-cell")
-      .f-cell(data-bind="css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive }")
+      .f-cell(data-bind="click:select, css:{ 'f-cell-selected':isSelected, 'f-cell-active':isActive }")
         .f-cell-input
           textarea(rows='1' spellcheck='false' data-bind="value:input, valueUpdate:'afterkeydown', hasFocus:isActive, attr:{ 'rows':lineCount }, cursorPosition:_cursorPosition")
 

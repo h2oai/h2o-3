@@ -39,10 +39,10 @@ Flow.Repl = (_) ->
         error "index #{i} is empty"
     return
 
-  selectCell = (cell) ->
-    return if _selectedCell is cell
+  selectCell = (target) ->
+    return if _selectedCell is target
     _selectedCell.isSelected no if _selectedCell
-    _selectedCell = cell
+    _selectedCell = target
     _selectedCell.isSelected yes
     _selectedCellIndex = _cells.indexOf _selectedCell
     checkConsistency()
@@ -59,18 +59,24 @@ Flow.Repl = (_) ->
     # The ko 'cursorPosition' custom binding attaches a read() method to this.
     _cursorPosition = {}
 
+    apply$ _isActive, (isActive) -> selectCell self if isActive
+
+    select = -> selectCell self
+
     execute = (go) ->
       go() if go
 
-    type: _type
-    isSelected: _isSelected
-    isActive: _isActive
-    input: _input
-    lineCount: _lineCount
-    execute: execute
-    _cursorPosition: _cursorPosition
-    cursorPosition: -> _cursorPosition.read()
-    template: 'flow-cell'
+    self =
+      type: _type
+      isSelected: _isSelected
+      isActive: _isActive
+      input: _input
+      lineCount: _lineCount
+      select: select
+      execute: execute
+      _cursorPosition: _cursorPosition
+      cursorPosition: -> _cursorPosition.read()
+      template: 'flow-cell'
 
   cloneCell = (cell) ->
     createCell cell.type(), cell.input()
@@ -119,11 +125,11 @@ Flow.Repl = (_) ->
     selectCell cell
     cell
 
-  insertCellAbove = (input) ->
-    insertCell _selectedCellIndex, createCell 'code', input
+  insertCellAbove = ->
+    insertCell _selectedCellIndex, createCell 'code', uniqueId()
 
-  insertCellBelow = (input) ->
-    insertCell _selectedCellIndex + 1, createCell 'code', input
+  insertCellBelow = ->
+    insertCell _selectedCellIndex + 1, createCell 'code', uniqueId()
 
   moveCellDown = ->
     cells = _cells()
@@ -159,9 +165,8 @@ Flow.Repl = (_) ->
           left = substr input, 0, cursorPosition
           right = substr input, cursorPosition
           _selectedCell.input left
-          #_selectedCell.isActive no
-          insertCellBelow right
-          #_selectedCell.isActive yes
+          insertCell _selectedCellIndex + 1, createCell 'code', right
+          _selectedCell.isActive yes
     return
 
   pasteCellAbove = ->
