@@ -38,6 +38,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   @API(help="Columns")
   Col[] columns;
 
+  @API(help="Compatible models, if requested")
+  String[] compatible_models;
+
   // Output fields one-per-column
   private static class Col extends Iced {
     @API(help="label")

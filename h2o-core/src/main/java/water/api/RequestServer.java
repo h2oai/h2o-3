@@ -121,8 +121,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", new String[] {"key"});
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list");
-    // TODO: register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
-    // TODO: register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
+    register("/3/Models/(?<key>.*)"                              ,"DELETE",ModelsHandler.class, "delete", new String[] {"key"});
+    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll");
 
     register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", new String[] {"algo"});
     register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list");
