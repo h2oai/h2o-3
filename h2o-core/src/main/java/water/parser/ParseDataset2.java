@@ -874,7 +874,7 @@ public final class ParseDataset2 extends Job<Frame> {
       Vec[] vecArr = fr.vecs();
       // get all rollups started in parallell, otherwise this takes ages!
       Futures fs = new Futures();
-      for(Vec v:vecArr) fs.add(RollupStats.get(v));
+      for(Vec v:vecArr) fs.add(v.startRollupStats());
       fs.blockForPending();
       for( int i = 0; i < vecArr.length; i++ ) {
         Vec v = vecArr[i];

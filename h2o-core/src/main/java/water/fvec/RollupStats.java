@@ -1,17 +1,13 @@
 package water.fvec;
 
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
 import water.util.ArrayUtils;
-import water.H2O.H2OFuture;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
@@ -24,7 +20,7 @@ import water.H2O.H2OFuture;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-public class RollupStats extends DTask<RollupStats> {
+class RollupStats extends DTask<RollupStats> {
   final Key _rskey;
   final private byte _priority;
   /** The count of missing elements.... or -2 if we have active writers and no
@@ -40,10 +36,9 @@ public class RollupStats extends DTask<RollupStats> {
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
-  private final int MAX_SIZE = 1024;
+  private static final int MAX_SIZE = 1024;
   volatile public long[] _bins;
   // Approximate data value closest to the Xth percentile
-  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
   public double[] _pctiles;
 
   // Check for: Vector is mutating and rollups cannot be asked for
@@ -161,48 +156,28 @@ public class RollupStats extends DTask<RollupStats> {
     return rs;                  // In progress
   }
 
-
-  public static H2OFuture<RollupStats> get(Vec v){
-    final Key rskey = v.rollupStatsKey();
-    final RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-    if( rs.isReady() ) return new H2OFuture<RollupStats>(){
-      @Override public boolean cancel(boolean mayInterruptIfRunning) {return false;}
-      @Override public boolean isCancelled() { return false;}
-      @Override public boolean isDone() {return true;}
-      @Override public RollupStats get() throws InterruptedException, ExecutionException {return rs; }
-      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {return rs;}
-    };                 // All good
+  static Future start(Vec vec) {
+    final Key rskey = vec.rollupStatsKey();
+    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+    if( rs.isReady() ) return rs;                      // All good
     assert rs.isComputing();
-    // No local cached Rollups; go ask Master for a copy
-    H2ONode h2o = rskey.home_node();
-    final Future fs;
-    if( h2o.equals(H2O.SELF) )
-      fs = (H2O.submitTask(rs));
-    else                        // Run remotely
-      fs = (RPC.call(h2o,rs)); // Run remote
-    return new H2OFuture<RollupStats>() {
-      @Override public boolean cancel(boolean mayInterruptIfRunning) { return fs.cancel(mayInterruptIfRunning);}
-      @Override public boolean isCancelled() { return fs.isCancelled();}
-      @Override public boolean isDone() { return fs.isDone();}
-      @Override public RollupStats get() throws InterruptedException, ExecutionException { fs.get(); return rs;}
-      @Override public RollupStats get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException { fs.get(timeout, unit); return rs;}
-    };
+    return rskey.home() ? H2O.submitTask(rs) : RPC.call(rskey.home_node(),rs);
   }
 
   // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
   // the rollup in the background and do not return.
-//  public static RollupStats get(Vec vec) {
-//    final Key rskey = vec.rollupStatsKey();
-//    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-//    if( rs.isReady() ) return rs;                 // All good
-//    assert rs.isComputing();
-//    // No local cached Rollups; go ask Master for a copy
-//    if( rskey.home() ) {
-//      rs.compute2();
-//      return rs;  // Block till ready
-//    } else                                    // Run remotely
-//      return RPC.call(rskey.home_node(),rs).get(); // Run remote
-//  }
+  static RollupStats get(Vec vec) {
+    final Key rskey = vec.rollupStatsKey();
+    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
+    if( rs.isReady() ) return rs;                 // All good
+    assert rs.isComputing();
+    // No local cached Rollups; go ask Master for a copy
+    if( rskey.home() ) {
+      rs.compute2();
+      return rs;                                   // Block till ready
+    } else
+      return RPC.call(rskey.home_node(),rs).get(); // Run remote
+  }
 
   // Fetch if present, but do not compute
   static RollupStats getOrNull(Vec vec) {
@@ -252,7 +227,7 @@ public class RollupStats extends DTask<RollupStats> {
   // Version that allows histograms to be computed in parallel
   static Futures computeHisto(Vec vec, Futures fs) {
     while( true ) {
-      RollupStats rs = get(vec).getResult(); // Block for normal histogram
+      RollupStats rs = get(vec); // Block for normal histogram
       if( rs._bins != null ) return fs;
       rs.computeHisto_impl(vec);
       Value old = DKV.get(rs._rskey);
@@ -283,13 +258,13 @@ public class RollupStats extends DTask<RollupStats> {
     _bins = new Histo(this,nbins).doAll(vec)._bins;
 
     // Compute percentiles from histogram
-    _pctiles = new double[PERCENTILES.length];
+    _pctiles = new double[Vec.PERCENTILES.length];
     int j=0;                    // Histogram bin number
     long hsum=0;                // Rolling histogram sum
     double base = h_base();
     double stride = h_stride();
-    for( int i=0; i<PERCENTILES.length; i++ ) {
-      final double P = PERCENTILES[i];
+    for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
+      final double P = Vec.PERCENTILES[i];
       long pint = (long)(P*rows);
       while( hsum < pint ) hsum += _bins[j++];
       // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big

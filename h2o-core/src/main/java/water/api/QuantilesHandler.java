@@ -648,7 +648,6 @@ public class QuantilesHandler extends Handler<QuantilesHandler.Quantiles,Quantil
     init(q);
     String[] names = new String[1];
 
-    q.column.rollupStats();
     boolean multiPass;
     Quantiles[] qbins;
 

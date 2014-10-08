@@ -2,7 +2,6 @@ package water.api;
 
 import water.*;
 import water.fvec.Frame;
-import water.fvec.RollupStats;
 import water.fvec.Vec;
 
 class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
@@ -103,9 +102,8 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     if (null == vec)
       throw new IllegalArgumentException("Did not find column: " + frames.column + " in frame: " + frames.key.toString());
 
-    // Compute second pass of rollups: the histograms.  Side-effects the Vec.
-    // TODO: side effects, ugh.
-    RollupStats.computeHisto(vec);
+    // Compute second pass of rollups: the histograms.
+    vec.bins();
 
     // Cons up our result
     frames.frames = new Frame[1];

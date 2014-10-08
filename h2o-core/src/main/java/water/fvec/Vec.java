@@ -11,6 +11,7 @@ import water.util.UnsafeUtils;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *  
@@ -148,10 +149,6 @@ public class Vec extends Keyed {
   boolean _isUUID;    // All UUIDs (or zero or missing)
   /** String flag */
   boolean _isString;    // All Strings
-
-  private long _last_write_timestamp = System.currentTimeMillis();
-  private long _checksum_timestamp = -1;
-  private long _checksum = 0;
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
@@ -368,7 +365,9 @@ public class Vec extends Keyed {
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }
 
-  /** Histogram bins.  Computed on-demand to 1st call to these methods.
+  /** Default Histogram bins. */
+  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  /**  Computed on-demand to 1st call to these methods.
    *  bins[] are row-counts in each bin
    *  base - start of bin 0
    *  stride - relative start of next bin
@@ -376,9 +375,18 @@ public class Vec extends Keyed {
   public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins;  }
   public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base();  }
   public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
+  public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
 
   /** Compute the roll-up stats as-needed */
-  public RollupStats rollupStats() { return RollupStats.get(this).getResult(); }
+  private RollupStats rollupStats() { return RollupStats.get(this); }
+
+  /** Begin execution of RollupStats; useful when launching a bunch of them in
+   *  parallel right after a parse. */
+  public Future startRollupStats() { return RollupStats.start(this); }
+
+  private long _last_write_timestamp = System.currentTimeMillis();
+  private long _checksum_timestamp = -1;
+  private long _checksum = 0;
 
   /** A private class to compute the rollup stats */
   private static class ChecksummerTask extends MRTask<ChecksummerTask> {
@@ -502,7 +510,7 @@ public class Vec extends Keyed {
     UnsafeUtils.set4(bits,6,cidx); // chunk#
     return Key.make(bits);
   }
-  public Key rollupStatsKey() { return chunkKey(-2); }
+  Key rollupStatsKey() { return chunkKey(-2); }
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map,
    *  plus the {@code DKV.get()}.  Warning: this pulls the data locally;
@@ -531,6 +539,8 @@ public class Vec extends Keyed {
   /** Make a new random Key that fits the requirements for a Vec key. */
   public static Key newKey(){return newKey(Key.make());}
 
+  /** Internally used to help build Vec and Chunk Keys; public to help
+   * PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
@@ -911,8 +921,8 @@ public class Vec extends Keyed {
 
   /** Collect numeric domain of given vector */
   private static class CollectDomain extends MRTask<CollectDomain> {
-    transient NonBlockingHashMapLong<Object> _uniques;
-    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong(); }
+    transient NonBlockingHashMapLong<String> _uniques;
+    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA0(row) )
@@ -930,7 +940,7 @@ public class Vec extends Keyed {
     @Override public CollectDomain read_impl( AutoBuffer ab ) {
       assert _uniques == null || _uniques.size()==0;
       long ls[] = ab.getA8();
-      _uniques = new NonBlockingHashMapLong();
+      _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l,"");
       return this;
     }

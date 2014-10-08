@@ -98,15 +98,14 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
     Col( String name, Vec vec, long off, int len ) {
       label=name;
-      RollupStats rs = vec.rollupStats();
-      missing = rs._naCnt;
-      zeros = vec.length()-rs._nzCnt;
-      pinfs = rs._pinfs;
-      ninfs = rs._ninfs;
-      mins  = rs._mins;
-      maxs  = rs._maxs;
-      mean  = rs._mean;
-      sigma = rs._sigma;
+      missing = vec.naCnt();
+      zeros = vec.length()-vec.nzCnt();
+      pinfs = vec.pinfs();
+      ninfs = vec.ninfs();
+      mins  = vec.mins();
+      maxs  = vec.maxs();
+      mean  = vec.mean();
+      sigma = vec.sigma();
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
@@ -132,10 +131,10 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      bins  = rs._bins;
-      base  = bins==null ? 0 : rs.h_base();
-      stride= bins==null ? 0 : rs.h_stride();
-      pctiles=rs._pctiles;
+      bins  = vec.bins();
+      base  = bins==null ? 0 : vec.base();
+      stride= bins==null ? 0 : vec.stride();
+      pctiles=vec.pctiles();
     }
   }
 
@@ -164,7 +163,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     for( int i=0; i<columns.length; i++ )
       columns[i] = new Col(fr._names[i],vecs[i],off,len);
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_pctiles = RollupStats.PERCENTILES;
+    default_pctiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
   }
 
