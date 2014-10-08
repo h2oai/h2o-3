@@ -121,22 +121,33 @@ public class Vec extends Keyed {
    *  such as file-backed Vecs. */
   final long[] _espc;
 
-  private String [] _factors;
-  /** Returns the enum toString mapping array, not a defensive clone (to
-   *  expensive to clone; coding error to change the contents).
-   *  @return the enum / factor / categorical mapping array */
-  final public String [] factors() { return _factors; }
+  private String [] _domain;
+  /** Returns the enum toString mapping array, or null if not an Enum column.
+   *  Not a defensive clone (to expensive to clone; coding error to change the
+   *  contents).
+   *  @return the enum / factor / categorical mapping array, or null if not a Enum column */
+  final public String[] domain() { return _domain; }
+  /** Returns the {@code i}th factor for this enum column.
+   *  @return The {@code i}th factor */
+  final public String factor( long i ) { return _domain[(int)i]; }
   /** Set the Enum/factor/categorical names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  final public void set_factors(String[] factors) { _factors = factors; }
+  final public void setDomain(String[] domain) { _domain = domain; }
+  /** True if this is an Enum column.  All enum columns are also isInt(), but
+   *  not vice-versa.
+   *  @return true if this is an Enum column.  */
+  public final boolean isEnum(){return _domain != null && !_isString;}
+  /** Returns cardinality for enum domain or -1 for other types. */
+  public int cardinality() { return isEnum() ? _domain.length : -1; }
+
 
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
-  protected byte _time;
+  byte _time;
   /** UUID flag */
-  protected boolean _isUUID;    // All UUIDs (or zero or missing)
+  boolean _isUUID;    // All UUIDs (or zero or missing)
   /** String flag */
-  protected boolean _isString;    // All Strings
+  boolean _isString;    // All Strings
 
   private long _last_write_timestamp = System.currentTimeMillis();
   private long _checksum_timestamp = -1;
@@ -153,7 +164,7 @@ public class Vec extends Keyed {
     _time = time;               // is-a-time, or not (and what flavor used to parse time)
     _isUUID = hasUUID;          // all-or-nothing UUIDs
     _isString = hasString;
-    _factors = domain;
+    _domain = domain;
   }
 
   protected Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
@@ -312,7 +323,6 @@ public class Vec extends Keyed {
 
   /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
    *  are are also "isInt()" but not vice-versa. */
-  public final boolean isEnum(){return _factors != null && !_isString;}
   public final boolean isUUID(){return _isUUID;}
   public final boolean isString(){return _isString;}
   public final boolean isNumeric(){return !_isUUID && !_isString; }
@@ -329,17 +339,6 @@ public class Vec extends Keyed {
    * <p>Returns true if the column is full of NAs.</p>
    */
   private final boolean isBad() { return naCnt() == length(); }
-
-  /** Map the integer value for a enum/factor/categorical to it's String.
-   *  Error if it is not an ENUM.  */
-  private String domain(long i) { return _factors[(int)i]; }
-
-  /** Return an array of domains.  This is eagerly manifested for enum or
-   *  categorical columns.  Returns null for non-Enum/factor columns. */
-  public String[] domain() { return _factors; }
-
-  /** Returns cardinality for enum domain or -1 for other types. */
-  public int cardinality() { return isEnum() ? _factors.length : -1; }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -733,7 +732,7 @@ public class Vec extends Keyed {
         for (int r = 0; r < c0._len; r++) c0.set0(r, vec.at(srow + r));
       }
     }.doAll(avec);
-    avec._factors = _factors;
+    avec._domain = _domain;
     return avec;
   }
 
@@ -777,8 +776,8 @@ public class Vec extends Keyed {
    *  @see Vec#makeTransf(int[], int[], String[])
    */
   private Vec makeIdentityTransf() {
-    assert _factors != null : "Cannot make an identity transformation of non-enum vector!";
-    return makeTransf(ArrayUtils.seq(0, _factors.length), null, _factors);
+    assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
+    return makeTransf(ArrayUtils.seq(0, _domain.length), null, _domain);
   }
 
   /** Makes a new transformation vector from given values to values 0..domain size

@@ -66,9 +66,9 @@ public class ConfusionMatrix extends Iced {
       if (classification) {
         // Create a new vectors - it is cheap since vector are only adaptation vectors
         va = vactual .toEnum(); // always returns TransfVec
-        actual_domain = va.factors();
+        actual_domain = va.domain();
         vp = vpredict.toEnum(); // always returns TransfVec
-        predicted_domain = vp.factors();
+        predicted_domain = vp.domain();
         if (!Arrays.equals(actual_domain, predicted_domain)) {
           domain = ArrayUtils.domainUnion(actual_domain, predicted_domain);
           int[][] vamap = Model.getDomainMapping(domain, actual_domain, true);

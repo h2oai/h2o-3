@@ -45,7 +45,7 @@ public class HitRatio extends Iced {
     Vec va = null;
     try {
       va = vactual.toEnum(); // always returns TransfVec
-      actual_domain = va.factors();
+      actual_domain = va.domain();
       if (max_k > predict.numCols()-1) {
         Log.warn("Reducing Hitratio Top-K value to maximum value allowed: " + String.format("%,d", predict.numCols() - 1));
         max_k = predict.numCols() - 1;

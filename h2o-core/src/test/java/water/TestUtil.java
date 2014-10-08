@@ -159,7 +159,7 @@ public class TestUtil extends Iced {
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k);
-    avec.set_factors(domain);
+    avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
     chunk.close(0, fs);

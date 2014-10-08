@@ -1402,7 +1402,6 @@ class ASTSeq extends ASTUniPrefixOp {
         nc.close(0, fs);
         Vec vec = av.close(fs);
         fs.blockForPending();
-        vec.set_factors(null);
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{vec});
         env.push(new ValFrame(fr));
       }
@@ -1430,7 +1429,7 @@ class ASTRepLen extends ASTUniPrefixOp {
               c.set0(i, fr.anyVec().at((long)c.at0(i)));
           }
         }.doAll(v);
-        v.set_factors(fr.anyVec().factors());
+        v.setDomain(fr.anyVec().domain());
         Frame f = new Frame(new String[]{"C1"}, new Vec[]{v});
         env.cleanup(fr);
         env.push(new ValFrame(f));
@@ -1458,7 +1457,7 @@ class ASTRepLen extends ASTUniPrefixOp {
       if (env.isStr()) {
         // make a constant enum vec with domain[] = []{env.popStr()}
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(0, len)});
-        fr.anyVec().set_factors(new String[]{env.popStr()});
+        fr.anyVec().setDomain(new String[]{env.popStr()});
         env.push(new ValFrame(fr));
       } else if (env.isNum()) {
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(env.popDbl(), len)});
@@ -1539,7 +1538,7 @@ class ASTQtile extends ASTUniPrefixOp {
     // create output vec
     Vec res = Vec.makeCon((long)Double.NaN, null, p.length);
     Vec p_names = Vec.makeSeq(res.length());
-    p_names.set_factors(names);
+    p_names.setDomain(names);
 
 
     final int MAX_ITERATIONS = 16;
@@ -2159,7 +2158,7 @@ class ASTLs extends ASTOp {
     fs.blockForPending();
     String[] key_domain = new String[domain.size()];
     for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
-    c0.set_factors(key_domain);
+    c0.setDomain(key_domain);
     Frame ls = new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0});
     env.push(new ValFrame(ls));
   }

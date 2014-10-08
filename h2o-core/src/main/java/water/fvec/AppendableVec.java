@@ -148,7 +148,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, factors(), hasUUID, hasString, (byte)t);
+    Vec vec = new Vec(_key, espc, domain(), hasUUID, hasString, (byte)t);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

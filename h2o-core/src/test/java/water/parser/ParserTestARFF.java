@@ -649,7 +649,7 @@ public class ParserTestARFF extends TestUtil {
     Frame fr = ParseDataset2.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertTrue(fr.anyVec().factors().length == 6);
+    Assert.assertTrue(fr.anyVec().cardinality() == 6);
     fr.delete();
   }
 

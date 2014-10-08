@@ -132,11 +132,9 @@ public class MRUtils {
     long[] dist = new ClassDist(label).doAll(label).dist();
     assert(dist.length > 0);
     Log.info("Doing stratified sampling for data set containing " + fr.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
-    if (verbose) {
-      for (int i=0; i<dist.length;++i) {
-        Log.info("Class " + label.factors()[i] + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
-      }
-    }
+    if (verbose)
+      for (int i=0; i<dist.length;++i)
+        Log.info("Class " + label.factor(i) + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
 
     // create sampling_ratios for class balance with max. maxrows rows (fill existing array if not null)
     if (sampling_ratios == null || (ArrayUtils.minValue(sampling_ratios) == 0 && ArrayUtils.maxValue(sampling_ratios) == 0)) {
@@ -241,7 +239,7 @@ public class MRUtils {
       long sumdist = ArrayUtils.sum(dist);
       Log.info("After stratified sampling: " + sumdist + " rows.");
       for (int i=0; i<dist.length;++i) {
-        Log.info("Class " + r.vecs()[labelidx].factors()[i] + ": count: " + dist[i]
+        Log.info("Class " + r.vecs()[labelidx].factor(i) + ": count: " + dist[i]
                 + " sampling ratio: " + sampling_ratios[i] + " actual relative frequency: " + (float)dist[i] / sumdist * dist.length);
       }
     }
