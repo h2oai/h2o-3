@@ -71,7 +71,10 @@ publishing {
           name 'nexusReleases'
           //TODO: read directly from gradle.properties w/o loading properties explicitly
           Properties p = new Properties()
-          p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+          def propsFileName = "${System.properties['user.home']}/.gradle/gradle.properties"
+          if ( new File(propsFileName).exists()){
+              p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+          }
 
           credentials {
               username  p.nexusUser
@@ -82,7 +85,10 @@ publishing {
       maven {
           name 'nexusSnapshots'
           Properties p = new Properties()
-          p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+          def propsFileName = "${System.properties['user.home']}/.gradle/gradle.properties"
+          if ( new File(propsFileName).exists()){
+              p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+          }
 
           credentials {
               username  p.nexusUser
