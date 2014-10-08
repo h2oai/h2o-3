@@ -4,6 +4,7 @@ apply plugin: 'nexus'
 apply from: "$rootDir/gradle/java6bytecode.gradle"
 // install Ivy publisher plugin
 apply plugin: 'ivy-publish'
+apply plugin: 'maven-publish'
 
 modifyPom {
     project {
@@ -57,10 +58,37 @@ publishing {
       ivyJava(IvyPublication) {
         from components.java
       }
+      h2oDev(MavenPublication) {
+          from components.java
+      }
   }
+
   repositories {
       ivy {
           url "${System.properties['user.home']}/.ivy2/local"
+      }
+      maven {
+          name 'nexusReleases'
+          //TODO: read directly from gradle.properties w/o loading properties explicitly
+          Properties p = new Properties()
+          p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+
+          credentials {
+              username  p.nexusUser
+              password  p.nexusUserPasswd
+          }
+          url "http://nexus:8081/nexus/content/repositories/releases"
+      }
+      maven {
+          name 'nexusSnapshots'
+          Properties p = new Properties()
+          p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
+
+          credentials {
+              username  p.nexusUser
+              password  p.nexusUserPasswd
+          }
+          url 'http://nexus:8081/nexus/content/repositories/snapshots'
       }
   }
 }
