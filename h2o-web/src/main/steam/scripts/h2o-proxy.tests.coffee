@@ -6,7 +6,7 @@ test 'empty cloud', (t) ->
     ensureNoFramesExist = (go) ->
       _.requestFrames (error, result) ->
         if error
-          t.fail 'frames request failed'
+          t.fail 'frames request failed ' + pp error
           go error
         else
           t.pass 'got frames reply'
@@ -16,7 +16,7 @@ test 'empty cloud', (t) ->
     ensureNoJobsExist = (go) ->
       _.requestJobs (error, result) ->
         if error
-          t.fail 'request failed'
+          t.fail 'request failed ' + pp error
           go error
         else
           t.pass 'got jobs reply'
@@ -36,7 +36,7 @@ test 'airlines ingest and model building flow', (t) ->
     ensureNoFramesExist = (go) ->
       _.requestFrames (error, result) ->
         if error
-          t.fail 'frames request failed'
+          t.fail 'frames request failed ' + pp error
           go error
         else
           t.pass 'got frames reply'
@@ -47,7 +47,7 @@ test 'airlines ingest and model building flow', (t) ->
     findNonExistentFile = (go) ->
       _.requestFileGlob '/non/existent/path', 10, (error, result) ->
         if error
-          t.fail 'glob request failed'
+          t.fail 'glob request failed ' + pp error
           go error
         else
           t.pass 'got glob reply'
@@ -57,7 +57,7 @@ test 'airlines ingest and model building flow', (t) ->
     findAirlines = (go) ->
       _.requestFileGlob (path.join DATA_PATH, 'airlines'), 10, (error, result) ->
         if error
-          t.fail 'glob request failed'
+          t.fail 'glob request failed ' + pp error
           go error
         else
           t.pass 'got glob reply'
@@ -74,7 +74,7 @@ test 'airlines ingest and model building flow', (t) ->
     importAirlinesFrame = (airlinesZip, go) ->
       _.requestImportFile airlinesZip, (error, result) ->
         if error
-          t.fail 'import request failed'
+          t.fail 'import request failed ' + pp error
           go error
         else
           t.pass 'got import reply'
@@ -91,7 +91,7 @@ test 'airlines ingest and model building flow', (t) ->
     parseSetupAirlinesFrame = (airlinesZipKey, go) ->
       _.requestParseSetup [ airlinesZipKey ], (error, result) ->
         if error
-          t.fail 'parse setup request failed'
+          t.fail 'parse setup request failed ' + pp error
           go error
         else
           t.pass 'got parse setup reply'
@@ -105,7 +105,7 @@ test 'airlines ingest and model building flow', (t) ->
       sourceKeys = map parseSetup.srcs, (src) -> src.name
       _.requestParseFiles sourceKeys, parseSetup.hexName, parseSetup.pType, parseSetup.sep, parseSetup.ncols, parseSetup.singleQuotes, parseSetup.columnNames, yes, parseSetup.checkHeader, (error, result) ->
         if error
-          t.fail 'parse request failed'
+          t.fail 'parse request failed ' + pp error
           go error
         else
           t.pass 'got parse reply'
@@ -116,7 +116,7 @@ test 'airlines ingest and model building flow', (t) ->
     fetchJobs = (jobKey, go) ->
       _.requestJobs (error, result) ->
         if error
-          t.fail 'jobs request failed'
+          t.fail 'jobs request failed ' + pp error
           go error
         else
           t.pass 'got jobs reply'
@@ -128,7 +128,7 @@ test 'airlines ingest and model building flow', (t) ->
       poll = (go) ->
         _.requestJob jobKey, (error, job) ->
           if error
-            t.fail 'job poll failed'
+            t.fail 'job poll failed ' + pp error
             go error
           else
             if job.status is 'CREATED' or job.status is 'RUNNING'
@@ -147,7 +147,7 @@ test 'airlines ingest and model building flow', (t) ->
     inspectAirlinesFrame = (frameKey, go) -> 
       _.requestInspect frameKey, (error, result) ->
         if error
-          t.fail 'frame inspect request failed'
+          t.fail 'frame inspect request failed ' + pp error
           go error
         else
           t.pass 'got frame inspect reply'
@@ -158,7 +158,7 @@ test 'airlines ingest and model building flow', (t) ->
     fetchAirlinesFrame = (frameKey, go) ->
       _.requestFrame frameKey, (error, result) ->
         if error
-          t.fail 'frame request failed'
+          t.fail 'frame request failed ' + pp error
           go error
         else
           t.pass 'got frame reply'
@@ -168,7 +168,7 @@ test 'airlines ingest and model building flow', (t) ->
     fetchKmeansModelBuilder = (frameKey, go) ->
       _.requestModelBuilders 'kmeans', (error, result) ->
         if error
-          t.fail 'model builders request failed'
+          t.fail 'model builders request failed ' + pp error
           go error
         else
           t.pass 'got model builders reply'
@@ -185,7 +185,7 @@ test 'airlines ingest and model building flow', (t) ->
         init: 'Furthest'
       _.requestModelBuild 'kmeans', parameters, (error, result) ->
         if error
-          t.fail 'model build request failed'
+          t.fail 'model build request failed ' + pp error
           go error
         else
           t.pass 'got model build reply'
@@ -196,7 +196,7 @@ test 'airlines ingest and model building flow', (t) ->
     inspectAirlinesKmeansModel = (modelKey, go) ->
       _.requestInspect modelKey, (error, result) ->
         if error
-          t.fail 'model inspect request failed'
+          t.fail 'model inspect request failed ' + pp error
           go error
         else
           t.pass 'got model inspect reply'
@@ -208,7 +208,7 @@ test 'airlines ingest and model building flow', (t) ->
     fetchDeepLearningModelBuilder = (go) ->
       _.requestModelBuilders 'deeplearning', (error, result) ->
         if error
-          t.fail 'model builders request failed'
+          t.fail 'model builders request failed ' + pp error
           go error
         else
           t.pass 'got model builders reply'
@@ -225,7 +225,7 @@ test 'airlines ingest and model building flow', (t) ->
         response_column: 'IsDepDelayed'
       _.requestModelBuild 'deeplearning', parameters, (error, result) ->
         if error
-          t.fail 'model build request failed'
+          t.fail 'model build request failed ' + pp error
           go error
         else
           t.pass 'got model build reply'
@@ -236,7 +236,7 @@ test 'airlines ingest and model building flow', (t) ->
     inspectAirlinesDeepLearningModel = (modelKey, go) ->
       _.requestInspect modelKey, (error, result) ->
         if error
-          t.fail 'model inspect request failed'
+          t.fail 'model inspect request failed ' + pp error
           go error
         else
           t.pass 'got model inspect reply'
@@ -249,7 +249,7 @@ test 'airlines ingest and model building flow', (t) ->
     scoreAirlinesDeepLearningModel = (modelKey, go) ->
       _.requestModelMetrics modelKey, 'allyears2k_headers.hex', (error, result) ->
         if error
-          t.fail 'model metrics request failed'
+          t.fail 'model metrics request failed ' + pp error
           go error
         else
           t.pass 'got model metrics reply'
