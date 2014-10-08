@@ -127,20 +127,20 @@ public class Vec extends Keyed {
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the enum / factor / categorical mapping array, or null if not a Enum column */
-  final public String[] domain() { return _domain; }
+  public final String[] domain() { return _domain; }
   /** Returns the {@code i}th factor for this enum column.
    *  @return The {@code i}th factor */
-  final public String factor( long i ) { return _domain[(int)i]; }
+  public final String factor( long i ) { return _domain[(int)i]; }
   /** Set the Enum/factor/categorical names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  final public void setDomain(String[] domain) { _domain = domain; }
+  public final void setDomain(String[] domain) { _domain = domain; }
   /** True if this is an Enum column.  All enum columns are also isInt(), but
    *  not vice-versa.
    *  @return true if this is an Enum column.  */
   public final boolean isEnum(){return _domain != null && !_isString;}
   /** Returns cardinality for enum domain or -1 for other types. */
-  public int cardinality() { return isEnum() ? _domain.length : -1; }
+  public final int cardinality() { return isEnum() ? _domain.length : -1; }
 
 
   /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */

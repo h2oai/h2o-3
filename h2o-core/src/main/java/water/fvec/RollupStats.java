@@ -173,8 +173,8 @@ class RollupStats extends DTask<RollupStats> {
     assert rs.isComputing();
     // No local cached Rollups; go ask Master for a copy
     if( rskey.home() ) {
-      H2O.submitTask(rs).join();
-      return rs;                                   // Block till ready
+      H2O.submitTask(rs).join();  // Run at home, wait till the onCompletion code runs
+      return rs;
     } else
       return RPC.call(rskey.home_node(),rs).get(); // Run remote
   }
