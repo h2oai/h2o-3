@@ -1,13 +1,13 @@
 package water.fvec;
 
-import java.util.Arrays;
-import java.util.concurrent.Future;
-
 import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
 import water.util.ArrayUtils;
+
+import java.util.Arrays;
+import java.util.concurrent.Future;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask
@@ -173,7 +173,7 @@ class RollupStats extends DTask<RollupStats> {
     assert rs.isComputing();
     // No local cached Rollups; go ask Master for a copy
     if( rskey.home() ) {
-      rs.compute2();
+      H2O.submitTask(rs).join();
       return rs;                                   // Block till ready
     } else
       return RPC.call(rskey.home_node(),rs).get(); // Run remote
