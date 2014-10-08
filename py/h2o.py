@@ -607,6 +607,10 @@ class H2O(object):
 
         if asynchronous:
             return result
+        elif 'validation_error_count' in result:
+            # parameters validation failure
+            # TODO: add schema_type and schema_version into all the schemas to make this clean to check
+            return result
         else:
             job = result['jobs'][0]
             job_key = job['key']['name']
@@ -673,7 +677,6 @@ class H2O(object):
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
     '''
-
     def models(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_frames': False

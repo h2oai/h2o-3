@@ -212,6 +212,24 @@ pp.pprint(models)
 
 
 #######################################
+# Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
+dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
+
+print 'About to try to build a DeepLearning model with bad parameters. . .'
+dl_prostate_bad_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
+parameters_validation = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad, training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+print 'Done trying to build DeepLearning model with bad parameters.'
+
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters build result."
+assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters build validation result."
+found_error = False
+for validation_message in parameters_validation['validation_messages']:
+    if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        found_error = True
+assert found_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
+
+
+#######################################
 # Build DeepLearning model for Airlines
 dl_airlines_model_name = 'airlines_DeepLearning_1'
 
