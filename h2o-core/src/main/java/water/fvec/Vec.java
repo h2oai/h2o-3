@@ -167,42 +167,58 @@ public class Vec extends Keyed {
   public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
 
 
-  /** Main default constructor; requires the caller understand Chunk layout
-   *  already, along with count of missing elements.  */
+  /** Build a numeric-type Vec; the caller understands Chunk layout (via the
+   *  {@code espc} array). */
   Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
+
+  /** Build a numeric-type or enum-type Vec; the caller understands Chunk
+   *  layout (via the {@code espc} array); enum Vecs need to pass the
+   *  domain. */
   Vec( Key key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
+
+  /** Main default constructor; the caller understands Chunk layout (via the
+   *  {@code espc} array), plus enum/factor the {@code domain} (or null for
+   *  non-enums), and the Vec type. */
   Vec( Key key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
-    _espc = espc;
     assert domain==null || type==T_ENUM;
+    assert T_BAD <= type && type < T_TIMELAST; // Note that T_BAD is allowed for all-NA Vecs
     _type = type;
+    _espc = espc;
     _domain = domain;
   }
 
-  Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
+  private Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
 
-  /** Make a new vector with the same size and data layout as the old one, and
-   *  initialized to zero. */
-  public Vec makeZero()                { return makeCon(0); }
-  public Vec makeZero(String[] domain) { return makeCon(0, domain); }
-  /** Make a new vector with the same size and data layout as the old one, and
-   *  initialized to a constant. */
-  Vec makeCon( final long l ) { return makeCon(l, null); }
-  private Vec makeCon( final long l, String[] domain ) { return makeCon(l,domain,group(),_espc); }
-  public static Vec makeCon( final long l, String[] domain, final long len ) {
+  // ======= Create zero/constant Vecs ======
+
+  /** Make a new zero-filled vector with the given row count. 
+   *  @return New zero-filled vector with the given row count. */
+  public static Vec makeZero( final long len ) {
     int nchunks = (int)Math.max(1,(len>>LOG_CHK)-1);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<LOG_CHK;
     espc[nchunks] = len;
-    return makeCon(l,domain,VectorGroup.VG_LEN1,espc);
+    return makeCon(0,null,VectorGroup.VG_LEN1,espc);
   }
 
-  static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  /** Make a new vector with the same size and data layout as the current one,
+   *  and initialized to zero.
+   *  @return A new vector with the same size and data layout as the current one,
+   *  and initialized to zero.  */
+  public Vec makeZero()                { return makeCon(0, null, group(), _espc); }
+
+  /** A new vector with the same size and data layout as the current one, and
+   *  initialized to zero, with the given enum domain.
+   *  @return A new vector with the same size and data layout as the current
+   *  one, and initialized to zero, with the given enum domain. */
+  public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
+
+  private static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
-
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
@@ -214,8 +230,9 @@ public class Vec extends Keyed {
     DKV.put(v0._key,v0);        // Header last
     return v0;
   }
+
   public Vec makeCon( final double d ) {
-    if( (long)d==d ) return makeCon((long)d);
+    if( (long)d==d ) return makeCon((long)d, null, group(), _espc);
     final int nchunks = nChunks();
     final Vec v0 = new Vec(group().addVec(),_espc);
 

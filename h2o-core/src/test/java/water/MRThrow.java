@@ -17,7 +17,7 @@ public class MRThrow extends TestUtil {
   // and make sure it's forwarded to the invoke.
   @Test public void testInvokeThrow() {
     int sz = H2O.CLOUD.size();
-    Vec vec = Vec.makeCon(0,null,(sz+1)*Vec.CHUNK_SZ+1);
+    Vec vec = Vec.makeZero((sz+1)*Vec.CHUNK_SZ+1);
     try {
       for(int i = 0; i < sz; ++i){
         ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
@@ -39,7 +39,7 @@ public class MRThrow extends TestUtil {
 
   @Test public void testContinuationThrow() throws InterruptedException, ExecutionException {
     int sz = H2O.CLOUD.size();
-    Vec vec = Vec.makeCon(0,null,(sz+1)*Vec.CHUNK_SZ+1);
+    Vec vec = Vec.makeZero((sz+1)*Vec.CHUNK_SZ+1);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
         final ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);

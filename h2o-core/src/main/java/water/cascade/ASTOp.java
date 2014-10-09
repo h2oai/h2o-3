@@ -1536,7 +1536,7 @@ class ASTQtile extends ASTUniPrefixOp {
     for (int i = 0; i < names.length; ++i) names[i] = Double.toString(p[i]) + "%";
 
     // create output vec
-    Vec res = Vec.makeCon(0, null, p.length);
+    Vec res = Vec.makeZero(p.length);
     Vec p_names = Vec.makeSeq(res.length());
     p_names.setDomain(names);
 
