@@ -64,6 +64,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     catch( IllegalArgumentException pe ) { e=pe;}
     catch( Throwable e2 ) { Log.err(e=e2); }
     finally {
+      if (e != null) e.printStackTrace();
       if (e != null) cascade._error = e.getMessage() == null ? e.toString() : e.getMessage();
       if (e != null && e instanceof ArrayIndexOutOfBoundsException) cascade._error = e.toString();
       if (env != null) {

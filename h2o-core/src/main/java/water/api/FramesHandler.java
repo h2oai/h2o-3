@@ -186,7 +186,8 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
       int i = 0;
       for (Model m : compatible) {
         schema.compatible_models[i] = m.schema().fillFromImpl(m);
-        schema.frames[0].compatible_models[i++] = m._key.toString();
+        schema.frames[0].compatible_models[i] = m._key.toString();
+        i++;
       }
     }
     return schema;

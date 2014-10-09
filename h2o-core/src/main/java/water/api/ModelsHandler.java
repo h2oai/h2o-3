@@ -125,11 +125,19 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
     m.models = new Model[1];
     m.models[0] = model;
     ModelsBase schema = this.schema(version).fillFromImpl(m);
+
     if (m.find_compatible_frames) {
-      Frames compatible = new Frames();
-      compatible.frames = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
-      schema.models[0].compatible_frames = (new FramesHandler()).schema(version).fillFromImpl(compatible);
+      Frame[] compatible = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
+      schema.compatible_frames = new FrameV2[compatible.length]; // TODO: FrameBase
+      schema.models[0].compatible_frames = new String[compatible.length];
+      int i = 0;
+      for (Frame f : compatible) {
+        schema.compatible_frames[i] = new FrameV2(f).fillFromImpl(f); // TODO: FrameBase
+        schema.models[0].compatible_frames[i] = f._key.toString();
+        i++;
+      }
     }
+
     return schema;
   }
 
