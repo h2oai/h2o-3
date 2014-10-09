@@ -19,10 +19,10 @@ public class AppendableVec extends Vec {
   public long _espc[];
   public static final byte NA     = 1;
   public static final byte ENUM   = 2;
-  public static final byte NUMBER = 4;
-  public static final byte TIME   = 8;
-  public static final byte UUID   =16;
-  public static final byte STRING =32;
+  public static final byte NUMBER = 3;
+  public static final byte TIME   = 4;
+  public static final byte UUID   = 5;
+  public static final byte STRING = 6;
   byte [] _chunkTypes;
   long _naCnt;
   long _enumCnt;
@@ -98,45 +98,40 @@ public class AppendableVec extends Vec {
       nchunk--;
       DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
     }
-    boolean hasNumber = false, hasEnum = false, hasTime=false, hasUUID=false, hasString=false;
-    for( int i = 0; i < nchunk; ++i ) {
-      if( (_chunkTypes[i] & TIME  ) != 0 ) { hasNumber = true; hasTime=true; }
-      if( (_chunkTypes[i] & NUMBER) != 0 )   hasNumber = true;
-      if( (_chunkTypes[i] & ENUM  ) != 0 )   hasEnum   = true;
-      if( (_chunkTypes[i] & UUID  ) != 0 )   hasUUID   = true;
-      if( (_chunkTypes[i] & STRING) != 0 )   hasString = true;
-    }
-    // number wins, we need to go through the enum chunks and declare them all
-    // NAs (chunk is considered enum iff it has only enums + possibly some nas)
-    if( hasNumber && hasEnum ) {
-      for(int i = 0; i < nchunk; ++i)
-        if(_chunkTypes[i] == ENUM)
-          DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
-    }
 
-    // UUID wins over enum, string & number
-    if( hasUUID && (hasEnum || hasNumber || hasString) ) {
-      hasEnum=hasNumber=hasString=false;
-      for(int i = 0; i < nchunk; ++i)
-        if((_chunkTypes[i] & UUID)==0)
-          DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
-    }
+    // Histogram chunk types
+    int[] ctypes = new int[STRING+1];
+    for( int i = 0; i < nchunk; ++i )
+      ctypes[_chunkTypes[i]]++;
 
     // Make sure time is consistent
     int t = -1;
-    if( hasTime ) {
-      // Find common time parse, and all zeros - or inconsistent time parse
-      for( int i=0; i<_timCnt.length; i++ )
-        if( _timCnt[i] != 0 )
-          if( t== -1 ) t=i;     // common time parse
-          else t = -2;          // inconsistent parse
-      if( t < 0 )               // blow off time parse
-        for(int i = 0; i < nchunk; ++i)
-          if(_chunkTypes[i] == TIME)
-            DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
+    for( int i=0; i<_timCnt.length; i++ )
+      if( _timCnt[i] != 0 )
+        if( t== -1 ) t=i;     // common time parse
+        else t = -2;          // inconsistent parse
+    if( t== -2 ) ctypes[TIME] = 0; // Blow off inconsistent time parse
 
+    // Find the dominant non-NA Chunk type.
+    int idx = 0;
+    for( int i=0; i<ctypes.length; i++ )
+      if( i != NA && ctypes[i] > ctypes[idx] )
+        idx = i;
+
+    // Make Chunks other than the dominant type fail out to NAs
+    for(int i = 0; i < nchunk; ++i)
+      if(_chunkTypes[i] != idx)
+        DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
+
+    byte type = T_BAD;
+    switch( idx ) {
+    case ENUM  : type = T_ENUM; break;
+    case NUMBER: type = T_NUM ; break;
+    case TIME  : type = (byte)(T_TIME+t); break;
+    case UUID  : type = T_UUID; break;
+    case STRING: type = T_STR ; break;
+    default    : type = T_BAD ; break;
     }
-    assert t<0 || !isEnum();
 
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -148,7 +143,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, domain(), hasUUID, hasString, (byte)t);
+    Vec vec = new Vec(_key, espc, domain(), type);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }
