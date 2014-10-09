@@ -140,19 +140,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
       pctiles=vec.pctiles();
     }
 
-    public void clearSummaryFields() {
-      this.mins = null;
-      this.maxs = null;
-      this.mean = 0;
-      this.sigma = 0;
-      this.missing = 0;
-      this.zeros = 0;
-      this.pinfs = 0;
-      this.ninfs = 0;
+    public void clearBinsField() {
       this.bins = null;
-      this.base = 0;
-      this.stride = 0;
-      this.pctiles = null;
     }
   }
 
@@ -214,9 +203,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     return this;
   }
 
-  public void clearSummaryFields() {
+  public void clearBinsField() {
     for (Col col: columns)
-      col.clearSummaryFields();
+      col.clearBinsField();
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {

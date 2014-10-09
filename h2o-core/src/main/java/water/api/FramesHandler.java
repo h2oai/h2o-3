@@ -116,7 +116,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
     for (FrameV2 a_frame: schema.frames) {
-      a_frame.clearSummaryFields();
+      a_frame.clearBinsField();
     }
 
     return schema;
@@ -164,7 +164,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     f.frames = new Frame[1];
     f.frames[0] = new_frame;
     FramesBase schema = this.schema(version).fillFromImpl(f);
-    schema.frames[0].clearSummaryFields();
+    schema.frames[0].clearBinsField();
     return schema;
   }
 
@@ -194,7 +194,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
     for (FrameV2 a_frame: schema.frames) {
-      a_frame.clearSummaryFields();
+      a_frame.clearBinsField();
 
     }
     if (f.find_compatible_models) {
