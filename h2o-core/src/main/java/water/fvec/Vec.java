@@ -135,36 +135,52 @@ public class Vec extends Keyed {
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
   public final void setDomain(String[] domain) { _domain = domain; }
-  /** True if this is an Enum column.  All enum columns are also isInt(), but
-   *  not vice-versa.
-   *  @return true if this is an Enum column.  */
-  public final boolean isEnum(){return _domain != null && !_isString;}
   /** Returns cardinality for enum domain or -1 for other types. */
   public final int cardinality() { return isEnum() ? _domain.length : -1; }
 
+  // Vec internal type
+  static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
+  static final byte T_UUID =  1; // UUID
+  static final byte T_STR  =  2; // String
+  static final byte T_NUM  =  3; // Numeric, but not enum or time
+  static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
+  static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
+  static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
+  byte _type;                   // Vec Type
 
-  /** Time parse, index into Utils.TIME_PARSE, or -1 for not-a-time */
-  byte _time;
-  /** UUID flag */
-  boolean _isUUID;    // All UUIDs (or zero or missing)
-  /** String flag */
-  boolean _isString;    // All Strings
+  /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
+   *  not vice-versa.
+   *  @return true if this is an Enum column.  */
+  public final boolean isEnum   (){ return _type==T_ENUM; }
+  /** @return true if this is a UUID column.  */
+  public final boolean isUUID   (){ return _type==T_UUID; }
+  /** @return true if this is a String column.  */
+  public final boolean isString (){ return _type==T_STR; }
+  /** @return true if this is a numeric column, excluding enum and time types  */
+  public final boolean isNumeric(){ return _type==T_NUM; }
+  /** True if this is a time column.  All time columns are also {@link #isInt}, but
+   *  not vice-versa.
+   *  @return true if this is a time column.  */
+  public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
+  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
+  /** @return Time formatting string */
+  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
+
 
   /** Main default constructor; requires the caller understand Chunk layout
    *  already, along with count of missing elements.  */
-  public Vec( Key key, long espc[]) { this(key, espc, null); }
-  public Vec( Key key, long espc[], String[] domain) { this(key,espc,domain,false, false, (byte)-1); }
-  public Vec( Key key, long espc[], String[] domain, boolean hasUUID, boolean hasString, byte time) {
+  Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
+  Vec( Key key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
+  Vec( Key key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
     _espc = espc;
-    _time = time;               // is-a-time, or not (and what flavor used to parse time)
-    _isUUID = hasUUID;          // all-or-nothing UUIDs
-    _isString = hasString;
+    assert domain==null || type==T_ENUM;
+    _type = type;
     _domain = domain;
   }
 
-  protected Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
+  Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
 
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to zero. */
@@ -172,9 +188,9 @@ public class Vec extends Keyed {
   public Vec makeZero(String[] domain) { return makeCon(0, domain); }
   /** Make a new vector with the same size and data layout as the old one, and
    *  initialized to a constant. */
-  public Vec makeCon( final long l ) { return makeCon(l, null); }
+  Vec makeCon( final long l ) { return makeCon(l, null); }
   private Vec makeCon( final long l, String[] domain ) { return makeCon(l,domain,group(),_espc); }
-  static public Vec makeCon( final long l, String[] domain, final long len ) {
+  public static Vec makeCon( final long l, String[] domain, final long len ) {
     int nchunks = (int)Math.max(1,(len>>LOG_CHK)-1);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
@@ -183,7 +199,7 @@ public class Vec extends Keyed {
     return makeCon(l,domain,VectorGroup.VG_LEN1,espc);
   }
 
-  static public Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
+  static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
 
@@ -215,21 +231,19 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public Vec [] makeZeros(int n){return makeZeros(n,null,null,null,null);}
+  public Vec[] makeZeros(int n) { return makeZeros(n,null,null); }
 
-  public Vec [] makeZeros(int n, String [][] domain, boolean[] uuids, boolean[] strings, byte[] times){ return makeCons(n, 0, domain, uuids, strings, times);}
+  Vec[] makeZeros(int n, String [][] domains, byte[] types){ return makeCons(n, 0, domains, types);}
 
   // Make a bunch of compatible zero Vectors
-  Vec[] makeCons(int n, final long l, String[][] domains, boolean[] uuids, boolean[] strings, byte[] times) {
+  Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
     for(int i = 0; i < vs.length; ++i)
-      vs[i] = new Vec(keys[i],_espc,
-                      domains== null ? null    : domains[i],
-                      uuids  == null ? false   : uuids  [i],
-                      strings == null ? false  : strings[i],
-                      times  == null ? (byte)-1: times  [i]);
+      vs[i] = new Vec(keys[i],_espc, 
+                      domains== null ? null : domains[i], 
+                      types  == null ? T_NUM: types[i]);
     new MRTask() {
       @Override protected void setupLocal() {
         for (Vec v1 : vs) {
@@ -258,13 +272,10 @@ public class Vec extends Keyed {
 
   public static Vec makeSeq( long len) {
     return new MRTask() {
-      @Override
-      public void map(Chunk[] cs) {
-        for (int i = 0; i < cs.length; i++) {
-          Chunk c = cs[i];
-          for (int r = 0; r < c._len; r++)
+      @Override public void map(Chunk[] cs) {
+        for( Chunk c : cs )
+          for( int r = 0; r < c._len; r++ )
             c.set0(r, r+1+c._start);
-        }
       }
     }.doAll(makeConSeq(0, len))._fr.vecs()[0];
   }
@@ -318,24 +329,13 @@ public class Vec extends Keyed {
     return Arrays.equals(_espc,v._espc) && length() < 1e5;
   }
 
-  /** Is the column a factor/categorical/enum?  Note: all "isEnum()" columns
-   *  are are also "isInt()" but not vice-versa. */
-  public final boolean isUUID(){return _isUUID;}
-  public final boolean isString(){return _isString;}
-  public final boolean isNumeric(){return !_isUUID && !_isString; }
-
-  /** Whether or not this column parsed as a time, and if so what pattern was used. */
-  public final boolean isTime(){ return _time>=0; }
-  private final int timeMode(){ return _time; }
-  public final String timeParse(){ return ParseTime.TIME_PARSE[_time]; }
-
   /** Is the column constant.
    * <p>Returns true if the column contains only constant values and it is not full of NAs.</p> */
   public final boolean isConst() { return min() == max(); }
   /** Is the column bad.
    * <p>Returns true if the column is full of NAs.</p>
    */
-  private final boolean isBad() { return naCnt() == length(); }
+  private boolean isBad() { return naCnt() == length(); }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
   protected boolean readable() { return true ; }
@@ -360,7 +360,11 @@ public class Vec extends Keyed {
   /** Positive and negative infinity counts */
   public long  pinfs() { return rollupStats()._pinfs; }
   public long  ninfs() { return rollupStats()._ninfs; }
-  /** Is all integers? */
+  /** {@link #isInt} is a property of numeric Vecs and not a type; this
+   *  property can be changed by assigning non-integer values into the Vec (or
+   *  restored by overwriting non-integer values with integers).  This is a
+   *  strong type for {@link #isEnum} and {@link #isTime} Vecs.
+   *  @return true if the Vec is all integers */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
   long byteSize(){return rollupStats()._size; }

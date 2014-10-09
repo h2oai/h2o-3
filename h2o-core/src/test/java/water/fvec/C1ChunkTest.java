@@ -55,7 +55,7 @@ public class C1ChunkTest extends TestUtil {
 
   @Test public void test_setNA() {
     // Create a vec with one chunk, and set its numbers
-    Vec vec = new Vec(Vec.newKey(), new long[]{0,15}).makeZeros(1,null,null,null,null)[0];
+    Vec vec = new Vec(Vec.newKey(), new long[]{0,15}).makeZero();
     int[] vals = new int[]{0, 1, 0, 5, 0, 0, 0, 21, 0, 111, 0, 8, 0, 1};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);

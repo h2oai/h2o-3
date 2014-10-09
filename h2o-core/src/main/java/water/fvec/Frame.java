@@ -288,25 +288,27 @@ public class Frame extends Lockable {
     return bs;
   }
 
-  /** Time status for every Vec */
-  public byte[] times() {
-    byte bs[] = new byte[vecs().length];
-    for( int i=0; i<vecs().length; i++ )
-      bs[i] = vecs()[i]._time;
+  /** Type for every Vec */
+  public byte[] types() {
+    Vec[] vecs = vecs();
+    byte bs[] = new byte[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      bs[i] = vecs[i]._type;
     return bs;
   }
 
   /** All the domains for enum columns; null for non-enum columns.  */
   public String[][] domains() {
-    String ds[][] = new String[vecs().length][];
-    for( int i=0; i<vecs().length; i++ )
-      ds[i] = vecs()[i].domain();
+    Vec[] vecs = vecs();
+    String ds[][] = new String[vecs.length][];
+    for( int i=0; i<vecs.length; i++ )
+      ds[i] = vecs[i].domain();
     return ds;
   }
 
   public String[][] domains(int [] cols){
-    Vec [] vecs = vecs();
-    String [][] res = new String[cols.length][];
+    Vec[] vecs = vecs();
+    String[][] res = new String[cols.length][];
     for(int i = 0; i < cols.length; ++i)
       res[i] = vecs[cols[i]].domain();
     return res;
@@ -562,7 +564,7 @@ public class Frame extends Lockable {
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
   // FIXME: have proper representation of column type
-  public void finalizePartialFrame( long[] espc, Class[] colTypes, String[][] domains ) {
+  public void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
@@ -579,13 +581,12 @@ public class Frame extends Lockable {
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
-      Vec vec = _vecs[i] = new Vec(_keys[i],
-              espc2,
-              domains!=null ? domains[i] : null,
-              false/*not UUID*/,
-              colTypes[i].equals(String.class) && (domains==null || domains[i]==null),
-              (byte)-1/*not Time*/);
-      DKV.put(_keys[i],vec,fs);             // Inject the header
+      Vec vec = _vecs[i] = new Vec(_keys[i], espc2,
+                                   domains!=null ? domains[i] : null,
+                                   types[i]);
+      throw H2O.unimpl();       // string???
+      //colTypes[i].equals(String.class) && (domains==null || domains[i]==null),
+      //DKV.put(_keys[i],vec,fs);             // Inject the header
     }
     fs.blockForPending();
     unlock(null);

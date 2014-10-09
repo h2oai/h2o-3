@@ -12,9 +12,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import static water.parser.ParserTest.makeByteVec;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class ParserTestARFF extends TestUtil {
 
@@ -414,9 +412,6 @@ public class ParserTestARFF extends TestUtil {
     byte[] exp_types = new byte[]{
             ParseDataset2.FVecDataOut.ICOL
     };
-    String[] exp_names = new String[]{
-            "uuid"
-    };
     final int len = 4;
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
@@ -716,10 +711,9 @@ public class ParserTestARFF extends TestUtil {
                     "0\n" +
                     "1.324e-13\n" +
                     "-2\n";
-    String data2 = data1;
 
     Key k1 = ParserTest.makeByteVec(data1);
-    Key k2 = ParserTest.makeByteVec(data2);
+    Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset2.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
@@ -746,10 +740,9 @@ public class ParserTestARFF extends TestUtil {
                     "0\n" +
                     "1.324e-13\n" +
                     "-2\n";
-    String data2 = data1;
 
     Key k1 = ParserTest.makeByteVec(data1);
-    Key k2 = ParserTest.makeByteVec(data2);
+    Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset2.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
@@ -775,12 +768,10 @@ public class ParserTestARFF extends TestUtil {
                     "0\n" +
                     "1.324e-13\n" +
                     "-2\n";
-    String data2 = data1;
-    String data3 = data1;
 
     Key k1 = ParserTest.makeByteVec(data1);
-    Key k2 = ParserTest.makeByteVec(data2);
-    Key k3 = ParserTest.makeByteVec(data3);
+    Key k2 = ParserTest.makeByteVec(data1);
+    Key k3 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2, k3};
     Frame fr = ParseDataset2.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isString());
