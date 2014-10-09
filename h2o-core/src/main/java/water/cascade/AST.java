@@ -402,7 +402,7 @@ class ASTWhile extends ASTStatement {
 //    return res;
 //  }
 //
-//  @Override void exec(Env e) {
+//  @Override void exec(Env e) {
 //    while(checkPred(e)) {
 //
 //    }
@@ -417,8 +417,8 @@ class ASTWhile extends ASTStatement {
 //    return true;
 //  }
 //
-//  @Override String value() { return null; }
-//  @Override int type() { return 0; }
+//  @Override String value() { return null; }
+//  @Override int type() { return 0; }
 //}
 
 class ASTString extends AST {
