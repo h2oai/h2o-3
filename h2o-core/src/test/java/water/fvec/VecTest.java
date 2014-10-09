@@ -5,7 +5,7 @@ import org.junit.*;
 
 import water.Futures;
 import water.TestUtil;
-import static water.fvec.Vec.makeConSeq;
+import static water.fvec.Vec.makeCon;
 import static water.fvec.Vec.makeSeq;
 
 /** This test tests stability of Vec API. */
@@ -33,47 +33,46 @@ public class VecTest extends TestUtil {
   @Test public void testMakeConSeq() {
     Vec v;
 
-    v = makeConSeq(0xCAFE,Vec.CHUNK_SZ);
+    v = makeCon(0xCAFE,2*Vec.CHUNK_SZ);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v._espc.length == 2);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ
+            v._espc[1] == Vec.CHUNK_SZ*2
     );
     v.remove(new Futures()).blockForPending();
 
-    v = makeConSeq(0xCAFE,2*Vec.CHUNK_SZ);
+    v = makeCon(0xCAFE,3*Vec.CHUNK_SZ);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(2*Vec.CHUNK_SZ-1) == 0xCAFE);
+    assertTrue(v.at(3*Vec.CHUNK_SZ-1) == 0xCAFE);
     assertTrue(v._espc.length == 3);
     assertTrue(
             v._espc[0] == 0              &&
             v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*2
+            v._espc[2] == Vec.CHUNK_SZ*3
     );
     v.remove(new Futures()).blockForPending();
 
-    v = makeConSeq(0xCAFE,2*Vec.CHUNK_SZ+1);
+    v = makeCon(0xCAFE,3*Vec.CHUNK_SZ+1);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(2*Vec.CHUNK_SZ) == 0xCAFE);
+    assertTrue(v.at(3*Vec.CHUNK_SZ) == 0xCAFE);
+    assertTrue(v._espc.length == 3);
+    assertTrue(
+            v._espc[0] == 0              &&
+            v._espc[1] == Vec.CHUNK_SZ   &&
+            v._espc[2] == Vec.CHUNK_SZ*3+1
+    );
+    v.remove(new Futures()).blockForPending();
+
+    v = makeCon(0xCAFE,4*Vec.CHUNK_SZ);
+    assertTrue(v.at(234) == 0xCAFE);
+    assertTrue(v.at(4*Vec.CHUNK_SZ-1) == 0xCAFE);
     assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0              &&
             v._espc[1] == Vec.CHUNK_SZ   &&
             v._espc[2] == Vec.CHUNK_SZ*2 &&
-            v._espc[3] == Vec.CHUNK_SZ*2+1
-    );
-    v.remove(new Futures()).blockForPending();
-
-    v = makeConSeq(0xCAFE,3*Vec.CHUNK_SZ);
-    assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(3*Vec.CHUNK_SZ-1) == 0xCAFE);
-    assertTrue(v._espc.length == 4);
-    assertTrue(
-            v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*2 &&
-            v._espc[3] == Vec.CHUNK_SZ*3
+            v._espc[3] == Vec.CHUNK_SZ*4
     );
     v.remove(new Futures()).blockForPending();
   }
@@ -83,12 +82,11 @@ public class VecTest extends TestUtil {
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
     assertTrue(v.at(2*Vec.CHUNK_SZ) == 2*Vec.CHUNK_SZ+1);
-    assertTrue(v._espc.length == 4);
+    assertTrue(v._espc.length == 3);
     assertTrue(
             v._espc[0] == 0 &&
             v._espc[1] == Vec.CHUNK_SZ &&
-            v._espc[2] == Vec.CHUNK_SZ * 2 &&
-            v._espc[3] == Vec.CHUNK_SZ * 3
+            v._espc[2] == Vec.CHUNK_SZ * 3
     );
     v.remove(new Futures()).blockForPending();
   }

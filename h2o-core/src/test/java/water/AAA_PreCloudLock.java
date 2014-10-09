@@ -40,7 +40,7 @@ public class AAA_PreCloudLock extends TestUtil {
       serve("/junk",null);
       serve("/HTTP404",null);
       Properties parms = new Properties();
-      parms.setProperty("training_frame","./smalldata/iris");
+      parms.setProperty("src","./smalldata/iris");
       serve("/Typeahead/files",parms);
     } finally {
       TypeMap._check_no_locking=false;

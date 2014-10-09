@@ -1456,11 +1456,11 @@ class ASTRepLen extends ASTUniPrefixOp {
         throw new IllegalArgumentException("Error in rep_len: argument length.out must be coercible to a positive integer");
       if (env.isStr()) {
         // make a constant enum vec with domain[] = []{env.popStr()}
-        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(0, len)});
+        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(0, len)});
         fr.anyVec().setDomain(new String[]{env.popStr()});
         env.push(new ValFrame(fr));
       } else if (env.isNum()) {
-        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeConSeq(env.popDbl(), len)});
+        Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(env.popDbl(), len)});
         env.push(new ValFrame(fr));
       } else throw new IllegalArgumentException("Unkown input. Type: "+env.peekType() + " Stack: " + env.toString());
     }

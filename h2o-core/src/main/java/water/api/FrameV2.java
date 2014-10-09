@@ -137,7 +137,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
       bins  = vec.lazy_bins();
       base  = bins==null ? 0 : vec.base();
       stride= bins==null ? 0 : vec.stride();
-      pctiles=vec.pctiles();
+      pctiles=bins==null ? null : vec.pctiles();
     }
 
     public void clearBinsField() {

@@ -74,7 +74,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     }
     assert espc[espc.length-1] == _in.numRows():"unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length-1];
     final Vec[] srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(Vec.newKey(),espc).makeZeros(srcVecs.length,_in.domains(),_in.types()));
+    _out = new Frame(_okey,_in.names(), new Vec(Vec.newKey(),espc).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
     new RebalanceTask(this,srcVecs).asyncExec(_out);
   }

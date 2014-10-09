@@ -152,18 +152,22 @@ public class Vec extends Keyed {
    *  not vice-versa.
    *  @return true if this is an Enum column.  */
   public final boolean isEnum   (){ return _type==T_ENUM; }
-  /** @return true if this is a UUID column.  */
+  /** True if this is a UUID column.  
+   *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
-  /** @return true if this is a String column.  */
+  /** True if this is a String column.  
+   *  @return true if this is a String column.  */
   public final boolean isString (){ return _type==T_STR; }
-  /** @return true if this is a numeric column, excluding enum and time types  */
+  /** True if this is a numeric column, excluding enum and time types.
+   *  @return true if this is a numeric column, excluding enum and time types  */
   public final boolean isNumeric(){ return _type==T_NUM; }
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
   public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
   final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
-  /** @return Time formatting string */
+  /** Time formatting string.
+   *  @return Time formatting string */
   public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
 
 
@@ -191,24 +195,29 @@ public class Vec extends Keyed {
 
   private Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
 
+
   // ======= Create zero/constant Vecs ======
 
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( final long len ) {
+  public static Vec makeZero( long len ) { return makeCon(0L,len); }
+
+  /** Make a new constant vector with the given row count. 
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len) {
     int nchunks = (int)Math.max(1,(len>>LOG_CHK)-1);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<LOG_CHK;
     espc[nchunks] = len;
-    return makeCon(0,null,VectorGroup.VG_LEN1,espc);
+    return makeCon(x,VectorGroup.VG_LEN1,espc);
   }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to zero.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to zero.  */
-  public Vec makeZero()                { return makeCon(0, null, group(), _espc); }
+  public Vec makeZero() { return makeCon(0, null, group(), _espc); }
 
   /** A new vector with the same size and data layout as the current one, and
    *  initialized to zero, with the given enum domain.
@@ -231,11 +240,16 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public Vec makeCon( final double d ) {
-    if( (long)d==d ) return makeCon((long)d, null, group(), _espc);
-    final int nchunks = nChunks();
-    final Vec v0 = new Vec(group().addVec(),_espc);
+  /** Make a new vector with the same size and data layout as the current one,
+   *  and initialized to the given constant value.
+   *  @return A new vector with the same size and data layout as the current one,
+   *  and initialized to the given constant value.  */
+  public Vec makeCon( final double d ) { return makeCon(d,group(),_espc); }
 
+  private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
+    if( (long)d==d ) return makeCon((long)d, null, group, espc);
+    final int nchunks = espc.length-1;
+    final Vec v0 = new Vec(group.addVec(), espc, null, T_NUM);
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
@@ -248,9 +262,12 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public Vec[] makeZeros(int n) { return makeZeros(n,null,null); }
-
-  Vec[] makeZeros(int n, String [][] domains, byte[] types){ return makeCons(n, 0, domains, types);}
+  
+  /** Make a collection of new vectors with the same size and data layout as
+   *  the current one, and initialized to zero.
+   *  @return A collection of new vectors with the same size and data layout as
+   *  the current one, and initialized to zero.  */
+  public Vec[] makeZeros(int n) { return makeCons(n,0L,null,null); }
 
   // Make a bunch of compatible zero Vectors
   Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
@@ -275,18 +292,10 @@ public class Vec extends Keyed {
     return vs;
   }
 
-  // make a seq vec mod repeat
-  public static Vec makeRepSeq( long len, final long repeat ) {
-    return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs) {
-          for (int r = 0; r < c._len; r++)
-            c.set0(r, (r + 1 + c._start) % repeat);
-        }
-      }
-    }.doAll(makeConSeq(0, len))._fr.vecs()[0];
-  }
-
+  /** Make a new vector with the same size and data layout as the current one,
+   *  and initialized to increasing integers, starting with 1.
+   *  @return A new vector with the same size and data layout as the current
+   *  one, and initialized to increasing integers, starting with 1. */
   public static Vec makeSeq( long len) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
@@ -294,34 +303,30 @@ public class Vec extends Keyed {
           for( int r = 0; r < c._len; r++ )
             c.set0(r, r+1+c._start);
       }
-    }.doAll(makeConSeq(0, len))._fr.vecs()[0];
-  }
-  public static Vec makeConSeq(double x, long len) {
-    int chunks = (int)Math.ceil((double)len / Vec.CHUNK_SZ);
-    long[] espc = new long[chunks+1];
-    for (int i = 1; i<=chunks; ++i)
-      espc[i] = Math.min(espc[i-1] + Vec.CHUNK_SZ, len);
-    return new Vec(VectorGroup.VG_LEN1.addVec(), espc).makeCon(x);
+    }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Create a new 1-element vector in the shared vector group for 1-element vectors. */
-  private static Vec make1Elem(double d) {
-    return make1Elem(Vec.VectorGroup.VG_LEN1.addVec(), d);
-  }
-  /** Create a new 1-element vector representing a scalar value. */
-  private static Vec make1Elem(Key key, double d) {
-    assert key.isVec();
-    Vec v = new Vec(key,new long[]{0,1});
-    Futures fs = new Futures();
-    throw H2O.unimpl();
-    //DKV.put(v.chunkKey(0),new C0DChunk(d,1),fs);
-    //DKV.put(key,v,fs);
-    //fs.blockForPending();
-    //return v;
+  /** Make a new vector with the same size and data layout as the current one,
+   *  and initialized to increasing integers mod {@code repeat}, starting with 1.
+   *  @return A new vector with the same size and data layout as the current
+   *  one, and initialized to increasing integers mod {@code repeat}, starting
+   *  with 1. */
+  public static Vec makeRepSeq( long len, final long repeat ) {
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for( Chunk c : cs )
+          for( int r = 0; r < c._len; r++ )
+            c.set0(r, (r+1+c._start) % repeat);
+      }
+    }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Number of elements in the vector.  Overridden by subclasses that compute
-   *  length in an alternative way, such as file-backed Vecs. */
+
+  /** Number of elements in the vector; returned as a {@code long} instead of
+   *  an {@code int} because Vecs support more than 2^32 elements. Overridden
+   *  by subclasses that compute length in an alternative way, such as
+   *  file-backed Vecs.
+   *  @return Number of elements in the vector */
   public long length() { return _espc[_espc.length-1]; }
 
   /** Number of chunks.  Overridden by subclasses that compute chunks in an

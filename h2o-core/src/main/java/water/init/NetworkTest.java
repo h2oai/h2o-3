@@ -146,7 +146,7 @@ public class NetworkTest {
   private static double send_recv_collective(int msg_size, int repeats) {
     byte[] payload = new byte[msg_size];
     new Random().nextBytes(payload);
-    Vec v = Vec.makeConSeq(0., 1); //trivial Vec: 1 element with value 0.
+    Vec v = Vec.makeZero(1); //trivial Vec: 1 element with value 0.
 
     Timer t = new Timer();
     for (int l = 0; l < repeats; ++l) {

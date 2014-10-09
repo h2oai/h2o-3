@@ -81,7 +81,7 @@ public class L_BFGS_Test  extends TestUtil {
       lp._gradEps = 1e-8;
       L_BFGS.Result r = L_BFGS.solve(dinfo.fullN() + 1, solver, lp);
       GLMGradientInfo ginfo = (GLMGradientInfo) r.ginfo;
-      assertEquals(378.33830534354166, ginfo._val.residualDeviance(), 1e-3);
+      assertEquals(378.34, ginfo._val.residualDeviance(), 1e-1);
     } finally {
       Value v = DKV.get(parsedKey);
       if (v != null) {
