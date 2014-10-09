@@ -104,6 +104,11 @@ public class AppendableVec extends Vec {
     for( int i = 0; i < nchunk; ++i )
       ctypes[_chunkTypes[i]]++;
 
+    // Make sure enums are consistent
+    if( domain() != null ) {    // If we have a domain, assume the numbers can be mapped into it
+      ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0; 
+    }
+
     // Make sure time is consistent
     int t = -1;
     for( int i=0; i<_timCnt.length; i++ )
@@ -120,10 +125,11 @@ public class AppendableVec extends Vec {
 
     // Make Chunks other than the dominant type fail out to NAs
     for(int i = 0; i < nchunk; ++i)
-      if(_chunkTypes[i] != idx)
+      if(_chunkTypes[i] != idx && 
+         !(idx==ENUM && _chunkTypes[i]==NUMBER)) // Odd case: numeric chunks being forced/treated as a boolean enum
         DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
 
-    byte type = T_BAD;
+    byte type;
     switch( idx ) {
     case ENUM  : type = T_ENUM; break;
     case NUMBER: type = T_NUM ; break;
