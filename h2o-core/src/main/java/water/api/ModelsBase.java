@@ -16,6 +16,9 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   @API(help="Models", direction = API.Direction.OUTPUT)
   public ModelSchema[] models;
 
+  @API(help="Compatible frames")
+  FrameV2[] compatible_frames; // TODO: FrameBase
+
   // Non-version-specific filling into the impl
   @Override public Models createImpl() {
     Models m = new Models();

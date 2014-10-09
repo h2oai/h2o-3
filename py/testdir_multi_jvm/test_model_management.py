@@ -371,15 +371,10 @@ validate_actual_parameters(dl_airline_1_parameters, dl_model['parameters'], airl
 model = a_node.models(key=kmeans_model_name, find_compatible_frames=True)
 found_kmeans = False;
 print 'k-means model with find_compatible_frames output: '
-pp.pprint(model)
+print '/Models/' + kmeans_model_name + '?find_compatible_frames=true: ', repr(model)
 h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
-h2o_util.assertKeysExist(model['models'][0]['compatible_frames'], '', ['frames'])
+assert prostate_key in model['models'][0]['compatible_frames'], "Failed to find " + prostate_key + " in compatible_frames list."
 
-found = False
-for frame in model['models'][0]['compatible_frames']['frames']:
-    if frame['key']['name'] == prostate_key:
-        found = True
-assert found, "Failed to find " + prostate_key + " in compatible_frames list."
 
 ######################################################################
 # Now look for prostate_key using the one-frame API and find_compatible_models, and check it
