@@ -166,19 +166,30 @@ assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames lis
 frames = a_node.frames(key='prostate.hex')['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
-
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'CAPSULE' in columns_dict, "Failed to find CAPSULE in Frames/prostate.hex."
+assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns."
+assert 'bins' in columns_dict['AGE'], "Failed to find bins in Frames/prostate.hex/columns/AGE."
+print 'bins: ', repr(columns_dict['AGE']['bins'])
+assert None is columns_dict['AGE']['bins'], "Failed to clear bins field." # should be cleared except for /summary
+
 
 # Test /Frames/{key}/columns for prostate.csv
 frames = a_node.columns(key='prostate.hex')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'ID' in columns_dict, "Failed to find ID in Frames/prostate.hex/columns."
+assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns."
+assert 'bins' in columns_dict['AGE'], "Failed to find bins in Frames/prostate.hex/columns/AGE."
+print 'bins: ', repr(columns_dict['AGE']['bins'])
+assert None is columns_dict['AGE']['bins'], "Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label} for prostate.csv
 frames = a_node.column(key='prostate.hex', column='AGE')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
-assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns/AGE."
+assert 'AGE' in columns_dict, "Failed to find AGE in Frames/prostate.hex/columns."
+assert 'bins' in columns_dict['AGE'], "Failed to find bins in Frames/prostate.hex/columns/AGE."
+print 'bins: ', repr(columns_dict['AGE']['bins'])
+assert None is columns_dict['AGE']['bins'], "Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label}/summary for prostate.csv
 frames = a_node.summary(key='prostate.hex', column='AGE')['frames']

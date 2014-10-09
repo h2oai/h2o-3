@@ -42,60 +42,60 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   String[] compatible_models;
 
   // Output fields one-per-column
-  private static class Col extends Iced {
+  protected static class Col extends Iced {
     @API(help="label")
-    final String label;
+    String label;
 
     @API(help="missing")
-    final long missing;
+    long missing;
 
     @API(help="zeros")
-    final long zeros;
+    long zeros;
 
     @API(help="positive infinities")
-    final long pinfs;
+    long pinfs;
 
     @API(help="negative infinities")
-    final long ninfs;
+    long ninfs;
 
     @API(help="mins")
-    final double[] mins;
+    double[] mins;
 
     @API(help="maxs")
-    final double[] maxs;
+    double[] maxs;
 
     @API(help="mean")
-    final double mean;
+    double mean;
 
     @API(help="sigma")
-    final double sigma;
+    double sigma;
 
     @API(help="datatype: {enum, string, int, real, time, uuid}")
-    final String type;
+    String type;
 
     @API(help="domain; not-null for enum columns only")
-    final String[] domain;
+    String[] domain;
 
     @API(help="data")
-    final double[] data;
+    double[] data;
 
     @API(help="string data")
-    final String[] str_data;
+    String[] str_data;
 
     @API(help="decimal precision, -1 for all digits")
-    final byte precision;
+    byte precision;
 
     @API(help="Histogram bins; null if not computed")
-    final long[] bins;
+    long[] bins;
 
     @API(help="Start of histogram bin zero")
-    final double base;
+    double base;
 
     @API(help="Stride per bin")
-    final double stride;
+    double stride;
 
     @API(help="Percentile values, matching the default percentiles")
-    final double[] pctiles;
+    double[] pctiles;
 
     transient Vec _vec;
 
@@ -138,6 +138,21 @@ class FrameV2 extends Schema<Frame, FrameV2> {
       base  = bins==null ? 0 : vec.base();
       stride= bins==null ? 0 : vec.stride();
       pctiles=vec.pctiles();
+    }
+
+    public void clearSummaryFields() {
+      this.mins = null;
+      this.maxs = null;
+      this.mean = 0;
+      this.sigma = 0;
+      this.missing = 0;
+      this.zeros = 0;
+      this.pinfs = 0;
+      this.ninfs = 0;
+      this.bins = null;
+      this.base = 0;
+      this.stride = 0;
+      this.pctiles = null;
     }
   }
 
@@ -197,6 +212,11 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     for( int i=0; i<columns.length; i++ )
       columns[i] = new Col(_fr._names[i],vecs[i],off,len);
     return this;
+  }
+
+  public void clearSummaryFields() {
+    for (Col col: columns)
+      col.clearSummaryFields();
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
