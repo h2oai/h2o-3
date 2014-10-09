@@ -110,7 +110,16 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   /** Return all the frames. */
   public Schema list(int version, Frames f) {
     f.frames = Frames.fetchAll();
-    return this.schema(version).fillFromImpl(f);
+
+    FramesBase schema = this.schema(version).fillFromImpl(f);
+
+    // Summary data is big, and not always there: null it out here.  You have to call columnSummary
+    // to force computation of the summary data.
+    for (FrameV2 a_frame: schema.frames) {
+      a_frame.clearSummaryFields();
+    }
+
+    return schema;
   }
 
   /** NOTE: We really want to return a different schema here! */
@@ -154,7 +163,9 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     Frame new_frame = new Frame(names, vecs);
     f.frames = new Frame[1];
     f.frames[0] = new_frame;
-    return this.schema(version).fillFromImpl(f);
+    FramesBase schema = this.schema(version).fillFromImpl(f);
+    schema.frames[0].clearSummaryFields();
+    return schema;
   }
 
   public FramesBase columnSummary(int version, Frames frames) {
@@ -179,6 +190,13 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     f.frames[0] = frame;
 
     FramesBase schema = this.schema(version).fillFromImpl(f);
+
+    // Summary data is big, and not always there: null it out here.  You have to call columnSummary
+    // to force computation of the summary data.
+    for (FrameV2 a_frame: schema.frames) {
+      a_frame.clearSummaryFields();
+
+    }
     if (f.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll(), f.fetchModelCols());
       schema.compatible_models = new ModelSchema[compatible.length];
