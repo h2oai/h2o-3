@@ -4,7 +4,7 @@ import water.*;
 
 public class WaterMeterCpuTicks extends Iced {
   // Input
-  int nodeidx;
+  public int nodeidx;
 
   // Output
   public long[][] cpu_ticks;
