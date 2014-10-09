@@ -95,8 +95,11 @@ html(lang='en')
       include scoring-selection-view
     script(type="text/html" id="column-summary-view")
       include column-summary-view
+    script(type="text/html" id="perfbar-view")
+      include perfbar-view
 
     script(src='js/lib.js')
+    script(src='img/perfbar.js')   // TODO: move this script somewhere else in the resource bundle.
     script(src='js/steam.js')
 
     script.
