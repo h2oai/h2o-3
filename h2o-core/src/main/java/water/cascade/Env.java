@@ -141,7 +141,7 @@ public class Env extends Iced {
 
   private void addRef(Vec v) {
     IcedInt I = _refcnt.get(v);
-    assert I==null || I._val>0;
+    assert I==null || I._val>=0;
     _refcnt.put(v,new IcedInt(I==null?1:I._val+1));
     //TODO: Does masterVec() need to become public?
 //      if (v.masterVec()!=null) addRef(vec.masterVec());
