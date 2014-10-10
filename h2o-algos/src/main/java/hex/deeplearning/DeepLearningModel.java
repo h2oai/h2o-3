@@ -462,8 +462,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     //Sanity check for Deep Learning job parameters
     @Override
     public int sanityCheckParameters() {
-      Frame fr = Frame.sanityCheckFrameKey(_training_frame,"Training Frame");
-      if( _validation_frame != null ) Frame.sanityCheckFrameKey(_validation_frame,"Validation Frame");
+      Frame fr = _training_frame.get();
       if (fr.numCols() <= 1)
         validation_error("_validation_frame", "Training data must have at least 2 features (incl. response).");
 
@@ -1273,7 +1272,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
     final Frame fr = parms._training_frame.get();
-    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms.response_column), fr.indices(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms.response_column), fr.find(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);

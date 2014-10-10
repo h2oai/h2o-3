@@ -11,34 +11,50 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-/** A collection of named Vecs, essentially an R-like Distributed Data Frame.
- *  <p>
- *  Frames represent a large distributed 2-D table with named columns (Vecs)
- *  and numbered rows.  A reasonable column limit is 100K columns, but theres
- *  no hard-coded limit.  There's no real row limit except memory; Frames (and
- *  Vecs) with many billions of rows are used routinely.
- *  <p>
- *  A Frame is a collection of named Vecs; a Vec is a collection of numbered
- *  Chunks.  Multiple Frames can reference the same Vecs.  A Frame is small,
- *  cheaply and easily manipulated, it is commonly passed-by-Value.  It exists
- *  on one node, and may be stored in the DKV.  Vecs, on the otherhand,
- *  <b>must</b> be stored in the DKV, as they represent the shared common
- *  management state for a collection of distributed Chunks.
- *  <p>
- *  Example: Make a Frame from a CSV file:
- *  <pre> {@code
- * File file = ...
- * NFSFileVec nfs = NFSFileVec.make(file);
- * Frame fr = water.parser.ParseDataset2.parse(Key.make("myKey"),nfs._key);
- *  }</pre>
- *  <p>
- *  Find and remove the Vec called "unique_id" from the Frame:
- *  <pre> {@code
+/** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
+ *
+ *  <p>Frames represent a large distributed 2-D table with named columns
+ *  ({@link Vec}s) and numbered rows.  A reasonable <em>column</em> limit is
+ *  100K columns, but theres no hard-coded limit.  There's no real <em>row</em>
+ *  limit except memory; Frames (and Vecs) with many billions of rows are used
+ *  routinely.
+ *
+ *  <p>A Frame is a collection of named Vecs; a Vec is a collection of numbered
+ *  {@link Chunk}s.  A Frame is small, cheaply and easily manipulated, it is
+ *  commonly passed-by-Value.  It exists on one node, and <em>may</em> be
+ *  stored in the DKV.  Vecs, on the otherhand, <em>must</em> be stored in the
+ *  DKV, as they represent the shared common management state for a collection
+ *  of distributed Chunks.
+ *
+ *  <p>Multiple Frames can reference the same Vecs, although this sharing can
+ *  make Vec lifetime management complex.  Commonly temporary Frames are used
+ *  to work with a subset of some other Frame (often during algorithm
+ *  execution, when some columns are dropped from the modeling process).  The
+ *  temporary Frame can simply be ignored, allowing the normal GC process to
+ *  reclaim it.  Such temp Frames usually have a {@code null} key.
+ *
+ *  <p>All the Vecs in a Frame belong to the same {@link Vec.VectorGroup} which
+ *  then enforces {@link Chunk} row alignment across Vecs (or at least enforces
+ *  a low-cost access model).  Parallel and distributed execution touching all
+ *  the data in a Frame relies on this alignment to get good performance.
+ *  
+ *  <p>Example: Make a Frame from a CSV file:<pre>
+ *  File file = ...
+ *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
+ *  Frame fr = water.parser.ParseDataset2.parse(Key.make("myKey"),nfs._key);
+ *  </pre>
+ * 
+ *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
+ *  since modeling with a unique_id can lead to overfitting:
+ *  <pre>
  *  Vec uid = fr.remove("unique_id");
- *  }</pre>
- *  <p>
- *  Frame is referenced by a key.  Nevertheless, key can be <code>null</code>
- *  and it means that frame is local and is not going into DKV
+ *  </pre>
+ *
+ *  <p>Example: Move the response column to the last position:
+ *  <pre>
+ *  fr.add("response",fr.remove("response"));
+ *  </pre>
+ *
  */
 public class Frame extends Lockable {
   /** Vec names */
@@ -47,11 +63,6 @@ public class Frame extends Lockable {
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
-  /** Creates an empty frame with given key name.
-   * The resulting frame is intended to be filled lazily.
-   * @param keyName
-   */
-  public Frame( String keyName ) { this(Key.make(keyName),null,new Vec[0]); } // Empty frame, lazily filled
   /** Creates an internal frame composed of given vectors. The frame has no key. */
   public Frame( Vec... vecs ){ this(null,vecs);}
   /** Creates an internal frame. The frame has null key! */
@@ -69,7 +80,7 @@ public class Frame extends Lockable {
     // Always require names
     if( names==null ) {
       names = new String[vecs.length];
-      for( int i=0; i<vecs.length; i++ ) names[i] = "C"+(i+1);
+      for( int i=0; i<vecs.length; i++ ) names[i] = defaultColName(i);
     }
     assert names.length == vecs.length;
 
@@ -80,14 +91,25 @@ public class Frame extends Lockable {
     _vecs  = new Vec   [0];
     add(names,vecs);
   }
+  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
+  // resulting Frame does not share with the original, so the set of Vecs can
+  // be freely hacked without disturbing the original Frame.
+  public Frame( Frame fr ) {
+    super( Key.make() );
+    _names= fr._names.clone();
+    _keys = fr._keys .clone();
+    _vecs = fr.vecs().clone();
+  }
+
+  public String defaultColName( int col ) { return "C"+(1+col); }
+
   // Add a bunch of vecs
   private void add( String[] names, Vec[] vecs ) {
     if (null == vecs || null == names) return;
     for( int i=0; i<vecs.length; i++ )
       add(names[i],vecs[i]);
   }
-  // Append a default-named Vec
-  public Vec add( Vec vec ) { return add("C"+(numCols()+1),vec); }
+
   // Append a named Vec
   public Vec add( String name, Vec vec ) {
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
@@ -101,7 +123,7 @@ public class Frame extends Lockable {
   public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
 
   /** Appends an entire Frame */
-  public Frame add( Frame fr, String names[] ) {
+  private Frame add( Frame fr, String names[] ) {
     assert _vecs.length==0 || (anyVec().group().equals(fr.anyVec().group()) || Arrays.equals(anyVec()._espc,fr.anyVec()._espc)): "Adding a vector from different vector group. Current frame contains "+Arrays.toString(_names)+ " vectors. New frame contains "+Arrays.toString(fr.names()) + " vectors.";
     if( _names != null && fr._names != null )
       for( String name : names )
@@ -117,19 +139,6 @@ public class Frame extends Lockable {
     System.arraycopy(fr._vecs ,0,_vecs ,len0,len1);
     System.arraycopy(fr._keys ,0,_keys ,len0,len1);
     return this;
-  }
-
-  public Frame add( Frame fr, boolean rename ) {
-    if( !rename ) return add(fr,fr._names);
-    String names[] = new String[fr._names.length];
-    for( int i=0; i<names.length; i++ ) {
-      String name = fr._names[i];
-      int cnt=0;
-      while( find(name) != -1 )
-        name = fr._names[i]+(cnt++);
-      names[i] = name;
-    }
-    return add(fr,names);
   }
 
   // Allow sorting of columns based on some function
@@ -181,30 +190,6 @@ public class Frame extends Lockable {
     return n;
   }
 
-  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
-  // resulting Frame does not share with the original, so the set of Vecs can
-  // be freely hacked without disturbing the original Frame.
-  public Frame( Frame fr ) {
-    super( Key.make() );
-    _names= fr._names.clone();
-    _keys = fr._keys .clone();
-    _vecs = fr.vecs().clone();
-  }
-
-  // Deep Copy of the *data*.  Can get expensive quick.
-  public Frame deepcopy() {
-    return new MRTask() {
-      @Override public void map(Chunk []cs, NewChunk []ncs) {
-        for( int col = 0; col < cs.length; col++ ) {
-          Chunk c = cs[col];
-          NewChunk nc = ncs[col];
-          for( int row = 0; row < c._len; row++ )
-            if( c._vec.isUUID() ) nc.addUUID(c,row);
-            else nc.addNum(c.at0(row));
-        }
-      }
-    }.doAll(numCols(),this).outputFrame(names(),domains());
-  }
   /** Returns a subframe of this frame containing only vectors with desired names.
    *
    * @param names list of vector names
@@ -212,6 +197,7 @@ public class Frame extends Lockable {
    * @throws IllegalArgumentException if there is no vector with desired name in this frame.
    */
   public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
+
   /** Returns a new frame composed of vectors of this frame selected by given names.
    * The method replaces missing vectors by a constant column filled by given value.
    * @param names names of vector to compose a subframe
@@ -272,24 +258,8 @@ public class Frame extends Lockable {
     return vecs;
   }
 
-  /** true/false whether each Vec is a UUID */
-  public boolean[] uuids() {
-    boolean bs[] = new boolean[vecs().length];
-    for( int i=0; i<vecs().length; i++ )
-      bs[i] = vecs()[i].isUUID();
-    return bs;
-  }
-
-  /** true/false whether each Vec is a string */
-  public boolean[] strings() {
-    boolean bs[] = new boolean[vecs().length];
-    for( int i=0; i<vecs().length; i++ )
-      bs[i] = vecs()[i].isString();
-    return bs;
-  }
-
   /** Type for every Vec */
-  public byte[] types() {
+  byte[] types() {
     Vec[] vecs = vecs();
     byte bs[] = new byte[vecs.length];
     for( int i=0; i<vecs.length; i++ )
@@ -306,36 +276,7 @@ public class Frame extends Lockable {
     return ds;
   }
 
-  public String[][] domains(int [] cols){
-    Vec[] vecs = vecs();
-    String[][] res = new String[cols.length][];
-    for(int i = 0; i < cols.length; ++i)
-      res[i] = vecs[cols[i]].domain();
-    return res;
-  }
-
-  public String [] names(int [] cols){
-    if(_names == null)return null;
-    String [] res = new String[cols.length];
-    for(int i = 0; i < cols.length; ++i)
-      res[i] = _names[cols[i]];
-    return res;
-  }
-
   public String[] names() { return _names; }
-
-  public int [] indices(String [] cols){
-    if(cols == null) return null;
-
-    Map<String, Integer> names_map = new HashMap();
-    for(int i = 0; i < _names.length; i++)
-      names_map.put(_names[i], i);
-
-    int [] res = new int[cols.length];
-    for(int i = 0; i < cols.length; ++i)
-      res[i] = names_map.get(i);
-    return res;
-  }
 
   public long byteSize() {
     long sum=0;
@@ -348,7 +289,7 @@ public class Frame extends Lockable {
    * together.  Since parse always parses the same pieces of files into the same offsets
    * in some chunk this checksum will be consistent across reparses.
    */
-  public long checksum() {
+  @Override public long checksum() {
     Vec [] vecs = vecs();
     long _checksum = 0;
     for(int i = 0; i < _names.length; ++i) {
@@ -374,20 +315,16 @@ public class Frame extends Lockable {
     _keys = new Key[0];
     return fs;
   }
+
   public Vec replace(int col, Vec nv) {
+    assert DKV.get(nv._key)!=null; // Already in DKV
     Vec rv = vecs()[col];
     assert rv.group().equals(nv.group());
     _vecs[col] = nv;
     _keys[col] = nv._key;
-    if( DKV.get(nv._key)==null )    // If not already in KV, put it there
-      DKV.put(nv._key, nv);
     return rv;
   }
-  public Frame extractFrame(int startIdx, int endIdx) {
-    Frame f = subframe(startIdx, endIdx);
-    remove(startIdx, endIdx);
-    return f;
-  }
+
   /** Create a subframe from given interval of columns.
    *
    * @param startIdx index of first column (inclusive)
@@ -398,37 +335,29 @@ public class Frame extends Lockable {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
+  public Frame extractFrame(int startIdx, int endIdx) {
+    Frame f = subframe(startIdx, endIdx);
+    remove(startIdx, endIdx);
+    return f;
+  }
+
   public int  numCols() { return _keys.length; }
   public long numRows() { return anyVec().length(); }
 
-  public Vec lastVec() {
-    final Vec [] vecs = vecs();
-    return vecs[vecs.length-1];
-  }
+  public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
+  public String lastVecName() {  return _names[_names.length-1]; }
 
-  public String lastVecName() {
-    return _names[_names.length - 1];
-  }
-
-  public Vec vec(String name){
-    Vec [] vecs = vecs();
-    for(int i = 0; i < _names.length; ++i)
-      if(_names[i].equals(name))return vecs[i];
-    return null;
-  }
-  /** Returns the vector by given index.
-   * <p>The call is direct equivalent to call <code>vecs()[i]</code> and
-   * it does not do any array bounds checking.</p>
-   * @param idx idx of column
-   * @return this frame idx-th vector, never returns <code>null</code>
-   */
-  public Vec vec(int idx) {
-    Vec[] vecs = vecs();
-    return vecs[idx];
-  }
-
-  // Force a cache-flush & reload, assuming vec mappings were altered remotely
+  // Force a cache-flush & reload, assuming vec mappings were altered remotely, or
+  // that the _vecs array was shared and now needs to be a defensive copy
   public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
+
+  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
+
+  /** Returns the vector by given index.  The call is direct equivalent to call
+   * {@code vecs()[idx]} and it does not do any array bounds checking.
+   * @param idx idx of column
+   * @return this frame idx-th vector, never returns <code>null</code> */
+  public final Vec vec(int idx) { return vecs()[idx]; }
 
   /** Finds the first column with a matching name.  */
   public int find( String name ) {
@@ -447,18 +376,26 @@ public class Frame extends Lockable {
     return -1;
   }
 
-   /** Removes the first column with a matching name.  */
+  public int[] find(String[] names) {
+    if( names == null ) return null;
+    int[] res = new int[names.length];
+    for(int i = 0; i < names.length; ++i)
+      res[i] = find(names[i]);
+    return res;
+  }
+
+  /** Removes the first column with a matching name.  */
   public Vec remove( String name ) { return remove(find(name)); }
 
-  /** Removes a numbered column. */
-  public Vec [] remove( int [] idxs ) {
+  /** Removes a list of numbered columns. */
+  public Vec[] remove( int[] idxs ) {
     for(int i :idxs)if(i < 0 || i > _vecs.length)
       throw new ArrayIndexOutOfBoundsException();
     Arrays.sort(idxs);
-    Vec [] res = new Vec[idxs.length];
-    Vec [] rem = new Vec[_vecs.length-idxs.length];
-    String [] names = new String[rem.length];
-    Key    [] keys  = new Key   [rem.length];
+    Vec[] res = new Vec[idxs.length];
+    Vec[] rem = new Vec[_vecs.length-idxs.length];
+    String[] names = new String[rem.length];
+    Key   [] keys  = new Key   [rem.length];
     int j = 0;
     int k = 0;
     int l = 0;
@@ -474,13 +411,14 @@ public class Frame extends Lockable {
       }
     }
     _vecs = rem;
-    _names = names;
+    _names= names;
     _keys = keys;
     assert l == rem.length && k == idxs.length;
     return res;
   }
+
   /** Removes a numbered column. */
-  public Vec remove( int idx ) {
+  public final Vec remove( int idx ) {
     int len = _names.length;
     if( idx < 0 || idx >= len ) return null;
     Vec v = vecs()[idx];
@@ -494,19 +432,17 @@ public class Frame extends Lockable {
     return v;
   }
 
-  /**
-   * Remove given interval of columns from frame. Motivated by R intervals.
-   * @param startIdx - start index of column (inclusive)
-   * @param endIdx - end index of column (exclusive)
-   * @return an array of remove columns
-   */
+  /** Remove given interval of columns from frame.  Motivated by R intervals.
+   *  @param startIdx - start index of column (inclusive)
+   *  @param endIdx - end index of column (exclusive)
+   *  @return array of removed columns  */
   Vec[] remove(int startIdx, int endIdx) {
     int len = _names.length;
     int nlen = len - (endIdx-startIdx);
     String[] names = new String[nlen];
     Key[] keys = new Key[nlen];
     Vec[] vecs = new Vec[nlen];
-    reloadVecs(); // force vecs reload
+    vecs();
     if (startIdx > 0) {
       System.arraycopy(_names, 0, names, 0, startIdx);
       System.arraycopy(_vecs,  0, vecs,  0, startIdx);
@@ -519,19 +455,19 @@ public class Frame extends Lockable {
       System.arraycopy(_keys,  endIdx, keys,  startIdx, nlen);
     }
 
-    Vec[] vec = Arrays.copyOfRange(vecs(),startIdx,endIdx);
+    Vec[] vecX = Arrays.copyOfRange(_vecs,startIdx,endIdx);
     _names = names;
     _vecs = vecs;
     _keys = keys;
     _col0 = null;
-    return vec;
+    return vecX;
   }
 
   // --------------------------------------------
   // Utilities to help external Frame constructors, e.g. Spark.
 
   // Make an initial Frame & lock it for writing.  Build Vec Keys.
-  public void preparePartialFrame( String[] names ) {
+  void preparePartialFrame( String[] names ) {
     // Nuke any prior frame (including freeing storage) & lock this one
     if( _keys != null ) delete_and_lock(null);
     else write_lock(null);
@@ -545,7 +481,7 @@ public class Frame extends Lockable {
   // Make NewChunks to for holding data from e.g. Spark.  Once per set of
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  public static NewChunk[] createNewChunks( String name, int cidx ) {
+  static NewChunk[] createNewChunks( String name, int cidx ) {
     Frame fr = Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for( int i=0; i<nchks.length; i++ )
@@ -555,7 +491,7 @@ public class Frame extends Lockable {
 
   // Compress & DKV.put NewChunks.  Once per set of Chunks in a Frame, after
   // filling them.  Can be called in parallel for different sets of Chunks.
-  public static void closeNewChunks( NewChunk[] nchks ) {
+  static void closeNewChunks( NewChunk[] nchks ) {
     Futures fs = new Futures();
     for( NewChunk nchk : nchks ) nchk.close(fs);
     fs.blockForPending();
@@ -564,7 +500,7 @@ public class Frame extends Lockable {
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
   // FIXME: have proper representation of column type
-  public void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
+  void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
@@ -590,15 +526,6 @@ public class Frame extends Lockable {
     }
     fs.blockForPending();
     unlock(null);
-  }
-
-  // Return an array of Chunks, by chunk#
-  public Chunk[] getChunks( int cidx ) {
-    Vec vecs[] = vecs();
-    Chunk chks[] = new Chunk[vecs.length];
-    for( int i=0; i<vecs.length; i++ )
-      chks[i] = vecs[i].chunkForChunkIdx(cidx);
-    return chks;
   }
 
   // --------------------------------------------------------------------------
@@ -858,6 +785,22 @@ public class Frame extends Lockable {
     return fr;
   }
 
+  private String[][] domains(int [] cols){
+    Vec[] vecs = vecs();
+    String[][] res = new String[cols.length][];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = vecs[cols[i]].domain();
+    return res;
+  }
+
+  private String [] names(int [] cols){
+    if(_names == null)return null;
+    String [] res = new String[cols.length];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = _names[cols[i]];
+    return res;
+  }
+
   // Return Frame 'f' if 'f' is compatible with 'this'.
   // Return a new Frame compatible with 'this' and a copy of 'f's data otherwise.
   public Frame makeCompatible( Frame f) {
@@ -866,7 +809,7 @@ public class Frame extends Lockable {
       return f;                 // Then must be compatible
     // Same VectorGroup is also compatible
     if (f.anyVec() == null ||
-            f.anyVec().group().equals(anyVec().group()) && Arrays.equals(f.anyVec()._espc, anyVec()._espc))
+        f.anyVec().group().equals(anyVec().group()) && Arrays.equals(f.anyVec()._espc, anyVec()._espc))
       return f;
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
@@ -876,27 +819,6 @@ public class Frame extends Lockable {
     return f2;
   }
 
-  /**
-   * Check to see if a Key is a valid Frame key; if so, return the Frame, if not throw an IllegalArgumentException.
-   */
-  public static Frame sanityCheckFrameKey(Key key, String description) {
-    if (null == key)
-      throw new IllegalArgumentException(description + " key must be non-null.");
-    Value v = DKV.get(key);
-    if (null == v)
-      throw new IllegalArgumentException(description + " key not found: " + key);
-    if (! v.isFrame() && !v.isSubclassOf(Frame.class))  // We need some notion of Frame
-      throw new IllegalArgumentException(description + " key points to a non-Frame object in the KV store: " + key);
-    Frame frame = v.get();
-    if (frame.numCols() <= 1)
-      throw new IllegalArgumentException(description + " must have at least 2 features (incl. response).");
-    return frame;
-  }
-
-  // Return the entire Frame as a CSV stream
-  public InputStream toCSV(boolean headers) {
-    return new CSVStream(headers, false);
-  }
 
   public InputStream toCSV(boolean headers, boolean hex_string) {
     return new CSVStream(headers, hex_string);

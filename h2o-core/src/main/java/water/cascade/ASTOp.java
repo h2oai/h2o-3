@@ -1132,7 +1132,7 @@ class ASTCbind extends ASTUniPrefixOp {
       Frame f = env.pop0Ary();
       Frame new_frame = fr.makeCompatible(f);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
-      else fr.add(new_frame, true);
+      else fr.add(new_frame);
     }
 
     env.push(new ValFrame(fr));
@@ -1439,7 +1439,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
         Frame f = new Frame(col_names, new Vec[(int)_length]);
         for (int i = 0; i < f.numCols(); ++i)
-          f.add(fr.vec( i % fr.numCols() ));
+          f.add(f.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
 
         env.cleanup(fr);
         env.push(new ValFrame(f));

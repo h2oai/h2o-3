@@ -129,7 +129,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   p.response_column = _train.lastVecName();
                                   p.ignored_columns = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p.response_column), _train.indices(p.ignored_columns), true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p.response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)

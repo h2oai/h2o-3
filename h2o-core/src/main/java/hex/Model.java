@@ -518,7 +518,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
     Frame vfr = new Frame(fr); // To avoid modification of original frame fr
     int n = _output._names.length;
     if (haveResponse && isSupervised()) {
-      int ridx = vfr.find(_output._names[_output._names.length - 1]);
+      int ridx = vfr.find(_output._names[n - 1]);
       if (ridx != -1 && ridx != vfr._names.length - 1) { // Unify frame - put response to the end
         String name = vfr._names[ridx];
         vfr.add(name, vfr.remove(ridx));
@@ -556,7 +556,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters<M
       }
     // Fill trash bin by vectors which need to be deleted later by the caller.
     Frame vecTrash = new Frame(anames.toArray(new String[anames.size()]), avecs.toArray(new Vec[avecs.size()]));
-    if (subVfr[1]!=null) vecTrash.add(subVfr[1], true);
+    if (subVfr[1]!=null) vecTrash.add(subVfr[1]);
     return new Frame[] { new Frame(names,frvecs), vecTrash };
   }
 

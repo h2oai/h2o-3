@@ -106,6 +106,20 @@ import java.util.concurrent.Future;
  *    double sigma= vec.sigma(); // Standard deviation; already computed
  *  </pre>
  *
+ *  <p>Example: Impute (replace) missing values with the mean.  Note that the
+ *  use of {@code vec.mean()} in the constructor uses (and computes) the
+ *  general RollupStats before the MRTask starts.  Setting a value in the Chunk
+ *  clears the RollupStats (since setting any value but the mean will change
+ *  the mean); they will be recomputed at the next use after the MRTask.
+ *  <pre>
+ *    new MRTask{} { final double _mean = vec.mean();
+ *      public void map( Chunk chk ) {
+ *        for( int row=0; row < chk._len; row++ )
+ *          if( chk.isNA0(row) ) chk.set0(row,_mean);
+ *      }
+ *    }.doAll(vec);
+ *  </pre>
+ *
  *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
  *  same Chunk and row alignment - that is, Chunks with the same index are
  *  homed to the same Node and have the same count of rows-per-Chunk.  {@link
