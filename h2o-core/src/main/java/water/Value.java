@@ -249,9 +249,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _mem = mem; // Close a race with the H2O cleaner zapping _mem while removing from ice
   }
 
-  /** Check if the Value's POJO is a subtype of clz.  Does not require the POJO.
-   *  @return True if the Value's POJO is a subtype of clz. */
-  public boolean isSubclassOf(Class clz) { return isSubclassOf(_type, clz); }
   /** Check if the Value's POJO is a subtype of given type integer.  Does not require the POJO.
    *  @return True if the Value's POJO is a subtype. */
   public static boolean isSubclassOf(int type, Class clz) { return clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
@@ -278,15 +275,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  @return True if the Value's POJO is a {@link Job} subtype. */
   public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
 
-  /** Creates a Stream for reading bytes */
-  private InputStream openStream(Job p) throws IOException {
-    if(onNFS() ) return PersistNFS .openStream(_key  );
-    if(onHDFS()) return PersistHdfs.openStream(_key,p);
-    if(onS3()  ) return PersistS3  .openStream(_key,p);
-    if( isFrame() ) throw new IllegalArgumentException("Tried to pass a Frame to openStream (maybe tried to parse a (already-parsed) Frame?)");
-    assert _type==TypeMap.PRIM_B : "Expected byte[] type but got "+TypeMap.className(_type);
-    return new ByteArrayInputStream(memOrLoad());
-  }
 
   // --------------------------------------------------------------------------
 
@@ -524,7 +512,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // assert I am waiting on threads with higher priority?
     while( (x=_rwlock.get()) != -1 ) // Spin until rwlock==-1
       if( x == 1 || RW_CAS(0,1,"remote_need_notify") )
-        try { ForkJoinPool.managedBlock(this); } catch( InterruptedException e ) { }
+        try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
   }
 
   /** The PUT for this Value has completed.  Wakeup any blocked later PUTs. */

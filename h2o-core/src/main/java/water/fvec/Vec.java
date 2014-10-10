@@ -241,9 +241,6 @@ public class Vec extends Keyed {
     _domain = domain;
   }
 
-  private Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
-
-
   /** Number of elements in the vector; returned as a {@code long} instead of
    *  an {@code int} because Vecs support more than 2^32 elements. Overridden
    *  by subclasses that compute length in an alternative way, such as
@@ -437,7 +434,7 @@ public class Vec extends Keyed {
   /** Count of negative infinities
    *  @return Count of negative infinities */
   public long  ninfs() { return rollupStats()._ninfs; }
-  /** {@link #isInt} is a property of numeric Vecs and not a type; this
+  /** <b>isInt</b> is a property of numeric Vecs and not a type; this
    *  property can be changed by assigning non-integer values into the Vec (or
    *  restored by overwriting non-integer values with integers).  This is a
    *  strong type for {@link #isEnum} and {@link #isTime} Vecs.
@@ -519,7 +516,7 @@ public class Vec extends Keyed {
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
   public long checksum() {
-    final long now = _last_write_timestamp;  // TODO: someone can be writing while we're checksuming. . .
+    final long now = _last_write_timestamp;
     if (-1 != now && now == _checksum_timestamp) {
       return _checksum;
     }

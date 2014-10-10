@@ -173,8 +173,7 @@ public class MRUtils {
                 + " to limit number of rows to " + String.format("%,d", maxrows));
     }
     for (int i=0;i<label.domain().length;++i) {
-      Log.info("Class '" + label.domain()[i].toString()
-              + "' sampling ratio: " + sampling_ratios[i]);
+      Log.info("Class '" + label.domain()[i] + "' sampling ratio: " + sampling_ratios[i]);
     }
 
     return sampleFrameStratified(fr, label, sampling_ratios, seed, verbose);

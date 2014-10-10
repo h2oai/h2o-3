@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -63,9 +62,9 @@ public class Frame extends Lockable {
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
-  /** Creates an internal frame composed of given vectors. The frame has no key. */
+  /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
   public Frame( Vec... vecs ){ this(null,vecs);}
-  /** Creates an internal frame. The frame has null key! */
+  /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   /** Creates an empty frame with given key. */
   public Frame( Key key ) { this(key,null,new Vec[0]); }
@@ -91,9 +90,10 @@ public class Frame extends Lockable {
     _vecs  = new Vec   [0];
     add(names,vecs);
   }
-  // Deep copy of Vecs & Keys & Names (but not data!) to a new named Key.  The
-  // resulting Frame does not share with the original, so the set of Vecs can
-  // be freely hacked without disturbing the original Frame.
+
+  /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
+   *  The resulting Frame does not share with the original, so the set of Vecs
+   *  can be freely hacked without disturbing the original Frame. */
   public Frame( Frame fr ) {
     super( Key.make() );
     _names= fr._names.clone();
@@ -101,55 +101,19 @@ public class Frame extends Lockable {
     _vecs = fr.vecs().clone();
   }
 
-  public String defaultColName( int col ) { return "C"+(1+col); }
+  /** Default column name maker */
+  public static String defaultColName( int col ) { return "C"+(1+col); }
 
-  // Add a bunch of vecs
-  private void add( String[] names, Vec[] vecs ) {
-    if (null == vecs || null == names) return;
-    for( int i=0; i<vecs.length; i++ )
-      add(names[i],vecs[i]);
-  }
-
-  // Append a named Vec
-  public Vec add( String name, Vec vec ) {
-    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
-    int ncols = _keys.length;
-    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
-    _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
-    _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
-    return vec;
-  }
-  // Append a Frame
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
-
-  /** Appends an entire Frame */
-  private Frame add( Frame fr, String names[] ) {
-    assert _vecs.length==0 || (anyVec().group().equals(fr.anyVec().group()) || Arrays.equals(anyVec()._espc,fr.anyVec()._espc)): "Adding a vector from different vector group. Current frame contains "+Arrays.toString(_names)+ " vectors. New frame contains "+Arrays.toString(fr.names()) + " vectors.";
-    if( _names != null && fr._names != null )
-      for( String name : names )
-        if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
-    final int len0= _names!=null ? _names.length : 0;
-    final int len1=  names!=null ?  names.length : 0;
-    final int len = len0+len1;
-    // Note: _names==null <=> _vecs==null <=> _keys==null
-    _names = _names != null ? Arrays.copyOf(_names,len) : new String[len];
-    _vecs  = _vecs  != null ? Arrays.copyOf(_vecs ,len) : new Vec   [len];
-    _keys  = _keys  != null ? Arrays.copyOf(_keys ,len) : new Key   [len];
-    System.arraycopy(    names,0,_names,len0,len1);
-    System.arraycopy(fr._vecs ,0,_vecs ,len0,len1);
-    System.arraycopy(fr._keys ,0,_keys ,len0,len1);
-    return this;
-  }
-
-  // Allow sorting of columns based on some function
-  public void swap( int lo, int hi ) {
-    assert 0 <= lo && lo < _keys.length;
-    assert 0 <= hi && hi < _keys.length;
-    if( lo==hi ) return;
-    Vec vecs[] = vecs();
-    Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
-    Key k   = _keys[lo]; _keys [lo] = _keys [hi]; _keys [hi] = k;
-    String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+  private String uniquify( String name ) {
+    String n = name;
+    int cnt=0, again;
+    do {
+      again = cnt;
+      for( String s : _names )
+        if( n.equals(s) )
+          n = name+(cnt++);
+    } while( again != cnt );
+    return n;
   }
 
   /** Check that the vectors are all compatible.  All Vecs have their content
@@ -168,7 +132,7 @@ public class Frame extends Lockable {
       throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
   }
 
-  // Used by tests to "go slow" when comparing mis-aligned Frames
+  /** Quick compatibility check between Frames.  Used by some tests for efficient equality checks. */
   public boolean checkCompatible( Frame fr ) {
     if( numCols() != fr.numCols() ) return false;
     if( numRows() != fr.numRows() ) return false;
@@ -178,43 +142,201 @@ public class Frame extends Lockable {
     return true;
   }
 
-  private String uniquify( String name ) {
-    String n = name;
-    int cnt=0, again;
-    do {
-      again = cnt;
-      for( String s : _names )
-        if( n.equals(s) )
-          n = name+(cnt++);
-    } while( again != cnt );
-    return n;
+  /** Number of columns
+   *  @return Number of columns */
+  public int  numCols() { return _keys.length; }
+  /** Number of rows
+   *  @return Number of rows */
+  public long numRows() { return anyVec().length(); }
+
+  /** Returns the first readable vector. 
+   *  @return the first readable Vec */
+  public final Vec anyVec() {
+    Vec c0 = _col0; // single read
+    if( c0 != null ) return c0;
+    for( Vec v : vecs() )
+      if( v.readable() )
+        return (_col0 = v);
+    return null;
+  }
+
+  /** The array of column names.
+   *  @return the array of column names */
+  public String[] names() { return _names; }
+
+  /** The internal array of Vecs.  For efficiency Frames contain an array of
+   *  Vec Keys - and the Vecs themselves are lazily loaded from the DKV. 
+   *  @return the internal array of Vecs */
+  public final Vec[] vecs() {
+    Vec[] tvecs = _vecs; // read the content
+    return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
+  }
+  // Compute vectors for caching
+  private Vec[] vecs_impl() {
+    // Load all Vec headers; load them all in parallel by starting prefetches
+    for( Key key : _keys ) DKV.prefetch(key);
+    Vec [] vecs = new Vec[_keys.length];
+    for( int i=0; i<_keys.length; i++ ) vecs[i] = _keys[i].get();
+    return vecs;
+  }
+
+  /** Convenience to accessor for last Vec 
+   *  @return last Vec */
+  public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
+  /** Convenience to accessor for last Vec name
+   *  @return last Vec name */
+  public String lastVecName() {  return _names[_names.length-1]; }
+
+  /** Force a cache-flush & reload, assuming vec mappings were altered
+   *  remotely, or that the _vecs array was shared and now needs to be a
+   *  defensive copy. 
+   *  @return the new instance of the Frame's Vec[] */
+  public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
+  
+  /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
+   *  @param idx idx of column
+   *  @return this frame idx-th vector, never returns <code>null</code> */
+  public final Vec vec(int idx) { return vecs()[idx]; }
+
+  /**  Return a Vec by name, or null if missing
+   *  @return a Vec by name, or null if missing */
+  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
+
+  /**   Finds the column index with a matching name, or -1 if missing
+   *  @return the column index with a matching name, or -1 if missing */
+  public int find( String name ) {
+    if (_names!=null)
+      for( int i=0; i<_names.length; i++ )
+        if( name.equals(_names[i]) )
+          return i;
+    return -1;
+  }
+
+  /**   Finds the matching column index, or -1 if missing
+   *  @return the matching column index, or -1 if missing */
+  public int find( Vec vec ) {
+    Vec[] vecs = vecs();
+    for( int i=0; i<vecs.length; i++ )
+      if( vec.equals(vecs[i]) )
+        return i;
+    return -1;
+  }
+
+  /** Bulk {@link #find(String)} api
+   *  @return An array of column indices matching the {@code names} array */
+  public int[] find(String[] names) {
+    if( names == null ) return null;
+    int[] res = new int[names.length];
+    for(int i = 0; i < names.length; ++i)
+      res[i] = find(names[i]);
+    return res;
+  }
+
+  /** Type for every Vec */
+  byte[] types() {
+    Vec[] vecs = vecs();
+    byte bs[] = new byte[vecs.length];
+    for( int i=0; i<vecs.length; i++ )
+      bs[i] = vecs[i]._type;
+    return bs;
+  }
+
+  /** All the domains for enum columns; null for non-enum columns.  
+   *  @return the domains for enum columns */
+  public String[][] domains() {
+    Vec[] vecs = vecs();
+    String ds[][] = new String[vecs.length][];
+    for( int i=0; i<vecs.length; i++ )
+      ds[i] = vecs[i].domain();
+    return ds;
+  }
+
+  /** The {@code Vec.byteSize} of all Vecs
+   *  @return the {@code Vec.byteSize} of all Vecs */
+  public long byteSize() {
+    long sum=0;
+    Vec[] vecs = vecs();
+    for (Vec vec : vecs) sum += vec.byteSize();
+    return sum;
+  }
+
+  /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the
+   *  chunks are XORed together.  Since parse always parses the same pieces of
+   *  files into the same offsets in some chunk this checksum will be
+   *  consistent across reparses.
+   *  @return 64-bit Frame checksum */
+  @Override public long checksum() {
+    Vec [] vecs = vecs();
+    long _checksum = 0;
+    for(int i = 0; i < _names.length; ++i) {
+      long vec_checksum = vecs[i].checksum();
+      _checksum ^= vec_checksum;
+      long tmp = (2147483647L * i);
+      _checksum ^= tmp;
+    }
+    return _checksum;
+  }
+
+  // Add a bunch of vecs
+  private void add( String[] names, Vec[] vecs ) {
+    if (null == vecs || null == names) return;
+    for( int i=0; i<vecs.length; i++ )
+      add(names[i],vecs[i]);
+  }
+
+  /** Append a named Vec to the Frame.  Names are forced unique, by appending a
+   *  unique number if needed.
+   *  @return the added Vec, for flow-coding */
+  public Vec add( String name, Vec vec ) {
+    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
+    int ncols = _keys.length;
+    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
+    _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
+    _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
+    return vec;
+  }
+
+  /** Append a Frame onto this Frame.  Names are forced unique, by appending
+   *  unique numbers if needed.
+   *  @return the expanded Frame, for flow-coding */
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+
+  /** Swap two Vecs in-place; useful for sorting columns by some criteria */
+  public void swap( int lo, int hi ) {
+    assert 0 <= lo && lo < _keys.length;
+    assert 0 <= hi && hi < _keys.length;
+    if( lo==hi ) return;
+    Vec vecs[] = vecs();
+    Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
+    Key k   = _keys[lo]; _keys [lo] = _keys [hi]; _keys [hi] = k;
+    String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
   }
 
   /** Returns a subframe of this frame containing only vectors with desired names.
    *
-   * @param names list of vector names
-   * @return a new frame which collects vectors from this frame with desired names.
-   * @throws IllegalArgumentException if there is no vector with desired name in this frame.
+   *  @param names list of vector names
+   *  @return a new frame which collects vectors from this frame with desired names.
+   *  @throws IllegalArgumentException if there is no vector with desired name in this frame.
    */
   public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
 
   /** Returns a new frame composed of vectors of this frame selected by given names.
-   * The method replaces missing vectors by a constant column filled by given value.
-   * @param names names of vector to compose a subframe
-   * @param c value to fill missing columns.
-   * @return two frames, the first contains subframe, the second contains newly created constant vectors or null
+   *  The method replaces missing vectors by a constant column filled by given value.
+   *  @param names names of vector to compose a subframe
+   *  @param c value to fill missing columns.
+   *  @return two frames, the first contains subframe, the second contains newly created constant vectors or null
    */
   public Frame[] subframe(String[] names, double c) { return subframe(names, true, c); }
 
   /** Create a subframe from this frame based on desired names.
-   * Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
-   * Else replace a missing column by a constant column with given value.
+   *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
+   *  Else replace a missing column by a constant column with given value.
    *
-   * @param names list of column names to extract
-   * @param replaceBy should be missing column replaced by a constant column
-   * @param c value for constant column
-   * @return array of 2 frames, the first is containing a desired subframe, the second one contains newly created columns or null
-   * @throws IllegalArgumentException if <code>replaceBy</code> is false and there is a missing column in this frame
+   *  @param names list of column names to extract
+   *  @param replaceBy should be missing column replaced by a constant column
+   *  @param c value for constant column
+   *  @return array of 2 frames, the first is containing a desired subframe, the second one contains newly created columns or null
+   *  @throws IllegalArgumentException if <code>replaceBy</code> is false and there is a missing column in this frame
    */
   private Frame[] subframe(String[] names, boolean replaceBy, double c){
     Vec [] vecs     = new Vec[names.length];
@@ -235,79 +357,16 @@ public class Frame extends Lockable {
     return new Frame[] { new Frame(names,vecs), ccv>0 ?  new Frame(Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
   }
 
-  /** Returns the first readable vector. */
-  public final Vec anyVec() {
-    Vec c0 = _col0; // single read
-    if( c0 != null ) return c0;
-    for( Vec v : vecs() )
-      if( v.readable() )
-        return (_col0 = v);
-    return null;
-  }
-
-  public final Vec[] vecs() {
-    Vec[] tvecs = _vecs; // read the content
-    return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
-  }
-  // Compute vectors for caching
-  private Vec[] vecs_impl() {
-    // Load all Vec headers; load them all in parallel by starting prefetches
-    for( Key key : _keys ) DKV.prefetch(key);
-    Vec [] vecs = new Vec[_keys.length];
-    for( int i=0; i<_keys.length; i++ ) vecs[i] = _keys[i].get();
-    return vecs;
-  }
-
-  /** Type for every Vec */
-  byte[] types() {
-    Vec[] vecs = vecs();
-    byte bs[] = new byte[vecs.length];
-    for( int i=0; i<vecs.length; i++ )
-      bs[i] = vecs[i]._type;
-    return bs;
-  }
-
-  /** All the domains for enum columns; null for non-enum columns.  */
-  public String[][] domains() {
-    Vec[] vecs = vecs();
-    String ds[][] = new String[vecs.length][];
-    for( int i=0; i<vecs.length; i++ )
-      ds[i] = vecs[i].domain();
-    return ds;
-  }
-
-  public String[] names() { return _names; }
-
-  public long byteSize() {
-    long sum=0;
-    Vec[] vecs = vecs();
-    for (Vec vec : vecs) sum += vec.byteSize();
-    return sum;
-  }
-
-  /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the chunks are XORed
-   * together.  Since parse always parses the same pieces of files into the same offsets
-   * in some chunk this checksum will be consistent across reparses.
-   */
-  @Override public long checksum() {
-    Vec [] vecs = vecs();
-    long _checksum = 0;
-    for(int i = 0; i < _names.length; ++i) {
-      long vec_checksum = vecs[i].checksum();
-      _checksum ^= vec_checksum;
-      long tmp = (2147483647L * i);
-      _checksum ^= tmp;
-    }
-    return _checksum;
-  }
-
-  // For MRTask: allow rollups for all written-into vecs
+  /** Allow rollups for all written-into vecs; used by {@link MRTask} once
+   *  writing is complete.
+   *  @return the original Futures, for flow-coding */
   public Futures postWrite(Futures fs) {
     for( Vec v : vecs() ) v.postWrite(fs);
     return fs;
   }
 
-  /** Actually remove/delete all Vecs from memory, not just from the Frame. */
+  /** Actually remove/delete all Vecs from memory, not just from the Frame.
+   *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
     for( Vec v : vecs() ) v.remove(fs);
     _names = new String[0];
@@ -316,6 +375,8 @@ public class Frame extends Lockable {
     return fs;
   }
 
+  /** Replace one column with another 
+   *  @return The new column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     assert DKV.get(nv._key)!=null; // Already in DKV
     Vec rv = vecs()[col];
@@ -326,71 +387,34 @@ public class Frame extends Lockable {
   }
 
   /** Create a subframe from given interval of columns.
-   *
-   * @param startIdx index of first column (inclusive)
-   * @param endIdx index of the last column (exclusive)
-   * @return a new frame containing specified interval of columns
-   */
+   *  @param startIdx index of first column (inclusive)
+   *  @param endIdx index of the last column (exclusive)
+   *  @return a new Frame containing specified interval of columns  */
   Frame subframe(int startIdx, int endIdx) {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
+  /** Split this Frame; return a subframe created from the given column interval, and
+   *  remove those columns from this Frame. 
+   *  @param startIdx index of first column (inclusive)
+   *  @param endIdx index of the last column (exclusive)
+   *  @return a new Frame containing specified interval of columns */
   public Frame extractFrame(int startIdx, int endIdx) {
     Frame f = subframe(startIdx, endIdx);
     remove(startIdx, endIdx);
     return f;
   }
 
-  public int  numCols() { return _keys.length; }
-  public long numRows() { return anyVec().length(); }
-
-  public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
-  public String lastVecName() {  return _names[_names.length-1]; }
-
-  // Force a cache-flush & reload, assuming vec mappings were altered remotely, or
-  // that the _vecs array was shared and now needs to be a defensive copy
-  public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
-
-  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
-
-  /** Returns the vector by given index.  The call is direct equivalent to call
-   * {@code vecs()[idx]} and it does not do any array bounds checking.
-   * @param idx idx of column
-   * @return this frame idx-th vector, never returns <code>null</code> */
-  public final Vec vec(int idx) { return vecs()[idx]; }
-
-  /** Finds the first column with a matching name.  */
-  public int find( String name ) {
-    if (_names!=null)
-      for( int i=0; i<_names.length; i++ )
-        if( name.equals(_names[i]) )
-          return i;
-    return -1;
-  }
-
-  public int find( Vec vec ) {
-    Vec[] vecs = vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( vec.equals(vecs[i]) )
-        return i;
-    return -1;
-  }
-
-  public int[] find(String[] names) {
-    if( names == null ) return null;
-    int[] res = new int[names.length];
-    for(int i = 0; i < names.length; ++i)
-      res[i] = find(names[i]);
-    return res;
-  }
-
-  /** Removes the first column with a matching name.  */
+  /** Removes the column with a matching name.  
+   *  @return The removed column */
   public Vec remove( String name ) { return remove(find(name)); }
 
-  /** Removes a list of numbered columns. */
+  /** Removes a list of columns by index; the index list must be sorted
+   *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
-    for(int i :idxs)if(i < 0 || i > _vecs.length)
-      throw new ArrayIndexOutOfBoundsException();
+    for( int i : idxs )
+      if(i < 0 || i >= _vecs.length)
+        throw new ArrayIndexOutOfBoundsException();
     Arrays.sort(idxs);
     Vec[] res = new Vec[idxs.length];
     Vec[] rem = new Vec[_vecs.length-idxs.length];
@@ -417,7 +441,8 @@ public class Frame extends Lockable {
     return res;
   }
 
-  /** Removes a numbered column. */
+  /**  Removes a numbered column. 
+   *  @return the removed column */
   public final Vec remove( int idx ) {
     int len = _names.length;
     if( idx < 0 || idx >= len ) return null;
@@ -529,14 +554,19 @@ public class Frame extends Lockable {
   }
 
   // --------------------------------------------------------------------------
-  // In support of R, a generic Deep Copy & Slice.
-  // Semantics are a little odd, to match R's.
-  // Each dimension spec can be:
-  //   null - all of them
-  //   a sorted list of negative numbers (no dups) - all BUT these
-  //   an unordered list of positive - just these, allowing dups
-  // The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range.
-  static final int MAX_EQ2_COLS = 100000; // FIXME.  Put this in a better spot.
+  static final int MAX_EQ2_COLS = 100000; // Limit of columns user is allowed to request
+
+  /** In support of R, a generic Deep Copy & Slice.
+   *
+   *  <p>Semantics are a little odd, to match R's.  Each dimension spec can be:<ul>
+   *  <li><em>null</em> - all of them
+   *  <li><em>a sorted list of negative numbers (no dups)</em> - all BUT these
+   *  <li><em>an unordered list of positive</em> - just these, allowing dups
+   *  </ul>
+   *
+   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values.
+   *  @return the sliced Frame
+   */
   public Frame deepSlice( Object orows, Object ocols ) {
     // ocols is either a long[] or a Frame-of-1-Vec
     long[] cols;
@@ -772,19 +802,6 @@ public class Frame extends Lockable {
     }
   }
 
-  private Frame copyRollups( Frame fr, boolean isACopy ) {
-    if( !isACopy ) return fr; // Not a clean copy, do not copy rollups (will do rollups "the hard way" on first ask)
-    Vec vecs0[] = vecs();
-    Vec vecs1[] = fr.vecs();
-    for( int i=0; i<fr._names.length; i++ ) {
-      assert vecs1[i].naCnt()== -1; // not computed yet, right after slice
-      Vec v0 = vecs0[find(fr._names[i])];
-      Vec v1 = vecs1[i];
-//      v1.setRollupStats(v0);
-    }
-    return fr;
-  }
-
   private String[][] domains(int [] cols){
     Vec[] vecs = vecs();
     String[][] res = new String[cols.length][];
@@ -801,8 +818,10 @@ public class Frame extends Lockable {
     return res;
   }
 
-  // Return Frame 'f' if 'f' is compatible with 'this'.
-  // Return a new Frame compatible with 'this' and a copy of 'f's data otherwise.
+  /** Return Frame 'f' if 'f' is compatible with 'this', else return a new
+   *  Frame compatible with 'this' and a copy of 'f's data otherwise.  Note
+   *  that this can, in the worst case, copy all of {@code this}s' data.
+   *  @return This Frame's data in a Frame that is compatible with {@code f}. */
   public Frame makeCompatible( Frame f) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
@@ -820,6 +839,9 @@ public class Frame extends Lockable {
   }
 
 
+  /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
+   *  is compatible with R 3.1's recent change to read.csv()'s behavior.
+   *  @return An InputStream containing this Frame as a CSV */
   public InputStream toCSV(boolean headers, boolean hex_string) {
     return new CSVStream(headers, hex_string);
   }
@@ -856,6 +878,7 @@ public class Frame extends Lockable {
             else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
             else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
             else {
+              double d = vs[i].at(_row);
               // R 3.1 unfortunately changed the behavior of read.csv().
               // (Really type.convert()).
               //
@@ -865,21 +888,7 @@ public class Frame extends Lockable {
               //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
               //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
               //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-
-              double d = vs[i].at(_row);
-
-              String s;
-              if (_hex_string) {
-                // Used by R's as.data.frame().
-                s = Double.toHexString(d);
-              }
-              else {
-                // To emit CSV files that can be read by R 3.1, limit the number of significant digits.
-                // s = String.format("%.15g", d);
-
-                s = Double.toString(d);
-              }
-
+              String s = _hex_string ? Double.toHexString(d) : Double.toString(d);
               sb.append(s);
             }
           }

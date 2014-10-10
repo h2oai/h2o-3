@@ -1439,7 +1439,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         for (int i = 0; i < col_names.length; ++i) col_names[i] = "C" + (i+1);
         Frame f = new Frame(col_names, new Vec[(int)_length]);
         for (int i = 0; i < f.numCols(); ++i)
-          f.add(f.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
+          f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
 
         env.cleanup(fr);
         env.push(new ValFrame(f));

@@ -25,10 +25,10 @@ import water.parser.ValueString;
  *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
  *  and is faster than the global row-numbering for tight loops (because it 
  *  avoids some range checks):
- *  <pre>{@code
-for( int row=0; row < chunk._len; row++ )
-  ...chunk.at0(row)...
-}</pre>
+ *  <pre>
+ *  for( int row=0; row < chunk._len; row++ )
+ *    ...chunk.at0(row)...
+ *  </pre>
  *
  *  <p>The array-like API allows loading and storing elements in and out of
  *  Chunks.  When loading, values are decompressed.  When storing, an attempt
@@ -67,9 +67,9 @@ for( int row=0; row < chunk._len; row++ )
  *  coding error and will be flagged.  If you are working with integer data
  *  with missing elements, you must first check for a missing value before
  *  loading it:
- *  <pre>{@code
-if( !chk.isNA0(row) ) ...chk.at80(row)....
-}</pre>
+ *  <pre>
+ *  if( !chk.isNA0(row) ) ...chk.at80(row)....
+ *  </pre>
  * 
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
  *  Strings, or enums); they must be checked for missing before being used.
@@ -123,10 +123,10 @@ public abstract class Chunk extends Iced implements Cloneable {
    *
    *  <p>not-final: set in various deserializers.
    *  <p>Proper usage: read the field, probably in a hot loop.
-   *  <pre>{@code
-   for( int row=0; row < chunk._len; row++ )
-     ...chunk.at0(row)...
-   }</pre>
+   *  <pre>
+   *  for( int row=0; row < chunk._len; row++ )
+   *    ...chunk.at0(row)...
+   *  </pre>
    **/
   public int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */

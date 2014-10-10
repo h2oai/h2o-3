@@ -86,7 +86,7 @@ public abstract class DKV {
   /** Remove any mapping for <em>key</em>.  */
   static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 
-  /** Default caching call to {@link #DputIfMatch}  */
+  /** Default caching call to {@link #DputIfMatch(Key,Value,Value,Futures,boolean)}  */
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) { return DputIfMatch(key, val, old, fs, false);  }
 
   /** Update the mapping for Key <em>key</em>, from Value <em>old</em> to Value
