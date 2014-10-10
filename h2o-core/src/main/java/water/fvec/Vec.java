@@ -173,13 +173,13 @@ public class Vec extends Keyed {
   public final int cardinality() { return isEnum() ? _domain.length : -1; }
 
   // Vec internal type
-  static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
-  static final byte T_UUID =  1; // UUID
-  static final byte T_STR  =  2; // String
-  static final byte T_NUM  =  3; // Numeric, but not enum or time
-  static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
-  static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
-  static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
+  public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
+  public static final byte T_UUID =  1; // UUID
+  public static final byte T_STR  =  2; // String
+  public static final byte T_NUM  =  3; // Numeric, but not enum or time
+  public static final byte T_ENUM =  4; // Integer, with a enum/factor String mapping
+  public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
+  public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
 
   /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
