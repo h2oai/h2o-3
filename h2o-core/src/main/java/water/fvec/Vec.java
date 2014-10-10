@@ -39,14 +39,27 @@ import java.util.concurrent.Future;
  *  you are much better off using e.g. {@link MRTask}.
  *
  *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
- *<pre>
- *   double  at  ( long row );  // Returns the value expressed as a double.  NaN if missing.
- *   long    at8 ( long row );  // Returns the value expressed as a long.  Throws if missing.
- *   boolean isNA( long row );  // True if the value is missing.
- *   set( long row, double d ); // Stores a double; NaN will be treated as missing.
- *   set( long row, long l );   // Stores a long; throws if l exceeds what fits in a double &amp; any floats are ever set.
- *   setNA( long row );         // Sets the value as missing.
- *</pre>
+ *   <table class='table table-striped table-bordered' border="1"> 
+ *   <tr><th>     Returns       </th><th>    Call      </th><th>  Missing?  </th><th>Notes</th>
+ *   <tr><td>  {@code double}   </td><td>{@link #at}   </td><td>{@code NaN} </td><td></td>
+ *   <tr><td>  {@code long}     </td><td>{@link #at8}  </td><td>   throws   </td><td></td>
+ *   <tr><td>  {@code long}     </td><td>{@link #at16l}</td><td>   throws   </td><td>Low  half of 128-bit UUID</td>
+ *   <tr><td>  {@code long}     </td><td>{@link #at16h}</td><td>   throws   </td><td>High half of 128-bit UUID</td>
+ *   <tr><td>{@link ValueString}</td><td>{@link #atStr}</td><td>{@code null}</td><td>Updates ValueString in-place and returns it for flow-coding</td>
+ *   <tr><td>  {@code boolean}  </td><td>{@link #isNA} </td><td>{@code true}</td><td></td>
+ *   <tr><td>        </td><td>{@link #set(long,double)}</td><td>{@code NaN} </td><td></td>
+ *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
+ *   <tr><td>        </td><td>{@link #set(long,long)}  </td><td>Cannot set  </td><td></td>
+ *   <tr><td>        </td><td>{@link #set(long,String)}</td><td>{@code null}</td><td>Convenience wrapper for String</td>
+ *   <tr><td>        </td><td>{@link #setNA(long)}     </td><td>            </td><td></td>
+ *   </table>
+ *
+ *  <p>Example manipulating some individual elements:<pre>
+ *    double r1 = vec.at(0x123456789L);  // Access element 0x1234567889 as a double
+ *    double r2 = vec.at(-1);            // Throws AIOOBE
+ *    long   r3 = vec.at8(1);            // Element #1, as a long
+ *    vec.set(2,r1+r3);                  // Set element #2, as a double
+ *  </pre>
  *
  *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
  *  or {@link String}.  Numeric types are further broken down into integral
@@ -75,15 +88,23 @@ import java.util.concurrent.Future;
  *  The cast from a Double.NaN to a long produces a zero!  This code will
  *  silently replace a missing value with a zero.
  *
- *  <p>Vecs have lazily computed {@link RollupStats} object and Key.  The
- *  RollupStats give fast access to the common metrics: min, max, mean, stddev,
- *  the count of missing elements and non-zeros.  They are cleared if the Vec
- *  is modified, and lazily recomputed after the modified Vec is closed.
- *  Clearing the RollupStats cache is fairly expensive for individual {@link
- *  #set} calls but is easy to amortize over a large count of writes; i.e.,
- *  batch writing is efficient.  This is normally handled by the MRTask
- *  framework; the {@link Vec.Writer} framework allows <em>single-threaded</em>
- *  efficient batch writing for smaller Vecs.
+ *  <p>Vecs have a lazily computed {@link RollupStats} object and Key.  The
+ *  RollupStats give fast access to the common metrics: {@link #min}, {@link
+ *  #max}, {@link #mean}, {@link #sigma}, the count of missing elements ({@link
+ *  #naCnt}) and non-zeros ({@link #nzCnt}), amongst other stats.  They are
+ *  cleared if the Vec is modified and lazily recomputed after the modified Vec
+ *  is closed.  Clearing the RollupStats cache is fairly expensive for
+ *  individual {@link #set} calls but is easy to amortize over a large count of
+ *  writes; i.e., batch writing is efficient.  This is normally handled by the
+ *  MRTask framework; the {@link Vec.Writer} framework allows
+ *  <em>single-threaded</em> efficient batch writing for smaller Vecs.
+ *
+ *  <p>Example usage of common stats:<pre>
+ *    double mean = vec.mean();  // Vec's mean; first touch computes & caches rolluops
+ *    double min  = vec.min();   // Smallest element; already computed
+ *    double max  = vec.max();   // Largest element; already computed
+ *    double sigma= vec.sigma(); // Standard deviation; already computed
+ *  </pre>
  *
  *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
  *  same Chunk and row alignment - that is, Chunks with the same index are
@@ -92,7 +113,20 @@ import java.util.concurrent.Future;
  *  Vecs) guaranteeing that all elements of each row are homed to the same Node
  *  and set of Chunks - such that a simple {@code for} loop over a set of
  *  Chunks all operates locally.  See the example in the {@link Chunk} class.
+ *
+ *  <p>It is common and cheap to make new Vecs in the same VectorGroup as an
+ *  existing Vec and initialized to e.g. zero.  Such Vecs are often used as
+ *  temps, and usually immediately set to interest values in a later MRTask
+ *  pass.
  * 
+ *  <p>Example creation of temp Vecs:<pre>
+ *    Vec tmp0 = vec.makeZero();         // New Vec with same VectorGroup and layout as vec, filled with zero
+ *    Vec tmp1 = vec.makeCon(mean);      // Filled with 'mean'
+ *    assert tmp1.at(0x123456789)==mean; // All elements filled with 'mean'
+ *    for( int i=0; i<100; i++ )         // A little math on the first 100 elements
+ *      tmp0.set(i,tmp1.at(i)+17);       // ...set into the tmp0 vec
+ *  </pre>
+ *
  *  <p>Vec {@link Key}s have a special layout (enforced by the various Vec
  *  constructors) so there is a direct Key mapping from a Vec to a numbered
  *  Chunk and vice-versa.  This mapping is crucially used in all sorts of
@@ -328,10 +362,8 @@ public class Vec extends Keyed {
     return vs;
   }
 
-  /** Make a new vector with the same size and data layout as the current one,
-   *  and initialized to increasing integers, starting with 1.
-   *  @return A new vector with the same size and data layout as the current
-   *  one, and initialized to increasing integers, starting with 1. */
+  /** Make a new vector initialized to increasing integers, starting with 1.
+   *  @return A new vector initialized to increasing integers, starting with 1. */
   public static Vec makeSeq( long len) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
@@ -342,10 +374,8 @@ public class Vec extends Keyed {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Make a new vector with the same size and data layout as the current one,
-   *  and initialized to increasing integers mod {@code repeat}, starting with 1.
-   *  @return A new vector with the same size and data layout as the current
-   *  one, and initialized to increasing integers mod {@code repeat}, starting
+  /** Make a new vector initialized to increasing integers mod {@code repeat}, starting with 1.
+   *  @return A new vector initialized to increasing integers mod {@code repeat}, starting
    *  with 1. */
   public static Vec makeRepSeq( long len, final long repeat ) {
     return new MRTask() {
@@ -540,7 +570,7 @@ public class Vec extends Keyed {
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs. */
   int elem2ChunkIdx( long i ) {
-    assert 0 <= i && i < length() : "0 <= "+i+" < "+length();
+    if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
     int lo=0, hi = nChunks();
     while( lo < hi-1 ) {
       int mid = (hi+lo)>>>1;
