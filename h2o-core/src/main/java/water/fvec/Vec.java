@@ -196,6 +196,42 @@ public class Vec extends Keyed {
   private Vec( Key key, Vec v ) { this(key, v._espc); assert group()==v.group(); }
 
 
+  /** Number of elements in the vector; returned as a {@code long} instead of
+   *  an {@code int} because Vecs support more than 2^32 elements. Overridden
+   *  by subclasses that compute length in an alternative way, such as
+   *  file-backed Vecs.
+   *  @return Number of elements in the vector */
+  public long length() { return _espc[_espc.length-1]; }
+
+  /** Number of chunks, returned as an {@code int} - Chunk count is limited by
+   *  the max size of a Java {@code long[]}.  Overridden by subclasses that
+   *  compute chunks in an alternative way, such as file-backed Vecs.
+   *  @return Number of chunks */
+  public int nChunks() { return _espc.length-1; }
+
+  /** Convert a chunk-index into a starting row #.  For constant-sized chunks
+   *  this is a little shift-and-add math.  For variable-sized chunks this is a
+   *  table lookup. */
+  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
+
+  /** Number of rows in chunk. Does not fetch chunk content. */
+  private int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
+
+  /** Check that row-layouts are compatible. */
+  boolean checkCompatible( Vec v ) {
+    // Groups are equal?  Then only check length
+    if( group().equals(v.group()) ) return length()==v.length();
+    // Otherwise actual layout has to be the same, and size "small enough"
+    // to not worry about data-replication when things are not homed the same.
+    // The layout test includes an exactly-equals-length check.
+    return Arrays.equals(_espc,v._espc) && length() < 1e5;
+  }
+
+  /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
+  boolean readable() { return true ; }
+  /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
+  boolean writable() { return true; }
+  
   // ======= Create zero/constant Vecs ======
 
   /** Make a new zero-filled vector with the given row count. 
@@ -322,65 +358,40 @@ public class Vec extends Keyed {
   }
 
 
-  /** Number of elements in the vector; returned as a {@code long} instead of
-   *  an {@code int} because Vecs support more than 2^32 elements. Overridden
-   *  by subclasses that compute length in an alternative way, such as
-   *  file-backed Vecs.
-   *  @return Number of elements in the vector */
-  public long length() { return _espc[_espc.length-1]; }
+  // ======= Rollup Stats ======
 
-  /** Number of chunks.  Overridden by subclasses that compute chunks in an
-   *  alternative way, such as file-backed Vecs. */
-  public int nChunks() { return _espc.length-1; }
-
-  /** Convert a chunk-index into a starting row #.  For constant-sized chunks
-   *  this is a little shift-and-add math.  For variable-sized chunks this is a
-   *  table lookup. */
-  long chunk2StartElem( int cidx ) { return _espc[cidx]; }
-
-  /** Number of rows in chunk. Does not fetch chunk content. */
-  public int chunkLen( int cidx ) { return (int) (_espc[cidx + 1] - _espc[cidx]); }
-
-  /** Check that row-layouts are compatible. */
-  boolean checkCompatible( Vec v ) {
-    // Groups are equal?  Then only check length
-    if( group().equals(v.group()) ) return length()==v.length();
-    // Otherwise actual layout has to be the same, and size "small enough"
-    // to not worry about data-replication when things are not homed the same.
-    // The layout test includes an exactly-equals-length check.
-    return Arrays.equals(_espc,v._espc) && length() < 1e5;
-  }
-
-  /** Is the column constant.
-   * <p>Returns true if the column contains only constant values and it is not full of NAs.</p> */
-  public final boolean isConst() { return min() == max(); }
-  /** Is the column bad.
-   * <p>Returns true if the column is full of NAs.</p>
-   */
-  private boolean isBad() { return naCnt() == length(); }
-
-  /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
-  protected boolean readable() { return true ; }
-  /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
-  protected boolean writable() { return true; }
-
-  /** RollupStats: min/max/mean of this Vec lazily computed.  */
-  /** Return column min - lazily computed as needed. */
+  /** Vec's minimum value 
+   *  @return Vec's minimum value */
   public double min()  { return mins()[0]; }
+  /** Vec's 5 smallest values 
+   *  @return Vec's 5 smallest values */
   public double[]mins(){ return rollupStats()._mins; }
-  /** Return column max - lazily computed as needed. */
+  /** Vec's maximum value 
+   *  @return Vec's maximum value */
   public double max()  { return maxs()[0]; }
+  /** Vec's 5 largest values 
+   *  @return Vec's 5 largeest values */
   public double[]maxs(){ return rollupStats()._maxs; }
-  /** Return column mean - lazily computed as needed. */
+  /** True if the column contains only a constant value and it is not full of NAs 
+   *  @return True if the column is constant */
+  public final boolean isConst() { return min() == max(); }
+  /** Vecs's mean 
+   *  @return Vec's mean */
   public double mean() { return rollupStats()._mean; }
-  /** Return column standard deviation - lazily computed as needed. */
+  /** Vecs's standard deviation
+   *  @return Vec's standard deviation */
   public double sigma(){ return rollupStats()._sigma; }
-  /** Return column missing-element-count - lazily computed as needed. */
+  /** Count of missing elements
+   *  @return Count of missing elements */
   public long  naCnt() { return rollupStats()._naCnt; }
-  /** Return column zero-element-count - lazily computed as needed. */
+  /** Count of non-zero elements
+   *  @return Count of non-zero elements */
   public long  nzCnt() { return rollupStats()._nzCnt; }
-  /** Positive and negative infinity counts */
+  /** Count of positive infinities
+   *  @return Count of positive infinities */
   public long  pinfs() { return rollupStats()._pinfs; }
+  /** Count of negative infinities
+   *  @return Count of negative infinities */
   public long  ninfs() { return rollupStats()._ninfs; }
   /** {@link #isInt} is a property of numeric Vecs and not a type; this
    *  property can be changed by assigning non-integer values into the Vec (or
@@ -393,17 +404,31 @@ public class Vec extends Keyed {
 
   /** Default Histogram bins. */
   public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
-  /**  Computed on-demand to 1st call to these methods.
-   *  bins[] are row-counts in each bin
-   *  base - start of bin 0
-   *  stride - relative start of next bin
-   */
+
+  /** A simple and cheap histogram of the Vec, useful for getting a broad
+   *  overview of the data.  Each bin is row-counts for the bin's range.  The
+   *  bin's range is computed from {@link #base} and {@link #stride}.  The
+   *  histogram is computed on first use and cached thereafter.
+   *  @return A set of histogram bins. */
   public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins; }
-  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base(); }
-  public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
-  public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
-  /** Optimistically return the histogram bins, or null if not computed */
+  /** Optimistically return the histogram bins, or null if not computed 
+   *  @return the histogram bins, or null if not computed */
   public long[] lazy_bins() { return rollupStats()._bins; }
+  /** The {@code base} for a simple and cheap histogram of the Vec, useful
+   *  for getting a broad overview of the data.  This returns the base of
+   *  {@code bins()[0]}.
+   *  @return the base of {@code bins()[0]} */
+  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base(); }
+  /** The {@code stride} for a a simple and cheap histogram of the Vec, useful
+   *  for getting a broad overview of the data.  This returns the stride
+   *  between any two bins.
+   *  @return the stride between any two bins */
+  public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
+
+  /** A simple and cheap percentiles of the Vec, useful for getting a broad
+   *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}. 
+   *  @return A set of percentiles */
+  public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
 
   /** Compute the roll-up stats as-needed */
   private RollupStats rollupStats() { return RollupStats.get(this); }
@@ -446,6 +471,9 @@ public class Vec extends Keyed {
     }
   } // class ChecksummerTask
 
+  /** A high-quality 64-bit checksum of the Vec's content, useful for
+   *  establishing dataset identity.
+   *  @return Checksum of the Vec's content  */
   public long checksum() {
     final long now = _last_write_timestamp;  // TODO: someone can be writing while we're checksuming. . .
     if (-1 != now && now == _checksum_timestamp) {
@@ -469,10 +497,11 @@ public class Vec extends Keyed {
   }
 
 
-  /** Writing into this Vector from *some* chunk.  Immediately clear all caches
-   *  (_min, _max, _mean, etc).  Can be called repeatedly from one or all
-   *  chunks.  Per-chunk row-counts will not be changing, just row contents and
-   *  caches of row contents. */
+  /** Begin writing into this Vec.  Immediately clears all the rollup stats
+   *  ({@link #min}, {@link #max}, {@link #mean}, etc) since such values are
+   *  not meaningful while the Vec is being actively modified.  Can be called
+   *  repeatedly.  Per-chunk row-counts will not be changing, just row
+   *  contents. */
   public void preWriting( ) {
     if( !writable() ) throw new IllegalArgumentException("Vector not writable");
     final Key rskey = rollupStatsKey();
@@ -489,10 +518,9 @@ public class Vec extends Keyed {
     }.invoke(rskey);
   }
 
-  /** Stop writing into this Vec.  Rollup stats will again (lazily) be computed. */
+  /** Stop writing into this Vec.  Rollup stats will again (lazily) be
+   *  computed. */
   public Futures postWrite( Futures fs ) {
-    // TODO: update _last_write_timestamp!
-
     // Get the latest rollups *directly* (do not compute them!).
     final Key rskey = rollupStatsKey();
     Value val = DKV.get(rollupStatsKey());
@@ -521,18 +549,24 @@ public class Vec extends Keyed {
     return lo;
   }
 
-  /** Get a Vec Key from Chunk Key, without loading the Chunk */
-  public static Key getVecKey( Key key ) {
-    assert key._kb[0]==Key.CHK;
-    byte [] bits = key._kb.clone();
+  /** Get a Vec Key from Chunk Key, without loading the Chunk.
+   *  @return the Vec Key for the Chunk Key */
+  public static Key getVecKey( Key chk_key ) {
+    assert chk_key._kb[0]==Key.CHK;
+    byte [] bits = chk_key._kb.clone();
     bits[0] = Key.VEC;
     UnsafeUtils.set4(bits, 6, -1); // chunk#
     return Key.make(bits);
   }
 
-  /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map. */
+  /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
+   *  @return Chunk Key from a chunk-index */
   public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
-  static public Key chunkKey(Key veckey, int cidx ) {
+
+  /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
+   *  actual Vec object.  Basically the index-to-key map.
+   *  @return Chunk Key from a chunk-index and Vec Key */
+  public static Key chunkKey(Key veckey, int cidx ) {
     byte [] bits = veckey._kb.clone();
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits,6,cidx); // chunk#
@@ -540,17 +574,16 @@ public class Vec extends Keyed {
   }
   Key rollupStatsKey() { return chunkKey(-2); }
 
-  /** Get a Chunk's Value by index.  Basically the index-to-key map,
-   *  plus the {@code DKV.get()}.  Warning: this pulls the data locally;
-   *  using this call on every Chunk index on the same node will
-   *  probably trigger an OOM!  */
-  protected Value chunkIdx( int cidx ) {
+  /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
+   *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
+   *  on every Chunk index on the same node will probably trigger an OOM!  */
+  Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val);
     return val;
   }
 
-  protected boolean checkMissing(int cidx, Value val) {
+  private boolean checkMissing(int cidx, Value val) {
     if( val != null ) return true;
     System.out.println("Error: Missing chunk "+cidx+" for "+_key);
     return false;
@@ -564,11 +597,12 @@ public class Vec extends Keyed {
     return cidx < nChunks() ? chunkForChunkIdx(cidx) : null;
   }
 
-  /** Make a new random Key that fits the requirements for a Vec key. */
+  /** Make a new random Key that fits the requirements for a Vec key. 
+   *  @return A new random Vec Key */
   public static Key newKey(){return newKey(Key.make());}
 
   /** Internally used to help build Vec and Chunk Keys; public to help
-   * PersistNFS build file mappings.  Not intended as a public field. */
+   *  PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
@@ -591,12 +625,10 @@ public class Vec extends Keyed {
     UnsafeUtils.set4(bits, 6, -1);
     return Key.make(bits);
   }
-  /**
-   * Get the group this vector belongs to.
-   * In case of a group with only one vector, the object actually does not exist in KV store.
-   *
-   * @return VectorGroup this vector belongs to.
-   */
+
+  /** Get the group this vector belongs to.  In case of a group with only one
+   *  vector, the object actually does not exist in KV store.
+   *  @return VectorGroup this vector belongs to */
   public final VectorGroup group() {
     Key gKey = groupKey();
     Value v = DKV.get(gKey);
@@ -617,6 +649,7 @@ public class Vec extends Keyed {
     c._start = start;          // Fields not filled in by unpacking from Value
     return c;
   }
+
   /** The Chunk for a row#.  Warning: this loads the data locally!  */
   private Chunk chunkForRow_impl(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
@@ -627,6 +660,7 @@ public class Vec extends Keyed {
     Chunk c = _cache;
     return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow_impl(i));
   }
+
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. */
   public final long  at8( long i ) { return chunkForRow(i).at8(i); }
