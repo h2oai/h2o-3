@@ -49,7 +49,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     _nchunks = nchunks;
     _jobKey = jobKey;
     _okey = dstKey;
-    _vg = Vec.VectorGroup.newVectorGroup();
+    _vg = new Vec.VectorGroup();
   }
 
   public Frame getResult(){join(); return _out;}

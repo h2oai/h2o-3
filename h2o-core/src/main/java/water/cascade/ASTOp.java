@@ -1392,9 +1392,8 @@ class ASTSeq extends ASTUniPrefixOp {
       if(dd < 100*Double.MIN_VALUE)
         env.push(new ValNum(_from));
       else {
-        Key k = new Vec.VectorGroup().addVec();
         Futures fs = new Futures();
-        AppendableVec av = new AppendableVec(k);
+        AppendableVec av = new AppendableVec(Vec.newKey());
         NewChunk nc = new NewChunk(av, 0);
         int len = (int)n + 1;
         for (int r = 0; r < len; r++) nc.addNum(_from + r*_by);

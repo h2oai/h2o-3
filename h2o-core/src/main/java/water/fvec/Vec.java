@@ -82,7 +82,7 @@ import java.util.concurrent.Future;
  *  Clearing the RollupStats cache is fairly expensive for individual {@link
  *  #set} calls but is easy to amortize over a large count of writes; i.e.,
  *  batch writing is efficient.  This is normally handled by the MRTask
- *  framework; the {@link Writer} framework allows <em>single-threaded</em>
+ *  framework; the {@link Vec.Writer} framework allows <em>single-threaded</em>
  *  efficient batch writing for smaller Vecs.
  *
  *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
@@ -533,6 +533,8 @@ public class Vec extends Keyed {
   }
 
 
+  // ======= Key and Chunk Management ======
+
   /** Convert a row# to a chunk#.  For constant-sized chunks this is a little
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
@@ -636,7 +638,9 @@ public class Vec extends Keyed {
     return v==null ? new VectorGroup(gKey,1) : (VectorGroup)v.get();
   }
 
-  /** The Chunk for a chunk#.  Warning: this loads the data locally!  */
+  /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
+   *  call on every Chunk index on the same node will probably trigger an OOM!
+   *  @return Chunk for a chunk# */
   public Chunk chunkForChunkIdx(int cidx) {
     long start = chunk2StartElem(cidx); // Chunk# to chunk starting element#
     Value dvec = chunkIdx(cidx);        // Chunk# to chunk data
@@ -655,53 +659,67 @@ public class Vec extends Keyed {
 
   // Cache of last Chunk accessed via at/set api
   transient Chunk _cache;
-  /** The Chunk for a row#.  Warning: this loads the data locally!  */
+
+  /** The Chunk for a row#.  Warning: this pulls the data locally; using this
+   *  call on every Chunk index on the same node will probably trigger an OOM!
+   *  @return Chunk for a row# */
   public final Chunk chunkForRow(long i) {
     Chunk c = _cache;
     return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow_impl(i));
   }
 
+  // ======= Direct Data Accessors ======
+
   /** Fetch element the slow way, as a long.  Floating point values are
-   *  silently rounded to an integer.  Throws if the value is missing. */
+   *  silently rounded to an integer.  Throws if the value is missing. 
+   *  @return {@code i}th element as a long, or throw if missing */
   public final long  at8( long i ) { return chunkForRow(i).at8(i); }
-  /** Fetch element the slow way, as a double.  Missing values are
-   *  returned as Double.NaN instead of throwing. */
+
+  /** Fetch element the slow way, as a double, or Double.NaN is missing.
+   *  @return {@code i}th element as a double, or Double.NaN if missing */
   public final double at( long i ) { return chunkForRow(i).at(i); }
-  /** Fetch the missing-status the slow way. */
+  /** Fetch the missing-status the slow way. 
+   *  @return the missing-status the slow way */
   public final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
 
-  /** Fetch element the slow way, as a long.  Throws if the value is missing or not a UUID. */
+  /** Fetch element the slow way, as the low half of a UUID.  Throws if the
+   *  value is missing or not a UUID.
+   *  @return {@code i}th element as a UUID low half, or throw if missing */
   public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
+  /** Fetch element the slow way, as the high half of a UUID.  Throws if the
+   *  value is missing or not a UUID.
+   *  @return {@code i}th element as a UUID high half, or throw if missing */
   public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
 
+  /** Fetch element the slow way, as a {@link ValueString} or null if missing.
+   *  Throws if the value is not a String.  ValueStrings are String-like
+   *  objects than can be reused in-place, which is much more efficient than
+   *  constructing Strings.
+   *  @return {@code i}th element as {@link ValueString} or null if missing, or
+   *  throw if not a String */
   public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr(vstr,i); }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
    *  if the long does not fit in a double (value is larger magnitude than
-   *  2^52), AND float values are stored in Vector.  In this case, there is no
-   *  common compatible data representation.
-   *
-   *  */
+   *  2^52), AND float values are stored in Vec.  In this case, there is no
+   *  common compatible data representation.  */
   public final void set( long i, long l) {
     Chunk ck = chunkForRow(i);
     ck.set(i,l);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
-  /** Write element the slow way, as a double.  Double.NaN will be treated as
-   *  a set of a missing element.
-   *  Slow to do this for every set - use Writer if writing many values
-   *  */
+  /** Write element the slow way, as a double.  Double.NaN will be treated as a
+   *  set of a missing element. */
   public final void set( long i, double d) {
     Chunk ck = chunkForRow(i);
     ck.set(i,d);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
-  /** Write element the slow way, as a float.  Float.NaN will be treated as
-   *  a set of a missing element.
-   *  */
+  /** Write element the slow way, as a float.  Float.NaN will be treated as a
+   *  set of a missing element. */
   public final void set( long i, float  f) {
     Chunk ck = chunkForRow(i);
     ck.set(i,f);
@@ -715,15 +733,17 @@ public class Vec extends Keyed {
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
+  /** Write element the slow way, as a String.  {@code null} will be treated as a
+   *  set of a missing element. */
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
     ck.set(i,str);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
-  /**
-   * More efficient way to write randomly to a Vec - still slow, but much
-   * faster than Vec.set().  Limited to single-threaded single-machine writes.
+  /** A more efficient way to write randomly to a Vec - still single-threaded,
+   *  still slow, but much faster than Vec.set().  Limited to single-threaded
+   *  single-machine writes.
    *
    * Usage:
    * Vec.Writer vw = vec.open();
@@ -732,7 +752,7 @@ public class Vec extends Keyed {
    * vw.set(2, 5.32);
    * vw.close();
    */
-  public final static class Writer implements java.io.Closeable {
+  final static class Writer implements java.io.Closeable {
     final Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
     public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
@@ -744,7 +764,8 @@ public class Vec extends Keyed {
     public void close() { close(new Futures()).blockForPending(); }
   }
 
-  /** Create a writer for bulk serial writes into this Vec */
+  /** Create a writer for bulk serial writes into this Vec.
+   *  @return A Writer for bulk serial writes */
   public final Writer open() { return new Writer(this); }
 
   /** Close all chunks that are local (not just the ones that are homed)
@@ -757,7 +778,8 @@ public class Vec extends Keyed {
     return fs;                  // Flow-coding
   }
 
-  /** Pretty print the Vec: [#elems, min/mean/max]{chunks,...} */
+  /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
+   *  @return Brief string representation of a Vec */
   @Override public String toString() {
     RollupStats rs = RollupStats.getOrNull(this);
     String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
@@ -771,25 +793,31 @@ public class Vec extends Keyed {
     return s+"}]";
   }
 
-  // Remove associated Keys when this guy removes
+  /** True if two Vecs are equal.  Checks for equal-Keys only (so it is fast)
+   *  and not equal-contents.
+   *  @return True if two Vecs are equal */
+  @Override public boolean equals( Object o ) {
+    return o instanceof Vec && ((Vec)o)._key.equals(_key);
+  }
+  /** Vec's hashcode, which is just the Vec Key hashcode.
+   *  @return Vec's hashcode */
+  @Override public int hashCode() { return _key.hashCode(); }
+
+  /** Remove associated Keys when this guy removes.  For Vecs, remove all
+   *  associated Chunks.
+   *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
     for( int i=0; i<nChunks(); i++ )
       DKV.remove(chunkKey(i),fs);
     DKV.remove(rollupStatsKey(),fs);
     return fs;
   }
-  @Override public boolean equals( Object o ) {
-    return o instanceof Vec && ((Vec)o)._key.equals(_key);
-  }
-  @Override public int hashCode() { return _key.hashCode(); }
 
-  /** Always makes a copy of the given vector which shares the same
-   * group.
-   *
-   * The user is responsible for deleting the returned vector.
-   *
-   * This can be expensive operation since it can force copy of data
-   * among nodes.
+  // ======= Whole Vec Transformations ======
+
+  /** Always makes a copy of the given vector which shares the same group as
+   *  this Vec.  This can be expensive operation since it can force copy of
+   *  data among nodes.
    *
    * @param vec vector which is intended to be copied
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
@@ -808,14 +836,12 @@ public class Vec extends Keyed {
     return avec;
   }
 
-  /** Transform this vector to enum.
-   *  If the vector is integer vector then its domain is collected and transformed to
-   *  corresponding strings.
-   *  If the vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a TransfVec which provides a mapping between values.
-   *
-   *  @return always returns a new vector and the caller is responsible for vector deletion!
-   */
+  /** Transform this vector to enum.  If the vector is integer vector then its
+   *  domain is collected and transformed to corresponding strings.  If the
+   *  vector is enum an identity transformation vector is returned.
+   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  between values - without copying the underlying data.
+   *  @return A new Enum Vec  */
   public Vec toEnum() {
     if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
@@ -826,11 +852,14 @@ public class Vec extends Keyed {
   }
 
   /** Create a vector transforming values according given domain map.
-   * @see Vec#makeTransf(int[], int[], String[])
-   */
+   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  between values - without copying the underlying data.
+   *  @see Vec#makeTransf(int[], int[], String[])  */
   public Vec makeTransf(final int[][] map, String[] finalDomain) { return makeTransf(map[0], map[1], finalDomain); }
 
   /** Creates a new transformation from given values to given indexes of given domain.
+   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  between values - without copying the underlying data.
    *  @param values values being mapped from
    *  @param indexes values being mapped to
    *  @param domain domain of new vector
@@ -844,6 +873,8 @@ public class Vec extends Keyed {
   }
 
   /** Makes a new transformation vector with identity mapping.
+   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  between values - without copying the underlying data.
    *  @return a new transformation vector
    *  @see Vec#makeTransf(int[], int[], String[])
    */
@@ -853,6 +884,8 @@ public class Vec extends Keyed {
   }
 
   /** Makes a new transformation vector from given values to values 0..domain size
+   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  between values - without copying the underlying data.
    *  @param values values which are mapped from
    *  @param domain target domain which is mapped to
    *  @return a new transformation vector providing mapping between given values and target domain.
@@ -863,123 +896,11 @@ public class Vec extends Keyed {
     for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
     return makeTransf(is, null, domain);
   }
+
   /** This Vec does not have dependent hidden Vec it uses.
-   *
-   * @return dependent hidden vector or <code>null</code>
-   */
-  protected Vec masterVec() { return null; }
-
-  /**
-   * Class representing the group of vectors.
-   *
-   * Vectors from the same group have same distribution of chunks among nodes.
-   * Each vector is member of exactly one group.  Default group of one vector
-   * is created for each vector.  Group of each vector can be retrieved by
-   * calling group() method;
-   *
-   * The expected mode of operation is that user wants to add new vectors
-   * matching the source.  E.g. parse creates several vectors (one for each
-   * column) which are all colocated and are colocated with the original
-   * bytevector.
-   *
-   * To do this, user should first ask for the set of keys for the new vectors
-   * by calling addVecs method on the target group.
-   *
-   * Vectors in the group will have the same keys except for the prefix which
-   * specifies index of the vector inside the group.  The only information the
-   * group object carries is it's own key and the number of vectors it
-   * contains(deleted vectors still count).
-   *
-   * Because vectors(and chunks) share the same key-pattern with the group,
-   * default group with only one vector does not have to be actually created,
-   * it is implicit.
-   *
-   * @author tomasnykodym
-   *
-   */
-  public static class VectorGroup extends Iced {
-    // The common shared vector group for length==1 vectors
-    public static VectorGroup newVectorGroup(){
-      return new Vec(Vec.newKey(),(long[])null).group();
-    }
-    public static final VectorGroup VG_LEN1 = new VectorGroup();
-    final int _len;
-    final Key _key;
-    private VectorGroup(Key key, int len){_key = key;_len = len;}
-    public VectorGroup() {
-      byte[] bits = new byte[26];
-      bits[0] = Key.GRP;
-      bits[1] = -1;
-      UnsafeUtils.set4(bits, 2, -1);
-      UnsafeUtils.set4(bits, 6, -1);
-      UUID uu = UUID.randomUUID();
-      UnsafeUtils.set8(bits,10,uu.getLeastSignificantBits());
-      UnsafeUtils.set8(bits,18,uu. getMostSignificantBits());
-      _key = Key.make(bits);
-      _len = 0;
-    }
-    public Key vecKey(int vecId) {
-      byte [] bits = _key._kb.clone();
-      bits[0] = Key.VEC;
-      UnsafeUtils.set4(bits,2,vecId);//
-      return Key.make(bits);
-    }
-    /**
-     * Task to atomically add vectors into existing group.
-     * @author tomasnykodym
-     */
-    private static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
-      final Key _key;
-      int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
-      private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
-      @Override protected VectorGroup atomic(VectorGroup old) {
-        int n = _n;             // how many
-        // If the old group is missing, assume it is the default group-of-self
-        // (having 1 ID already allocated for self), not a new group with
-        // zero prior vectors.
-        _n = old==null ? 1 : old._len; // start of allocated key run
-        return new VectorGroup(_key, n+_n);
-      }
-    }
-    // reserve range of keys and return index of first new available key
-    public int reserveKeys(final int n){
-      AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
-      tsk.invoke(_key);
-      return tsk._n;
-    }
-    /**
-     * Gets the next n keys of this group.
-     * Performs atomic update of the group object to assure we get unique keys.
-     * The group size will be updated by adding n.
-     *
-     * @param n number of keys to make
-     * @return arrays of unique keys belonging to this group.
-     */
-    public Key [] addVecs(final int n){
-      AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
-      tsk.invoke(_key);
-      Key [] res = new Key[n];
-      for(int i = 0; i < n; ++i)
-        res[i] = vecKey(i + tsk._n);
-      return res;
-    }
-    /**
-     * Shortcut for addVecs(1).
-     * @see #addVecs(int)
-     */
-    public Key addVec() { return addVecs(1)[0]; }
-
-    @Override public String toString() {
-      return "VecGrp "+_key.toString()+", next free="+_len;
-    }
-
-    @Override public boolean equals( Object o ) {
-      return o instanceof VectorGroup && ((VectorGroup)o)._key.equals(_key);
-    }
-    @Override public int hashCode() {
-      return _key.hashCode();
-    }
-  }
+   *  @see TransfVec
+   *  @return dependent hidden vector or <code>null</code>  */
+  Vec masterVec() { return null; }
 
   /** Collect numeric domain of given vector */
   private static class CollectDomain extends MRTask<CollectDomain> {
@@ -1021,4 +942,117 @@ public class Vec extends Keyed {
       return dom;
     }
   }
+
+  /** Class representing the group of vectors.
+   *
+   *  Vectors from the same group have same distribution of chunks among nodes.
+   *  Each vector is member of exactly one group.  Default group of one vector
+   *  is created for each vector.  Group of each vector can be retrieved by
+   *  calling group() method;
+   *  
+   *  The expected mode of operation is that user wants to add new vectors
+   *  matching the source.  E.g. parse creates several vectors (one for each
+   *  column) which are all colocated and are colocated with the original
+   *  bytevector.
+   *  
+   *  To do this, user should first ask for the set of keys for the new vectors
+   *  by calling addVecs method on the target group.
+   *  
+   *  Vectors in the group will have the same keys except for the prefix which
+   *  specifies index of the vector inside the group.  The only information the
+   *  group object carries is it's own key and the number of vectors it
+   *  contains (deleted vectors still count).
+   *  
+   *  Because vectors (and chunks) share the same key-pattern with the group,
+   *  default group with only one vector does not have to be actually created,
+   *  it is implicit.
+   *  
+   *  @author tomasnykodym
+   */
+  public static class VectorGroup extends Iced {
+    /** The common shared vector group for very short vectors */
+    public static final VectorGroup VG_LEN1 = new VectorGroup();
+
+    final int _len;
+    final Key _key;
+    private VectorGroup(Key key, int len){_key = key;_len = len;}
+
+    VectorGroup() {
+      byte[] bits = new byte[26];
+      bits[0] = Key.GRP;
+      bits[1] = -1;
+      UnsafeUtils.set4(bits, 2, -1);
+      UnsafeUtils.set4(bits, 6, -1);
+      UUID uu = UUID.randomUUID();
+      UnsafeUtils.set8(bits,10,uu.getLeastSignificantBits());
+      UnsafeUtils.set8(bits,18,uu. getMostSignificantBits());
+      _key = Key.make(bits);
+      _len = 0;
+    }
+
+    /** Returns Vec Key from Vec id# 
+     *  @return Vec Key from Vec id# */
+    public Key vecKey(int vecId) {
+      byte [] bits = _key._kb.clone();
+      bits[0] = Key.VEC;
+      UnsafeUtils.set4(bits,2,vecId);//
+      return Key.make(bits);
+    }
+    /** Task to atomically add vectors into existing group.
+     *  @author tomasnykodym   */
+    private static class AddVecs2GroupTsk extends TAtomic<VectorGroup>{
+      final Key _key;
+      int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
+      @Override protected VectorGroup atomic(VectorGroup old) {
+        int n = _n;             // how many
+        // If the old group is missing, assume it is the default group-of-self
+        // (having 1 ID already allocated for self), not a new group with
+        // zero prior vectors.
+        _n = old==null ? 1 : old._len; // start of allocated key run
+        return new VectorGroup(_key, n+_n);
+      }
+    }
+
+    /** Reserve a range of keys and return index of first new available key
+     *  @return Vec id# of a range of Vec keys in this group */
+    public int reserveKeys(final int n) {
+      AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
+      tsk.invoke(_key);
+      return tsk._n;
+    }
+
+    /** Gets the next n keys of this group.
+     *  @param n number of keys to make
+     *  @return arrays of unique keys belonging to this group.  */
+    public Key[] addVecs(final int n) {
+      int nn = reserveKeys(n);
+      Key[] res = new Key[n];
+      for( int i = 0; i < n; ++i )
+        res[i] = vecKey(i + nn);
+      return res;
+    }
+    /** Shortcut for {@code addVecs(1)}.
+     *  @see #addVecs(int)
+     *  @return a new Vec Key in this group   */
+    public Key addVec() { return addVecs(1)[0]; }
+
+    /** Pretty print the VectorGroup
+     *  @return String representation of a VectorGroup */
+    @Override public String toString() {
+      return "VecGrp "+_key.toString()+", next free="+_len;
+    }
+
+    /** True if two VectorGroups are equal 
+     *  @return True if two VectorGroups are equal */
+    @Override public boolean equals( Object o ) {
+      return o instanceof VectorGroup && ((VectorGroup)o)._key.equals(_key);
+    }
+    /** VectorGroups's hashcode
+     *  @return VectorGroups's hashcode */
+    @Override public int hashCode() {
+      return _key.hashCode();
+    }
+  }
+
 }
