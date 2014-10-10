@@ -378,9 +378,9 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if (missing(i) && missing(j)) {
     if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
     lhs <- x
-  } else if (missing(i)) lhs <- do.call("[", list(x=x, j=substitute(j)))
-    else if (missing(j)) lhs <- do.call("[", list(x=x, i=substitute(i)))
-    else lhs <- do.call("[", list(x=x, i=substitute(i), j=substitute(j)))
+  } else if (missing(i)) lhs <- do.call("[", list(x=x, j=j))
+    else if (missing(j)) lhs <- do.call("[", list(x=x, i=i))
+    else lhs <- do.call("[", list(x=x, i=i, j=j))
 
   if (value %<i-% "ASTNode") rhs <- eval(value)
   else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key

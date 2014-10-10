@@ -169,9 +169,7 @@ public abstract class ASTOp extends AST {
   static private void putUniInfix(ASTOp ast) { UNI_INFIX_OPS.put(ast.opStr(),ast); }
   static private void putBinInfix(ASTOp ast) { BIN_INFIX_OPS.put(ast.opStr(),ast); SYMBOLS.put(ast.opStr(), ast); }
   static private void putPrefix  (ASTOp ast) { PREFIX_OPS.put(ast.opStr(),ast);    SYMBOLS.put(ast.opStr(), ast); }
-  static         void putUDF     (ASTOp ast, String fn) {
-    UDF_OPS.put(fn, ast);
-  }
+  static         void putUDF     (ASTOp ast, String fn) { UDF_OPS.put(fn, ast);    SYMBOLS.put(fn, ast);}
   static         void removeUDF  (String fn) { UDF_OPS.remove(fn); }
   static public ASTOp isOp(String id) {
     // This order matters. If used as a prefix OP, `+` and `-` are binary only.

@@ -27,20 +27,23 @@ test.head_empty <- function(conn) {
     a <- a_initial
     b <- a
     expect_that(all(b == a), equals(T))
+    print(a)
+    print(b)
 
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
 
     # now we'll create an empty b.h2o in h2o
     b.h2o <- a.h2o[a.h2o$C1==32]
+    print(b.h2o)
 
     # note the row expression is legal for the non-empty data frame
     #   V1 V2 C3 p4
-    head(a.h2o[1,])
+    print(head(a.h2o[1,]))
 
     # 1 0 0 0 0 
     # data frame with 0 columns and 0 rows
-    head(b.h2o[,1])
-    head(b.h2o[1,])
+    print(head(b.h2o[,1]))
+    print(head(b.h2o[1,]))
 
     testEnd()
 }

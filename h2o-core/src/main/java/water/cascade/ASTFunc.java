@@ -36,9 +36,8 @@ import java.util.ArrayList;
 
 
 /**
- *
- * Functions will always have all of their arguments fully specified, or filled with null.
- * Always parse `nargs` arguments.
+ * Functions will always have all of their arguments fully specified (even if that means they are filled with null).
+ * This means `nargs` arguments are awlays parsed.
  */
 public class ASTFunc extends ASTFuncDef {
   ASTFunc() { super(); }

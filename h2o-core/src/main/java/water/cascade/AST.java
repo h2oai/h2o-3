@@ -493,14 +493,15 @@ class ASTAssign extends AST {
     }
   }
 
+  // replace thing on the RHS -> LHS. set from cs to ary
   private static void replaceRow(Chunk[] cs, int row0, long row_id, long[] cols, Frame ary) {
     for (int c = 0; c < cols.length; ++c) {
       int col = (int)cols[c];
       // got an enum trying to set into enum
       // got an enum trying to set into something else -> NA
-      if (cs[col].vec().isEnum()) {
+      if (cs[c].vec().isEnum()) {
         if (ary.vecs()[col].isEnum()) {
-          ary.vecs()[col].set(row_id, cs[col].at0(row0));
+          ary.vecs()[col].set(row_id, cs[c].at0(row0));
         } else {
           ary.vecs()[col].set(row_id, Double.NaN);
         }
@@ -508,9 +509,9 @@ class ASTAssign extends AST {
 
       // got numeric trying to set into something non-numeric -> NA
       // got numeric trying to set into numeric
-      if (cs[col].vec().isNumeric()) {
+      if (cs[c].vec().isNumeric()) {
         if (ary.vecs()[col].isNumeric()) {
-          ary.vecs()[col].set(row_id, cs[col].at0(row0));
+          ary.vecs()[col].set(row_id, cs[c].at0(row0));
         } else {
           ary.vecs()[col].set(row_id, Double.NaN);
         }
@@ -544,7 +545,7 @@ class ASTAssign extends AST {
             for (int row = 0; row < chks[0]._len; ++row)
               if (Arrays.asList(rows0).contains(row)) replaceRow(chks, row, d0, s0, cols0);
           }
-        }.doAll(lhs_ary.numCols(), lhs_ary);
+        }.doAll(lhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
 
@@ -561,7 +562,7 @@ class ASTAssign extends AST {
             int rows = cs[0]._len;
             for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
-        }.doAll(rr.numCols() - 1, rr);
+        }.doAll(rr);
         e.cleanup(rr, (Frame) rows);
         e.push0(new ValFrame(lhs_ary));
         return;
@@ -604,7 +605,7 @@ class ASTAssign extends AST {
               }
             }
           }
-        }.doAll(lhs_ary.numCols(), lhs_ary);
+        }.doAll(lhs_ary);
         e.cleanup(rhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
@@ -641,7 +642,7 @@ class ASTAssign extends AST {
               replaceRow(cs, r, row_id, cols0, lhs_ary);
             }
           }
-        }.doAll(rr.numCols(), rr);
+        }.doAll(rr);
 
         e.cleanup(pred, rr, (Frame) rows);
         e.push0(new ValFrame(lhs_ary));
