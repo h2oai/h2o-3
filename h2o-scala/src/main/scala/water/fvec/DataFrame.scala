@@ -12,7 +12,7 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
   // underlying arrays.  Recommended that the input Java Frame be dead after
   // this call.
-  def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make(), fr._names, fr.vecs())
+  def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make("dframe"+Key.rand()), fr._names, fr.vecs())
 
   // Create DataFrame from existing Frame
   def this(k : Key) = this ( DKV.get(k).get.asInstanceOf[Frame] )
