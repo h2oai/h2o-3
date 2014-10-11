@@ -60,7 +60,9 @@ public abstract class JarHash {
   private static final ArrayList<File> RESOURCE_FILES = new ArrayList<>();
   
   public static void registerResourceRoot(File f) {
-    RESOURCE_FILES.add(f);
+    if (f.exists()) {
+      RESOURCE_FILES.add(f);
+    }
   }
 
   // Look for resources (JS files, PNG's, etc) from the self-jar first, then
@@ -77,6 +79,9 @@ public abstract class JarHash {
         if (is == null && (cl=Thread.currentThread().getContextClassLoader())!=null) {
             is = loadResource(uri, cl);
         }
+        if (is == null && (cl=JarHash.class.getClassLoader())!=null) {
+          is = loadResource(uri, cl);
+        }
         if (is != null) return is;
         // That failed, so try all registered locations
       }
@@ -87,7 +92,7 @@ public abstract class JarHash {
       }
     } catch (FileNotFoundException ignore) {}
 
-    Log.info("Resource not found: " + uri);
+    Log.warn("Resource not found: " + uri);
     return null;
   }
 
