@@ -542,12 +542,14 @@ public class Frame extends Lockable {
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
-      Vec vec = _vecs[i] = new Vec(_keys[i], espc2,
-                                   domains!=null ? domains[i] : null,
-                                   types[i]);
-      throw H2O.unimpl();       // string???
-      //colTypes[i].equals(String.class) && (domains==null || domains[i]==null),
-      //DKV.put(_keys[i],vec,fs);             // Inject the header
+      Vec vec = _vecs[i] = new Vec( _keys[i],
+                                    espc2,
+                                    domains!=null ? domains[i] : null,
+                                    types[i]);
+      // Here we have to save vectors since
+      // saving during unlock will invoke Frame vector
+      // refresh
+      DKV.put(_keys[i],vec,fs);
     }
     fs.blockForPending();
     unlock(null);
