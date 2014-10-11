@@ -4,13 +4,25 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.io.File;
+import java.util.Arrays;
+
 import water.*;
+import water.DException.DistributedException;
 import water.util.ArrayUtils;
 
 
 public class FVecTest extends TestUtil {
   public FVecTest() { super(3); }
 
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(5);
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
   static final double EPSILON = 1e-6;
 
   public static  Key makeByteVec(String kname, String... data) {
@@ -173,6 +185,60 @@ public class FVecTest extends TestUtil {
 
     } finally {
       if( fr != null ) fr.delete();
+    }
+  }
+
+  @Test public void testRollups() {
+//    Frame fr = null;
+//    try {
+    Key rebalanced = Key.make("rebalanced");
+    Vec v = null;
+    Frame fr = null;
+    try {
+      for (int i = 0; i < 10; ++i) { // loop around to cover different Vec/Rollups placement (based on Key uuids)
+        v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
+        Futures fs = new Futures();
+        assertEquals(0, v.min(), 0);
+        assertEquals(9, v.max(), 0);
+        assertEquals(4.5,v.mean(),1e-8);
+        H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
+        fr = DKV.get(rebalanced).get();
+        Vec v2 = fr.anyVec();
+        assertEquals(0, v2.min(), 0);
+        assertEquals(9, v2.max(), 0);
+        assertEquals(4.5, v.mean(), 1e-8);
+        v2.set(i, -100);
+        assertEquals(-100, v2.min(), 0);
+        v2.set(i, i);
+        // make several rollups requests in parallel with and withou histo and then get histo
+        v2.startRollupStats(fs);
+        v2.startRollupStats(fs);
+        v2.startRollupStats(fs,true);
+        assertEquals(0, v2.min(), 0);
+        long [] bins = v2.bins();
+        assertEquals(10,bins.length);
+        // TODO: should test percentiles?
+        for(long l:bins) assertEquals(1,l);
+        Vec.Writer w = v2.open();
+        try{
+          v2.min();
+          assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
+        } catch(DistributedException de){
+          assertTrue(de.getMessage().contains("IllegalArgumentException"));
+          // expect to get IAE since we're requesting rollups while also changing the vec
+        } catch(IllegalArgumentException ie){
+          // if on local node can get iae directly
+        }
+        w.close(fs);
+        fs.blockForPending();
+        assertEquals(0,v2.min(),0);
+        fr.delete();
+        v.remove();
+        fr = null;
+      }
+    } finally {
+      if( v != null)v.remove();
+      if(fr != null)fr.delete();
     }
   }
 }

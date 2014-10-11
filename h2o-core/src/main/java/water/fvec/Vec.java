@@ -11,10 +11,9 @@ import water.util.UnsafeUtils;
 
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
- *  
+ *
  *  <p>A distributed vector has a count of elements, an element-to-chunk
  *  mapping, a Java-like type (mostly determines rounding on store and
  *  display), and functions to directly load elements without further
@@ -321,6 +320,47 @@ public class Vec extends Keyed {
     return v0;
   }
 
+  public static Vec makeVec(int [] vals, String [] domain,  Key vecKey){
+    long [] espc = new long[2];
+    espc[1] = vals.length;
+    Vec v = new Vec(vecKey,espc);
+    v._domain = domain;
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(int i:vals)
+      nc.addNum(i,0);
+    nc.close(fs);
+    DKV.put(v._key,v,fs);
+    fs.blockForPending();
+    return v;
+  }
+  public static Vec makeVec(double [] vals, Key vecKey){
+    long [] espc = new long[2];
+    espc[1] = vals.length;
+    Vec v = new Vec(vecKey,espc);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(double d:vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key,v,fs);
+    fs.blockForPending();
+    return v;
+  }
+  public static Vec makeVec(long [] ms, int [] es, Key vecKey){
+    long [] espc = new long[2];
+    espc[1] = ms.length;
+    Vec v = new Vec(vecKey,espc);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(int i = 0; i < ms.length; ++i)
+      nc.addNum(ms[i],es[i]);
+    nc.close(fs);
+    DKV.put(v._key,v,fs);
+    fs.blockForPending();
+    return v;
+  }
+
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
@@ -445,13 +485,12 @@ public class Vec extends Keyed {
 
   /** Default Histogram bins. */
   public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
-
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
    *  @return A set of histogram bins. */
-  public long[] bins()  { RollupStats.computeHisto(this); return rollupStats()._bins; }
+  public long[] bins() { return RollupStats.get(this,true)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
   public long[] lazy_bins() { return rollupStats()._bins; }
@@ -459,24 +498,35 @@ public class Vec extends Keyed {
    *  for getting a broad overview of the data.  This returns the base of
    *  {@code bins()[0]}.
    *  @return the base of {@code bins()[0]} */
-  public double base()  { RollupStats.computeHisto(this); return rollupStats().h_base(); }
+  public double base()      { return RollupStats.get(this,true).h_base(); }
   /** The {@code stride} for a a simple and cheap histogram of the Vec, useful
    *  for getting a broad overview of the data.  This returns the stride
    *  between any two bins.
    *  @return the stride between any two bins */
-  public double stride(){ RollupStats.computeHisto(this); return rollupStats().h_stride();}
+  public double stride()    { return RollupStats.get(this,true).h_stride(); }
 
   /** A simple and cheap percentiles of the Vec, useful for getting a broad
    *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}. 
    *  @return A set of percentiles */
-  public double[] pctiles(){RollupStats.computeHisto(this); return rollupStats()._pctiles;}
+  public double[] pctiles() { return RollupStats.get(this, true)._pctiles;   }
+
 
   /** Compute the roll-up stats as-needed */
   private RollupStats rollupStats() { return RollupStats.get(this); }
 
-  /** Begin execution of RollupStats; useful when launching a bunch of them in
-   *  parallel right after a parse. */
-  public Future startRollupStats() { return RollupStats.start(this); }
+  public void startRollupStats(Futures fs) { startRollupStats(fs,false);}
+
+  /**
+   * Check if we have local cached copy of basic Vec stats (including histogram if requested) and if not start task to compute and fetch them;
+   * useful when launching a bunch of them in parallel to avoid single threaded execution later (e.g. for-loop accessing min/max of every vec in a frame).
+   *
+   * Does *not* guarantee rollup stats will be cached locally when done since there may be racy changes to vec which will flush local caches.
+   *
+   * @param fs Futures allow to wait for this task to finish.
+   * @param doHisto Also compute histogram, requires second pass over data amd is not computed by default.
+   *
+   */
+  public void startRollupStats(Futures fs, boolean doHisto) { RollupStats.start(this,fs,doHisto); }
 
   private long _last_write_timestamp = System.currentTimeMillis();
   private long _checksum_timestamp = -1;

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class L_BFGS_Test  extends TestUtil {
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
     try {
       Thread.sleep(100);
     } catch (InterruptedException e) {

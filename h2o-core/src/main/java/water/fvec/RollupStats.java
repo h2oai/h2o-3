@@ -1,7 +1,11 @@
 package water.fvec;
 
+import water.Futures;
+
 import jsr166y.CountedCompleter;
+import jsr166y.ForkJoinTask;
 import water.*;
+import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
 import water.util.ArrayUtils;
@@ -20,13 +24,14 @@ import java.util.concurrent.Future;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-class RollupStats extends DTask<RollupStats> {
-  final Key _rskey;
-  final private byte _priority;
+class RollupStats extends Iced {
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
+
+  volatile transient ForkJoinTask _tsk;
+
   long _naCnt;
   // Computed in 1st pass
   double _mean, _sigma;
@@ -41,6 +46,10 @@ class RollupStats extends DTask<RollupStats> {
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
 
+  public boolean hasChecksum(){return false;}
+  public boolean hasStats(){return _naCnt >= 0;}
+  public boolean hasHisto(){return _bins != null;}
+
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
   // Check for: Rollups currently being computed
@@ -48,10 +57,9 @@ class RollupStats extends DTask<RollupStats> {
   // Check for: Rollups available
   private boolean isReady() { return _naCnt>=0; }
 
-  private RollupStats( Key rskey, int mode ) { _rskey = rskey; _naCnt = mode; _priority = nextThrPriority(); }
-  @Override public byte priority() { return _priority; }
-  private static RollupStats makeComputing(Key rskey) { return new RollupStats(rskey,-1); }
-  static RollupStats makeMutating (Key rskey) { return new RollupStats(rskey,-2); }
+  private RollupStats( int mode ) { _naCnt = mode; }
+  private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
+  static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
@@ -139,7 +147,7 @@ class RollupStats extends DTask<RollupStats> {
     final Key _rskey;
     RollupStats _rs;
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
-    @Override public void map( Chunk c ) { _rs = new RollupStats(_rskey,0).map(c); }
+    @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
     @Override public void postGlobal() { _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
@@ -156,29 +164,33 @@ class RollupStats extends DTask<RollupStats> {
     return rs;                  // In progress
   }
 
-  static Future start(Vec vec) {
+  static void start(final Vec vec, Futures fs){ start(vec,fs,false);}
+  static void start(final Vec vec, Futures fs, boolean computeHisto) {
     final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-    if( rs.isReady() ) return rs;                      // All good
-    assert rs.isComputing();
-    return rskey.home() ? H2O.submitTask(rs) : RPC.call(rskey.home_node(),rs);
+    RollupStats rs = getOrNull(vec);
+    if(rs == null || computeHisto && !rs.hasHisto())
+      fs.add(new RPC(vec.rollupStatsKey().home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
+        @Override
+        public void callback(H2OCountedCompleter h2OCountedCompleter) {
+          DKV.get(vec.rollupStatsKey()); // fetch new results via DKV to enable chaching of the results.
+        }
+      }).call());
   }
 
+  static RollupStats get(Vec vec, boolean computeHisto) {
+    final Key rskey = vec.rollupStatsKey();
+    RollupStats rs = getOrNull(vec);
+    while(rs == null || computeHisto && !rs.hasHisto()){
+      // 1. compute
+      RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
+      rs = getOrNull(vec);
+    }
+    return rs;
+  }
   // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
   // the rollup in the background and do not return.
-  static RollupStats get(Vec vec) {
-    final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = check(rskey,null,DKV.get(rskey)); // Look for cached copy
-    if( rs.isReady() ) return rs;                 // All good
-    assert rs.isComputing();
-    // No local cached Rollups; go ask Master for a copy
-    if( rskey.home() ) {
-      H2O.submitTask(rs).join();  // Run at home, wait till the onCompletion code runs
-      return rs;
-    } else
-      return RPC.call(rskey.home_node(),rs).get(); // Run remote
-  }
-
+  static RollupStats get(Vec vec) { return get(vec,false);}
   // Fetch if present, but do not compute
   static RollupStats getOrNull(Vec vec) {
     final Key rskey = vec.rollupStatsKey();
@@ -187,94 +199,6 @@ class RollupStats extends DTask<RollupStats> {
     RollupStats rs = val.get(RollupStats.class);
     return rs.isReady() ? rs : null;
   }
-
-  private transient Value nnn;
-  private transient Futures fs;
-  @Override protected void compute2() {
-    assert _rskey.home();  // Only runs on Home node
-    assert isComputing();
-    // Attempt to flip from no-rollups to computing-rollups
-    nnn = new Value(_rskey,this);
-    fs = new Futures();
-    Value old = DKV.DputIfMatch(_rskey,nnn,null,fs);
-    RollupStats rs = check(_rskey,this,old);
-    if( rs.isReady() ) {        // Old stuff already is good stuff
-      copyOver(rs);             // Update self with good stuff
-      // tryComplete(); return;
-      throw H2O.unimpl();
-    }
-    if( rs!=this ) {
-      // need to block on an in-progress roll-up
-      throw H2O.unimpl();
-    }
-    // This call to DKV "get the lock" on making the Rollups.
-    // Do them Right Here, Right Now.
-    Vec vec = Vec.getVecKey(_rskey).get();
-    new Roll(this,_rskey).asyncExec(vec);
-  }
-  @Override public void onCompletion(CountedCompleter caller){
-    RollupStats rs = ((Roll)caller)._rs;
-    copyOver(rs);               // Copy over from rs into self
-    assert isReady();           // We're Ready!!!
-    Value old2 = DKV.DputIfMatch(_rskey,new Value(_rskey,this),nnn,fs);
-    assert old2==nnn;           // Since we "have the lock" this "must work"
-    fs.blockForPending();       // Block for any invalidates
-  }
-
-  // ----------------------------
-  // Compute the expensive histogram on-demand
-  static void computeHisto(Vec vec) { computeHisto(vec,new Futures()).blockForPending(); }
-  // Version that allows histograms to be computed in parallel
-  static Futures computeHisto(Vec vec, Futures fs) {
-    while( true ) {
-      RollupStats rs = get(vec); // Block for normal histogram
-      if( rs._bins != null ) return fs;
-      rs.computeHisto_impl(vec);
-      Value old = DKV.get(rs._rskey);
-      if( old.get(RollupStats.class) == rs ) {  // Nothing changed during the compute...
-        DKV.DputIfMatch(rs._rskey,new Value(rs._rskey,rs),old,fs);
-        return fs;
-      }
-    }
-  }
-
-  // Compute the expensive histogram
-  private void computeHisto_impl(Vec vec) {
-    // All NAs or non-math; histogram has zero bins
-    if( _naCnt == vec.length() || vec.isUUID() ) { _bins = new long[0]; return; }
-    // Constant: use a single bin
-    double span = _maxs[0]-_mins[0];
-    long rows = vec.length()-_naCnt;
-    if( span==0 ) { _bins = new long[]{rows}; return;  }
-
-    // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
-    // - unless the count gets too high; allow a very high count for enums.
-    int nbins=MAX_SIZE;
-    if( _isInt && (int)span==span ) {
-      nbins = (int)span+1;      // 1 bin per int
-      int lim = vec.isEnum() ? Enum.MAX_ENUM_SIZE : MAX_SIZE;
-      nbins = Math.min(lim,nbins); // Cap nbins at sane levels
-    }
-    _bins = new Histo(this,nbins).doAll(vec)._bins;
-
-    // Compute percentiles from histogram
-    _pctiles = new double[Vec.PERCENTILES.length];
-    int j=0;                    // Histogram bin number
-    long hsum=0;                // Rolling histogram sum
-    double base = h_base();
-    double stride = h_stride();
-    for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
-      final double P = Vec.PERCENTILES[i];
-      long pint = (long)(P*rows);
-      while( hsum < pint ) hsum += _bins[j++];
-      // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
-      _pctiles[i] = base+stride*(j-1);
-      // linear interpolate stride, based on fraction of bin
-      if (j > 0) _pctiles[i] += stride*((double)(pint-(hsum-_bins[j-1]))/_bins[j-1]);
-    }
-
-  }
-
   // Histogram base & stride
   double h_base() { return _mins[0]; }
   double h_stride() { return h_stride(_bins.length); }
@@ -285,7 +209,7 @@ class RollupStats extends DTask<RollupStats> {
     final double _base, _stride; // Inputs
     final int _nbins;            // Inputs
     long[] _bins;                // Outputs
-    Histo( RollupStats rs, int nbins ) { _base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
+    Histo( H2OCountedCompleter cmp, RollupStats rs, int nbins ) { super(cmp);_base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
     @Override public void map( Chunk c ) {
       _bins = new long[_nbins];
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
@@ -303,5 +227,148 @@ class RollupStats extends DTask<RollupStats> {
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
+
+
+  // Task to compute rollups on its homenode
+  static final class ComputeRollupsTask extends DTask<ComputeRollupsTask>{
+    final byte _priority;
+    final Key _vecKey;
+    final Key _rsKey;
+    final boolean _computeHisto;
+    boolean _computeChecksum;
+    transient volatile boolean _didCompute;
+    private transient volatile Value nnn;
+    private transient volatile RollupStats _rs;
+
+    public ComputeRollupsTask(Vec v, boolean computeHisto){
+      _priority = nextThrPriority();
+      _vecKey = v._key;
+      _rsKey = v.rollupStatsKey();
+      _computeHisto = computeHisto;
+    }
+    @Override public byte priority(){return _priority; }
+
+    final void computeChecksum(Vec vec){throw H2O.unimpl();}
+    final void computeHisto(Vec vec){
+      // All NAs or non-math; histogram has zero bins
+      if( _rs._naCnt == vec.length() || vec.isUUID() ) { _rs._bins = new long[0]; return; }
+      // Constant: use a single bin
+      double span = _rs._maxs[0]-_rs._mins[0];
+      final long rows = vec.length()-_rs._naCnt;
+      assert rows > 0:"rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + _rs._naCnt;
+      if( span==0 ) { _rs._bins = new long[]{rows}; return;  }
+
+      // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
+      // - unless the count gets too high; allow a very high count for enums.
+      int nbins=MAX_SIZE;
+      if( _rs._isInt && (int)span==span ) {
+        nbins = (int)span+1;      // 1 bin per int
+        int lim = vec.isEnum() ? Enum.MAX_ENUM_SIZE : MAX_SIZE;
+        nbins = Math.min(lim,nbins); // Cap nbins at sane levels
+      }
+      addToPendingCount(1);
+      new Histo(new H2OCallback<Histo>(this){
+        @Override
+        public void callback(Histo histo) {
+          _rs._bins = histo._bins;
+          // Compute percentiles from histogram
+          _rs._pctiles = new double[Vec.PERCENTILES.length];
+          int j=0;                    // Histogram bin number
+          long hsum=0;                // Rolling histogram sum
+          double base = _rs.h_base();
+          double stride = _rs.h_stride();
+          long oldPint = 0;
+          double oldVal = _rs._mins[0];
+          for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
+            final double P = Vec.PERCENTILES[i];
+            long pint = (long)(P*rows);
+            if(pint == oldPint) {
+              _rs._pctiles[i] = oldVal;
+              continue;
+            }
+            oldPint = pint;
+            while( hsum < pint ) hsum += _rs._bins[j++];
+            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
+            _rs._pctiles[i] = base+stride*(j-1);
+            // linear interpolate stride, based on fraction of bin
+            _rs._pctiles[i] += stride*((double)(pint-(hsum-_rs._bins[j-1]))/_rs._bins[j-1]);
+            oldVal = _rs._pctiles[i];
+          }
+        }
+      },_rs,nbins).dfork(vec); // intentionally using dfork here to increase priority level
+    }
+    final void computeRollups(final Key vecKey, final Key rollUpsKey, Value oldValue){
+      final Vec vec = DKV.get(_vecKey).get();
+      assert rollUpsKey.home();
+      // Attempt to flip from no(or incomplete)-rollups to computing-rollups
+      RollupStats newRs = RollupStats.makeComputing(_rsKey);
+      final Value nnn = new Value(rollUpsKey,newRs);
+      CountedCompleter cc = getCompleter(); // should be null or RPCCall
+      if(cc != null) assert cc.getCompleter() == null;
+      newRs._tsk = cc == null?this:cc; // need the task on the top of the tree, join() only works with tasks with no completers
+      Futures fs = new Futures();
+      Value v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue,fs);
+      if(v != oldValue && v == null) v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue = null,fs);
+      if(v == oldValue) { // got the lock, start the task to compute the rollups/histo/checksum
+        this.nnn = nnn;
+        _didCompute = true;
+        if(!_rs.hasStats()){
+          addToPendingCount(1);
+          new Roll(new H2OCallback<Roll>(this) {
+            @Override
+            public void callback(Roll r) {
+              _rs = r._rs;
+              if(_computeHisto)
+                computeHisto(vec);
+              if(_computeChecksum)
+                computeChecksum(vec);
+            }
+          },rollUpsKey).dfork(vec);
+        } else {
+          if(_computeHisto)
+            computeHisto(vec);
+          if(_computeChecksum)
+            computeChecksum(vec);
+        }
+      } else { // someone else already has the lock, wait for him to finish and check again
+        newRs = v.get();
+        updateRollups(newRs, v);
+      }
+    }
+
+    private void updateRollups(RollupStats rs, Value oldValue){
+      while(rs != null && rs.isComputing()){
+        rs._tsk.join(); // potential problem here: can block all live threads and cause deadlock in case of many parallel requests,
+                        // that's why forking of tasks via dfork to run at higher priority level, however, priority level depends also on
+                        // the task that requests rollups, so no guarantee here, for now, avoid many parallel rollup requests
+        oldValue = DKV.get(_rsKey);
+        rs = oldValue == null?null:oldValue.<RollupStats>get();
+      }
+      if(rs != null && rs.isMutating())
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being changed.");
+      if(rs == null)
+        rs = RollupStats.makeComputing(_rsKey);
+      _rs = rs;
+      computeRollups(_vecKey, _rsKey, oldValue);
+    }
+    @Override
+    protected void compute2() {
+      assert _rsKey.home();
+      Value v = DKV.get(_rsKey);
+      updateRollups(v == null?null:v.<RollupStats>get(),v);
+      tryComplete();
+    }
+    @Override // fetch rollups via DKV when done, so that the result is cached for others to use
+    public void onCompletion(CountedCompleter cc) {
+      if(_didCompute){
+        Futures fs = new Futures();
+        Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,_rs),nnn,fs);
+        fs.blockForPending();
+        assert old == nnn;
+      }
+    }
+  }
+
+
 
 }

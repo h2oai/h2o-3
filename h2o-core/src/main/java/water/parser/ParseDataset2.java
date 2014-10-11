@@ -867,15 +867,16 @@ public final class ParseDataset2 extends Job<Frame> {
     try {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
+      Futures fs = new Futures();
+      Vec[] vecArr = fr.vecs();
+      for(Vec v:vecArr)  v.startRollupStats(fs);
+      fs.blockForPending();
       int namelen = 0;
       for (String s : fr.names()) namelen = Math.max(namelen, s.length());
       String format = " %"+namelen+"s %11s %12s %12s %11s %8s %6s";
       Log.info(String.format(format, "Col", "type", "min", "max", "NAs", "constant", "numLevels"));
-      Vec[] vecArr = fr.vecs();
       // get all rollups started in parallell, otherwise this takes ages!
-      Futures fs = new Futures();
-      for(Vec v:vecArr) fs.add(v.startRollupStats());
-      fs.blockForPending();
+
       for( int i = 0; i < vecArr.length; i++ ) {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
