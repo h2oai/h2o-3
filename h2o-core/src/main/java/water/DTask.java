@@ -44,7 +44,12 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   transient boolean _repliedTcp; // Any return/reply/result was sent via TCP
 
   /** Top-level remote execution hook.  Called on the <em>remote</em>. */
-  public void dinvoke( H2ONode sender ) { compute2(); }
+  public void dinvoke( H2ONode sender ) {
+    // note: intentionally using H2O.submit here instead of direct compute2 call here to preserve FJ behavior
+    // such as exceptions being caught and handled via onExceptionalCompletion
+    // can't use fork() to keep correct priority level
+    H2O.submitTask(this);
+  }
   
   /** 2nd top-level execution hook.  After the primary task has received a
    * result (ACK) and before we have sent an ACKACK, this method is executed on

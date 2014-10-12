@@ -192,7 +192,7 @@ class RollupStats extends Iced {
   static RollupStats get(Vec vec, boolean computeHisto) {
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = getOrNull(vec);
-    while(rs == null || computeHisto && !rs.hasHisto()){
+    while(rs == null || computeHisto && !rs.hasHisto() && DKV.get(vec._key) != null){
       // 1. compute
       RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
@@ -247,7 +247,6 @@ class RollupStats extends Iced {
     final Key _vecKey;
     final Key _rsKey;
     final boolean _computeHisto;
-    boolean _computeChecksum;
     transient volatile boolean _didCompute;
     private transient volatile Value nnn;
     private transient volatile RollupStats _rs;
@@ -260,7 +259,6 @@ class RollupStats extends Iced {
     }
     @Override public byte priority(){return _priority; }
 
-    final void computeChecksum(Vec vec){throw H2O.unimpl();}
     final void computeHisto(Vec vec){
       // All NAs or non-math; histogram has zero bins
       if( _rs._naCnt == vec.length() || vec.isUUID() ) { _rs._bins = new long[0]; return; }
@@ -294,7 +292,7 @@ class RollupStats extends Iced {
           for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
             final double P = Vec.PERCENTILES[i];
             long pint = (long)(P*rows);
-            if(pint == oldPint) {
+            if(pint == oldPint) { // can happen if rows < 100
               _rs._pctiles[i] = oldVal;
               continue;
             }
@@ -310,20 +308,24 @@ class RollupStats extends Iced {
       },_rs,nbins).dfork(vec); // intentionally using dfork here to increase priority level
     }
     final void computeRollups(final Key vecKey, final Key rollUpsKey, Value oldValue){
-      final Vec vec = DKV.get(_vecKey).get();
       assert rollUpsKey.home();
       // Attempt to flip from no(or incomplete)-rollups to computing-rollups
       RollupStats newRs = RollupStats.makeComputing(_rsKey);
       final Value nnn = new Value(rollUpsKey,newRs);
       CountedCompleter cc = getCompleter(); // should be null or RPCCall
       if(cc != null) assert cc.getCompleter() == null;
+      // note: if cc == null then onExceptionalcompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
       newRs._tsk = cc == null?this:cc; // need the task on the top of the tree, join() only works with tasks with no completers
       Futures fs = new Futures();
       Value v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue,fs);
-      if(v != oldValue && v == null) v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue = null,fs);
+      if(v != oldValue && v == null) {
+        //fixme: vector has been modified or removed? no way to know (Rollups may already be null while the Vec header invalidate is still in progress)
+        v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue = null,fs);
+      }
       if(v == oldValue) { // got the lock, start the task to compute the rollups/histo/checksum
         this.nnn = nnn;
         _didCompute = true;
+        final Vec vec = DKV.get(_vecKey).get();
         if(!_rs.hasStats()){
           addToPendingCount(1);
           new Roll(new H2OCallback<Roll>(this) {
@@ -332,15 +334,11 @@ class RollupStats extends Iced {
               _rs = r._rs;
               if(_computeHisto)
                 computeHisto(vec);
-              if(_computeChecksum)
-                computeChecksum(vec);
             }
           },rollUpsKey).dfork(vec);
         } else {
           if(_computeHisto)
             computeHisto(vec);
-          if(_computeChecksum)
-            computeChecksum(vec);
         }
       } else { // someone else already has the lock, wait for him to finish and check again
         newRs = v.get();
@@ -350,7 +348,7 @@ class RollupStats extends Iced {
 
     private void updateRollups(RollupStats rs, Value oldValue){
       while(rs != null && rs.isComputing()){
-        rs._tsk.join(); // potential problem here: can block all live threads and cause deadlock in case of many parallel requests,
+        rs._tsk.join(); // potential problem here?: can block all live threads and cause deadlock in case of many parallel requests,
                         // that's why forking of tasks via dfork to run at higher priority level, however, priority level depends also on
                         // the task that requests rollups, so no guarantee here, for now, avoid many parallel rollup requests
         oldValue = DKV.get(_rsKey);
@@ -376,9 +374,21 @@ class RollupStats extends Iced {
         Futures fs = new Futures();
         Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,_rs),nnn,fs);
         fs.blockForPending();
-        assert old == nnn;
+        assert old == nnn || old == null; // should've succeeded (had the lock) unless Vec has been deleted in the meantime
       }
     }
+    @Override
+    public boolean onExceptionalCompletion(Throwable t, CountedCompleter cc){
+      // if got exception while having the lock, do cleanup!
+      // hopefully this happens before anyone waiting on join() gets woken up
+      if(_didCompute) {
+        Futures fs= new Futures();
+        DKV.remove(_rsKey, fs);
+        fs.blockForPending();
+      }
+      return true;
+    }
+
   }
 
 

@@ -195,7 +195,6 @@ public class FVecTest extends TestUtil {
     Vec v = null;
     Frame fr = null;
     try {
-      for (int i = 0; i < 10; ++i) { // loop around to cover different Vec/Rollups placement (based on Key uuids)
         v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
         Futures fs = new Futures();
         assertEquals(0, v.min(), 0);
@@ -207,9 +206,9 @@ public class FVecTest extends TestUtil {
         assertEquals(0, v2.min(), 0);
         assertEquals(9, v2.max(), 0);
         assertEquals(4.5, v.mean(), 1e-8);
-        v2.set(i, -100);
+        v2.set(5, -100);
         assertEquals(-100, v2.min(), 0);
-        v2.set(i, i);
+        v2.set(5, 5);
         // make several rollups requests in parallel with and withou histo and then get histo
         v2.startRollupStats(fs);
         v2.startRollupStats(fs);
@@ -235,7 +234,6 @@ public class FVecTest extends TestUtil {
         fr.delete();
         v.remove();
         fr = null;
-      }
     } finally {
       if( v != null)v.remove();
       if(fr != null)fr.delete();
