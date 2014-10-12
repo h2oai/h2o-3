@@ -8,6 +8,7 @@ import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.parser.Enum;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -35,6 +36,7 @@ class RollupStats extends Iced {
   long _naCnt;
   // Computed in 1st pass
   double _mean, _sigma;
+  long _checksum;
   long _rows, _nzCnt, _size, _pinfs, _ninfs;
   boolean _isInt=true;
   double[] _mins, _maxs;
@@ -46,7 +48,6 @@ class RollupStats extends Iced {
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
 
-  public boolean hasChecksum(){return false;}
   public boolean hasStats(){return _naCnt >= 0;}
   public boolean hasHisto(){return _bins != null;}
 
@@ -62,22 +63,30 @@ class RollupStats extends Iced {
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
   private RollupStats map( Chunk c ) {
+    _checksum = 0;
+    long start = c._start;
+    long l = 81985529216486895L;
     _size = c.byteSize();
     _mins = new double[5];  Arrays.fill(_mins, Double.MAX_VALUE);
     _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
+    ValueString vs = new ValueString();
     if (isString) _isInt = false;
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
       if( c.isNA0(i) ) {
         _naCnt++;
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        if (c.at16l0(i) != 0 || c.at16h0(i) != 0) _nzCnt++;
+        long lo = c.at16l0(i), hi = c.at16h0(i);
+        if (lo != 0 || hi != 0) _nzCnt++;
+        l = lo ^ 37*hi;
       } else if( isString ) { // String columns do not compute min/max/mean/sigma
         _nzCnt++;
+        l = c.atStr0(vs,i).hashCode();
       } else {                  // All other columns have useful rollups
         double d = c.at0(i);
+        l = Double.doubleToRawLongBits(d);
         if( d == Double.POSITIVE_INFINITY) _pinfs++;
         else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
         else {
@@ -88,6 +97,8 @@ class RollupStats extends Iced {
           if( _isInt && ((long)d) != d ) _isInt = false;
         }
       }
+      if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+        _checksum ^= (17 * (start+i)) ^ 23*l;
     }
 
     // Sparse?  We skipped all the zeros; do them now
@@ -128,6 +139,7 @@ class RollupStats extends Iced {
     _rows += rs._rows;
     _size += rs._size;
     _isInt &= rs._isInt;
+    _checksum ^= rs._checksum;
   }
 
   private void min( double d ) {
