@@ -3,7 +3,7 @@ apply plugin: 'release'
 release {
   tagPrefix = "RELEASE"
   // Safe point - do releases only from release branch - can be deleted in future
-  //requireBranch = "release"
+  requireBranch = "release_0.1.6"
 }
 
 // Upload artifacts after release
