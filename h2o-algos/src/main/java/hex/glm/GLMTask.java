@@ -6,6 +6,7 @@ import hex.FrameTask;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import hex.glm.GLM.GLMTaskInfo;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -170,7 +171,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       // public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMParams glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
       _glmts = new GLMIterationTask[betas.size()];
       for(int i = 0; i < _glmts.length; ++i)
-        _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas.get(i),ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
+        _glmts[i] = new GLMIterationTask(jobKey,null,glm,false,true,true,betas.get(i),ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
     }
 
     public GLMLineSearchTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double [][] betas, double ymu, long nobs, H2OCountedCompleter cmp) {
@@ -179,10 +180,19 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       // public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMParams glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
       _glmts = new GLMIterationTask[betas.length];
       for(int i = 0; i < _glmts.length; ++i)
-        _glmts[i] = new GLMIterationTask(jobKey,dinfo,glm,false,true,true,betas[i],ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
+        _glmts[i] = new GLMIterationTask(jobKey,null,glm,false,true,true,betas[i],ymu,1.0/nobs,new float[]{0} /* don't really want CMs!*/,null);
     }
 
-
+    @Override public void setupLocal(){
+      super.setupLocal();
+      for(GLMIterationTask glmt:_glmts)
+        glmt._dinfo = _dinfo;
+    }
+    @Override public void closeLocal(){
+      super.closeLocal();
+      for(GLMIterationTask glmt:_glmts)
+        glmt._dinfo = null;
+    }
     GLMIterationTask [] _glmts;
     @Override public void chunkInit(){
       _glmts = _glmts.clone();
@@ -233,7 +243,6 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
 
     public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
       super(jobKey, dinfo,glm,cmp);
-      assert beta == null || beta.length == dinfo.fullN()+1:"beta.length != dinfo.fullN(), beta = " + beta.length + " dinfo = " + dinfo.fullN();
       _beta = beta;
       _ymu = ymu;
       _reg = reg;
@@ -339,6 +348,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
           _grad[i] *= _reg;
       _yy *= _reg;
       if(_validate && _glm.family == Family.binomial) {
+        assert _val != null;
         _newThresholds[0] = Arrays.copyOf(_newThresholds[0],_ti[0]);
         _newThresholds[1] = Arrays.copyOf(_newThresholds[1],_ti[1]);
         Arrays.sort(_newThresholds[0]);

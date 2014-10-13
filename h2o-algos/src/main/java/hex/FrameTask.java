@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
-  final protected DataInfo _dinfo;
+  protected DataInfo _dinfo;
   final protected Key _jobKey;
 //  double    _ymu = Double.NaN; // mean of the response
   // size of the expanded vector of parameters
@@ -33,14 +33,21 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   public FrameTask(Key jobKey, DataInfo dinfo, H2OCountedCompleter cmp) {
     super(cmp);
     _jobKey = jobKey;
-    _dinfo = dinfo;
+    if(dinfo != null){
+      _dinfo = (DataInfo)dinfo.clone();
+      // do not carry duplicate and potentially large adaptedFrame around!
+      _dinfo._adaptedFrame = null;
+    }
   }
   protected FrameTask(FrameTask ft){
     _dinfo = ft._dinfo;
     _jobKey = ft._jobKey;
     _useFraction = ft._useFraction;
     _shuffle = ft._shuffle;
+
   }
+  @Override protected void closeLocal(){ _dinfo = null;}
+
   public final double [] normMul(){return _dinfo._normMul;}
   public final double [] normSub(){return _dinfo._normSub;}
   public final double [] normRespMul(){return _dinfo._normMul;}
@@ -598,4 +605,5 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     }
     chunkDone(num_processed_rows);
   }
+
 }
