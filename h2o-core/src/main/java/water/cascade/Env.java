@@ -1,7 +1,6 @@
 package water.cascade;
 
 import water.*;
-import water.api.UnlockTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMap;
@@ -205,7 +204,7 @@ public class Env extends Iced {
 
   public void remove_and_unlock() {
     // Unlock everything
-    new UnlockTask(true).doAllNodes();
+//    new UnlockTask(true).doAllNodes();
 
     while(!_stack.isEmpty()) {
       int type = peekType();
