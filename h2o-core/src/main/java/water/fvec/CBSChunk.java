@@ -85,4 +85,6 @@ public class CBSChunk extends Chunk {
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);
     return this;
   }
+  @Override
+  public boolean hasFloat() {return false;}
 }

@@ -38,4 +38,6 @@ public class C8Chunk extends Chunk {
     assert _mem.length == _len <<3;
     return this;
   }
+  @Override
+  public boolean hasFloat() {return false;}
 }

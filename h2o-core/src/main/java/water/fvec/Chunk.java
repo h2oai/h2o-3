@@ -357,7 +357,8 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,str); else _vec.set(i,str); }
-  
+
+  public boolean hasFloat(){return true;}
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";

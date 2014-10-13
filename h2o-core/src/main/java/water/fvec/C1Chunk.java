@@ -46,4 +46,6 @@ public class C1Chunk extends Chunk {
     set_len(_mem.length);
     return this;
   }
+  @Override
+  public boolean hasFloat() {return false;}
 }

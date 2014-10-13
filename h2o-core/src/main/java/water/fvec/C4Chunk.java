@@ -46,4 +46,6 @@ public class C4Chunk extends Chunk {
     assert _mem.length == _len <<2;
     return this;
   }
+  @Override
+  public boolean hasFloat() {return false;}
 }

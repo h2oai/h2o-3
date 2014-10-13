@@ -532,60 +532,10 @@ public class Vec extends Keyed {
   private long _checksum_timestamp = -1;
   private long _checksum = 0;
 
-  /** A private class to compute the rollup stats */
-  private static class ChecksummerTask extends MRTask<ChecksummerTask> {
-    public long checksum = 0;
-    public long getChecksum() { return checksum; }
-
-    @Override public void map( Chunk c ) {
-      long _start = c._start;
-
-      for( int i=0; i<c._len; i++ ) {
-        long l = 81985529216486895L; // 0x0123456789ABCDEF
-        if (! c.isNA0(i)) {
-          if (c instanceof C16Chunk) {
-            l = c.at16l0(i);
-            l ^= (37 * c.at16h0(i));
-          } else {
-            l = c.at80(i);
-          }
-        }
-        long global_row = _start + i;
-
-        checksum ^= (17 * global_row);
-        checksum ^= (23 * l);
-      }
-    } // map()
-
-    @Override public void reduce( ChecksummerTask that ) {
-      this.checksum ^= that.checksum;
-    }
-  } // class ChecksummerTask
-
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
-  public long checksum() {
-    final long now = _last_write_timestamp;
-    if (-1 != now && now == _checksum_timestamp) {
-      return _checksum;
-    }
-    final long checksum = new ChecksummerTask().doAll(this).getChecksum();
-
-    new TAtomic<Vec>() {
-      @Override public Vec atomic(Vec v) {
-          if (v != null) {
-              v._checksum = checksum;
-              v._checksum_timestamp = now;
-          } return v;
-      }
-    }.invoke(_key);
-
-    this._checksum = checksum;
-    this._checksum_timestamp = now;
-
-    return checksum;
-  }
+  public long checksum() { return rollupStats()._checksum;}
 
 
   /** Begin writing into this Vec.  Immediately clears all the rollup stats

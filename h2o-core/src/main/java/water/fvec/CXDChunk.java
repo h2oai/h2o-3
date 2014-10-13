@@ -61,6 +61,8 @@ public class CXDChunk extends CXIChunk {
       }
     });
   }
+  @Override
+  public boolean hasFloat() {return true;}
 
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }

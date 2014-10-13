@@ -30,4 +30,6 @@ public class C1NChunk extends Chunk {
   @Override final public AutoBuffer write_impl(AutoBuffer ab) { return ab.putA1(_mem,_mem.length); }
   @Override final public C1NChunk read_impl(AutoBuffer ab) {
     _mem = ab.bufClose(); _start = -1; set_len(_mem.length); return this; }
+  @Override
+  public boolean hasFloat() {return false;}
 }

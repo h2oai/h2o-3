@@ -51,4 +51,6 @@ public class C2Chunk extends Chunk {
     assert _mem.length == _len <<1;
     return this;
   }
+  @Override
+  public boolean hasFloat() {return false;}
 }
