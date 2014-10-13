@@ -45,6 +45,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
    */
   @Override
   public void setupLocal() {
+    super.setupLocal();
     _res = new DeepLearningTask(_jobKey, _model_info, _sync_fraction);
     addToPendingCount(1);
     _res.setCompleter(this);

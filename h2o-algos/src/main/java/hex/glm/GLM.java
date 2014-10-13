@@ -26,6 +26,7 @@ import water.util.MRUtils.ParallelTasks;
 import water.util.ModelUtils;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -56,7 +57,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
     fr.read_lock(_key);
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
-    DataInfo dinfo = new DataInfo(source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+    DataInfo dinfo = new DataInfo(Key.make(),source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+    DKV.put(dinfo._key,dinfo);
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       AtomicBoolean _gotException = new AtomicBoolean(false);
       @Override
@@ -492,6 +494,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
    */
   public static final class GLMDriver extends DTask<GLMDriver> {
     final DataInfo _dinfo;
+    transient ArrayList<DataInfo> _foldInfos = new ArrayList<DataInfo>();
     final GLMParameters _params;
     final Key _dstKey;
     final Key _jobKey;
@@ -518,7 +521,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       return beta;
     }
 
+    private void doCleanup(){
+      DKV.remove(_dinfo._key);
+      for(DataInfo dinfo:_foldInfos)
+        DKV.remove(dinfo._key);
+    }
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
+      doCleanup();
+      for(DataInfo dinfo:_foldInfos)
+        DKV.remove(dinfo._key);
       if(!_gotException.getAndSet(true)){
         if(ex instanceof TooManyPredictorsException){
           // TODO add warning
@@ -532,6 +543,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       return false;
     }
     @Override public void onCompletion(CountedCompleter cc){
+      doCleanup();
       H2OCountedCompleter cmp = (H2OCountedCompleter)getCompleter();
       cmp.addToPendingCount(1);
       new FinalizeAndUnlockTsk(cmp,_dstKey,_jobKey).fork();
@@ -549,7 +561,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       if(_params.lambda_search && _params.nlambdas <= 1)
         throw new IllegalArgumentException("GLM2(" + _dstKey + ") nlambdas must be > 1 when running with lambda search.");
       Futures fs = new Futures();
-      new YMUTask(_jobKey, _dinfo, _params.n_folds,new H2O.H2OCallback<YMUTask>(this) {
+      new YMUTask(_jobKey, _dinfo._key, _params.n_folds,new H2O.H2OCallback<YMUTask>(this) {
         @Override
         public String toString(){
           return "YMUTask callback. completer = " + getCompleter() != null?"null":getCompleter().toString();
@@ -651,6 +663,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                   final GLMParameters params = (GLMParameters)_params.clone();
                   params.n_folds = 0;
                   final DataInfo dinfo = _dinfo.getFold(i-1,_params.n_folds);
+                  _foldInfos.add(dinfo);
+                  DKV.put(dinfo._key,dinfo);
                   if(i != 0){
                     // public LMAXTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double ymu, long nobs, double alpha, float [] thresholds, H2OCountedCompleter cmp) {
                     new LMAXTask(_jobKey,dinfo,_params,ymut.ymu(fi-1),ymut.nobs(fi-1), ModelUtils.DEFAULT_THRESHOLDS,new H2OCallback<LMAXTask>(cmp) {

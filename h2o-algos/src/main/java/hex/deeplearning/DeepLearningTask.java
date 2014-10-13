@@ -33,6 +33,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   // transfer ownership from input to output (which will be worked on)
   @Override protected void setupLocal(){
+    super.setupLocal();
     _output = _input; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
     _input = null;
     _output.set_processed_local(0l);

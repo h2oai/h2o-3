@@ -27,7 +27,7 @@ import water.util.ArrayUtils;
 public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
   final protected GLMModel.GLMParameters _glm;
   public GLMTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm){this(jobKey,dinfo,glm,null);}
-  public GLMTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm,H2OCountedCompleter cmp){super(jobKey,dinfo,cmp);_glm = glm;}
+  public GLMTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm,H2OCountedCompleter cmp){super(jobKey,dinfo == null?null:dinfo._key,dinfo == null?null:dinfo._activeCols,cmp);_glm = glm;}
 
   //helper function to compute eta - i.e. beta * row
   protected final double computeEta(final int ncats, final int [] cats, final double [] nums, final double [] beta){
@@ -52,9 +52,9 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     public double [] _ymin;
     public double [] _ymax;
     final int _nfolds;
-    public YMUTask(Key jobKey, DataInfo dinfo,int nfolds) {this(jobKey,dinfo, nfolds, null);}
-    public YMUTask(Key jobKey, DataInfo dinfo,int nfolds,  H2OCountedCompleter cmp) {
-      super(jobKey,dinfo,cmp);
+    public YMUTask(Key jobKey, Key dataInfoKey, int nfolds) {this(jobKey, dataInfoKey, nfolds, null);}
+    public YMUTask(Key jobKey, Key dataInfoKey, int nfolds,  H2OCountedCompleter cmp) {
+      super(jobKey, dataInfoKey, null, cmp);
       _nfolds = nfolds;
     }
     @Override public void chunkInit(){

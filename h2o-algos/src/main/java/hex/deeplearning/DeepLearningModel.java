@@ -1273,13 +1273,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
     final Frame fr = parms._training_frame.get();
     final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms.response_column), fr.find(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
-    final DataInfo dinfo = new FrameTask.DataInfo(train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
+    final DataInfo dinfo = new FrameTask.DataInfo(Key.make(),train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
     if (!parms.autoencoder) {
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
       assert (!parms.classification ^ resp.isEnum()) : "Must have enum response_vec for classification!"; //either regression or enum response
     }
+    DKV.put(dinfo._key,dinfo);
     return dinfo;
   }
 

@@ -752,7 +752,7 @@ public final class Gram extends Iced<Gram> {
     public final boolean _isWeighted; // last response is weight vector?
 
     public GramTask(Key jobKey, DataInfo dinfo, boolean hasIntercept, boolean isWeighted){
-      super(jobKey,dinfo);
+      super(jobKey,dinfo._key,dinfo._activeCols);
       _hasIntercept = hasIntercept;
       _isWeighted = isWeighted;
     }

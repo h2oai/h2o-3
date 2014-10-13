@@ -70,12 +70,14 @@ public class L_BFGS_Test  extends TestUtil {
   @Test
   public void logistic() {
     Key parsedKey = Key.make("prostate");
+    DataInfo dinfo = null;
     try {
       GLMParameters glmp = new GLMParameters(Family.binomial);
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();
-      DataInfo dinfo = new DataInfo(source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(),source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.vec("CAPSULE").mean(), source.numRows());
       L_BFGS_Params lp = new L_BFGS_Params();
       lp._gradEps = 1e-8;
@@ -83,6 +85,8 @@ public class L_BFGS_Test  extends TestUtil {
       GLMGradientInfo ginfo = (GLMGradientInfo) r.ginfo;
       assertEquals(378.34, ginfo._val.residualDeviance(), 1e-1);
     } finally {
+      if(dinfo != null)
+        DKV.remove(dinfo._key);
       Value v = DKV.get(parsedKey);
       if (v != null) {
         v.<Frame>get().delete();
@@ -93,16 +97,20 @@ public class L_BFGS_Test  extends TestUtil {
   // Test LSM on arcene - wide dataset with ~10k columns
   @Test public void testArcene() {
     Key parsedKey = Key.make("arcene_parsed");
+    DataInfo dinfo = null;
     try {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/arcene.csv");
       GLMParameters glmp = new GLMParameters(Family.gaussian);
-      DataInfo dinfo = new DataInfo(source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(),source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
       L_BFGS.Result r = L_BFGS.solve(dinfo.fullN() + 1, solver, new L_BFGS_Params());
       GLMGradientInfo ginfo = (GLMGradientInfo) r.ginfo;
       assertEquals(0, ginfo._val.residualDeviance(), 1e-3);
       assertTrue("iter# expected < 100, got " + r.iter, r.iter < 100);
     } finally {
+      if(dinfo != null)
+        DKV.remove(dinfo._key);
       Value v = DKV.get(parsedKey);
       if (v != null) {
         v.<Frame>get().delete();

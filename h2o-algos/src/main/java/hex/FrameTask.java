@@ -16,7 +16,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
-  protected DataInfo _dinfo;
+  protected transient DataInfo _dinfo;
+  final Key _dinfoKey;
+  final int [] _activeCols;
   final protected Key _jobKey;
 //  double    _ymu = Double.NaN; // mean of the response
   // size of the expanded vector of parameters
@@ -28,23 +30,33 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected boolean skipMissing() { return _skipMissing; }
 
   public FrameTask(Key jobKey, DataInfo dinfo) {
-    this(jobKey,dinfo,null);
+    this(jobKey, dinfo._key, dinfo._activeCols,null);
   }
   public FrameTask(Key jobKey, DataInfo dinfo, H2OCountedCompleter cmp) {
+    this(jobKey, dinfo._key, dinfo._activeCols,cmp);
+  }
+  public FrameTask(Key jobKey, Key dinfoKey, int [] activeCols) {
+    this(jobKey,dinfoKey, activeCols,null);
+  }
+  public FrameTask(Key jobKey, Key dinfoKey, int [] activeCols, H2OCountedCompleter cmp) {
     super(cmp);
+    assert dinfoKey == null || DKV.get(dinfoKey) != null;
     _jobKey = jobKey;
-    if(dinfo != null){
-      _dinfo = (DataInfo)dinfo.clone();
-      // do not carry duplicate and potentially large adaptedFrame around!
-      _dinfo._adaptedFrame = null;
-    }
+    _dinfoKey = dinfoKey;
+    _activeCols = activeCols;
   }
   protected FrameTask(FrameTask ft){
     _dinfo = ft._dinfo;
     _jobKey = ft._jobKey;
     _useFraction = ft._useFraction;
     _shuffle = ft._shuffle;
-
+    _activeCols = ft._activeCols;
+    _dinfoKey = ft._dinfoKey;
+    assert DKV.get(_dinfoKey) != null;
+  }
+  @Override protected void setupLocal(){
+    DataInfo dinfo = DKV.get(_dinfoKey).get();
+    _dinfo = _activeCols == null?dinfo:dinfo.filterExpandedColumns(_activeCols);
   }
   @Override protected void closeLocal(){ _dinfo = null;}
 
@@ -79,9 +91,14 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected void processRow(long gid, double [] nums, int ncats, int [] cats, double [] response, NewChunk [] outputs){throw new RuntimeException("should've been overriden!");}
 
 
-  public static class DataInfo extends Iced {
+  public static class DataInfo extends Keyed {
+    public int [] _activeCols;
     public Frame _adaptedFrame;
     public int _responses; // number of responses
+
+    @Override
+    public long checksum() {throw H2O.unimpl();} // don't really need checksum
+
     public enum TransformType { NONE, STANDARDIZE, NORMALIZE };
     public TransformType _predictor_transform;
     public TransformType _response_transform;
@@ -105,9 +122,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       return (DataInfo)new DataInfo().read(ab);
     }
 
-    private DataInfo() {_catLvls = null;}
+    private DataInfo() {super(null);_catLvls = null;}
 
-    private DataInfo(DataInfo dinfo, int foldId, int nfolds){
+    private DataInfo(Key selfKey, DataInfo dinfo, int foldId, int nfolds){
+      super(selfKey);
       assert dinfo._catLvls == null:"Should not be called with filtered levels (assuming the selected levels may change with fold id) ";
       _predictor_transform = dinfo._predictor_transform;
       _response_transform = dinfo._response_transform;
@@ -127,8 +145,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _catLvls = null;
     }
 
-    public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, TransformType predictor_transform, double [] normRespSub, double [] normRespMul){
-      this(fr,hasResponses,useAllFactorLvls,
+    public DataInfo(Key selfKey, Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, TransformType predictor_transform, double [] normRespSub, double [] normRespMul){
+      this(selfKey, fr,hasResponses,useAllFactorLvls,
         normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
         normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
       assert (normSub == null) == (normMul == null);
@@ -256,12 +274,13 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       return prepareFrame(source, response, ignored_cols, toEnum, dropConstantCols, false);
     }
 
-    public DataInfo(Frame fr, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
-      this(fr, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
+    public DataInfo(Key selfKey, Frame fr, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
+      this(selfKey, fr, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
     }
 
     //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
-    public DataInfo(Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
+    public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
+      super(selfKey);
       _adaptedFrame = fr;
       _catOffsets = MemoryManager.malloc4(catLevels.length+1);
       _catMissing = new int[catLevels.length];
@@ -321,7 +340,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _nfolds = nfolds;
       _foldId = foldId;
     }
-    public DataInfo(Frame fr, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform) {
+    public DataInfo(Key selfKey, Frame fr, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform) {
+      super(selfKey);
       _nfolds = _foldId = 0;
       _predictor_transform = predictor_transform;
       _response_transform = response_transform;
@@ -436,13 +456,15 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
       if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
       assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
-      return new DataInfo(f,catLvls, _responses, _predictor_transform, _response_transform, _foldId, _nfolds);
+      DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _foldId, _nfolds);
+      dinfo._activeCols = cols;
+      return dinfo;
     }
     public String toString(){
       return "";
     }
     public DataInfo getFold(int foldId, int nfolds){
-      return new DataInfo(this, foldId, nfolds);
+      return new DataInfo(Key.make(),this, foldId, nfolds);
     }
     public final int fullN(){return _nums + _catOffsets[_cats];}
     public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
