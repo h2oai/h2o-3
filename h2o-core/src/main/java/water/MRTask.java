@@ -276,10 +276,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Called internal by D/F/J.  Not expected to be user-called.  */
   @Override public final void dinvoke(H2ONode sender) {
     setupLocal0();              // Local setup
-    try {
-      compute2();               // Do The Main Work
-    } catch( Throwable ex ) { setException(ex); throw ex; }
-    // nothing here... must do any post-work-cleanup in onCompletion
+    H2O.submitTask(this);
   }
 
   // Special mode to run once-per-node
