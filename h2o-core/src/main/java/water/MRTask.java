@@ -430,7 +430,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
         _profile._closestart = System.currentTimeMillis();
-        for( Chunk bv : bvs ) bv.close(_lo,_fs);
+        for( Chunk bv : bvs )  bv.close(_lo,_fs);
         if(_noutputs > 0) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
     }
@@ -465,6 +465,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
   protected void postGlobal(){}
+
+  /**
+   * Override to perform cleanup of large input arguments before sending over the wire.
+   */
   // Work done after all the main local work is done.
   // Gather/reduce remote work.
   // Block for other queued pending tasks.
@@ -485,10 +489,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       copyOver(_res);           // So copy into self
     }
     closeLocal();          // User's node-local cleanup
-    if( _fr != null )      // Do any post-writing work (zap rollup fields, etc)
-      _fr.postWrite(_fs).blockForPending();
-    if( nlo==0 && nhi == H2O.CLOUD.size() )
+    if( nlo==0 && nhi == H2O.CLOUD.size() ) {
+      if (_fr != null)      // Do any post-writing work (zap rollup fields, etc)
+        _fr.postWrite(_fs).blockForPending();
       postGlobal();             // User's continuation work
+
+    }
+
   }
 
   // Block for RPCs to complete, then reduce global results into self results
