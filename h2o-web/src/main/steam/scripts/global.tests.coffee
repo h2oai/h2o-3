@@ -137,9 +137,12 @@ Xhr = (_, host) ->
     makeRequest opts, go
 
 _clouds = []
+_uniqueCloudId = 0
+uniqueCloudId = -> ++_uniqueCloudId
 _spawnCloud = ->
   diag "Starting new H2O cloud..."
-  cloud = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH ]
+  cloudId = uniqueCloudId()
+  cloud = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH, '-name', "steam_#{cloudId}", '-port', "#{cloudId + 60000}" ]
   diag "PID #{cloud.pid}"
   _clouds.push cloud
   cloud
