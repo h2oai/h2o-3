@@ -15,4 +15,4 @@ fatJar {
    }
 }
 
-build.dependsOn fatJar
+//build.dependsOn fatJar
