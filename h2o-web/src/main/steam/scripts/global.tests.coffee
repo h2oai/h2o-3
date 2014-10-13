@@ -4,7 +4,7 @@ fs = require 'fs'
 path = require 'path'
 spawn = (require 'child_process').spawn
 httpRequest = require 'request'
-lodash = require 'lodash'
+_ = require 'lodash'
 async = require 'async'
 test = require 'tape'
 
@@ -43,10 +43,7 @@ bailout = (message) ->
 
 # Pretty-print errors, etc.
 pp = (error) ->
-  if lodash.isObject error
-    JSON.stringify error
-  else
-    error
+  JSON.stringify error
 
 dumpAssertion = (path, value) ->
   if isUndefined value
