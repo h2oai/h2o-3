@@ -13,6 +13,7 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
     public String[] fields() { return new String[] {
         "destination_key",
         "training_frame",
+        "response_column",
         "ntrees",
         "learn_rate",
         "loss",

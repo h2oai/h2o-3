@@ -24,8 +24,7 @@ import static java.lang.Double.isNaN;
 
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
 
-  public static class DeepLearningParameters extends Model.Parameters {
-    public boolean classification;
+  public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
     public int n_folds;
     public boolean keep_cross_validation_splits;
 
@@ -486,7 +485,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (_validation_frame == null)
         hide("score_validation_samples", "score_validation_samples requires a validation frame.");
 
-      if (classification) {
+      if (_classification) {
         hide("regression_stop", "regression_stop is used only with regression.");
       } else {
         hide("classification_stop", "classification_stop is used only with classification.");
@@ -495,17 +494,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("balance_classes", "balance_classes is used only with classification.");
       }
 
-      if (classification && balance_classes) {
+      if (_classification && balance_classes) {
 
       } else {
         hide("class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       }
 
-      if (classification && !balance_classes || !classification)
+      if (_classification && !balance_classes || !_classification)
         hide("max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
 
 
-      if (!classification && _validation_frame != null || _validation_frame == null)
+      if (!_classification && _validation_frame != null || _validation_frame == null)
         hide("score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
@@ -529,11 +528,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
 
-      if (classification) {
-        if (response_column == null)
+      if (_classification) {
+        if (_response_column == null)
           validation_error("response_column", "Response column must be specified.");
-        if (null == fr.vec(response_column))
-          validation_error("response_column", "Response column " + response_column + " not found in frame: " + _training_frame + ".");
+        if (null == fr.vec(_response_column))
+          validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _training_frame + ".");
       }
 
       if (null != ignored_columns)
@@ -541,9 +540,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (null == fr.vec(ignored_column))
             validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
 
-      if (null != response_column && fr.vec(response_column).isEnum() && !classification) {
+      if (null != _response_column && fr.vec(_response_column).isEnum() && !_classification) {
         validation_error("classification", "Must choose classification for a categorical response column.");
-        classification = true;
+        _classification = true;
       }
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
         hide("replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
@@ -609,7 +608,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
 
       if(loss == Loss.Automatic) {
-        if (!classification) {
+        if (!_classification) {
           if (!quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for regression.");
           loss = Loss.MeanSquare;
         }
@@ -634,9 +633,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (!classification && loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
+      if (!_classification && loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
       if (autoencoder && loss != Loss.MeanSquare) validation_error("loss", "Must use MeanSquare loss function for auto-encoder.");
-      if (autoencoder && classification) { classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
+      if (autoencoder && _classification) { _classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
       if (!autoencoder && sparsity_beta != 0) validation_info("sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
@@ -647,7 +646,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!sparse && col_major) {
         if (!quiet_mode) validation_error("col_major", "Cannot use column major storage for non-sparse data handling.");
       }
-      if (!classification && balance_classes) {
+      if (!_classification && balance_classes) {
         validation_error("balance_classes", "balance_classes requires classification to be enabled.");
       }
       if (class_sampling_factors != null && !balance_classes) {
@@ -914,7 +913,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       data_info = dinfo;
       parameters = params;
       final int num_input = dinfo.fullN();
-      final int num_output = get_params().autoencoder ? num_input : get_params().classification ? dinfo._adaptedFrame.domains()[dinfo._adaptedFrame.domains().length-1].length : 1;
+      final int num_output = get_params().autoencoder ? num_input : get_params()._classification ? dinfo._adaptedFrame.domains()[dinfo._adaptedFrame.domains().length-1].length : 1;
       assert(num_input > 0);
       assert(num_output > 0);
       if (has_momenta() && adaDelta()) throw new IllegalArgumentException("Cannot have non-zero momentum and adaptive rate at the same time.");
@@ -1139,7 +1138,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
             if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.UniformAdaptive) {
               // cf. http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_GlorotB10.pdf
-              if (w==dense_row_weights.length-1 && get_params().classification)
+              if (w==dense_row_weights.length-1 && get_params()._classification)
                 get_weights(w).set(i,j, (float)(4.*uniformDist(rng, -range, range))); //Softmax might need an extra factor 4, since it's like a sigmoid
               else
                 get_weights(w).set(i,j, (float)uniformDist(rng, -range, range));
@@ -1296,13 +1295,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
     final Frame fr = parms._training_frame.get();
-    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms.response_column), fr.find(parms.ignored_columns), parms.classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms._response_column), fr.find(parms.ignored_columns), parms._classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(Key.make(),train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            parms.classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
+            parms._classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
     if (!parms.autoencoder) {
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
-      assert (!parms.classification ^ resp.isEnum()) : "Must have enum response_vec for classification!"; //either regression or enum response
+      assert (!parms._classification ^ resp.isEnum()) : "Must have enum response_vec for classification!"; //either regression or enum response
     }
     DKV.put(dinfo._key,dinfo);
     return dinfo;
@@ -1442,7 +1441,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (printme) Log.info("Scoring the model.");
           // compute errors
           err.classification = _output.isClassifier();
-          assert (err.classification == get_params().classification);
+          assert (err.classification == get_params()._classification);
           err.num_folds = get_params().n_folds;
           err.train_confusion_matrix = new ConfusionMatrix();
           final int hit_k = Math.min(_output.nclasses(), get_params().max_hit_ratio_k);

@@ -24,7 +24,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     }
     public Family _loss = Family.AUTO;
 
-    public float _learn_rate;    // Learning rate from 0.0 to 1.0
+    public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
     public long _seed;           // RNG seed for balancing classes
 
     @Override public int sanityCheckParameters() {

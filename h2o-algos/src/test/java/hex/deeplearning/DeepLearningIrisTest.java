@@ -126,10 +126,10 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                   p = new DeepLearningParameters();
                                   p._training_frame = _train._key;
-                                  p.response_column = _train.lastVecName();
+                                  p._response_column = _train.lastVecName();
                                   p.ignored_columns = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p.response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(Key.make(),fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
@@ -157,7 +157,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.momentum_ramp = 0; //do not change - not implemented in reference
                                 p.initial_weight_distribution = dist;
                                 p.initial_weight_scale = scale;
-                                p.classification = true;
+                                p._classification = true;
                                 p.diagnostics = true;
                                 p._validation_frame = null;
                                 p.quiet_mode = true;
