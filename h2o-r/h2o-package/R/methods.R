@@ -285,8 +285,8 @@ setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparable
 
 #'
 #' %in% method
-setMethod("%in%", "H2OParsedData", function(x, table) match.H2OParsedData(x, table, nomatch = 0) > 0)
-setMethod("%in%", "ASTNode", function(x, table) match.H2OFrame(x, table, nomatch = 0) > 0)
+setMethod("%in%", "H2OParsedData", function(x, table) match(x, table, nomatch = 0) > 0)
+setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
