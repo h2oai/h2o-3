@@ -6,6 +6,14 @@ algorithms = [
   key: 'deeplearning'
   title: 'Deep Learning'
   description: 'Model high-level abstractions in data by using model architectures composed of multiple non-linear transformations.'
+,
+  key: 'glm'
+  title: 'GLM'
+  description: 'No description available'
+,
+  key: 'gbm'
+  title: 'GBM'
+  description: 'No description available'
 ]
 
 createTextboxControl = (parameter) ->
@@ -138,6 +146,12 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
         #TODO handle properly
       else
         trainingFrameParameter = findParameter parameters, 'training_frame'
+
+        #XXX temporary bail out for GLM
+        unless trainingFrameParameter
+          console.error "Model does not have a 'training_frame' parameter!" 
+          return go()
+
         trainingFrameParameter.values = map result.frames, (frame) -> frame.key.name
         if frameKey
           trainingFrameParameter.actual_value = frameKey
