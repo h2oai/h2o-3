@@ -109,6 +109,7 @@ public class AppendableVec extends Vec {
     if( domain() != null ) {    // If we have a domain, assume the numbers can be mapped into it
       ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0;
       ctypes[ENUM] += ctypes[NA]; ctypes[NA] = 0;
+      if (nchunk == 0) ctypes[ENUM]++;
     }
 
     // Make sure time is consistent
