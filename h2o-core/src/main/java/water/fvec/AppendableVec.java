@@ -1,8 +1,9 @@
 package water.fvec;
 
-import java.util.Arrays;
 import water.*;
 import water.parser.ParseTime;
+
+import java.util.Arrays;
 
 /**
  * A NEW single distributed vector column.
@@ -106,7 +107,8 @@ public class AppendableVec extends Vec {
 
     // Make sure enums are consistent
     if( domain() != null ) {    // If we have a domain, assume the numbers can be mapped into it
-      ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0; 
+      ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0;
+      ctypes[ENUM] += ctypes[NA]; ctypes[NA] = 0;
     }
 
     // Make sure time is consistent

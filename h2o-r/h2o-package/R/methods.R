@@ -205,6 +205,36 @@ h2o.getFrame <- function(h2o, key) {
 #  .h2o.unop("table", x)
 #}
 
+
+table <- function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
+                           "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
+  if (.isH2O(list(...)[[1]])) { UseMethod("table")
+  } else base::table(..., exclude, useNA, dnn, deparse.level)
+}
+
+table.H2OFrame <-
+    function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
+                      "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
+
+    if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
+    vecs <- list(...)
+    one <- vecs[[1]]
+    two <- if (2 > length(vecs)) NULL else vecs[[2]]
+    ast <- .h2o.varop("table", one, two)
+    print(ast)
+}
+
+table.H2OParsedData <-
+function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
+                  "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
+
+  if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
+  vecs <- list(...)
+  ast <- .h2o.varop("table", vecs[[1]], vecs[[2]])
+  print(ast)
+}
+
+
 #'
 #' cut a numeric column into factors
 cut.H2OParsedData<-
@@ -235,40 +265,28 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
 #  ast.cut
 }
 
-match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
+#match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
 
 #'
 #' `match` or %in% for an AST
-#'
-match.H2OFrame <-function(x, table, nomatch = 0, incomparables = NULL) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(ncol(x) > 1) stop("`x` must be a single column.")
+setMethod("match", "H2OFrame", function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
-#  ID <- "Last.value"
-#  .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.cut')
   ast.match
-}
+})
 
 #'
 #' `match` or %in% for H2OParsedData
-#'
-match.H2OParsedData <- function(x, table, nomatch = NA_integer_, incomparables = NULL) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(ncol(x) > 1) stop("`x` must be a single column.")
-  ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
+setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparables = NULL) {
+  ast.match <- .h2o.varop("match", x, table, momatch, incomparables)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.match, ID = ID, rID = 'ast.match')
   ast.match
-}
+})
 
 #'
 #' %in% method
-#'
-"%in%" <- function(x, table) {
-  if (x %<i-% "ASTNode") match.H2OFrame(x, table, nomatch = 0) > 0                  # ASTNode case
-  else if (x %<i-% "H2OParsedData") match.H2OParsedData(x, table, nomatch = 0) > 0  # H2OParsedData case
-  else match(x, table, nomatch = 0) > 0                                             # base:: case
-}
+setMethod("%in%", "H2OParsedData", function(x, table) match.H2OParsedData(x, table, nomatch = 0) > 0)
+setMethod("%in%", "ASTNode", function(x, table) match.H2OFrame(x, table, nomatch = 0) > 0)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date

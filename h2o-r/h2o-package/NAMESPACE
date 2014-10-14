@@ -1,8 +1,9 @@
 import("RCurl", "rjson", "statmod", "methods")
 importFrom("utils", "installed.packages")
 exportPattern("^[[:alpha:]]+")
+export("%in%")
 exportMethods(
-  "show"
+  "show", "%in%"
 )
 exportClasses(
   "H2OClient",
