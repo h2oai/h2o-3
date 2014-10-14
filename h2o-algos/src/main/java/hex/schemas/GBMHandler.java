@@ -5,7 +5,7 @@ import hex.gbm.GBMModel.GBMParameters;
 import water.H2O;
 import water.api.Handler;
 
-public class GBMHandler extends Handler<GBM, GBMV2> {
+public class GBMHandler extends SharedTreeHandler<GBM, GBMV2> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 

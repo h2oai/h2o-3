@@ -26,21 +26,21 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
     public float learn_rate;
 
     @API(help = "Loss function", values = { "AUTO", "Bernoulli" })
-    public GBM.Family loss;
+    public GBMParameters.Family loss;
 
     @API(help = "RNG Seed for balancing classes", level = API.Level.expert)
     public long seed;
 
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
-      loss = GBM.Family.AUTO;
+      loss = GBMParameters.Family.AUTO;
       return this;
     }
 
     public GBMParameters createImpl() {
       GBMParameters impl = new GBMParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      impl.loss = GBM.Family.AUTO;
+      impl.loss = GBMParameters.Family.AUTO;
       return impl;
     }
   }
@@ -57,7 +57,7 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
     if( parameters.ntrees < 0 || parameters.ntrees > 100000 ) throw new IllegalArgumentException("ntrees must be between 1 and 100000");
     if( parameters.learn_rate == 0.0f ) parameters.learn_rate = 0.1f; // Default
     if( parameters.learn_rate < 0.0f || parameters.learn_rate > 100000 ) throw new IllegalArgumentException("learn_rate must be between 0.0 and 1.0");
-    if( parameters.loss == null ) parameters.loss = GBM.Family.AUTO;
+    if( parameters.loss == null ) parameters.loss = GBMParameters.Family.AUTO;
     
     if( parameters.seed == 0 ) parameters.seed = System.nanoTime();
 
