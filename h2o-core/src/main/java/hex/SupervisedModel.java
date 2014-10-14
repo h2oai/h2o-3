@@ -10,7 +10,7 @@ import water.util.ModelUtils;
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Model<M,P,O> {
 
   protected float[] _priorClassDist;
   protected float[] _modelClassDist;

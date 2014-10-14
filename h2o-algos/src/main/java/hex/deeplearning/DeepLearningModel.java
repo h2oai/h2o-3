@@ -24,7 +24,7 @@ import static java.lang.Double.isNaN;
 
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
 
-  public static class DeepLearningParameters extends Model.Parameters<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+  public static class DeepLearningParameters extends Model.Parameters {
     public boolean classification;
     public int n_folds;
     public boolean keep_cross_validation_splits;
@@ -667,7 +667,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  public static class DeepLearningOutput extends Model.Output<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+  public static class DeepLearningOutput extends Model.Output {
     //FIXME
     //add output fields
   }
@@ -1594,10 +1594,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       ex.printStackTrace();
       keep_running = false;
       throw new RuntimeException(ex);
-    } finally {
-      return keep_running;
     }
-  }
+    return keep_running; 
+ }
 
 //  @Override protected void setCrossValidationError(Parameters job, double cv_error, ConfusionMatrix cm, AUCData auc, HitRatio hr) {
 //    _have_cv_results = true;

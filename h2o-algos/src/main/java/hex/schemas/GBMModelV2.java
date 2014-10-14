@@ -11,20 +11,8 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
 
   public static final class GBMModelOutputV2 extends ModelOutputSchema<GBMModel.GBMOutput, GBMModelOutputV2> {
     // Output fields; input fields are in the parameters list
-    @API(help="Clusters[K][features]")
-    public double[/*K*/][/*features*/] clusters;
-
-    @API(help="Rows[K]")
-    public long[/*K*/]  rows;
-
-    @API(help="Mean Square Error per cluster")
-    public double[/*K*/] mses;   // Per-cluster MSE, variance
-
     @API(help="Mean Square Error")
     public double mse;           // Total MSE, variance
-
-    @API(help="Iterations executed")
-    public double iters;
 
     @Override public GBMModel.GBMOutput createImpl() {
       GBMModel.GBMOutput impl = new GBMModel.GBMOutput();

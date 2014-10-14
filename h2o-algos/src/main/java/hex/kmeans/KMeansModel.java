@@ -10,7 +10,7 @@ import water.fvec.Frame;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
-  public static class KMeansParameters extends Model.Parameters<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  public static class KMeansParameters extends Model.Parameters {
     public int _K;                        // Number of clusters
     public int _max_iters = 100;          // Max iterations
     public boolean _normalize = false;    // Normalize columns
@@ -26,7 +26,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     }
   }
 
-  public static class KMeansOutput extends Model.Output<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  public static class KMeansOutput extends Model.Output {
     // Number of categorical variables in the training set; they are all moved
     // up-front and use a different distance metric than numerical variables
     public int _ncats; // TODO: final?

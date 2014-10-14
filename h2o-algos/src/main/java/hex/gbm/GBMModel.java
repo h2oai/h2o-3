@@ -10,15 +10,15 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
-public class GBMModel extends Model<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
-  public static class GBMParameters extends Model.Parameters<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+  public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     // SharedTreeBuilder
     public int ntrees;          // Number of trees. Grid Search, comma sep values:50,100,150,200
 
     // GBM specific parms
-    public float learn_rate;          // Learning rate from 0.0 to 1.0
-    public long seed;                 // RNG seed for balancing classes
+    public float learn_rate;    // Learning rate from 0.0 to 1.0
+    public long seed;           // RNG seed for balancing classes
     public GBM.Family loss = GBM.Family.AUTO;
 
     @Override public int sanityCheckParameters() {
@@ -27,7 +27,7 @@ public class GBMModel extends Model<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
   }
 
-  public static class GBMOutput extends Model.Output<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+  public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
 
     /** Initially predicted value (for zero trees) */
     double initialPrediction;
@@ -44,8 +44,6 @@ public class GBMModel extends Model<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBMModel(Key selfKey, Frame fr, GBMParameters parms, GBMOutput output, int ncats) {
     super(selfKey,fr,parms,output);
   }
-
-  @Override public boolean isSupervised() {return true;}
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new GBMModelV2(); }

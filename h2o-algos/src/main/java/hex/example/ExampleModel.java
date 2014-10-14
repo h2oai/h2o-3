@@ -8,7 +8,7 @@ import water.fvec.Frame;
 
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
-  public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleParameters,ExampleOutput> {
+  public static class ExampleParameters extends Model.Parameters {
     public int _max_iters;        // Max iterations
 
     @Override
@@ -18,7 +18,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     }
   }
 
-  public static class ExampleOutput extends Model.Output<ExampleModel,ExampleParameters,ExampleOutput> {
+  public static class ExampleOutput extends Model.Output {
     // Iterations executed
     public int _iters;
     public double[] _maxs;
