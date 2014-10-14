@@ -137,8 +137,8 @@ Xhr = (_, host) ->
     makeRequest opts, go
 
 _clouds = []
-_uniqueCloudId = 0
-uniqueCloudId = -> ++_uniqueCloudId
+_uniqueCloudId = 1
+uniqueCloudId = -> _uniqueCloudId = _uniqueCloudId + 2
 _spawnCloud = ->
   diag "Starting new H2O cloud..."
   cloudId = uniqueCloudId()
