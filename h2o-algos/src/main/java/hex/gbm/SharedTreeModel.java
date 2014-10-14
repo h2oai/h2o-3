@@ -10,10 +10,10 @@ import water.fvec.Frame;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
   public abstract static class SharedTreeParameters extends SupervisedModel.Parameters {
-    public int ntrees;          // Number of trees. Grid Search, comma sep values:50,100,150,200
+    public int _ntrees;          // Number of trees. Grid Search, comma sep values:50,100,150,200
 
     @Override public int sanityCheckParameters() {
-      if( ntrees < 0 || ntrees > 100000 ) validation_error("ntrees", "ntrees must be between 1 and 100000");
+      if( _ntrees < 0 || _ntrees > 100000 ) validation_error("_ntrees", "ntrees must be between 1 and 100000");
       return validation_error_count;
     }
   }

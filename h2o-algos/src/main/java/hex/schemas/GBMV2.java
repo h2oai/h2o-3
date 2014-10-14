@@ -40,7 +40,6 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
     public GBMParameters createImpl() {
       GBMParameters impl = new GBMParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      impl.loss = GBMParameters.Family.AUTO;
       return impl;
     }
   }

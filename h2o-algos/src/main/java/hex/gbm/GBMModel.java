@@ -22,14 +22,14 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     public enum Family {
       AUTO, bernoulli
     }
+    public Family _loss = Family.AUTO;
 
-    // GBM specific parms
-    public float learn_rate;    // Learning rate from 0.0 to 1.0
-    public long seed;           // RNG seed for balancing classes
-    public Family loss = Family.AUTO;
+    public float _learn_rate;    // Learning rate from 0.0 to 1.0
+    public long _seed;           // RNG seed for balancing classes
 
     @Override public int sanityCheckParameters() {
-      if( !(0. < learn_rate && learn_rate <= 1.0) ) validation_error("learn_rate", "learn_rate must be between 0 and 1");
+      super.sanityCheckParameters();
+      if( !(0. < _learn_rate && _learn_rate <= 1.0) ) validation_error("learn_rate", "learn_rate must be between 0 and 1");
       return validation_error_count;
     }
   }
@@ -68,7 +68,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     float[] p = super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
-    if( _parms.loss == GBMParameters.Family.bernoulli ) {
+    if( _parms._loss == GBMParameters.Family.bernoulli ) {
       double fx = p[1] + _output.initialPrediction;
       p[2] = 1.0f/(float)(1f+Math.exp(-fx));
       p[1] = 1f-p[2];

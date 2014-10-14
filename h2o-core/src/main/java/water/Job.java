@@ -146,7 +146,13 @@ public class Job<T extends Keyed> extends Keyed {
     // runs the onCompletion or onExceptionCompletion code.
     _barrier = new H2OCountedCompleter() {
         @Override public void compute2() { }
-        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) { return true; }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) { 
+          if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
+            System.err.println("barrier onExCompletion for "+fjtask);
+            ex.printStackTrace();
+          }
+          return true;
+        }
       };
     fjtask.setCompleter(_barrier);
     _start_time = System.currentTimeMillis();
