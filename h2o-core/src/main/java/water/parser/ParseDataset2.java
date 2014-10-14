@@ -129,6 +129,10 @@ public final class ParseDataset2 extends Job<Frame> {
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
   }
 
+  private static class EnumMapping extends Iced {
+    final int [][] map;
+    public EnumMapping(int[][] map){this.map = map;}
+  }
   // --------------------------------------------------------------------------
   // Top-level parser driver
   private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
@@ -150,9 +154,29 @@ public final class ParseDataset2 extends Job<Frame> {
       EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), mfpt._eKey, ecols).doAllNodes();
       Enum[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];
-      int j = 0;
-      for( int i : ecols ) mfpt._dout._vecs[i].setDomain(ValueString.toString(ds[j++] = enums[i].computeColumnDomain()));
-      eut = new EnumUpdateTask(ds, eft._lEnums, mfpt._chunk2Enum, ecols);
+      EnumMapping [] emaps = new EnumMapping[H2O.CLOUD.size()];
+      int k = 0;
+      for(int i = 0; i < ecols.length; ++i)
+        mfpt._dout._vecs[ecols[i]].setDomain(ValueString.toString(ds[k++] = enums[ecols[i]].computeColumnDomain()));
+      for(int nodeId = 0; nodeId < H2O.CLOUD.size(); ++nodeId) {
+        if(eft._lEnums[nodeId] == null)continue;
+        int[][] emap = new int[ecols.length][];
+        for (int i = 0; i < ecols.length; ++i) {
+          final Enum e = eft._lEnums[nodeId][ecols[i]];
+          if(e == null) continue;
+          emap[i] = MemoryManager.malloc4(e.maxId() + 1);
+          Arrays.fill(emap[i], -1);
+          for (int j = 0; j < ds[i].length; ++j) {
+            ValueString vs = ds[i][j];
+            if (e.containsKey(vs)) {
+              assert e.getTokenId(vs) <= e.maxId() : "maxIdx = " + e.maxId() + ", got " + e.getTokenId(vs);
+              emap[i][e.getTokenId(vs)] = j;
+            }
+          }
+        }
+        emaps[nodeId] = new EnumMapping(emap);
+      }
+      eut = new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum, ecols);
     }
     Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
@@ -187,38 +211,14 @@ public final class ParseDataset2 extends Job<Frame> {
    *  @author tomasnykodym
    */
   private static class EnumUpdateTask extends MRTask<EnumUpdateTask> {
-    private transient int[][][] _emap;
     private final ValueString [][] _gDomain;
-    private final Enum [][] _lEnums;
+    private final EnumMapping [] _emaps;
     private final int  [] _chunk2Enum;
     private final int [] _colIds;
-    private EnumUpdateTask(ValueString [][] gDomain, Enum [][]  lEnums, int [] chunk2Enum, int [] colIds){
-      _gDomain = gDomain; _lEnums = lEnums; _chunk2Enum = chunk2Enum; _colIds = colIds;
+    private EnumUpdateTask(ValueString [][] gDomain, EnumMapping [] emaps, int [] chunk2Enum, int [] colIds){
+      _gDomain = gDomain; _emaps = emaps; _chunk2Enum = chunk2Enum; _colIds = colIds;
     }
-
-    private int[][] emap(int nodeId) {
-      if( _emap == null ) _emap = new int[_lEnums.length][][];
-      if( _emap[nodeId] == null ) {
-        int[][] emap = _emap[nodeId] = new int[_gDomain.length][];
-        for( int i = 0; i < _gDomain.length; ++i ) {
-          if( _gDomain[i] != null ) {
-            assert _lEnums[nodeId] != null : "missing lEnum of node "  + nodeId + ", enums = " + Arrays.toString(_lEnums);
-            final Enum e = _lEnums[nodeId][_colIds[i]];
-            emap[i] = new int[e.maxId()+1];
-            Arrays.fill(emap[i], -1);
-            for(int j = 0; j < _gDomain[i].length; ++j) {
-              ValueString vs = _gDomain[i][j];
-              if( e.containsKey(vs) ) {
-                assert e.getTokenId(vs) <= e.maxId():"maxIdx = " + e.maxId() + ", got " + e.getTokenId(vs);
-                emap[i][e.getTokenId(vs)] = j;
-              }
-            }
-          }
-        }
-      }
-      return _emap[nodeId];
-    }
-
+    private int[][] emap(int nodeId) {return _emaps[nodeId].map;}
     @Override public void map(Chunk [] chks){
       int[][] emap = emap(_chunk2Enum[chks[0].cidx()]);
       final int cidx = chks[0].cidx();
@@ -233,7 +233,7 @@ public final class ParseDataset2 extends Job<Frame> {
             if (l < 0 || l >= emap[i].length)
               chk.reportBrokenEnum(i, j, l, emap, _gDomain[i].length);
             if(emap[i][(int)l] < 0)
-              throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + j + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName());
+              throw new RuntimeException(H2O.SELF.toString() + ": missing enum at col:" + i + ", line: " + (chk.start() + j) + ", val = " + l + ", chunk=" + chk.getClass().getSimpleName() + ", map = " + Arrays.toString(emap[i]));
             chk.set0(j, emap[i][(int)l]);
           }
         }
@@ -248,7 +248,7 @@ public final class ParseDataset2 extends Job<Frame> {
     private final int[] _ecols;
     private final int _homeNode; // node where the computation started, enum from this node MUST be cloned!
     private Enum[] _gEnums;      // global enums per column
-    private Enum[][] _lEnums;    // local enums per node per column
+    public Enum[][] _lEnums;    // local enums per node per column
     private EnumFetchTask(int homeNode, Key k, int[] ecols){_homeNode = homeNode; _k = k;_ecols = ecols;}
     @Override public void setupLocal() {
       _lEnums = new Enum[H2O.CLOUD.size()][];
@@ -261,11 +261,12 @@ public final class ParseDataset2 extends Job<Frame> {
       // if we are the original node (i.e. there will be no sending over wire),
       // we have to clone the enums not to share the same object (causes
       // problems when computing column domain and renumbering maps).
-      if( H2O.SELF.index() == _homeNode ) {
+//      if( H2O.SELF.index() == _homeNode ) {
+      // fixme: looks like need to clone even if not on home node in h2o-dev
         _gEnums = _gEnums.clone();
         for(int i = 0; i < _gEnums.length; ++i)
           if( _gEnums[i] != null ) _gEnums[i] = _gEnums[i].deepCopy();
-      }
+//      }
       MultiFileParseTask._enums.remove(_k);
     }
 
@@ -423,7 +424,6 @@ public final class ParseDataset2 extends Job<Frame> {
         chunksAreLocal(vec,chunkStartIdx,key);
         return;
       }
-
       // Parse the file
       try {
         switch( cpr ) {

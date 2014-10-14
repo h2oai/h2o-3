@@ -6,6 +6,10 @@ import water.*;
 import water.fvec.*;
 
 public class ParserTest2 extends TestUtil {
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(5);
+  }
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   private static void testParsed(Frame fr, String[][] expected) {
