@@ -225,6 +225,7 @@ abstract public class Log {
 
     // HTTPD logging
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
+    p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
 
     p.setProperty("log4j.appender.HTTPD",                       "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.HTTPD.Threshold",             "TRACE");
