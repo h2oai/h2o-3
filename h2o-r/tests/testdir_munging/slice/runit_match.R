@@ -9,7 +9,7 @@ test.match <- function(conn) {
   hex <- as.h2o(conn, iris)
 
 
-  Log.info("Printing the head of the iris data frame."
+  Log.info("Printing the head of the iris data frame.")
   print(hex)
 
 
