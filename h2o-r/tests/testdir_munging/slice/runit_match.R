@@ -10,8 +10,10 @@ test.match <- function(conn) {
 
   print(hex)
 
+  sub <- hex$Species %in% c("setosa", "versicolor")
+  print(sub)
   
-  hh <- hex[hex$Species %in% c("setosa","versicolor"),]
+  hh <- hex[sub,]
 
   print(hh)
   
@@ -20,5 +22,5 @@ test.match <- function(conn) {
   testEnd()
 }
 
-doTest("test cbind", test.match)
+doTest("test match", test.match)
 
