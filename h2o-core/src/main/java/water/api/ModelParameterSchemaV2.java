@@ -41,9 +41,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"")
   public String level;
 
-  @API(help="other fields that must be set before setting this one, e.g. \"response_column\"")
-  public String[] dependencies;
-
   @API(help="list of valid values for use by the front-end")
   public String[] values;
 
@@ -115,7 +112,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       o = f.get(default_schema);
       this.default_value = consValue(o);
 
-
       o = f.get(schema);
       this.actual_value = consValue(o);
 
@@ -131,7 +127,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
         this.required = annotation.required();
 
         this.level = annotation.level().toString();
-        this.dependencies = annotation.dependsOn();
 
         this.values = annotation.values();
 

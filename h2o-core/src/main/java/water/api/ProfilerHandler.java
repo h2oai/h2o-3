@@ -6,7 +6,7 @@ import water.api.ProfilerHandler.Profiler;
 import water.util.JProfile;
 
 public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: recursive generics seem to prevent more specific types here
-  @Override protected int min_ver() { return 1; }
+  @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   protected static final class Profiler extends Iced {

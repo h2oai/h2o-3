@@ -1,10 +1,11 @@
 package water.api;
 
-import java.util.Arrays;
-import water.*;
+import water.Key;
 import water.api.ParseHandler.Parse;
-import water.util.DocGen.HTML;
 import water.parser.ParserType;
+import water.util.DocGen.HTML;
+
+import java.util.Arrays;
 
 public class ParseV2 extends Schema<Parse,ParseV2> {
 
@@ -12,25 +13,25 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   @API(help="Final hex key name",required=true)
   Key hex;
 
-  @API(help="Source keys",required=true,dependsOn={"hex"})
+  @API(help="Source keys",required=true)
   Key[] srcs;
 
-  @API(help="Parser Type",dependsOn={"srcs"})
+  @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType pType;
 
-  @API(help="separator",dependsOn={"srcs"})
+  @API(help="separator")
   byte sep;
 
-  @API(help="ncols",dependsOn={"srcs"})
+  @API(help="ncols")
   int ncols;
 
-  @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",dependsOn={"srcs"})
+  @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header")
   int checkHeader;
 
-  @API(help="single Quotes",dependsOn={"srcs"})
+  @API(help="single Quotes")
   boolean singleQuotes;
 
-  @API(help="Column Names",dependsOn={"srcs"})
+  @API(help="Column Names")
   String[] columnNames;
 
   @API(help="Delete input key after parse")

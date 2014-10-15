@@ -305,6 +305,25 @@ public class Vec extends Keyed {
    *  one, and initialized to zero, with the given enum domain. */
   public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _espc); }
 
+  /**
+   * A new vector which is a copy of {@code this} one.
+   * @return a copy of the vector.
+   */
+  public Vec makeCopy(){
+    final Vec v = new Vec(group().addVec(),_espc.clone());
+    new MRTask(){
+      @Override public void map(Chunk c){
+        Chunk c2 = (Chunk)c.clone();
+        c2._mem = c2._mem.clone();
+        DKV.put(v.chunkKey(c.cidx()),c2,_fs);
+      }
+    }.doAll(this);
+    Futures fs= new Futures();
+    DKV.put(v._key,v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
   private static Vec makeCon( final long l, String[] domain, VectorGroup group, long[] espc ) {
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, domain);
@@ -943,8 +962,11 @@ public class Vec extends Keyed {
    *  @return dependent hidden vector or <code>null</code>  */
   Vec masterVec() { return null; }
 
-  /** Collect numeric domain of given vector */
-  private static class CollectDomain extends MRTask<CollectDomain> {
+  /** Collect numeric domain of given vector
+   *  A map-reduce task to collect up the unique values of an integer vector
+   *  and returned as the domain for the vector.
+   * */
+  public static class CollectDomain extends MRTask<CollectDomain> {
     transient NonBlockingHashMapLong<String> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk ys) {
@@ -977,7 +999,7 @@ public class Vec extends Keyed {
      *    domain()[0] - minimal domain value
      *    domain()[domain().length-1] - maximal domain value
      */
-    private long[] domain() {
+    public long[] domain() {
       long[] dom = _uniques.keySetLong();
       Arrays.sort(dom);
       return dom;
