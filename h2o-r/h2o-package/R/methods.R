@@ -406,7 +406,9 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
-  new("ASTNode", root=op, children=list(lhs, rhs))
+  ast <- new("ASTNode", root=op, children=list(lhs, rhs))
+  .force.eval(.retrieveH2O(parent.frame()), ast, ID = x@key, rID = 'x')
+  x
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
@@ -652,7 +654,8 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #})
 
 
-#setMethod("is.factor", "H2OFrame", function(x) { as.logical(.h2o.unop("is.factor", x)) })
+setMethod("is.factor", "H2OFrame", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
+setMethod("is.factor", "H2OParsedData", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
 
 #quantile.H2OFrame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
 #  if((numCols = ncol(x)) != 1) stop("quantile only operates on a single column")
@@ -957,7 +960,8 @@ as.data.frame.H2OParsedData <- function(x, ...) {
 as.matrix.H2OParsedData <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 as.matrix.H2OFrame      <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 
-#setMethod("as.factor", "H2OParsedData", function(x) { .h2o.__unop2("factor", x) })
+setMethod("as.factor", "H2OParsedData", function(x) .h2o.unop("as.factor", x))
+setMethod("as.factor", "H2OFrame",      function(x) .h2o.unop("as.factor", x))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Model Plot/Summary Operations: PCA model summary and screeplot

@@ -3,8 +3,37 @@ source('../../h2o-runit.R')
 
 test.as.factor.basic <- function(conn) {
   hex <- h2o.importFile(conn, locate("smalldata/junit/cars.csv"), key = "cars.hex")
+
+  Log.info("Printing out the head of the cars datasets") 
+
+  print(hex)
+
+  print(hex[, "cylinders"])
+
+  asdf <- hex[,"cylinders"]
+  print(asdf)
+  
+  print(as.factor(hex[,"cylinders"]))
+
+  meow <- as.factor(hex[,"cylinders"])
+  print(meow)
+
+  
   hex[,"cylinders"] <- as.factor(hex[,"cylinders"])
-  expect_true(is.factor(hex[,"cylinders"])[1])
+
+  print(hex)
+
+
+  Log.info("doing the Log.info")
+
+
+  #print(is.factor(hex[,"cylinders"]))  
+
+  print(hex[,"cylinders"])
+
+
+
+  #expect_true(is.factor(hex[,"cylinders"])[1])
   testEnd()
 }
 

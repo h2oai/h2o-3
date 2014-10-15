@@ -33,7 +33,10 @@
 "%<i-%"  <- function(x,y) inherits(x, y)  # check if `x` inherits from `y`
 "%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0
 "%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
-"%<-%"   <- function(x,y) new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
+"%<-%"   <- function(x,y) {
+  if ( x %<i-% "H2OParsedData" ) x <- x@key
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
+}
 
 #'
 #' Map of binary operators to their "AST" operator value.
