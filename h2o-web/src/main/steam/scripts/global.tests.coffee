@@ -125,7 +125,7 @@ Xhr = (_, host) ->
     opts =
       method: 'GET'
       url: "http://#{host}#{path}"
-      timeout: 15000
+      timeout: 900000
     makeRequest opts, go
 
   link$ _.h2oPost, (path, parameters, go) ->
@@ -133,7 +133,7 @@ Xhr = (_, host) ->
       method: 'POST'
       url: "http://#{host}#{path}"
       form: parameters
-      timeout: 15000
+      timeout: 900000
     makeRequest opts, go
 
 _clouds = []
@@ -142,7 +142,7 @@ uniqueCloudId = -> _uniqueCloudId = _uniqueCloudId + 2
 _spawnCloud = ->
   diag "Starting new H2O cloud..."
   cloudId = uniqueCloudId()
-  cloud = spawn 'java', [ '-Xmx1g', '-jar', JAR_PATH, '-name', "steam_#{cloudId}", '-port', "#{cloudId + 60000}" ]
+  cloud = spawn 'java', [ '-Xmx4g', '-jar', JAR_PATH, '-name', "steam_#{cloudId}", '-port', "#{cloudId + 60000}" ]
   diag "PID #{cloud.pid}"
   _clouds.push cloud
   cloud
