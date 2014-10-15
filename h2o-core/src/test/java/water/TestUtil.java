@@ -224,6 +224,7 @@ public class TestUtil extends Iced {
    *  @param fr2 Frame
    *  @return true if equal  */
   protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
+    if (fr1 == fr2) return true;
     if( fr1.numCols() != fr2.numCols() ) return false;
     if( fr1.numRows() != fr2.numRows() ) return false;
     if( fr1.checkCompatible(fr2) )

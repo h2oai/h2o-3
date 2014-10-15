@@ -431,6 +431,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     public double sparsity_beta = 0;
 
+    /**
+     * Max. number of categorical features, enforced via hashing (Experimental)
+     */
+    public int max_categorical_features = Integer.MAX_VALUE;
+
+    /**
+     * Force reproducibility on small data (will be slow - only uses 1 thread)
+     */
+    public boolean reproducible = false;
+
     public enum MissingValuesHandling {
       Skip, MeanImputation
     }
@@ -627,10 +637,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!classification && loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
       if (autoencoder && loss != Loss.MeanSquare) validation_error("loss", "Must use MeanSquare loss function for auto-encoder.");
       if (autoencoder && classification) { classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
+      if (!autoencoder && sparsity_beta != 0) validation_info("sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
       if (autoencoder && _validation_frame != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (autoencoder && activation == Activation.Maxout) validation_error("activation", "Maxout activation is not supported for auto-encoder.");
+      if (max_categorical_features < 1) validation_error("max_categorical_features", "max_categorical_features must be at least 1.");
 
       if (!sparse && col_major) {
         if (!quiet_mode) validation_error("col_major", "Cannot use column major storage for non-sparse data handling.");
@@ -640,6 +652,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
       if (class_sampling_factors != null && !balance_classes) {
         validation_error("class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
+      }
+      if (reproducible) {
+        if (!quiet_mode)
+          Log.info("Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\nand setting train_samples_per_iteration to -1 to enforce reproducibility.");
+        force_load_balance = true;
+        single_node_mode = false;
+        train_samples_per_iteration = -1;
+        replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+//      replicate_training_data = true; //doesn't hurt, but does replicated identical work
       }
 
       return validation_error_count;
@@ -900,7 +921,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       final int layers=get_params().hidden.length;
       // units (# neurons for each layer)
       units = new int[layers+2];
-      units[0] = num_input;
+      if (get_params().max_categorical_features <= Integer.MAX_VALUE - dinfo._nums)
+        units[0] = Math.min(dinfo._nums + get_params().max_categorical_features, num_input);
+      else
+        units[0] = num_input;
       System.arraycopy(get_params().hidden, 0, units, 1, layers);
       units[layers+1] = num_output;
       // weights (to connect layers)
@@ -1357,8 +1381,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     boolean keep_running = true;
     try {
       final long now = System.currentTimeMillis();
-      epoch_counter = (float)model_info().get_processed_total()/train.numRows();
-      final double time_last_iter_millis = Math.max(1, now-_timeLastScoreEnter); //at least 1 msec
+      epoch_counter = (float)model_info().get_processed_total()/training_rows;
+      final double time_last_iter_millis = now-_timeLastScoreEnter;
 
       // Auto-tuning
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),

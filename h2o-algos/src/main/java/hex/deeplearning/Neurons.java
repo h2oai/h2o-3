@@ -5,10 +5,11 @@ import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.nio.ByteBuffer;
+import java.util.*;
+
+import org.apache.hadoop.util.hash.Hash;
+import org.apache.hadoop.util.hash.MurmurHash;
 
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
@@ -703,9 +704,56 @@ public abstract class Neurons {
     public void setInput(long seed, final double[] nums, final int numcat, final int[] cats) {
       _a = _dvec;
       Arrays.fill(_a.raw(), 0f);
-      for (int i=0; i<numcat; ++i) _a.set(cats[i], 1f);
-      for (int i=0; i<nums.length; ++i) _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
-//      Log.info("Input Layer: " + ArrayUtils.toString(_a.raw()));
+
+      // random projection from fullN down to max_categorical_features
+      if (params.max_categorical_features < _dinfo.fullN() - _dinfo._nums) {
+        assert(nums.length == _dinfo._nums);
+        final int M = nums.length + params.max_categorical_features;
+        final boolean random_projection = false;
+        final boolean hash_trick = true;
+        if (random_projection) {
+          final int N = _dinfo.fullN();
+          assert (_a.size() == M);
+
+          //expensive
+          DenseVector orig = new DenseVector(N);
+          for (int i = 0; i < numcat; ++i) orig.set(cats[i], 1f);
+          for (int i = 0; i < nums.length; ++i)
+            orig.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
+
+          // Random projections based on http://users.soe.ucsc.edu/~optas/papers/jl.pdf
+          Random rng = new Random(params.seed);
+          for (int i = 0; i < M; ++i) {
+            for (int j = 0; j < N; ++j) {
+              final float rnd = rng.nextFloat();
+              float val = 0;
+              if (rnd < 1. / 6.) val = (float) Math.sqrt(3);
+              if (rnd > 5. / 6.) val = -(float) Math.sqrt(3);
+              _a.add(i, orig.get(j) * val);
+            }
+          }
+        } else if (hash_trick) {
+          // Use hash trick for categorical features
+          assert (_a.size() == M);
+          // hash N-nums.length down to M-nums.length = cM (#categorical slots - always use all numerical features)
+          final int cM = params.max_categorical_features;
+
+          assert (_a.size() == M);
+          Hash murmur = MurmurHash.getInstance();
+          for (int i = 0; i < numcat; ++i) {
+            ByteBuffer buf = ByteBuffer.allocate(4);
+            int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params.seed); // turn horizontalized categorical integer into another integer, based on seed
+//            int hashval = cats[i] ^ (int)params.seed; // turn horizontalized categorical integer into another integer, based on seed
+            _a.add(Math.abs(hashval % cM), 1f); // restrict to limited range
+          }
+          for (int i = 0; i < nums.length; ++i)
+            _a.set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
+        }
+      } else {
+        for (int i = 0; i < numcat; ++i) _a.set(cats[i], 1f); // one-hot encode categoricals
+        for (int i = 0; i < nums.length; ++i)
+          _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
+      }
 
       // Input Dropout
       if (_dropout == null) return;

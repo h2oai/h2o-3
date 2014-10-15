@@ -544,6 +544,12 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Sparsity regularization (Experimental)")
     public double sparsity_beta = 0;
 
+    @API(help = "Max. number of categorical features, enforced via hashing (Experimental)", level = API.Level.expert)
+    public int max_categorical_features = Integer.MAX_VALUE;
+
+    @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert)
+    public boolean reproducible = false;
+
     @Override public DeepLearningParametersV2 fillFromImpl(DeepLearningParameters parms) {
       super.fillFromImpl(parms);
       return this;

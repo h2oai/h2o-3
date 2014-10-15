@@ -100,6 +100,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             "autoencoder",
             "average_activation",
             "sparsity_beta",
+            "max_categorical_features",
     };
 
     // the following parameters can be modified when restarting from a checkpoint
@@ -124,6 +125,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             "single_node_mode",
             "sparse",
             "col_major",
+            // Allow modification of the regularization parameters after a checkpoint restart
+            "l1",
+            "l2",
+            "max_w2",
     };
 
     /**
@@ -271,7 +276,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         final long model_size = model.model_info().size();
         if (!_parms.quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = model.model_info().data_info()._adaptedFrame;
-        if (mp.force_load_balance) train = reBalance(train, mp.replicate_training_data /*rebalance into only 4*cores per node*/);
+        if (mp.force_load_balance) train = reBalance(train, mp.replicate_training_data);
         if (mp.classification && mp.balance_classes) {
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
           if (mp.class_sampling_factors != null) {
@@ -314,7 +319,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         // Set train_samples_per_iteration size (cannot be done earlier since this depends on whether stratified sampling is done)
         model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, train.numRows(), model);
         // Determine whether shuffling is enforced
-        if(mp.replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp.single_node_mode?1:H2O.CLOUD.size())) && !mp.shuffle_training_data && H2O.CLOUD.size() > 1) {
+        if(mp.replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp.single_node_mode?1:H2O.CLOUD.size())) && !mp.shuffle_training_data && H2O.CLOUD.size() > 1 && !mp.reproducible) {
           Log.warn("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp.shuffle_training_data = true;
         }
@@ -397,10 +402,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * @return Frame that has potentially more chunks
      */
     private Frame reBalance(final Frame fr, boolean local) {
-      final int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
-      if (fr.anyVec().nChunks() > chunks) {
+      int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
+      if (fr.anyVec().nChunks() > chunks && !_parms.reproducible) {
         Log.info("Dataset already contains " + fr.anyVec().nChunks() + " chunks. No need to rebalance.");
         return fr;
+      } else if (_parms.reproducible) {
+        Log.warn("Reproducibility enforced - using only 1 thread - can be slow.");
+        chunks = 1;
       }
       if (!_parms.quiet_mode) Log.info("ReBalancing dataset into (at least) " + chunks + " chunks.");
 //      return MRUtils.shuffleAndBalance(fr, chunks, seed, local, shuffle_training_data);
