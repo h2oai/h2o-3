@@ -5,6 +5,7 @@ package water.cascade;
 import water.*;
 import water.api.QuantilesHandler.Quantiles;
 import water.fvec.*;
+import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 import java.math.BigDecimal;
@@ -132,7 +133,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRepLen());  //TODO
     putPrefix(new ASTQtile ());  //TODO
     putPrefix(new ASTCbind ());
-//    putPrefix(new ASTTable ());
+    putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
 //    putPrefix(new ASTIfElse());
 //    putPrefix(new ASTRApply());
@@ -1244,7 +1245,6 @@ class ASTRename extends ASTUniPrefixOp {
     fr = new Frame(Key.make(_newname), fr.names(), fr.vecs());
     e.push0(new ValFrame(fr));
   }
-
 }
 
 class ASTMatch extends ASTUniPrefixOp {
@@ -1843,80 +1843,110 @@ class ASTMean extends ASTUniPrefixOp {
   }
 }
 
-//class ASTTable extends ASTOp {
-//  ASTTable() { super(new String[]{"table", "ary"}); }
-//  @Override String opStr() { return "table"; }
-//  @Override ASTOp make() { return new ASTTable(); }
-//  @Override void apply(Env env) {
-//    int ncol;
-//    Frame fr = env.ary(-1);
-//    if ((ncol = fr.vecs().length) > 2)
-//      throw new IllegalArgumentException("table does not apply to more than two cols.");
-//    for (int i = 0; i < ncol; i++) if (!fr.vecs()[i].isInt())
-//      throw new IllegalArgumentException("table only applies to integer vectors.");
-//    String[][] domains = new String[ncol][];  // the domain names to display as row and col names
-//    // if vec does not have original domain, use levels returned by CollectDomain
-//    long[][] levels = new long[ncol][];
-//    for (int i = 0; i < ncol; i++) {
-//      Vec v = fr.vecs()[i];
-//      levels[i] = new Vec.CollectDomain(v).doAll(new Frame(v)).domain();
-//      domains[i] = v.domain();
-//    }
-//    long[][] counts = new Tabularize(levels).doAll(fr)._counts;
-//    // Build output vecs
-//    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(counts.length+1);
-//    Vec[] vecs = new Vec[counts.length+1];
-//    String[] colnames = new String[counts.length+1];
-//    AppendableVec v0 = new AppendableVec(keys[0]);
-//    v0._domain = fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone();
-//    NewChunk c0 = new NewChunk(v0,0);
-//    for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
-//    c0.close(0,null);
-//    vecs[0] = v0.close(null);
-//    colnames[0] = "row.names";
-//    if (ncol==1) colnames[1] = "Count";
-//    for (int level1=0; level1 < counts.length; level1++) {
-//      AppendableVec v = new AppendableVec(keys[level1+1]);
-//      NewChunk c = new NewChunk(v,0);
-//      v._domain = null;
-//      for (int level0=0; level0 < counts[level1].length; level0++)
-//        c.addNum((double) counts[level1][level0]);
-//      c.close(0, null);
-//      vecs[level1+1] = v.close(null);
-//      if (ncol>1) {
-//        colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
-//      }
-//    }
-//    env.pop(2);
-//    env.push(new Frame(colnames, vecs));
-//  }
-//  private static class Tabularize extends MRTask2<Tabularize> {
-//    public final long[][]  _domains;
-//    public long[][] _counts;
-//
-//    public Tabularize(long[][] dom) { super(); _domains=dom; }
-//    @Override public void map(Chunk[] cs) {
-//      assert cs.length == _domains.length;
-//      _counts = _domains.length==1? new long[1][] : new long[_domains[1].length][];
-//      for (int i=0; i < _counts.length; i++) _counts[i] = new long[_domains[0].length];
-//      for (int i=0; i < cs[0]._len; i++) {
-//        if (cs[0].isNA0(i)) continue;
-//        long ds[] = _domains[0];
-//        int level0 = Arrays.binarySearch(ds,cs[0].at80(i));
-//        assert 0 <= level0 && level0 < ds.length : "l0="+level0+", len0="+ds.length+", min="+ds[0]+", max="+ds[ds.length-1];
-//        int level1;
-//        if (cs.length>1) {
-//          if (cs[1].isNA0(i)) continue; else level1 = Arrays.binarySearch(_domains[1],(int)cs[1].at80(i));
-//          assert 0 <= level1 && level1 < _domains[1].length;
-//        } else {
-//          level1 = 0;
-//        }
-//        _counts[level1][level0]++;
-//      }
-//    }
-//    @Override public void reduce(Tabularize that) { Utils.add(_counts,that._counts); }
-//  }
-//}
+class ASTTable extends ASTUniPrefixOp {
+  ASTTable() { super(new String[]{"table", "..."}); }
+  @Override String opStr() { return "table"; }
+  @Override ASTOp make() { return new ASTTable(); }
+
+  @Override ASTTable parse_impl(Exec E) {
+    AST ary = E.parse();
+    AST two = E.skipWS().parse();
+    if (two instanceof ASTString) two = new ASTNull();
+    ASTTable res = (ASTTable)clone();
+    res._asts = new AST[]{ary, two}; //two is pushed on, then ary is pushed on
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    Frame two = env.peekType() == Env.NULL ? null : env.pop0Ary();
+    if (two == null) env.pop();
+    Frame one = env.pop0Ary();
+
+    // Rules: two != null => two.numCols == one.numCols == 1
+    //        two == null => one.numCols == 1 || one.numCols == 2
+    // Anything else is IAE
+
+    if (two != null)
+      if (two.numCols() != 1 || one.numCols() != 1)
+        throw new IllegalArgumentException("table supports at *most* two vectors");
+    else
+      if (one.numCols() < 1 || one.numCols() > 2 )
+        throw new IllegalArgumentException("table supports at *most* two vectors and at least one vector.");
+
+    Frame fr;
+    if (two != null) fr = new Frame(one.add(two));
+    else fr = one;
+
+    int ncol;
+    if ((ncol = fr.vecs().length) > 2)
+      throw new IllegalArgumentException("table does not apply to more than two cols.");
+    for (int i = 0; i < ncol; i++) if (!fr.vecs()[i].isInt())
+      throw new IllegalArgumentException("table only applies to integer vectors.");
+    String[][] domains = new String[ncol][];  // the domain names to display as row and col names
+    // if vec does not have original domain, use levels returned by CollectDomain
+    long[][] levels = new long[ncol][];
+    for (int i = 0; i < ncol; i++) {
+      Vec v = fr.vecs()[i];
+      levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
+      domains[i] = v.domain();
+    }
+    long[][] counts = new Tabularize(levels).doAll(fr)._counts;
+    // Build output vecs
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(counts.length+1);
+    Vec[] vecs = new Vec[counts.length+1];
+    String[] colnames = new String[counts.length+1];
+    AppendableVec v0 = new AppendableVec(keys[0]);
+    v0.setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
+    NewChunk c0 = new NewChunk(v0,0);
+    for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
+    c0.close(0,null);
+    vecs[0] = v0.close(null);
+    colnames[0] = "row.names";
+    if (ncol==1) colnames[1] = "Count";
+    for (int level1=0; level1 < counts.length; level1++) {
+      AppendableVec v = new AppendableVec(keys[level1+1]);
+      NewChunk c = new NewChunk(v,0);
+      v.setDomain(null);
+      for (int level0=0; level0 < counts[level1].length; level0++)
+        c.addNum((double) counts[level1][level0]);
+      c.close(0, null);
+      vecs[level1+1] = v.close(null);
+      if (ncol>1) {
+        colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
+      }
+    }
+    Frame fr2 = new Frame(colnames, vecs);
+    env.cleanup(fr, one, two);
+    env.push(new ValFrame(fr2));
+  }
+
+  private static class Tabularize extends MRTask<Tabularize> {
+    public final long[][]  _domains;
+    public long[][] _counts;
+
+    public Tabularize(long[][] dom) { super(); _domains=dom; }
+    @Override public void map(Chunk[] cs) {
+      assert cs.length == _domains.length;
+      _counts = _domains.length==1? new long[1][] : new long[_domains[1].length][];
+      for (int i=0; i < _counts.length; i++) _counts[i] = new long[_domains[0].length];
+      for (int i=0; i < cs[0]._len; i++) {
+        if (cs[0].isNA0(i)) continue;
+        long ds[] = _domains[0];
+        int level0 = Arrays.binarySearch(ds,cs[0].at80(i));
+        assert 0 <= level0 && level0 < ds.length : "l0="+level0+", len0="+ds.length+", min="+ds[0]+", max="+ds[ds.length-1];
+        int level1;
+        if (cs.length>1) {
+          if (cs[1].isNA0(i)) continue; else level1 = Arrays.binarySearch(_domains[1],(int)cs[1].at80(i));
+          assert 0 <= level1 && level1 < _domains[1].length;
+        } else {
+          level1 = 0;
+        }
+        _counts[level1][level0]++;
+      }
+    }
+    @Override public void reduce(Tabularize that) { ArrayUtils.add(_counts, that._counts); }
+  }
+}
 
 // Selective return.  If the selector is a double, just eval both args and
 // return the selected one.  If the selector is an array, then it must be
@@ -2106,7 +2136,7 @@ class ASTCut extends ASTUniPrefixOp {
   }
 }
 
-class ASTFactor extends ASTOp {
+class ASTFactor extends ASTUniPrefixOp {
   ASTFactor() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.factor"; }
   @Override ASTOp make() {return new ASTFactor();}
@@ -2121,8 +2151,9 @@ class ASTFactor extends ASTOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
-    if (v1 != null) { ary.delete(); ary = new Frame(ary._names,new Vec[]{v1}); }
-    env.push(new ValFrame(ary));
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+//    env.cleanup(ary);
+    env.push(new ValFrame(fr));
   }
 }
 
