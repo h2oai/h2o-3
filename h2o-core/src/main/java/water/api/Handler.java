@@ -4,8 +4,13 @@ import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
 import water.api.RequestServer.Route;
+import water.util.Log;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2OCountedCompleter {
@@ -56,5 +61,20 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
 
     // Version-specific unwind from the Iced back into the Schema
     return result;
+  }
+
+  protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
+    // TODO: version handling
+    StringBuffer sb = new StringBuffer();
+    Path path = Paths.get(filename);
+    try {
+      sb.append(Files.readAllBytes(path));
+    }
+    catch (IOException e) {
+      Log.warn("Caught IOException trying to read doc file: ", path);
+    }
+    if (null != docs)
+      docs.append(sb);
+    return sb;
   }
 }

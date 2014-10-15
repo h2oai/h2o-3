@@ -216,4 +216,23 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
   }
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
+
+  /**
+   *
+   * @param markdown A StringBuffer into which we should write a Markdown representation of this object.
+   * @return A StringBuffer containing only the bits we appended.
+   */
+  public StringBuffer appendMarkdown(StringBuffer markdown) {
+    throw H2O.unimpl("Haven't yet implemented writeMarkdownDocs().");
+  }
+
+  /**
+   *
+   * @param markdown A StringBuffer into which we should write full Markdown documentation for this object.
+   * @return
+   */
+  public StringBuffer writeMarkdownDocs(StringBuffer markdown) {
+    throw H2O.unimpl("Haven't yet implemented writeMarkdownDocs().");
+  }
+
 }

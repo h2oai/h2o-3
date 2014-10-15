@@ -13,7 +13,7 @@ class FindV2 extends Schema<FindPojo,FindV2> {
   @API(help="Frame to search",required=true)
   Key key;
 
-  @API(help="Column, or null for all",dependsOn={"key"})
+  @API(help="Column, or null for all")
   String column;
 
   @API(help="Starting row for search",required=true)

@@ -1,10 +1,11 @@
 package water.parser;
 
-import java.util.Arrays;
-import water.*;
+import water.Key;
 import water.api.API;
 import water.api.Schema;
 import water.util.DocGen.HTML;
+
+import java.util.Arrays;
 
 public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
@@ -22,7 +23,7 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   @API(help="Suggested name", direction=API.Direction.OUTPUT)
   public String hexName;
 
-  @API(help="Parser Type")
+  @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   public ParserType pType;
 
   @API(help="Field separator")

@@ -183,6 +183,10 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return schema(version).fillFromImpl(frames);
   }
 
+  public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
+    return null; // doc(this, version, docs, "docs/columnSummary.md");
+  }
+
   /** Return a single frame. */
   public Schema fetch(int version, Frames f) {
     Frame frame = getFromDKV(f.key);

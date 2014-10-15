@@ -7,7 +7,7 @@ import water.fvec.Frame;
 abstract class FramesBase extends Schema<Frames, FramesBase> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  Key key;
+  Key key; // TODO: change to Frame
 
   @API(help="Name of column of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   String column;
