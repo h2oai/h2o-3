@@ -152,15 +152,19 @@ cleanup(a_node)
 ################################################
 # Import prostate.csv
 import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
+frames = a_node.frames(key=import_result['keys'][0])['frames']
+assert frames[0]['isText'], "Raw imported Frame is not isText"
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
-pp.pprint(parse_result)
 prostate_key = parse_result['frames'][0]['key']['name']
+
 
 ################################################
 # Test /Frames for prostate.csv
 frames = a_node.frames()['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
+assert not frames_dict['prostate.hex']['isText'], "Parsed Frame is isText"
+
 
 # Test /Frames/{key} for prostate.csv
 frames = a_node.frames(key='prostate.hex')['frames']
