@@ -21,13 +21,13 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
   // int[] cols;
 
   // OUT
-  @API(help = "Column name.")                                                                  String column_name;
-  @API(help = "Quantile requested.")                                                           double quantile_requested;
-  @API(help = "Interpolation type used.")                                                      int interpolation_type_used;
-  @API(help = "False if an exact result is provided, True if the answer is interpolated.")     boolean interpolated;
-  @API(help = "Number of iterations actually performed.")                                      int iterations;
-  @API(help = "Result.")                                                                       public double result;
-  @API(help = "Single pass Result.")                                                           double result_single;
+  @API(help = "Column name.", direction=API.Direction.OUTPUT)                                                                  String column_name;
+  @API(help = "Quantile requested.", direction=API.Direction.OUTPUT)                                                           double quantile_requested;
+  @API(help = "Interpolation type used.", direction=API.Direction.OUTPUT)                                                      int interpolation_type_used;
+  @API(help = "False if an exact result is provided, True if the answer is interpolated.", direction=API.Direction.OUTPUT)     boolean interpolated;
+  @API(help = "Number of iterations actually performed.", direction=API.Direction.OUTPUT)                                      int iterations;
+  @API(help = "Result.", direction=API.Direction.OUTPUT)                                                                       public double result;
+  @API(help = "Single pass Result.", direction=API.Direction.OUTPUT)                                                           double result_single;
 
   protected void init() throws IllegalArgumentException {
     if (column.equals("") || column == null) throw new IllegalArgumentException("Column is missing.");

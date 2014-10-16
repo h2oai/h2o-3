@@ -98,19 +98,44 @@ public class RequestServer extends NanoHTTPD {
       builder.heading1(_http_method, _url_pattern.toString().replace("(?<", "{").replace(">.*)", "}"));
       builder.hline();
       builder.paragraph(_summary);
-      builder.heading2("parameters");
 
-      // parameters table
+      // parameters and outputs tables
       try {
-        builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
-
         Handler h = _handler_class.newInstance();
         Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
         SchemaMetadata meta = new SchemaMetadata(s);
+
+        boolean first; // don't print the table at all if there are no rows
+
+        first = true;
+        builder.heading2("parameters");
         for (FieldMetadata field_meta : meta.fields.values()) {
-          if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT)
+          if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
+              first = false;
+            }
             builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          }
         }
+        if (first)
+          builder.paragraph("(none)");
+
+        first = true;
+        builder.heading2("output");
+        for (FieldMetadata field_meta : meta.fields.values()) {
+          if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "type", "default", "description", "values");
+              first = false;
+            }
+            builder.tableRow(field_meta.name, field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          }
+        }
+        if (first)
+          builder.paragraph("(none)");
+
+        // TODO: render examples and other stuff, if it's passed in
       }
       catch (Exception e) {
         throw H2O.fail("Caught exception using reflection on handler method: " + _handler_method + ": " + e);

@@ -6,7 +6,7 @@ public class JStackV2 extends Schema<JStack,JStackV2> {
   // No inputs
 
   // Output
-  @API(help="Array of Profiles, one per Node in the Cluster")
+  @API(help="Array of Profiles, one per Node in the Cluster", direction=API.Direction.OUTPUT)
   public JStack _jstack;
 
   @Override public JStack createImpl() {

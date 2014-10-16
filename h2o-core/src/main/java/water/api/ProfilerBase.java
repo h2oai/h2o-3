@@ -11,9 +11,9 @@ abstract class ProfilerBase<S extends Schema<Profiler, S>> extends Schema<Profil
   public int depth = 5;
 
   // Output
-  @API(help="Array of Profiles, one per Node in the Cluster")
+  @API(help="Array of Profiles, one per Node in the Cluster", direction=API.Direction.OUTPUT)
   public String[][] stacktraces;
-  @API(help="Array of Profile Counts, one per Node in the Cluster")
+  @API(help="Array of Profile Counts, one per Node in the Cluster", direction=API.Direction.OUTPUT)
   public int[][] counts;
 
   @Override public Profiler createImpl() {

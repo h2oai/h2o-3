@@ -9,7 +9,7 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public Key key;
 
-  @API(help="Find and return compatible frames?", json=false)
+  @API(help="Find and return compatible frames?", json=false, direction=API.Direction.INPUT)
   public boolean find_compatible_frames = false;
 
   // Output fields

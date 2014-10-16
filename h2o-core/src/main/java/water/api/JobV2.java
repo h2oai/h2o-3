@@ -15,19 +15,19 @@ public class JobV2 extends Schema<Job, JobV2> {
   String description;
 
   // Output fields
-  @API(help="job status")
+  @API(help="job status", direction=API.Direction.OUTPUT)
   String status;
 
-  @API(help="progress")
+  @API(help="progress", direction=API.Direction.OUTPUT)
   float progress;               // A number from 0 to 1
 
-  @API(help="runtime")
+  @API(help="runtime", direction=API.Direction.OUTPUT)
   long msec;
 
-  @API(help="destination key")
+  @API(help="destination key", direction=API.Direction.OUTPUT)
   Key dest;
 
-  @API(help="exception")
+  @API(help="exception", direction=API.Direction.OUTPUT)
   String exception;
 
   JobV2() {}

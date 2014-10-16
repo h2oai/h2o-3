@@ -7,16 +7,16 @@ import water.util.IcedHashMap;
  * Schema for the response blob used in /2/*.
  */
 class ResponseInfoV2 extends Schema<IcedHashMap, ResponseInfoV2> {
-  @API(help="h2o")
+  @API(help="h2o", direction=API.Direction.OUTPUT)
   String h2o;
 
-  @API(help="node")
+  @API(help="node", direction=API.Direction.OUTPUT)
   String node;
 
-  @API(help="status")
+  @API(help="status", direction=API.Direction.OUTPUT)
   String status;
 
-  @API(help="time")
+  @API(help="time", direction=API.Direction.OUTPUT)
   int time;
 
   @Override public IcedHashMap createImpl() { throw H2O.fail("fillInto should never be called on ResponseInfoV2"); }

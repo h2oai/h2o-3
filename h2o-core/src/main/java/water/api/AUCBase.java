@@ -6,93 +6,93 @@ import water.util.PojoUtils;
 import static hex.AUC.ThresholdCriterion;
 
 public class AUCBase extends Schema<AUCData, AUCBase> {
-  @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).")
+  @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", direction=API.Direction.OUTPUT)
   public float[] thresholds;
 
-  @API(help = "Threshold criterion")
+  @API(help = "Threshold criterion", direction=API.Direction.OUTPUT)
   public ThresholdCriterion threshold_criterion = ThresholdCriterion.maximum_F1;
 
-  @API(help="domain of the actual response")
+  @API(help="domain of the actual response", direction=API.Direction.OUTPUT)
   public String [] actual_domain;
 
-  @API(help="AUC (ROC)")
+  @API(help="AUC (ROC)", direction=API.Direction.OUTPUT)
   public double AUC;
 
-  @API(help="Gini")
+  @API(help="Gini", direction=API.Direction.OUTPUT)
   public double Gini;
 
 
-  @API(help = "Confusion Matrices for all thresholds")
+  @API(help = "Confusion Matrices for all thresholds", direction=API.Direction.OUTPUT)
   public long[][][] confusion_matrices;
 
-  @API(help = "F1 for all thresholds")
+  @API(help = "F1 for all thresholds", direction=API.Direction.OUTPUT)
   public float[] F1;
 
-  @API(help = "F2 for all thresholds")
+  @API(help = "F2 for all thresholds", direction=API.Direction.OUTPUT)
   public float[] F2;
 
-  @API(help = "F0point5 for all thresholds")
+  @API(help = "F0point5 for all thresholds", direction=API.Direction.OUTPUT)
   public float[] F0point5;
 
-  @API(help = "Accuracy for all thresholds")
+  @API(help = "Accuracy for all thresholds", direction=API.Direction.OUTPUT)
   public float[] accuracy;
 
-  @API(help = "Error for all thresholds")
+  @API(help = "Error for all thresholds", direction=API.Direction.OUTPUT)
   public float[] errorr;
 
-  @API(help = "Precision for all thresholds")
+  @API(help = "Precision for all thresholds", direction=API.Direction.OUTPUT)
   public float[] precision;
 
-  @API(help = "Recall for all thresholds")
+  @API(help = "Recall for all thresholds", direction=API.Direction.OUTPUT)
   public float[] recall;
 
-  @API(help = "Specificity for all thresholds")
+  @API(help = "Specificity for all thresholds", direction=API.Direction.OUTPUT)
   public float[] specificity;
 
-  @API(help = "MCC for all thresholds")
+  @API(help = "MCC for all thresholds", direction=API.Direction.OUTPUT)
   public float[] mcc;
 
-  @API(help = "Max per class error for all thresholds")
+  @API(help = "Max per class error for all thresholds", direction=API.Direction.OUTPUT)
   public float[] max_per_class_error;
 
 
-  @API(help="Threshold criteria")
+  @API(help="Threshold criteria", direction=API.Direction.OUTPUT)
   public String[] threshold_criteria;
 
-  @API(help="Optimal thresholds for criteria")
+  @API(help="Optimal thresholds for criteria", direction=API.Direction.OUTPUT)
   public float[] threshold_for_criteria;
 
-  @API(help="F1 for threshold criteria")
+  @API(help="F1 for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] F1_for_criteria;
 
-  @API(help="F2 for threshold criteria")
+  @API(help="F2 for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] F2_for_criteria;
 
-  @API(help="F0point5 for threshold criteria")
+  @API(help="F0point5 for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] F0point5_for_criteria;
 
-  @API(help="Accuracy for threshold criteria")
+  @API(help="Accuracy for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] accuracy_for_criteria;
 
-  @API(help="Error for threshold criteria")
+  @API(help="Error for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] error_for_criteria;
 
-  @API(help="Precision for threshold criteria")
+  @API(help="Precision for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] precision_for_criteria;
 
-  @API(help="Recall for threshold criteria")
+  @API(help="Recall for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] recall_for_criteria;
 
-  @API(help="Specificity for threshold criteria")
+  @API(help="Specificity for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] specificity_for_criteria;
 
-  @API(help="MCC for threshold criteria")
+  @API(help="MCC for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] mcc_for_criteria;
 
-  @API(help="Maximum per class Error for threshold criteria")
+  @API(help="Maximum per class Error for threshold criteria", direction=API.Direction.OUTPUT)
   public float[] max_per_class_error_for_criteria;
 
-  @API(help="Confusion Matrices for threshold criteria")
+  @API(help="Confusion Matrices for threshold criteria", direction=API.Direction.OUTPUT)
   public long[][][] confusion_matrix_for_criteria;
 
   // Version&Schema-specific filling into the implementation object

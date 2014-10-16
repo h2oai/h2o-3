@@ -13,7 +13,7 @@ abstract class ModelBuildersBase extends Schema<ModelBuilders, ModelBuildersBase
   String algo;;
 
   // Output fields
-  @API(help="ModelBuilders")
+  @API(help="ModelBuilders", direction=API.Direction.OUTPUT)
   IcedHashMap<String, ModelBuilderSchema> model_builders;
 
   // Non-version-specific filling into the impl

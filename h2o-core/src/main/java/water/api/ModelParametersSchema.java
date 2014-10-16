@@ -24,28 +24,28 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   abstract public String[] fields();
 
   // Parameters common to all models:
-  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false)
+  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
   public Key destination_key;
 
-  @API(help="Training frame")
+  @API(help="Training frame", direction=API.Direction.INOUT)
   public Frame training_frame;
 
-  @API(help="Validation frame")
+  @API(help="Validation frame", direction=API.Direction.INOUT)
   public Frame validation_frame;
 
   // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.
-  @API(help="Response column")
+  @API(help="Response column", direction=API.Direction.INOUT)
   public String response_column;
 
-  @API(help="Ignored columns")
+  @API(help="Ignored columns", direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
-  @API(help="Parameter validation messages")
+  @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
   public ValidationMessageBase validation_messages[];
 
-  @API(help="Count of parameter validation errors")
+  @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;
 
   public ModelParametersSchema() {
@@ -68,13 +68,13 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   abstract public P createImpl();
 
   public static class ValidationMessageBase extends Schema<Model.Parameters.ValidationMessage, ValidationMessageBase> {
-    @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)")
+    @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)", direction=API.Direction.OUTPUT)
     public String message_type;
 
-    @API(help="Field to which the message applies")
+    @API(help="Field to which the message applies", direction=API.Direction.OUTPUT)
     public String field_name;
 
-    @API(help="Message text")
+    @API(help="Message text", direction=API.Direction.OUTPUT)
     public String message;
 
     public Model.Parameters.ValidationMessage createImpl() { return new Model.Parameters.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };

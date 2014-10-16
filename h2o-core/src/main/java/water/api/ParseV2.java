@@ -41,7 +41,7 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   boolean blocking;
 
   // Output fields
-  @API(help="Job Key")
+  @API(help="Job Key", direction=API.Direction.OUTPUT)
   Key job;
 
   //==========================

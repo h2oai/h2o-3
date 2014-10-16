@@ -17,7 +17,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public P parameters;
 
   // Output fields
-  @API(help = "Job Key")
+  @API(help = "Job Key", direction = API.Direction.OUTPUT)
   Key job;
 
   /** Factory method to create the model-specific parameters schema. */

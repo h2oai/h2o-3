@@ -3,13 +3,13 @@ package water.api;
 import hex.ConfusionMatrix2;
 
 public class ConfusionMatrixBase extends Schema<ConfusionMatrix2, ConfusionMatrixBase> {
-  @API(help="Confusion matrix (Actual/Predicted)")
+  @API(help="Confusion matrix (Actual/Predicted)", direction=API.Direction.OUTPUT)
   public long[][] confusion_matrix; // [actual][predicted]
 
-  @API(help = "Prediction error by class")
+  @API(help = "Prediction error by class", direction=API.Direction.OUTPUT)
   public double[] prediction_error_by_class;
 
-  @API(help = "Prediction error")
+  @API(help = "Prediction error", direction=API.Direction.OUTPUT)
   public double prediction_error;
 
   // Version&Schema-specific filling into the implementation object

@@ -165,6 +165,9 @@ public final class SchemaMetadata extends Iced {
       if (is_array)
         return consType(clz.getComponentType()) + "[]";
 
+      if (Map.class.isAssignableFrom(clz))
+        return "Map";
+
       // H2O-specific types:
       if (hex.Model.class.isAssignableFrom(clz))
         return "Model";

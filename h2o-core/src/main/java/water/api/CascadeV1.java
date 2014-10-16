@@ -10,17 +10,17 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
   String ast;
 
   // Output
-  @API(help="Parsing error, if any") String exception;
-  @API(help="Result key"           ) Key key;
-  @API(help="Rows in Frame result" ) long num_rows;
-  @API(help="Columns in Frame result" ) int  num_cols;
-  @API(help="Scalar result"        ) double scalar;
-  @API(help="Function result"      ) String funstr;
-  @API(help="Column Names"         ) String[] col_names;
-  @API(help="String result"        ) String string;
+  @API(help="Parsing error, if any"   , direction=API.Direction.OUTPUT) String exception;
+  @API(help="Result key"              , direction=API.Direction.OUTPUT) Key key;
+  @API(help="Rows in Frame result"    , direction=API.Direction.OUTPUT) long num_rows;
+  @API(help="Columns in Frame result" , direction=API.Direction.OUTPUT) int  num_cols;
+  @API(help="Scalar result"           , direction=API.Direction.OUTPUT) double scalar;
+  @API(help="Function result"         , direction=API.Direction.OUTPUT) String funstr;
+  @API(help="Column Names"            , direction=API.Direction.OUTPUT) String[] col_names;
+  @API(help="String result"           , direction=API.Direction.OUTPUT) String string;
   // Pretty-print of result.  For Frames, first 10 rows.  For scalars, just the
   // value.  For functions, the pretty-printed AST.
-  @API(help="String result"        ) String result;
+  @API(help="String result"           , direction=API.Direction.OUTPUT) String result;
 
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 

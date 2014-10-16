@@ -11,13 +11,13 @@ class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl clas
   String status_header = null;
 
   // Output fields
-  @API(help="Error message")
+  @API(help="Error message", direction=API.Direction.OUTPUT)
   String errmsg = null;
 
-  @API(help="Error url")
+  @API(help="Error url", direction=API.Direction.OUTPUT)
   String errurl = null;
 
-  @API(help="Stacktrace, if any")
+  @API(help="Stacktrace, if any", direction=API.Direction.OUTPUT)
   String[] stacktrace = null;
 
   HttpErrorV1( int status_code, String msg, String url ) {

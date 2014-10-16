@@ -9,90 +9,90 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   // This Schema has no inputs
 
   // Output fields
-  @API(help="version")
+  @API(help="version", direction=API.Direction.OUTPUT)
   private String version;
 
-  @API(help="cloud_name")
+  @API(help="cloud_name", direction=API.Direction.OUTPUT)
   private String cloud_name;
 
-  @API(help="cloud_size")
+  @API(help="cloud_size", direction=API.Direction.OUTPUT)
   private int cloud_size;
 
-  @API(help="cloud_uptime_millis")
+  @API(help="cloud_uptime_millis", direction=API.Direction.OUTPUT)
   private long cloud_uptime_millis;
 
-  @API(help="Nodes reporting unhealthy")
+  @API(help="Nodes reporting unhealthy", direction=API.Direction.OUTPUT)
   private int bad_nodes;
 
-  @API(help="Cloud voting is stable")
+  @API(help="Cloud voting is stable", direction=API.Direction.OUTPUT)
   private boolean consensus;
 
-  @API(help="Cloud is accepting new members or not")
+  @API(help="Cloud is accepting new members or not", direction=API.Direction.OUTPUT)
   private boolean locked;
 
-  @API(help="nodes")
+  @API(help="nodes", direction=API.Direction.OUTPUT)
   private Node[] nodes;
 
   // Output fields one-per-JVM
   protected static class Node extends Iced {
-    @API(help="IP")
+    @API(help="IP", direction=API.Direction.OUTPUT)
     final H2ONode h2o;
 
-    @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT")
+    @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT", direction=API.Direction.OUTPUT)
     final boolean healthy;
 
-    @API(help="Time (in msec) of last ping")
+    @API(help="Time (in msec) of last ping", direction=API.Direction.OUTPUT)
     final long last_ping;
 
-    @API(help="System load; average #runnables/#cores")
+    @API(help="System load; average #runnables/#cores", direction=API.Direction.OUTPUT)
     final float sys_load;       // Average #runnables/#cores
 
-    @API(help="Linpack GFlops")
+    @API(help="Linpack GFlops", direction=API.Direction.OUTPUT)
     final double gflops;
 
-    @API(help="Memory Bandwidth")
+    @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
     final double mem_bw;
 
-    @API(help="Data on Node (memory or disk)")
+    @API(help="Data on Node (memory or disk)", direction=API.Direction.OUTPUT)
     final long total_value_size;
 
-    @API(help="Data on Node (memory only)")
+    @API(help="Data on Node (memory only)", direction=API.Direction.OUTPUT)
     final long mem_value_size;
 
-    @API(help="#local keys")
+    @API(help="#local keys", direction=API.Direction.OUTPUT)
     final int num_keys;
 
-    @API(help="Free heap")
+    @API(help="Free heap", direction=API.Direction.OUTPUT)
     final long free_mem;
-    @API(help="Total heap")
+    @API(help="Total heap", direction=API.Direction.OUTPUT)
     final long tot_mem;
-    @API(help="Max heap")
+    @API(help="Max heap", direction=API.Direction.OUTPUT)
     final long max_mem;
 
-    @API(help="Free disk")
+    @API(help="Free disk", direction=API.Direction.OUTPUT)
     final long free_disk;
-    @API(help="Max disk")
+    @API(help="Max disk", direction=API.Direction.OUTPUT)
     final long max_disk;
 
-    @API(help="Active Remote Procedure Calls")
+    @API(help="Active Remote Procedure Calls", direction=API.Direction.OUTPUT)
     final int rpcs_active;
 
-    @API(help="F/J Thread count, by priority")
+    @API(help="F/J Thread count, by priority", direction=API.Direction.OUTPUT)
     final short fjthrds[];
 
-    @API(help="F/J Task count, by priority")
+    @API(help="F/J Task count, by priority", direction=API.Direction.OUTPUT)
     final short fjqueue[];
 
-    @API(help="Open TCP connections")
+    @API(help="Open TCP connections", direction=API.Direction.OUTPUT)
     final int tcps_active;
 
-    @API(help="Open File Descripters")
+    @API(help="Open File Descripters", direction=API.Direction.OUTPUT)
     final int open_fds;
 
-    @API(help="num_cpus")
+    @API(help="num_cpus", direction=API.Direction.OUTPUT)
     final int num_cpus;
 
-    @API(help="PID")
+    @API(help="PID", direction=API.Direction.OUTPUT)
     final String pid;
 
     Node( H2ONode h2o ) {

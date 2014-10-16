@@ -7,10 +7,10 @@ import hex.Model;
  */
 abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
 
-  @API(help="Column names.")
+  @API(help="Column names.", direction=API.Direction.OUTPUT)
   public String[] names;
 
-  @API(help="Domains for categorical (enum) columns.")
+  @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT)
   public String[][] domains;
 
 
