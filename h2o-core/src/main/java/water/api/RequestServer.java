@@ -102,13 +102,14 @@ public class RequestServer extends NanoHTTPD {
 
       // parameters table
       try {
-        builder.tableHeader("name", "type", "description");
+        builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
 
         Handler h = _handler_class.newInstance();
         Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
         SchemaMetadata meta = new SchemaMetadata(s);
         for (FieldMetadata field_meta : meta.fields.values()) {
-          builder.tableRow(field_meta.name, field_meta.type, field_meta.help);
+          if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT)
+            builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
         }
       }
       catch (Exception e) {

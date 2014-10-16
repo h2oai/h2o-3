@@ -13,10 +13,10 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   public boolean find_compatible_frames = false;
 
   // Output fields
-  @API(help="Models", direction = API.Direction.OUTPUT)
+  @API(help="Models", direction=API.Direction.OUTPUT)
   public ModelSchema[] models;
 
-  @API(help="Compatible frames")
+  @API(help="Compatible frames", direction=API.Direction.OUTPUT)
   FrameV2[] compatible_frames; // TODO: FrameBase
 
   // Non-version-specific filling into the impl

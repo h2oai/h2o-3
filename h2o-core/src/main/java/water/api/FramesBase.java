@@ -16,10 +16,10 @@ abstract class FramesBase extends Schema<Frames, FramesBase> {
   public boolean find_compatible_models = false;
 
   // Output fields
-  @API(help="Frames")
+  @API(help="Frames", direction=API.Direction.OUTPUT)
   FrameV2[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
 
-  @API(help="Compatible models")
+  @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
 
   // Non-version-specific filling into the impl

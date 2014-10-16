@@ -1,6 +1,5 @@
 package water.api;
 
-import java.util.Arrays;
 import water.api.ImportFilesHandler.ImportFiles;
 import water.util.DocGen.HTML;
 
@@ -11,16 +10,16 @@ class ImportFilesV2 extends Schema<ImportFiles,ImportFilesV2> {
   String path;
 
   // Output fields
-  @API(help="files")
+  @API(help="files", direction=API.Direction.OUTPUT)
   String files[];
 
-  @API(help="keys")
+  @API(help="keys", direction=API.Direction.OUTPUT)
   String keys[];
 
-  @API(help="fails")
+  @API(help="fails", direction=API.Direction.OUTPUT)
   String fails[];
 
-  @API(help="dels")
+  @API(help="dels", direction=API.Direction.OUTPUT)
   String dels[];
 
   //==========================

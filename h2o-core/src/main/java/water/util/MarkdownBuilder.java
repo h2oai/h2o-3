@@ -20,36 +20,38 @@ public class MarkdownBuilder {
     return sb;
   }
 
-  private StringBuffer append(String separator, String... strings) {
+  private StringBuffer append(String separator, boolean addNewline, String... strings) {
     int i = 0;
     for (String string : strings) {
       if (i++ > 0) sb.append(separator);
       sb.append(string);
     }
-    sb.append("\n");
+    if (addNewline)
+      sb.append("\n");
     return sb;
   }
 
   public StringBuffer comment(String... comment) {
     sb.append("[//]: # (");
-    this.append(" ", comment);
+    this.append(" ", false, comment);
+    sb.append(")\n");
     return sb;
   }
 
   public StringBuffer heading1(String... heading) {
     sb.append("# ");
-    this.append(" ", heading);
+    this.append(" ", true, heading);
     return sb;
   }
 
   public StringBuffer heading2(String... heading) {
     sb.append("## ");
-    this.append(" ", heading);
+    this.append(" ", true, heading);
     return sb;
   }
 
   public StringBuffer tableRow(String... cols) {
-    this.append(" | ", cols);
+    this.append(" | ", true, cols);
     return sb;
   }
 
@@ -60,6 +62,7 @@ public class MarkdownBuilder {
       if (i++ > 0) sb.append(" | ");
       sb.append("---");
     }
+    sb.append("\n");
     return sb;
   }
 

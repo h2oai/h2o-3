@@ -34,7 +34,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   private Node[] nodes;
 
   // Output fields one-per-JVM
-  private static class Node extends Iced {
+  protected static class Node extends Iced {
     @API(help="IP")
     final H2ONode h2o;
 

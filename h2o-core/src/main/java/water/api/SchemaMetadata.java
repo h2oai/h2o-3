@@ -75,9 +75,12 @@ public final class SchemaMetadata extends Iced {
     boolean json;
 
     public FieldMetadata(String name, String type, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
+      // from the Field
       this.name = name;
       this.type = type;
       this.value = value;
+
+      // from the @API annotation
       this.help = help;
       this.label = label;
       this.required = required;
@@ -87,6 +90,11 @@ public final class SchemaMetadata extends Iced {
       this.json = json;
     }
 
+    /**
+     * Create a new FieldMetadata object for the given Field of the given Schema.
+     * @param schema water.api.Schema object
+     * @param f java.lang.reflect.Field for the Schema class
+     */
     public FieldMetadata(Schema schema, Field f) {
       try {
         this.name = f.getName();
@@ -104,13 +112,13 @@ public final class SchemaMetadata extends Iced {
 
         if (null != annotation) {
           String l = annotation.label();
-          this.label = (null == l || l.isEmpty() ? f.getName() : l);
           this.help = annotation.help();
+          this.label = (null == l || l.isEmpty() ? f.getName() : l);
           this.required = annotation.required();
-
           this.level = annotation.level();
-
+          this.direction = annotation.direction();
           this.values = annotation.values();
+          this.json = annotation.json();
 
           // If the field is an enum then the values annotation field had better be set. . .
           if (is_enum && (null == this.values || 0 == this.values.length)) {
@@ -123,17 +131,41 @@ public final class SchemaMetadata extends Iced {
       }
     } // FieldMetadata(Schema, Field)
 
+    /**
+     * Factory method to create a new FieldMetadata instance if the Field has an @API annotation.
+     * @param schema water.api.Schema object
+     * @param f java.lang.reflect.Field for the Schema class
+     * @return a new FieldMetadata instance if the Field has an @API annotation, else null
+     */
+    public static FieldMetadata createIfApiAnnotation(Schema schema, Field f) {
+      f.setAccessible(true); // handle private and protected fields
+
+      if (null != f.getAnnotation(API.class))
+        return new FieldMetadata(schema, f);
+
+      Log.warn("Skipping field that lacks an annotation: " + schema.toString() + "." + f);
+      return null;
+    }
+
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
     private static String consType(Class clz) {
       boolean is_enum = Enum.class.isAssignableFrom(clz);
       boolean is_array = clz.isArray();
 
+      // built-in Java types:
       if (is_enum)
         return "enum";
+
+      if (String.class.isAssignableFrom(clz))
+        return "string"; // lower-case, to be less Java-centric
+
+      if (clz.equals(Boolean.TYPE) || clz.equals(Byte.TYPE) || clz.equals(Short.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
+        return clz.toString();
 
       if (is_array)
         return consType(clz.getComponentType()) + "[]";
 
+      // H2O-specific types:
       if (hex.Model.class.isAssignableFrom(clz))
         return "Model";
 
@@ -146,11 +178,17 @@ public final class SchemaMetadata extends Iced {
       if (water.Key.class.isAssignableFrom(clz))
         return "Key";
 
-      if (String.class.isAssignableFrom(clz))
-        return "string"; // lower-case, to be less Java-centric
+      if (water.api.JobV2.class.isAssignableFrom(clz))
+        return "Job";
 
-      if (clz.equals(Boolean.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
-        return clz.toString();
+      if (water.api.ModelMetricsBase.class.isAssignableFrom(clz))
+        return "Key";
+
+      if (CloudV1.class.isAssignableFrom(clz))
+        return "Cloud";
+
+      if (CloudV1.Node.class.isAssignableFrom(clz))
+        return "Node";
 
       Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
       return clz.toString();
@@ -187,10 +225,12 @@ public final class SchemaMetadata extends Iced {
     fields = new TreeMap<String, FieldMetadata>();
 
     String field_name = null;
-    for (Field field : ReflectionUtils.getFieldsUpTo(schema.getClass(), Object.class)) {
+    // Fields up to but not including Schema
+    for (Field field : ReflectionUtils.getFieldsUpTo(schema.getClass(), Schema.class)) {
       field_name = field.getName();
-      FieldMetadata fmd = new FieldMetadata(schema, field);
-      fields.put(field_name, fmd);
+      FieldMetadata fmd = FieldMetadata.createIfApiAnnotation(schema, field);
+      if (null != fmd) // skip transient or other non-annotated fields
+        fields.put(field_name, fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them
     }
   }
 }

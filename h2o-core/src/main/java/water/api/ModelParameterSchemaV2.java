@@ -103,6 +103,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
     return sb.toString();
   }
 
+  /** TODO: refactor using SchemaMetadata. */
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     try {
       this.name = f.getName();
