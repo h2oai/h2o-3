@@ -63,6 +63,10 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
     return result;
   }
 
+  @Override public void compute2() {
+    throw H2O.unimpl();
+  }
+
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
     // TODO: version handling
     StringBuffer sb = new StringBuffer();
