@@ -1,9 +1,9 @@
 package water.parser;
 
-import java.util.Arrays;
-
-import water.*;
+import water.DKV;
 import water.api.Handler;
+
+import java.util.Arrays;
 
 /** A class holding parser-setup flags: kind of parser, field separator, column
  *  header labels, whether or not to allow single-quotes to quote, number of
@@ -35,5 +35,4 @@ public class ParseSetupHandler extends Handler<ParseSetup,ParseSetupV2> {
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
   // ParseSetup Schemas are at V2
   @Override protected ParseSetupV2 schema(int version) { return new ParseSetupV2(); }
-  @Override protected void compute2() { throw H2O.fail(); }
 }

@@ -3,7 +3,6 @@ package water.api;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
-import water.api.RequestServer.Route;
 import water.util.Log;
 
 import java.io.IOException;
@@ -63,7 +62,7 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
     return result;
   }
 
-  @Override public void compute2() {
+  @Override protected void compute2() {
     throw H2O.unimpl();
   }
 

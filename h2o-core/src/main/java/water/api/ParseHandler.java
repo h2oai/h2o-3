@@ -28,9 +28,6 @@ class ParseHandler extends Handler<Parse,ParseV2> {
     ParseDataset2 _job; // Boolean read-only value; exists==>running, not-exists==>canceled/removed
   }
 
-  // Running all in exec2, no need for backgrounding on F/J threads
-  @Override protected void compute2() { throw H2O.fail(); }
-
   // Entry point for parsing.
   public ParseV2 parse(int version, Parse parse) {
     ParseSetup setup = new ParseSetup(true,0,0,null,parse._pType,parse._sep,parse._ncols,parse._singleQuotes,parse._columnNames,parse._domains,null,parse._checkHeader, null);

@@ -1,6 +1,5 @@
 package water.api;
 
-import water.H2O;
 import water.Iced;
 
 /**
@@ -59,7 +58,6 @@ class TutorialsHandler extends Handler<TutorialsHandler.Tutorials,TutorialsV1> {
                     + "</div>";
   }
 
-  @Override protected void compute2() { throw H2O.fail(); }
   public TutorialsV1 nop(int version, TutorialsHandler.Tutorials ignoreme) { return schema(version); }
   // Tutorial Schemas are still at V1, unchanged for V2
   @Override protected TutorialsV1 schema(int version) { return new TutorialsV1(); }
