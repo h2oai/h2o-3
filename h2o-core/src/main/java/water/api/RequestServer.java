@@ -103,12 +103,20 @@ public class RequestServer extends NanoHTTPD {
     // REST only, no html:
 
 
-    register("/1/Docs/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetch",                       new String[] {"num"},
+    register("/1/Docs/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint documentation for the endpoint specified by number.");
-    register("/1/Docs/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetch",                       new String[] {"path"},
+    register("/1/Docs/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
       "Return the REST API endpoint documentation for the endpoint specified by path.");
-    register("/1/Docs/endpoints"                                 ,"GET"   ,DocsHandler.class, "list",
+    register("/1/Docs/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
       "Return a list of all the REST API endpoints.");
+
+    /*
+    register("/1/Docs/schemas/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaDocs",                      new String[] {"classname"},
+            "Return the REST API schema documentation for specified schema class.");
+            */
+
+    register("/1/Metadata/schemas/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata",                      new String[] {"classname"},
+            "Return the REST API schema metadata for specified schema class.");
 
     register("/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
       "Typehead hander for filename completion.");

@@ -8,8 +8,9 @@ import water.util.ReflectionUtils;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * The metadata info on all the fields in a Schema.  This is used to help Schema be self-documenting,
@@ -17,7 +18,7 @@ import java.util.TreeMap;
  */
 public final class SchemaMetadata extends Iced {
 
-  public Map<String, FieldMetadata> fields;
+  public List<FieldMetadata> fields;
 
   static public final class FieldMetadata extends Iced {
     /**
@@ -75,6 +76,7 @@ public final class SchemaMetadata extends Iced {
     boolean json;
 
     public FieldMetadata(String name, String type, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
+      super();
       // from the Field
       this.name = name;
       this.type = type;
@@ -96,6 +98,7 @@ public final class SchemaMetadata extends Iced {
      * @param f java.lang.reflect.Field for the Schema class
      */
     public FieldMetadata(Schema schema, Field f) {
+      super();
       try {
         this.name = f.getName();
         boolean is_array = f.getType().isArray();
@@ -168,6 +171,9 @@ public final class SchemaMetadata extends Iced {
       if (Map.class.isAssignableFrom(clz))
         return "Map";
 
+      if (List.class.isAssignableFrom(clz))
+        return "List";
+
       // H2O-specific types:
       if (hex.Model.class.isAssignableFrom(clz))
         return "Model";
@@ -221,11 +227,11 @@ public final class SchemaMetadata extends Iced {
   } // FieldMetadata
 
   public SchemaMetadata() {
-    fields = new TreeMap<String, FieldMetadata>();
+    fields = new ArrayList<FieldMetadata>();
   }
 
   public SchemaMetadata(Schema schema) {
-    fields = new TreeMap<String, FieldMetadata>();
+    fields = new ArrayList<FieldMetadata>();
 
     String field_name = null;
     // Fields up to but not including Schema
@@ -233,7 +239,7 @@ public final class SchemaMetadata extends Iced {
       field_name = field.getName();
       FieldMetadata fmd = FieldMetadata.createIfApiAnnotation(schema, field);
       if (null != fmd) // skip transient or other non-annotated fields
-        fields.put(field_name, fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them
+        fields.add(fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them
     }
   }
 }

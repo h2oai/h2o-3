@@ -1,6 +1,7 @@
 package water.api;
 
 import water.Iced;
+import water.util.Log;
 
 /*
  * Docs REST API handler, which provides endpoint handlers for the autogeneration of
@@ -21,13 +22,15 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     String http_method; // GET, etc.
     int num;
     String path;
+    String classname;
 
     // Outputs
     Route[] routes;
+    SchemaMetadata[] schemas;
   }
 
 
-  public DocsBase list(int version, DocsPojo docsPojo) {
+  public DocsBase listRoutes(int version, DocsPojo docsPojo) {
     docsPojo.routes = new Route[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
@@ -36,7 +39,7 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     return schema(version).fillFromImpl(docsPojo);
   }
 
-  public DocsBase fetch(int version, DocsPojo docsPojo) {
+  public DocsBase fetchRoute(int version, DocsPojo docsPojo) {
     Route route = null;
     if (null != docsPojo.path && null != docsPojo.http_method) {
       route = RequestServer.lookup(docsPojo.http_method, docsPojo.path);
@@ -61,8 +64,24 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     return result;
   }
 
+  public DocsBase fetchSchemaMetadata(int version, DocsPojo docsPojo) {
+    DocsBase result = schema(version).fillFromImpl(docsPojo);
+    try {
+      Class<? extends Schema>clz = (Class<? extends Schema>)Class.forName(docsPojo.classname);
+      Schema s = clz.newInstance();
+      result.schemas = new SchemaMetadataBase[1];
+      result.schemas[0] = new SchemaMetadataV1().fillFromImpl(new SchemaMetadata(s));
+    }
+    catch (Exception e) {
+      String msg = "Caught exception fetching schema: " + docsPojo.classname + ": " + e;
+      Log.warn(msg);
+      throw new IllegalArgumentException(msg);
+    }
+    return result;
+  }
 
-  @Override protected DocsBase schema ( int version){
+
+  @Override protected DocsBase schema(int version) {
     if (version == 1)
       return new DocsV1();
     else

@@ -27,7 +27,7 @@ import java.util.Properties;
 public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private final transient int _version;
   final int getVersion() { return _version; }
-  protected Schema() {
+  public Schema() {
     // Check version number
     String n = this.getClass().getSimpleName();
     assert n.charAt(n.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
@@ -41,7 +41,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   abstract public I createImpl();
 
   // Version&Schema-specific filling from the implementation object
-  abstract public S fillFromImpl(I i);
+  abstract public S fillFromImpl(I i); // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base classes. . .
 
   // Version&Schema-specific filling of an already filled object from this schema
   public I fillFromSchema() { return (I)this; }

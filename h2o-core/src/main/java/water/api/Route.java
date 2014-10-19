@@ -54,7 +54,7 @@ final class Route extends Iced {
 
       first = true;
       builder.heading2("parameters");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields.values()) {
+      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
             builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
@@ -68,7 +68,7 @@ final class Route extends Iced {
 
       first = true;
       builder.heading2("output");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields.values()) {
+      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
             builder.tableHeader("name", "type", "default", "description", "values");
