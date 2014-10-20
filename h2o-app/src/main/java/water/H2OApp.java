@@ -1,12 +1,15 @@
+
 package water;
 
 import hex.ModelBuilder;
 import hex.api.DeepLearningBuilderHandler;
 import hex.api.ExampleBuilderHandler;
+import hex.api.GBMBuilderHandler;
 import hex.api.GLMBuilderHandler;
 import hex.api.KMeansBuilderHandler;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.gbm.GBM;
 import hex.glm.GLM;
 import hex.kmeans.KMeans;
 
@@ -32,19 +35,21 @@ public class H2OApp {
     H2O.registerResourceRoot(new File(relpath + File.separator + "h2o-core/src/main/resources/www"));
 
     // Register menu items and service handlers for algos
+    H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"train","/Example","Example","Model","Train an Example model on the specified Frame.");
     H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"train","/DeepLearning","Deep Learning","Model","Train a Deep Learning model on the specified Frame.");
     H2O.registerGET("/GLM",hex.schemas.GLMHandler.class,"train","/GLM","GLM","Model","Train a GLM model on the specified Frame.");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model","Train a KMeans model on the specified Frame.");
-    H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"train","/Example","Example","Model","Train an Example model on the specified Frame.");
-
-    // An empty Job for testing job polling
-    // TODO: put back:
-    // H2O.registerGET("/SlowJob", SlowJobHandler.class, "work", "/SlowJob", "Slow Job", "Model");
+    H2O.registerGET("/GBM",hex.schemas.GBMHandler.class,"train","/GBM","GBM","Model","Train a GBM model on the specified Frame.");
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
+    ModelBuilder.registerModelBuilder("gbm", GBM.class);
+    H2O.registerPOST("/2/ModelBuilders/gbm", GBMBuilderHandler.class, "train","Train a GBM model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/gbm/parameters", GBMBuilderHandler.class, "validate_parameters","Validate a set of GBM model builder parameters.");
+
     ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
     H2O.registerPOST("/2/ModelBuilders/kmeans", KMeansBuilderHandler.class, "train","Train a KMeans model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/kmeans/parameters", KMeansBuilderHandler.class, "validate_parameters","Validate a set of KMeans model builder parameters.");
 
     ModelBuilder.registerModelBuilder("deeplearning", DeepLearning.class);
     H2O.registerPOST("/2/ModelBuilders/deeplearning", DeepLearningBuilderHandler.class, "train","Train a Deep Learning model on the specified Frame.");

@@ -3,7 +3,6 @@ package water.util;
 import water.*;
 
 import java.lang.reflect.Field;
-import java.util.*;
 
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
@@ -47,26 +46,14 @@ public class PojoUtils {
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields) {
     if (null == dest || null == origin) return;
 
-    Map<String, Field> dest_fields = new HashMap<>();
-    Map<String, Field> origin_fields = new HashMap<>();
-    Set<String> skip = new HashSet();
-    if (null != skip_fields)
-      skip.addAll(Arrays.asList(skip_fields));
+    Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
+    Field[] orig_fields = Weaver.getWovenFields(origin.getClass());
 
-    for (Field f : ReflectionUtils.getFieldsUpTo(dest.getClass(), Iced.class))
-      if (! skip.contains(f.getName()))
-        dest_fields.put(f.getName(), f);
+    for( Field f : orig_fields ) {
+      String origin_name = f.getName();
+      if( ArrayUtils.contains(skip_fields,origin_name) ) continue;
 
-
-    for (Field f : ReflectionUtils.getFieldsUpTo(origin.getClass(), Iced.class))
-      if (! skip.contains(f.getName()))
-        origin_fields.put(f.getName(), f);
-
-    for (Map.Entry<String, Field> entry : origin_fields.entrySet()) {
-      String origin_name = entry.getKey();
-      Field f = entry.getValue();
       String dest_name = null;
-
       if (field_naming == FieldNaming.CONSISTENT) {
         dest_name = origin_name;
       } else if (field_naming == FieldNaming.DEST_HAS_UNDERSCORES) {
@@ -76,9 +63,11 @@ public class PojoUtils {
       }
 
       try {
-        if (dest_fields.containsKey(dest_name)) {
-          Field dest_field = dest_fields.get(dest_name);
+        Field dest_field = null;
+        for( Field fd : dest_fields )
+          if( fd.getName().equals(dest_name) ) { dest_field = fd; break; }
 
+        if( dest_field != null ) {
           dest_field.setAccessible(true);
           if (null == f.get(origin)) {
             dest_field.set(dest, null);
