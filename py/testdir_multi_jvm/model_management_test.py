@@ -12,7 +12,7 @@ from config import Config
 import random
 import types
 import unittest
-import sys, pprint
+import sys, os, pprint
 sys.path.extend(['.','..','py'])
 import h2o, h2o_util
 
@@ -81,25 +81,26 @@ def cleanup(a_node, models=None, frames=None):
 class TestModelManagement(object):
     @test(groups=['rgm'])
     def testConnect(self):
-        cfg = Config('test_config.cfg')
-        if ( cfg.type == 'local_cloud'):
+        self.cfg = Config('test_config.cfg')
+        if ( self.cfg.type == 'local_cloud'):
             self.a_node = h2o.H2O(
-                use_this_ip_addr=cfg['topology']['local_cloud']['ip'],
-                port=cfg['topology']['local_cloud']['port']
+                use_this_ip_addr=self.cfg['topology']['local_cloud']['ip'],
+                port=self.cfg['topology']['local_cloud']['port']
             )
+            self.timeoutSecs = self.cfg['topology']['local_cloud']['timeoutSecs']
         self.algos = ['example', 'kmeans', 'deeplearning', 'glm']
         self.clean_up_after = False
         h2o.H2O.verbose = True
-        h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
+##        h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
         self.models = self.a_node.models()
         self.frames = self.a_node.frames()
-        self.model_metrics = self.a_node.model_metrics(timeoutSecs=240)
+        self.model_metrics = self.a_node.model_metrics(timeoutSecs=self.timeoutSecs)
 
 
     @test(groups=["rgm"], depends_on=[testConnect])
     def testModelBuilders(self):
         #cleanup(self.a_node)
-        model_builders = self.a_node.model_builders(timeoutSecs=240)
+        model_builders = self.a_node.model_builders(timeoutSecs=self.timeoutSecs)
         for algo in self.algos:
             assert algo in model_builders['model_builders'], "Failed to find algo: " + algo
             validate_builder(model_builders['model_builders'][algo])
@@ -107,7 +108,7 @@ class TestModelManagement(object):
     @test(groups=["rgm"], depends_on=[testModelBuilders])
     def testImportProstate(self):
         cleanup(self.a_node)
-        import_result = self.a_node.import_files(path="/Users/radu/h2o-dev/smalldata/logreg/prostate.csv")
+        import_result = self.a_node.import_files(path=os.path.join(self.cfg.basedir, self.cfg.data['prostate']))
         parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
         self.prostate_key = parse_result['frames'][0]['key']['name']
         # Test /Frames for prostate.csv
@@ -156,22 +157,22 @@ class TestModelManagement(object):
 
     @test(groups=["rgm"], depends_on=[testImportProstate])
     def testImportAirlines(self):
-        import_result = self.a_node.import_files(path="/Users/radu/h2o-dev/smalldata/airlines/allyears2k_headers.zip")
+        import_result = self.a_node.import_files(path=os.path.join(self.cfg.basedir, self.cfg.data['airlines']))
         parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
         self.airlines_key = parse_result['frames'][0]['key']['name']
-        model_builders = self.a_node.model_builders(timeoutSecs=240)
-        kmeans_builder = self.a_node.model_builders(algo='kmeans', timeoutSecs=240)['model_builders']['kmeans']
+        model_builders = self.a_node.model_builders(timeoutSecs=self.timeoutSecs)
+        kmeans_builder = self.a_node.model_builders(algo='kmeans', timeoutSecs=self.timeoutSecs)['model_builders']['kmeans']
         self.kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
         self.kmeans_parameters = {'K': 2 }
         jobs = self.a_node.build_model(
             algo='kmeans', destination_key=self.kmeans_model_name,
-            training_frame=self.prostate_key, parameters=self.kmeans_parameters, timeoutSecs=240) # synchronous
+            training_frame=self.prostate_key, parameters=self.kmeans_parameters, timeoutSecs=self.timeoutSecs) # synchronous
 
     @test( groups=["rgm"], depends_on=[testImportAirlines] )
     def testGoodParameters(self):
         dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
         parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
-                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
         assert 'validation_error_count' in parameters_validation, \
             "Failed to find validation_error_count in good-parameters parameters validation result."
         h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
@@ -184,7 +185,7 @@ class TestModelManagement(object):
         dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE',
                 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
         parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
-                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
         assert 'validation_error_count' in parameters_validation, \
             "Failed to find validation_error_count in bad-parameters parameters validation result."
         h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
@@ -204,7 +205,7 @@ class TestModelManagement(object):
         self.dl_prostate_model_name = 'prostate_DeepLearning_1'
         self.dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
         jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_prostate_model_name,
-                training_frame=self.prostate_key, parameters=self.dl_prostate_1_parameters, timeoutSecs=240) # synchronous
+                training_frame=self.prostate_key, parameters=self.dl_prostate_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
         models = self.a_node.models()
         #######################################
         # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
@@ -212,7 +213,7 @@ class TestModelManagement(object):
         dl_prostate_bad_parameters = {'classification': True,
             'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
         parameters_validation = self.a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad,
-            training_frame=self.prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+            training_frame=self.prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=self.timeoutSecs) # synchronous
         assert 'validation_error_count' in parameters_validation, \
             "Failed to find validation_error_count in bad-parameters build result."
         assert 0 < parameters_validation['validation_error_count'], \
@@ -232,7 +233,7 @@ class TestModelManagement(object):
         self.dl_airlines_model_name = 'airlines_DeepLearning_1'
         self.dl_airline_1_parameters = {'classification': True, 'response_column': 'IsDepDelayed' }
         jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_airlines_model_name,
-            training_frame=self.airlines_key, parameters=self.dl_airline_1_parameters, timeoutSecs=240) # synchronous
+            training_frame=self.airlines_key, parameters=self.dl_airline_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
 
         self.models = self.a_node.models()
 
