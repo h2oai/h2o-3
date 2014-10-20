@@ -151,7 +151,7 @@ cleanup(a_node)
 
 ################################################
 # Import prostate.csv
-import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv")
+import_result = a_node.import_files(path="../../smalldata/logreg/prostate.csv")
 frames = a_node.frames(key=import_result['keys'][0])['frames']
 assert frames[0]['isText'], "Raw imported Frame is not isText"
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
@@ -217,7 +217,7 @@ assert col['pctiles'][0] == 50.5, 'Failed to find 50.5 as the first pctile for A
 
 ################################################
 # Import allyears2k_headers.zip
-import_result = a_node.import_files(path="/Users/rpeck/Source/h2o2/smalldata/airlines/allyears2k_headers.zip")
+import_result = a_node.import_files(path="../../smalldata/airlines/allyears2k_headers.zip")
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
 pp.pprint(parse_result)
 airlines_key = parse_result['frames'][0]['key']['name']
