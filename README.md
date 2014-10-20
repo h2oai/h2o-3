@@ -62,8 +62,19 @@ Step 2. Install Node.js and npm
 
 Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended.
 
+Step 3. Install R and the required packages
 
-Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+Install [R](http://www.r-project.org/) and add the installed bin\x64 directory to your PATH.
+
+Install the following packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+
+    cd Downloads
+    R CMD INSTALL RCurl_x.xx-x.x.zip
+    R CMD INSTALL rjson_x.x.xx.zip
+    R CMD INSTALL statmod_x.x.xx.zip
+    R CMD INSTALL bitops_x.x-x.zip
+
+Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
 If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
 
@@ -71,7 +82,7 @@ Download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
-Step 4. Run the top-level gradle build:
+Step 5. Run the top-level gradle build:
 
     cd h2o-dev
     gradlew.bat build
@@ -96,13 +107,25 @@ Using Hombrew:
 
 Otherwise install from the [NodeJS website](http://nodejs.org/download/).
 
-Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+Step 3. Install R and the required packages
+
+Install [R](http://www.r-project.org/) and add the installed bin directory to your PATH if not already included.
+
+Install the following packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+
+    cd Downloads
+    R CMD INSTALL RCurl_x.xx-x.x.tgz
+    R CMD INSTALL rjson_x.x.xx.tgz
+    R CMD INSTALL statmod_x.x.xx.tgz
+    R CMD INSTALL bitops_x.x-x.tgz
+
+Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
 OS X should have come with Git installed, so just download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
-Step 4. Run the top-level gradle build:
+Step 5. Run the top-level gradle build:
 
     cd h2o-dev
     ./gradlew build
