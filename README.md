@@ -64,9 +64,9 @@ Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\P
 
 Step 3. Install R and the required packages
 
-Install [R](http://www.r-project.org/) and add the installed bin\x64 directory to your PATH.
+Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
-Install the following packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
 
     cd Downloads
     R CMD INSTALL RCurl_x.xx-x.x.zip
@@ -109,9 +109,9 @@ Otherwise install from the [NodeJS website](http://nodejs.org/download/).
 
 Step 3. Install R and the required packages
 
-Install [R](http://www.r-project.org/) and add the installed bin directory to your PATH if not already included.
+Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
-Install the following packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
 
     cd Downloads
     R CMD INSTALL RCurl_x.xx-x.x.tgz
