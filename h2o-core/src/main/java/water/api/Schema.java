@@ -3,10 +3,12 @@ package water.api;
 import water.*;
 import water.fvec.Frame;
 import hex.Model;
+import water.util.MarkdownBuilder;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -41,7 +43,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   abstract public I createImpl();
 
   // Version&Schema-specific filling from the implementation object
-  abstract public S fillFromImpl(I i); // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base classes. . .
+  abstract public S fillFromImpl(I i); // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
 
   // Version&Schema-specific filling of an already filled object from this schema
   public I fillFromSchema() { return (I)this; }
@@ -218,21 +220,67 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
   /**
-   *
-   * @param markdown A StringBuffer into which we should write a Markdown representation of this object.
-   * @return A StringBuffer containing only the bits we appended.
+   * Generate Markdown documentation for this Schema.
    */
-  public StringBuffer appendMarkdown(StringBuffer markdown) {
-    throw H2O.unimpl("Haven't yet implemented writeMarkdownDocs().");
+  public StringBuffer markdown(StringBuffer appendToMe) {
+    return markdown(new SchemaMetadata(this), appendToMe);
   }
 
   /**
-   *
-   * @param markdown A StringBuffer into which we should write full Markdown documentation for this object.
-   * @return
+   * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
    */
-  public StringBuffer writeMarkdownDocs(StringBuffer markdown) {
-    throw H2O.unimpl("Haven't yet implemented writeMarkdownDocs().");
-  }
+  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe) {
+    MarkdownBuilder builder = new MarkdownBuilder();
+
+    builder.comment("Preview with http://jbt.github.io/markdown-editor");
+    builder.heading1("schema ", this.getClass().getSimpleName());
+    builder.hline();
+    // builder.paragraph(metadata.summary);
+
+    // TODO: refactor with Route.markdown():
+
+    // fields
+    boolean first; // don't print the table at all if there are no rows
+
+    first = true;
+    builder.heading2("input fields");
+    try {
+      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+        if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
+          if (first) {
+            builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
+            first = false;
+          }
+          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+        }
+      }
+      if (first)
+        builder.paragraph("(none)");
+
+      first = true;
+      builder.heading2("output fields");
+      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+        if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
+          if (first) {
+            builder.tableHeader("name", "type", "default", "description", "values");
+            first = false;
+          }
+          builder.tableRow(field_meta.name, field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+        }
+      }
+      if (first)
+        builder.paragraph("(none)");
+
+      // TODO: render examples and other stuff, if it's passed in
+    }
+    catch (Exception e) {
+      throw H2O.fail("Caught exception using reflection on schema: " + this + ": " + e);
+    }
+
+    if (null != appendToMe)
+      appendToMe.append(builder.stringBuffer());
+
+    return builder.stringBuffer();
+  } // markdown()
 
 }

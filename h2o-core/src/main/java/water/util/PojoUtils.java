@@ -69,6 +69,7 @@ public class PojoUtils {
 
         if( dest_field != null ) {
           dest_field.setAccessible(true);
+          f.setAccessible(true);
           if (null == f.get(origin)) {
             dest_field.set(dest, null);
           } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {

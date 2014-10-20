@@ -13,6 +13,9 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
   @API(help="All the public fields of the schema")
   public FieldMetadataBase[] fields;
 
+  @API(help="Documentation for the schema in Markdown format with GitHub extensions")
+  String markdown;
+
   /**
    * Schema for the metadata for the field of a Schema.
    */
@@ -74,6 +77,7 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
 
   @Override
   public SchemaMetadataBase fillFromImpl(SchemaMetadata impl) {
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] {"fields"});
     this.fields = new FieldMetadataBase[impl.fields.size()];
     int i = 0;
     for (FieldMetadata f : impl.fields)

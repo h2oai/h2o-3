@@ -44,11 +44,13 @@ final class Route extends Iced {
     builder.hline();
     builder.paragraph(_summary);
 
-    // parameters and outputs tables
+    // parameters and output tables
     try {
       Handler h = _handler_class.newInstance();
       Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
       SchemaMetadata meta = new SchemaMetadata(s);
+
+      // TODO: refactor with Schema.markdown():
 
       boolean first; // don't print the table at all if there are no rows
 

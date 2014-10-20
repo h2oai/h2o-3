@@ -102,20 +102,14 @@ public class RequestServer extends NanoHTTPD {
 
     // REST only, no html:
 
-
-    register("/1/Docs/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
-      "Return the REST API endpoint documentation for the endpoint specified by number.");
-    register("/1/Docs/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
-      "Return the REST API endpoint documentation for the endpoint specified by path.");
-    register("/1/Docs/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
+    register("/1/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
+      "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
+    register("/1/Metadata/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
+      "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path.");
+    register("/1/Metadata/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
       "Return a list of all the REST API endpoints.");
 
-    /*
-    register("/1/Docs/schemas/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaDocs",                      new String[] {"classname"},
-            "Return the REST API schema documentation for specified schema class.");
-            */
-
-    register("/1/Metadata/schemas/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata",                      new String[] {"classname"},
+    register("/1/Metadata/schemaclasses/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
             "Return the REST API schema metadata for specified schema class.");
 
     register("/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
@@ -303,10 +297,6 @@ public class RequestServer extends NanoHTTPD {
       Pattern pattern = Pattern.compile(uri_pattern);
       Route route = new Route(http_method, pattern, summary, handler_class, meth, doc_meth, path_params);
       _routes.put(pattern, route);
-
-      // TODO: render documentation markdown
-      // Serve them from /2/Docs/<route> in either Markdown or HTML
-      Log.info(route.markdown(null));
       return route;
     }
 

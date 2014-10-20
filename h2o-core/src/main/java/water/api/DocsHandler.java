@@ -1,7 +1,6 @@
 package water.api;
 
 import water.Iced;
-import water.util.Log;
 
 /*
  * Docs REST API handler, which provides endpoint handlers for the autogeneration of
@@ -44,11 +43,9 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     if (null != docsPojo.path && null != docsPojo.http_method) {
       route = RequestServer.lookup(docsPojo.http_method, docsPojo.path);
     } else {
-
-
       int i = 0;
       for (Route r : RequestServer.routes()) {
-        if (i == docsPojo.num) {
+        if (i++ == docsPojo.num) {
           route = r;
           break;
         }
@@ -64,22 +61,14 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     return result;
   }
 
-  public DocsBase fetchSchemaMetadata(int version, DocsPojo docsPojo) {
+  public DocsBase fetchSchemaMetadataByClass(int version, DocsPojo docsPojo) {
     DocsBase result = schema(version).fillFromImpl(docsPojo);
-    try {
-      Class<? extends Schema>clz = (Class<? extends Schema>)Class.forName(docsPojo.classname);
-      Schema s = clz.newInstance();
-      result.schemas = new SchemaMetadataBase[1];
-      result.schemas[0] = new SchemaMetadataV1().fillFromImpl(new SchemaMetadata(s));
-    }
-    catch (Exception e) {
-      String msg = "Caught exception fetching schema: " + docsPojo.classname + ": " + e;
-      Log.warn(msg);
-      throw new IllegalArgumentException(msg);
-    }
+    result.schemas = new SchemaMetadataBase[1];
+    // NOTE: this will throw IllegalArgumentException if the classname isn't found:
+    SchemaMetadataBase meta = new SchemaMetadataV1().fillFromImpl(SchemaMetadata.createSchemaMetadata(docsPojo.classname));
+    result.schemas[0] = meta;
     return result;
   }
-
 
   @Override protected DocsBase schema(int version) {
     if (version == 1)
