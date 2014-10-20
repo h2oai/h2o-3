@@ -51,7 +51,8 @@ public class PojoUtils {
 
     for( Field f : orig_fields ) {
       String origin_name = f.getName();
-      if( ArrayUtils.contains(skip_fields,origin_name) ) continue;
+      if( skip_fields != null &
+              ArrayUtils.contains(skip_fields, origin_name) ) continue;
 
       String dest_name = null;
       if (field_naming == FieldNaming.CONSISTENT) {
