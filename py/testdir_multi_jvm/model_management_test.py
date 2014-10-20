@@ -7,6 +7,7 @@ from proboscis import after_class
 from proboscis import before_class
 from proboscis import SkipTest
 from proboscis import test
+from config import Config
 
 import random
 import types
@@ -80,7 +81,12 @@ def cleanup(a_node, models=None, frames=None):
 class TestModelManagement(object):
     @test(groups=['rgm'])
     def testConnect(self):
-        self.a_node = h2o.H2O(use_this_ip_addr="127.0.0.1", port=54321)
+        cfg = Config('test_config.cfg')
+        if ( cfg.type == 'local_cloud'):
+            self.a_node = h2o.H2O(
+                use_this_ip_addr=cfg['topology']['local_cloud']['ip'],
+                port=cfg['topology']['local_cloud']['port']
+            )
         self.algos = ['example', 'kmeans', 'deeplearning', 'glm']
         self.clean_up_after = False
         h2o.H2O.verbose = True
