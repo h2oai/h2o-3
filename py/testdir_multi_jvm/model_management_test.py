@@ -77,21 +77,37 @@ def cleanup(a_node, models=None, frames=None):
             for m in ms['frames']:
                 assert m['key'] != frame, 'Found frame that we tried to delete in the frames list: ' + frame
 
+def local_cloud(test):
+    test.a_node = h2o.H2O(
+        use_this_ip_addr=test.cfg['topology']['local_cloud']['ip'],
+        port=test.cfg['topology']['local_cloud']['port']
+    )
+    test.timeoutSecs = test.cfg['topology']['local_cloud']['timeoutSecs']
+
+def flat_file(test):
+    test.a_node = h2o.H2O(
+        use_this_ip_addr=test.cfg['topology']['local_cloud']['ip'],
+        port=test.cfg['topology']['local_cloud']['port']
+    )
+    test.timeoutSecs = test.cfg['topology']['local_cloud']['timeoutSecs']
+
+def create_cloud(test, type):
+    options = {
+        'local_cloud' : local_cloud,
+        'cloudByFlatFile' : flat_file
+    }
+    options[type](test)
+
 @test(groups=["rgm"])
 class TestModelManagement(object):
     @test(groups=['rgm'])
     def testConnect(self):
         self.cfg = Config('test_config.cfg')
-        if ( self.cfg.type == 'local_cloud'):
-            self.a_node = h2o.H2O(
-                use_this_ip_addr=self.cfg['topology']['local_cloud']['ip'],
-                port=self.cfg['topology']['local_cloud']['port']
-            )
-            self.timeoutSecs = self.cfg['topology']['local_cloud']['timeoutSecs']
+        type = self.cfg['type']
+        create_cloud(self,type)
         self.algos = ['example', 'kmeans', 'deeplearning', 'glm']
         self.clean_up_after = False
         h2o.H2O.verbose = True
-##        h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
         self.models = self.a_node.models()
         self.frames = self.a_node.frames()
         self.model_metrics = self.a_node.model_metrics(timeoutSecs=self.timeoutSecs)
