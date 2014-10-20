@@ -53,12 +53,12 @@ public class PojoUtils {
     if (null != skip_fields)
       skip.addAll(Arrays.asList(skip_fields));
 
-    for (Field f : dest.getClass().getFields())
+    for (Field f : ReflectionUtils.getFieldsUpTo(dest.getClass(), Iced.class))
       if (! skip.contains(f.getName()))
         dest_fields.put(f.getName(), f);
 
 
-    for (Field f : origin.getClass().getFields())
+    for (Field f : ReflectionUtils.getFieldsUpTo(origin.getClass(), Iced.class))
       if (! skip.contains(f.getName()))
         origin_fields.put(f.getName(), f);
 
@@ -79,6 +79,7 @@ public class PojoUtils {
         if (dest_fields.containsKey(dest_name)) {
           Field dest_field = dest_fields.get(dest_name);
 
+          dest_field.setAccessible(true);
           if (null == f.get(origin)) {
             dest_field.set(dest, null);
           } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {

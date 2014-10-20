@@ -6,7 +6,7 @@ import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-// TODO: need a base class!
+// TODO: need a base (versionless) class!
 class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
@@ -147,6 +147,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
+
+  public FrameV2() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
   FrameV2( Key key ) { this.key = key; }
