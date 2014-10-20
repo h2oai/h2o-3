@@ -44,7 +44,7 @@ public class H2OApp {
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
     ModelBuilder.registerModelBuilder("gbm", GBM.class);
-    H2O.registerPOST("/2/ModelBuilders/gbm", GBMBuilderHandler.class, "train");
+    H2O.registerPOST("/2/ModelBuilders/gbm", GBMBuilderHandler.class, "train","Train a GBM model on the specified Frame.");
     H2O.registerPOST("/2/ModelBuilders/gbm/parameters", GBMBuilderHandler.class, "validate_parameters","Validate a set of GBM model builder parameters.");
 
     ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
