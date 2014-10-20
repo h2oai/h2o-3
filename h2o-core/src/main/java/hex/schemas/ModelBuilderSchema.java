@@ -11,7 +11,7 @@ import water.util.DocGen;
 
 import java.util.Properties;
 
-abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
+public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
   // Input fields
   @API(help="Model builder parameters.")
   public P parameters;
@@ -40,7 +40,7 @@ abstract public class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
-    ab.title("KMeans Started");
+    ab.title(this.getClass().getSimpleName()+" Started");
     String url = JobV2.link(job);
     return ab.href("Poll",url,url);
   }

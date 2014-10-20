@@ -563,7 +563,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
         impl._validation_frame = validation_frame._key;
       impl._destination_key = destination_key;
 
-      impl.response_column = response_column;
+      impl._response_column = response_column;
       return impl;
     }
   }

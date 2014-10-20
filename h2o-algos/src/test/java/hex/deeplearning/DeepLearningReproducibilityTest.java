@@ -54,7 +54,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._training_frame = train._key;
           p._validation_frame = test._key;
           p._destination_key = Key.make();
-          p.response_column = train.names()[train.names().length-1];
+          p._response_column = train.names()[train.names().length-1];
           p.ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p.activation = DeepLearningParameters.Activation.RectifierWithDropout;
           p.hidden = new int[]{32, 58};

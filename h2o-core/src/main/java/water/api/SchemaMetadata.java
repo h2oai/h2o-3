@@ -3,8 +3,8 @@ package water.api;
 import water.H2O;
 import water.Iced;
 import water.Keyed;
+import water.Weaver;
 import water.util.Log;
-import water.util.ReflectionUtils;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -101,11 +101,8 @@ public final class SchemaMetadata extends Iced {
       super();
       try {
         this.name = f.getName();
-        boolean is_array = f.getType().isArray();
-        Object o;
-
         f.setAccessible(true); // handle private and protected fields
-        o = f.get(schema);
+        Object o = f.get(schema);
         this.value = consValue(o);
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
@@ -227,16 +224,13 @@ public final class SchemaMetadata extends Iced {
   } // FieldMetadata
 
   public SchemaMetadata() {
-    fields = new ArrayList<FieldMetadata>();
+    fields = new ArrayList<>();
   }
 
   public SchemaMetadata(Schema schema) {
-    fields = new ArrayList<FieldMetadata>();
-
-    String field_name = null;
+    fields = new ArrayList<>();
     // Fields up to but not including Schema
-    for (Field field : ReflectionUtils.getFieldsUpTo(schema.getClass(), Schema.class)) {
-      field_name = field.getName();
+    for (Field field : Weaver.getWovenFields(schema.getClass())) {
       FieldMetadata fmd = FieldMetadata.createIfApiAnnotation(schema, field);
       if (null != fmd) // skip transient or other non-annotated fields
         fields.add(fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them

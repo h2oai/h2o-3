@@ -564,8 +564,8 @@ public class RequestServer extends NanoHTTPD {
   // html template and navbar handling -----------------------------------------
 
   private static String loadTemplate(String name) {
-    water.H2O.registerResourceRoot(new File("training_frame/main/resources/www"));
-    water.H2O.registerResourceRoot(new File("h2o-core/training_frame/main/resources/www"));
+    water.H2O.registerResourceRoot(new File("src/main/resources/www"));
+    water.H2O.registerResourceRoot(new File("h2o-core/src/main/resources/www"));
     // Try-with-resource
     try (InputStream resource = water.init.JarHash.getResource2(name)) {
       return new String(toByteArray(resource)).replace("%cloud_name", H2O.ARGS.name);

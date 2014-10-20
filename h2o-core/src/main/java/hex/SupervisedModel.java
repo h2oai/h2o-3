@@ -10,7 +10,7 @@ import water.util.ModelUtils;
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends Model.Output> extends Model<M,P,O> {
 
   protected float[] _priorClassDist;
   protected float[] _modelClassDist;
@@ -27,8 +27,16 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
     _priorClassDist = priorClassDist;
   }
 
+  public abstract static class SupervisedParameters extends Model.Parameters {
+    public boolean _classification; // true for classification, false for regression
+    public String _response_column; // response column name
+    @Override public long checksum() {
+      return super.checksum()+_response_column.hashCode()+(_classification?1:0);
+    }
+  }
+
   /**
-   * Compute the model error for a given test data set
+   * compute the model error for a given test data set
    * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.
    * For binary classification, this is the classification error based on assigning labels using the optimal threshold for maximizing the F1 score.
    * For regression, this is the mean squared error (MSE).
