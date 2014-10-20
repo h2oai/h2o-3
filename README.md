@@ -66,6 +66,10 @@ Step 3. Install R and the required packages
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
+
+Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
+
+
 Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
 
     cd Downloads
@@ -73,6 +77,13 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
     R CMD INSTALL rjson_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
     R CMD INSTALL bitops_x.x-x.zip
+
+You may alternatively install these packages from within an R session:
+
+> install.packages("rjson")
+> install.packages("RCurl")
+> install.packages("statmod")
+> install.packages("bitops")
 
 Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
