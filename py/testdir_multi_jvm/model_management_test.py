@@ -7,7 +7,7 @@ from proboscis import after_class
 from proboscis import before_class
 from proboscis import SkipTest
 from proboscis import test
-from config import Config
+from test_config import CloudConfig
 
 import random
 import types
@@ -79,36 +79,35 @@ def cleanup(a_node, models=None, frames=None):
 
 def local_cloud(test):
     test.a_node = h2o.H2O(
-        use_this_ip_addr=test.cfg['topology']['local_cloud']['ip'],
-        port=test.cfg['topology']['local_cloud']['port']
+        use_this_ip_addr=(test.cfg.cloud_topology())['local_cloud']['ip'],
+        port = (test.cfg.cloud_topology())['local_cloud']['port']
     )
-    test.timeoutSecs = test.cfg['topology']['local_cloud']['timeoutSecs']
+    test.timeoutSecs = (test.cfg.cloud_topology())['local_cloud']['timeoutSecs']
 
 def flat_file(test):
     # read the flatfile and pick the first address and port
-    with open(test.cfg['topology']['cloudByFlatFile']['flatFile'], 'r') as f:
+    with open((test.cfg.cloud_topology())['cloudByFlatFile']['flatFile'], 'r') as f:
         first_line = f.readline()
         tokens = first_line.split(":", 2)
     test.a_node = h2o.H2O(
         use_this_ip_addr=tokens[0],
         port=int(tokens[1])
     )
-    test.timeoutSecs = test.cfg['topology']['cloudByFlatFile']['timeoutSecs']
+    test.timeoutSecs = (test.cfg.cloud_topology())['cloudByFlatFile']['timeoutSecs']
 
-def connect_to_cloud(test, type):
+def connect_to_cloud(test):
     options = {
         'local_cloud' : local_cloud,
         'cloudByFlatFile' : flat_file
     }
-    options[type](test)
+    options[test.cfg.cloud_type()](test)
 
 @test
 class TestModelManagement(object):
     @test
     def testConnect(self):
-        self.cfg = Config('test_config.cfg')
-        type = self.cfg['type']
-        connect_to_cloud(self,type)
+        self.cfg = CloudConfig()
+        connect_to_cloud(self)
         self.algos = ['example', 'kmeans', 'deeplearning', 'glm']
         self.clean_up_after = False
         h2o.H2O.verbose = True
@@ -128,9 +127,13 @@ class TestModelManagement(object):
     @test(groups=["rgm"], depends_on=[testModelBuilders])
     def testImportProstate(self):
         cleanup(self.a_node)
-        import_result = self.a_node.import_files(
-            path=os.path.abspath(os.path.join(self.cfg.basedir, self.cfg.data['prostate']))
-        )
+        prostate_tuple = self.cfg.data['prostate']
+        if ( prostate_tuple[0] == "file"):
+            import_result = self.a_node.import_files(
+                path=os.path.abspath( prostate_tuple[1] )
+            )
+        else:
+            raise RuntimeError("Unsupported file type specified")
         parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
         self.prostate_key = parse_result['frames'][0]['key']['name']
         # Test /Frames for prostate.csv
@@ -179,9 +182,13 @@ class TestModelManagement(object):
 
     @test(groups=["pending"], depends_on=[testImportProstate])
     def testImportAirlines(self):
-        import_result = self.a_node.import_files(
-            path=os.path.abspath(os.path.join(self.cfg.basedir, self.cfg.data['airlines']))
+        prostate_tuple = self.cfg.data['airlines']
+        if ( prostate_tuple[0] == "file"):
+            import_result = self.a_node.import_files(
+                path=os.path.abspath( prostate_tuple[1] )
             )
+        else:
+            raise RuntimeError("Unsupported file type specified")
         parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
         self.airlines_key = parse_result['frames'][0]['key']['name']
         model_builders = self.a_node.model_builders(timeoutSecs=self.timeoutSecs)
