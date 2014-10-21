@@ -1,7 +1,6 @@
 apply from: '../gradle/java.gradle'
-apply plugin: 'fatjar'
 
-description = "H2O Web Application"
+description = "H2O Application Runner"
 
 dependencies {
   compile project(":h2o-web")
@@ -9,10 +8,3 @@ dependencies {
   compile project(":h2o-core")
 }
 
-fatJar {
-   manifest {
-      attributes 'Main-Class': 'water.H2OApp'
-   }
-}
-
-build.dependsOn fatJar
