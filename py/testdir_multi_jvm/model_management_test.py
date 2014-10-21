@@ -102,9 +102,9 @@ def connect_to_cloud(test, type):
     }
     options[type](test)
 
-@test(groups=["rgm"])
+@test
 class TestModelManagement(object):
-    @test(groups=['rgm'])
+    @test
     def testConnect(self):
         self.cfg = Config('test_config.cfg')
         type = self.cfg['type']
@@ -177,202 +177,202 @@ class TestModelManagement(object):
         assert col['pctiles'][0] == 50.5, 'Failed to find 50.5 as the first pctile for AGE.'
 
 
-    # @test(groups=["pending"], depends_on=[testImportProstate])
-    # def testImportAirlines(self):
-    #     import_result = self.a_node.import_files(
-    #         path=os.path.abspath(os.path.join(self.cfg.basedir, self.cfg.data['airlines']))
-    #         )
-    #     parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
-    #     self.airlines_key = parse_result['frames'][0]['key']['name']
-    #     model_builders = self.a_node.model_builders(timeoutSecs=self.timeoutSecs)
-    #     kmeans_builder = self.a_node.model_builders(algo='kmeans', timeoutSecs=self.timeoutSecs)['model_builders']['kmeans']
-    #     self.kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
-    #     self.kmeans_parameters = {'K': 2 }
-    #     jobs = self.a_node.build_model(
-    #         algo='kmeans', destination_key=self.kmeans_model_name,
-    #         training_frame=self.prostate_key, parameters=self.kmeans_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #
-    # @test( groups=["pending"], depends_on=[testImportAirlines] )
-    # def testGoodParameters(self):
-    #     dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
-    #     parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
-    #             training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #     assert 'validation_error_count' in parameters_validation, \
-    #         "Failed to find validation_error_count in good-parameters parameters validation result."
-    #     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-    #     assert 0 == parameters_validation['validation_error_count'], \
-    #         "0 == validation_error_count in good-parameters parameters validation result."
-    #
-    # @test( groups=["pending"], depends_on=[testGoodParameters] )
-    # def testBadParameters(self):
-    #     # Bad parameters (hidden is null):
-    #     dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE',
-    #             'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
-    #     parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
-    #             training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #     assert 'validation_error_count' in parameters_validation, \
-    #         "Failed to find validation_error_count in bad-parameters parameters validation result."
-    #     h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-    #     assert 0 < parameters_validation['validation_error_count'], \
-    #         "0 != validation_error_count in bad-parameters parameters validation result."
-    #     found_error = False
-    #     for validation_message in parameters_validation['validation_messages']:
-    #         if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-    #             found_error = True
-    #     assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
-    #
-    #
-    # @test( groups=["pending"], depends_on=[testBadParameters] )
-    # def testDeepLearningModelProstate(self):
-    #     #######################################
-    #     # Build DeepLearning model for Prostate
-    #     self.dl_prostate_model_name = 'prostate_DeepLearning_1'
-    #     self.dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
-    #     jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_prostate_model_name,
-    #             training_frame=self.prostate_key, parameters=self.dl_prostate_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #     models = self.a_node.models()
-    #     #######################################
-    #     # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
-    #     dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
-    #     dl_prostate_bad_parameters = {'classification': True,
-    #         'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
-    #     parameters_validation = self.a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad,
-    #         training_frame=self.prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #     assert 'validation_error_count' in parameters_validation, \
-    #         "Failed to find validation_error_count in bad-parameters build result."
-    #     assert 0 < parameters_validation['validation_error_count'], \
-    #         "0 != validation_error_count in bad-parameters build validation result."
-    #     found_error = False
-    #     for validation_message in parameters_validation['validation_messages']:
-    #         if validation_message['message_type'] == 'ERROR' and \
-    #                         validation_message['field_name'] == 'input_dropout_ratio':
-    #             found_error = True
-    #     assert found_error, \
-    #         "Failed to find error message about input_dropout_ratio in the bad build validation messages."
-    #
-    # @test( groups=["pending"], depends_on=[testDeepLearningModelProstate] )
-    # def testDeepLearningModelAirlines(self):
-    #     #######################################
-    #     # Build DeepLearning model for Airlines
-    #     self.dl_airlines_model_name = 'airlines_DeepLearning_1'
-    #     self.dl_airline_1_parameters = {'classification': True, 'response_column': 'IsDepDelayed' }
-    #     jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_airlines_model_name,
-    #         training_frame=self.airlines_key, parameters=self.dl_airline_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
-    #
-    #     self.models = self.a_node.models()
-    #
-    #     ############################
-    #     # Check kmeans_model_name
-    #     found_kmeans = False;
-    #     kmeans_model = None
-    #     for model in self.models['models']:
-    #         if model['key'] == self.kmeans_model_name:
-    #             found_kmeans = True
-    #             kmeans_model = model
-    #
-    #     assert found_kmeans, 'Did not find ' + self.kmeans_model_name + ' in the models list.'
-    #     validate_actual_parameters(self.kmeans_parameters, kmeans_model['parameters'], self.prostate_key, None)
-    #
-    #     ###################################
-    #     # Check dl_prostate_model_name
-    #     found_dl = False;
-    #     dl_model = None
-    #     for model in self.models['models']:
-    #         if model['key'] == self.dl_prostate_model_name:
-    #             found_dl = True
-    #             dl_model = model
-    #
-    #     assert found_dl, 'Did not find ' + self.dl_prostate_model_name + ' in the models list.'
-    #     validate_actual_parameters(self.dl_prostate_1_parameters, dl_model['parameters'], self.prostate_key, None)
-    #
-    #
-    # @test( groups=["pending"], depends_on=[testDeepLearningModelAirlines] )
-    # def testComputeAndCheckModelMetricsProstate(self):
-    #     ###################################
-    #     # Compute and check ModelMetrics for dl_prostate_model_name
-    #     mm = self.a_node.compute_model_metrics(model=self.dl_prostate_model_name, frame=self.prostate_key)
-    #     assert mm is not None, "Got a null result for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key
-    #     assert 'auc' in mm, "ModelMetrics for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key + " does not contain an AUC."
-    #     assert 'cm' in mm, "ModelMetrics for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key + " does not contain a CM."
-    #     ###################################
-    #     # Check for ModelMetrics for dl_prostate_model_name in full list
-    #     mms = self.a_node.model_metrics() # fetch all
-    #     assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
-    #     found_mm = False
-    #     for mm in mms['model_metrics']:
-    #         model_key = mm['model']['key']
-    #         frame_key = mm['frame']['key']['name'] # TODO: should match
-    #         if model_key == self.dl_prostate_model_name and frame_key == self.prostate_key:
-    #             found_mm = True
-    #     assert found_mm, "Failed to find ModelMetrics object for model: " + \
-    #         self.dl_prostate_model_name + " and frame: " + self.prostate_key
-    #
-    # @test( groups=["pending"], depends_on=[testComputeAndCheckModelMetricsProstate] )
-    # def testPredictAndCheckModelMetricsProstate(self):
-    #     ###################################
-    #     # Predict and check ModelMetrics for dl_prostate_model_name
-    #     p = self.a_node.predict(model=self.dl_prostate_model_name, frame=self.prostate_key)
-    #     assert p is not None, "Got a null result for scoring: " + self.dl_prostate_model_name + " on: " + self.prostate_key
-    #     assert 'model_metrics' in p, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain a model_metrics object."
-    #     mm = p['model_metrics'][0]
-    #     h2o.H2O.verboseprint('mm: ', repr(mm))
-    #     assert 'auc' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain an AUC."
-    #     assert 'cm' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain a CM."
-    #     assert 'predictions' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain an predictions section."
-    #     predictions = mm['predictions']
-    #     h2o.H2O.verboseprint ('p: ', repr(p))
-    #     assert 'columns' in predictions, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain an columns section."
-    #     assert len(predictions['columns']) > 0, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
-    #         self.prostate_key + " does not contain any columns."
-    #     assert 'label' in predictions['columns'][0], "Predictions for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key + " column 0 has no label element."
-    #     assert 'predict' == predictions['columns'][0]['label'], "Predictions for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key + " column 0 is not 'predict'."
-    #     assert 380 == predictions['rows'], "Predictions for scoring: " + \
-    #         self.dl_prostate_model_name + " on: " + self.prostate_key + " has an unexpected number of rows."
-    #     ###################################
-    #     # Check dl_airlines_model_name
-    #     found_dl = False;
-    #     dl_model = None
-    #     for model in self.models['models']:
-    #         if model['key'] == self.dl_airlines_model_name:
-    #             found_dl = True
-    #             dl_model = model
-    #
-    #     assert found_dl, 'Did not find ' + self.dl_airlines_model_name + ' in the models list.'
-    #     validate_actual_parameters(self.dl_airline_1_parameters, dl_model['parameters'], self.airlines_key, None)
-    #
-    # @test( groups=["pending"], depends_on=[testPredictAndCheckModelMetricsProstate] )
-    # def testCheckWithModelAPI(self):
-    #     ######################################################################
-    #     # Now look for kmeans_model_name using the one-model API and find_compatible_frames, and check it
-    #     model = self.a_node.models(key=self.kmeans_model_name, find_compatible_frames=True)
-    #     found_kmeans = False;
-    #     h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
-    #     assert self.prostate_key in model['models'][0]['compatible_frames'], \
-    #         "Failed to find " + self.prostate_key + " in compatible_frames list."
-    #     ######################################################################
-    #     # Now look for prostate_key using the one-frame API and find_compatible_models, and check it
-    #     result = self.a_node.frames(key='prostate.hex', find_compatible_models=True)
-    #     frames = result['frames']
-    #     frames_dict = h2o_util.list_to_dict(frames, 'key/name')
-    #     assert 'prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list."
-    #
-    #     compatible_models = result['compatible_models']
-    #     models_dict = h2o_util.list_to_dict(compatible_models, 'key')
-    #     assert self.dl_prostate_model_name in models_dict, "Failed to find " + \
-    #                 self.dl_prostate_model_name + " in compatible models list."
-    #
-    #     assert self.dl_prostate_model_name in frames[0]['compatible_models']
-    #     assert self.kmeans_model_name in frames[0]['compatible_models']
+    @test(groups=["pending"], depends_on=[testImportProstate])
+    def testImportAirlines(self):
+        import_result = self.a_node.import_files(
+            path=os.path.abspath(os.path.join(self.cfg.basedir, self.cfg.data['airlines']))
+            )
+        parse_result = self.a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
+        self.airlines_key = parse_result['frames'][0]['key']['name']
+        model_builders = self.a_node.model_builders(timeoutSecs=self.timeoutSecs)
+        kmeans_builder = self.a_node.model_builders(algo='kmeans', timeoutSecs=self.timeoutSecs)['model_builders']['kmeans']
+        self.kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
+        self.kmeans_parameters = {'K': 2 }
+        jobs = self.a_node.build_model(
+            algo='kmeans', destination_key=self.kmeans_model_name,
+            training_frame=self.prostate_key, parameters=self.kmeans_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+
+    @test( groups=["pending"], depends_on=[testImportAirlines] )
+    def testGoodParameters(self):
+        dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+        parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
+                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+        assert 'validation_error_count' in parameters_validation, \
+            "Failed to find validation_error_count in good-parameters parameters validation result."
+        h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
+        assert 0 == parameters_validation['validation_error_count'], \
+            "0 == validation_error_count in good-parameters parameters validation result."
+
+    @test( groups=["pending"], depends_on=[testGoodParameters] )
+    def testBadParameters(self):
+        # Bad parameters (hidden is null):
+        dl_test_parameters = {'classification': True, 'response_column': 'CAPSULE',
+                'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
+        parameters_validation = self.a_node.validate_model_parameters(algo='deeplearning',
+                training_frame=self.prostate_key, parameters=dl_test_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+        assert 'validation_error_count' in parameters_validation, \
+            "Failed to find validation_error_count in bad-parameters parameters validation result."
+        h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
+        assert 0 < parameters_validation['validation_error_count'], \
+            "0 != validation_error_count in bad-parameters parameters validation result."
+        found_error = False
+        for validation_message in parameters_validation['validation_messages']:
+            if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+                found_error = True
+        assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
+
+
+    @test( groups=["pending"], depends_on=[testBadParameters] )
+    def testDeepLearningModelProstate(self):
+        #######################################
+        # Build DeepLearning model for Prostate
+        self.dl_prostate_model_name = 'prostate_DeepLearning_1'
+        self.dl_prostate_1_parameters = {'classification': True, 'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+        jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_prostate_model_name,
+                training_frame=self.prostate_key, parameters=self.dl_prostate_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+        models = self.a_node.models()
+        #######################################
+        # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
+        dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
+        dl_prostate_bad_parameters = {'classification': True,
+            'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
+        parameters_validation = self.a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad,
+            training_frame=self.prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+        assert 'validation_error_count' in parameters_validation, \
+            "Failed to find validation_error_count in bad-parameters build result."
+        assert 0 < parameters_validation['validation_error_count'], \
+            "0 != validation_error_count in bad-parameters build validation result."
+        found_error = False
+        for validation_message in parameters_validation['validation_messages']:
+            if validation_message['message_type'] == 'ERROR' and \
+                            validation_message['field_name'] == 'input_dropout_ratio':
+                found_error = True
+        assert found_error, \
+            "Failed to find error message about input_dropout_ratio in the bad build validation messages."
+
+    @test( groups=["pending"], depends_on=[testDeepLearningModelProstate] )
+    def testDeepLearningModelAirlines(self):
+        #######################################
+        # Build DeepLearning model for Airlines
+        self.dl_airlines_model_name = 'airlines_DeepLearning_1'
+        self.dl_airline_1_parameters = {'classification': True, 'response_column': 'IsDepDelayed' }
+        jobs = self.a_node.build_model(algo='deeplearning', destination_key=self.dl_airlines_model_name,
+            training_frame=self.airlines_key, parameters=self.dl_airline_1_parameters, timeoutSecs=self.timeoutSecs) # synchronous
+
+        self.models = self.a_node.models()
+
+        ############################
+        # Check kmeans_model_name
+        found_kmeans = False;
+        kmeans_model = None
+        for model in self.models['models']:
+            if model['key'] == self.kmeans_model_name:
+                found_kmeans = True
+                kmeans_model = model
+
+        assert found_kmeans, 'Did not find ' + self.kmeans_model_name + ' in the models list.'
+        validate_actual_parameters(self.kmeans_parameters, kmeans_model['parameters'], self.prostate_key, None)
+
+        ###################################
+        # Check dl_prostate_model_name
+        found_dl = False;
+        dl_model = None
+        for model in self.models['models']:
+            if model['key'] == self.dl_prostate_model_name:
+                found_dl = True
+                dl_model = model
+
+        assert found_dl, 'Did not find ' + self.dl_prostate_model_name + ' in the models list.'
+        validate_actual_parameters(self.dl_prostate_1_parameters, dl_model['parameters'], self.prostate_key, None)
+
+
+    @test( groups=["pending"], depends_on=[testDeepLearningModelAirlines] )
+    def testComputeAndCheckModelMetricsProstate(self):
+        ###################################
+        # Compute and check ModelMetrics for dl_prostate_model_name
+        mm = self.a_node.compute_model_metrics(model=self.dl_prostate_model_name, frame=self.prostate_key)
+        assert mm is not None, "Got a null result for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key
+        assert 'auc' in mm, "ModelMetrics for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key + " does not contain an AUC."
+        assert 'cm' in mm, "ModelMetrics for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key + " does not contain a CM."
+        ###################################
+        # Check for ModelMetrics for dl_prostate_model_name in full list
+        mms = self.a_node.model_metrics() # fetch all
+        assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
+        found_mm = False
+        for mm in mms['model_metrics']:
+            model_key = mm['model']['key']
+            frame_key = mm['frame']['key']['name'] # TODO: should match
+            if model_key == self.dl_prostate_model_name and frame_key == self.prostate_key:
+                found_mm = True
+        assert found_mm, "Failed to find ModelMetrics object for model: " + \
+            self.dl_prostate_model_name + " and frame: " + self.prostate_key
+
+    @test( groups=["pending"], depends_on=[testComputeAndCheckModelMetricsProstate] )
+    def testPredictAndCheckModelMetricsProstate(self):
+        ###################################
+        # Predict and check ModelMetrics for dl_prostate_model_name
+        p = self.a_node.predict(model=self.dl_prostate_model_name, frame=self.prostate_key)
+        assert p is not None, "Got a null result for scoring: " + self.dl_prostate_model_name + " on: " + self.prostate_key
+        assert 'model_metrics' in p, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain a model_metrics object."
+        mm = p['model_metrics'][0]
+        h2o.H2O.verboseprint('mm: ', repr(mm))
+        assert 'auc' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain an AUC."
+        assert 'cm' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain a CM."
+        assert 'predictions' in mm, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain an predictions section."
+        predictions = mm['predictions']
+        h2o.H2O.verboseprint ('p: ', repr(p))
+        assert 'columns' in predictions, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain an columns section."
+        assert len(predictions['columns']) > 0, "Predictions for scoring: " + self.dl_prostate_model_name + " on: " + \
+            self.prostate_key + " does not contain any columns."
+        assert 'label' in predictions['columns'][0], "Predictions for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key + " column 0 has no label element."
+        assert 'predict' == predictions['columns'][0]['label'], "Predictions for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key + " column 0 is not 'predict'."
+        assert 380 == predictions['rows'], "Predictions for scoring: " + \
+            self.dl_prostate_model_name + " on: " + self.prostate_key + " has an unexpected number of rows."
+        ###################################
+        # Check dl_airlines_model_name
+        found_dl = False;
+        dl_model = None
+        for model in self.models['models']:
+            if model['key'] == self.dl_airlines_model_name:
+                found_dl = True
+                dl_model = model
+
+        assert found_dl, 'Did not find ' + self.dl_airlines_model_name + ' in the models list.'
+        validate_actual_parameters(self.dl_airline_1_parameters, dl_model['parameters'], self.airlines_key, None)
+
+    @test( groups=["pending"], depends_on=[testPredictAndCheckModelMetricsProstate] )
+    def testCheckWithModelAPI(self):
+        ######################################################################
+        # Now look for kmeans_model_name using the one-model API and find_compatible_frames, and check it
+        model = self.a_node.models(key=self.kmeans_model_name, find_compatible_frames=True)
+        found_kmeans = False;
+        h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
+        assert self.prostate_key in model['models'][0]['compatible_frames'], \
+            "Failed to find " + self.prostate_key + " in compatible_frames list."
+        ######################################################################
+        # Now look for prostate_key using the one-frame API and find_compatible_models, and check it
+        result = self.a_node.frames(key='prostate.hex', find_compatible_models=True)
+        frames = result['frames']
+        frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+        assert_true ('prostate.hex' in frames_dict, "Failed to find prostate.hex in Frames list.")
+
+        compatible_models = result['compatible_models']
+        models_dict = h2o_util.list_to_dict(compatible_models, 'key')
+        assert_true ( self.dl_prostate_model_name in models_dict, "Failed to find " + \
+                    self.dl_prostate_model_name + " in compatible models list.")
+
+        assert_true (self.dl_prostate_model_name in frames[0]['compatible_models'])
+        assert_true (self.kmeans_model_name in frames[0]['compatible_models'])
 
 
 ## ----------------- proboscis boiler plate hook -------------------------
