@@ -27,19 +27,19 @@ import java.util.regex.Pattern;
  * to evolve rapidly.  As part of request handling the framework translates
  * back and forth between the stable external representation of objects (Schema)
  * and the less stable internal classes.
- * <br />
+ * <p>
  * Request <i>routing</i> is done by searching a list of registered
  * handlers, in order of registration, for a handler whose path regex matches
  * the request URI and whose HTTP method (GET, POST, DELETE...) matches the
  * request's method.  If none is found an HTTP 404 is returned.
- * <br />
+ * <p>
  * A Handler class is parameterized by the kind of Schema that it accepts
  * for request handling, as well as the internal implementation class (Iced
  * class) that the Schema translates from and to.  Handler methods are allowed to
  * return other Schema types than in the  type parameter if that makes
  * sense for a given request.  For example, a prediction (scoring) call on
  * a Model might return a Frame schema.
- * <br />
+ * <p>
  * When an HTTP request is accepted the framework does the following steps:
  * <ol>
  *   <li>searches the registered handler methods for a matching URL and HTTP method</li>
@@ -216,10 +216,10 @@ public class RequestServer extends NanoHTTPD {
 
   /**
    * Register an HTTP request handler for a given URI pattern, with no path parameters.
-   * <br />
+   * <p>
    * URIs which match this pattern will have their parameters collected from the query params.
    *
-   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with <code>(?<parm>.*)</code> syntax
+   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
@@ -237,13 +237,13 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
-   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with <code>(?<parm>.*)</code> syntax
+   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
    * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
    * @param path_params list of parameter names to extract from the uri_pattern; they are matched by name from the named pattern capture group
-   * @param summary short help string which sumamrizes the functionality of this endpoint
+   * @param summary short help string which summarizes the functionality of this endpoint
    * @see Route
    * @see water.api.RequestServer
    * @return the Route for this request

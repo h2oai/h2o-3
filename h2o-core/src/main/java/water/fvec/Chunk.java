@@ -26,7 +26,7 @@ import water.parser.ValueString;
  *  and is faster than the global row-numbering for tight loops (because it 
  *  avoids some range checks):
  *  <pre>
- *  for( int row=0; row < chunk._len; row++ )
+ *  for( int row=0; row &lt; chunk._len; row++ )
  *    ...chunk.at0(row)...
  *  </pre>
  *
@@ -124,7 +124,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  <p>not-final: set in various deserializers.
    *  <p>Proper usage: read the field, probably in a hot loop.
    *  <pre>
-   *  for( int row=0; row < chunk._len; row++ )
+   *  for( int row=0; row &lt; chunk._len; row++ )
    *    ...chunk.at0(row)...
    *  </pre>
    **/
@@ -149,7 +149,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  pointer to this array defeats the user-mode spill-to-disk. */
   public byte[] getBytes() { return _mem; }
 
-  /** Used by a ParseExceptionTest to break the Chunk invariants & trigger an
+  /** Used by a ParseExceptionTest to break the Chunk invariants and trigger an
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
