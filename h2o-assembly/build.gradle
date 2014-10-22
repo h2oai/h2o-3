@@ -15,5 +15,17 @@ fatJar {
    }
 }
 
-build.dependsOn fatJar
+def assembly = "h2o-assembly.jar"
+def allInOne = "h2o.jar"
+
+task copyJar(type: Copy) {
+    from ("${project.buildDir}/libs"){
+        include assembly
+    }
+    into "${project.parent.buildDir}"
+    rename { it.replace(assembly, allInOne) }
+}
+copyJar.dependsOn fatJar
+build.dependsOn copyJar
+
 
