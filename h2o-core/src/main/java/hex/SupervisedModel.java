@@ -31,7 +31,6 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public String _response_column; // response column name
 
     // Derived values, generally caches
-    public transient Frame _train;  // Handy Frame
     public transient Vec _response; // Handy response column
     public int _nclass;             // Number of classes; 1 for regression; 2+ for classification
     public boolean _classification; // true for classification, false for regression
@@ -39,17 +38,16 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public long _nrows;             // Number of rows where the response is not-NA
 
     @Override public int sanityCheckParameters() {
-      assert _training_frame  != null; // Should not get here without these set (cutout at higher layer)
+      assert _train  != null; // Should not get here without these set (cutout at higher layer)
       assert _response_column != null;
-      _train = _training_frame.get();
-      int ridx = _train.find(_response_column);
+      int ridx = train().find(_response_column);
       if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
-        validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _training_frame + ".");
-      _response = _train.vecs()[ridx];
+        validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
+      _response = train().vecs()[ridx];
       _nclass = _response.domain()==null ? 1 : _response.domain().length;
       _classification = _response.isEnum();
-      _ncols = _train.numCols();
-      _nrows = _train.numRows() - _response.naCnt();
+      _ncols = train().numCols();
+      _nrows = train().numRows() - _response.naCnt();
       if( _ncols <= 1 )
         validation_error("_training_frame", "Training data must have at least 2 features (incl. response).");
       if( _response.isBad() ) 
@@ -58,7 +56,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
         validation_error("_response_column", "Response column is constant!");
 
       int usableColumns = 0;
-      for( Vec v : _train.vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
+      for( Vec v : train().vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
       if( usableColumns==0 ) throw new IllegalArgumentException("There is no usable column to generate model!");
 
       return _validation_error_count;

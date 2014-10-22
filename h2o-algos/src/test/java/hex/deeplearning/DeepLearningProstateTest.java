@@ -111,9 +111,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                       dest_tmp = p._destination_key;
                                       p.checkpoint = null;
 
-                                      p._training_frame = frame._key;
+                                      p._train = frame._key;
                                       p._response_column = frame._names[resp];
-                                      p._validation_frame = valid==null ? null : valid._key;
+                                      p._valid = valid==null ? null : valid._key;
 
                                       p.hidden = hidden;
 //                                      p.best_model_key = best_model_key;
@@ -172,8 +172,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p.checkpoint = dest_tmp;
                                     p.n_folds = 0;
 
-                                    p._training_frame = frame._key;
-                                    p._validation_frame = valid == null ? null : valid._key;
+                                    p._train = frame._key;
+                                    p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
                                     p._classification = !(i == 0 && resp == 2);
                                     p.override_with_best_model = override_with_best_model;

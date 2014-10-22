@@ -17,10 +17,10 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public long _seed;                    // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
 
-    @Override
-    public int sanityCheckParameters() {
+    @Override public int sanityCheckParameters() {
       if (_K < 2) validation_error("K", "K must be > 2");
       if (_max_iters < 1) validation_error("max_iters", "max_iters must be > 1");
+      if ( train().numRows() < _K) throw new IllegalArgumentException("Cannot make " + _K + " clusters out of " + train().numRows() + " rows.");
 
       return _validation_error_count;
     }

@@ -159,7 +159,7 @@ public class GBMTest extends TestUtil {
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) { parms._classification = false; idx = ~idx; }
-      parms._training_frame = fr._key;
+      parms._train = fr._key;
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;
       parms._loss = family;

@@ -51,11 +51,11 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Build a regularized DL model with polluted training data, score on clean validation set
           DeepLearningParameters p = new DeepLearningParameters();
 
-          p._training_frame = train._key;
-          p._validation_frame = test._key;
+          p._train = train._key;
+          p._valid = test._key;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
-          p.ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
+          p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p.activation = DeepLearningParameters.Activation.RectifierWithDropout;
           p.hidden = new int[]{32, 58};
           p.l1 = 1e-5;
