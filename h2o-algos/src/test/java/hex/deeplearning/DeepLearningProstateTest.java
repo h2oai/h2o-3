@@ -7,8 +7,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
+import water.fvec.*;
 import water.parser.ParseDataset2;
 import water.util.Log;
 
@@ -26,15 +25,15 @@ public class DeepLearningProstateTest extends TestUtil {
     Random rng = new Random(seed);
     String[] datasets = new String[2];
     int[][] responses = new int[datasets.length][];
-    datasets[0] = "smalldata/./logreg/prostate.csv"; responses[0] = new int[]{1,2,8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
+    datasets[0] = "smalldata/logreg/prostate.csv"; responses[0] = new int[]{1,2,8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
     datasets[1] = "smalldata/iris/iris.csv";  responses[1] = new int[]{4}; //Iris-type (multi-class)
 
     int testcount = 0;
     int count = 0;
     for (int i = 0; i < datasets.length; ++i) {
       final String dataset = datasets[i];
-      NFSFileVec nfs = NFSFileVec.make(find_test_file(dataset));
-      Frame frame = ParseDataset2.parse(Key.make(), nfs._key);
+      NFSFileVec  nfs = NFSFileVec.make(find_test_file(dataset));
+      Frame  frame = ParseDataset2.parse(Key.make(), nfs._key);
       NFSFileVec vnfs = NFSFileVec.make(find_test_file(dataset));
       Frame vframe = ParseDataset2.parse(Key.make(), vnfs._key);
 
@@ -117,7 +116,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._validation_frame = valid==null ? null : valid._key;
 
                                       p.hidden = hidden;
-                                      p._classification = !(i == 0 && resp == 2);
 //                                      p.best_model_key = best_model_key;
                                       p.override_with_best_model = override_with_best_model;
                                       p.epochs = epochs;

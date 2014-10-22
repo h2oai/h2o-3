@@ -22,7 +22,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
       if (_K < 2) validation_error("K", "K must be > 2");
       if (_max_iters < 1) validation_error("max_iters", "max_iters must be > 1");
 
-      return validation_error_count;
+      return _validation_error_count;
     }
   }
 

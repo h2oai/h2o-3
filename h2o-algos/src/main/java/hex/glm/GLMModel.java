@@ -194,7 +194,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public int sanityCheckParameters() {
       // TODO: fill in!
-      return validation_error_count;
+      return _validation_error_count;
     }
 
     public final double variance(double mu){

@@ -56,9 +56,9 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "validation_messages"} ); // Cliff models have _fields
     PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT, new String[] { "validation_messages"} ); // Other people's models have no-underscore fields
 
-    this.validation_messages = new ValidationMessageBase[parms.validation_messages.length];
+    this.validation_messages = new ValidationMessageBase[parms._validation_messages.length];
     int i = 0;
-    for (ValidationMessage vm : parms.validation_messages)
+    for (ValidationMessage vm : parms._validation_messages)
       this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
 
     return (S)this;

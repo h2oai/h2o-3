@@ -4,14 +4,12 @@ import hex.FrameTask;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.util.Log;
 import water.util.RandomUtils;
 
@@ -39,10 +37,9 @@ public class DeepLearningIrisTest extends TestUtil {
     long seed0 = 0xDECAF;
     int num_runs = 0;
 
-    NFSFileVec nfs = NFSFileVec.make(find_test_file(PATH));
     Frame frame = null;
     try {
-      frame = water.parser.ParseDataset2.parse(Key.make("iris.hex"), nfs._key);
+      frame = parse_test_file(Key.make("iris.hex"),PATH);
 
       for (int repeat = 0; repeat < 5; ++repeat) {
         // Testing different things
@@ -77,9 +74,10 @@ public class DeepLearningIrisTest extends TestUtil {
                         for (double rate : rates) {
                           for (boolean sparse : new boolean[]{true, false}) {
                             for (boolean col_major : new boolean[]{false}) {
+                              Scope.enter();
                               DeepLearningModel mymodel = null;
                               Frame fr = null;
-                              DeepLearningParameters p = null;
+                              DeepLearningParameters p;
                               Frame trainPredict = null;
                               Frame testPredict = null;
                               try {
@@ -123,10 +121,16 @@ public class DeepLearningIrisTest extends TestUtil {
                                   int limit = (int) (frame.numRows() * holdout_ratio);
                                   _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
+                                  // Convert response to an enum
+                                  String resp_name = _train.lastVecName();
+                                  _train.add(resp_name, _train.remove(resp_name).toEnum());
+                                  _test .add(resp_name, _test .remove(resp_name).toEnum());
+                                  DKV.put(_train._key, _train);
+                                  DKV.put(_test ._key, _test );
 
                                   p = new DeepLearningParameters();
                                   p._training_frame = _train._key;
-                                  p._response_column = _train.lastVecName();
+                                  p._response_column = resp_name;
                                   p.ignored_columns = null;
                                   p.ignore_const_cols = true;
                                   fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
@@ -343,6 +347,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 if (fr != null) fr.delete();
                                 if (trainPredict != null) trainPredict.delete();
                                 if (testPredict != null) testPredict.delete();
+                                Scope.exit();
                               }
                             }
                           }

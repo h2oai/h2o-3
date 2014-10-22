@@ -469,11 +469,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
 
     //Sanity check for Deep Learning job parameters
-    @Override
-    public int sanityCheckParameters() {
-      Frame fr = _training_frame.get();
-      if (fr.numCols() <= 1)
-        validation_error("_validation_frame", "Training data must have at least 2 features (incl. response).");
+    @Override public int sanityCheckParameters() {
+      super.sanityCheckParameters();
+      Frame fr = _train;
 
       if (hidden == null || hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
 
@@ -528,22 +526,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
 
-      if (_classification) {
-        if (_response_column == null)
-          validation_error("response_column", "Response column must be specified.");
-        if (null == fr.vec(_response_column))
-          validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _training_frame + ".");
-      }
-
       if (null != ignored_columns)
         for (String ignored_column : ignored_columns)
           if (null == fr.vec(ignored_column))
             validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
 
-      if (null != _response_column && fr.vec(_response_column).isEnum() && !_classification) {
-        validation_error("classification", "Must choose classification for a categorical response column.");
-        _classification = true;
-      }
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
         hide("replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
         validation_info("replicate_training_data", "Disabling replicate_training_data on 1 node.");
@@ -662,7 +649,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
       }
 
-      return validation_error_count;
+      return _validation_error_count;
     }
   }
 

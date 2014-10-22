@@ -6,6 +6,10 @@ import water.H2O;
 import water.Job;
 import water.fvec.Frame;
 
+/** Gradient Boosted Trees
+ *
+ *  Based on "Elements of Statistical Learning, Second Edition, page 387"
+ */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) {

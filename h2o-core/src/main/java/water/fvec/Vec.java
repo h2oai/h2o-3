@@ -475,6 +475,9 @@ public class Vec extends Keyed {
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
+  /** True if the column contains only NAs
+   *  @return True if the column contains only NAs */
+  public final boolean isBad() { return naCnt()==length(); }
   /** Vecs's mean 
    *  @return Vec's mean */
   public double mean() { return rollupStats()._mean; }

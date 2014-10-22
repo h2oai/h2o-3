@@ -14,7 +14,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     @Override
     public int sanityCheckParameters() {
       if (_max_iters < 0) validation_error("max_iters", "max_iters must be > 0");
-      return validation_error_count;
+      return _validation_error_count;
     }
   }
 

@@ -79,7 +79,7 @@ public class GBMTest extends TestUtil {
 //    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
 //  }
 //
-  @Test @Ignore public void testBasicGBM() {
+  @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr ) { DKV.remove(fr.remove("name")._key); return ~fr.find("economy (mpg)"); }});
@@ -164,7 +164,8 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 4;
       parms._loss = family;
       parms._learn_rate = .2f;
-      assert parms._loss != Family.bernoulli || parms._classification;
+      parms.sanityCheckParameters();
+      assertEquals(parms._validation_error_count,0);
 
       GBM job = null;
       try {

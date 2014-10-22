@@ -30,7 +30,10 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     @Override public int sanityCheckParameters() {
       super.sanityCheckParameters();
       if( !(0. < _learn_rate && _learn_rate <= 1.0) ) validation_error("learn_rate", "learn_rate must be between 0 and 1");
-      return validation_error_count;
+      if( _loss == Family.bernoulli &&
+          (!_classification || _nclass != 2) )
+        throw new IllegalArgumentException("Bernoulli requires the response to be a 2-class categorical");
+      return _validation_error_count;
     }
   }
 

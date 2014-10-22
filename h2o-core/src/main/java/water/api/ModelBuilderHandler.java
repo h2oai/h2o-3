@@ -17,7 +17,7 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
   public Schema train(int version, B builder) {
     builder._parms.sanityCheckParameters();
 
-    if (builder._parms.validation_error_count > 0) {
+    if (builder._parms._validation_error_count > 0) {
       S builder_schema = (S) builder.schema().fillFromImpl(builder);
       return builder_schema.parameters;
     }

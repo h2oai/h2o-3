@@ -53,8 +53,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String[] ignored_columns; // column names to ignore for training
 
     /** A list of field validation issues. */
-    public ValidationMessage[] validation_messages = new ValidationMessage[0];
-    public int validation_error_count = 0;
+    public ValidationMessage[] _validation_messages = new ValidationMessage[0];
+    public int _validation_error_count = 0;
 
     public static final class ValidationMessage extends Iced {
       public enum MessageType {
@@ -92,22 +92,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     public void validation_error(String field_name, String message) {
-      validation_error_count++;
+      _validation_error_count++;
       validation_message(ValidationMessage.MessageType.ERROR, field_name, message);
     }
 
     private void validation_message(ValidationMessage.MessageType message_type, String field_name, String message) {
-      if (null == validation_messages)
-        validation_messages = new ValidationMessage[1];
+      if (null == _validation_messages)
+        _validation_messages = new ValidationMessage[1];
       else
-        validation_messages = Arrays.copyOf(validation_messages, validation_messages.length + 1);
-      validation_messages[validation_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
+        _validation_messages = Arrays.copyOf(_validation_messages, _validation_messages.length + 1);
+      _validation_messages[_validation_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
     }
 
     public String validationErrors() {
       StringBuilder sb = new StringBuilder();
-      for (ValidationMessage vm : validation_messages)
-        if (vm.message_type == ValidationMessage.MessageType.ERROR)
+      for( ValidationMessage vm : _validation_messages )
+        if( vm.message_type == ValidationMessage.MessageType.ERROR )
           sb.append((sb.length() > 0 ? "" : "; ")).append(vm.toString());
 
       return sb.toString();
