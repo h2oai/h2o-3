@@ -54,7 +54,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
   @Override
   public Job<GLMModel> train() {
     _parms.lock_frames(this);
-    Frame fr = _parms.train();  // Get training frame
+    final Frame fr = _parms.train();  // Get training frame
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(Key.make(),source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);

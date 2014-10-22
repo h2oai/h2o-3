@@ -55,6 +55,12 @@ public class DeepLearningProstateTest extends TestUtil {
                       false,
               }) {
                 for (int resp : responses[i]) {
+                  boolean classification = !(i == 0 && resp == 2);
+                  Vec old = frame.vecs()[resp];
+                  if( classification ) {
+                    frame.replace(resp, old.toEnum());
+                    DKV.put(frame._key,frame);
+                  }
                   for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
                           ClassSamplingMethod.Stratified,
                           ClassSamplingMethod.Uniform
@@ -130,7 +136,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p.score_validation_samples = scorevalidation;
                                       p.classification_stop = -1;
                                       p.regression_stop = -1;
-                                      p.balance_classes = p._classification && balance_classes;
+                                      p.balance_classes = classification && balance_classes;
                                       p.quiet_mode = true;
                                       p.score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
@@ -175,12 +181,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p._train = frame._key;
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
-                                    p._classification = !(i == 0 && resp == 2);
                                     p.override_with_best_model = override_with_best_model;
                                     p.epochs = epochs;
                                     p.seed = seed;
                                     p.train_samples_per_iteration = train_samples_per_iteration;
-                                    p.balance_classes = p._classification && balance_classes;
+                                    p.balance_classes = classification && balance_classes;
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();
@@ -192,7 +197,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     }
 
                                     // score and check result (on full data)
-                                    model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                                    model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in DKV (because of DataInfo...)
 
                                     // score and check result of the best_model
                                     if (model2.actual_best_model_key != null) {
@@ -340,6 +345,9 @@ public class DeepLearningProstateTest extends TestUtil {
                       }
                     }
                   }
+                  if( classification )
+                    frame.replace(resp,old).remove();
+                    DKV.put(frame._key,frame);
                 }
               }
             }
