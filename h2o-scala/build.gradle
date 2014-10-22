@@ -8,7 +8,7 @@ dependencies {
   compile "org.scala-lang:scala-library:$scalaVersion"
   
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testCompile "junit:junit:4.11"
+  testCompile "junit:junit:${junitVersion}"
 }
 
 // The default 'test' behavior is broken in that it does not grok clusters.
