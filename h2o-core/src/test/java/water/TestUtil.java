@@ -27,21 +27,11 @@ public class TestUtil extends Iced {
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
-    if (! _stall_called_before) {
-      if (H2O.getCloudSize() < x) {
-        // Figure out how to build cloud here, if desired.
-        _stall_called_before = true;
-      }
+    if( !_stall_called_before ) {
+      H2O.main(new String[] {});
+      _stall_called_before = true;
     }
-
     H2O.waitForCloudSize(x, 30000);
-  }
-
-  @BeforeClass()
-  public static void setupCloud() {
-    H2O.main(new String[] {});
-    _stall_called_before = true; // multinode-in-1-jvm launch off by default
-    stall_till_cloudsize(MINCLOUDSIZE);
     _initial_keycnt = H2O.store_size();
   }
 
