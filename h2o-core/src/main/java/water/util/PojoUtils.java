@@ -49,10 +49,11 @@ public class PojoUtils {
     Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
     Field[] orig_fields = Weaver.getWovenFields(origin.getClass());
 
-    for( Field f : orig_fields ) {
+    for (Field f : orig_fields) {
       String origin_name = f.getName();
-      if( skip_fields != null &
-              ArrayUtils.contains(skip_fields, origin_name) ) continue;
+
+      if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
+        continue;
 
       String dest_name = null;
       if (field_naming == FieldNaming.CONSISTENT) {
@@ -63,10 +64,17 @@ public class PojoUtils {
         dest_name = origin_name.substring(1);
       }
 
+      if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+        continue;
+
       try {
         Field dest_field = null;
-        for( Field fd : dest_fields )
-          if( fd.getName().equals(dest_name) ) { dest_field = fd; break; }
+        for( Field fd : dest_fields ) {
+          if (fd.getName().equals(dest_name)) {
+            dest_field = fd;
+            break;
+          }
+        }
 
         if( dest_field != null ) {
           dest_field.setAccessible(true);

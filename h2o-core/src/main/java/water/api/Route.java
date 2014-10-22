@@ -48,39 +48,8 @@ final class Route extends Iced {
     try {
       Handler h = _handler_class.newInstance();
       Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
-      SchemaMetadata meta = new SchemaMetadata(s);
 
-      // TODO: refactor with Schema.markdown():
-
-      boolean first; // don't print the table at all if there are no rows
-
-      first = true;
-      builder.heading2("parameters");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
-            first = false;
-          }
-          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
-        }
-      }
-      if (first)
-        builder.paragraph("(none)");
-
-      first = true;
-      builder.heading2("output");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "type", "default", "description", "values");
-            first = false;
-          }
-          builder.tableRow(field_meta.name, field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
-        }
-      }
-      if (first)
-        builder.paragraph("(none)");
+      builder.append(s.markdown(null));
 
       // TODO: render examples and other stuff, if it's passed in
     }

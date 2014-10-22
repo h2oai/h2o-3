@@ -26,6 +26,9 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
     @API(help="Type for this field")
     public String type;
 
+    @API(help="Type for this field is itself a Schema.")
+    public boolean is_schema;
+
     @API(help="Value for this field")
     public String value;
 
@@ -54,7 +57,7 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
 
     @Override
     public FieldMetadata createImpl() {
-      return new FieldMetadata(this.name, this.type, this.value, this.help, this.label, this.required, this.level, this.direction, this.values, this.json);
+      return new FieldMetadata(this.name, this.type, this.is_schema, this.value, this.help, this.label, this.required, this.level, this.direction, this.values, this.json);
     }
 
     @Override

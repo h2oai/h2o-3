@@ -10,6 +10,16 @@ public class MarkdownBuilder {
     sb = new StringBuffer();
   }
 
+  public StringBuffer append(StringBuffer s) {
+    sb.append(s);
+    return sb;
+  }
+
+  public StringBuffer append(String s) {
+    sb.append(s);
+    return sb;
+  }
+
   public StringBuffer paragraph(String paragraph) {
     sb.append(paragraph).append("\n\n");
     return sb;
