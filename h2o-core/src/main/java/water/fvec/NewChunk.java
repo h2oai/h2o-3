@@ -555,6 +555,7 @@ public class NewChunk extends Chunk {
       }
       _id = id;
       assert j == nzeros;
+      set_sparseLen(nzeros);
       return;
     }
     assert sparseLen() == _len :"_len = " + sparseLen() + ", _len2 = " + _len + ", nzeros = " + nzeros;
