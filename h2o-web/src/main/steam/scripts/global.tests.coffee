@@ -9,7 +9,7 @@ async = require 'async'
 test = require 'tape'
 
 # Pass -jar /path/to/h2o.jar to override the default jar
-JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'h2o-app', 'build', 'libs', 'h2o-app.jar'
+JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'build', 'h2o.jar'
 
 throw "H2O jar '#{JAR_PATH}' not found!" unless fs.existsSync JAR_PATH
 
