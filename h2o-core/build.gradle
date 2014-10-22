@@ -28,7 +28,7 @@ dependencies {
   compile "commons-collections:commons-collections:3.0"
   compile "org.javassist:javassist:3.18.2-GA"
 
-  testCompile "junit:junit:4.+"
+  testCompile "junit:junit:4.11"
 }
 
 javadoc {
