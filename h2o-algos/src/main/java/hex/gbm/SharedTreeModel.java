@@ -12,9 +12,12 @@ import water.fvec.Vec;
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
 
   public abstract static class SharedTreeParameters extends SupervisedModel.SupervisedParameters {
-    public int _ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
     /** Maximal number of supported levels in response. */
     private static final int MAX_SUPPORTED_LEVELS = 1000;
+
+    protected int _ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
+
+    protected boolean _importance = false; // compute variable importance
 
     @Override public int sanityCheckParameters() {
       super.sanityCheckParameters();
@@ -29,7 +32,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   public abstract static class SharedTreeOutput extends SupervisedModel.Output {
 
     /** Initially predicted value (for zero trees) */
-    double initialPrediction;
+    double _initialPrediction;
 
     @Override public int nfeatures() { return _names.length; }
 

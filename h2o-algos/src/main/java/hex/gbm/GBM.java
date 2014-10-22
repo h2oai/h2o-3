@@ -12,30 +12,30 @@ import water.fvec.Frame;
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
   // Called from an http request
-  public GBM( GBMModel.GBMParameters parms) {
-    super("GBM",parms);
-  }
+  public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); }
 
-  public ModelBuilderSchema schema() { return new GBMV2(); }
-
+  @Override public GBMV2 schema() { return new GBMV2(); }
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> train() {
-    return start(new GBMDriver(), _parms._ntrees);
+    return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
   // ----------------------
   private class GBMDriver extends H2OCountedCompleter<GBMDriver> {
 
+    /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
+    private transient float[/*nfeatures*/] _improvPerVar;
+
     @Override protected void compute2() {
-      Frame fr = null;
-      GBMModel model = null;
+      GBMModel model = null;    // Resulting model!
       try {
-        // Fetch & read-lock source frame
-        fr = _parms._training_frame.get();
-        fr.read_lock(_key);
+        _parms.lock_frames(GBM.this); // Fetch & read-lock input frames
 
         throw H2O.unimpl();
+
+        // Initialize gbm-specific data structures
+        //if( _parms._importance ) _improvPerVar = new float[initialModel.nfeatures()];
 
       } catch( Throwable t ) {
         t.printStackTrace();
@@ -43,7 +43,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        if( fr != null ) fr.unlock(_key);
+        _parms.unlock_frames(GBM.this);
         done();                 // Job done!
       }
       //tryComplete();

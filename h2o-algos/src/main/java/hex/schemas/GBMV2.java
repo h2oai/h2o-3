@@ -12,11 +12,12 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
   public static final class GBMParametersV2 extends ModelParametersSchema<GBMParameters, GBMParametersV2> {
     public String[] fields() { return new String[] {
         "destination_key",
-        "training_frame",
+        "train",
         "response_column",
         "ntrees",
         "learn_rate",
         "loss",
+        "importance",
         "seed"}; }
 
     // Input fields

@@ -34,7 +34,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> train() {
-    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms._training_frame.<Frame>get().numRows()));
+    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms.train().numRows()));
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
@@ -138,7 +138,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
-      Frame tra_fr = _parms._training_frame.get();
+      Frame tra_fr = _parms.train();
       if (_parms.checkpoint == null) cp = initModel();
       else {
         final DeepLearningModel previous = DKV.get(_parms.checkpoint).get();
@@ -150,21 +150,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         else {
 //        ((ValidatedJob)previous.job()).xval_models = null; //remove existing cross-validation keys after checkpoint restart
         }
-        if (_parms._training_frame == null || !Arrays.equals(_parms._training_frame._kb, previous.model_info().get_params()._training_frame._kb)) {
+        assert _parms._train != null; // Checked at a higher level
+        if (!_parms._train.equals(previous.model_info().get_params()._train)) {
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
         }
         _parms.autoencoder = previous.model_info().get_params().autoencoder;
-        if (!_parms.autoencoder && (_parms._response_column == null || !Arrays.equals(tra_fr.vec(_parms._response_column)._key._kb, tra_fr.vec(previous.model_info().get_params()._response_column)._key._kb))) {
+        if (!_parms.autoencoder && (_parms._response_column == null || !tra_fr.vec(_parms._response_column)._key.equals(tra_fr.vec(previous.model_info().get_params()._response_column)._key))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
-        if (ArrayUtils.difference(_parms.ignored_columns, previous.model_info().get_params().ignored_columns).length != 0
-                || ArrayUtils.difference(previous.model_info().get_params().ignored_columns, _parms.ignored_columns).length != 0) {
-          _parms.ignored_columns = previous.model_info().get_params().ignored_columns;
+        if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
+                || ArrayUtils.difference(previous.model_info().get_params()._ignored_columns, _parms._ignored_columns).length != 0) {
+          _parms._ignored_columns = previous.model_info().get_params()._ignored_columns;
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
-        if ((_parms._validation_frame == null) == (previous._parms._validation_frame != null)
-                || (_parms._validation_frame != null && _parms._validation_frame != null && previous._parms._validation_frame != null
-                && !Arrays.equals(_parms._validation_frame._kb, previous._parms._validation_frame._kb))) {
+        if ((_parms._valid == null) == (previous._parms._valid != null)
+                || (_parms._valid != null && _parms._valid != null && previous._parms._valid != null
+                    && !_parms._valid.equals(previous._parms._valid))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
         if (_parms._classification != previous.model_info().get_params()._classification) {
@@ -208,17 +209,17 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       trainModel(cp);
 
       // clean up
-      Frame val_fr = _parms._validation_frame==null ? null : _parms._validation_frame.<Frame>get();
+      Frame val_fr = _parms._valid==null ? null : _parms.valid();
       int validlen = val_fr!= null ? val_fr.vecs().length : 0;
       Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
       //don't delete the training data
       for (int i = 0; i< tra_fr.vecs().length; ++i)
         keep[i] = tra_fr.vecs()[i]._key;
-      keep[tra_fr.vecs().length] = _parms._training_frame;
+      keep[tra_fr.vecs().length] = _parms._train;
       //don't delete the validation data
       for (int i = 0; i< validlen; ++i)
         keep[i] = val_fr.vecs()[i]._key;
-      if (val_fr != null) keep[tra_fr.vecs().length+1] = _parms._validation_frame;
+      if (val_fr != null) keep[tra_fr.vecs().length+1] = _parms._valid;
       //don't delete the model
       keep[tra_fr.vecs().length+2] = _dest;
       keep[tra_fr.vecs().length+3] = cp.actual_best_model_key;
@@ -235,19 +236,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      */
     public final DeepLearningModel initModel() {
       try {
-        lock_data();
+        _parms.lock_frames(DeepLearning.this);
         if (_parms.sanityCheckParameters() > 0)
           throw new IllegalArgumentException("Error(s) in model parameters: " + _parms.validationErrors());
 
         final DataInfo dinfo = prepareDataInfo(_parms);
         final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
         float[] priorDist = _parms._classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;
-        final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms._training_frame, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
+        final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms._train, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
         model.model_info().initializeMembers();
         return model;
       }
       finally {
-        unlock_data();
+        _parms.unlock_frames(DeepLearning.this);
       }
     }
 
@@ -260,15 +261,15 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       Frame validScoreFrame = null;
       Frame train, trainScoreFrame;
       try {
-        lock_data();
+        _parms.lock_frames(DeepLearning.this);
 //      if (checkpoint == null && !quiet_mode) logStart(); //if checkpoint is given, some Job's params might be uninitialized (but the restarted model's parameters are correct)
         if (model == null) {
           model = DKV.get(dest()).get();
         }
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
-        Frame tra_fr = _parms._training_frame.get();
-        Frame val_fr = _parms._validation_frame == null ? null : _parms._validation_frame.<Frame>get();
+        Frame tra_fr = _parms.train();
+        Frame val_fr = _parms._valid == null ? null : _parms.valid();
 
         ValidationAdapter validAdapter = new ValidationAdapter(val_fr, _parms._classification);
         validAdapter.prepareValidationWithModel(model);
@@ -370,30 +371,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       }
       finally {
         if (model != null) model.unlock(self());
-        unlock_data();
+        _parms.unlock_frames(DeepLearning.this);
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
       return model;
     }
     transient HashSet<Frame> _delete_me = new HashSet<>();
-
-    /**
-     * Lock the input datasets against deletes
-     */
-    private void lock_data() {
-      _parms._training_frame.<Frame>get().read_lock(self());
-      if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
-        _parms._validation_frame.<Frame>get().read_lock(self());
-    }
-
-    /**
-     * Release the lock for the input datasets
-     */
-    private void unlock_data() {
-      _parms._training_frame.<Frame>get().unlock(self());
-      if( _parms._validation_frame != null && _parms._training_frame != null && !_parms._training_frame.equals(_parms._validation_frame) )
-        _parms._validation_frame.<Frame>get().unlock(self());
-    }
 
     /**
      * Rebalance a frame for load balancing

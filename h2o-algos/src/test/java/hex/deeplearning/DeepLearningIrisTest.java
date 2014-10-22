@@ -129,11 +129,11 @@ public class DeepLearningIrisTest extends TestUtil {
                                   DKV.put(_test ._key, _test );
 
                                   p = new DeepLearningParameters();
-                                  p._training_frame = _train._key;
+                                  p._train = _train._key;
                                   p._response_column = resp_name;
-                                  p.ignored_columns = null;
+                                  p._ignored_columns = null;
                                   p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
+                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p._ignored_columns), true, p.ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(Key.make(),fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
@@ -163,7 +163,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.initial_weight_scale = scale;
                                 p._classification = true;
                                 p.diagnostics = true;
-                                p._validation_frame = null;
+                                p._valid = null;
                                 p.quiet_mode = true;
                                 p.fast_mode = false; //to be the same as reference
 //                            p.fast_mode = true; //to be the same as old NeuralNet code

@@ -53,8 +53,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
   @Override
   public Job<GLMModel> train() {
-    final Frame fr = _parms._training_frame.get();
-    fr.read_lock(_key);
+    _parms.lock_frames(this);
+    final Frame fr = _parms.train();  // Get training frame
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(Key.make(),source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
@@ -65,7 +65,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        fr.unlock(_key);
+        _parms.unlock_frames(GLM.this);
         DKV.remove(_progressKey);
         done();
       }
@@ -74,7 +74,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         if(!_gotException.getAndSet(true)) {
           cancel2(ex);
           DKV.remove(_progressKey);
-          fr.unlock(_key);
+          _parms.unlock_frames(GLM.this);
           return true;
         }
         return false;

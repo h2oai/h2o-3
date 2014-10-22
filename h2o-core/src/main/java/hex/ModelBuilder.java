@@ -62,7 +62,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   public ModelBuilder(String desc, P parms) {
     super((parms._destination_key== null ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key), desc);
-    this._parms = parms;
+    _parms = parms;
+    if( parms.sanityCheckParameters() > 0 )
+      throw new IllegalArgumentException("Error(s) in model parameters: " + parms.validationErrors());
   }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */

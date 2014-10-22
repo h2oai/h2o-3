@@ -471,7 +471,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     //Sanity check for Deep Learning job parameters
     @Override public int sanityCheckParameters() {
       super.sanityCheckParameters();
-      Frame fr = _train;
+      Frame fr = train();
 
       if (hidden == null || hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
 
@@ -480,7 +480,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           validation_error("hidden", "Hidden layer size must be >0.");
       }
 
-      if (_validation_frame == null)
+      if (_valid == null)
         hide("score_validation_samples", "score_validation_samples requires a validation frame.");
 
       if (_classification) {
@@ -502,7 +502,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
 
 
-      if (!_classification && _validation_frame != null || _validation_frame == null)
+      if (!_classification && _valid != null || _valid == null)
         hide("score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
@@ -526,10 +526,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
 
-      if (null != ignored_columns)
-        for (String ignored_column : ignored_columns)
+      if (null != _ignored_columns)
+        for (String ignored_column : _ignored_columns)
           if (null == fr.vec(ignored_column))
-            validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _training_frame + ".");
+            validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _train + ".");
 
       if (H2O.CLOUD.size() == 1 && replicate_training_data) {
         hide("replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
@@ -626,7 +626,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!autoencoder && sparsity_beta != 0) validation_info("sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (autoencoder && _validation_frame != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
+      if (autoencoder && _valid != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (autoencoder && activation == Activation.Maxout) validation_error("activation", "Maxout activation is not supported for auto-encoder.");
       if (max_categorical_features < 1) validation_error("max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -1281,8 +1281,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return DataInfo object
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
-    final Frame fr = parms._training_frame.get();
-    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms._response_column), fr.find(parms.ignored_columns), parms._classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
+    final Frame fr = parms.train();
+    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms._response_column), fr.find(parms._ignored_columns), parms._classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
     final DataInfo dinfo = new FrameTask.DataInfo(Key.make(),train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms._classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
@@ -1345,7 +1345,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (!get_params().autoencoder) {
       errors = new Errors[1];
       errors[0] = new Errors();
-      errors[0].validation = (params._validation_frame != null);
+      errors[0].validation = (params._valid != null);
       errors[0].num_folds = params.n_folds;
     }
     assert(Arrays.equals(_key._kb, destKey._kb));

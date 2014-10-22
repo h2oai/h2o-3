@@ -559,9 +559,9 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // some have no leading _
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
       if (null != training_frame)
-        impl._training_frame = training_frame._key;
+        impl._train = training_frame._key;
       if (null != validation_frame)
-        impl._validation_frame = validation_frame._key;
+        impl._valid = validation_frame._key;
       impl._destination_key = destination_key;
 
       impl._response_column = response_column;
