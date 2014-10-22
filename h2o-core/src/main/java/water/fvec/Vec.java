@@ -38,7 +38,7 @@ import java.util.UUID;
  *  you are much better off using e.g. {@link MRTask}.
  *
  *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
- *   <table class='table table-striped table-bordered' border="1"> 
+ *   <table class='table table-striped table-bordered' border="1" summary="">
  *   <tr><th>     Returns       </th><th>    Call      </th><th>  Missing?  </th><th>Notes</th>
  *   <tr><td>  {@code double}   </td><td>{@link #at}   </td><td>{@code NaN} </td><td></td>
  *   <tr><td>  {@code long}     </td><td>{@link #at8}  </td><td>   throws   </td><td></td>
@@ -99,7 +99,7 @@ import java.util.UUID;
  *  <em>single-threaded</em> efficient batch writing for smaller Vecs.
  *
  *  <p>Example usage of common stats:<pre>
- *    double mean = vec.mean();  // Vec's mean; first touch computes & caches rolluops
+ *    double mean = vec.mean();  // Vec's mean; first touch computes and caches rollups
  *    double min  = vec.min();   // Smallest element; already computed
  *    double max  = vec.max();   // Largest element; already computed
  *    double sigma= vec.sigma(); // Standard deviation; already computed
@@ -113,7 +113,7 @@ import java.util.UUID;
  *  <pre>
  *    new MRTask{} { final double _mean = vec.mean();
  *      public void map( Chunk chk ) {
- *        for( int row=0; row < chk._len; row++ )
+ *        for( int row=0; row &lt; chk._len; row++ )
  *          if( chk.isNA0(row) ) chk.set0(row,_mean);
  *      }
  *    }.doAll(vec);
@@ -136,7 +136,7 @@ import java.util.UUID;
  *    Vec tmp0 = vec.makeZero();         // New Vec with same VectorGroup and layout as vec, filled with zero
  *    Vec tmp1 = vec.makeCon(mean);      // Filled with 'mean'
  *    assert tmp1.at(0x123456789)==mean; // All elements filled with 'mean'
- *    for( int i=0; i<100; i++ )         // A little math on the first 100 elements
+ *    for( int i=0; i&lt;100; i++ )         // A little math on the first 100 elements
  *      tmp0.set(i,tmp1.at(i)+17);       // ...set into the tmp0 vec
  *  </pre>
  *
