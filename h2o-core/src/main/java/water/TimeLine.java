@@ -122,7 +122,7 @@ public class TimeLine extends UDP {
    * @param size - bytes read/written
    * @param flavor - Value.HDFS or Value.S3
    */
-  private static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
+  public static void record_IOclose( long start_ns, long start_io_ms, int r_w, long size, int flavor ) {
     long block_ns = System.nanoTime() - start_ns;
     long io_ms = System.currentTimeMillis() - start_io_ms;
     // First long word going out has sender-port and a 'bad' control packet
