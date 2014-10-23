@@ -21,6 +21,9 @@ import water.util.Log;
 
 /** Persistence backend for S3 */
 public final class PersistS3 extends Persist {
+  //
+  // FIXME: back port here authorization chain from h2o1
+  //
   private static final String HELP = "You can specify a credentials properties file with the -aws_credentials command line switch.";
 
   private static final String KEY_PREFIX = "s3://";
