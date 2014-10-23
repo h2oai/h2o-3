@@ -24,10 +24,9 @@ public abstract class Persist {
   public abstract static class Schemes {
     public static final String FILE = "file";
     public static final String HDFS = "hdfs";
-    public static final String S3 = "s3";
-    public static final String NFS = "nfs";
+    public static final String S3   = "s3";
+    public static final String NFS  = "nfs";
   }
-
 
   static {
     URI uri = H2O.ICE_ROOT;
@@ -57,7 +56,7 @@ public abstract class Persist {
   /** Reclaim space from a previously stored Value */
   abstract public void delete(Value v);
 
-  /** Usuable storage space, or -1 for unknown */
+  /** Usable storage space, or -1 for unknown */
   public long getUsableSpace() { return /*UNKNOWN*/-1; }
 
   /** Total storage space, or -1 for unknown */

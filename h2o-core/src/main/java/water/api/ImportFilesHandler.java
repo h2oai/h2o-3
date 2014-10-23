@@ -5,17 +5,33 @@ package water.api;
 //import com.amazonaws.services.s3.model.S3ObjectSummary;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.hadoop.fs.Path;
 import water.H2O;
 import water.Iced;
 import water.api.ImportFilesHandler.ImportFiles;
+import water.persist.PersistHdfs;
 import water.util.FileIntegrityChecker;
+import water.util.Log;
 
+/**
+ * The handler provides import capabilities.
+ *
+ * <p>
+ *   Currently import from local filesystem, hdfs and s3 is supported.
+ * </p>
+ */
 public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
+  /**
+   * Holder for parameters.
+   */
   protected static final class ImportFiles extends Iced {
     // Input
     String _path;
@@ -31,29 +47,41 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
 
   public ImportFilesV2 importFiles(int version, ImportFiles importFiles) {
     assert importFiles._path != null;
-//    String p2 = _path.toLowerCase();
-    //if( false ) ;
-    //else if( p2.startsWith("hdfs://" ) ) serveHdfs();
-    //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
+    String path = importFiles._path.toLowerCase();
+    if (path.startsWith("hdfs://") )
+      return serveHDFS(version, importFiles);
+    else if (path.startsWith("s3n://" ))
+      return serveHDFS(version, importFiles);
     //else if( p2.startsWith("maprfs:/") ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
     //else if( p2.startsWith("https://") ) serveHttp();
-    // else
-    return serveLocalDisk(version, importFiles);
+    else
+      return serveLocalDisk(version, importFiles);
   }
 
-//  private void serveHdfs() throws IOException{
-//    if (isBareS3NBucketWithoutTrailingSlash(path)) { path += "/"; }
-//    Log.info("ImportHDFS processing (" + path + ")");
-//    ArrayList<String> succ = new ArrayList<String>();
-//    ArrayList<String> fail = new ArrayList<String>();
-//    PersistHdfs.addFolder2(new Path(path), succ, fail);
-//    keys = succ.toArray(new String[succ.size()]);
-//    files = keys;
-//    fails = fail.toArray(new String[fail.size()]);
-//    DKV.write_barrier();
-//  }
+  private ImportFilesV2 serveHDFS(int version, ImportFiles importFiles)  {
+    // Fix for S3N kind of URL
+    if (isBareS3NBucketWithoutTrailingSlash(importFiles._path)) {
+      importFiles._path += "/";
+    }
+    Log.info("ImportHDFS processing (" + importFiles._path + ")");
+    // List of processed files
+    ArrayList<String> succ = new ArrayList<String>();
+    ArrayList<String> fail = new ArrayList<String>();
+    try {
+      // Recursively import given file/folder
+      PersistHdfs.addFolder(new Path(importFiles._path), succ, fail);
+      // Save results into schema holder
+      importFiles._keys = succ.toArray(new String[succ.size()]);
+      importFiles._files = importFiles._keys;
+      importFiles._fails = fail.toArray(new String[fail.size()]);
+      // write barrier was here : DKV.write_barrier();
+      return schema(version).fillFromImpl(importFiles);
+    } catch (IOException e) {
+      throw new HDFSIOException(importFiles._path, PersistHdfs.CONF.toString(), e);
+    }
+  }
 //
 //
 //  private void serveS3(){
@@ -157,6 +185,12 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
 //  }
 //  private String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
+  private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
+    Pattern p = Pattern.compile("s3n://[^/]*");
+    Matcher m = p.matcher(s);
+    boolean b = m.matches();
+    return b;
+  }
 //
   @Override protected ImportFilesV2 schema(int version) { return new ImportFilesV2(); }
 }
