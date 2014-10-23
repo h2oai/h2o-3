@@ -1368,7 +1368,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     try {
       final long now = System.currentTimeMillis();
       epoch_counter = (float)model_info().get_processed_total()/training_rows;
-      final double time_last_iter_millis = now-_timeLastScoreEnter;
+      final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
 
       // Auto-tuning
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
