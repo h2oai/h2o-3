@@ -37,7 +37,7 @@ else
 endif
 
 # Default build: the h2o-core jar file
-default: build/h2o-core.jar build/test-h2o-core.jar
+default: build/libs/h2o-core.jar build/libs/h2o-core-test.jar
 
 # Just the classes, no jarring step
 classes: $(classes)
@@ -94,16 +94,16 @@ build/classes/main/water/init/BuildVersion.class: ../build/BuildVersion.java
 # All included jars are unpacked into a flat structure, then repacked into One Jar
 # Name collisions amongst packages are quietly ignored.
 # H2O names win over all other names.
-build/h2o-core.jar: $(main_classes) build/classes/main/water/init/BuildVersion.class
+build/libs/h2o-core.jar: $(main_classes) build/classes/main/water/init/BuildVersion.class
 	@echo "jarring " $@ " because " $?
 	@rm -rf build/tmp ; mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
-	@jar -cfm build/h2o-core.jar manifest.txt -C build/classes/main . -C build/tmp . -C src/main resources
+	@jar -cfm build/libs/h2o-core.jar manifest.txt -C build/classes/main . -C build/tmp . -C src/main resources
 	@rm -rf build/tmp
 
-build/test-h2o-core.jar: $(test_classes)
+build/libs/h2o-core-test.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
-	@jar -cfm build/test-h2o-core.jar manifest.txt -C build/classes/test .
+	@jar -cfm build/libs/h2o-core-test.jar manifest.txt -C build/classes/test .
 
 # JavaDoc!
 # Exclude the C*Chunk files, as they are specific kinds of compression.

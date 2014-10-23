@@ -23,7 +23,7 @@ trap cleanup SIGTERM SIGINT
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/h2o-algos.jar${SEP}build/test-h2o-algos.jar${SEP}../h2o-core/build/h2o-core.jar${SEP}../h2o-core/build/test-h2o-core.jar${SEP}../lib/*"
+JVM="nice java -ea -cp build/libs/h2o-algos.jar${SEP}build/libs/h2o-algos-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../lib/*"
 
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"

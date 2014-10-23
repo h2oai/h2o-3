@@ -8,7 +8,7 @@ classes = $(main_classes) $(test_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
 libs = $(wildcard ../lib/*jar)
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-core/build/test-h2o-core.jar
+jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/libs/h2o-core.jar$(SEP)../h2o-core/build/libs/h2o-core-test.jar
 
 # Fun Args to javac.  Mostly limit to java6 source definitions, and fairly
 # agressive lint warnings.
@@ -34,7 +34,7 @@ else
 endif
 
 # Default build: the h2o-algos jar file
-default: build/h2o-algos.jar build/test-h2o-algos.jar
+default: build/libs/h2o-algos.jar build/libs/h2o-algos-test.jar
 
 # Just the classes, no jarring step
 classes: $(classes)
@@ -63,13 +63,13 @@ $(test_classes): build/classes/test/%class: src/test/java/%java
 	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/test $(test_javas)
 
 # Build the h2o-algos.jar file
-build/h2o-algos.jar: $(main_classes)
+build/libs/h2o-algos.jar: $(main_classes)
 	@echo "jarring " $@ " because " $?
-	@jar -cf build/h2o-algos.jar -C build/classes/main .
+	@jar -cf build/libs/h2o-algos.jar -C build/classes/main .
 
-build/test-h2o-algos.jar: $(test_classes)
+build/libs/h2o-algos-test.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
-	@jar -cf build/test-h2o-algos.jar -C build/classes/test .
+	@jar -cf build/libs/h2o-algos-test.jar -C build/classes/test .
 
 
 .PHONY: clean
