@@ -293,5 +293,14 @@ abstract public class Log {
       if( strb.length() < size ) strb.append(' ');
     return strb.toString();
   }
-  
+
+  public static void ignore(Throwable e) {
+    ignore(e,"[h2o] Problem ignored: ");
+  }
+  public static void ignore(Throwable e, String msg) {
+    ignore(e, msg, true);
+  }
+  public static void ignore(Throwable e, String msg, boolean printException) {
+    debug(msg + (printException? e.toString() : ""));
+  }
 }
