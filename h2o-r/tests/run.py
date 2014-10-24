@@ -498,8 +498,10 @@ class Test:
             sys.exit(1)
 
         test_short_dir_with_no_slashes = re.sub(r'[\\/]', "_", self.test_short_dir)
+        if (len(test_short_dir_with_no_slashes) > 0):
+            test_short_dir_with_no_slashes += "_"
         self.output_file_name = \
-            os.path.join(self.output_dir, test_short_dir_with_no_slashes + "_" + self.test_name + ".out.txt")
+            os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
         self.child = subprocess.Popen(args=cmd,
                                       stdout=f,
