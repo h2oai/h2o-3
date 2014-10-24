@@ -153,7 +153,7 @@ class H2OCloudNode:
                ]
 
         # Add S3N credentials to cmd if they exist.
-        ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
+        #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
         #if (os.path.exists(ec2_hdfs_config_file_name)):
         #    cmd.append("-hdfs_config")
         #    cmd.append(ec2_hdfs_config_file_name)
@@ -653,7 +653,7 @@ class RUnitRunner:
             clouds = RUnitRunner.read_config(cloud_config)
             node_num = 0
             for c in clouds:
-                cloud = H2OUseCloud(node_num,c[0],c[1])
+                cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
                 node_num += 1
         else:
@@ -742,7 +742,9 @@ class RUnitRunner:
             for f in files:
                 if (not re.match(".*runit.*\.[rR]$", f)):
                     continue
-                if "h2o-runit.R" in f: continue
+                if "h2o-runit.R" in f:
+                    continue
+
                 is_small = False
                 is_medium = False
                 is_large = False
