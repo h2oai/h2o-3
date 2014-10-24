@@ -1472,8 +1472,7 @@ def main(argv):
             os.path.join(                           # ..
                 os.path.join(                       # ..
                     os.path.join(                   # build
-                        os.path.join(               # h2o.jar
-            test_root_dir, ".."), ".."), "build"), "h2o.jar")))
+                        os.path.join(test_root_dir, ".."), ".."), "build"), "h2o.jar")))
 
     # Override any defaults with the user's choices.
     parse_args(argv)
