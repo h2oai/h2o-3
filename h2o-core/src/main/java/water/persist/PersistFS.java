@@ -1,8 +1,11 @@
 package water.persist;
 
 import java.io.*;
+import java.net.URI;
 
 import water.*;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 /**
@@ -77,5 +80,10 @@ final class PersistFS extends Persist {
 
   @Override public long getTotalSpace() {
     return _root.getTotalSpace();
+  }
+
+  @Override
+  public Key uriToKey(URI uri) {
+    return NFSFileVec.make(new File(uri.toString()))._key;
   }
 }

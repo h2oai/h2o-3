@@ -1,9 +1,12 @@
 package water.persist;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 
 import water.*;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 // Persistence backend for network file system.
@@ -68,4 +71,9 @@ public final class PersistNFS extends Persist {
   }
 
   @Override public void delete(Value v) { throw H2O.fail(); }
+
+  @Override
+  public Key uriToKey(URI uri) {
+    return NFSFileVec.make(new File(uri.toString()))._key;
+  }
 }

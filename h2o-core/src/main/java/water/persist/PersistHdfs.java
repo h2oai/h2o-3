@@ -233,4 +233,15 @@ public final class PersistHdfs extends Persist {
       failed.add(p.toString());
     }
   }
+
+  @Override
+  public Key uriToKey(URI uri) throws IOException {
+    assert "hdfs".equals(uri.getScheme()) || "s3n".equals(uri.getScheme()) : "Expected hdfs or s3n scheme, but uri is " + uri;
+
+    FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
+    FileStatus[] fstatus = fs.listStatus(new Path(uri));
+    assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
+
+    return HDFSFileVec.make(fstatus[0]);
+  }
 }

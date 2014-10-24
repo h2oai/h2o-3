@@ -1,8 +1,10 @@
 package water.fvec
 
 import java.io.File
+import java.net.URI
 
 import water._
+import water.parser.ParseSetup
 
 class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   extends Frame(key,names,vecs) 
@@ -20,7 +22,10 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   def this(s : String) = this ( Key.make(s) )
 
   // Scala DataFrame by reading a CSV file
-  def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(water.parser.ParseSetup.hex(file.getName)),file))
+  def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(file.getName)),file))
+
+  // Uniform call to load any resource referenced by URI
+  def this(uri: URI) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(uri.toString)), uri))
 
   // No-args public constructor for (de)serialization
   def this() = this(null,null,new Array[Vec](0))

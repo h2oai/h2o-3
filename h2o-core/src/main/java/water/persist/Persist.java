@@ -5,6 +5,9 @@ import java.net.URI;
 import java.util.Arrays;
 
 import water.*;
+import water.fvec.HDFSFileVec;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 /** Abstract class describing various persistence targets.
@@ -61,6 +64,22 @@ public abstract class Persist {
 
   /** Total storage space, or -1 for unknown */
   public long getTotalSpace() { return /*UNKNOWN*/-1; }
+
+  /** Transform given uri into file vector holding file name. */
+  abstract public Key uriToKey(URI uri) throws IOException;
+
+  public static final Key anyURIToKey(URI uri) throws IOException {
+    Key ikey = null;
+    String scheme = uri.getScheme();
+    if ("hdfs".equals(scheme)) {
+      ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("s3n".equals(scheme)) {
+      ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("files".equals(scheme) || scheme == null) {
+      ikey = I[Value.NFS].uriToKey(uri);
+    }
+    return ikey;
+  }
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
