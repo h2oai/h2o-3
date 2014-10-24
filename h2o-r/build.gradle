@@ -161,7 +161,7 @@ task cpH2OAppJar << {
     File f = new File(path)
     f.deleteDir()
     new File(path).mkdirs()
-    copyFile([T,"..", "h2o-app", "build", "libs", "h2o-app.jar"],[T, "h2o-package", "inst", "java", "h2o.jar"])
+    copyFile([T,"..", "build", "h2o.jar"],[T, "h2o-package", "inst", "java", "h2o.jar"])
 }
 
 task buildPKG(type: Exec) { commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package']) }
