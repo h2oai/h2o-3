@@ -1466,8 +1466,12 @@ def main(argv):
 
     # Calculate and set other variables.
     h2o_jar = os.path.abspath(
-        os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
-            test_root_dir, ".."), ".."), "h2o-app"), "build"), "libs"), "h2o-app.jar"))
+        os.path.join(                               # test_root_dir
+            os.path.join(                           # ..
+                os.path.join(                       # ..
+                    os.path.join(                   # build
+                        os.path.join(               # h2o.jar
+            test_root_dir, ".."), ".."), "build"), "h2o.jar")))
 
     # Override any defaults with the user's choices.
     parse_args(argv)
