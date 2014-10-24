@@ -28,23 +28,35 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
   }
 
   public abstract static class SupervisedParameters extends Model.Parameters {
+    // Values that are set by the caller:
     public String _response_column; // response column name
 
-    // Derived values, generally caches
+    // Derived values, generally caches:
+    public transient Frame _train;  // Handy Frame
     public transient Vec _response; // Handy response column
     public int _nclass;             // Number of classes; 1 for regression; 2+ for classification
     public boolean _classification; // true for classification, false for regression
     public int  _ncols;             // Columns to train on, including the response
     public long _nrows;             // Number of rows where the response is not-NA
 
+    /**
+     * Sanity check model building parameters and return user-visible warnings or errors if something is wrong.
+     * NOTE: it's up to the caller to get the parameters right.  Do not change them behind the caller's back!
+     */
     @Override public int sanityCheckParameters() {
-      assert _train  != null; // Should not get here without these set (cutout at higher layer)
-      assert _response_column != null;
+      if (_train == null)
+        validation_error("training_frame", "Training frame must be set.");
+
+      if (_response_column == null)
+        validation_error("response_column", "Response column must be set.");
+
       int ridx = train().find(_response_column);
       if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
         validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
       _response = train().vecs()[ridx];
       _nclass = _response.domain()==null ? 1 : _response.domain().length;
+
+      // NOTE: classification is no longer considered a parameter; it is derived from the response column.
       _classification = _response.isEnum();
       _ncols = train().numCols();
       _nrows = train().numRows() - _response.naCnt();

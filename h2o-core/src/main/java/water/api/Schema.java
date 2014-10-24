@@ -5,9 +5,7 @@ import water.fvec.Frame;
 import hex.Model;
 import water.util.MarkdownBuilder;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +45,11 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   // Version&Schema-specific filling of an already filled object from this schema
   public I fillFromSchema() { return (I)this; }
+
+  public Class<? extends Iced> getImplClass() {
+    Type[] schema_type_parms = ((ParameterizedType)(this.getClass().getGenericSuperclass())).getActualTypeArguments();
+    return  (Class<? extends Iced>)schema_type_parms[0];  // [0] is the impl (Iced) type; [1] is the Schema type
+  }
 
   // TODO: this really does not belong in the schema layer; it's a hack for the
   // TODO: old-school-web-UI
@@ -89,12 +92,12 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         Field f = fields.get(key); // No such field error, if parm is junk
 
         if (null == f)
-          throw new IllegalArgumentException("Unknown argument: " + key);
+          throw new IllegalArgumentException("Unknown argument (not found): " + key);
 
         int mods = f.getModifiers();
         if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
           // Attempting to set a transient or static; treat same as junk fieldname
-          throw new IllegalArgumentException("Unknown argument: " + key);
+          throw new IllegalArgumentException("Unknown argument (transient or static): " + key);
         // Only support a single annotation which is an API, and is required
         API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
@@ -149,7 +152,6 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       catch (ArrayIndexOutOfBoundsException e) {
         throw new IllegalArgumentException("Missing annotation for API field: " + f.getName());
       }
-      // TODO: execute "validation language" in the BackEnd, which includes a "required check", if any
     }
     return (S)this;
   }

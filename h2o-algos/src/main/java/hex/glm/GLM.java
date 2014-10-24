@@ -1,15 +1,17 @@
 package hex.glm;
 
-import hex.glm.GLMModel.FinalizeAndUnlockTsk;
-import hex.glm.GLMModel.GLMOutput;
-import hex.glm.LSMSolver.ADMMSolver;
-import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.*;
-import hex.glm.GLMTask.*;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.ModelBuilder;
-import hex.optimization.L_BFGS;
+import hex.glm.GLMModel.FinalizeAndUnlockTsk;
+import hex.glm.GLMModel.GLMOutput;
+import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMTask.GLMIterationTask;
+import hex.glm.GLMTask.GLMLineSearchTask;
+import hex.glm.GLMTask.LMAXTask;
+import hex.glm.GLMTask.YMUTask;
+import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
 import hex.schemas.GLMV2;
@@ -24,7 +26,6 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils.ParallelTasks;
 import water.util.ModelUtils;
-
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +54,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
   @Override
   public Job<GLMModel> train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for GLM: " + _parms.validationErrors());
+
     _parms.lock_frames(this);
     final Frame fr = _parms.train();  // Get training frame
     Vec response = fr.vec(_parms._response);

@@ -41,6 +41,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for KMeans: " + _parms.validationErrors());
+
     return start(new KMeansDriver(), _parms._max_iters);
   }
 

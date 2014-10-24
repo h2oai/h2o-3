@@ -1,7 +1,5 @@
 package hex.deeplearning;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -16,6 +14,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import static org.junit.Assert.assertTrue;
 
 public class DeepLearningReproducibilityTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
@@ -51,21 +52,21 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Build a regularized DL model with polluted training data, score on clean validation set
           DeepLearningParameters p = new DeepLearningParameters();
 
-          p._train = train._key;
+          p._train = train;
           p._valid = test._key;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
-          p.activation = DeepLearningParameters.Activation.RectifierWithDropout;
-          p.hidden = new int[]{32, 58};
-          p.l1 = 1e-5;
-          p.l2 = 3e-5;
-          p.seed = 0xbebe;
-          p.input_dropout_ratio = 0.2;
-          p.hidden_dropout_ratios = new double[]{0.4, 0.1};
-          p.epochs = 3.32;
-          p.quiet_mode = true;
-          p.reproducible = repro;
+          p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+          p._hidden = new int[]{32, 58};
+          p._l1 = 1e-5;
+          p._l2 = 3e-5;
+          p._seed = 0xbebe;
+          p._input_dropout_ratio = 0.2;
+          p._hidden_dropout_ratios = new double[]{0.4, 0.1};
+          p._epochs = 3.32;
+          p._quiet_mode = true;
+          p._reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
           try {
             mymodel = dl.train().get();

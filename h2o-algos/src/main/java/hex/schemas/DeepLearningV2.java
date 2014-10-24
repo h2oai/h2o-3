@@ -19,7 +19,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "validation_frame",
         "response_column",
         "ignored_columns",
-        "classification",
         "n_folds",
         "keep_cross_validation_splits",
         "checkpoint",
@@ -80,8 +79,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
       };
     }
 
-    @API(help="Classification v. regression", direction=API.Direction.INOUT)
-    public boolean classification;
     @API(help="Number of folds for n-fold cross-validation (0 to n)", direction= API.Direction.INOUT)
     public int n_folds;
     @API(help="Keep cross-validation Frames", direction=API.Direction.INOUT)
@@ -556,7 +553,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     public DeepLearningParameters createImpl() {
       DeepLearningParameters impl = new DeepLearningParameters();
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // some have no leading _
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
       if (null != training_frame)
         impl._train = training_frame._key;
