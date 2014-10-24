@@ -12,12 +12,13 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
   public static final class GBMParametersV2 extends ModelParametersSchema<GBMParameters, GBMParametersV2> {
     public String[] fields() { return new String[] {
         "destination_key",
-        "train",
+        "training_frame",
+        "validation_frame",
         "response_column",
         "ntrees",
         "learn_rate",
         "loss",
-        "importance",
+        "variable_importance",
         "seed"}; }
 
     // Input fields
@@ -33,15 +34,25 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
     @API(help = "RNG Seed for balancing classes", level = API.Level.expert)
     public long seed;
 
+    @API(help = "Compute variable importance", level = API.Level.critical)
+    public boolean variable_importance;
+
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
       loss = GBMParameters.Family.AUTO;
+      variable_importance = parms._importance;
       return this;
     }
 
     public GBMParameters createImpl() {
       GBMParameters impl = new GBMParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      impl._importance = this.variable_importance;
+
+      // Sigh:
+      impl._train = (this.training_frame == null ? null : this.training_frame._key);
+      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
+
       return impl;
     }
   }

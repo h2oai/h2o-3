@@ -52,7 +52,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // Build a regularized DL model with polluted training data, score on clean validation set
           DeepLearningParameters p = new DeepLearningParameters();
 
-          p._train = train;
+          p._train = train._key;
           p._valid = test._key;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];

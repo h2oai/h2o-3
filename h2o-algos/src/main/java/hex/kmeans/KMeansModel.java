@@ -1,8 +1,7 @@
 package hex.kmeans;
 
-import hex.schemas.KMeansModelV2;
 import hex.Model;
-import water.H2O;
+import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
@@ -20,7 +19,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     @Override public int sanityCheckParameters() {
       if (_K < 2) validation_error("K", "K must be >= 2");
       if (_max_iters < 1) validation_error("max_iters", "max_iters must be > 1");
-      if ( train().numRows() < _K) throw new IllegalArgumentException("Cannot make " + _K + " clusters out of " + train().numRows() + " rows.");
+      if (train().numRows() < _K) validation_error("K", "Cannot make " + _K + " clusters out of " + train().numRows() + " rows.");
 
       return _validation_error_count;
     }

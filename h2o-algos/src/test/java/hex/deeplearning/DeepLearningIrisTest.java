@@ -129,7 +129,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   DKV.put(_test ._key, _test );
 
                                   p = new DeepLearningParameters();
-                                  p._train = _train;
+                                  p._train = _train._key;
                                   p._response_column = resp_name;
                                   p._ignored_columns = null;
                                   p._ignore_const_cols = true;

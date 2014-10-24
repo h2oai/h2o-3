@@ -32,7 +32,6 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public String _response_column; // response column name
 
     // Derived values, generally caches:
-    public transient Frame _train;  // Handy Frame
     public transient Vec _response; // Handy response column
     public int _nclass;             // Number of classes; 1 for regression; 2+ for classification
     public boolean _classification; // true for classification, false for regression

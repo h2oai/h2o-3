@@ -554,10 +554,9 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public DeepLearningParameters createImpl() {
       DeepLearningParameters impl = new DeepLearningParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
-      if (null != training_frame)
-        impl._train = training_frame._key;
-      if (null != validation_frame)
-        impl._valid = validation_frame._key;
+      // Sigh:
+      impl._train = (this.training_frame == null ? null : this.training_frame._key);
+      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
       impl._destination_key = destination_key;
 
       impl._response_column = response_column;

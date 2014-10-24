@@ -427,7 +427,7 @@ assert dl_prostate_model_name in models_dict, "Failed to find " + dl_prostate_mo
 
 assert dl_prostate_model_name in frames[0]['compatible_models']
 assert kmeans_model_name in frames[0]['compatible_models']
-print '/Frames/prosate.hex?find_compatible_models=true: ', repr(result)
+h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(result))
 
 if clean_up_after:
     cleanup(models=[dl_airlines_model_name, dl_prostate_model_name, kmeans_model_name], frames=[prostate_key, airlines_key])

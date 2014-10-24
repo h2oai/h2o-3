@@ -47,6 +47,10 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
       KMeansParameters impl = new KMeansParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       impl._init = KMeans.Initialization.Furthest;
+
+      // Sigh:
+      impl._train = (this.training_frame == null ? null : this.training_frame._key);
+      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
       return impl;
     }
   }

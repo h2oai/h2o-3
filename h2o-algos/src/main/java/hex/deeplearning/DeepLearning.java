@@ -34,14 +34,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> train() {
-<<<<<<< HEAD
-    return start(new DeepLearningDriver(), (long)(_parms.epochs * _parms.train().numRows()));
-=======
     if (_parms.sanityCheckParameters() > 0)
       throw new IllegalArgumentException("Invalid parameters for DeepLearning: " + _parms.validationErrors());
 
-    return start(new DeepLearningDriver(), (long)(_parms._epochs * _parms._training_frame.<Frame>get().numRows()));
->>>>>>> Unbreak the REST API.
+    return start(new DeepLearningDriver(), (long)(_parms._epochs * _parms.train().numRows()));
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
@@ -145,13 +141,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
-<<<<<<< HEAD
       Frame tra_fr = _parms.train();
-      if (_parms.checkpoint == null) cp = initModel();
-=======
-      Frame tra_fr = _parms._training_frame.get();
       if (_parms._checkpoint == null) cp = initModel();
->>>>>>> Unbreak the REST API.
       else {
         final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
@@ -166,13 +157,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (!_parms._train.equals(previous.model_info().get_params()._train)) {
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
         }
-<<<<<<< HEAD
-        _parms.autoencoder = previous.model_info().get_params().autoencoder;
-        if (!_parms.autoencoder && (_parms._response_column == null || !tra_fr.vec(_parms._response_column)._key.equals(tra_fr.vec(previous.model_info().get_params()._response_column)._key))) {
-=======
         _parms._autoencoder = previous.model_info().get_params()._autoencoder;
-        if (!_parms._autoencoder && (_parms._response_column == null || !Arrays.equals(tra_fr.vec(_parms._response_column)._key._kb, tra_fr.vec(previous.model_info().get_params()._response_column)._key._kb))) {
->>>>>>> Unbreak the REST API.
+        if (!_parms._autoencoder && (_parms._response_column == null || !tra_fr.vec(_parms._response_column)._key.equals(tra_fr.vec(previous.model_info().get_params()._response_column)._key))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
         if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
