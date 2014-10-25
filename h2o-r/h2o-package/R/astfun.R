@@ -1,43 +1,89 @@
-##'
-##' A collection of methods to parse expressions and produce ASTs.
-##'
-##' R expressions convolved with H2O objects evaluate lazily.
-#
-#
-##'
-##' Retrieve the slot value from the object given its name and return it as a list.
-#.slots<-
-#function(name, object) {
-#    ret <- list(slot(object, name))
-#    names(ret) <- name
-#    ret
-#}
-#
-##'
-##' Cast an S4 AST object to a list.
-##'
-##'
-##' For each slot in `object`, create a list entry of name "slotName", with value given by the slot.
-##'
-##' To unpack this information, .ASTToList depends on a secondary helper function `.slots(...)`.
-##' Finally, the result of the lapply is unlisted a single level, such that a vector of lists is returned
-##' rather than a list of lists. This helps avoids anonymous lists.
-#.ASTToList<-
-#function(object) {
-#  return( unlist(recursive = FALSE, lapply(slotNames(object), .slots, object)))
-#}
-#
-##'
-##' The AST visitor method.
-##'
-##' This method represents a map between an AST S4 object and a regular R list,
-##' which is suitable for the rjson::toJSON method.
-##'
-##' Given a node, the `visitor` function recursively "list"-ifies the node's S4 slots and then returns the list.
-##'
-##' A node that has a "root" slot is an object of type ASTOp. An ASTOp will always have a "children" slot representing
-##' its operands. A root node is the most general type of input, while an object of type ASTFrame or ASTNumeric is the
-##' most specific. This method relies on the private helper function .ASTToList(...) to map the AST S4 object to a list.
+#'
+#' Transmogrify A User Defined Function Into A Cascade AST
+#'
+#' A function has three parts:
+#'  1. A name
+#'  2. Arguments
+#'  3. A body
+#'
+#' If it has been deteremined that a function is user-defined, then it must become a Cascade AST.
+#'
+#' The overall strategy for collecting up a function is to avoid densely packed recursive calls, each attempting to handle
+#' the various corner cases.
+#'
+#' Instead, the thinking is that there are a limited number of statement types in a function body:
+#'  1. control flow: if, else, while, for, return
+#'  2. assignments
+#'  3. operations/function calls
+#'  4. Implicit return statement
+#'
+#' Implicit return statements are the last statement in a closure. Statements that are not implicit return statements
+#' are optimized away by the back end.
+#'
+#' Since the statement types can be explicitly defined, there is only a need for processing a statement of the 3rd kind.
+#' Therefore, all recursive calls are funneled into a single statement processing function.
+#'
+#' From now on, statements will refer to statemets of the 3rd kind.
+#'
+#' Simple statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
+#'
+#'  1. Unary operations  (dispatch to .h2o.unop )
+#'  2. Binary Operations (dispatch to .h2o.binop)
+#'  3. Prefix Operations (dispatch to .h2o.varop)
+#'  4. User Defined Function Call
+#'  5. Anonymous closure
+#'
+#' Of course "real" statements are mixtures of these simple statements, but these statements are handled recursively.
+#'
+#' Case 4 spins off a new transmogrification for the encountered udf. If the udf is already defined in this **scope**, or in
+#' some parent scope, then there is nothing to do.
+#'
+#' Case 5 spins off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
+#' If there's no assignment resulting from the closure, the closure is simply dropped (modification can only happen in the
+#' global scope (scope used in usual sense here)).
+#'
+#'
+#' NB:
+#' **scope**: Here scopes are defined in terms of a closure.
+#'            *this* scope knows about all functions and all if its parents functions.
+#'            They are implemented as nested environments.
+#'
+
+
+#'
+#' Retrieve the slot value from the object given its name and return it as a list.
+.slots<-
+function(name, object) {
+    ret <- list(slot(object, name))
+    names(ret) <- name
+    ret
+}
+
+#'
+#' Cast an S4 AST object to a list.
+#'
+#'
+#' For each slot in `object`, create a list entry of name "slotName", with value given by the slot.
+#'
+#' To unpack this information, .ASTToList depends on a secondary helper function `.slots(...)`.
+#' Finally, the result of the lapply is unlisted a single level, such that a vector of lists is returned
+#' rather than a list of lists. This helps avoids anonymous lists.
+.ASTToList<-
+function(object) {
+  return( unlist(recursive = FALSE, lapply(slotNames(object), .slots, object)))
+}
+
+#'
+#' The AST visitor method.
+#'
+#' This method represents a map between an AST S4 object and a regular R list,
+#' which is suitable for the rjson::toJSON method.
+#'
+#' Given a node, the `visitor` function recursively "list"-ifies the node's S4 slots and then returns the list.
+#'
+#' A node that has a "root" slot is an object of type ASTOp. An ASTOp will always have a "children" slot representing
+#' its operands. A root node is the most general type of input, while an object of type ASTFrame or ASTNumeric is the
+#' most specific. This method relies on the private helper function .ASTToList(...) to map the AST S4 object to a list.
 #visitor<-
 #function(node) {
 #  if (.hasSlot(node, "root")) {
@@ -73,30 +119,51 @@
 #    .ASTToList(node)
 #  }
 #}
-#
-##'
-##' Check if the call is user defined.
-##'
-##' A call is user defined if its environment is the Global one.
-#.isUDF<-
-#function(fun) {
-#  e <- environment(eval(fun))
-#  identical(e, .GlobalEnv)
-#}
-#
-##'
-##' Check if operator is infix.
-##'
-##' .INFIX_OPERATORS is defined in cosntants.R. Used by .exprToAST.
+
+
+#'
+#' Helper function for .isUDF
+#'
+#' Carefully examine an environment and determine if it's a user-defined closure.
+#'
+.isClosure <- function(e) {
+
+  # if env is defined in the global environment --> it is user defined
+  if (identical(e, .GlobalEnv)) return(TRUE)
+
+  # otherwise may be a closure:
+
+  # first check that it is not a named environment --> not part of a package
+  isNamed <- environmentName(e) != ""
+  if (isNamed) return(FALSE)
+  # go to the parent and check again, until we hit the global, in which case return true
+  .isClosure(parent.env(e))
+}
+
+#'
+#' Check if the call is user defined.
+#'
+#' A call is user defined if its environment is the Global one, or it's a closure inside of a call existing in the Global env.
+.is_udf<-
+function(fun) {
+  e <- tryCatch( environment(eval(fun)), error = function(x) FALSE) # get the environment of `fun`
+  if (is.logical(e)) return(FALSE)                                  # if e is logical -> no environment found
+  tryCatch(.isClosure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
+}
+
+#'
+#' Check if operator is infix.
+#'
+#' .INFIX_OPERATORS is defined in cosntants.R. Used by .exprToAST.
 #.isInfix<-
 #function(o) {
 #  o %in% .INFIX_OPERATORS
 #}
-#
-##'
-##' Return the class of the eval-ed expression.
-##'
-##' A convenience method for lapply. Used by .exprToAST
+
+#'
+#' Return the class of the eval-ed expression.
+#'
+#' A convenience method for lapply. Used by .exprToAST
 #.evalClass<-
 #function(i) {
 #  val <- tryCatch(class(eval(i)), error = function(e) {return(NA)})
@@ -111,113 +178,6 @@
 #function(expr) {
 #  formals_vec <- function(fun) { names(formals(fun)) }
 #  expr %in% unlist(lapply(.pkg.env$call_list, formals_vec))
-#}
-#
-##'
-##' Walk the R AST directly.
-##'
-##' This walks the AST for some arbitrary R expression and produces an "S4"-ified AST.
-##'
-##' This function has lots of twists and turns mainly for involving h2o S4 objects.
-##' We have to "prove" that we can safely eval an expression by showing that the
-##' intersection of the classes in the expression with a vector of some of the H2O object types is non empty.
-##'
-##' The calls to eval here currently redirect to .h2o.binop() and .h2o.unop(). In the future,
-##' this call may redirect to .h2o.varop() to handle multiple arg methods.
-#.exprToAST<-
-#function(expr) {
-#    argument_names <- list()
-#
-#  # Assigning to the symbol or this is a symbol appearing in the formals of a UDF. If the latter, tag it.
-#  if (is.symbol(expr)) {
-#    sym <- as.character(expr)
-#    if (.isFormal(sym)) {
-#      return(new("ASTUnk", key=sym, isFormal=TRUE))
-#    }
-#    return(new("ASTUnk", key=as.character(expr), isFormal=FALSE))
-#  }
-#
-#  # Got an atomic numeric. Plain old numeric value. #TODO: What happens to logicals?
-#  if (is.atomic(expr) && class(expr) == "numeric") {
-#    new("ASTNumeric", type="numeric", value=expr)
-#
-#  # Got an atomic string. #TODO: What to do with print/cat statements in h2o? Ignore them in UDFs?
-#  } else if (is.atomic(expr) && class(expr) == "character") {
-#    new("ASTString", type="character", value=expr)
-#
-#  # Got a left arrow assignment statement
-#  } else if (identical(expr[[1]], quote(`<-`))) {
-#    lhs <- new("ASTUnk", key=as.character(expr[[2]]), isFormal=FALSE)
-#    rhs <- .exprToAST(expr[[3]])
-#    op <- new("ASTOp", type="LAAssignOperator", operator="<-", infix=TRUE)
-#    new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-#
-#  # Got an equals assignment statement
-#  } else if (identical(expr[[1]], quote(`=`))) {
-#    lhs <- new("ASTUnk", key=as.character(expr[[2]]))
-#    rhs <- .exprToAST(expr[[3]])
-#    op <- new("ASTOp", type="EQAssignOperator", operator="=", infix=TRUE)
-#    new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-#
-#  # Got a named function
-#  } else if (is.name(expr[[1]])) {
-#
-#    # The named function is user defined
-#    if (.isUDF(expr[[1]])) {
-#      return(.funToAST(expr))
-#    }
-#    o <- deparse(expr[[1]])
-#
-#    # Is the function generic? (see getGenerics() in R)
-#    if (isGeneric(o)) {
-#
-#      # Operator is infix?
-#      if (.isInfix(o)) {
-#
-#        lhs <- .exprToAST(expr[[2]])
-#        rhs <- .exprToAST(expr[[3]])
-#
-#        expr[[2]] <- lhs
-#        expr[[3]] <- rhs
-#
-#        # Prove that we have _h2o_ infix:
-#        if (length( intersect(c("H2OParsedData", "H2OFrame", "ASTNode", "ASTUnk", "ASTFrame", "ASTFrame", "ASTNumeric"), unlist(lapply(expr, .evalClass)))) > 0) {
-#
-#          # Calls .h2o.binop
-#          return(eval(expr))
-#        } else {
-#          # Regular R infix... recurse down the left and right arguments
-#          op <- new("ASTOp", type="InfixOperator", operator=as.character(expr[[1]]), infix=TRUE)
-#          args <- lapply(expr[-1], .exprToAST)
-#          return(new("ASTNode", root=op, children=args))
-#        }
-#      # Function is not infix, but some prefix method. #TODO: Must ensure a _single_ argument here: No .h2o.varop yet!
-#      } else {
-#
-#        # Prove that we have _h2o_ prefix:
-#        if (length( intersect(c("H2OParsedData", "H2OFrame", "ASTNode"), unlist(lapply(expr, .evalClass)))) > 0) {
-#
-#          # Calls .h2o.unop
-#          return(eval(expr))
-#       }
-#      }
-#    }
-#
-#    # Not an R generic, operator is some other R method. Recurse down the arguments.
-#    op <- new("ASTOp", type="PrefixOperator", operator=as.character(expr[[1]]), infix=FALSE)
-#    args <- lapply(expr[-1], .exprToAST)
-#    new("ASTNode", root=op, children=args)
-#
-#  # Got an H2O object back: Must inherit from H2OFrame or error (NB: ASTNode inherits H2OFrame)
-#  } else if (is.object(expr)) {
-#    if (inherits(expr, "ASTNode")) {
-#      expr
-#    } else if (inherits(expr, "H2OFrame")) {
-#      new("ASTFrame", type="Frame", value=expr@key)
-#    } else {
-#      stop("Unfamiliar object. Got: ", class(expr), ". This is unimplemented.")
-#    }
-#  }
 #}
 #
 ##'
@@ -325,3 +285,162 @@
 #    substitute(fun)
 #  }
 #}
+
+
+
+
+#'
+#' Statement Processor
+#'
+#' Converts the statement into an AST.
+#'
+#'
+#' The possible types of statements to process:
+#'
+#'  1. A unary operation (calls .h2o.unop)
+#'      A. `!` operator
+#'
+#'  2. A binary operation  (calls .h2o.binop)
+#'      A. ‘"+"’, ‘"-"’, ‘"*"’, ‘"^"’, ‘"%%"’, ‘"%/%"’, ‘"/"’
+#'         ‘"=="’, ‘">"’, ‘"<"’, ‘"!="’, ‘"<="’, ‘">="’
+#'         ‘"&"’, ‘"|"’, ‘"**"’
+#'
+#'  3. A prefix operation
+#'      A. Unary Prefix:  ‘"abs"’,   ‘"sign"’,   ‘"sqrt"’,   ‘"ceiling"’, ‘"floor"’,
+#'                        ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
+#'                        ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
+#'                        ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
+#'                        ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
+#'                        ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’, ‘"is.na"’
+#'
+#'      B. .h2o.varop: ‘"round"’, ‘"signif"’
+#'
+#'      C. .h2o.varop: ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
+#'
+#'      D. .h2o.varop: ‘"trunc"’, ‘"log"’  (could be either unop or varop)
+#'
+#' Each of the above types of statements will handle their own arguments and return an appropriate AST
+.process_stmnt<-
+function(stmnt) {
+
+  # convenience variable
+  stmnt_list <- as.list(stmnt)
+
+  # we got a defined op
+  if (.is_op(stmnt_list[[1]])) {
+
+    # have an operator
+    op <- stmnt_list[[1]]
+
+    # Case 2 from the comment above
+    if (.is_binop(op)) {
+
+
+    # Case 1, 3A above unless it's `log`
+    } else if (.is_unop(op)) {
+
+    # all varops
+    } else if(.is_varop(op)) {
+
+    # should never get here
+    } else {
+      stop(paste("Fail in statement processing to AST. Failing statement was: ", stmnt))
+    }
+  }
+
+  # we got a user-defined function
+  if (.is_udf(stmnt_list[[1]])) {
+
+  }
+
+  # otherwise just got a variable name to either return (if last statement, or skip if not last statement)
+  if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
+    ast <- '$' %<p0-% deparse(stmnt_list[[1]])
+  }
+}
+
+#'
+#' Statement Parser Switchboard
+#'
+#' This function acts as a switchboard for the various types of statements that may exist in the body of a function.
+#'
+#' The possible types of statements:
+#'
+#'  1. Control Flow Statements:
+#'      A. If
+#'      B. Else
+#'      C. for  -- to handle iterator-for (i in 1:5) (x in vector)
+#'      D. return -- return the result
+#'      E. while -- stops processing immediately. while loops are unsupported
+#'
+#'  2. Assignment
+#'
+#'  3. Function call / Operation
+#'
+#' This switchboard takes exactly ONE statement at a time.
+.statement_to_ast_switchboard<-
+function(stmnt) {
+
+  # convenience variable
+  stmnt_list <- as.list(stmnt)
+
+  # check for `if`, `for`, `else`, `return`, `while` -- stop if `while`
+  if (identical(quote(`if`),     stmnt_list[[1]])) return(.process_if_stmnt(stmnt))
+  if (identical(quote(`for`),    stmnt_list[[1]])) return(.process_for_stmnt(stmnt))
+  if (identical(quote(`else`),   stmnt_list[[1]])) return(.process_else_stmnt(stmnt))
+  if (identical(quote(`return`), stmnt_list[[1]])) return(.process_return_stmnt(stmnt))
+  if (identical(quote(`while`),  stmnt_list[[1]])) stop("*Unimplemented* `while` loops are not supported by h2o")
+
+  # check assignment
+  if(identical(quote(`<-`), stmnt_list[[1]])) return(.process_assign_stmnt(stmnt))
+  if(identical(quote(`=`),  stmnt_list[[1]])) return(.process_assign_stmnt(stmnt))
+  if(identical(quote(`->`), stmnt_list[[1]])) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
+
+  # everything else is a function call or operation
+  .process_stmnt(stmnt)
+}
+
+
+#'
+#' Produce a list of statements from a function body. The statements are ordered in first -> last.
+.extract_statements<-
+function(b) {
+  # strip off the '{' if it's there
+  stmnts <- as.list(b)
+  if(identical(stmnts[[1]], quote(`{`))) stmnts <- stmnts[-1]
+  stmnts
+}
+
+
+#'
+#' Transmogrify A User Defined Function Into A Cascade AST
+#'
+#' A function has three parts:
+#'  1. A name
+#'  2. Arguments
+#'  3. A body
+#'
+#' At this point, it's been determined that `fun` is a user defined function, and it must become an AST.
+#' Pack the function call up into an AST.
+#'
+#' Two interesting cases to handle:
+#'
+#'  1. A closure defined in the body.
+#'  2. A different UDF is called within the body.
+#'
+#'  1.
+#'      A. Recognize closure declaration
+#'      B. Parse the closure AST and store it to be shipped to H2O
+#'      C. Swap out the declaration in the body of this function with an invocation of the closure.
+#'
+#'  2.
+#'      A. Recognize the call
+#'      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
+.funToAST<-
+function(fun, name) {
+  args <- formals(fun)
+  b <- body(fun)
+  stmnts <- .extract_statements(b)
+  # every variable is a lookup
+
+}

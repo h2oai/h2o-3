@@ -60,6 +60,78 @@
                 '^'  = '^',
                 "%/%"="%/%")
 
+.binop.map <- list('>'  = 'g',
+                '>=' = 'G',
+                '<'  = 'l',
+                '<=' = 'L',
+                '==' = 'n',
+                '!=' = 'N',
+                '%%' = '%',
+                '**' = '^',
+                '|'  = '|',
+                '&'  = '&',
+                "&&" = "&&",
+                '+'  = '+',
+                '-'  = '-',
+                '*'  = '*',
+                '/'  = '/',
+                '^'  = '^',
+                "%/%"="%/%")
+
+#'
+#' Map of unary operators to their "AST" operator value.
+#'
+.unop.map <- list('!'  = '_',
+                  '$'  = '[',
+                  '['  = '[')
+
+#'
+#' A list of prefix operations. 1:1 map for now, may add more to the map as needed.
+#'
+.prefix.map <- list("abs"  = "abs",
+                    "sign" = "sign",
+                    "sqrt" = "sqrt",
+                    "ceiling" = "ceiling",
+                    "floor" = "floor",
+                    "trunc" = "trunc",
+                    "cummax" = "cummax",
+                    "cummin" = "cummin",
+                    "cumprod" = "cumprod",
+                    "cumsum" = "cumsum",
+                    "log" = "log",
+                    "log10" = "log10",
+                    "log2" = "log2",
+                    "log1p" = "log1p",
+                    "acos" = "acos",
+                    "acosh" = "acosh",
+                    "asin" = "asin",
+                    "asinh" = "asinh",
+                    "atan" = "atan",
+                    "atanh" = "atanh",
+                    "exp" = "exp",
+                    "expm1" = "expm1",
+                    "cos" = "cos",
+                    "cosh" = "cosh",
+                    "sin" = "sin",
+                    "sinh" = "sinh",
+                    "tan" = "tan",
+                    "tanh" = "tanh",
+                    "gamma" = "gamma",
+                    "lgamma" = "lgamma",
+                    "digamma" = "digamma",
+                    "trigamma" = "trigamma",
+                    "round" = "round",
+                    "signif" = "signif",
+                    "max" = "max",
+                    "min" = "min",
+                    "range" = "range",
+                    "prod" = "prod",
+                    "sum" = "sum",
+                    "any" = "any",
+                    "all" = "all",
+                    "is.na" = "is.na",
+                    "trunc" = "trunc")
+
 #'
 #' H2O API endpoints
 #'
