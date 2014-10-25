@@ -25,21 +25,21 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
-    public int n_folds;
-    public boolean keep_cross_validation_splits;
+    public int _n_folds;
+    public boolean _keep_cross_validation_splits;
 
     /**
      * A model key associated with a previously trained Deep Learning
      * model. This option allows users to build a new model as a
      * continuation of a previously generated model (e.g., by a grid search).
      */
-    public Key checkpoint;
+    public Key _checkpoint;
 
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.
      * Only applicable if training is not cancelled.
      */
-    public boolean override_with_best_model = true;
+    public boolean _override_with_best_model = true;
 
     /**
      * Unlock expert mode parameters than can affect model building speed,
@@ -47,11 +47,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * values is fine for many problems, but best results on complex datasets are often
      * only attainable via expert mode options.
      */
-    public boolean expert_mode = false;
+    public boolean _expert_mode = false;
 
-    public boolean autoencoder = false;
+    public boolean _autoencoder = false;
 
-    public boolean use_all_factor_levels = true;
+    public boolean _use_all_factor_levels = true;
 
   /*Neural Net Topology*/
     /**
@@ -64,7 +64,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      *      training row. This effectively trains exponentially many models at
      *      once, and can improve generalization.
      */
-    public Activation activation = Activation.Rectifier;
+    public Activation _activation = Activation.Rectifier;
 
     /**
      * The number and size of each hidden layer in the model.
@@ -73,7 +73,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * neurons.To specify a grid search, add parentheses around each
      * model's specification: "(100,100), (50,50,50), (20,20,20,20)".
      */
-    public int[] hidden = new int[] { 200, 200 };
+    public int[] _hidden = new int[] { 200, 200 };
 
     /**
      * The number of passes over the training dataset to be carried out.
@@ -81,7 +81,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * This value can be modified during checkpoint restarts and allows continuation
      * of selected models.
      */
-    public double epochs = 10;
+    public double _epochs = 10;
 
     /**
      * The number of training data rows to be processed per iteration. Note that
@@ -98,9 +98,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * will be trained per iteration on N nodes, otherwise one epoch). Special value
      * of -2 turns on automatic mode (auto-tuning).
      */
-    public long train_samples_per_iteration = -2;
+    public long _train_samples_per_iteration = -2;
 
-    public double target_ratio_comm_to_comp = 0.02;
+    public double _target_ratio_comm_to_comp = 0.02;
 
     /**
      * The random seed controls sampling and initialization. Reproducible
@@ -112,7 +112,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * results. Note that deterministic sampling and initialization might
      * still lead to some weak sense of determinism in the model.
      */
-    public long seed = new Random().nextLong();
+    public long _seed = new Random().nextLong();
 
   /*Adaptive Learning Rate*/
     /**
@@ -134,7 +134,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * surface with small learning rates, the model can converge far
      * slower than necessary.
      */
-    public boolean adaptive_rate = true;
+    public boolean _adaptive_rate = true;
 
     /**
      * The first of two hyper parameters for adaptive learning rate (ADADELTA).
@@ -142,7 +142,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Typical values are between 0.9 and 0.999.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    public double rho = 0.99;
+    public double _rho = 0.99;
 
     /**
      * The second of two hyper parameters for adaptive learning rate (ADADELTA).
@@ -151,7 +151,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Typical values are between 1e-10 and 1e-4.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    public double epsilon = 1e-8;
+    public double _epsilon = 1e-8;
 
   /*Learning Rate*/
     /**
@@ -168,7 +168,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * why the momentum is best ramped up slowly.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double rate = .005;
+    public double _rate = .005;
 
     /**
      * Learning rate annealing reduces the learning rate to "freeze" into
@@ -177,7 +177,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double rate_annealing = 1e-6;
+    public double _rate_annealing = 1e-6;
 
     /**
      * The learning rate decay parameter controls the change of learning rate across layers.
@@ -187,14 +187,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * and the learning rate for the weights connecting the second and third hidden layer will be 0.0025, etc.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double rate_decay = 1.0;
+    public double _rate_decay = 1.0;
 
   /*Momentum*/
     /**
      * The momentum_start parameter controls the amount of momentum at the beginning of training.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double momentum_start = 0;
+    public double _momentum_start = 0;
 
     /**
      * The momentum_ramp parameter controls the amount of learning for which momentum increases
@@ -202,14 +202,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * of training samples.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double momentum_ramp = 1e6;
+    public double _momentum_ramp = 1e6;
 
     /**
      * The momentum_stable parameter controls the final momentum value reached after momentum_ramp training samples.
      * The momentum used for training will remain the same for training beyond reaching that point.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public double momentum_stable = 0;
+    public double _momentum_stable = 0;
 
     /**
      * The Nesterov accelerated gradient descent method is a modification to
@@ -218,27 +218,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * minimizes the residuals in fewer iterations of the descent.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    public boolean nesterov_accelerated_gradient = true;
+    public boolean _nesterov_accelerated_gradient = true;
 
   /*Regularization*/
     /**
      * A fraction of the features for each training row to be omitted from training in order
      * to improve generalization (dimension sampling).
      */
-    public double input_dropout_ratio = 0.0;
+    public double _input_dropout_ratio = 0.0;
 
     /**
      * A fraction of the inputs for each hidden layer to be omitted from training in order
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
-    public double[] hidden_dropout_ratios;
+    public double[] _hidden_dropout_ratios;
 
     /**
      * A regularization method that constrains the absolute value of the weights and
      * has the net effect of dropping some weights (setting them to zero) from a model
      * to reduce complexity and avoid overfitting.
      */
-    public double l1 = 0.0;
+    public double _l1 = 0.0;
 
     /**
      *  A regularization method that constrdains the sum of the squared
@@ -246,14 +246,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * frequently produces substantial gains in modeling as estimate variance is
      * reduced.
      */
-    public double l2 = 0.0;
+    public double _l2 = 0.0;
 
     /**
      *  A maximum on the sum of the squared incoming weights into
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Maxout or Rectifier.
      */
-    public float max_w2 = Float.POSITIVE_INFINITY;
+    public float _max_w2 = Float.POSITIVE_INFINITY;
 
   /*Initialization*/
     /**
@@ -263,14 +263,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * interval. The "normal" option draws weights from the standard normal
      * distribution with a mean of 0 and given standard deviation.
      */
-    public InitialWeightDistribution initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
+    public InitialWeightDistribution _initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
 
     /**
      * The scale of the distribution function for Uniform or Normal distributions.
      * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
      * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
      */
-    public double initial_weight_scale = 1.0;
+    public double _initial_weight_scale = 1.0;
 
     /**
      * The loss (error) function to be minimized by the model.
@@ -283,20 +283,20 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    public Loss loss = Loss.Automatic;
+    public Loss _loss = Loss.Automatic;
 
   /*Scoring*/
     /**
      * The minimum time (in seconds) to elapse between model scoring. The actual
      * interval is determined by the number of training samples per iteration and the scoring duty cycle.
      */
-    public double score_interval = 5;
+    public double _score_interval = 5;
 
     /**
      * The number of training dataset points to be used for scoring. Will be
      * randomly sampled. Use 0 for selecting the entire training dataset.
      */
-    public long score_training_samples = 10000l;
+    public long _score_training_samples = 10000l;
 
     /**
      * The number of validation dataset points to be used for scoring. Can be
@@ -304,51 +304,51 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * validation sampling" is set to stratify). Use 0 for selecting the entire
      * training dataset.
      */
-    public long score_validation_samples = 0l;
+    public long _score_validation_samples = 0l;
 
     /**
      * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
      * and on diagnostics such as computation of feature importances (i.e., not on training).
      */
-    public double score_duty_cycle = 0.1;
+    public double _score_duty_cycle = 0.1;
 
     /**
      * The stopping criteria in terms of classification error (1-accuracy) on the
      * training data scoring dataset. When the error is at or below this threshold,
      * training stops.
      */
-    public double classification_stop = 0;
+    public double _classification_stop = 0;
 
     /**
      * The stopping criteria in terms of regression error (MSE) on the training
      * data scoring dataset. When the error is at or below this threshold, training
      * stops.
      */
-    public double regression_stop = 1e-6;
+    public double _regression_stop = 1e-6;
 
     /**
      * Enable quiet mode for less output to standard output.
      */
-    public boolean quiet_mode = false;
+    public boolean _quiet_mode = false;
 
     /**
      * For classification models, the maximum size (in terms of classes) of the
      * confusion matrix for it to be printed. This option is meant to avoid printing
      * extremely large confusion matrices.
      */
-    public int max_confusion_matrix_size = 20;
+    public int _max_confusion_matrix_size = 20;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    public int max_hit_ratio_k = 10;
+    public int _max_hit_ratio_k = 10;
 
   /*Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
      */
-    public boolean balance_classes = false;
+    public boolean _balance_classes = false;
 
 
     /**
@@ -356,60 +356,60 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Only when balance_classes is enabled.
      * If not specified, they will be automatically computed to obtain class balance during training.
      */
-    public float[] class_sampling_factors;
+    public float[] _class_sampling_factors;
 
     /**
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
      */
-    public float max_after_balance_size = 5.0f;
+    public float _max_after_balance_size = 5.0f;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */
-    public ClassSamplingMethod score_validation_sampling = ClassSamplingMethod.Uniform;
+    public ClassSamplingMethod _score_validation_sampling = ClassSamplingMethod.Uniform;
 
   /*Misc*/
     /**
      * Gather diagnostics for hidden layers, such as mean and RMS values of learning
      * rate, momentum, weights and biases.
      */
-    public boolean diagnostics = true;
+    public boolean _diagnostics = true;
 
     /**
      * Whether to compute variable importances for input features.
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
-    public boolean variable_importances = false;
+    public boolean _variable_importances = false;
 
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
      */
-    public boolean fast_mode = true;
+    public boolean _fast_mode = true;
 
     /**
      * Ignore constant training columns (no information can be gained anyway).
      */
-    public boolean ignore_const_cols = true;
+    public boolean _ignore_const_cols = true;
 
     /**
      * Increase training speed on small datasets by splitting it into many chunks
      * to allow utilization of all cores.
      */
-    public boolean force_load_balance = true;
+    public boolean _force_load_balance = true;
 
     /**
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
-    public boolean replicate_training_data = true;
+    public boolean _replicate_training_data = true;
 
     /**
      * Run on a single node for fine-tuning of model parameters. Can be useful for
      * checkpoint resumes after training on multiple nodes for fast initial
      * convergence.
      */
-    public boolean single_node_mode = false;
+    public boolean _single_node_mode = false;
 
     /**
      * Enable shuffling of training data (on each node). This option is
@@ -418,27 +418,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
      * times the dataset size or larger).
      */
-    public boolean shuffle_training_data = false;
+    public boolean _shuffle_training_data = false;
 
-    public MissingValuesHandling missing_values_handling = MissingValuesHandling.MeanImputation;
+    public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
 
-    public boolean sparse = false;
+    public boolean _sparse = false;
 
-    public boolean col_major = false;
+    public boolean _col_major = false;
 
-    public double average_activation = 0;
+    public double _average_activation = 0;
 
-    public double sparsity_beta = 0;
+    public double _sparsity_beta = 0;
 
     /**
      * Max. number of categorical features, enforced via hashing (Experimental)
      */
-    public int max_categorical_features = Integer.MAX_VALUE;
+    public int _max_categorical_features = Integer.MAX_VALUE;
 
     /**
      * Force reproducibility on small data (will be slow - only uses 1 thread)
      */
-    public boolean reproducible = false;
+    public boolean _reproducible = false;
 
     public enum MissingValuesHandling {
       Skip, MeanImputation
@@ -468,15 +468,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
 
-    //Sanity check for Deep Learning job parameters
+    /**
+     * Sanity check for Deep Learning job parameters and return user-visible warnings or errors if something is wrong.
+     * NOTE: it's up to the caller to get the parameters right.  Do not change them behind their back!
+     */
     @Override public int sanityCheckParameters() {
       super.sanityCheckParameters();
       Frame fr = train();
 
-      if (hidden == null || hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
+      if (_hidden == null || _hidden.length == 0) validation_error("hidden", "There must be at least one hidden layer.");
 
-      for (int i=0;i<hidden.length;++i) {
-        if (hidden[i]==0)
+      for (int i=0;i< _hidden.length;++i) {
+        if (_hidden[i]==0)
           validation_error("hidden", "Hidden layer size must be >0.");
       }
 
@@ -492,13 +495,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("balance_classes", "balance_classes is used only with classification.");
       }
 
-      if (_classification && balance_classes) {
+      if (_classification && _balance_classes) {
 
       } else {
         hide("class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       }
 
-      if (_classification && !balance_classes || !_classification)
+      if (_classification && !_balance_classes || !_classification)
         hide("max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
 
 
@@ -506,23 +509,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
-      if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout)
+      if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
         hide("hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
-      if (hidden_dropout_ratios == null) {
-        if (activation == Activation.TanhWithDropout || activation == Activation.MaxoutWithDropout || activation == Activation.RectifierWithDropout) {
-          hidden_dropout_ratios = new double[hidden.length];
-          if (!quiet_mode) validation_info("hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
-          Arrays.fill(hidden_dropout_ratios, 0.5);
+      if (_hidden_dropout_ratios == null) {
+        if (_activation == Activation.TanhWithDropout || _activation == Activation.MaxoutWithDropout || _activation == Activation.RectifierWithDropout) {
+          _hidden_dropout_ratios = new double[_hidden.length];
+          if (!_quiet_mode) validation_info("hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
+          Arrays.fill(_hidden_dropout_ratios, 0.5);
         }
       }
-      else if (hidden_dropout_ratios.length != hidden.length) {
-        validation_error("hidden_dropout_ratios", "Must have " + hidden.length + " hidden layer dropout ratios.");
+      else if (_hidden_dropout_ratios.length != _hidden.length) {
+        validation_error("hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
       }
-      else if (activation != Activation.TanhWithDropout && activation != Activation.MaxoutWithDropout && activation != Activation.RectifierWithDropout) {
-        if (!quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+      else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+        if (!_quiet_mode) validation_warn("hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
 
-      if (input_dropout_ratio < 0 || input_dropout_ratio >= 1) {
+      if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1) {
         validation_error("input_dropout_ratio", "Input dropout must be in [0,1).");
       }
 
@@ -531,32 +534,32 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (null == fr.vec(ignored_column))
             validation_error("ignored_columns", "Ignored column " + ignored_column + " not found in frame: " + _train + ".");
 
-      if (H2O.CLOUD.size() == 1 && replicate_training_data) {
+      if (H2O.CLOUD.size() == 1 && _replicate_training_data) {
         hide("replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
         validation_info("replicate_training_data", "Disabling replicate_training_data on 1 node.");
-        replicate_training_data = false;
+        _replicate_training_data = false;
       }
-      if (single_node_mode && (H2O.CLOUD.size() == 1 || !replicate_training_data)) {
+      if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data)) {
         hide("single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
         validation_info("single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
-        single_node_mode = false;
+        _single_node_mode = false;
       }
 
-      if (autoencoder)
-        hide("use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
-      if (!use_all_factor_levels && autoencoder ) {
-        validation_warn("use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
-        use_all_factor_levels = true;
+      if (_autoencoder)
+        hide("_use_all_factor_levels", "_use_all_factor_levels is unsupported in combination with autoencoder.");
+      if (!_use_all_factor_levels && _autoencoder) {
+        validation_warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
+        _use_all_factor_levels = true;
       }
 
-      if (n_folds != 0)
+      if (_n_folds != 0)
         hide("override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
-      if(override_with_best_model && n_folds != 0) {
+      if(_override_with_best_model && _n_folds != 0) {
         validation_warn("override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
-        override_with_best_model = false;
+        _override_with_best_model = false;
       }
 
-      if (adaptive_rate) {
+      if (_adaptive_rate) {
         hide("rate", "rate is not used with adaptive_rate.");
         hide("rate_annealing", "rate_annealing is not used with adaptive_rate.");
         hide("rate_decay", "rate_decay is not used with adaptive_rate.");
@@ -569,83 +572,83 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         hide("rho", "rho is only used with adaptive_rate.");
         hide("epsilon", "epsilon is only used with adaptive_rate.");
       }
-      if (!quiet_mode) {
-        if (adaptive_rate) {
+      if (!_quiet_mode) {
+        if (_adaptive_rate) {
           validation_info("adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
           + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
-          momentum_start = 0;
-          momentum_stable = 0;
+          _momentum_start = 0;
+          _momentum_stable = 0;
         } else {
           validation_info("adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
           + "rho, epsilon.");
-          rho = 0;
-          epsilon = 0;
+          _rho = 0;
+          _epsilon = 0;
         }
 
-        if (initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
+        if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
           hide("initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
           validation_info("initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
-        if (n_folds != 0) {
-          if (override_with_best_model) {
+        if (_n_folds != 0) {
+          if (_override_with_best_model) {
             validation_warn("override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-            override_with_best_model = false;
+            _override_with_best_model = false;
           }
         }
       }
 
-      if(loss == Loss.Automatic) {
+      if(_loss == Loss.Automatic) {
         if (!_classification) {
-          if (!quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for regression.");
-          loss = Loss.MeanSquare;
+          if (!_quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for regression.");
+          _loss = Loss.MeanSquare;
         }
-        else if (autoencoder) {
-          if (!quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for auto-encoder.");
-          loss = Loss.MeanSquare;
+        else if (_autoencoder) {
+          if (!_quiet_mode) validation_info("loss", "Automatically setting loss to MeanSquare for auto-encoder.");
+          _loss = Loss.MeanSquare;
         }
         else {
-          if (!quiet_mode) validation_info("loss", "Automatically setting loss to Cross-Entropy for classification.");
-          loss = Loss.CrossEntropy;
+          if (!_quiet_mode) validation_info("loss", "Automatically setting loss to Cross-Entropy for classification.");
+          _loss = Loss.CrossEntropy;
         }
       }
 
-      if(autoencoder && sparsity_beta > 0) {
-        if (activation == Activation.Tanh || activation == Activation.TanhWithDropout) {
-          if (average_activation >= 1 || average_activation <= -1)
+      if(_autoencoder && _sparsity_beta > 0) {
+        if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
+          if (_average_activation >= 1 || _average_activation <= -1)
             validation_error("average_activation", "Tanh average activation must be in (-1,1).");
         }
-        else if (activation == Activation.Rectifier || activation == Activation.RectifierWithDropout) {
-          if (average_activation <= 0)
+        else if (_activation == Activation.Rectifier || _activation == Activation.RectifierWithDropout) {
+          if (_average_activation <= 0)
             validation_error("average_activation", "Rectifier average activation must be positive.");
         }
       }
 
-      if (!_classification && loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
-      if (autoencoder && loss != Loss.MeanSquare) validation_error("loss", "Must use MeanSquare loss function for auto-encoder.");
-      if (autoencoder && _classification) { _classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
-      if (!autoencoder && sparsity_beta != 0) validation_info("sparsity_beta", "Sparsity beta can only be used for autoencoder.");
+      if (!_classification && _loss == Loss.CrossEntropy) validation_error("loss", "Cannot use CrossEntropy loss function for regression.");
+      if (_autoencoder && _loss != Loss.MeanSquare) validation_error("loss", "Must use MeanSquare loss function for auto-encoder.");
+      if (_autoencoder && _classification) { _classification = false; validation_info("classification", "Using regression mode for auto-encoder.");}
+      if (!_autoencoder && _sparsity_beta != 0) validation_info("sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (autoencoder && _valid != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
-      if (autoencoder && activation == Activation.Maxout) validation_error("activation", "Maxout activation is not supported for auto-encoder.");
-      if (max_categorical_features < 1) validation_error("max_categorical_features", "max_categorical_features must be at least 1.");
+      if (_autoencoder && _valid != null) validation_error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
+      if (_autoencoder && _activation == Activation.Maxout) validation_error("activation", "Maxout activation is not supported for auto-encoder.");
+      if (_max_categorical_features < 1) validation_error("max_categorical_features", "max_categorical_features must be at least 1.");
 
-      if (!sparse && col_major) {
-        if (!quiet_mode) validation_error("col_major", "Cannot use column major storage for non-sparse data handling.");
+      if (!_sparse && _col_major) {
+        if (!_quiet_mode) validation_error("col_major", "Cannot use column major storage for non-sparse data handling.");
       }
-      if (!_classification && balance_classes) {
+      if (!_classification && _balance_classes) {
         validation_error("balance_classes", "balance_classes requires classification to be enabled.");
       }
-      if (class_sampling_factors != null && !balance_classes) {
+      if (_class_sampling_factors != null && !_balance_classes) {
         validation_error("class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
       }
-      if (reproducible) {
-        if (!quiet_mode)
+      if (_reproducible) {
+        if (!_quiet_mode)
           Log.info("Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\nand setting train_samples_per_iteration to -1 to enforce reproducibility.");
-        force_load_balance = true;
-        single_node_mode = false;
-        train_samples_per_iteration = -1;
-        replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+        _force_load_balance = true;
+        _single_node_mode = false;
+        _train_samples_per_iteration = -1;
+        _replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
 //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
       }
 
@@ -666,7 +669,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   final public DeepLearningModelInfo model_info() { return model_info; }
 
   private long run_time;
-  final private long start_time;
+  private long start_time;
 
   public long actual_train_samples_per_iteration;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
@@ -692,7 +695,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public final DeepLearningParameters get_params() { return _parms; }
 //  @Override public final Request2 job() { return get_params(); }
 
-  protected double missingColumnsType() { return get_params().sparse ? 0 : Double.NaN; }
+  protected double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -847,8 +850,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     // accessors to (shared) weights and biases - those will be updated racily (c.f. Hogwild!)
-    boolean has_momenta() { return get_params().momentum_start != 0 || get_params().momentum_stable != 0; }
-    boolean adaDelta() { return get_params().adaptive_rate; }
+    boolean has_momenta() { return get_params()._momentum_start != 0 || get_params()._momentum_stable != 0; }
+    boolean adaDelta() { return get_params()._adaptive_rate; }
     public final Neurons.Matrix get_weights(int i) { return dense_row_weights[i] == null ? dense_col_weights[i] : dense_row_weights[i]; }
     public final Neurons.DenseVector get_biases(int i) { return biases[i]; }
     public final Neurons.Matrix get_weights_momenta(int i) { return dense_row_weights_momenta[i] == null ? dense_col_weights_momenta[i] : dense_row_weights_momenta[i]; }
@@ -900,25 +903,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       data_info = dinfo;
       parameters = params;
       final int num_input = dinfo.fullN();
-      final int num_output = get_params().autoencoder ? num_input : get_params()._classification ? dinfo._adaptedFrame.domains()[dinfo._adaptedFrame.domains().length-1].length : 1;
+      final int num_output = get_params()._autoencoder ? num_input : get_params()._classification ? dinfo._adaptedFrame.domains()[dinfo._adaptedFrame.domains().length-1].length : 1;
       assert(num_input > 0);
       assert(num_output > 0);
       if (has_momenta() && adaDelta()) throw new IllegalArgumentException("Cannot have non-zero momentum and adaptive rate at the same time.");
-      final int layers=get_params().hidden.length;
+      final int layers=get_params()._hidden.length;
       // units (# neurons for each layer)
       units = new int[layers+2];
-      if (get_params().max_categorical_features <= Integer.MAX_VALUE - dinfo._nums)
-        units[0] = Math.min(dinfo._nums + get_params().max_categorical_features, num_input);
+      if (get_params()._max_categorical_features <= Integer.MAX_VALUE - dinfo._nums)
+        units[0] = Math.min(dinfo._nums + get_params()._max_categorical_features, num_input);
       else
         units[0] = num_input;
-      System.arraycopy(get_params().hidden, 0, units, 1, layers);
+      System.arraycopy(get_params()._hidden, 0, units, 1, layers);
       units[layers+1] = num_output;
       // weights (to connect layers)
       dense_row_weights = new Neurons.DenseRowMatrix[layers+1];
       dense_col_weights = new Neurons.DenseColMatrix[layers+1];
 
       // decide format of weight matrices row-major or col-major
-      if (get_params().col_major) dense_col_weights[0] = new Neurons.DenseColMatrix(units[1], units[0]);
+      if (get_params()._col_major) dense_col_weights[0] = new Neurons.DenseColMatrix(units[1], units[0]);
       else dense_row_weights[0] = new Neurons.DenseRowMatrix(units[1], units[0]);
       for (int i = 1; i <= layers; ++i)
         dense_row_weights[i] = new Neurons.DenseRowMatrix(units[i + 1] /*rows*/, units[i] /*cols*/);
@@ -927,7 +930,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       biases = new Neurons.DenseVector[layers+1];
       for (int i=0; i<=layers; ++i) biases[i] = new Neurons.DenseVector(units[i+1]);
       // average activation (only for hidden layers)
-      if (get_params().autoencoder && get_params().sparsity_beta > 0) {
+      if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
         avg_activations = new Neurons.DenseVector[layers];
         mean_a = new float[layers];
         for (int i = 0; i < layers; ++i) avg_activations[i] = new Neurons.DenseVector(units[i + 1]);
@@ -984,45 +987,45 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
-      if (get_params().diagnostics && !get_params().quiet_mode) {
+      if (get_params()._diagnostics && !get_params()._quiet_mode) {
         Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
 
-        sb.append("Number of hidden layers is " + get_params().hidden.length + " \n");
+        sb.append("Number of hidden layers is " + get_params()._hidden.length + " \n");
 
-        if (get_params().sparsity_beta > 0) {
-          for (int k = 0; k < get_params().hidden.length; k++)
+        if (get_params()._sparsity_beta > 0) {
+          for (int k = 0; k < get_params()._hidden.length; k++)
             sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
         }
 
         sb.append("Status of Neuron Layers:\n");
-        sb.append("#  Units         Type      Dropout    L1       L2    " + (get_params().adaptive_rate ? "  Rate (Mean,RMS)   " : "  Rate      Momentum") + "   Weight (Mean, RMS)      Bias (Mean,RMS)\n");
+        sb.append("#  Units         Type      Dropout    L1       L2    " + (get_params()._adaptive_rate ? "  Rate (Mean,RMS)   " : "  Rate      Momentum") + "   Weight (Mean, RMS)      Bias (Mean,RMS)\n");
         final String format = "%7g";
         for (int i=0; i<neurons.length; ++i) {
           sb.append((i+1) + " " + String.format("%6d", neurons[i].units)
                   + " " + String.format("%16s", neurons[i].getClass().getSimpleName()));
           if (i == 0) {
-            sb.append("  " + PrettyPrint.formatPct(neurons[i].params.input_dropout_ratio) + " \n");
+            sb.append("  " + PrettyPrint.formatPct(neurons[i].params._input_dropout_ratio) + " \n");
             continue;
           }
           else if (i < neurons.length-1) {
-            if (neurons[i].params.hidden_dropout_ratios == null)
+            if (neurons[i].params._hidden_dropout_ratios == null)
               sb.append("  " + PrettyPrint.formatPct(0) + " ");
             else
-              sb.append("  " + PrettyPrint.formatPct(neurons[i].params.hidden_dropout_ratios[i - 1]) + " ");
+              sb.append("  " + PrettyPrint.formatPct(neurons[i].params._hidden_dropout_ratios[i - 1]) + " ");
           } else {
             sb.append("          ");
           }
           sb.append(
-                  " " + String.format("%5f", neurons[i].params.l1)
-                          + " " + String.format("%5f", neurons[i].params.l2)
-                          + " " + (get_params().adaptive_rate ? (" (" + String.format(format, mean_rate[i]) + ", " + String.format(format, rms_rate[i]) + ")" )
+                  " " + String.format("%5f", neurons[i].params._l1)
+                          + " " + String.format("%5f", neurons[i].params._l2)
+                          + " " + (get_params()._adaptive_rate ? (" (" + String.format(format, mean_rate[i]) + ", " + String.format(format, rms_rate[i]) + ")" )
                           : (String.format("%10g", neurons[i].rate(get_processed_total())) + " " + String.format("%5f", neurons[i].momentum(get_processed_total()))))
                           + " (" + String.format(format, mean_weight[i])
                           + ", " + String.format(format, rms_weight[i]) + ")"
                           + " (" + String.format(format, mean_bias[i])
                           + ", " + String.format(format, rms_bias[i]) + ")\n");
 
-          if (get_params().sparsity_beta > 0) {
+          if (get_params()._sparsity_beta > 0) {
             // sb.append("  " + String.format(format, mean_a[i]) + " \n");
           }
         }
@@ -1059,16 +1062,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       randomizeWeights();
       //TODO: determine good/optimal/best initialization scheme for biases
       // hidden layers
-      for (int i=0; i<get_params().hidden.length; ++i) {
-        if (get_params().activation == DeepLearningParameters.Activation.Rectifier
-                || get_params().activation == DeepLearningParameters.Activation.RectifierWithDropout
-                || get_params().activation == DeepLearningParameters.Activation.Maxout
-                || get_params().activation == DeepLearningParameters.Activation.MaxoutWithDropout
+      for (int i=0; i<get_params()._hidden.length; ++i) {
+        if (get_params()._activation == DeepLearningParameters.Activation.Rectifier
+                || get_params()._activation == DeepLearningParameters.Activation.RectifierWithDropout
+                || get_params()._activation == DeepLearningParameters.Activation.Maxout
+                || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout
                 ) {
 //          Arrays.fill(biases[i], 1.); //old behavior
           Arrays.fill(biases[i].raw(), i == 0 ? 0.5f : 1f); //new behavior, might be slightly better
         }
-        else if (get_params().activation == DeepLearningParameters.Activation.Tanh || get_params().activation == DeepLearningParameters.Activation.TanhWithDropout) {
+        else if (get_params()._activation == DeepLearningParameters.Activation.Tanh || get_params()._activation == DeepLearningParameters.Activation.TanhWithDropout) {
           Arrays.fill(biases[i].raw(), 0f);
         }
       }
@@ -1119,22 +1122,22 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     void randomizeWeights() {
       for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getDeterRNG(get_params().seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
+        final Random rng = water.util.RandomUtils.getDeterRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
-            if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.UniformAdaptive) {
+            if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.UniformAdaptive) {
               // cf. http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_GlorotB10.pdf
               if (w==dense_row_weights.length-1 && get_params()._classification)
                 get_weights(w).set(i,j, (float)(4.*uniformDist(rng, -range, range))); //Softmax might need an extra factor 4, since it's like a sigmoid
               else
                 get_weights(w).set(i,j, (float)uniformDist(rng, -range, range));
             }
-            else if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Uniform) {
-              get_weights(w).set(i,j, (float)uniformDist(rng, -get_params().initial_weight_scale, get_params().initial_weight_scale));
+            else if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Uniform) {
+              get_weights(w).set(i,j, (float)uniformDist(rng, -get_params()._initial_weight_scale, get_params()._initial_weight_scale));
             }
-            else if (get_params().initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Normal) {
-              get_weights(w).set(i,j, (float)(rng.nextGaussian() * get_params().initial_weight_scale));
+            else if (get_params()._initial_weight_distribution == DeepLearningParameters.InitialWeightDistribution.Normal) {
+              get_weights(w).set(i,j, (float)(rng.nextGaussian() * get_params()._initial_weight_scale));
             }
           }
         }
@@ -1209,10 +1212,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     // compute stats on all nodes
     public void computeStats() {
-      float[][] rate = get_params().adaptive_rate ? new float[units.length-1][] : null;
+      float[][] rate = get_params()._adaptive_rate ? new float[units.length-1][] : null;
 
-      if (get_params().autoencoder && get_params().sparsity_beta > 0) {
-        for (int k = 0; k < get_params().hidden.length; k++) {
+      if (get_params()._autoencoder && get_params()._sparsity_beta > 0) {
+        for (int k = 0; k < get_params()._hidden.length; k++) {
           mean_a[k] = 0;
           for (int j = 0; j < avg_activations[k].size(); j++)
             mean_a[k] += avg_activations[k].get(j);
@@ -1233,8 +1236,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (rate != null) {
 //            final float RMS_dx = (float)Math.sqrt(ada[y-1][2*u]+(float)get_params().epsilon);
 //            final float invRMS_g = (float)(1/Math.sqrt(ada[y-1][2*u+1]+(float)get_params().epsilon));
-            final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y-1).raw()[2*u]+(float)get_params().epsilon);
-            final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y-1).raw()[2*u+1]+(float)get_params().epsilon);
+            final float RMS_dx = MathUtils.approxSqrt(get_ada_dx_g(y-1).raw()[2*u]+(float)get_params()._epsilon);
+            final float invRMS_g = MathUtils.approxInvSqrt(get_ada_dx_g(y-1).raw()[2*u+1]+(float)get_params()._epsilon);
             rate[y-1][u] = RMS_dx*invRMS_g; //not exactly right, RMS_dx should be from the previous time step -> but close enough for diagnostics.
             mean_rate[y] += rate[y-1][u];
           }
@@ -1282,11 +1285,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public static DataInfo prepareDataInfo(DeepLearningParameters parms) {
     final Frame fr = parms.train();
-    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms.autoencoder ? null : fr.vec(parms._response_column), fr.find(parms._ignored_columns), parms._classification, parms.ignore_const_cols, true /*drop >20% NA cols*/);
-    final DataInfo dinfo = new FrameTask.DataInfo(Key.make(),train, parms.autoencoder ? 0 : 1, parms.autoencoder || parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
-            parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+    final Frame train = FrameTask.DataInfo.prepareFrame(fr, parms._autoencoder ? null : fr.vec(parms._response_column), fr.find(parms._ignored_columns), parms._classification, parms._ignore_const_cols, true /*drop >20% NA cols*/);
+    final DataInfo dinfo = new FrameTask.DataInfo(Key.make(),train, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             parms._classification ? DataInfo.TransformType.NONE : DataInfo.TransformType.STANDARDIZE);
-    if (!parms.autoencoder) {
+    if (!parms._autoencoder) {
       final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
       assert (!parms._classification ^ resp.isEnum()) : "Must have enum response_vec for classification!"; //either regression or enum response
     }
@@ -1312,7 +1315,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     } else {
       model_info = (DeepLearningModelInfo) cp.model_info.clone(); //shallow clone is ok (won't modify the Checkpoint in K-V store during checkpoint restart)
       model_info.data_info = dataInfo; //shallow clone is ok
-      get_params().checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
+      get_params()._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
@@ -1341,12 +1344,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     _timeLastScoreEnter = start_time;
     model_info = new DeepLearningModelInfo(params, dinfo);
     actual_best_model_key = Key.makeUserHidden(Key.make());
-    if (params.n_folds != 0) actual_best_model_key = null;
-    if (!get_params().autoencoder) {
+    if (params._n_folds != 0) actual_best_model_key = null;
+    if (!get_params()._autoencoder) {
       errors = new Errors[1];
       errors[0] = new Errors();
       errors[0].validation = (params._valid != null);
-      errors[0].num_folds = params.n_folds;
+      errors[0].num_folds = params._n_folds;
     }
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -1374,13 +1377,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
       // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
       // Note: actual communication time is estimated by the NetworkTest's collective test.
-      if (H2O.CLOUD.size() > 1 && get_params().train_samples_per_iteration == -2 && time_for_communication_us > 1e4) {
+      if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && time_for_communication_us > 1e4) {
 //        Log.info("Time taken for communication: " + PrettyPrint.usecs((long)time_for_communication_us));
 //        Log.info("Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long)time_last_iter_millis, true));
         final double comm_to_work_ratio = (time_for_communication_us *1e-3) / time_last_iter_millis;
 //        Log.info("Ratio of network communication to computation: " + String.format("%.3f", comm_to_work_ratio));
 //        Log.info("target_comm_to_work: " + get_params().target_ratio_comm_to_comp);
-        final double correction = get_params().target_ratio_comm_to_comp / comm_to_work_ratio;
+        final double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
 //        Log.warn("Suggested value for train_samples_per_iteration: " + get_params().actual_train_samples_per_iteration/correction);
         actual_train_samples_per_iteration /= correction;
         actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
@@ -1388,11 +1391,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       run_time += time_last_iter_millis;
       _timeLastScoreEnter = now;
-      keep_running = (epoch_counter < get_params().epochs);
+      keep_running = (epoch_counter < get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
       final long samples = model_info().get_processed_total();
-      if (!keep_running || sinceLastPrint > get_params().score_interval*1000) {
+      if (!keep_running || sinceLastPrint > get_params()._score_interval *1000) {
         _timeLastPrintStart = now;
         Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
                 + ". Processed " + String.format("%,d", samples) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
@@ -1401,12 +1404,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       // this is potentially slow - only do every so often
       if( !keep_running ||
-              (sinceLastScore > get_params().score_interval*1000 //don't score too often
-                      &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params().score_duty_cycle) ) { //duty cycle
-        final boolean printme = !get_params().quiet_mode;
+              (sinceLastScore > get_params()._score_interval *1000 //don't score too often
+                      &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
+        final boolean printme = !get_params()._quiet_mode;
         final boolean adaptCM = (_output.isClassifier() && vadaptor.needsAdaptation2CM());
         _timeLastScoreStart = now;
-        if (get_params().diagnostics) model_info().computeStats();
+        if (get_params()._diagnostics) model_info().computeStats();
         Errors err = new Errors();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
@@ -1414,7 +1417,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
 
-        if (get_params().autoencoder) {
+        if (get_params()._autoencoder) {
           if (printme) Log.info("Scoring the auto-encoder.");
           // training
           {
@@ -1429,9 +1432,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           // compute errors
           err.classification = _output.isClassifier();
           assert (err.classification == get_params()._classification);
-          err.num_folds = get_params().n_folds;
+          err.num_folds = get_params()._n_folds;
           err.train_confusion_matrix = new ConfusionMatrix();
-          final int hit_k = Math.min(_output.nclasses(), get_params().max_hit_ratio_k);
+          final int hit_k = Math.min(_output.nclasses(), get_params()._max_hit_ratio_k);
           if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
             err.train_hitratio = new HitRatio();
             err.train_hitratio.set_max_k(hit_k);
@@ -1442,7 +1445,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           AUC trainAUC = null;
           if (err.classification && _output.nclasses() == 2) trainAUC = new AUC();
           final double trainErr = calcError(ftrain, ftrain.lastVec(), trainPredict, trainPredict, "training",
-                  printme, get_params().max_confusion_matrix_size, err.train_confusion_matrix, trainAUC, err.train_hitratio);
+                  printme, get_params()._max_confusion_matrix_size, err.train_confusion_matrix, trainAUC, err.train_hitratio);
           if (_output.isClassifier()) err.train_err = trainErr;
           if (trainAUC != null) err.trainAUC = trainAUC.data();
           else err.train_mse = trainErr;
@@ -1481,7 +1484,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             AUC validAUC = null;
             if (err.classification && _output.nclasses() == 2) validAUC = new AUC();
             final double validErr = calcError(ftest, ftest.lastVec(), validPredict, hitratio_validPredict, "validation",
-                    printme, get_params().max_confusion_matrix_size, err.valid_confusion_matrix, validAUC, err.valid_hitratio);
+                    printme, get_params()._max_confusion_matrix_size, err.valid_confusion_matrix, validAUC, err.valid_hitratio);
             if (_output.isClassifier()) err.valid_err = validErr;
             if (trainAUC != null) err.validAUC = validAUC.data();
             else err.valid_mse = validErr;
@@ -1490,15 +1493,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (adaptCM) orig_label.remove(new Futures()).blockForPending();
           }
 
-          if (get_params().variable_importances) {
-            if (!get_params().quiet_mode) Log.info("Computing variable importances.");
+          if (get_params()._variable_importances) {
+            if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
             final float[] vi = model_info().computeVariableImportances();
             err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
           }
 
           // only keep confusion matrices for the last step if there are fewer than specified number of output classes
           if (err.train_confusion_matrix.cm != null
-                  && err.train_confusion_matrix.cm.length - 1 >= get_params().max_confusion_matrix_size) {
+                  && err.train_confusion_matrix.cm.length - 1 >= get_params()._max_confusion_matrix_size) {
             err.train_confusion_matrix = null;
             err.valid_confusion_matrix = null;
           }
@@ -1516,7 +1519,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           errors = err2;
         }
 
-        if (!get_params().autoencoder) {
+        if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
           if (actual_best_model_key != null && (
                   // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
@@ -1525,7 +1528,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                           // otherwise, compare against our own _bestError
                           (DKV.get(actual_best_model_key) == null && error() < _bestError)
           ) ) {
-            if (!get_params().quiet_mode)
+            if (!get_params()._quiet_mode)
               Log.info("Error reduced from " + _bestError + " to " + error() + ". Storing best model so far under key " + actual_best_model_key.toString() + ".");
             _bestError = error();
             putMeAsBestModel(actual_best_model_key);
@@ -1544,7 +1547,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 bestPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
               }
               final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-                      printme, get_params().max_confusion_matrix_size, new hex.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
+                      printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
               if (_output.isClassifier())
                 assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
               else
@@ -1569,8 +1572,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (model_info().unstable()) {
         Log.warn(unstable_msg);
         keep_running = false;
-      } else if ( (_output.isClassifier() && last_scored().train_err <= get_params().classification_stop)
-              || (!_output.isClassifier() && last_scored().train_mse <= get_params().regression_stop) ) {
+      } else if ( (_output.isClassifier() && last_scored().train_err <= get_params()._classification_stop)
+              || (!_output.isClassifier() && last_scored().train_mse <= get_params()._regression_stop) ) {
         Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
         keep_running = false;
       }
@@ -1581,7 +1584,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       keep_running = false;
       throw new RuntimeException(ex);
     }
-    return keep_running; 
+    return keep_running;
  }
 
 //  @Override protected void setCrossValidationError(Parameters job, double cv_error, ConfusionMatrix cm, AUCData auc, HitRatio hr) {
@@ -1619,7 +1622,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   @Override
   public Frame score(Frame frame) {
-    if (!get_params().autoencoder) {
+    if (!get_params()._autoencoder) {
       return super.score(frame);
     } else {
       // Reconstruction
@@ -1730,7 +1733,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   // Make (potentially expanded) reconstruction
   private float[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds, Neurons[] neurons) {
-    assert(get_params().autoencoder);
+    assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
     for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].at0(row_in_chunk);
@@ -1745,7 +1748,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return reconstruction error
    */
   private double score_autoencoder(double[] data, float[] preds, Neurons[] neurons) {
-    assert(model_info().get_params().autoencoder);
+    assert(model_info().get_params()._autoencoder);
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");

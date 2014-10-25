@@ -456,6 +456,8 @@ class H2O(object):
     def frames(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_models': 0,
+            'offset': 0,
+            'len': 100     # TODO: len and offset are not working yet
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
         
@@ -471,7 +473,10 @@ class H2O(object):
     Return the columns for a single Frame in the h2o cluster.  
     '''
     def columns(self, key, timeoutSecs=10, **kwargs):
-        params_dict = { }
+        params_dict = { 
+            'offset': 0,
+            'len': 100
+        }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
@@ -483,7 +488,10 @@ class H2O(object):
     Return a single column for a single Frame in the h2o cluster.  
     '''
     def column(self, key, column, timeoutSecs=10, **kwargs):
-        params_dict = { }
+        params_dict = { 
+            'offset': 0,
+            'len': 100
+        }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', True)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
@@ -495,7 +503,10 @@ class H2O(object):
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
     def summary(self, key, column, timeoutSecs=10, **kwargs):
-        params_dict = { }
+        params_dict = { 
+            'offset': 0,
+            'len': 100
+        }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)

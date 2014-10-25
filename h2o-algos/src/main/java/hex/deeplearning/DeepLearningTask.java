@@ -1,10 +1,8 @@
 package hex.deeplearning;
 
 import hex.FrameTask;
-import water.DKV;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
-import water.Job;
 import water.Key;
 import water.util.Log;
 
@@ -27,7 +25,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _training=true;
     _input=input;
     _useFraction=fraction;
-    _shuffle = _input.get_params().shuffle_training_data;
+    _shuffle = _input.get_params()._shuffle_training_data;
     assert(_output == null);
   }
 
@@ -46,7 +44,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   }
 
   @Override public final void processRow(long seed, final double [] nums, final int numcats, final int [] cats, double [] responses){
-    if (model_info().get_params().reproducible) {
+    if (model_info().get_params()._reproducible) {
       seed += model_info().get_processed_global(); //avoid periodicity
     } else {
       seed = new Random().nextLong();
@@ -79,7 +77,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   static long _lastWarn;
   static long _warnCount;
   @Override protected void postGlobal(){
-    if (H2O.CLOUD.size() > 1 && !_output.get_params().replicate_training_data) {
+    if (H2O.CLOUD.size() > 1 && !_output.get_params()._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
 //        Log.info("Synchronizing across " + _chunk_node_count + " H2O node(s).");
@@ -89,7 +87,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    if (!_output.get_params().replicate_training_data || H2O.CLOUD.size() == 1) {
+    if (!_output.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) {
       _output.div(_chunk_node_count);
       _output.add_processed_global(_output.get_processed_local());
       _output.set_processed_local(0l);
@@ -108,13 +106,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   private static Neurons[] makeNeurons(final DeepLearningModel.DeepLearningModelInfo minfo, boolean training) {
     DataInfo dinfo = minfo.data_info();
     final DeepLearningModel.DeepLearningParameters params = minfo.get_params();
-    final int[] h = params.hidden;
+    final int[] h = params._hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input
     neurons[0] = new Neurons.Input(dinfo.fullN(), dinfo);
     // hidden
     for( int i = 0; i < h.length; i++ ) {
-      switch( params.activation ) {
+      switch( params._activation) {
         case Tanh:
           neurons[i+1] = new Neurons.Tanh(h[i]);
           break;

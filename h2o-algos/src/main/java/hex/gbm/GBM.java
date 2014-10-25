@@ -1,10 +1,9 @@
 package hex.gbm;
 
-import hex.schemas.*;
-import water.H2O.H2OCountedCompleter;
+import hex.schemas.GBMV2;
 import water.H2O;
+import water.H2O.H2OCountedCompleter;
 import water.Job;
-import water.fvec.Frame;
 
 /** Gradient Boosted Trees
  *
@@ -18,6 +17,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for GBM: " + _parms.validationErrors());
+
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 

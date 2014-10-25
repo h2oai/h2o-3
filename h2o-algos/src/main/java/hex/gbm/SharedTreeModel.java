@@ -1,13 +1,9 @@
 package hex.gbm;
 
-import hex.Model;
 import hex.SupervisedModel;
-import hex.schemas.SharedTreeModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
 
@@ -15,9 +11,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Maximal number of supported levels in response. */
     private static final int MAX_SUPPORTED_LEVELS = 1000;
 
-    protected int _ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
+    public int _ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
 
-    protected boolean _importance = false; // compute variable importance
+    public boolean _importance = false; // compute variable importance
 
     @Override public int sanityCheckParameters() {
       super.sanityCheckParameters();

@@ -143,11 +143,11 @@ public final class ParseSetup extends Iced {
     if( !ps._isValid ) return ps; // Already invalid
 
     // ARFF wins over CSV (Note: ARFF might not know separator or ncols yet)
-    if (_pType == ParserType.CSV && ps._pType == ParserType.ARFF) {
+    if ((_pType == ParserType.CSV || _pType == ParserType.AUTO) && ps._pType == ParserType.ARFF) {
       if (ps._sep == ParseSetup.AUTO_SEP && _sep != ParseSetup.AUTO_SEP) ps._sep = _sep; //use existing separator
       return ps;
     }
-    if (_pType == ParserType.ARFF && ps._pType == ParserType.CSV) {
+    if (_pType == ParserType.ARFF && (ps._pType == ParserType.CSV || _pType == ParserType.AUTO)) {
       if (ps._sep != ParseSetup.AUTO_SEP && _sep == ParseSetup.AUTO_SEP) _sep = ps._sep; //use existing separator
       return this;
     }

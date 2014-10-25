@@ -43,7 +43,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   public String[] ignored_columns;         // column names to ignore for training
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase validation_messages[];
+  public ValidationMessageBase validation_messages[] = new ValidationMessageBase[0];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;
@@ -53,8 +53,10 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   public S fillFromImpl(P parms) {
     // TODO: change impl classes so that they are consistent in terms of not having leading _
-    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "validation_messages"} ); // Cliff models have _fields
-    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.CONSISTENT, new String[] { "validation_messages"} ); // Other people's models have no-underscore fields
+    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "_validation_messages"} );
+
+    this.training_frame = parms._train == null ? null : (Frame)parms._train.get();
+    this.validation_frame = parms._valid == null ? null : (Frame)parms._valid.get();
 
     this.validation_messages = new ValidationMessageBase[parms._validation_messages.length];
     int i = 0;

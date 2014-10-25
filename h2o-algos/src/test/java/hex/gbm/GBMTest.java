@@ -1,14 +1,14 @@
 package hex.gbm;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import hex.gbm.GBMModel.GBMParameters.Family;
-import hex.gbm.GBMModel;
-import java.io.File;
-import org.junit.*;
-import water.*;
-import water.fvec.*;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import water.DKV;
+import water.TestUtil;
+import water.fvec.Frame;
+
+import static org.junit.Assert.assertEquals;
 
 public class GBMTest extends TestUtil {
 

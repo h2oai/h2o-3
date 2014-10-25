@@ -115,30 +115,30 @@ public class DeepLearningProstateTest extends TestUtil {
                                       DeepLearningParameters p = new DeepLearningParameters();
                                       p._destination_key = Key.make(Key.make().toString() + "first");
                                       dest_tmp = p._destination_key;
-                                      p.checkpoint = null;
+                                      p._checkpoint = null;
 
                                       p._train = frame._key;
                                       p._response_column = frame._names[resp];
                                       p._valid = valid==null ? null : valid._key;
 
-                                      p.hidden = hidden;
+                                      p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
-                                      p.override_with_best_model = override_with_best_model;
-                                      p.epochs = epochs;
-                                      p.n_folds = n_folds;
-                                      p.keep_cross_validation_splits = keep_cv_splits;
-                                      p.seed = seed;
-                                      p.train_samples_per_iteration = train_samples_per_iteration;
-                                      p.force_load_balance = load_balance;
-                                      p.replicate_training_data = replicate;
-                                      p.shuffle_training_data = shuffle;
-                                      p.score_training_samples = scoretraining;
-                                      p.score_validation_samples = scorevalidation;
-                                      p.classification_stop = -1;
-                                      p.regression_stop = -1;
-                                      p.balance_classes = classification && balance_classes;
-                                      p.quiet_mode = true;
-                                      p.score_validation_sampling = csm;
+                                      p._override_with_best_model = override_with_best_model;
+                                      p._epochs = epochs;
+                                      p._n_folds = n_folds;
+                                      p._keep_cross_validation_splits = keep_cv_splits;
+                                      p._seed = seed;
+                                      p._train_samples_per_iteration = train_samples_per_iteration;
+                                      p._force_load_balance = load_balance;
+                                      p._replicate_training_data = replicate;
+                                      p._shuffle_training_data = shuffle;
+                                      p._score_training_samples = scoretraining;
+                                      p._score_validation_samples = scorevalidation;
+                                      p._classification_stop = -1;
+                                      p._regression_stop = -1;
+                                      p._balance_classes = p._classification && balance_classes;
+                                      p._quiet_mode = true;
+                                      p._score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(p);
                                       try {
@@ -149,7 +149,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
-                                      assert( ((p.train_samples_per_iteration <= 0 || p.train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
+                                      assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
                                               || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 
                                       if (n_folds != 0)
@@ -175,17 +175,18 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     p._destination_key = Key.make();
                                     dest = p._destination_key;
-                                    p.checkpoint = dest_tmp;
-                                    p.n_folds = 0;
+                                    p._checkpoint = dest_tmp;
+                                    p._n_folds = 0;
 
                                     p._train = frame._key;
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
-                                    p.override_with_best_model = override_with_best_model;
-                                    p.epochs = epochs;
-                                    p.seed = seed;
-                                    p.train_samples_per_iteration = train_samples_per_iteration;
-                                    p.balance_classes = classification && balance_classes;
+                                    p._override_with_best_model = override_with_best_model;
+                                    p._epochs = epochs;
+                                    p._seed = seed;
+                                    p._train_samples_per_iteration = train_samples_per_iteration;
+                                    p._balance_classes = p._classification && balance_classes;
+
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();

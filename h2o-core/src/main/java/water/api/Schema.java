@@ -5,9 +5,7 @@ import water.fvec.Frame;
 import hex.Model;
 import water.util.MarkdownBuilder;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +45,11 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   // Version&Schema-specific filling of an already filled object from this schema
   public I fillFromSchema() { return (I)this; }
+
+  public Class<? extends Iced> getImplClass() {
+    Type[] schema_type_parms = ((ParameterizedType)(this.getClass().getGenericSuperclass())).getActualTypeArguments();
+    return  (Class<? extends Iced>)schema_type_parms[0];  // [0] is the impl (Iced) type; [1] is the Schema type
+  }
 
   // TODO: this really does not belong in the schema layer; it's a hack for the
   // TODO: old-school-web-UI
@@ -89,12 +92,12 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         Field f = fields.get(key); // No such field error, if parm is junk
 
         if (null == f)
-          throw new IllegalArgumentException("Unknown argument: " + key);
+          throw new IllegalArgumentException("Unknown argument (not found): " + key);
 
         int mods = f.getModifiers();
         if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
           // Attempting to set a transient or static; treat same as junk fieldname
-          throw new IllegalArgumentException("Unknown argument: " + key);
+          throw new IllegalArgumentException("Unknown argument (transient or static): " + key);
         // Only support a single annotation which is an API, and is required
         API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
@@ -149,7 +152,6 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       catch (ArrayIndexOutOfBoundsException e) {
         throw new IllegalArgumentException("Missing annotation for API field: " + f.getName());
       }
-      // TODO: execute "validation language" in the BackEnd, which includes a "required check", if any
     }
     return (S)this;
   }
@@ -248,10 +250,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "default", "description", "values");
+            builder.tableHeader("name", "required?", "level", "type", "schema?", "default", "description", "values");
             first = false;
           }
-          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, String.valueOf(field_meta.is_schema), field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
         }
       }
       if (first)
@@ -262,10 +264,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "type", "default", "description", "values");
+            builder.tableHeader("name", "type", "schema?", "default", "description", "values");
             first = false;
           }
-          builder.tableRow(field_meta.name, field_meta.type, field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(field_meta.name, field_meta.type, String.valueOf(field_meta.is_schema), field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
         }
       }
       if (first)
