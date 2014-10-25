@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final public class H2O {
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
+  //-------------------------------------------------------------------------------------------------------------------
 
   /**
    * Print help about command line arguments.
