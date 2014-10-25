@@ -45,7 +45,9 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   public static FileIntegrityChecker check(File r) {  return new FileIntegrityChecker(r).doAllNodes(); }
 
   public FileIntegrityChecker(File root) {
-    _root = PersistNFS.decodeFile(new File(root.getAbsolutePath())).toString();
+    String abspath = root.getAbsolutePath();
+    File fi = new File(abspath);
+    _root = PersistNFS.decodeFile(fi).toString();
     ArrayList<File> filesInProgress = new ArrayList();
     addFolder(root,filesInProgress);
     _files = new String[filesInProgress.size()];
