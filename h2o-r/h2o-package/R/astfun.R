@@ -7,6 +7,45 @@
 #'  3. A body
 #'
 #' If it has been deteremined that a function is user-defined, then it must become an Cascade AST.
+#'
+#' The overall strategy for collecting up a function is to avoid densely packed recusive calls, each attempting to handle
+#' the various corner cases.
+#'
+#' Instead, the thinking is that there are a limited number of statement types in a function body:
+#'  1. control flow: if, else, while, for, return
+#'  2. assignments
+#'  3. operations/function calls
+#'  4. Implicit return statement
+#'
+#' Implicit return statements are the last statement in a closure. Statements that are not implicit return statements
+#' are optimized away by the back end.
+#'
+#' Since the statement types can be explicitly defined, there is only a need for processing a statement of the 3rd kind.
+#' Therefore, all recursive calls are funneled into a single statement processing function.
+#'
+#' From now on, statements will refer to statemets of the 3rd kind.
+#'
+#' Statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
+#'
+#'  1. Unary operations  (dispatch to .h2o.unop )
+#'  2. Binary Operations (dispatch to .h2o.binop)
+#'  3. Prefix Operations (dispatch to .h2o.varop)
+#'  4. User Defined Function Call
+#'  5. Anonymous closure
+#'
+#' Case 4 spins off a new transmogrification for the encountered udf. If the udf is already defined in this **scope**, or in
+#' some parent scope, then there is nothing to do.
+#'
+#' Case 5 spinds off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
+#' If there's no assignment resulting from the closure, the closure is simply dropped (modification can only happen in the
+#' global scope (scope used in usual sense here)).
+#'
+#'
+#' NB:
+#' **scope**: Here scopes are defined in terms of a closure.
+#'            *this* scope knows about all functions and all if its parents functions.
+#'            They are implemented as nested environments.
+#'
 
 
 #'
