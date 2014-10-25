@@ -6,9 +6,9 @@
 #'  2. Arguments
 #'  3. A body
 #'
-#' If it has been deteremined that a function is user-defined, then it must become an Cascade AST.
+#' If it has been deteremined that a function is user-defined, then it must become a Cascade AST.
 #'
-#' The overall strategy for collecting up a function is to avoid densely packed recusive calls, each attempting to handle
+#' The overall strategy for collecting up a function is to avoid densely packed recursive calls, each attempting to handle
 #' the various corner cases.
 #'
 #' Instead, the thinking is that there are a limited number of statement types in a function body:
@@ -25,7 +25,7 @@
 #'
 #' From now on, statements will refer to statemets of the 3rd kind.
 #'
-#' Statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
+#' Simple statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
 #'
 #'  1. Unary operations  (dispatch to .h2o.unop )
 #'  2. Binary Operations (dispatch to .h2o.binop)
@@ -33,10 +33,12 @@
 #'  4. User Defined Function Call
 #'  5. Anonymous closure
 #'
+#' Of course "real" statements are mixtures of these simple statements, but these statements are handled recursively.
+#'
 #' Case 4 spins off a new transmogrification for the encountered udf. If the udf is already defined in this **scope**, or in
 #' some parent scope, then there is nothing to do.
 #'
-#' Case 5 spinds off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
+#' Case 5 spins off a new transmogrification for the encountered closure and replaced by an invocation of that closure.
 #' If there's no assignment resulting from the closure, the closure is simply dropped (modification can only happen in the
 #' global scope (scope used in usual sense here)).
 #'
