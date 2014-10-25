@@ -172,6 +172,7 @@ class H2OCloudNode:
         # i.e. it won't make s3n/s3 break on ec2
 
         cmd = ["java",
+               # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
                "-ea",
                "-jar", self.h2o_jar,
@@ -288,6 +289,7 @@ class H2OCloudNode:
             print("Killing JVM with PID {}".format(self.pid))
             try:
                 self.child.terminate()
+                self.child.wait()
             except OSError:
                 pass
             self.pid = -1
