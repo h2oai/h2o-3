@@ -8,6 +8,7 @@ import water.init.AbstractBuildVersion;
 import water.init.JarHash;
 import water.init.NetworkInit;
 import water.nbhm.NonBlockingHashMap;
+import water.persist.Persist;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -647,8 +648,6 @@ final public class H2O {
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
-    Paxos.doHeartbeat(SELF);
-    assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -944,8 +943,25 @@ final public class H2O {
     // Load up from disk and initialize the persistence layer
     initializePersistence();
 
-    // Start network services, including heartbeats & Paxos
+    // Start network services, including heartbeats
     startNetworkServices();   // start server services
+
+    Log.info("Network services started");
+
+    // Deadlock initializing PersistNFS occurred when this was earlier, so put it here.
+    // Not sure if this is the right thing to do or a band-aid.
+    {
+      // This is an out-and-out hack to touch the Persist static block before announcing
+      // that the Cloud is good inside doHeartbeat.
+      Persist.getIce();
+      Log.info("Persist static block initialized via hack");
+
+      // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
+      // for users of H2O to know that it's OK to start sending REST API requests.
+      Paxos.doHeartbeat(SELF);
+
+      assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
+    }
   }
 
   /** Notify embedding software instance H2O wants to exit.
