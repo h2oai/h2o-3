@@ -233,7 +233,7 @@ public class Vec extends Keyed {
   Vec( Key key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
-    assert domain==null || type==T_ENUM || type==T_STR;
+    assert domain==null || type==T_ENUM;
     assert T_BAD <= type && type < T_TIMELAST; // Note that T_BAD is allowed for all-NA Vecs
     _type = type;
     _espc = espc;
