@@ -122,11 +122,11 @@ function(object) {
 
 
 #'
-#' Helper function for .isUDF
+#' Helper function for .is_udfs
 #'
 #' Carefully examine an environment and determine if it's a user-defined closure.
 #'
-.isClosure <- function(e) {
+.is.closure <- function(e) {
 
   # if env is defined in the global environment --> it is user defined
   if (identical(e, .GlobalEnv)) return(TRUE)
@@ -144,42 +144,13 @@ function(object) {
 #' Check if the call is user defined.
 #'
 #' A call is user defined if its environment is the Global one, or it's a closure inside of a call existing in the Global env.
-.is_udf<-
+.is.udf<-
 function(fun) {
   e <- tryCatch( environment(eval(fun)), error = function(x) FALSE) # get the environment of `fun`
   if (is.logical(e)) return(FALSE)                                  # if e is logical -> no environment found
-  tryCatch(.isClosure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
+  tryCatch(.is.closure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
 }
 
-#'
-#' Check if operator is infix.
-#'
-#' .INFIX_OPERATORS is defined in cosntants.R. Used by .exprToAST.
-#.isInfix<-
-#function(o) {
-#  o %in% .INFIX_OPERATORS
-#}
-
-#'
-#' Return the class of the eval-ed expression.
-#'
-#' A convenience method for lapply. Used by .exprToAST
-#.evalClass<-
-#function(i) {
-#  val <- tryCatch(class(eval(i)), error = function(e) {return(NA)})
-#}
-#
-##'
-##' Check if the expr is in the formals of _any_ method in the call list.
-##'
-##' It doesn't matter if multiple closures have the same argument names since at execution time
-##' the closure will use whatever symbol table it is closest to.
-#.isFormal<-
-#function(expr) {
-#  formals_vec <- function(fun) { names(formals(fun)) }
-#  expr %in% unlist(lapply(.pkg.env$call_list, formals_vec))
-#}
-#
 ##'
 ##' Helper function for .funToAST
 ##'
@@ -287,7 +258,46 @@ function(fun) {
 #}
 
 
+.is.op<-
+function(o) {
+  if(.is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)) return(TRUE)
+  FALSE
+}
 
+.is.unop<-
+function(o) {
+  o <- deparse(o)
+  if (o %in% names(.unop.map)) return(TRUE)
+  FALSE
+}
+
+.is.binop<-
+function(o) {
+  o <- deparse(o)
+  if (o %in% names(.binop.map)) return(TRUE)
+  FALSE
+}
+
+.is.varop<-
+function(o) {
+  o <- deparse(o)
+  if (o %in% names(.varop.map)) return(TRUE)
+  FALSE
+}
+
+.is.prefix<-
+function(o) {
+  o <- deparse(o)
+  if (o %in% names(.prefix.map)) return(TRUE)
+  FALSE
+}
+
+.is.slice<-
+function(o) {
+  o <- deparse(o)
+  if (o %in% c("[", "$")) return(TRUE)
+  FALSE
+}
 
 #'
 #' Statement Processor
@@ -320,27 +330,53 @@ function(fun) {
 #'      D. .h2o.varop: ‘"trunc"’, ‘"log"’  (could be either unop or varop)
 #'
 #' Each of the above types of statements will handle their own arguments and return an appropriate AST
-.process_stmnt<-
+.process.stmnt<-
 function(stmnt) {
 
   # convenience variable
   stmnt_list <- as.list(stmnt)
 
+  # Got an atomic numeric. Plain old numeric value
+  if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "numeric") {
+    return('#' %<p0-% stmnt_list[[1]])
+
+  # Got an atomic string
+  } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "character") {
+    return(deparse(stmnt_list[[1]]))
+
+  # Got a logical value --> goes to numeric
+  } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "logical") {
+    return('$' %<p0-% stmnt_list[[1]])
+  }
+
   # we got a defined op
-  if (.is_op(stmnt_list[[1]])) {
+  if (.is.op(stmnt_list[[1]])) {
 
     # have an operator
     op <- stmnt_list[[1]]
 
     # Case 2 from the comment above
-    if (.is_binop(op)) {
+    if (.is.binop(op)) {
+      e1 <- .statement.to.ast.switchboard(stmnt_list[[2]])
+      e2 <- .statement.to.ast.switchboard(stmnt_list[[3]])
+      return(.h2o.binop(deparse(op), e1, e2))
 
-
-    # Case 1, 3A above unless it's `log`
-    } else if (.is_unop(op)) {
+    # Case 1, 3A above unless it's `log`, or `[`, or `$`
+    } else if (.is.unop(op)) {
+      if (.is.slice(op)) return(.process.slice.stmnt(stmnt))
+      x <- .statement.to.ast.switchboard(stmnt_list[[2]])
+      return(.h2o.unop(deparse(op), x))
 
     # all varops
-    } else if(.is_varop(op)) {
+    } else if(.is.varop(op)) {
+      args <- lapply(stmnt_list[-1], .statement.to.ast.switchboard)
+      op <- new("ASTApply", op = deparse(op))
+      return(new("ASTNode", root=op, children=args))
+
+    # prefix op, 1 arg
+    } else if(.is.prefix(op)) {
+      arg <- .statement.to.ast.switchboard(stmnt_list[[2]])
+      return(.h2o.unop(deparse(op), arg))
 
     # should never get here
     } else {
@@ -349,14 +385,68 @@ function(stmnt) {
   }
 
   # we got a user-defined function
-  if (.is_udf(stmnt_list[[1]])) {
-
+  if (.is.udf(stmnt_list[[1]])) {
+    stop("fcn within a fcn unimplemented")
   }
 
-  # otherwise just got a variable name to either return (if last statement, or skip if not last statement)
+  # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
-    ast <- '$' %<p0-% deparse(stmnt_list[[1]])
+    ast <- '$' %<p0-% deparse(stmnt_list[[1]]) #new("H2OParsedData", h2o = new("H2OClient", ip = "", port = -1), key=deparse(stmnt_list[[1]]))
+    return(ast)
   }
+  stop(paste( "Don't know what to do with statement: ", stmnt))
+}
+
+
+.process.slice.stmnt<-
+function(stmnt) {
+  stmnt_list <- as.list(stmnt)
+  i <- stmnt_list[[3]]  # rows
+  if (length(stmnt_list) == 3) {
+    if(missing(i)) return("")
+    if(length(i) > 1) stop("[[]] may only select one column")
+    if (!is.numeric(i)) stop("column selection within a function call must be numeric")
+    op <- new("ASTApply", op='[')
+    x <- '$' %<p0-% deparse(stmnt_list[[2]])
+    rows <- deparse("null")
+    cols <- .eval(substitute(i), parent.frame())
+    return(new("ASTNode", root=op, children=list(x, rows, cols)))
+  }
+  j <- stmnt_list[[4]]  # columns
+  op <- new("ASTApply", op='[')
+  x <- '$' %<p0-% deparse(stmnt_list[[2]])
+  rows <- if( missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
+  cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
+  new("ASTNode", root=op, children=list(x, rows, cols))
+}
+
+.process.if.stmnt<-
+function(stmnt) {
+  stop("`if` unimplemented")
+}
+
+.process.for.stmnt<-
+function(stmnt) {
+  stop("`if` unimplemented")
+}
+
+.process.else.stmnt<-
+function(stmnt) {
+  stop("`if` unimplemented")
+}
+
+.process.return.stmnt<-
+function(stmnt) {
+  stmnt_list <- as.list(stmnt)
+  .h2o.unop("return", .statement.to.ast.switchboard(stmnt_list[[2]]))
+}
+
+.process.assign.stmnt<-
+function(stmnt) {
+  stmnt_list <- as.list(stmnt)
+  x <- deparse(stmnt[[2]])
+  y <- .statement.to.ast.switchboard(stmnt_list[[3]])
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
 }
 
 #'
@@ -378,32 +468,32 @@ function(stmnt) {
 #'  3. Function call / Operation
 #'
 #' This switchboard takes exactly ONE statement at a time.
-.statement_to_ast_switchboard<-
+.statement.to.ast.switchboard<-
 function(stmnt) {
 
   # convenience variable
   stmnt_list <- as.list(stmnt)
 
   # check for `if`, `for`, `else`, `return`, `while` -- stop if `while`
-  if (identical(quote(`if`),     stmnt_list[[1]])) return(.process_if_stmnt(stmnt))
-  if (identical(quote(`for`),    stmnt_list[[1]])) return(.process_for_stmnt(stmnt))
-  if (identical(quote(`else`),   stmnt_list[[1]])) return(.process_else_stmnt(stmnt))
-  if (identical(quote(`return`), stmnt_list[[1]])) return(.process_return_stmnt(stmnt))
+  if (identical(quote(`if`),     stmnt_list[[1]])) return(.process.if.stmnt(stmnt))
+  if (identical(quote(`for`),    stmnt_list[[1]])) return(.process.for.stmnt(stmnt))
+  if (identical(quote(`else`),   stmnt_list[[1]])) return(.process.else.stmnt(stmnt))
+  if (identical(quote(`return`), stmnt_list[[1]])) return(.process.return.stmnt(stmnt))
   if (identical(quote(`while`),  stmnt_list[[1]])) stop("*Unimplemented* `while` loops are not supported by h2o")
 
   # check assignment
-  if(identical(quote(`<-`), stmnt_list[[1]])) return(.process_assign_stmnt(stmnt))
-  if(identical(quote(`=`),  stmnt_list[[1]])) return(.process_assign_stmnt(stmnt))
+  if(identical(quote(`<-`), stmnt_list[[1]])) return(.process.assign.stmnt(stmnt))
+  if(identical(quote(`=`),  stmnt_list[[1]])) return(.process.assign.stmnt(stmnt))
   if(identical(quote(`->`), stmnt_list[[1]])) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
 
   # everything else is a function call or operation
-  .process_stmnt(stmnt)
+  .process.stmnt(stmnt)
 }
 
 
 #'
 #' Produce a list of statements from a function body. The statements are ordered in first -> last.
-.extract_statements<-
+.extract.statements<-
 function(b) {
   # strip off the '{' if it's there
   stmnts <- as.list(b)
@@ -411,6 +501,12 @@ function(b) {
   stmnts
 }
 
+
+.process.body<-
+function(b) {
+  stmnts <- .extract.statements(b)
+  # return a list of ast_stmnts
+}
 
 #'
 #' Transmogrify A User Defined Function Into A Cascade AST
@@ -436,11 +532,11 @@ function(b) {
 #'  2.
 #'      A. Recognize the call
 #'      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
-.funToAST<-
+.fun.to.ast<-
 function(fun, name) {
   args <- formals(fun)
   b <- body(fun)
-  stmnts <- .extract_statements(b)
-  # every variable is a lookup
-
+  stmnts <- .process.body(b)
+  ast_stmnts <- lapply(stmnts, .statement.to.ast.switchboard)
+  print(ast_stmnts) #TODO: do more than simply print out the list of statements
 }

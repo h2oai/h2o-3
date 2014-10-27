@@ -133,6 +133,22 @@
                     "trunc" = "trunc")
 
 #'
+#' The variable args operations
+#'
+
+.varop.map <- list( "round" = "round",
+                    "signif" = "signif",
+                    "max" = "max",
+                    "min" = "min",
+                    "range" = "range",
+                    "prod" = "prod",
+                    "sum" = "sum",
+                    "any" = "any",
+                    "all" = "all",
+                    "log" = "log",
+                    "trunc" = "trunc")
+
+#'
 #' H2O API endpoints
 #'
 #'
