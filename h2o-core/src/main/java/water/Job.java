@@ -307,7 +307,8 @@ public class Job<T extends Keyed> extends Keyed {
   public static class JobCancelledException extends RuntimeException{}
 
   @Override protected Futures remove_impl(Futures fs) {
-    DKV.remove(_progressKey, fs);
+    if( _progressKey != null ) // Can not have one if job is aborted early due to, e.g., bad params
+      DKV.remove(_progressKey, fs);
     return fs;
   }
 
