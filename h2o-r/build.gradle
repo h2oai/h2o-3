@@ -75,6 +75,7 @@ task gitbranch(type: Exec) {
     commandLine getOsSpecificCommandLine(["git",  "branch"])
     standardOutput = new ByteArrayOutputStream()
     ext.output = {
+        if (standardOutput.toString().replace("\n", "").replace(' ','').split("\\*").length != 2) return ""
         return standardOutput.toString().replace("\n", "").replace(' ','').split("\\*")[1]
     }
 }
