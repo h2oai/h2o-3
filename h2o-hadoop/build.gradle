@@ -11,4 +11,5 @@ compileJava {
 
 dependencies {
   compile project(":h2o-core")
+  compile project(":h2o-app")
 }

@@ -11,6 +11,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
+import water.H2OApp;
 
 import water.util.Log;
 
@@ -373,7 +374,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       _embeddedH2OConfig.setMapperCallbackPort(localPort);
       H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
       Log.POST(11, "After register");
-      water.H2O.main(args);
+      water.H2OApp.main(args);
       Log.POST(12, "After main");
     }
     catch (Exception e) {
