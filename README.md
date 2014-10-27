@@ -112,7 +112,7 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
 Step 2. Install Node.js and npm
 
-Using Hombrew:
+Using Homebrew:
 
     brew install node
 
@@ -200,6 +200,74 @@ For users of Eclipse, project files can be generated with:
 
     ./gradlew eclipse
 
+Launching H2O on Hadoop from your workspace
+-------------------------------------------
+Note: This capability is new to h2o-dev and still under development!
+
+### First, choose the version of Hadoop you want to build for
+
+Right now, h2o-dev can only build for one version of Hadoop at a time.  This is specified in **_h2o-dev/build.gradle_** by the line below.
+
+	hadoopVersion = '2.5.0-cdh5.2.0'
+
+The default version is set to CDH5.2 but this also works for HDP2.1 (the example below is launching on hdp2.1).
+
+### Second, do a standard build (if you haven't already)
+
+	(In top-level h2o-dev directory)
+	./gradlew build
+
+### Third, do the Hadoop launch
+
+After building, you now have the pieces to run H2O on Hadoop.  Copy the h2o-hadoop.jar and h2o.jar files to an appropriate Hadoop enabled host.  The following command shows an example of running in place, assuming you did your build on a Hadoop enabled host.
+
+	(In top-level h2o-dev directory)
+	hadoop jar h2o-hadoop/build/libs/h2o-hadoop.jar water.hadoop.h2odriver -libjars build/h2o.jar -n 3 -mapperXmx 4g -output hdfsOutputDirectory
+
+This example creates a cluster with three nodes where each node has a 4g Java heap.
+
+**_Note: For best results, we recommend you give your cluster enough memory to avoid swapping data to disk. (Of course, this depends on the size of your data!)_**
+
+Output from the above command:
+
+```
+Determining driver host interface for mapper->driver callback...
+    [Possible callback IP address: 172.16.2.181]
+    [Possible callback IP address: 127.0.0.1]
+Using mapper->driver callback IP address and port: 172.16.2.181:44948
+(You can override these with -driverif and -driverport.)
+14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.child.java.opts is deprecated. Instead, use mapreduce.map.java.opts
+Memory Settings:
+    mapred.child.java.opts:      -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
+    mapred.map.child.java.opts:  -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
+    Extra memory percent:        10
+    mapreduce.map.memory.mb:     4505
+14/10/26 22:59:07 INFO Configuration.deprecation: mapred.used.genericoptionsparser is deprecated. Instead, use mapreduce.client.genericoptionsparser.used
+14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.tasks.speculative.execution is deprecated. Instead, use mapreduce.map.speculative
+14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.max.attempts is deprecated. Instead, use mapreduce.map.maxattempts
+14/10/26 22:59:07 INFO Configuration.deprecation: mapred.job.reuse.jvm.num.tasks is deprecated. Instead, use mapreduce.job.jvm.numtasks
+14/10/26 22:59:08 INFO client.RMProxy: Connecting to ResourceManager at mr-0xd7.0xdata.loc/172.16.2.187:8050
+14/10/26 22:59:09 INFO mapreduce.JobSubmitter: number of splits:3
+14/10/26 22:59:09 INFO mapreduce.JobSubmitter: Submitting tokens for job: job_1413598290344_0035
+14/10/26 22:59:09 INFO impl.YarnClientImpl: Submitted application application_1413598290344_0035
+14/10/26 22:59:09 INFO mapreduce.Job: The url to track the job: http://mr-0xd7.0xdata.loc:8088/proxy/application_1413598290344_0035/
+Job name 'H2O_3581' submitted
+JobTracker job ID is 'job_1413598290344_0035'
+For YARN users, logs command is 'yarn logs -applicationId application_1413598290344_0035'
+Waiting for H2O cluster to come up...
+H2O node 172.16.2.184:54321 reports H2O cluster size 1
+H2O node 172.16.2.185:54321 reports H2O cluster size 1
+H2O node 172.16.2.181:54321 reports H2O cluster size 1
+H2O node 172.16.2.181:54321 reports H2O cluster size 3
+H2O cluster (3 nodes) is up
+(Note: Use the -disown option to exit the driver after cluster formation)
+(Press Ctrl-C to kill the cluster)
+Blocking until the H2O cluster shuts down...
+H2O node 172.16.2.185:54321 reports H2O cluster size 3
+H2O node 172.16.2.184:54321 reports H2O cluster size 3
+```
+
+
 Community
 ---------------------------------
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
@@ -239,6 +307,7 @@ Jessica Lanford
 Advisors
 --------------------------------
 Scientific Advisory Council
+
 ```
 Stephen Boyd
 Rob Tibshirani
@@ -246,6 +315,7 @@ Trevor Hastie
 ```
 
 Systems, Data, FileSystems and Hadoop
+
 ```
 Doug Lea
 Chris Pouliot
@@ -255,6 +325,7 @@ Charles Zedlewski
 
 Investors
 --------------------------------
+
 ```
 Jishnu Bhattacharjee, Nexus Venture Partners
 Anand Babu Periasamy
