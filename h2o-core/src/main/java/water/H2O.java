@@ -1006,23 +1006,18 @@ final public class H2O {
 
     // Start network services, including heartbeats
     startNetworkServices();   // start server services
+    Log.trace("Network services started");
 
-    Log.info("Network services started");
+    // Deadlock initializing PersistNFS occurred when doHeartbeat was earlier
+    // (allowed a cloud to form before the persistence layer was initialized,
+    // and then started accepting REST calls), so put it here.
+    Persist.getIce();
+    Log.trace("Persist static block initialized");
 
-    // Deadlock initializing PersistNFS occurred when this was earlier, so put it here.
-    // Not sure if this is the right thing to do or a band-aid.
-    {
-      // This is an out-and-out hack to touch the Persist static block before announcing
-      // that the Cloud is good inside doHeartbeat.
-      Persist.getIce();
-      Log.info("Persist static block initialized via hack");
-
-      // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
-      // for users of H2O to know that it's OK to start sending REST API requests.
-      Paxos.doHeartbeat(SELF);
-
-      assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
-    }
+    // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
+    // for users of H2O to know that it's OK to start sending REST API requests.
+    Paxos.doHeartbeat(SELF);
+    assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
   }
 
   // Die horribly
