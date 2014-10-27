@@ -1,8 +1,26 @@
 return unless SYSTEM_TEST
 
 test 'empty cloud', (t) ->
-  t.plan 4
+  t.plan 6
   createCloud (_, go) ->
+    logAndEcho = (go) ->
+      _.requestLogAndEcho (error, result) ->
+        if error
+          t.fail 'log and echo request failed ' + pp error
+          go error
+        else
+          t.pass 'got log and echo reply'
+          go null
+
+    removeAll = (go) ->
+      _.requestRemoveAll (error, result) ->
+        if error
+          t.fail 'remove all request failed ' + pp error
+          go error
+        else
+          t.pass 'got remove all reply'
+          go null
+
     ensureNoFramesExist = (go) ->
       _.requestFrames (error, result) ->
         if error
@@ -24,15 +42,35 @@ test 'empty cloud', (t) ->
           go null
 
     operations = [
+      logAndEcho
+      removeAll
       ensureNoFramesExist
       ensureNoJobsExist
     ]
     async.waterfall operations, -> go t
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 64
+  t.plan 66
 
   createCloud (_, go) ->
+    logAndEcho = (go) ->
+      _.requestLogAndEcho (error, result) ->
+        if error
+          t.fail 'log and echo request failed ' + pp error
+          go error
+        else
+          t.pass 'got log and echo reply'
+          go null
+
+    removeAll = (go) ->
+      _.requestRemoveAll (error, result) ->
+        if error
+          t.fail 'remove all request failed ' + pp error
+          go error
+        else
+          t.pass 'got remove all reply'
+          go null
+
     ensureNoFramesExist = (go) ->
       _.requestFrames (error, result) ->
         if error
@@ -281,6 +319,8 @@ test 'airlines ingest and model building flow', (t) ->
           go null, modelKey
 
     operations = [
+      logAndEcho
+      removeAll
       ensureNoFramesExist
       findNonExistentFile
       findAirlines
