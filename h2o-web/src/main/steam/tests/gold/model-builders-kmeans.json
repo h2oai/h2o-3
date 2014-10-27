@@ -12,7 +12,6 @@
           "default_value": null,
           "actual_value": null,
           "level": "critical",
-          "dependencies": [],
           "values": []
         },
         {
@@ -24,7 +23,6 @@
           "default_value": null,
           "actual_value": null,
           "level": "critical",
-          "dependencies": [],
           "values": []
         },
         {
@@ -36,7 +34,6 @@
           "default_value": "0",
           "actual_value": "0",
           "level": "critical",
-          "dependencies": [],
           "values": []
         },
         {
@@ -48,7 +45,6 @@
           "default_value": "0",
           "actual_value": "100",
           "level": "critical",
-          "dependencies": [],
           "values": []
         },
         {
@@ -60,7 +56,6 @@
           "default_value": "true",
           "actual_value": "false",
           "level": "secondary",
-          "dependencies": [],
           "values": []
         },
         {
@@ -72,7 +67,6 @@
           "default_value": "0",
           "actual_value": "0",
           "level": "expert",
-          "dependencies": [],
           "values": []
         },
         {
@@ -84,7 +78,6 @@
           "default_value": null,
           "actual_value": "Furthest",
           "level": "critical",
-          "dependencies": [],
           "values": [
             "None",
             "PlusPlus",

@@ -25,6 +25,16 @@ def is_python_test_file(file_name):
 
     return False
 
+def is_javascript_test_file(file_name):
+    """
+    Return True if file_name matches a regexp for a javascript test.  False otherwise.
+    """
+
+    if (re.match("^.*tests.js$", file_name)):
+        return True
+
+    return False
+
 
 def is_runit_test_file(file_name):
     """
@@ -492,6 +502,12 @@ class Test:
                    "-f",
                    self.test_name,
                    "--args",
+                   self.ip + ":" + str(self.port)]
+        elif (is_javascript_test_file(self.test_name)):
+            cmd = ["node",
+                   self.test_name,
+                   "-s",
+                   "--usecloud",
                    self.ip + ":" + str(self.port)]
         else:
             print("")
@@ -1534,6 +1550,10 @@ def main(argv):
         i = len(cwd_arr) - 1
         while (i > 0):
             if (cwd_arr[i] == "testdir_multi_jvm"):
+                cwd_arr_prefix = cwd_arr[:i+1]
+                test_root_dir = os.sep.join(cwd_arr_prefix)
+                break
+            elif (cwd_arr[i] == "h2o-web"):
                 cwd_arr_prefix = cwd_arr[:i+1]
                 test_root_dir = os.sep.join(cwd_arr_prefix)
                 break

@@ -17,7 +17,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -29,7 +28,6 @@
         "default_value": null,
         "actual_value": "allyears2k_headers.hex",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -41,7 +39,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -53,7 +50,6 @@
         "default_value": null,
         "actual_value": "IsDepDelayed",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -65,19 +61,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
-        "values": []
-      },
-      {
-        "name": "classification",
-        "label": "classification",
-        "help": "Classification v. regression",
-        "required": false,
-        "type": "boolean",
-        "default_value": "false",
-        "actual_value": "true",
-        "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -89,7 +72,6 @@
         "default_value": "0",
         "actual_value": "0",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -101,7 +83,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -113,7 +94,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -125,7 +105,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -137,7 +116,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -149,7 +127,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -161,7 +138,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -173,7 +149,6 @@
         "default_value": "Rectifier",
         "actual_value": "Rectifier",
         "level": "critical",
-        "dependencies": [],
         "values": [
           "Tanh",
           "TanhWithDropout",
@@ -192,7 +167,6 @@
         "default_value": "[200, 200]",
         "actual_value": "[200, 200]",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -204,7 +178,6 @@
         "default_value": "10.0",
         "actual_value": "10.0",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -214,9 +187,8 @@
         "required": false,
         "type": "long",
         "default_value": "-2",
-        "actual_value": "-2",
+        "actual_value": "-1",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -228,7 +200,6 @@
         "default_value": "0.02",
         "actual_value": "0.02",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -240,7 +211,6 @@
         "default_value": "random",
         "actual_value": "random",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -252,7 +222,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -264,7 +233,6 @@
         "default_value": "0.99",
         "actual_value": "0.99",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -276,7 +244,6 @@
         "default_value": "1.0E-8",
         "actual_value": "1.0E-8",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -288,7 +255,6 @@
         "default_value": "0.005",
         "actual_value": "0.005",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -300,7 +266,6 @@
         "default_value": "1.0E-6",
         "actual_value": "1.0E-6",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -312,7 +277,6 @@
         "default_value": "1.0",
         "actual_value": "1.0",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -324,7 +288,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -336,7 +299,6 @@
         "default_value": "1000000.0",
         "actual_value": "1000000.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -348,7 +310,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -360,7 +321,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -372,7 +332,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -384,7 +343,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -396,7 +354,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -408,7 +365,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -420,7 +376,6 @@
         "default_value": "Infinity",
         "actual_value": "Infinity",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -432,7 +387,6 @@
         "default_value": "UniformAdaptive",
         "actual_value": "UniformAdaptive",
         "level": "expert",
-        "dependencies": [],
         "values": [
           "UniformAdaptive",
           "Uniform",
@@ -448,7 +402,6 @@
         "default_value": "1.0",
         "actual_value": "1.0",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -460,7 +413,6 @@
         "default_value": "Automatic",
         "actual_value": "CrossEntropy",
         "level": "expert",
-        "dependencies": [],
         "values": [
           "Automatic",
           "MeanSquare",
@@ -476,7 +428,6 @@
         "default_value": "5.0",
         "actual_value": "5.0",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -488,7 +439,6 @@
         "default_value": "10000",
         "actual_value": "10000",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -500,7 +450,6 @@
         "default_value": "0",
         "actual_value": "0",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -512,7 +461,6 @@
         "default_value": "0.1",
         "actual_value": "0.1",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -524,7 +472,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -536,7 +483,6 @@
         "default_value": "1.0E-6",
         "actual_value": "1.0E-6",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -548,7 +494,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -560,7 +505,6 @@
         "default_value": "20",
         "actual_value": "20",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -572,7 +516,6 @@
         "default_value": "10",
         "actual_value": "10",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -584,7 +527,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -596,7 +538,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -608,7 +549,6 @@
         "default_value": "5.0",
         "actual_value": "5.0",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -620,7 +560,6 @@
         "default_value": "Uniform",
         "actual_value": "Uniform",
         "level": "expert",
-        "dependencies": [],
         "values": [
           "Uniform",
           "Stratified"
@@ -635,7 +574,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -647,7 +585,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -659,7 +596,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -671,7 +607,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -683,7 +618,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -695,7 +629,6 @@
         "default_value": "true",
         "actual_value": "false",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -707,7 +640,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -719,7 +651,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -731,7 +662,6 @@
         "default_value": "MeanImputation",
         "actual_value": "MeanImputation",
         "level": "critical",
-        "dependencies": [],
         "values": [
           "Skip",
           "MeanImputation"
@@ -746,7 +676,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -758,7 +687,6 @@
         "default_value": "false",
         "actual_value": "false",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -770,7 +698,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -782,7 +709,6 @@
         "default_value": "0.0",
         "actual_value": "0.0",
         "level": "critical",
-        "dependencies": [],
         "values": []
       }
     ],

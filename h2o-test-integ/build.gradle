@@ -13,4 +13,10 @@ task runPythonMultiJVMTests(type: Exec) {
     commandLine 'python', runner, '--wipeall', '--numclouds', '1'
 }
 
+// task runNodeJsSingleJVMTests(type: Exec) {
+//    workingDir "$rootDir/h2o-web"
+//    commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--test', 'src/main/resources/www/steam/js/steam-tests.js', '--jvm.xmx', '4g'
+// }
+
 test.dependsOn runPythonMultiJVMTests
+// test.dependsOn runNodeJsSingleJVMTests

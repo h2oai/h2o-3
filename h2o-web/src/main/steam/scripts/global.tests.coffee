@@ -8,18 +8,20 @@ _ = require 'lodash'
 async = require 'async'
 test = require 'tape'
 
-# Pass -jar /path/to/h2o.jar to override the default jar
-JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve process.cwd(), '..', path.join 'build', 'h2o.jar'
+cwd = path.resolve.apply path, [ process.cwd() ].concat ('..' for i in [1 .. 6])
 
-throw "H2O jar '#{JAR_PATH}' not found!" unless fs.existsSync JAR_PATH
+# Pass -jar /path/to/h2o.jar to override the default jar
+#JAR_PATH = if argv.jar then path.resolve argv.jar else path.resolve cwd, '..', path.join 'build', 'h2o.jar'
+
+#throw "H2O jar '#{JAR_PATH}' not found!" unless fs.existsSync JAR_PATH
 
 # Pass -data /path/to/smalldata to override the smalldata directory
-DATA_PATH = if argv.data then path.resolve argv.data else path.resolve process.cwd(), '..', 'smalldata'
+DATA_PATH = if argv.data then path.resolve argv.data else path.resolve cwd, '..', 'smalldata'
 
 throw "Data path '#{DATA_PATH}' not found!" unless fs.existsSync DATA_PATH
 
 # Pass -gold /path/to/src/main/steam/tests/gold to override gold files
-GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve process.cwd(), path.join 'src', 'main', 'steam', 'tests', 'gold'
+GOLD_PATH = if argv.gold then path.resolve argv.gold else path.resolve cwd, path.join 'src', 'main', 'steam', 'tests', 'gold'
 
 throw "Gold file path '#{GOLD_PATH}' not found!" unless fs.existsSync GOLD_PATH
 
@@ -88,6 +90,7 @@ readGoldFile = (name) ->
 readGoldJson = (name) ->
   JSON.parse readGoldFile name
 
+
 # Node.js equivalent of Steam.Xhr
 Xhr = (_, host) ->
   makeRequest = (opts, go) ->
@@ -136,41 +139,41 @@ Xhr = (_, host) ->
       timeout: 900000
     makeRequest opts, go
 
-_clouds = []
-_uniqueCloudId = 1
-uniqueCloudId = -> _uniqueCloudId = _uniqueCloudId + 2
-_spawnCloud = ->
-  diag "Starting new H2O cloud..."
-  cloudId = uniqueCloudId()
-  cloud = spawn 'java', [ '-Xmx4g', '-jar', JAR_PATH, '-name', "steam_#{cloudId}", '-port', "#{cloudId + 60000}" ]
-  diag "PID #{cloud.pid}"
-  _clouds.push cloud
-  cloud
-
-_killCloud = (cloud) ->
-  if cloud
-    try
-      diag "Killing cloud #{cloud.pid}..."
-      cloud.kill() # SIGTERM
-    catch error
-      # noop
-  return
-
-killCloud = (cloud) ->
-  if -1 < (index = _clouds.indexOf cloud)
-    _clouds.splice index, 1
-  _killCloud cloud
-
-killAllClouds = ->
-  while cloud = _clouds.pop()
-    _killCloud cloud
-  return
-
-'exit uncaughtException SIGINT SIGTERM SIGHUP SIGBREAK'.split(' ')
-  .forEach (signal) ->
-    process.on signal, ->
-      diag "Caught signal '#{signal}'"
-      killAllClouds()
+#_clouds = []
+#_uniqueCloudId = 1
+#uniqueCloudId = -> _uniqueCloudId = _uniqueCloudId + 2
+#_spawnCloud = ->
+#  diag "Starting new H2O cloud..."
+#  cloudId = uniqueCloudId()
+#  cloud = spawn 'java', [ '-Xmx4g', '-jar', JAR_PATH, '-name', "steam_#{cloudId}", '-port', "#{cloudId + 60000}" ]
+#  diag "PID #{cloud.pid}"
+#  _clouds.push cloud
+#  cloud
+#
+#_killCloud = (cloud) ->
+#  if cloud
+#    try
+#      diag "Killing cloud #{cloud.pid}..."
+#      cloud.kill() # SIGTERM
+#    catch error
+#      # noop
+#  return
+#
+#killCloud = (cloud) ->
+#  if -1 < (index = _clouds.indexOf cloud)
+#    _clouds.splice index, 1
+#  _killCloud cloud
+#
+#killAllClouds = ->
+#  while cloud = _clouds.pop()
+#    _killCloud cloud
+#  return
+#
+#'exit uncaughtException SIGINT SIGTERM SIGHUP SIGBREAK'.split(' ')
+#  .forEach (signal) ->
+#    process.on signal, ->
+#      diag "Caught signal '#{signal}'"
+#      killAllClouds()
 
 createContext = (host) ->
   _ = Steam.ApplicationContext()
@@ -179,30 +182,34 @@ createContext = (host) ->
   _
 
 createCloud = (go) ->
-  cloud = _spawnCloud()
-  _test = null
+  runTests = (host) -> -> go (createContext host), (t) ->
+  setTimeout (runTests argv.usecloud), 1000
 
-  runTests = (host) ->
-    ->
-      diag "Executing tests..."
-      go (createContext host), (t) ->
-        _test = t
-        killCloud cloud
-
-  _isStarted = no
-  cloud.stdout.on 'data', (data) ->
-    diag data
-    unless _isStarted
-      if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
-        host = match[1]
-        diag "H2O cloud started at #{host}"
-        _isStarted = yes
-        setTimeout (runTests host), 1000
-
-  cloud.stderr.on 'data', (data) -> diag data
-  cloud.on 'close', (code, signal) ->
-    diag "H2O exited with code #{code}, signal #{signal}."
-    _test.end() if _test
+#createCloud = (go) ->
+#  cloud = _spawnCloud()
+#  _test = null
+#
+#  runTests = (host) ->
+#    ->
+#      diag "Executing tests..."
+#      go (createContext host), (t) ->
+#        _test = t
+#        killCloud cloud
+#
+#  _isStarted = no
+#  cloud.stdout.on 'data', (data) ->
+#    diag data
+#    unless _isStarted
+#      if match = data.toString().match /listen.+http.+http:\/\/(.+)\//i
+#        host = match[1]
+#        diag "H2O cloud started at #{host}"
+#        _isStarted = yes
+#        setTimeout (runTests host), 1000
+#
+#  cloud.stderr.on 'data', (data) -> diag data
+#  cloud.on 'close', (code, signal) ->
+#    diag "H2O exited with code #{code}, signal #{signal}."
+#    _test.end() if _test
 
 tapediff = (x, y, opts) ->
   _compile = (pattern) ->

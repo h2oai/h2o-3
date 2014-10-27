@@ -17,7 +17,6 @@
         "default_value": null,
         "actual_value": null,
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -29,7 +28,6 @@
         "default_value": null,
         "actual_value": "allyears2k_headers.hex",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -41,7 +39,6 @@
         "default_value": "0",
         "actual_value": "2",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -53,7 +50,6 @@
         "default_value": "0",
         "actual_value": "1000",
         "level": "critical",
-        "dependencies": [],
         "values": []
       },
       {
@@ -65,7 +61,6 @@
         "default_value": "true",
         "actual_value": "true",
         "level": "secondary",
-        "dependencies": [],
         "values": []
       },
       {
@@ -77,7 +72,6 @@
         "default_value": "0",
         "actual_value": "1410214121289766000",
         "level": "expert",
-        "dependencies": [],
         "values": []
       },
       {
@@ -89,7 +83,6 @@
         "default_value": null,
         "actual_value": "Furthest",
         "level": "critical",
-        "dependencies": [],
         "values": [
           "None",
           "PlusPlus",

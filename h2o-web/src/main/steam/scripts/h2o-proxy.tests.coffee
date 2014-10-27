@@ -221,8 +221,8 @@ test 'airlines ingest and model building flow', (t) ->
     buildAirlinesDeepLearningModel = (go) ->
       parameters = 
         training_frame: 'allyears2k_headers.hex'
-        classification: yes
         response_column: 'IsDepDelayed'
+        reproducible: true
       _.requestModelBuild 'deeplearning', parameters, (error, result) ->
         if error
           t.fail 'model build request failed ' + pp error
@@ -277,7 +277,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.ok (isArray metric.auc.mcc), 'isArray metric.auc.mcc'
           t.ok (isArray metric.auc.max_per_class_error), 'isArray metric.auc.max_per_class_error'
 
-          tdiff t, (readGoldJson 'score-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'model_metrics.#.model.key', 'model_metrics.#.model_checksum', 'model_metrics.#.frame_checksum', 'model_metrics.#.duration_in_ms', 'model_metrics.#.scoring_time', 'model_metrics.#.auc.thresholds', 'model_metrics.#.auc.AUC', 'model_metrics.#.auc.Gini' , 'model_metrics.#.auc.confusion_matrices', 'model_metrics.#.auc.F1', 'model_metrics.#.auc.F2', 'model_metrics.#.auc.F0point5', 'model_metrics.#.auc.accuracy', 'model_metrics.#.auc.errorr', 'model_metrics.#.auc.precision', 'model_metrics.#.auc.recall', 'model_metrics.#.auc.specificity', 'model_metrics.#.auc.mcc', 'model_metrics.#.auc.max_per_class_error' ]
+          tdiff t, (readGoldJson 'score-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'model_metrics.#.model.key', 'model_metrics.#.model_checksum', 'model_metrics.#.frame_checksum', 'model_metrics.#.duration_in_ms', 'model_metrics.#.scoring_time', 'model_metrics.#.auc.thresholds', 'model_metrics.#.auc.AUC', 'model_metrics.#.auc.Gini' , 'model_metrics.#.auc.confusion_matrices', 'model_metrics.#.auc.F1', 'model_metrics.#.auc.F2', 'model_metrics.#.auc.F0point5', 'model_metrics.#.auc.accuracy', 'model_metrics.#.auc.errorr', 'model_metrics.#.auc.precision', 'model_metrics.#.auc.recall', 'model_metrics.#.auc.specificity', 'model_metrics.#.auc.mcc', 'model_metrics.#.auc.max_per_class_error', "model_metrics.#.auc.threshold_for_criteria", "model_metrics.#.auc.F1_for_criteria", "model_metrics.#.auc.F2_for_criteria", "model_metrics.#.auc.F0point5_for_criteria", "model_metrics.#.auc.accuracy_for_criteria", "model_metrics.#.auc.error_for_criteria", "model_metrics.#.auc.precision_for_criteria", "model_metrics.#.auc.recall_for_criteria", "model_metrics.#.auc.specificity_for_criteria", "model_metrics.#.auc.mcc_for_criteria", "model_metrics.#.auc.max_per_class_error_for_criteria", "model_metrics.#.auc.confusion_matrix_for_criteria" ]
           go null, modelKey
 
     operations = [
