@@ -257,11 +257,17 @@ abstract public class Log {
                          : H2O.DEFAULT_ICE_ROOT());
       
     // If a log4j properties file was specified on the command-line, use it.
-    // Otherwise, create some default properties on the fly.
-    String log4jProperties = System.getProperty ("log4j.configuration");
-    if (log4jProperties != null) {
-      PropertyConfigurator.configure(log4jProperties);
-    } else {
+    // Don't use it if we were launched with 'hadoop jar'.
+    // Create some default properties on the fly if we aren't using a provided configuration file.
+    String log4jConfiguration = System.getProperty ("log4j.configuration");
+    boolean launchedWithHadoopJar = H2O.ARGS.hdfs_skip;
+    boolean log4jConfigurationProvided = log4jConfiguration != null;
+    boolean useProvidedLog4jConfigurationFile = log4jConfigurationProvided && !launchedWithHadoopJar;
+
+    if (useProvidedLog4jConfigurationFile) {
+      PropertyConfigurator.configure(log4jConfiguration);
+    }
+    else {
       java.util.Properties p = new java.util.Properties();
       try {
         setLog4jProperties(dir.toString(), p);
@@ -320,6 +326,7 @@ abstract public class Log {
 //  private static final Object postLock = new Object();
   public static void POST(int n, String s) {
     // DO NOTHING UNLESS ENABLED BY REMOVING THIS RETURN!
+    System.out.println("POST " + n + ": " + s);
     return;
 
 //      synchronized (postLock) {
