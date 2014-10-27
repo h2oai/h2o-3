@@ -30,7 +30,7 @@ public class DocsBase extends Schema<DocsHandler.DocsPojo, DocsBase> {
   }
 
   @Override public DocsBase fillFromImpl(DocsHandler.DocsPojo impl) {
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] { "routes", "schemas" });
     this.routes = new RouteBase[null == impl.routes ? 0 : impl.routes.length];
     this.schemas = new SchemaMetadataBase[null == impl.schemas ? 0 : impl.schemas.length];
 

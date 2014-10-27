@@ -5,10 +5,11 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
 import water.init.AbstractBuildVersion;
-import water.init.Arguments;
+import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
 import water.init.NetworkInit;
 import water.nbhm.NonBlockingHashMap;
+import water.persist.Persist;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -28,6 +29,369 @@ import java.util.concurrent.atomic.AtomicLong;
 * @version 1.0
 */
 final public class H2O {
+  //-------------------------------------------------------------------------------------------------------------------
+  // Command-line argument parsing and help
+  //-------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * Print help about command line arguments.
+   */
+  private static void printHelp() {
+    String s =
+            "\n" +
+            "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
+            "        (Note that every option has a default and is optional.)\n" +
+            "\n" +
+            "    -h | -help\n" +
+            "          Print this help.\n" +
+            "\n" +
+            "    -version\n" +
+            "          Print version info and exit.\n" +
+            "\n" +
+            "    -name <h2oCloudName>\n" +
+            "          Cloud name used for discovery of other nodes.\n" +
+            "          Nodes with the same cloud name will form an H2O cloud\n" +
+            "          (also known as an H2O cluster).\n" +
+            "\n" +
+            "    -flatfile <flatFileName>\n" +
+            "          Configuration file explicitly listing H2O cloud node members.\n" +
+            "\n" +
+            "    -ip <ipAddressOfNode>\n" +
+            "          IP address of this node.\n" +
+            "\n" +
+            "    -port <port>\n" +
+            "          Port number for this node (note: port+1 is also used).\n" +
+            "          (The default port is " + ARGS.port + ".)\n" +
+            "\n" +
+            "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
+            "          The IP address discovery code will bind to the first interface\n" +
+            "          that matches one of the networks in the comma-separated list.\n" +
+            "          Use instead of -ip when a broad range of addresses is legal.\n" +
+            "          (Example network specification: '10.1.2.0/24' allows 256 legal\n" +
+            "          possibilities.)\n" +
+            "\n" +
+            "    -ice_root <fileSystemPath>\n" +
+            "          The directory where H2O spills temporary data to disk.\n" +
+            "          (The default is '" + ARGS.port + "'.)\n" +
+            "\n" +
+            "    -nthreads <#threads>\n" +
+            "          Maximum number of threads in the low priority batch-work queue.\n" +
+            "          (The default is 99.)\n" +
+            "\n" +
+            "    -md5skip\n" +
+            "          Skip comparing MD5 of jar path while joining cloud.\n" +
+            "\n" +
+            "    -client\n" +
+            "          Launch H2O node in client mode.\n" +
+            "\n" +
+            "Cloud formation behavior:\n" +
+            "\n" +
+            "    New H2O nodes join together to form a cloud at startup time.\n" +
+            "    Once a cloud is given work to perform, it locks out new members\n" +
+            "    from joining.\n" +
+            "\n" +
+            "Examples:\n" +
+            "\n" +
+            "    Start an H2O node with 4GB of memory and a default cloud name:\n" +
+            "        $ java -Xmx4g -jar h2o.jar\n" +
+            "\n" +
+            "    Start an H2O node with 6GB of memory and a specify the cloud name:\n" +
+            "        $ java -Xmx6g -jar h2o.jar -name MyCloud\n" +
+            "\n" +
+            "    Start an H2O cloud with three 2GB nodes and a default cloud name:\n" +
+            "        $ java -Xmx2g -jar h2o.jar &\n" +
+            "        $ java -Xmx2g -jar h2o.jar &\n" +
+            "        $ java -Xmx2g -jar h2o.jar &\n" +
+            "\n";
+
+    System.out.print(s);
+  }
+
+  /**
+   * Singleton ARGS instance that contains the processed arguments.
+   */
+  public static final OptArgs ARGS = new OptArgs();
+
+  /**
+   * A class containing all of the arguments for H2O.
+   */
+  public static class OptArgs {
+    //-----------------------------------------------------------------------------------
+    // Help and info
+    //-----------------------------------------------------------------------------------
+    /** -help, -help=true; print help and exit*/
+    public boolean help = false;
+
+    /** -version, -version=true; print version and exit */
+    public boolean version = false;
+
+    //-----------------------------------------------------------------------------------
+    // Clouding
+    //-----------------------------------------------------------------------------------
+    /** -name=name; Set cloud name */
+    public String name = System.getProperty("user.name"); // Cloud name
+
+    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
+    public String flatfile;
+
+    /** -port=####; Specific Browser/API/HTML port */
+    public int port;
+
+    /** -baseport=####; Port to start upward searching from. */
+    public int baseport = 54321;
+
+    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    public String ip;
+
+    /** -network=network; Network specification for acceptable interfaces to bind to */
+    public String network;
+
+    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
+    public boolean client;
+
+    //-----------------------------------------------------------------------------------
+    // Node configuration
+    //-----------------------------------------------------------------------------------
+    /** -ice_root=ice_root; ice root directory; where temp files go */
+    public String ice_root;
+
+    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
+    public int nthreads=Math.max(99,10*NUMCPUS);
+
+    //-----------------------------------------------------------------------------------
+    // HDFS & AWS
+    //-----------------------------------------------------------------------------------
+    /** -hdfs=hdfs; HDFS backend */
+    public String hdfs = null;
+
+    /** -hdfs_version=hdfs_version; version of the filesystem */
+    public String hdfs_version = null;
+
+    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
+    public String hdfs_config = null;
+
+    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
+    public boolean hdfs_skip = false;
+
+    /** -aws_credentials=aws_credentials; properties file for aws credentials */
+    public String aws_credentials = null;
+
+    //-----------------------------------------------------------------------------------
+    // Debugging
+    //-----------------------------------------------------------------------------------
+    /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
+    public String log_level;
+
+    /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
+    public boolean random_udp_drop;
+
+    /** -md5skip, -md5skip=true; test-only; Skip the MD5 Jar checksum; allows jars from different builds to mingle in the same cloud */
+    public boolean md5skip = false;
+  }
+
+  private static void parseFailed(String message) {
+    System.out.println("");
+    System.out.println("ERROR: " + message);
+    System.out.println("");
+    printHelp();
+    H2O.exit(1);
+  }
+
+  private static class OptString {
+    String _s;
+    String _lastMatchedFor;
+
+    public OptString(String s) {
+      _s = s;
+    }
+
+    public boolean matches(String s) {
+      boolean result = false;
+
+      _lastMatchedFor = s;
+
+      String candidate;
+      candidate = "-" + s;
+      if (_s.equals(candidate)) {
+        result = true;
+      }
+
+      candidate = "--" + s;
+      if (_s.equals(candidate)) {
+        result = true;
+      }
+
+      return result;
+    }
+
+    public int incrementAndCheck(int i, String[] args) {
+      i = i + 1;
+      if (i >= args.length) {
+        parseFailed(_lastMatchedFor + " not specified");
+      }
+      return i;
+    }
+
+    public int parseInt(String a) {
+      int result = 0;
+
+      try {
+        result = Integer.parseInt(a);
+      }
+      catch (Exception e) {
+        parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
+      }
+
+      return result;
+    }
+
+    public String toString() { return _s; }
+  }
+
+
+  /**
+   * Dead stupid argument parser.
+   */
+  private static void parseArguments(String[] args) {
+    for (int i = 0; i < args.length; i++) {
+      OptString s = new OptString(args[i]);
+      if (s.matches("h") || s.matches("help")) {
+        ARGS.help = true;
+      }
+      else if (s.matches("version")) {
+        ARGS.version = true;
+      }
+      else if (s.matches("name")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.name = args[i];
+      }
+      else if (s.matches("flatfile")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.flatfile = args[i];
+      }
+      else if (s.matches("port")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.port = s.parseInt(args[i]);
+      }
+      else if (s.matches("baseport")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.baseport = s.parseInt(args[i]);
+      }
+      else if (s.matches("ip")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.ip = args[i];
+      }
+      else if (s.matches("network")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.network = args[i];
+      }
+      else if (s.matches("client")) {
+        ARGS.client = true;
+      }
+      else if (s.matches("ice_root")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.ice_root = args[i];
+      }
+      else if (s.matches("nthreads")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.nthreads = s.parseInt(args[i]);
+      }
+      else if (s.matches("hdfs")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.hdfs = args[i];
+      }
+      else if (s.matches("hdfs_version")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.hdfs_version = args[i];
+      }
+      else if (s.matches("hdfs_config")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.hdfs_config = args[i];
+      }
+      else if (s.matches("hdfs_skip")) {
+        ARGS.hdfs_skip = true;
+      }
+      else if (s.matches("aws_credentials")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.aws_credentials = args[i];
+      }
+      else if (s.matches("log_level")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.log_level = args[i];
+      }
+      else if (s.matches("random_udp_drop")) {
+        ARGS.random_udp_drop = true;
+      }
+      else if (s.matches("md5skip")) {
+        ARGS.md5skip = true;
+      }
+      else {
+        parseFailed("Unknown argument (" + s + ")");
+      }
+    }
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+  // Embedded configuration for a full H2O node to be implanted in another
+  // piece of software (e.g. Hadoop mapper task).
+  //-------------------------------------------------------------------------------------------------------------------
+
+  public static volatile AbstractEmbeddedH2OConfig embeddedH2OConfig;
+
+  /**
+   * Register embedded H2O configuration object with H2O instance.
+   */
+  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+
+  /**
+   * Tell the embedding software that this H2O instance belongs to
+   * a cloud of a certain size.
+   * This may be nonblocking.
+   *
+   * @param ip IP address this H2O can be reached at.
+   * @param port Port this H2O can be reached at (for REST API and browser).
+   * @param size Number of H2O instances in the cloud.
+   */
+  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) {
+    if (embeddedH2OConfig == null) { return; }
+    embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
+  }
+
+  /**
+   * Notify embedding software instance H2O wants to exit.
+   * @param status H2O's requested process exit value.
+   */
+  public static void exit(int status) {
+    // embeddedH2OConfig is only valid if this H2O node is living inside
+    // another software instance (e.g. a Hadoop mapper task).
+    //
+    // Expect embeddedH2OConfig to be null if H2O is run standalone.
+
+    // Cleanly shutdown internal H2O services.
+    // if (apiIpPortWatchdog != null) {
+    //   apiIpPortWatchdog.shutdown();
+    // }
+
+    if (embeddedH2OConfig == null) {
+      // Standalone H2O path.
+      System.exit(status);
+    }
+
+    // Embedded H2O path (e.g. inside Hadoop mapper task).
+    embeddedH2OConfig.exit(status);
+
+    // Should never reach here.
+    System.exit(222);
+  }
+
+  /** Shutdown itself by sending a shutdown UDP packet. */
+  public void shutdown() {
+    UDPRebooted.T.shutdown.send(H2O.SELF);
+    H2O.exit(0);
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
 
   public static final AbstractBuildVersion ABV;
   static {
@@ -259,58 +623,6 @@ final public class H2O {
     public abstract void callback(T t);
   }
 
-  // --------------------------------------------------------------------------
-  // List of arguments.
-  public static final OptArgs ARGS = new OptArgs();
-  /** Parsed command line arguments, as Java primitives. */
-  public static class OptArgs extends Arguments.Opt {
-    private OptArgs(){}
-    /** -h, -h=true; print help and exit */
-    boolean h = false;
-    /** -help, -help=true; print help and exit*/
-    boolean help = false;
-    /** -version, -version=true; print version and exit */
-    boolean version = false;
-
-    // Common config options
-    /** -name=name; Set cloud name */
-    public String name = System.getProperty("user.name"); // Cloud name
-    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
-    public String flatfile;
-    /** -port=####; Browser/API/HTML port */
-    public int    port;
-    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
-    public String ip;
-    /** -network=network; Network specification for acceptable interfaces to bind to */
-    public String network;
-    /** -ice_root=ice_root; ice root directory; where temp files go */
-    String ice_root;
-    /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
-    String log_level;
-
-    // Less common config options
-    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    int nthreads=Math.max(99,10*NUMCPUS);
-    /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
-    boolean random_udp_drop;
-    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
-    boolean client;
-
-    // HDFS & AWS
-    /** -hdfs=hdfs; HDFS backend */
-    public String hdfs;
-    /** -hdfs_version=hdfs_version; version of the filesystem */
-    String hdfs_version;
-    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config;
-    /** -hdfs_skip=hdfs_skip; used by hadoop driver to not unpack and load any hdfs jar file at runtime. */
-    String hdfs_skip = null;
-    /** -aws_credentials=aws_credentials; properties file for aws credentials */
-    public String aws_credentials;
-    /** -md5skip, -md5skip=true; test-only; Skip the MD5 Jar checksum; allows jars from different builds to mingle in the same cloud */
-    public boolean md5skip;
-  }
-
   public static int H2O_PORT; // Both TCP & UDP cluster ports
   public static int API_PORT; // RequestServer and the API HTTP port
 
@@ -343,78 +655,6 @@ final public class H2O {
   // Enables debug features like more logging and multiple instances per JVM
   static final String DEBUG_ARG = "h2o.debug";
   static final boolean DEBUG = System.getProperty(DEBUG_ARG) != null;
-
-  static void printHelp() {
-    String s =
-    "Start an H2O node.\n" +
-    "\n" +
-    "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
-    "        (Note that every option has a default and is optional.)\n" +
-    "\n" +
-    "    -h | -help\n" +
-    "          Print this help.\n" +
-    "\n" +
-    "    -version\n" +
-    "          Print version info and exit.\n" +
-    "\n" +
-    "    -name <h2oCloudName>\n" +
-    "          Cloud name used for discovery of other nodes.\n" +
-    "          Nodes with the same cloud name will form an H2O cloud\n" +
-    "          (also known as an H2O cluster).\n" +
-    "\n" +
-    "    -flatfile <flatFileName>\n" +
-    "          Configuration file explicitly listing H2O cloud node members.\n" +
-    "\n" +
-    "    -ip <ipAddressOfNode>\n" +
-    "          IP address of this node.\n" +
-    "\n" +
-    "    -port <port>\n" +
-    "          Port number for this node (note: port+1 is also used).\n" +
-    "          (The default port is " + ARGS.port + ".)\n" +
-    "\n" +
-    "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
-    "          The IP address discovery code will bind to the first interface\n" +
-    "          that matches one of the networks in the comma-separated list.\n" +
-    "          Use instead of -ip when a broad range of addresses is legal.\n" +
-    "          (Example network specification: '10.1.2.0/24' allows 256 legal\n" +
-    "          possibilities.)\n" +
-    "\n" +
-    "    -ice_root <fileSystemPath>\n" +
-    "          The directory where H2O spills temporary data to disk.\n" +
-    "          (The default is '" + ARGS.port + "'.)\n" +
-    "\n" +
-    "    -nthreads <#threads>\n" +
-    "          Maximum number of threads in the low priority batch-work queue.\n" +
-    "          (The default is 99.)\n" +
-    "\n" +
-    "    -md5skip\n" +
-    "          Skip comparing MD5 of jar path while joining cloud.\n" +
-    "\n" +
-    "    -client\n" +
-    "          Launch H2O node in client mode.\n" +
-    "\n" +
-    "Cloud formation behavior:\n" +
-    "\n" +
-    "    New H2O nodes join together to form a cloud at startup time.\n" +
-    "    Once a cloud is given work to perform, it locks out new members\n" +
-    "    from joining.\n" +
-    "\n" +
-    "Examples:\n" +
-    "\n" +
-    "    Start an H2O node with 4GB of memory and a default cloud name:\n" +
-    "        $ java -Xmx4g -jar h2o.jar\n" +
-    "\n" +
-    "    Start an H2O node with 6GB of memory and a specify the cloud name:\n" +
-    "        $ java -Xmx6g -jar h2o.jar -name MyCloud\n" +
-    "\n" +
-    "    Start an H2O cloud with three 2GB nodes and a default cloud name:\n" +
-    "        $ java -Xmx2g -jar h2o.jar &\n" +
-    "        $ java -Xmx2g -jar h2o.jar &\n" +
-    "        $ java -Xmx2g -jar h2o.jar &\n" +
-    "\n";
-
-    System.out.print(s);
-  }
 
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
@@ -469,8 +709,6 @@ final public class H2O {
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
-    Paxos.doHeartbeat(SELF);
-    assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -729,7 +967,7 @@ final public class H2O {
       return;                   // Already started
 
     // Parse args
-    new Arguments(args).extract(ARGS);
+    parseArguments(args);
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
@@ -743,8 +981,9 @@ final public class H2O {
     // Always print version, whether asked-for or not!
     printAndLogVersion();
     if( ARGS.version ) { exit(0); }
+
     // Print help & exit
-    if( ARGS.help || ARGS.h ) { printHelp(); exit(0); }
+    if( ARGS.help ) { printHelp(); exit(0); }
 
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
@@ -765,18 +1004,25 @@ final public class H2O {
     // Load up from disk and initialize the persistence layer
     initializePersistence();
 
-    // Start network services, including heartbeats & Paxos
+    // Start network services, including heartbeats
     startNetworkServices();   // start server services
+    Log.trace("Network services started");
+
+    // Deadlock initializing PersistNFS occurred when doHeartbeat was earlier
+    // (allowed a cloud to form before the persistence layer was initialized,
+    // and then started accepting REST calls), so put it here.
+    Persist.getIce();
+    Log.trace("Persist static block initialized");
+
+    // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
+    // for users of H2O to know that it's OK to start sending REST API requests.
+    Paxos.doHeartbeat(SELF);
+    assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
   }
 
-  /** Notify embedding software instance H2O wants to exit.
-   *  @param status H2O's requested process exit value.  */
-  public static void exit(int status) {
-    System.exit(status);
-  }
   // Die horribly
   public static void die(String s) {
-    Log.err(s);
-    exit(-1);
+    Log.fatal(s);
+    H2O.exit(-1);
   }
 }

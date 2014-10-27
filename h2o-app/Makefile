@@ -6,7 +6,7 @@ classes = $(main_classes)
 
 # All the libraries; these are downloaded by gradle and slapped into the lib/ directory.
 libs = $(wildcard ../lib/*jar)
-jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/h2o-core.jar$(SEP)../h2o-algos/build/h2o-algos.jar$
+jars = $(subst $(space),$(SEP),$(libs))$(SEP)../h2o-core/build/libs/h2o-core.jar$(SEP)../h2o-algos/build/libs/h2o-algos.jar$
 
 # Fun Args to javac.  Mostly limit to java6 source definitions, and fairly
 # agressive lint warnings.

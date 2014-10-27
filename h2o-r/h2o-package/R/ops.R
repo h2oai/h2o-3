@@ -109,7 +109,7 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 #'
 #' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
 #'
-#' ‘"!"’, ‘"is.na"’, ‘"t"’
+#' ‘"!"’, ‘"is.na"’, ‘"t"’, ‘"trunc"’
 setMethod("!",     "H2OFrame", function(x) .h2o.unop("!", x))
 setMethod("is.na", "H2OFrame", function(x) .h2o.unop("is.na", x) )
 setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )

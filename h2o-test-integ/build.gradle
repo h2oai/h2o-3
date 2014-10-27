@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+description = "H2O Integration Testing"
+
+dependencies {
+    compile project(":h2o-assembly")
+}
+
+def runner = new File("$rootDir/h2o-r/tests/run.py").canonicalPath
+
+task runPythonMultiJVMTests(type: Exec) {
+    workingDir "$rootDir/py/testdir_multi_jvm"
+    commandLine 'python', runner, '--wipeall', '--numclouds', '1'
+}
+
+test.dependsOn runPythonMultiJVMTests

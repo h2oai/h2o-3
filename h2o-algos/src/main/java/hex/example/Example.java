@@ -25,6 +25,9 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for Example: " + _parms.validationErrors());
+
     return (Example)start(new ExampleDriver(), _parms._max_iters);
   }
 
