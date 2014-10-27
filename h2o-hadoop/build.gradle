@@ -1,0 +1,14 @@
+apply plugin: 'java'
+
+description = "H2O Hadoop Driver"
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+compileJava { 
+  options.debug = true 
+}
+
+dependencies {
+  compile project(":h2o-core")
+}

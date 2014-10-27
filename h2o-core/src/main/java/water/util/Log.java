@@ -303,4 +303,57 @@ abstract public class Log {
   public static void ignore(Throwable e, String msg, boolean printException) {
     debug(msg + (printException? e.toString() : ""));
   }
+
+  //-----------------------------------------------------------------
+  // POST support for debugging embedded configurations.
+  //-----------------------------------------------------------------
+
+  /**
+   * POST stands for "Power on self test".
+   * Stamp a POST code to /tmp.
+   * This is for bringup, when no logging or stdout I/O is reliable.
+   * (Especially when embedded, such as in hadoop mapreduce, for example.)
+   *
+   * @param n POST code.
+   * @param s String to emit.
+   */
+//  private static final Object postLock = new Object();
+  public static void POST(int n, String s) {
+    // DO NOTHING UNLESS ENABLED BY REMOVING THIS RETURN!
+    return;
+
+//      synchronized (postLock) {
+//          File f = new File ("/tmp/h2o.POST");
+//          if (! f.exists()) {
+//              boolean success = f.mkdirs();
+//              if (! success) {
+//                  try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
+//                  H2O.exit (0);
+//              }
+//          }
+//
+//          f = new File ("/tmp/h2o.POST/" + n);
+//          try {
+//              f.createNewFile();
+//              FileWriter fstream = new FileWriter(f.getAbsolutePath(), true);
+//              BufferedWriter out = new BufferedWriter(fstream);
+//              out.write(s + "\n");
+//              out.close();
+//          }
+//          catch (Exception e) {
+//              try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
+//              H2O.exit (0);
+//          }
+//      }
+  }
+  public static void POST(int n, Exception e) {
+    if (e.getMessage() != null) {
+      POST(n, e.getMessage());
+    }
+    POST(n, e.toString());
+    StackTraceElement[] els = e.getStackTrace();
+    for (int i = 0; i < els.length; i++) {
+      POST(n, els[i].toString());
+    }
+  }
 }

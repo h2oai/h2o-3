@@ -5,6 +5,7 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
 import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
 import water.init.NetworkInit;
 import water.nbhm.NonBlockingHashMap;
@@ -328,6 +329,66 @@ final public class H2O {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+  // Embedded configuration for a full H2O node to be implanted in another
+  // piece of software (e.g. Hadoop mapper task).
+  //-------------------------------------------------------------------------------------------------------------------
+
+  public static volatile AbstractEmbeddedH2OConfig embeddedH2OConfig;
+
+  /**
+   * Register embedded H2O configuration object with H2O instance.
+   */
+  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+
+  /**
+   * Tell the embedding software that this H2O instance belongs to
+   * a cloud of a certain size.
+   * This may be nonblocking.
+   *
+   * @param ip IP address this H2O can be reached at.
+   * @param port Port this H2O can be reached at (for REST API and browser).
+   * @param size Number of H2O instances in the cloud.
+   */
+  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) {
+    if (embeddedH2OConfig == null) { return; }
+    embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
+  }
+
+  /**
+   * Notify embedding software instance H2O wants to exit.
+   * @param status H2O's requested process exit value.
+   */
+  public static void exit(int status) {
+    // embeddedH2OConfig is only valid if this H2O node is living inside
+    // another software instance (e.g. a Hadoop mapper task).
+    //
+    // Expect embeddedH2OConfig to be null if H2O is run standalone.
+
+    // Cleanly shutdown internal H2O services.
+    // if (apiIpPortWatchdog != null) {
+    //   apiIpPortWatchdog.shutdown();
+    // }
+
+    if (embeddedH2OConfig == null) {
+      // Standalone H2O path.
+      System.exit(status);
+    }
+
+    // Embedded H2O path (e.g. inside Hadoop mapper task).
+    embeddedH2OConfig.exit(status);
+
+    // Should never reach here.
+    System.exit(222);
+  }
+
+  /** Shutdown itself by sending a shutdown UDP packet. */
+  public void shutdown() {
+    UDPRebooted.T.shutdown.send(H2O.SELF);
+    H2O.exit(0);
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -964,14 +1025,9 @@ final public class H2O {
     }
   }
 
-  /** Notify embedding software instance H2O wants to exit.
-   *  @param status H2O's requested process exit value.  */
-  public static void exit(int status) {
-    System.exit(status);
-  }
   // Die horribly
   public static void die(String s) {
-    Log.err(s);
-    exit(-1);
+    Log.fatal(s);
+    H2O.exit(-1);
   }
 }
