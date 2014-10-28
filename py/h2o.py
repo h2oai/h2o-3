@@ -726,3 +726,20 @@ class H2O(object):
         return result
 
 
+    '''
+    Fetch the list of REST API endpoints.
+    '''
+    def endpoints(self, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/1/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
+
+        return result
+
+    '''
+    Fetch the metadata for the given numbered REST API endpoint.
+    '''
+    def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
+
+        return result
