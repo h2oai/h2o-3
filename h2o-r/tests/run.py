@@ -1544,34 +1544,34 @@ def main(argv):
     g_script_name = os.path.basename(argv[0])
 
     # Calculate test_root_dir.
-    test_root_dir = None
-    if (True):
-        cwd_arr = os.getcwd().split(os.sep)
-        i = len(cwd_arr) - 1
-        while (i > 0):
-            if (cwd_arr[i] == "testdir_multi_jvm"):
-                cwd_arr_prefix = cwd_arr[:i+1]
-                test_root_dir = os.sep.join(cwd_arr_prefix)
-                break
-            elif (cwd_arr[i] == "h2o-web"):
-                cwd_arr_prefix = cwd_arr[:i+1]
-                test_root_dir = os.sep.join(cwd_arr_prefix)
-                break
-            i -= 1
-        if (test_root_dir is None):
-            test_root_dir = os.path.dirname(os.path.realpath(__file__))
+    test_root_dir = os.path.realpath(os.getcwd())
 
     # Calculate global variables.
     g_output_dir = os.path.join(test_root_dir, str("results"))
     g_failed_output_dir = os.path.join(g_output_dir, str("failed"))
 
-    # Calculate and set other variables.
-    h2o_jar = os.path.abspath(
-        os.path.join(                               # test_root_dir
-            os.path.join(                           # ..
-                os.path.join(                       # ..
-                    os.path.join(                   # build
-                        os.path.join(test_root_dir, ".."), ".."), "build"), "h2o.jar")))
+    # Look for h2o jar file.
+    h2o_jar = None
+    if (True):
+        possible_h2o_jar_parent_dir = test_root_dir
+        while (True):
+            possible_h2o_jar_dir = os.path.join(possible_h2o_jar_parent_dir, "build")
+            possible_h2o_jar = os.path.join(possible_h2o_jar_dir, "h2o.jar")
+            if (os.path.exists(possible_h2o_jar)):
+                h2o_jar = possible_h2o_jar
+                break
+
+            next_possible_h2o_jar_parent_dir = os.path.dirname(possible_h2o_jar_parent_dir)
+            if (next_possible_h2o_jar_parent_dir == possible_h2o_jar_parent_dir):
+                break
+
+            possible_h2o_jar_parent_dir = next_possible_h2o_jar_parent_dir
+
+    if (h2o_jar is None):
+        print("")
+        print("ERROR: Could not find h2o.jar")
+        print("")
+        sys.exit(1)
 
     # Override any defaults with the user's choices.
     parse_args(argv)
