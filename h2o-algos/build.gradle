@@ -1,6 +1,5 @@
 apply from: '../gradle/java.gradle'
 apply from: '../gradle/cp.gradle'
-apply plugin : 'java'
 
 description = "H2O Algorithms"
 
