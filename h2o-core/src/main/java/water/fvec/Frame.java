@@ -278,7 +278,7 @@ public class Frame extends Lockable {
   }
 
   // Add a bunch of vecs
-  private void add( String[] names, Vec[] vecs ) {
+  public void add( String[] names, Vec[] vecs ) {
     if (null == vecs || null == names) return;
     for( int i=0; i<vecs.length; i++ )
       add(names[i],vecs[i]);
