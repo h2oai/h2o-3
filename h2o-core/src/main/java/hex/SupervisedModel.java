@@ -43,32 +43,36 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      * NOTE: it's up to the caller to get the parameters right.  Do not change them behind the caller's back!
      */
     @Override public int sanityCheckParameters() {
+      this.clearValidationErrors();
       if (_train == null)
         validation_error("training_frame", "Training frame must be set.");
 
       if (_response_column == null)
         validation_error("response_column", "Response column must be set.");
 
-      int ridx = train().find(_response_column);
-      if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
-        validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
-      _response = train().vecs()[ridx];
-      _nclass = _response.domain()==null ? 1 : _response.domain().length;
+      int ridx = 0;
+      if (_train != null) {
+        ridx = train().find(_response_column);
+        if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
+          validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
+        _response = train().vecs()[ridx];
+        _nclass = _response.domain()==null ? 1 : _response.domain().length;
 
-      // NOTE: classification is no longer considered a parameter; it is derived from the response column.
-      _classification = _response.isEnum();
-      _ncols = train().numCols();
-      _nrows = train().numRows() - _response.naCnt();
-      if( _ncols <= 1 )
-        validation_error("_training_frame", "Training data must have at least 2 features (incl. response).");
-      if( _response.isBad() ) 
-        validation_error("_response_column", "Response column is all NAs!");
-      if( _response.isConst() ) 
-        validation_error("_response_column", "Response column is constant!");
+        // NOTE: classification is no longer considered a parameter; it is derived from the response column.
+        _classification = _response.isEnum();
+        _ncols = train().numCols();
+        _nrows = train().numRows() - _response.naCnt();
+        if( _ncols <= 1 )
+          validation_error("_training_frame", "Training data must have at least 2 features (incl. response).");
+        if( _response.isBad() )
+          validation_error("_response_column", "Response column is all NAs!");
+        if( _response.isConst() )
+          validation_error("_response_column", "Response column is constant!");
 
-      int usableColumns = 0;
-      for( Vec v : train().vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
-      if( usableColumns==0 ) throw new IllegalArgumentException("There is no usable column to generate model!");
+        int usableColumns = 0;
+        for( Vec v : train().vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
+        if( usableColumns==0 ) throw new IllegalArgumentException("There is no usable column to generate model!"); // TODO: validation_error
+      }
 
       return _validation_error_count;
     }

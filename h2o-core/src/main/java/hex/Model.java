@@ -63,10 +63,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private transient Frame _vfr;    // Validation frame cache
 
     /** @return the (cached) training frame instance */
-    public final Frame train() { return _tfr==null ? (_tfr=              _train        .get()) : _tfr; }
+    public final Frame train() { return _tfr==null && _train != null ? (_tfr=              _train        .get()) : _tfr; }
     /** @return the (cached) validation frame instance, or the training frame
      *  if a validation frame was not specified */
-    public final Frame valid() { return _vfr==null ? (_vfr=(_valid==null?_train:_valid).get()) : _vfr; }
+    public final Frame valid() { return _vfr==null && _valid != null ? (_vfr=(_valid==null?_train:_valid).get()) : _vfr; }
 
     /** Read-Lock both training and validation frames. */
     public void lock_frames( Job job ) { 
@@ -141,6 +141,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           sb.append((sb.length() > 0 ? "" : "; ")).append(vm.toString());
 
       return sb.toString();
+    }
+
+    public void clearValidationErrors() {
+      _validation_messages = new ValidationMessage[0];
+      _validation_error_count = 0;
     }
 
     // TODO: this really needs to be called from a common place in ModelBuilder or Model. . .

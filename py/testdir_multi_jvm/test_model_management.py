@@ -286,24 +286,31 @@ print 'Done building KMeans model.'
 #######################################
 # Test DeepLearning parameters validation
 #
-# Good parameters:
+# Good parameters (note: testing with null training_frame):
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
-parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-assert 0 == parameters_validation['validation_error_count'], "0 == validation_error_count in good-parameters parameters validation result."
+if 1 != parameters_validation['validation_error_count']:
+    print "validation errors: "
+    pp.pprint(parameters_validation)
+assert 1 == parameters_validation['validation_error_count'], "1 != validation_error_count in good-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
 
 # Bad parameters (hidden is null):
+# (note: testing with null training_frame)
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
-parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters parameters validation result."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters parameters validation result."
-found_error = False
+assert 2 == parameters_validation['validation_error_count'], "2 != validation_error_count in bad-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
+
+found_expected_error = False
 for validation_message in parameters_validation['validation_messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-        found_error = True
-assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
+        found_expected_error = True
+assert found_expected_error, "Failed to find error message about input_dropout_ratio in the validation messages."
 
 #######################################
 # Build DeepLearning model for Prostate
@@ -332,11 +339,11 @@ print 'Done trying to build DeepLearning model with bad parameters.'
 
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters build result."
 assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters build validation result."
-found_error = False
+found_expected_error = False
 for validation_message in parameters_validation['validation_messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-        found_error = True
-assert found_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
+        found_expected_error = True
+assert found_expected_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
 
 
 #######################################

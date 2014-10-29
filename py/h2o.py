@@ -564,7 +564,7 @@ class H2O(object):
     '''
     def validate_model_parameters(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
         assert algo is not None, '"algo" parameter is null'
-        assert training_frame is not None, '"training_frame" parameter is null'
+        # Allow this now: assert training_frame is not None, '"training_frame" parameter is null'
         assert parameters is not None, '"parameters" parameter is null'
 
         model_builders = self.model_builders(timeoutSecs=timeoutSecs)
@@ -573,13 +573,11 @@ class H2O(object):
         builder = model_builders['model_builders'][algo]
         
         # TODO: test this assert, I don't think this is working. . .
-        frames = self.frames(key=training_frame)
-        assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
-
-        # TODO: add parameter existence checks
-        # TODO: add parameter value validation
-        parameters['training_frame'] = training_frame
+        if training_frame is not None:
+            frames = self.frames(key=training_frame)
+            assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
+            assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+            parameters['training_frame'] = training_frame
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
@@ -607,9 +605,6 @@ class H2O(object):
         frames = self.frames(key=training_frame)
         assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
         assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
-
-        # TODO: add parameter existence checks
-        # TODO: add parameter value validation
         parameters['training_frame'] = training_frame
 
         if destination_key is not None:
