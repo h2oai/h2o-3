@@ -2174,7 +2174,7 @@ class ASTLs extends ASTOp {
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
     NewChunk keys = new NewChunk(av,0);
     int r = 0;
-    KeySnapshot.KeyInfo[] infos = KeySnapshot.globalSnapshot()._keyInfos;
+//    KeySnapshot.KeyInfo[] infos = KeySnapshot.globalSnapshot()._keyInfos;
     for( Key key : KeySnapshot.globalSnapshot().keys())
       if( key.user_allowed() && H2O.get(key) != null) {
         if (DKV.get(key).get() instanceof Job.Progress) continue;

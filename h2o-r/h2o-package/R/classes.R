@@ -511,6 +511,10 @@ setMethod("show", "ASTNode", function(object) {
    }
 })
 
+#setMethod("show", "ASTFun", function(object) {
+#  cat(.fun.visitor(object)$ast, "\n")
+#})
+
 #'
 #' The ASTApply class.
 #'
@@ -535,24 +539,20 @@ setClass("ASTUnk", representation(key="character", isFormal="logical"), contains
 #' The ASTFun class.
 #'
 #' This class represents a UDF.
-setClass("ASTFun", representation(type="character", name="character", statements="list", arguments="vector"), contains="Node",
-         prototype(node_type = "ASTFun"))
-
-#'
-#' The ASTArg class.
-#'
-#' This class represents an argument to a function.
-setClass("ASTArg", representation(args="character"), contains="Node",
-         prototype(node_type = "ASTArg"))
-
+#setClass("ASTFun", representation(name="character", arguments="character", body="ASTBody"), contains="Node")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # AST Class Defintions: Part 2
 #-----------------------------------------------------------------------------------------------------------------------
 
-setClass("ASTSpan", representation(root="Node", children = "list"), contains="Node")
-
-setClass("ASTSeries", representation(op="character", children = "list"), contains="Node")
+setClass("ASTBody",   representation(statements="list"), contains="Node")
+setClass("ASTFun", representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
+setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
+setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
+setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
+setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
+setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Utils
