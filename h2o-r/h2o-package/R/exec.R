@@ -77,8 +77,8 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if (!is.null(ID)) Last.value <- ID %<-% Last.value
   expr <- visitor(Last.value)
 
-  print("AST: ")
-  print(expr$ast)
+#  print("AST: ")
+#  print(expr$ast)
 #  stop("end")
 
   # Have H2O evaluate the AST

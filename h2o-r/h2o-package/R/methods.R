@@ -110,12 +110,12 @@ h2o.rm <- function(object, keys) {
 }
 
 h2o.assign <- function(data, key) {
-  if(data %<i-% "ASTNode") invisible(head(data))
-  if(!(data %<i-% "H2OParsedData")) stop("data must be of class H2OParsedData")
+  if(data %i% "ASTNode") invisible(head(data))
+  if(!(data %i% "H2OParsedData")) stop("data must be of class H2OParsedData")
   if(!is.character(key)) stop("key must be of class character")
   if(nchar(key) == 0) stop("key cannot be an empty string")
   if(key == data@key) stop(paste("Destination key must differ from data key", data@key))
-  ast <- key %<-% (' $' %<p0-% data@key)
+  ast <- key %<-% (' $' %p0% data@key)
   .force.eval(.retrieveH2O(parent.frame()), ast, ID = NULL, rID = key)
   assign(deparse(substitute(data)), get(key), envir = parent.frame())
   invisible(get(key))
@@ -129,11 +129,118 @@ h2o.getFrame <- function(h2o, key) {
     key <- h2o
     h2o <- .retrieveH2O(parent.frame())
   }
-  ast <- new("ASTNode", root = new("ASTApply", op = '$' %<p0-% key))
+  ast <- new("ASTNode", root = new("ASTApply", op = '$' %p0% key))
   ID <- key
   .force.eval(h2o, ast, ID = ID, rID = 'ast')
   ast
 }
+
+#'
+#' Word2Vec
+#'
+#' Create a word2vec object.
+#'
+#' Two cases below: 1. Negative Sampling; 2. Hierarchical Softmax
+#'
+#' * Constructor used for specifying the number of negative sampling cases.
+#'  @param wordModel - SkipGram or CBOW
+#'  @param normModel - Hierarchical softmax or Negative sampling
+#'  @param numNegEx - Number of negative samples used per word
+#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
+#'  @param vecSize - Size of word vectors
+#'  @param winSize - Size of word window
+#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
+#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+#'  @param epochs - Number of iterations data is run through.
+#'
+#' * Constructor used for hierarchical softmax cases.
+#'  @param wordModel - SkipGram or CBOW
+#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
+#'  @param vecSize - Size of word vectors
+#'  @param winSize - Size of word window
+#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
+#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+#'  @param epochs - Number of iterations data is run through.
+h2o.word2vec<-
+function(data, minFreq, wordModel, normModel, numNegEx = NULL, vocabKey = NULL,
+         vecSize, winSize, sentSampleRate, learningRate, epochs) {
+
+  # param checking
+  if (!(data %i% "H2OFrame")) stop("`data` must be an H2OFrame")
+  if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
+  if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
+  if (!is.null(numNegEx)) {
+    if (numNegEx < 0) stop("`numNegEx` must be >= 0")
+    if (numNegEx != 0 && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received" %p% numNegEx)
+  }
+  if (missing(vecSize) || !is.numeric(vecSize)) stop("`vecSize` must be numeric")
+  if (missing(winSize) || !is.numeric(winSize)) stop("`winSize` must be numeric")
+  if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
+  if (missing(learningRate) || !is.numeric(learningRate)) stop("`learningRate` must be numeric")
+  if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
+  if (!(data %i% "H2OParsedData")) invisible(nrow(data))  # try to force the eval of the frame
+  if (!(data %i% "H2OParsedData")) stop("Could not evaluate `data` as an H2O data frame.")
+
+  params <- list(data = data@key,
+                 normModel = normModel,
+                 numNegEx = numNegEx,
+                 vocabKey = vocabKey,
+                 vecSize = vecSize,
+                 winSize = winSize,
+                 sentSampleRate = sentSampleRate,
+                 learningRate = learningRate,
+                 epochs = epochs)
+
+  res <- .h2o.__remoteSend(data@h2o, .h2o.__W2V, params)
+  w2vecFrame <- h2o.getFrame(res$'_w2vKey')
+  vocabFrame <- h2o.getFrame(res$'_wordCountKey')
+  new("H2OW2V", h2o = data@h2o, key = res$key, word2vec = w2vecFrame, vocab=vocabFrame, train.data = data, params = params)  # return a new h2o-word2vec object
+}
+
+#'
+#' Find Synonyms Using an H2OW2V object
+#'
+#'  @param word2vec: An H2OW2V model.
+#'  @param target: A single word, or a vector of words.
+#'  @param count: The top `count` synonyms will be returned.
+#'
+h2o.synonym<-
+function(word2vec, target, count) {
+  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")
+  if (missing(target)) stop("`target` must be specified")
+  if (!is.character(target)) stop("`target` must be character")
+  if (missing(count)) stop("`count` must be specified")
+  if (!is.numeric(count)) stop("`count` must be numeric")
+
+  params <- c(data = word2vec@word2vec@key, word2vec@params)
+  if (length(target) == 1) {
+    params$target <- target
+    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
+    return(h2o.getFrame(res$key))
+  } else {
+    vecs <- lapply(target, h2o.transform, word2vec)
+    vec <- colSums(as.data.frame(vecs))
+    params$vec <- vec
+    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
+    return(h2o.getFrame(res$key))
+  }
+}
+
+#'
+#' Transform A Word to A Vec Using Word2Vec
+#'
+#' Use a pre-existing word2vec object to transform a target word
+#' into a numeric vector.
+setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
+  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
+  if (missing(target)) stop("`target` must be specified")
+  if (!is.character(target)) stop("`target` must be character")
+  if (length(target) > 1) stop("`target` must be a single word")
+
+  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
+  res <- .h2o.__remoteSend(data@h2o, .h2o.__TRANSFORM, params)
+  res$vec
+})
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
