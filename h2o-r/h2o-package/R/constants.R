@@ -24,15 +24,17 @@
 .pkg.env$IS_LOGGING   <- FALSE
 .pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
-.LOGICAL_OPERATORS <- c("==", ">", "<", "!=", ">=", "<=", "&", "|", "&&", "||", "!", "is.na")
-.INFIX_OPERATORS   <- c("+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">")
 
 #'
 #' Some handy utility functions for doing common h2o package-related tasks.
 #'
 "%<i-%"  <- function(x,y) inherits(x, y)  # check if `x` inherits from `y`
+"%i%"    <- function(x,y) inherits(x, y)  # same as above but short hand version
+"%instanceof%" <- function(x,y) inherits(x,y) # java friendly version
 "%<p0-%" <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0
+"%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0
 "%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
+"%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
 "%<-%"   <- function(x,y) {
   if ( x %<i-% "H2OParsedData" ) x <- x@key
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
@@ -61,22 +63,22 @@
                 "%/%"="%/%")
 
 .binop.map <- list('>'  = 'g',
-                '>=' = 'G',
-                '<'  = 'l',
-                '<=' = 'L',
-                '==' = 'n',
-                '!=' = 'N',
-                '%%' = '%',
-                '**' = '^',
-                '|'  = '|',
-                '&'  = '&',
-                "&&" = "&&",
-                '+'  = '+',
-                '-'  = '-',
-                '*'  = '*',
-                '/'  = '/',
-                '^'  = '^',
-                "%/%"="%/%")
+                   '>=' = 'G',
+                   '<'  = 'l',
+                   '<=' = 'L',
+                   '==' = 'n',
+                   '!=' = 'N',
+                   '%%' = '%',
+                   '**' = '^',
+                   '|'  = '|',
+                   '&'  = '&',
+                   "&&" = "&&",
+                   '+'  = '+',
+                   '-'  = '-',
+                   '*'  = '*',
+                   '/'  = '/',
+                   '^'  = '^',
+                   "%/%"="%/%")
 
 #'
 #' Map of unary operators to their "AST" operator value.
@@ -135,7 +137,6 @@
 #'
 #' The variable args operations
 #'
-
 .varop.map <- list( "round" = "round",
                     "signif" = "signif",
                     "max" = "max",

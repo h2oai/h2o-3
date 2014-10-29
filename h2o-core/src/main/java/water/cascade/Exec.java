@@ -120,6 +120,15 @@ public class Exec extends Iced {
   }
 
   boolean hasNext() { return _x != _ast.length; }
+  boolean hasNextStmnt() {
+    if (hasNext()) {
+      if (_x+1 >= _ast.length) return false;
+      if (_x+2 >= _ast.length) return false;
+      if (_ast[_x] == ';' && _ast[_x+1] == ';' && _ast[_x+2] == ';') return false; // end of all statements == ;;;
+      return true;
+    }
+    return false;
+  }
 
   double nextDbl() { return ((ASTNum) this.skipWS().parse()).dbl(); }
   String nextStr() { return ((ASTString) this.skipWS().parse())._s; }
@@ -136,6 +145,18 @@ public class Exec extends Iced {
     while (true) {
       if (_x >= _ast.length) break;
       if (peek() == ' ' || peek() == ')') {
+        _x++;
+        continue;
+      }
+      break;
+    }
+    return this;
+  }
+
+  Exec skipEOS() {
+    while (true) {
+      if (_x >= _ast.length) break;
+      if (peek() == ';' || peek() == ' ' || peek() == ')') {
         _x++;
         continue;
       }

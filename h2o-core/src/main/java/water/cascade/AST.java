@@ -286,13 +286,13 @@ class ASTStatement extends AST {
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
 
-    // an ASTStatement is an array of ASTs. If the array is null, the statement is null -> return null.
-    String[] asts = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-    if (asts == null) return null;
-    for (int i = 0; i < asts.length; ++i) {
-      AST ast = E.parseAST(asts[i], E._env);
+    // an ASTStatement is an array of ASTs. May have statements within statements.
+    while (E.hasNextStmnt()) {
+      AST ast = E.parse();
       ast_ary.add(ast);
+      E.skipEOS();  // skip EOS == End of Statement
     }
+
     ASTStatement res = (ASTStatement) clone();
     res._asts = ast_ary.toArray(new AST[ast_ary.size()]);
     return res;
@@ -318,6 +318,7 @@ class ASTStatement extends AST {
 
 class ASTIf extends ASTStatement {
   protected AST _pred;
+  protected boolean _execed = false;
   ASTIf() {}
 
   // (if pred body)
@@ -337,6 +338,7 @@ class ASTIf extends ASTStatement {
     double v = captured.popDbl();
     captured.popScope();
     if (v == 0) return;
+    _execed = true;
     super.exec(e);  // run the statements
   }
   @Override String value() { return null; }
@@ -344,6 +346,7 @@ class ASTIf extends ASTStatement {
 }
 
 class ASTElse extends ASTStatement {
+  protected boolean _exec = true;
   // (else body)
   ASTElse() {}
   @Override ASTElse parse_impl(Exec E) {
@@ -352,8 +355,7 @@ class ASTElse extends ASTStatement {
     res._asts = statements._asts;
     return res;
   }
-  void exec(Env e, boolean exec) {if (exec) super.exec(e); }
-  @Override void exec(Env e) { throw H2O.fail(); }
+  @Override void exec(Env e) { if (_exec) super.exec(e); }
   @Override String value() { return null; }
   @Override int type() { return 0; }
 }
@@ -664,7 +666,9 @@ class ASTAssign extends AST {
         Frame f = e.pop0Ary();  // pop without lowering counts
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
-        DKV.put(k, fr);
+        Futures fs = new Futures();
+        DKV.put(k, fr, fs);
+        fs.blockForPending();
         e._locked.add(fr._key);
         e.push(new ValFrame(fr));
         e.put(id._id, Env.ARY, id._id);

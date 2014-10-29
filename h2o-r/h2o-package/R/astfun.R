@@ -48,81 +48,19 @@
 #'            *this* scope knows about all functions and all if its parents functions.
 #'            They are implemented as nested environments.
 #'
-
-
+#' The Finer Points
+#' ----------------
 #'
-#' Retrieve the slot value from the object given its name and return it as a list.
-.slots<-
-function(name, object) {
-    ret <- list(slot(object, name))
-    names(ret) <- name
-    ret
-}
-
+#' Mutually recursive functions:
 #'
-#' Cast an S4 AST object to a list.
+#'  For creating the
+#'  .process.stmnt <=> .statement.to.ast.switchboard
 #'
 #'
-#' For each slot in `object`, create a list entry of name "slotName", with value given by the slot.
 #'
-#' To unpack this information, .ASTToList depends on a secondary helper function `.slots(...)`.
-#' Finally, the result of the lapply is unlisted a single level, such that a vector of lists is returned
-#' rather than a list of lists. This helps avoids anonymous lists.
-.ASTToList<-
-function(object) {
-  return( unlist(recursive = FALSE, lapply(slotNames(object), .slots, object)))
-}
 
 #'
-#' The AST visitor method.
-#'
-#' This method represents a map between an AST S4 object and a regular R list,
-#' which is suitable for the rjson::toJSON method.
-#'
-#' Given a node, the `visitor` function recursively "list"-ifies the node's S4 slots and then returns the list.
-#'
-#' A node that has a "root" slot is an object of type ASTOp. An ASTOp will always have a "children" slot representing
-#' its operands. A root node is the most general type of input, while an object of type ASTFrame or ASTNumeric is the
-#' most specific. This method relies on the private helper function .ASTToList(...) to map the AST S4 object to a list.
-#visitor<-
-#function(node) {
-#  if (.hasSlot(node, "root")) {
-#    root_values <- .ASTToList(node@root)
-#    children <- lapply(node@children, visitor)
-#    root_values$operands <- children
-#    list(astop = root_values)
-#  } else if (.hasSlot(node, "statements")) {
-#    f_name <- node@name
-#    arguments <- node@arguments
-#    children <- lapply(node@statements, visitor)
-#
-#    l <- list(f_name, arguments, children)
-#    names(l) <- c("alias", "free_variables", "body")
-#    l
-#  } else if (.hasSlot(node, "symbols")) {
-#    l <- .ASTToList(node)
-#    l$symbols <- node@symbols
-#    l
-#  } else if (.hasSlot(node, "arg_value") && .hasSlot(node@arg_value, "root")) {
-#    l <- .ASTToList(node)
-#    l$arg_value <- visitor(node@arg_value)
-#    l
-#  } else if (.hasSlot(node, "arg_value") && .hasSlot(node@arg_value, "statements")) {
-#    l <- .ASTToList(node)
-#    l$arg_value <- visitor(node@arg_value)
-#    l
-#  } else if (.hasSlot(node, "arg_value") && .hasSlot(node@arg_value, "symbols")) {
-#    l <- .ASTToList(node)
-#    l$arg_value <- node@arg_value@symbols #visitor(node@arg_value)
-#    l
-#  } else {
-#    .ASTToList(node)
-#  }
-#}
-
-
-#'
-#' Helper function for .is_udfs
+#' Helper function for .is.udf
 #'
 #' Carefully examine an environment and determine if it's a user-defined closure.
 #'
@@ -137,7 +75,7 @@ function(object) {
   isNamed <- environmentName(e) != ""
   if (isNamed) return(FALSE)
   # go to the parent and check again, until we hit the global, in which case return true
-  .isClosure(parent.env(e))
+  .is.closure(parent.env(e))
 }
 
 #'
@@ -150,113 +88,6 @@ function(fun) {
   if (is.logical(e)) return(FALSE)                                  # if e is logical -> no environment found
   tryCatch(.is.closure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
 }
-
-##'
-##' Helper function for .funToAST
-##'
-##' Recursively discover other user defined functions and hand them to .funToAST and
-##' hand the *real* R expressions over to .exprToAST.
-#.funToASTHelper<-
-#function(piece) {
-#  f_call <- piece[[1]]
-#
-#  # Check if user defined function
-#  if (.isUDF(f_call)) {
-#
-#    if (is.call(piece)) {
-#      return(.funToAST(piece))
-#    }
-#
-#    # Keep a global eye on functions we have definitions for to prevent infinite recursion
-#    if (! (any(f_call == .pkg.env$call_list)) || is.null(.pkg.env$call_list)) {
-#      .pkg.env$call_list <- c(.pkg.env$call_list, f_call)
-#      .funToAST(eval(f_call))
-#    }
-#  } else {
-#    .exprToAST(piece)
-#  }
-#}
-#
-##'
-##' Translate a function's body to an AST.
-##'
-##' Recursively build an AST from a UDF.
-##'
-##' This method is the entry point for producing an AST from a closure.
-##.funToAST<-
-##function(fun) {
-##  if (is.call(fun)) {
-##
-##    res <- tryCatch(eval(fun), error = function(e) {
-##      FALSE
-##      }
-##    )
-##    # This is a fairly slimey conditional.
-###    if (is.object(res)) { return(res) }
-##    if ( (!is.object(res) && res == FALSE) || (is.object(res)) ) {
-##      return(.exprToAST(fun[[2]]))
-##    } else {
-##      return(.exprToAST(eval(fun)))
-##    }
-##  }
-##  if(is.null(body(fun)) && !(is.call(fun))) fun <- eval(fun)
-##  if (.isUDF(fun)) {
-##    .pkg.env$call_list <- c(.pkg.env$call_list, fun)
-##    l <- as.list(body(fun))
-##
-##    statements <- lapply(l[-1], .funToASTHelper)
-##    if (length(l[-1]) == 1) {
-##
-##      statements <- .funToASTHelper(eval(parse(text=deparse(eval(l[-1])))))
-##    }
-##    if (length(statements) == 1 && is.null(statements[[1]])) { return(NULL) }
-##    .pkg.env$call_list <- NULL
-##    print(fun)
-##    arguments <- names(formals(fun))
-##    if (is.null(formals(fun))) arguments <- "none"
-##    new("ASTFun", type="UDF", name=deparse(substitute(fun)), statements=statements, arguments=arguments)
-##  } else {
-##    substitute(fun)
-##  }
-##}
-#
-#.funToAST<-
-#function(fun) {
-#  if (is.call(fun)) {
-#
-#    res <- tryCatch(eval(fun), error = function(e) {
-#      FALSE
-#      }
-#    )
-#    # This is a fairly slimey conditional.
-##    if (is.object(res)) { return(res) }
-#    if ( (!is.object(res) && res == FALSE) || (is.object(res)) ) {
-#      return(.exprToAST(fun[[2]]))
-#    } else {
-#      return(.exprToAST(eval(fun)))
-#    }
-#  }
-#  if(is.null(body(fun)) && !(is.call(fun))) fun <- eval(fun)
-#  if (.isUDF(fun)) {
-#    .pkg.env$call_list <- c(.pkg.env$call_list, fun)
-#    l <- as.list(body(fun))
-#
-#    statements <- lapply(l[-1], .funToASTHelper)
-#    if (length(l[-1]) == 1) {
-#
-#      statements <- .funToASTHelper(eval(parse(text=deparse(eval(l[-1])))))
-#    }
-#    if (length(statements) == 1 && is.null(statements[[1]])) { return(NULL) }
-#    .pkg.env$call_list <- NULL
-#    print(fun)
-#    arguments <- names(formals(fun))
-#    if (is.null(formals(fun))) arguments <- "none"
-#    new("ASTFun", type="UDF", name=deparse(substitute(fun)), statements=statements, arguments=arguments)
-#  } else {
-#    substitute(fun)
-#  }
-#}
-
 
 .is.op<-
 function(o) {
@@ -338,7 +169,7 @@ function(stmnt) {
 
   # Got an atomic numeric
   if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "numeric") {
-    return('#' %<p0-% stmnt_list[[1]])
+    return('#' %p0% stmnt_list[[1]])
 
   # Got an atomic string
   } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "character") {
@@ -346,7 +177,7 @@ function(stmnt) {
 
   # Got an atomic logical
   } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "logical") {
-    return('$' %<p0-% stmnt_list[[1]])
+    return('$' %p0% stmnt_list[[1]])
   }
 
   # Got an Op
@@ -398,7 +229,6 @@ function(stmnt) {
   stop(paste( "Don't know what to do with statement: ", stmnt))
 }
 
-
 .process.slice.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)
@@ -416,14 +246,19 @@ function(stmnt) {
   j <- stmnt_list[[4]]  # columns
   op <- new("ASTApply", op='[')
   x <- '$' %<p0-% deparse(stmnt_list[[2]])
-  rows <- if( missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
+  rows <- if( missing(i)) deparse("null") else { if ( i %i% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
 }
 
 .process.if.stmnt<-
 function(stmnt) {
-  stop("`if` unimplemented")
+  stmnt_list <- as.list(stmnt)         # drop the `if`
+  has_else <- length(stmnt_list) == 4  # more if-elses are glommed together into the 4th item in the list ... ALWAYS!
+  condition <- .statement.to.ast.switchboard(stmnt_list[[2]])
+  body <- .process.body(stmnt_list[[3]])
+  if (has_else) body <- c(body, .process.else.stmnt(stmnt_list[[4]]))
+  new("ASTIf", condition = condition, body = new("ASTBody", statements = body))
 }
 
 .process.for.stmnt<-
@@ -433,7 +268,8 @@ function(stmnt) {
 
 .process.else.stmnt<-
 function(stmnt) {
-  stop("`else` unimplemented")
+  body <- .process.body(stmnt, TRUE)
+  new("ASTElse", body = body)
 }
 
 .process.return.stmnt<-
@@ -445,9 +281,15 @@ function(stmnt) {
 .process.assign.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)
-  x <- deparse(stmnt[[2]])
+  s <- .statement.to.ast.switchboard(stmnt_list[[2]])
+  lhs <- ""
+  if (s %i% "ASTNode") lhs <- s
+  else {
+    x <- deparse(stmnt[[2]])
+    lhs <- '!' %<p0-% x
+  }
   y <- .statement.to.ast.switchboard(stmnt_list[[3]])
-  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y))
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
 
 #'
@@ -504,9 +346,12 @@ function(b) {
 
 
 .process.body<-
-function(b) {
+function(b, is.single = FALSE) {
   stmnts <- .extract.statements(b)
+  if (is.single) { stmnts <- list(.statement.to.ast.switchboard(stmnts))
   # return a list of ast_stmnts
+  } else stmnts <- lapply(stmnts, .statement.to.ast.switchboard)
+  new("ASTBody", statements = stmnts)
 }
 
 #'
@@ -533,11 +378,65 @@ function(b) {
 #'  2.
 #'      A. Recognize the call
 #'      B. If there's not an existing definition *in the current scope*, make one. TODO: handle closures more gracefully -- they aren't handled at all currently.
+#'
+#'
+#' The result is something like the following:
+#' (def "f" {arg1;arg2;arg3} {(stmnt1);;(stmnt2);;(stmnt3);;(stmnt4)})
 .fun.to.ast<-
 function(fun, name) {
-  args <- formals(fun)
+  args <- '{' %p0% paste(names(formals(fun)), collapse = ";") %p0% '}'
   b <- body(fun)
   stmnts <- .process.body(b)
-  ast_stmnts <- lapply(stmnts, .statement.to.ast.switchboard)
-  print(ast_stmnts) #TODO: do more than simply print out the list of statements
+  new("ASTFun", name = name, arguments = args, body = stmnts)
+}
+
+.fun.visitor<-
+function(astfun) {
+  res <- "(def"
+  res %p% astfun@name
+  res %p% astfun@arguments
+  body <- .body.visitor(astfun@body)
+  for (b in body) {res %p% b; res %p0% ";;" }
+  res %p0% ';)'
+  list(ast = res)
+}
+
+.body.visitor<-
+function(b) {
+  stmnts <- lapply(b@statements, .stmnt.visitor)
+}
+
+.stmnt.visitor<-
+function(s) {
+  res <- ""
+  if (s %i% "ASTBody") {
+    return(.body.visitor(s))
+  }
+  if (s %i% "ASTIf") {
+    res %p0% '('
+    res %p0% s@op
+    res %p% visitor(s@condition)$ast
+    body <- .body.visitor(s@body)
+    for (b in body) { res %p% b}  #; res %p0% ";;" }
+    res %p0% ')'
+    return(res)
+  } else if (s %i% "ASTElse") {
+    res %p0% '('
+    res %p0% s@op
+    body <- .body.visitor(s@body)
+    for (b in body) {res %p% b}  #; res %p0% ";;" }
+    res %p0% ')'
+    return(res)
+  } else if (s %i% "ASTFor") {
+    stop("unimplemented")
+  } else if (s %i% "ASTNode") {
+    res %p% visitor(s)$ast
+    return(res)
+  } else if (s %i% "character") {
+    res %p% s
+    return(res)
+  } else {
+    print(s)
+    stop("unimplemented")
+  }
 }
