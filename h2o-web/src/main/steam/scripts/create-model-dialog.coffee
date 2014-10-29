@@ -78,9 +78,9 @@ createCheckboxControl = (parameter) ->
 
 createControlFromParameter = (parameter) ->
   switch parameter.type
-    when 'enum', 'Frame', 'Vec'
+    when 'enum', 'Frame', 'string'
       createDropdownControl parameter
-    when 'Vec[]'
+    when 'string[]'
       createListControl parameter
     when 'boolean'
       createCheckboxControl parameter
@@ -162,10 +162,10 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
           validationFrameParameter = findParameter parameters, 'validation_frame'
           responseColumnParameter = findParameter parameters, 'response_column'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
-          responseColumnParameter.type = 'Vec'
+          #responseColumnParameter.type = 'Vec'
           ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
           #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
-          ignoredColumnsParameter.type = 'Vec[]'
+          #ignoredColumnsParameter.type = 'Vec[]'
 
           validationFrameParameter.values = copy trainingFrameParameter.values
 
@@ -174,6 +174,22 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
             sort columnLabels
             responseColumnParameter.values = columnLabels
             ignoredColumnsParameter.values = columnLabels
+        else if algorithm.key is 'gbm'
+          #validationFrameParameter = findParameter parameters, 'validation_frame'
+          responseColumnParameter = findParameter parameters, 'response_column'
+          #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
+          #responseColumnParameter.type = 'Vec'
+          #ignoredColumnsParameter = findParameter parameters, 'ignored_columns'
+          #TODO HACK hard-coding DL column params for now - rework this when Vec type is supported.
+          #ignoredColumnsParameter.type = 'Vec[]'
+
+          #validationFrameParameter.values = copy trainingFrameParameter.values
+
+          if trainingFrame = (find result.frames, (frame) -> frame.key.name is frameKey)
+            columnLabels = map trainingFrame.columns, (column) -> column.label
+            sort columnLabels
+            responseColumnParameter.values = columnLabels
+            #ignoredColumnsParameter.values = columnLabels
         go()
 
   # If a source model is specified, we already know the algo, so skip algo selection

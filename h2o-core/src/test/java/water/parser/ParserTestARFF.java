@@ -1,6 +1,7 @@
 package water.parser;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
@@ -15,6 +16,7 @@ import static water.parser.ParserTest.makeByteVec;
 import java.util.Arrays;
 
 public class ParserTestARFF extends TestUtil {
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
 
   /**
    * Helper to check parsed column types

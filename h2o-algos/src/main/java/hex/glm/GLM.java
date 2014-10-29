@@ -1,15 +1,17 @@
 package hex.glm;
 
-import hex.glm.GLMModel.FinalizeAndUnlockTsk;
-import hex.glm.GLMModel.GLMOutput;
-import hex.glm.LSMSolver.ADMMSolver;
-import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.*;
-import hex.glm.GLMTask.*;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.ModelBuilder;
-import hex.optimization.L_BFGS;
+import hex.glm.GLMModel.FinalizeAndUnlockTsk;
+import hex.glm.GLMModel.GLMOutput;
+import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMTask.GLMIterationTask;
+import hex.glm.GLMTask.GLMLineSearchTask;
+import hex.glm.GLMTask.LMAXTask;
+import hex.glm.GLMTask.YMUTask;
+import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
 import hex.schemas.GLMV2;
@@ -24,7 +26,6 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils.ParallelTasks;
 import water.util.ModelUtils;
-
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,8 +54,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
 
   @Override
   public Job<GLMModel> train() {
-    final Frame fr = _parms._training_frame.get();
-    fr.read_lock(_key);
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for GLM: " + _parms.validationErrors());
+
+    _parms.lock_frames(this);
+    final Frame fr = _parms.train();  // Get training frame
     Vec response = fr.vec(_parms._response);
     Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
     DataInfo dinfo = new DataInfo(Key.make(),source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
@@ -65,7 +69,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        fr.unlock(_key);
+        _parms.unlock_frames(GLM.this);
         DKV.remove(_progressKey);
         done();
       }
@@ -74,7 +78,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
         if(!_gotException.getAndSet(true)) {
           cancel2(ex);
           DKV.remove(_progressKey);
-          fr.unlock(_key);
+          _parms.unlock_frames(GLM.this);
           return true;
         }
         return false;

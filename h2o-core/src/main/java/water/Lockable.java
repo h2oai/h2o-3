@@ -163,7 +163,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed {
   }
 
   // -----------
-  /** Atomically set a new version of self & unlock. */
+  /** Atomically set a new version of self and unlock. */
   public void unlock( Key job_key ) { 
     if( _key != null ) {
       Log.debug("unlock "+_key+" by job "+job_key);

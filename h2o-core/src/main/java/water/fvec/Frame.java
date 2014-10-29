@@ -187,7 +187,7 @@ public class Frame extends Lockable {
    *  @return last Vec name */
   public String lastVecName() {  return _names[_names.length-1]; }
 
-  /** Force a cache-flush & reload, assuming vec mappings were altered
+  /** Force a cache-flush and reload, assuming vec mappings were altered
    *  remotely, or that the _vecs array was shared and now needs to be a
    *  defensive copy. 
    *  @return the new instance of the Frame's Vec[] */
@@ -558,7 +558,7 @@ public class Frame extends Lockable {
   // --------------------------------------------------------------------------
   static final int MAX_EQ2_COLS = 100000; // Limit of columns user is allowed to request
 
-  /** In support of R, a generic Deep Copy & Slice.
+  /** In support of R, a generic Deep Copy and Slice.
    *
    *  <p>Semantics are a little odd, to match R's.  Each dimension spec can be:<ul>
    *  <li><em>null</em> - all of them

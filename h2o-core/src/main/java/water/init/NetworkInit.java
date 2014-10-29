@@ -311,7 +311,7 @@ public class NetworkInit {
   // function of the name. Parse node ip addresses from the filename.
   public static void initializeNetworkSockets( ) {
     // Assign initial ports
-    H2O.API_PORT = H2O.ARGS.port == 0 ? 54321/*Default port*/ : H2O.ARGS.port;
+    H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
     while (true) {
       H2O.H2O_PORT = H2O.API_PORT+1;

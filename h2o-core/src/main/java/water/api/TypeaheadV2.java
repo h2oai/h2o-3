@@ -14,7 +14,7 @@ class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
   int limit;
 
   // Output fields
-  @API(help="matches")
+  @API(help="matches", direction=API.Direction.OUTPUT)
   String matches[];
 
   //==========================

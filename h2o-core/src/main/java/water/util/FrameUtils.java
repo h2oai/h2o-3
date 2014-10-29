@@ -1,9 +1,12 @@
 package water.util;
 
 import java.io.*;
+import java.net.URI;
+
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.persist.Persist;
 
 public class FrameUtils {
   /** Parse given file into the form of frame represented by the given key.
@@ -18,6 +21,12 @@ public class FrameUtils {
     if(okey == null) okey = Key.make(file.getName());
     NFSFileVec nfs = NFSFileVec.make(file);
     return water.parser.ParseDataset2.parse(okey, nfs._key);
+  }
+
+  public static Frame parseFrame(Key okey, URI uri) throws IOException {
+    Key ikey = Persist.anyURIToKey(uri);
+    if(okey == null) okey = Key.make(uri.toString());
+    return water.parser.ParseDataset2.parse(okey, ikey);
   }
 
   /**

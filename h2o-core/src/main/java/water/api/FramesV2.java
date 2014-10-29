@@ -16,14 +16,14 @@ class FramesV2 extends FramesBase {
   String column; // TODO: this should NOT appear in the output
 
   // Output fields
-  @API(help="Map of (string representation of) key to Frame summary.")
+  @API(help="Map of (string representation of) key to Frame summary.", direction=API.Direction.OUTPUT)
   IcedHashMap<String, FrameSummaryV2> frames;
 
   // TODO:
   // @API(help="Map of (string representation of) key to Model summary.")
   // IcedHashMap<String, ModelsV2.ModelSummaryV2> models;
 
-  @API(help="General information on the response.")
+  @API(help="General information on the response.", direction=API.Direction.OUTPUT)
   ResponseInfoV2 response;
 
   /**

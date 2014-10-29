@@ -121,6 +121,14 @@ Steam.H2OProxy = (_) ->
   requestTimeline = (go) ->
     request '/Timeline.json', go
 
+  requestRemoveAll = (go) ->
+    request '/RemoveAll.json', go
+
+  requestLogAndEcho = (go) ->
+    request '/LogAndEcho.json', go
+
+  link$ _.requestRemoveAll, requestRemoveAll
+  link$ _.requestLogAndEcho, requestLogAndEcho
   link$ _.requestFileGlob, requestFileGlob
   link$ _.requestImportFile, requestImportFile
   link$ _.requestImportFiles, requestImportFiles

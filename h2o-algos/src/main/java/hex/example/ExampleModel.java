@@ -8,17 +8,17 @@ import water.fvec.Frame;
 
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
-  public static class ExampleParameters extends Model.Parameters<ExampleModel,ExampleParameters,ExampleOutput> {
+  public static class ExampleParameters extends SupervisedModel.SupervisedParameters {
     public int _max_iters;        // Max iterations
 
     @Override
     public int sanityCheckParameters() {
       if (_max_iters < 0) validation_error("max_iters", "max_iters must be > 0");
-      return validation_error_count;
+      return _validation_error_count;
     }
   }
 
-  public static class ExampleOutput extends Model.Output<ExampleModel,ExampleParameters,ExampleOutput> {
+  public static class ExampleOutput extends Model.Output {
     // Iterations executed
     public int _iters;
     public double[] _maxs;

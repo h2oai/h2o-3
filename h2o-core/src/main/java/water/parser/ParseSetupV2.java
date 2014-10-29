@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   // Input fields
-  @API(help="Source keys",required=true)
+  @API(help="Source keys",required=true, direction=API.Direction.INPUT)
   public Key[] srcs;
 
   @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",direction=API.Direction.INOUT)
@@ -23,19 +23,19 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   @API(help="Suggested name", direction=API.Direction.OUTPUT)
   public String hexName;
 
-  @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
+  @API(help="Parser Type", direction=API.Direction.OUTPUT, values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   public ParserType pType;
 
-  @API(help="Field separator")
+  @API(help="Field separator", direction=API.Direction.OUTPUT)
   public byte sep;
 
-  @API(help="Number of columns")
+  @API(help="Number of columns", direction=API.Direction.OUTPUT)
   public int ncols;
 
   @API(help="Column Names",direction=API.Direction.OUTPUT)
   public String[] columnNames;
 
-  @API(help="Sample Data")
+  @API(help="Sample Data", direction=API.Direction.OUTPUT)
   public String[][] data;
 
   //==========================

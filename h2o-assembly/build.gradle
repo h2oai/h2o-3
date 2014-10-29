@@ -1,0 +1,31 @@
+apply plugin: 'fatjar'
+
+description = "H2O Application Assembly"
+
+dependencies {
+  compile project(":h2o-web")
+  compile project(":h2o-algos")
+  compile project(":h2o-core")
+  compile project(":h2o-app")
+}
+
+fatJar {
+   manifest {
+      attributes 'Main-Class': 'water.H2OApp'
+   }
+}
+
+def assembly = "h2o-assembly.jar"
+def allInOne = "h2o.jar"
+
+task copyJar(type: Copy) {
+    from ("${project.buildDir}/libs"){
+        include assembly
+    }
+    into "${project.parent.buildDir}"
+    rename { it.replace(assembly, allInOne) }
+}
+copyJar.dependsOn fatJar
+build.dependsOn copyJar
+
+

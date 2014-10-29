@@ -13,13 +13,13 @@ import water.init.TimelineSnapshot;
  */
 public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   // This schema has no input params
-  @API(help="Current time in millis.")
+  @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
   private long now;
 
-  @API(help="This node")
+  @API(help="This node", direction=API.Direction.OUTPUT)
   private String self;
 
-  @API(help="recorded timeline events")
+  @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
   public Event [] events;
 
   public abstract static class Event extends Iced {

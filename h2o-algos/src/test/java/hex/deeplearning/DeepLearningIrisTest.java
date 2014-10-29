@@ -4,14 +4,12 @@ import hex.FrameTask;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.util.Log;
 import water.util.RandomUtils;
 
@@ -39,10 +37,9 @@ public class DeepLearningIrisTest extends TestUtil {
     long seed0 = 0xDECAF;
     int num_runs = 0;
 
-    NFSFileVec nfs = NFSFileVec.make(find_test_file(PATH));
     Frame frame = null;
     try {
-      frame = water.parser.ParseDataset2.parse(Key.make("iris.hex"), nfs._key);
+      frame = parse_test_file(Key.make("iris.hex"),PATH);
 
       for (int repeat = 0; repeat < 5; ++repeat) {
         // Testing different things
@@ -77,9 +74,10 @@ public class DeepLearningIrisTest extends TestUtil {
                         for (double rate : rates) {
                           for (boolean sparse : new boolean[]{true, false}) {
                             for (boolean col_major : new boolean[]{false}) {
+                              Scope.enter();
                               DeepLearningModel mymodel = null;
                               Frame fr = null;
-                              DeepLearningParameters p = null;
+                              DeepLearningParameters p;
                               Frame trainPredict = null;
                               Frame testPredict = null;
                               try {
@@ -123,13 +121,19 @@ public class DeepLearningIrisTest extends TestUtil {
                                   int limit = (int) (frame.numRows() * holdout_ratio);
                                   _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
+                                  // Convert response to an enum
+                                  String resp_name = _train.lastVecName();
+                                  _train.add(resp_name, _train.remove(resp_name).toEnum());
+                                  _test .add(resp_name, _test .remove(resp_name).toEnum());
+                                  DKV.put(_train._key, _train);
+                                  DKV.put(_test ._key, _test );
 
                                   p = new DeepLearningParameters();
-                                  p._training_frame = _train._key;
-                                  p.response_column = _train.lastVecName();
-                                  p.ignored_columns = null;
-                                  p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p.response_column), _train.find(p.ignored_columns), true, p.ignore_const_cols);
+                                  p._train = _train._key;
+                                  p._response_column = resp_name;
+                                  p._ignored_columns = null;
+                                  p._ignore_const_cols = true;
+                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p._ignored_columns), true, p._ignore_const_cols);
                                   dinfo = new FrameTask.DataInfo(Key.make(),fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
@@ -139,50 +143,50 @@ public class DeepLearningIrisTest extends TestUtil {
                                 DeepLearningMLPReference ref = new DeepLearningMLPReference();
                                 ref.init(activation, RandomUtils.getDeterRNG(seed), holdout_ratio, hidden);
 
-                                p.seed = seed;
-                                p.hidden = new int[]{hidden};
-                                p.adaptive_rate = false;
-                                p.rho = 0;
-                                p.epsilon = 0;
-                                p.rate = rate / (1 - momentum); //adapt to (1-m) correction that's done inside (only for constant momentum!)
-                                p.activation = activation;
-                                p.max_w2 = Float.POSITIVE_INFINITY;
-                                p.input_dropout_ratio = 0;
-                                p.rate_annealing = 0; //do not change - not implemented in reference
-                                p.l1 = 0;
-                                p.loss = loss;
-                                p.l2 = 0;
-                                p.momentum_stable = momentum; //reference only supports constant momentum
-                                p.momentum_start = p.momentum_stable; //do not change - not implemented in reference
-                                p.momentum_ramp = 0; //do not change - not implemented in reference
-                                p.initial_weight_distribution = dist;
-                                p.initial_weight_scale = scale;
-                                p.classification = true;
-                                p.diagnostics = true;
-                                p._validation_frame = null;
-                                p.quiet_mode = true;
-                                p.fast_mode = false; //to be the same as reference
+                                p._seed = seed;
+                                p._hidden = new int[]{hidden};
+                                p._adaptive_rate = false;
+                                p._rho = 0;
+                                p._epsilon = 0;
+                                p._rate = rate / (1 - momentum); //adapt to (1-m) correction that's done inside (only for constant momentum!)
+                                p._activation = activation;
+                                p._max_w2 = Float.POSITIVE_INFINITY;
+                                p._input_dropout_ratio = 0;
+                                p._rate_annealing = 0; //do not change - not implemented in reference
+                                p._l1 = 0;
+                                p._loss = loss;
+                                p._l2 = 0;
+                                p._momentum_stable = momentum; //reference only supports constant momentum
+                                p._momentum_start = p._momentum_stable; //do not change - not implemented in reference
+                                p._momentum_ramp = 0; //do not change - not implemented in reference
+                                p._initial_weight_distribution = dist;
+                                p._initial_weight_scale = scale;
+                                p._classification = true;
+                                p._diagnostics = true;
+                                p._valid = null;
+                                p._quiet_mode = true;
+                                p._fast_mode = false; //to be the same as reference
 //                            p.fast_mode = true; //to be the same as old NeuralNet code
-                                p.nesterov_accelerated_gradient = false; //to be the same as reference
+                                p._nesterov_accelerated_gradient = false; //to be the same as reference
 //                            p.nesterov_accelerated_gradient = true; //to be the same as old NeuralNet code
-                                p.train_samples_per_iteration = 0; //sync once per period
-                                p.ignore_const_cols = false;
-                                p.shuffle_training_data = false;
-                                p.classification_stop = -1; //don't stop early -> need to compare against reference, which doesn't stop either
-                                p.force_load_balance = false; //keep just 1 chunk for reproducibility
-                                p.override_with_best_model = false; //keep just 1 chunk for reproducibility
-                                p.replicate_training_data = false;
-                                p.single_node_mode = true;
-                                p.sparse = sparse;
-                                p.col_major = col_major;
-                                p.epochs = 0;
+                                p._train_samples_per_iteration = 0; //sync once per period
+                                p._ignore_const_cols = false;
+                                p._shuffle_training_data = false;
+                                p._classification_stop = -1; //don't stop early -> need to compare against reference, which doesn't stop either
+                                p._force_load_balance = false; //keep just 1 chunk for reproducibility
+                                p._override_with_best_model = false; //keep just 1 chunk for reproducibility
+                                p._replicate_training_data = false;
+                                p._single_node_mode = true;
+                                p._sparse = sparse;
+                                p._col_major = col_major;
+                                p._epochs = 0;
                                 DeepLearning dl = new DeepLearning(p);
                                 try {
                                   mymodel = dl.train().get();
                                 } finally {
                                   dl.remove();
                                 }
-                                p.epochs = epoch;
+                                p._epochs = epoch;
 
                                 Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
 
@@ -207,7 +211,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 }
 
                                 // Train the Reference
-                                ref.train((int) p.epochs, rate, p.momentum_stable, loss);
+                                ref.train((int) p._epochs, rate, p._momentum_stable, loss);
 
                                 // Train H2O
                                 mymodel.delete_best_model();
@@ -300,10 +304,10 @@ public class DeepLearningIrisTest extends TestUtil {
                                 final double testErr = ref._nn.Accuracy(ref._testData);
                                 trainPredict = mymodel.score(_train, false);
                                 final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
-                                        true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                 testPredict = mymodel.score(_test, false);
                                 final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
-                                        true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                 Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
                                 Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
                                 compareVal(trainErr, myTrainErr, abseps, releps);
@@ -318,12 +322,12 @@ public class DeepLearningIrisTest extends TestUtil {
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
 
                                 // this is enabled by default
-                                if (p.override_with_best_model) {
+                                if (p._override_with_best_model) {
                                   Frame bestPredict = null;
                                   try {
                                     bestPredict = mymodel.score(_train, false);
                                     final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
-                                            true, p.max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                            true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
                                     Log.info("Best_model's error : " + bestErr * 100 + "%.");
                                     compareVal(bestErr, best_err, abseps, releps);
                                   } finally {
@@ -343,6 +347,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 if (fr != null) fr.delete();
                                 if (trainPredict != null) trainPredict.delete();
                                 if (testPredict != null) testPredict.delete();
+                                Scope.exit();
                               }
                             }
                           }

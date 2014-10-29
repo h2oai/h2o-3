@@ -5,7 +5,7 @@ import org.junit.*;
 import java.util.Arrays;
 
 public class AutoSerialTest extends Iced {
-  @BeforeClass public static void stall() { TestUtil.setupCloud(); }
+  @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
   @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 
   byte _byte, _bytes[];

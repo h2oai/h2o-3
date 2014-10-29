@@ -279,7 +279,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // --------------------------------------------------------------------------
 
   /** Construct a Value from all parts; not needed for most uses.  This special
-   *  constructor is used by {@link water.fvec.FileVec} to build Value objects over
+   *  constructor is used by {@link water.fvec} to build Value objects over
    *  already-existing Files, so that the File contents will be lazily
    *  swapped-in as the Values are first used.  */
   public Value(Key k, int max, byte[] mem, short type, byte be ) {

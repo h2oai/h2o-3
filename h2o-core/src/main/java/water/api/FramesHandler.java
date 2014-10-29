@@ -15,6 +15,8 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   /** Class which contains the internal representation of the frames list and params. */
   protected static final class Frames extends Iced {
     Key key;
+    long offset;
+    int len;
     Frame[] frames;
     String column;
     public boolean find_compatible_models = false;

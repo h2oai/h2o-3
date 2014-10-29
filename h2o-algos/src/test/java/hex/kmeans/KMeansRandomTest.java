@@ -32,7 +32,7 @@ public class KMeansRandomTest extends TestUtil {
       Frame frame = parse_test_file(dataset);
 
       try {
-        for (int clusters : new int[]{1, 10, 100}) {
+        for (int clusters : new int[]{2, 10, 100}) {
           for (int max_iter : new int[]{1, 10, 100}) {
             for (boolean normalize : new boolean[]{false, true}) {
               for (KMeans.Initialization init : new KMeans.Initialization[]{
@@ -44,7 +44,7 @@ public class KMeansRandomTest extends TestUtil {
                 count++;
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-                parms._training_frame = frame._key;
+                parms._train = frame._key;
                 parms._K = clusters;
                 parms._seed = rng.nextLong();
                 parms._max_iters = max_iter;

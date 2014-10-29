@@ -23,10 +23,10 @@ class FindV2 extends Schema<FindPojo,FindV2> {
   String match;
 
   // Output
-  @API(help="previous row with matching value, or -1")
+  @API(help="previous row with matching value, or -1", direction=API.Direction.OUTPUT)
   long prev;
 
-  @API(help="next row with matching value, or -1")
+  @API(help="next row with matching value, or -1", direction=API.Direction.OUTPUT)
   long next;
 
   //==========================

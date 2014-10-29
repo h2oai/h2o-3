@@ -5,11 +5,37 @@ import sun.misc.Unsafe;
 import water.api.API;
 import water.nbhm.UtilUnsafe;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 
-/** Class to auto-gen serielizer delegate classes.  No user-exposed calls. */
-class Weaver {
+/** Class to auto-gen serielizer delegate classes.  */
+public class Weaver {
+
+  /** Get all woven fields in this class, including subclasses, up to the
+   *  normal {@link Iced} serialization classes, skipping static and transient
+   *  fields, and the required _ice_id field.
+   *  @return Array of {@link Field} holding the list of woven fields.
+   */
+  public static Field[] getWovenFields( Class clz ) {
+    ArrayList<Field> flds = new ArrayList<>();
+    while( Iced.class.isAssignableFrom(clz) ||
+           Freezable.class.isAssignableFrom(clz) ||
+           H2O.H2OCountedCompleter.class.isAssignableFrom(clz) ) {
+      for( Field f : clz.getDeclaredFields() ) {
+        int mods = f.getModifiers();
+        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) ) continue;
+        if( "_ice_id".equals(f.getName()) ) continue; // Strip the required typeid field
+        flds.add(f);
+      }
+      clz = clz.getSuperclass();
+    }
+
+    return flds.toArray(new Field[flds.size()]);
+  }
+
+
   private static final ClassPool _pool;
   private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();

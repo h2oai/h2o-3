@@ -1,9 +1,10 @@
 package water.util;
 
 import water.*;
+import water.api.Schema;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.util.*;
 
 /**
  * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
@@ -22,6 +23,8 @@ public class PojoUtils {
    * the other does not then the names are conformed according to the field_naming
    * parameter.
    *
+   * It is also able to map fields between external types like Schema to their corresponding
+   * internal types.
    *
    * @param dest Destination POJO
    * @param origin Origin POJO
@@ -47,26 +50,16 @@ public class PojoUtils {
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields) {
     if (null == dest || null == origin) return;
 
-    Map<String, Field> dest_fields = new HashMap<>();
-    Map<String, Field> origin_fields = new HashMap<>();
-    Set<String> skip = new HashSet();
-    if (null != skip_fields)
-      skip.addAll(Arrays.asList(skip_fields));
+    Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
+    Field[] orig_fields = Weaver.getWovenFields(origin.getClass());
 
-    for (Field f : dest.getClass().getFields())
-      if (! skip.contains(f.getName()))
-        dest_fields.put(f.getName(), f);
+    for (Field f : orig_fields) {
+      String origin_name = f.getName();
 
+      if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
+        continue;
 
-    for (Field f : origin.getClass().getFields())
-      if (! skip.contains(f.getName()))
-        origin_fields.put(f.getName(), f);
-
-    for (Map.Entry<String, Field> entry : origin_fields.entrySet()) {
-      String origin_name = entry.getKey();
-      Field f = entry.getValue();
       String dest_name = null;
-
       if (field_naming == FieldNaming.CONSISTENT) {
         dest_name = origin_name;
       } else if (field_naming == FieldNaming.DEST_HAS_UNDERSCORES) {
@@ -75,10 +68,21 @@ public class PojoUtils {
         dest_name = origin_name.substring(1);
       }
 
-      try {
-        if (dest_fields.containsKey(dest_name)) {
-          Field dest_field = dest_fields.get(dest_name);
+      if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+        continue;
 
+      try {
+        Field dest_field = null;
+        for( Field fd : dest_fields ) {
+          if (fd.getName().equals(dest_name)) {
+            dest_field = fd;
+            break;
+          }
+        }
+
+        if( dest_field != null ) {
+          dest_field.setAccessible(true);
+          f.setAccessible(true);
           if (null == f.get(origin)) {
             dest_field.set(dest, null);
           } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {
@@ -97,18 +101,46 @@ public class PojoUtils {
             } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
               Integer[] copy = (Integer[]) f.get(origin);
               dest_field.set(dest, copy);
-/**
- * TODO: finish later. . .
 
-            } else if (dest_field.getType().getComponentType().isAssignableFrom(Iced.class) && f.getType().getComponentType().isAssignableFrom(Schema.class)) {
-              Class dest_class = dest_field.getType().getComponentType();
-              Iced[] translation = (Iced[]) Array.newInstance(dest_class);
 
-              dest_field.set(dest, copy);
+
+
+            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(f.getType().getComponentType())) {
+              // copying an array of impl fields into an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
+
+              Class dest_component_class = dest_field.getType().getComponentType();
+              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(f.get(origin)));
+              int i = 0;
+              for (Iced impl : ((Iced[])f.get(origin))) {
+                translation[i] = ((Schema)dest_field.getType().newInstance()).fillFromImpl(impl);
+              }
+              dest_field.set(dest, translation);
+
+
+
+            } else if (Schema.class.isAssignableFrom(f.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
+              // can't check against the actual impl class I, because we can't instantiate the schema base classes to get the impl class from an instance
+              // dest_field.getType().getComponentType().isAssignableFrom(((Schema)f.getType().getComponentType().newInstance()).getImplClass())) {
+
+              // copying an array of schema fields into an array of impl fields, e.g. a DeepLearningParametersV2[] into a DeepLearningParameters[]
+              Class dest_component_class = dest_field.getType().getComponentType();
+              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(f.get(origin)));
+              int i = 0;
+              for (Schema s : ((Schema[])f.get(origin))) {
+                translation[i] = s.createImpl();
+              }
+              dest_field.set(dest, translation);
+
+
+
+
+
             } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
               Integer[] copy = (Integer[]) f.get(origin);
               dest_field.set(dest, copy);
- */
+
+
+
             } else {
               throw H2O.fail("Don't know how to cast an array of: " + f.getType().getComponentType() + " to an array of: " + dest_field.getType().getComponentType());
             }
@@ -120,7 +152,12 @@ public class PojoUtils {
           } else if (Enum.class.isAssignableFrom(f.getType()) && String.class.isAssignableFrom(dest_field.getType())) {
             // assign an enum field into a String
             dest_field.set(dest, f.get(origin).toString());
-
+          } else if (Schema.class.isAssignableFrom(dest_field.getType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(f.getType())) {
+            // copying an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2
+            dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl((Iced) f.get(origin)));
+          } else if (Schema.class.isAssignableFrom(f.getType()) && ((Schema)f.get(origin)).getImplClass().isAssignableFrom(dest_field.getType())) {
+            // copying a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters
+            dest_field.set(dest, ((Schema)f.get(origin)).createImpl());
           } else {
             // Normal case: not doing any type conversion.
             dest_field.set(dest, f.get(origin));
@@ -129,6 +166,9 @@ public class PojoUtils {
       }
       catch (IllegalAccessException e) {
         Log.err("Illegal access exception trying to copy field: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
+      }
+      catch (InstantiationException e) {
+        Log.err("Instantiation exception trying to copy field: " + origin_name + " of class: " + origin.getClass() + " to field: " + dest_name + " of class: " + dest.getClass());
       }
     }
   }

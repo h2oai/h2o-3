@@ -18,14 +18,14 @@ import java.util.Arrays;
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
   static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
-  private static class JobList extends Keyed { 
+  private static class JobList extends Keyed {
     Key[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
     private JobList(Key[]jobs) { super(LIST); _jobs = jobs; }
     public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
   }
 
-  /** The list of all Jobs, past and present. 
+  /** The list of all Jobs, past and present.
    *  @return The list of all Jobs, past and present */
   public static Job[] jobs() {
     Value val = DKV.get(LIST);
@@ -38,7 +38,7 @@ public class Job<T extends Keyed> extends Keyed {
       if( val != null ) jobs[j++] = val.get();
     }
     if( j==jobs.length ) return jobs; // All jobs still exist
-    jobs = Arrays.copyOf(jobs,j);     // Shrink out removed 
+    jobs = Arrays.copyOf(jobs,j);     // Shrink out removed
     Key keys[] = new Key[j];
     for( int i=0; i<j; i++ ) keys[i] = jobs[i]._key;
     // One-shot throw-away attempt at remove dead jobs from the jobs list
@@ -127,7 +127,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
    *  @return this job in {@link JobState#RUNNING} state
-   *  
+   *
    *  @see JobState
    *  @see H2OCountedCompleter
    */
@@ -146,7 +146,13 @@ public class Job<T extends Keyed> extends Keyed {
     // runs the onCompletion or onExceptionCompletion code.
     _barrier = new H2OCountedCompleter() {
         @Override public void compute2() { }
-        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) { return true; }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+          if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
+            System.err.println("barrier onExCompletion for "+fjtask);
+            ex.printStackTrace();
+          }
+          return true;
+        }
       };
     fjtask.setCompleter(_barrier);
     _start_time = System.currentTimeMillis();
@@ -252,12 +258,12 @@ public class Job<T extends Keyed> extends Keyed {
   protected void onCancelled() {
   }
 
-  /** Returns a float from 0 to 1 representing progress.  Polled periodically.  
+  /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
   public float progress() { return isStopped() ? _finalProgress : progress_impl(); }
   // Checks the DKV for the progress Key & object
   private float progress_impl() {
-    return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress(); 
+    return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress();
   }
   protected Key _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
@@ -301,7 +307,7 @@ public class Job<T extends Keyed> extends Keyed {
   public static class JobCancelledException extends RuntimeException{}
 
   @Override protected Futures remove_impl(Futures fs) {
-    DKV.remove(_progressKey, fs);
+    if (null != _progressKey) DKV.remove(_progressKey, fs);
     return fs;
   }
 

@@ -41,6 +41,8 @@ Steam.ApplicationContext = ->
     h2oGet: do edge$
     h2oPost: do edge$
 
+    requestRemoveAll: do edge$
+    requestLogAndEcho: do edge$
     requestFileGlob: do edge$
     requestImportFile: do edge$
     requestImportFiles: do edge$

@@ -25,6 +25,9 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for Example: " + _parms.validationErrors());
+
     return (Example)start(new ExampleDriver(), _parms._max_iters);
   }
 
@@ -32,14 +35,12 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
   private class ExampleDriver extends H2OCountedCompleter<ExampleDriver> {
 
     @Override protected void compute2() {
-      Frame fr = null;
       ExampleModel model = null;
       try {
-        // Fetch & read-lock source frame
-        fr = _parms._training_frame.get();
-        fr.read_lock(_key);
-
+        _parms.lock_frames(Example.this); // Fetch & read-lock source frame
+      
         // The model to be built
+        Frame fr = _parms.train();
         model = new ExampleModel(dest(), fr, _parms, new ExampleModel.ExampleOutput());
         model.delete_and_lock(_key);
 
@@ -67,7 +68,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        if( fr != null ) fr.unlock(_key);
+        _parms.unlock_frames(Example.this);
         done();                 // Job done!
       }
       tryComplete();

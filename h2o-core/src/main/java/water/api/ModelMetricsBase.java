@@ -8,35 +8,35 @@ import hex.ModelMetrics;
  */
 public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetricsBase> {
   // InOut fields
-  @API(help="The model used for this scoring run.")
+  @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
   public ModelSchema model;
 
-  @API(help="The checksum for the model used for this scoring run.")
+  @API(help="The checksum for the model used for this scoring run.", direction=API.Direction.INOUT)
   public long model_checksum;
 
-  @API(help="The frame used for this scoring run.")
+  @API(help="The frame used for this scoring run.", direction=API.Direction.INOUT)
   public FrameV2 frame; // TODO: should use a base class!
 
-  @API(help="The checksum for the frame used for this scoring run.")
+  @API(help="The checksum for the frame used for this scoring run.", direction=API.Direction.INOUT)
   public long frame_checksum;
 
   // Output fields
-  @API(help="The category (e.g., Clustering) for the model used for this scoring run.")
+  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", direction=API.Direction.OUTPUT)
   public Model.ModelCategory model_category ;
 
-  @API(help="The duration in mS for this scoring run.")
+  @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)
   public long duration_in_ms;
 
-  @API(help="The time in mS since the epoch for the start of this scoring run.")
+  @API(help="The time in mS since the epoch for the start of this scoring run.", direction=API.Direction.OUTPUT)
   public long scoring_time;
 
-  @API(help="The AUC object for this scoring run.")
+  @API(help="The AUC object for this scoring run.", direction=API.Direction.OUTPUT)
   public AUCBase auc;
 
-  @API(help="The ConfusionMatrix object for this scoring run.")
+  @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
   public ConfusionMatrixBase cm;
 
-  @API(help="Predictions Frame.")
+  @API(help="Predictions Frame.", direction=API.Direction.OUTPUT)
   public FrameV2 predictions;
 
   // Non-version-specific filling into the impl

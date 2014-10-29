@@ -160,6 +160,7 @@ public class ArrayUtils {
     return result;
   }
   public static boolean contains(String[] names, String name) {
+    if (null == names) return false;
     for (String n : names) if (n.equals(name)) return true;
     return false;
   }

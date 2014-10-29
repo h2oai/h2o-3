@@ -12,7 +12,6 @@ import water.parser.ValueString;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.concurrent.Future;
 
 /** A class to compute the rollup stats.  These are computed lazily, thrown
  *  away if the Vec is written into, and then recomputed lazily.  Error to ask

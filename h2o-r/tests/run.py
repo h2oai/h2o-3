@@ -12,6 +12,44 @@ import subprocess
 import ConfigParser
 
 
+def is_python_test_file(file_name):
+    """
+    Return True if file_name matches a regexp for a python test.  False otherwise.
+    """
+
+    if (file_name == "test_config.py"):
+        return False
+
+    if (re.match("^test.*\.py$", file_name)):
+        return True
+
+    return False
+
+def is_javascript_test_file(file_name):
+    """
+    Return True if file_name matches a regexp for a javascript test.  False otherwise.
+    """
+
+    if (re.match("^.*tests.js$", file_name)):
+        return True
+
+    return False
+
+
+def is_runit_test_file(file_name):
+    """
+    Return True if file_name matches a regexp for a R test.  False otherwise.
+    """
+
+    if (file_name == "h2o-runit.R"):
+        return False
+
+    if (re.match("^runit.*\.[rR]$", file_name)):
+        return True
+
+    return False
+
+
 class H2OUseCloudNode:
     """
     A class representing one node in an H2O cloud which was specified by the user.
@@ -144,6 +182,7 @@ class H2OCloudNode:
         # i.e. it won't make s3n/s3 break on ec2
 
         cmd = ["java",
+               # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
                "-ea",
                "-jar", self.h2o_jar,
@@ -153,7 +192,7 @@ class H2OCloudNode:
                ]
 
         # Add S3N credentials to cmd if they exist.
-        ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
+        #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
         #if (os.path.exists(ec2_hdfs_config_file_name)):
         #    cmd.append("-hdfs_config")
         #    cmd.append(ec2_hdfs_config_file_name)
@@ -260,6 +299,7 @@ class H2OCloudNode:
             print("Killing JVM with PID {}".format(self.pid))
             try:
                 self.child.terminate()
+                self.child.wait()
             except OSError:
                 pass
             self.pid = -1
@@ -452,14 +492,34 @@ class Test:
         self.ip = ip
         self.port = port
 
-        cmd = ["R",
-               "-f",
-               self.test_name,
-               "--args",
-               self.ip + ":" + str(self.port)]
+        if (is_python_test_file(self.test_name)):
+            cmd = ["python",
+                   self.test_name,
+                   "--usecloud",
+                   self.ip + ":" + str(self.port)]
+        elif (is_runit_test_file(self.test_name)):
+            cmd = ["R",
+                   "-f",
+                   self.test_name,
+                   "--args",
+                   self.ip + ":" + str(self.port)]
+        elif (is_javascript_test_file(self.test_name)):
+            cmd = ["node",
+                   self.test_name,
+                   "-s",
+                   "--usecloud",
+                   self.ip + ":" + str(self.port)]
+        else:
+            print("")
+            print("ERROR: Test runner failure with test: " + self.test_name)
+            print("")
+            sys.exit(1)
+
         test_short_dir_with_no_slashes = re.sub(r'[\\/]', "_", self.test_short_dir)
+        if (len(test_short_dir_with_no_slashes) > 0):
+            test_short_dir_with_no_slashes += "_"
         self.output_file_name = \
-            os.path.join(self.output_dir, test_short_dir_with_no_slashes + "_" + self.test_name + ".out.txt")
+            os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
         self.child = subprocess.Popen(args=cmd,
                                       stdout=f,
@@ -588,9 +648,9 @@ class Test:
         return s
 
 
-class RUnitRunner:
+class TestRunner:
     """
-    A class for running the RUnit tests.
+    A class for running tests.
 
     The tests list contains an object for every test.
     The tests_not_started list acts as a job queue.
@@ -650,10 +710,10 @@ class RUnitRunner:
             cloud = H2OUseCloud(node_num, use_ip, use_port)
             self.clouds.append(cloud)
         elif (use_cloud2):
-            clouds = RUnitRunner.read_config(cloud_config)
+            clouds = TestRunner.read_config(cloud_config)
             node_num = 0
             for c in clouds:
-                cloud = H2OUseCloud(node_num,c[0],c[1])
+                cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
                 node_num += 1
         else:
@@ -713,7 +773,7 @@ class RUnitRunner:
                 if (stripped.startswith("#")):
                     s = f.readline()
                     continue
-                found_stripped = RUnitRunner.find_test(stripped)
+                found_stripped = TestRunner.find_test(stripped)
                 self.add_test(found_stripped)
                 s = f.readline()
             f.close()
@@ -740,9 +800,15 @@ class RUnitRunner:
                 continue
 
             for f in files:
-                if (not re.match(".*runit.*\.[rR]$", f)):
+                # Figure out if the current file under consideration is a test.
+                is_test = False
+                if (is_python_test_file(f)):
+                    is_test = True
+                if (is_runit_test_file(f)):
+                    is_test = True
+                if (not is_test):
                     continue
-                if "h2o-runit.R" in f: continue
+
                 is_small = False
                 is_medium = False
                 is_large = False
@@ -830,9 +896,9 @@ class RUnitRunner:
         if (self.terminated):
             return
 
-        self._log("")
-        self._log("Setting up R H2O package...")
-        if (True):
+        if (self._have_some_r_tests()):
+            self._log("")
+            self._log("Setting up R H2O package...")
             out_file_name = os.path.join(self.output_dir, "runnerSetupPackage.out.txt")
             out = open(out_file_name, "w")
             cloud = self.clouds[0]
@@ -1024,11 +1090,29 @@ class RUnitRunner:
         abs_test_dir = os.path.dirname(abs_test_path)
 
         test_short_dir = abs_test_dir
+
+        # Look to elide longest prefix first.
         prefix = os.path.join(abs_test_root_dir, "")
         if (test_short_dir.startswith(prefix)):
             test_short_dir = test_short_dir.replace(prefix, "", 1)
 
+        prefix = abs_test_root_dir
+        if (test_short_dir.startswith(prefix)):
+            test_short_dir = test_short_dir.replace(prefix, "", 1)
+
         return test_short_dir
+
+    def _have_some_r_tests(self):
+        """
+        Do we have any R tests to run at all?
+        (There might be tests of a different language to run, even if there are no R tests.)
+        """
+        for test in self.tests:
+            test_name = test.get_test_name()
+            if (is_runit_test_file(test_name)):
+                return True
+
+        return False
 
     def _create_failed_output_dir(self):
         try:
@@ -1338,7 +1422,7 @@ def parse_args(argv):
             i += 1
             if (i > len(argv)):
                 usage()
-            g_test_to_run = RUnitRunner.find_test(argv[i])
+            g_test_to_run = TestRunner.find_test(argv[i])
         elif (s == "--testlist"):
             i += 1
             if (i > len(argv)):
@@ -1458,16 +1542,36 @@ def main(argv):
     global g_runner
 
     g_script_name = os.path.basename(argv[0])
-    test_root_dir = os.path.dirname(os.path.realpath(__file__))
+
+    # Calculate test_root_dir.
+    test_root_dir = os.path.realpath(os.getcwd())
 
     # Calculate global variables.
     g_output_dir = os.path.join(test_root_dir, str("results"))
     g_failed_output_dir = os.path.join(g_output_dir, str("failed"))
 
-    # Calculate and set other variables.
-    h2o_jar = os.path.abspath(
-        os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
-            test_root_dir, ".."), ".."), "h2o-app"), "build"), "libs"), "h2o-app.jar"))
+    # Look for h2o jar file.
+    h2o_jar = None
+    if (True):
+        possible_h2o_jar_parent_dir = test_root_dir
+        while (True):
+            possible_h2o_jar_dir = os.path.join(possible_h2o_jar_parent_dir, "build")
+            possible_h2o_jar = os.path.join(possible_h2o_jar_dir, "h2o.jar")
+            if (os.path.exists(possible_h2o_jar)):
+                h2o_jar = possible_h2o_jar
+                break
+
+            next_possible_h2o_jar_parent_dir = os.path.dirname(possible_h2o_jar_parent_dir)
+            if (next_possible_h2o_jar_parent_dir == possible_h2o_jar_parent_dir):
+                break
+
+            possible_h2o_jar_parent_dir = next_possible_h2o_jar_parent_dir
+
+    if (h2o_jar is None):
+        print("")
+        print("ERROR: Could not find h2o.jar")
+        print("")
+        sys.exit(1)
 
     # Override any defaults with the user's choices.
     parse_args(argv)
@@ -1485,10 +1589,10 @@ def main(argv):
     if (g_test_to_run is not None):
         g_num_clouds = 1
 
-    g_runner = RUnitRunner(test_root_dir,
-                           g_use_cloud, g_use_cloud2, g_config, g_use_ip, g_use_port,
-                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                           g_output_dir, g_failed_output_dir)
+    g_runner = TestRunner(test_root_dir,
+                          g_use_cloud, g_use_cloud2, g_config, g_use_ip, g_use_port,
+                          g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
+                          g_output_dir, g_failed_output_dir)
 
     # Build test list.
     if (g_test_to_run is not None):

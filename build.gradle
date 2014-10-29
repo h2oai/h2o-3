@@ -26,6 +26,39 @@ buildscript {
 }
 
 //
+// Common configuration
+//
+ext {
+    // Published projects
+    publishedProjects = [
+      project(':h2o-core'),
+      project(':h2o-algos'),
+      project(':h2o-web'),
+      project(':h2o-app'),
+      project(':h2o-scala')
+    ]
+
+    // Supported Hadoop versions used at compile time
+    // and assembled into resulting jar
+    hadoopVersions = [
+      /* CDH3     */ '0.20.2-cdh3u6',
+      /* CDH4.3   */ '2.0.0-cdh4.3.0',
+      /* CDH4.3   */ '2.0.0-cdh4.7.0',
+      /* CDH5.1   */ '2.3.0-cdh5.1.3',
+      /* CDH5.2   */ '2.5.0-cdh5.2.0',
+      /* HDP2.0.6 */ '2.2.0.2.0.6.0-102',
+      /* HDP2.1.3 */ '2.4.0.2.1.3.0-563',
+      /* HDP2.1.5 */ '2.4.0.2.1.5.0-695'
+    ]
+
+    // Versions of libraries shared cross all projects
+    junitVersion  = '4.11'
+    hadoopVersion = '2.5.0-cdh5.2.0'
+    jets3tVersion = '0.7.1'
+    awsJavaSdkVersion = '1.8.3'
+}
+
+//
 // For all projects (this and all subprojects) specify common properties and tasks
 //
 allprojects {
@@ -45,13 +78,21 @@ subprojects {
 
     repositories {
         mavenCentral()
+        // Cloudera dependencies
         maven {
-            url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+          url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+        }
+        // Hortonworks dependencies
+        maven {
+          url "http://repo.hortonworks.com/content/repositories/releases/"
         }
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
     // to all projects
-    apply from: "$rootDir/gradle/publish.gradle"
+    if (project in publishedProjects) {
+      apply from: "$rootDir/gradle/publish.gradle"
+    }
+
     apply from: "$rootDir/gradle/makeSupport.gradle"
 }
 
@@ -59,15 +100,21 @@ task wrapper(type: Wrapper) {
   gradleVersion = '2.0'
 }
 
+//
 // Setup global properties shared by all projects
+//
 ext {
     // Collect all artifacts produced by all projects in this project - all "archives" artifacts
     allArchives = subprojects.findAll().inject(
-            files(), { acc, pj ->
-        acc + pj.configurations.archives.allArtifacts.getFiles()
+            files(), { acc, pj -> 
+          if (pj in publishedProjects)
+            acc + pj.configurations.archives.allArtifacts.getFiles()
+          else
+            acc
     })
     // Collect all test artifacts
     allTestArchives = files() // filed lazily below
+
 }
 
 // After evaluation of all projects collect all artifacts produced by testArchives configuration

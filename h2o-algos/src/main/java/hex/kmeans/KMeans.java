@@ -41,6 +41,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> train() {
+    if (_parms.sanityCheckParameters() > 0)
+      throw new IllegalArgumentException("Invalid parameters for KMeans: " + _parms.validationErrors());
+
     return start(new KMeansDriver(), _parms._max_iters);
   }
 
@@ -48,16 +51,13 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
 
     @Override protected void compute2() {
-      Frame fr = null;
       KMeansModel model = null;
       try {
-        // Fetch & read-lock source frame
-        fr = _parms._training_frame.get();
-        fr.read_lock(_key);
-        if ( fr.numRows() < _parms._K) throw new IllegalArgumentException("Cannot make " + _parms._K + " clusters out of " + fr.numRows() + " rows.");
-
+        _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
+        
         // Sort columns, so the categoricals are all up front.  They use a
         // different distance metric than numeric columns.
+        Frame fr = _parms.train();       // Training frame
         Vec vecs[] = fr.vecs();
         final int N = vecs.length; // Feature count
         int ncats=0, len=N;
@@ -196,7 +196,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        if( fr != null ) fr.unlock(_key);
+        _parms.unlock_frames(KMeans.this);
         done();                 // Job done!
       }
       tryComplete();

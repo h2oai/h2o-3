@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
-abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Job<M> {
+abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
   /** All the parameters required to build the model. */
   public P _parms;
 
@@ -51,7 +51,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public ModelBuilder(Model.Parameters parms) {
+  public ModelBuilder(P parms) {
     super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
     throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
@@ -62,7 +62,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   public ModelBuilder(String desc, P parms) {
     super((parms._destination_key== null ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key), desc);
-    this._parms = parms;
+    _parms = parms;
   }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */

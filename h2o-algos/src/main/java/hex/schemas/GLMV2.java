@@ -29,6 +29,11 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
     public GLMParameters createImpl() {
       GLMParameters impl = new GLMParameters();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+
+      // Sigh:
+      impl._train = (this.training_frame == null ? null : this.training_frame._key);
+      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
+
       return impl;
     }
   }

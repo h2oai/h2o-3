@@ -38,8 +38,4 @@ public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: re
     }
     return schema(version).fillFromImpl(p);
   }
-
-  @Override protected void compute2() {
-    throw H2O.unimpl();
-  }
 }

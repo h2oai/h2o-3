@@ -2,14 +2,12 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.*;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
+import water.fvec.*;
 import water.parser.ParseDataset2;
 import water.util.Log;
 
@@ -27,15 +25,15 @@ public class DeepLearningProstateTest extends TestUtil {
     Random rng = new Random(seed);
     String[] datasets = new String[2];
     int[][] responses = new int[datasets.length][];
-    datasets[0] = "smalldata/./logreg/prostate.csv"; responses[0] = new int[]{1,2,8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
+    datasets[0] = "smalldata/logreg/prostate.csv"; responses[0] = new int[]{1,2,8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
     datasets[1] = "smalldata/iris/iris.csv";  responses[1] = new int[]{4}; //Iris-type (multi-class)
 
     int testcount = 0;
     int count = 0;
     for (int i = 0; i < datasets.length; ++i) {
       final String dataset = datasets[i];
-      NFSFileVec nfs = NFSFileVec.make(find_test_file(dataset));
-      Frame frame = ParseDataset2.parse(Key.make(), nfs._key);
+      NFSFileVec  nfs = NFSFileVec.make(find_test_file(dataset));
+      Frame  frame = ParseDataset2.parse(Key.make(), nfs._key);
       NFSFileVec vnfs = NFSFileVec.make(find_test_file(dataset));
       Frame vframe = ParseDataset2.parse(Key.make(), vnfs._key);
 
@@ -57,6 +55,12 @@ public class DeepLearningProstateTest extends TestUtil {
                       false,
               }) {
                 for (int resp : responses[i]) {
+                  boolean classification = !(i == 0 && resp == 2);
+                  Vec old = frame.vecs()[resp];
+                  if( classification ) {
+                    frame.replace(resp, old.toEnum());
+                    DKV.put(frame._key,frame);
+                  }
                   for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
                           ClassSamplingMethod.Stratified,
                           ClassSamplingMethod.Uniform
@@ -111,31 +115,30 @@ public class DeepLearningProstateTest extends TestUtil {
                                       DeepLearningParameters p = new DeepLearningParameters();
                                       p._destination_key = Key.make(Key.make().toString() + "first");
                                       dest_tmp = p._destination_key;
-                                      p.checkpoint = null;
+                                      p._checkpoint = null;
 
-                                      p._training_frame = frame._key;
-                                      p.response_column = frame._names[resp];
-                                      p._validation_frame = valid==null ? null : valid._key;
+                                      p._train = frame._key;
+                                      p._response_column = frame._names[resp];
+                                      p._valid = valid==null ? null : valid._key;
 
-                                      p.hidden = hidden;
-                                      p.classification = !(i == 0 && resp == 2);
+                                      p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
-                                      p.override_with_best_model = override_with_best_model;
-                                      p.epochs = epochs;
-                                      p.n_folds = n_folds;
-                                      p.keep_cross_validation_splits = keep_cv_splits;
-                                      p.seed = seed;
-                                      p.train_samples_per_iteration = train_samples_per_iteration;
-                                      p.force_load_balance = load_balance;
-                                      p.replicate_training_data = replicate;
-                                      p.shuffle_training_data = shuffle;
-                                      p.score_training_samples = scoretraining;
-                                      p.score_validation_samples = scorevalidation;
-                                      p.classification_stop = -1;
-                                      p.regression_stop = -1;
-                                      p.balance_classes = p.classification && balance_classes;
-                                      p.quiet_mode = true;
-                                      p.score_validation_sampling = csm;
+                                      p._override_with_best_model = override_with_best_model;
+                                      p._epochs = epochs;
+                                      p._n_folds = n_folds;
+                                      p._keep_cross_validation_splits = keep_cv_splits;
+                                      p._seed = seed;
+                                      p._train_samples_per_iteration = train_samples_per_iteration;
+                                      p._force_load_balance = load_balance;
+                                      p._replicate_training_data = replicate;
+                                      p._shuffle_training_data = shuffle;
+                                      p._score_training_samples = scoretraining;
+                                      p._score_validation_samples = scorevalidation;
+                                      p._classification_stop = -1;
+                                      p._regression_stop = -1;
+                                      p._balance_classes = p._classification && balance_classes;
+                                      p._quiet_mode = true;
+                                      p._score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(p);
                                       try {
@@ -146,7 +149,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
-                                      assert( ((p.train_samples_per_iteration <= 0 || p.train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
+                                      assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
                                               || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 
                                       if (n_folds != 0)
@@ -172,18 +175,18 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     p._destination_key = Key.make();
                                     dest = p._destination_key;
-                                    p.checkpoint = dest_tmp;
-                                    p.n_folds = 0;
+                                    p._checkpoint = dest_tmp;
+                                    p._n_folds = 0;
 
-                                    p._training_frame = frame._key;
-                                    p._validation_frame = valid == null ? null : valid._key;
-                                    p.response_column = frame._names[resp];
-                                    p.classification = !(i == 0 && resp == 2);
-                                    p.override_with_best_model = override_with_best_model;
-                                    p.epochs = epochs;
-                                    p.seed = seed;
-                                    p.train_samples_per_iteration = train_samples_per_iteration;
-                                    p.balance_classes = p.classification && balance_classes;
+                                    p._train = frame._key;
+                                    p._valid = valid == null ? null : valid._key;
+                                    p._response_column = frame._names[resp];
+                                    p._override_with_best_model = override_with_best_model;
+                                    p._epochs = epochs;
+                                    p._seed = seed;
+                                    p._train_samples_per_iteration = train_samples_per_iteration;
+                                    p._balance_classes = p._classification && balance_classes;
+
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
                                       model1 = dl.train().get();
@@ -195,7 +198,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                     }
 
                                     // score and check result (on full data)
-                                    model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in UKV (because of DataInfo...)
+                                    model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in DKV (because of DataInfo...)
 
                                     // score and check result of the best_model
                                     if (model2.actual_best_model_key != null) {
@@ -343,6 +346,9 @@ public class DeepLearningProstateTest extends TestUtil {
                       }
                     }
                   }
+                  if( classification )
+                    frame.replace(resp,old).remove();
+                    DKV.put(frame._key,frame);
                 }
               }
             }

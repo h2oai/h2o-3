@@ -21,7 +21,7 @@ trap cleanup SIGTERM SIGINT
 
 # Gradle puts files:
 #   build/libs/h2o-core.jar      - Main h2o core classes
-#   build/libs/test-h2o-core.jar - Test h2o core classes
+#   build/libs/h2o-core-test.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
 JVM="nice java -ea -cp build/libs/h2o-core.jar${SEP}build/libs/h2o-core-test.jar${SEP}../lib/*"
 

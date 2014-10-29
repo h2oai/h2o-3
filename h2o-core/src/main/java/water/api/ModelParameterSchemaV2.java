@@ -17,31 +17,31 @@ import java.lang.reflect.Field;
  * TODO: add a superclass.
  */
 public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
-  @API(help="name in the JSON, e.g. \"lambda\"")
+  @API(help="name in the JSON, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
   public String name;
 
-  @API(help="label in the UI, e.g. \"lambda\"")
+  @API(help="label in the UI, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
   public String label;
 
-  @API(help="help for the UI, e.g. \"regularization multiplier, typically used for foo bar baz etc.\"")
+  @API(help="help for the UI, e.g. \"regularization multiplier, typically used for foo bar baz etc.\"", direction=API.Direction.OUTPUT)
   public String help;
 
-  @API(help="the field is required")
+  @API(help="the field is required", direction=API.Direction.OUTPUT)
   public boolean required;
 
-  @API(help="Java type, e.g. \"double\"")
+  @API(help="Java type, e.g. \"double\"", direction=API.Direction.OUTPUT)
   public String type;
 
-  @API(help="default value, e.g. 1")
+  @API(help="default value, e.g. 1", direction=API.Direction.OUTPUT)
   public String default_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .  Problem is Icer serialization blows up if the field is an Object
 
-  @API(help="actual value as set by the user and / or modified by the ModelBuilder, e.g., 10")
+  @API(help="actual value as set by the user and / or modified by the ModelBuilder, e.g., 10", direction=API.Direction.OUTPUT)
   public String actual_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .
 
-  @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"")
+  @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"", direction=API.Direction.OUTPUT)
   public String level;
 
-  @API(help="list of valid values for use by the front-end")
+  @API(help="list of valid values for use by the front-end", direction=API.Direction.OUTPUT)
   public String[] values;
 
 
@@ -103,6 +103,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
     return sb.toString();
   }
 
+  /** TODO: refactor using SchemaMetadata. */
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     try {
       this.name = f.getName();

@@ -18,20 +18,20 @@ import water.util.PojoUtils;
 abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O extends Model.Output, S extends ModelSchema<M, P, O, S>> extends Schema<M, S> {
 
   // Input fields
-  @API(help="Model key", required=true)
+  @API(help="Model key", required=true, direction=API.Direction.INOUT)
   protected Key key;
 
   // Output fields
-  @API(help="The build parameters for the model (e.g. K for KMeans).")
+  @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
   protected ModelParametersSchema parameters;
 
-  @API(help="The build output for the model (e.g. the clusters for KMeans).")
+  @API(help="The build output for the model (e.g. the clusters for KMeans).", direction=API.Direction.OUTPUT)
   protected ModelOutputSchema output;
 
-  @API(help="Compatible frames, if requested")
+  @API(help="Compatible frames, if requested", direction=API.Direction.OUTPUT)
   String[] compatible_frames;
 
-  @API(help="Checksum for all the things that go into building the Model.")
+  @API(help="Checksum for all the things that go into building the Model.", direction=API.Direction.OUTPUT)
   protected long checksum;
 
   public ModelSchema() {

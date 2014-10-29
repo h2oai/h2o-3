@@ -7,19 +7,25 @@ import water.fvec.Frame;
 abstract class FramesBase extends Schema<Frames, FramesBase> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  Key key; // TODO: change to Frame
+  public Key key; // TODO: change to Frame
 
   @API(help="Name of column of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  String column;
+  public String column;
+
+  @API(help="Row offset to display", direction=API.Direction.INOUT)
+  public long offset;
+
+  @API(help="Number of rows to display", direction=API.Direction.INOUT)
+  public int len;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
 
   // Output fields
-  @API(help="Frames")
+  @API(help="Frames", direction=API.Direction.OUTPUT)
   FrameV2[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2
 
-  @API(help="Compatible models")
+  @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
 
   // Non-version-specific filling into the impl
@@ -52,7 +58,7 @@ abstract class FramesBase extends Schema<Frames, FramesBase> {
 
       int i = 0;
       for (Frame frame : f.frames) {
-        this.frames[i++] = new FrameV2(frame, 0, 100);
+        this.frames[i++] = new FrameV2(frame, f.offset, f.len);
       }
     }
     return this;

@@ -119,6 +119,7 @@ gulp.task 'build', [
   'build-browser-script'
   'build-templates'
   'build-styles'
+  'build-test-script'
 ]
 
 gulp.task 'default', [ 'build' ]

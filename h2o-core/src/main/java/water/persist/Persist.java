@@ -5,6 +5,9 @@ import java.net.URI;
 import java.util.Arrays;
 
 import water.*;
+import water.fvec.HDFSFileVec;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 /** Abstract class describing various persistence targets.
@@ -24,10 +27,9 @@ public abstract class Persist {
   public abstract static class Schemes {
     public static final String FILE = "file";
     public static final String HDFS = "hdfs";
-    public static final String S3 = "s3";
-    public static final String NFS = "nfs";
+    public static final String S3   = "s3";
+    public static final String NFS  = "nfs";
   }
-
 
   static {
     URI uri = H2O.ICE_ROOT;
@@ -57,11 +59,27 @@ public abstract class Persist {
   /** Reclaim space from a previously stored Value */
   abstract public void delete(Value v);
 
-  /** Usuable storage space, or -1 for unknown */
+  /** Usable storage space, or -1 for unknown */
   public long getUsableSpace() { return /*UNKNOWN*/-1; }
 
   /** Total storage space, or -1 for unknown */
   public long getTotalSpace() { return /*UNKNOWN*/-1; }
+
+  /** Transform given uri into file vector holding file name. */
+  abstract public Key uriToKey(URI uri) throws IOException;
+
+  public static final Key anyURIToKey(URI uri) throws IOException {
+    Key ikey = null;
+    String scheme = uri.getScheme();
+    if ("hdfs".equals(scheme)) {
+      ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("s3n".equals(scheme)) {
+      ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("files".equals(scheme) || scheme == null) {
+      ikey = I[Value.NFS].uriToKey(uri);
+    }
+    return ikey;
+  }
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in

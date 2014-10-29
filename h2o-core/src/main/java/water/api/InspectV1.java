@@ -16,10 +16,10 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   int len;
 
   // Output
-  @API(help="Kind of object (\"frame\", \"model\", etc.)")
+  @API(help="Kind of object (\"frame\", \"model\", etc.)", direction=API.Direction.OUTPUT)
   String kind;
 
-  @API(help="Output schema for class")
+  @API(help="Output schema for class", direction=API.Direction.OUTPUT)
   Schema schema;
 
   //==========================

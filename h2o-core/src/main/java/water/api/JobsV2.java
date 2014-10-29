@@ -9,7 +9,7 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
   public Key key;
 
   // Output fields
-  @API(help="jobs")
+  @API(help="jobs", direction=API.Direction.OUTPUT)
   JobV2[] jobs;
 
   //==========================

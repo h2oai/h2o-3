@@ -10,7 +10,7 @@ import water.util.ModelUtils;
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Parameters<M,P,O>, O extends Model.Output<M,P,O>> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends Model.Output> extends Model<M,P,O> {
 
   protected float[] _priorClassDist;
   protected float[] _modelClassDist;
@@ -27,8 +27,59 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Model.Pa
     _priorClassDist = priorClassDist;
   }
 
+  public abstract static class SupervisedParameters extends Model.Parameters {
+    // Values that are set by the caller:
+    public String _response_column; // response column name
+
+    // Derived values, generally caches:
+    public transient Vec _response; // Handy response column
+    public int _nclass;             // Number of classes; 1 for regression; 2+ for classification
+    public boolean _classification; // true for classification, false for regression
+    public int  _ncols;             // Columns to train on, including the response
+    public long _nrows;             // Number of rows where the response is not-NA
+
+    /**
+     * Sanity check model building parameters and return user-visible warnings or errors if something is wrong.
+     * NOTE: it's up to the caller to get the parameters right.  Do not change them behind the caller's back!
+     */
+    @Override public int sanityCheckParameters() {
+      if (_train == null)
+        validation_error("training_frame", "Training frame must be set.");
+
+      if (_response_column == null)
+        validation_error("response_column", "Response column must be set.");
+
+      int ridx = train().find(_response_column);
+      if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
+        validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
+      _response = train().vecs()[ridx];
+      _nclass = _response.domain()==null ? 1 : _response.domain().length;
+
+      // NOTE: classification is no longer considered a parameter; it is derived from the response column.
+      _classification = _response.isEnum();
+      _ncols = train().numCols();
+      _nrows = train().numRows() - _response.naCnt();
+      if( _ncols <= 1 )
+        validation_error("_training_frame", "Training data must have at least 2 features (incl. response).");
+      if( _response.isBad() ) 
+        validation_error("_response_column", "Response column is all NAs!");
+      if( _response.isConst() ) 
+        validation_error("_response_column", "Response column is constant!");
+
+      int usableColumns = 0;
+      for( Vec v : train().vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
+      if( usableColumns==0 ) throw new IllegalArgumentException("There is no usable column to generate model!");
+
+      return _validation_error_count;
+    }
+
+    @Override public long checksum() {
+      return super.checksum()+_response_column.hashCode();
+    }
+  }
+
   /**
-   * Compute the model error for a given test data set
+   * compute the model error for a given test data set
    * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.
    * For binary classification, this is the classification error based on assigning labels using the optimal threshold for maximizing the F1 score.
    * For regression, this is the mean squared error (MSE).

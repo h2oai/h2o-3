@@ -122,7 +122,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     return preds;
   }
 
-  public static class GLMParameters extends Model.Parameters<GLMModel,GLMParameters,GLMOutput> {
+  public static class GLMParameters extends Model.Parameters {
     public int _response;
     public int [] _ignored_cols;
     public boolean _standardize = true;
@@ -194,7 +194,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public int sanityCheckParameters() {
       // TODO: fill in!
-      return validation_error_count;
+      return _validation_error_count;
     }
 
     public final double variance(double mu){
@@ -447,7 +447,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
   final long   _nobs;
   long   _run_time;
   
-  public static class GLMOutput extends Model.Output<GLMModel,GLMParameters,GLMOutput> {
+  public static class GLMOutput extends Model.Output {
     Submodel [] _submodels;
     int         _best_lambda_idx;
     float       _threshold;

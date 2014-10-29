@@ -9,14 +9,14 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public Key key;
 
-  @API(help="Find and return compatible frames?", json=false)
+  @API(help="Find and return compatible frames?", json=false, direction=API.Direction.INPUT)
   public boolean find_compatible_frames = false;
 
   // Output fields
-  @API(help="Models", direction = API.Direction.OUTPUT)
+  @API(help="Models", direction=API.Direction.OUTPUT)
   public ModelSchema[] models;
 
-  @API(help="Compatible frames")
+  @API(help="Compatible frames", direction=API.Direction.OUTPUT)
   FrameV2[] compatible_frames; // TODO: FrameBase
 
   // Non-version-specific filling into the impl

@@ -6,7 +6,7 @@ import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-// TODO: need a base class!
+// TODO: need a base (versionless) class!
 class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
@@ -20,81 +20,81 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   int len;
 
   // Output fields
-  @API(help="checksum")
+  @API(help="checksum", direction=API.Direction.OUTPUT)
   protected long checksum;
 
-  @API(help="Number of rows")
+  @API(help="Number of rows", direction=API.Direction.OUTPUT)
   long rows;
 
-  @API(help="Total data size in bytes")
+  @API(help="Total data size in bytes", direction=API.Direction.OUTPUT)
   long byteSize;
 
-  @API(help="Raw unparsed text")
+  @API(help="Raw unparsed text", direction=API.Direction.OUTPUT)
   boolean isText;
 
-  @API(help="Default percentiles, from 0 to 1")
+  @API(help="Default percentiles, from 0 to 1", direction=API.Direction.OUTPUT)
   double[] default_pctiles;
 
-  @API(help="Columns")
+  @API(help="Columns", direction=API.Direction.OUTPUT)
   Col[] columns;
 
-  @API(help="Compatible models, if requested")
+  @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   String[] compatible_models;
 
   // Output fields one-per-column
   protected static class Col extends Iced {
-    @API(help="label")
+    @API(help="label", direction=API.Direction.OUTPUT)
     String label;
 
-    @API(help="missing")
+    @API(help="missing", direction=API.Direction.OUTPUT)
     long missing;
 
-    @API(help="zeros")
+    @API(help="zeros", direction=API.Direction.OUTPUT)
     long zeros;
 
-    @API(help="positive infinities")
+    @API(help="positive infinities", direction=API.Direction.OUTPUT)
     long pinfs;
 
-    @API(help="negative infinities")
+    @API(help="negative infinities", direction=API.Direction.OUTPUT)
     long ninfs;
 
-    @API(help="mins")
+    @API(help="mins", direction=API.Direction.OUTPUT)
     double[] mins;
 
-    @API(help="maxs")
+    @API(help="maxs", direction=API.Direction.OUTPUT)
     double[] maxs;
 
-    @API(help="mean")
+    @API(help="mean", direction=API.Direction.OUTPUT)
     double mean;
 
-    @API(help="sigma")
+    @API(help="sigma", direction=API.Direction.OUTPUT)
     double sigma;
 
-    @API(help="datatype: {enum, string, int, real, time, uuid}")
+    @API(help="datatype: {enum, string, int, real, time, uuid}", direction=API.Direction.OUTPUT)
     String type;
 
-    @API(help="domain; not-null for enum columns only")
+    @API(help="domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
     String[] domain;
 
-    @API(help="data")
+    @API(help="data", direction=API.Direction.OUTPUT)
     double[] data;
 
-    @API(help="string data")
+    @API(help="string data", direction=API.Direction.OUTPUT)
     String[] str_data;
 
-    @API(help="decimal precision, -1 for all digits")
+    @API(help="decimal precision, -1 for all digits", direction=API.Direction.OUTPUT)
     byte precision;
 
-    @API(help="Histogram bins; null if not computed")
+    @API(help="Histogram bins; null if not computed", direction=API.Direction.OUTPUT)
     long[] bins;
 
-    @API(help="Start of histogram bin zero")
+    @API(help="Start of histogram bin zero", direction=API.Direction.OUTPUT)
     double base;
 
-    @API(help="Stride per bin")
+    @API(help="Stride per bin", direction=API.Direction.OUTPUT)
     double stride;
 
-    @API(help="Percentile values, matching the default percentiles")
+    @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
     double[] pctiles;
 
     transient Vec _vec;
@@ -147,6 +147,8 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Constructor for when called from the Inspect handler instead of RequestServer
   transient Frame _fr;         // Avoid an racey update to Key; cached loaded value
+
+  public FrameV2() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
   FrameV2( Key key ) { this.key = key; }
