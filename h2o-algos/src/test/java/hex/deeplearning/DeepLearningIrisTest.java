@@ -8,6 +8,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.RandomUtils;
 
@@ -117,6 +118,14 @@ public class DeepLearningIrisTest extends TestUtil {
                                   _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
 
+                                  // Must have all output classes in training
+                                  // data (since that's what the reference
+                                  // implementation has hardcoded).  But count
+                                  // of classes is not known unless visit all
+                                  // the response data - force that now.
+                                  Vec ve = _train.lastVec().toEnum();
+                                  _train.replace(_train.numCols()-1,ve);
+
                                   DeepLearningParameters p = new DeepLearningParameters();
                                   p._train = _train._key;
                                   p._response_column = _train.lastVecName();
@@ -124,8 +133,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   p._ignored_columns = null;
                                   dl = new DeepLearning(p); // Run the init & frame prep
                                 }
-                                // must have all output classes in training data (since that's what the reference implementation has hardcoded)
-                                while (dl._response.domain().length < 3);
+                                while (dl._nclass < 3);
 
                                 // use the same seed for the reference implementation
                                 DeepLearningMLPReference ref = new DeepLearningMLPReference();
