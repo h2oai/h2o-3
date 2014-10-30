@@ -26,6 +26,7 @@ public class Word2VecTest extends TestUtil {
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
+      parms._minWordFreq = 5;
       parms._wordModel = Word2Vec.WordModel.CBOW;
       parms._normModel = Word2Vec.NormModel.HSM;
       parms._vecSize = 25;
@@ -54,9 +55,10 @@ public class Word2VecTest extends TestUtil {
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
+      parms._minWordFreq = 5;
       parms._wordModel = Word2Vec.WordModel.CBOW;
       parms._normModel = Word2Vec.NormModel.NegSampling;
-      parms._numNegEx = 10;
+      parms._negSampleCnt = 10;
       parms._vecSize = 25;
       parms._windowSize = 4;
       parms._sentSampleRate = 0.001f;
@@ -84,6 +86,7 @@ public class Word2VecTest extends TestUtil {
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
+      parms._minWordFreq = 5;
       parms._wordModel = Word2Vec.WordModel.SkipGram;
       parms._normModel = Word2Vec.NormModel.HSM;
       parms._vecSize = 25;
@@ -112,9 +115,10 @@ public class Word2VecTest extends TestUtil {
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
+      parms._minWordFreq = 5;
       parms._wordModel = Word2Vec.WordModel.SkipGram;
       parms._normModel = Word2Vec.NormModel.NegSampling;
-      parms._numNegEx = 10;
+      parms._negSampleCnt = 10;
       parms._vecSize = 25;
       parms._windowSize = 4;
       parms._sentSampleRate = 0.001f;

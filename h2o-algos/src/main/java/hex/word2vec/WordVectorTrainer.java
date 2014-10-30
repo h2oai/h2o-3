@@ -52,7 +52,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     assert(_vocab.numRows() > 0);
 
     if (input.getParams()._normModel == NormModel.NegSampling){
-      _negExCnt = input.getParams()._numNegEx;
+      _negExCnt = input.getParams()._negSampleCnt;
       _unigramTable = input._uniTable;
       _HBWTCode = null;
       _HBWTPoint = null;

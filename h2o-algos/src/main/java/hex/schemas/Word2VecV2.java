@@ -15,7 +15,7 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
             "minWordFreq",
             "wordModel",
             "normModel",
-            "negExCnt",
+            "negSampleCnt",
             "vecSize",
             "windowSize",
             "sentSampleRate",

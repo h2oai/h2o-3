@@ -9,19 +9,6 @@ public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModel.Wo
 
   public static final class Word2VecModelOutputV2 extends ModelOutputSchema<Word2VecModel.Word2VecOutput, Word2VecModelOutputV2> {
 
-    @API(help="Vocabulary size")
-    public int vocabSize;
-
-    @API(help="Word vector size")
-    public int vecSize;
-
-    @API(help="Words[vocabSize]")
-    public String[/*vocabSize*/] words;
-
-    @API(help="Word vectors")
-    public int vecs[/*vocabSize*/][/*vecSize*/];
-
-
     @Override public Word2VecModel.Word2VecOutput createImpl() {
       Word2VecModel.Word2VecOutput impl = new Word2VecModel.Word2VecOutput();
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);

@@ -23,7 +23,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   private volatile Word2VecModelInfo _modelInfo;
   void setModelInfo(Word2VecModelInfo mi) { _modelInfo = mi; }
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
-  private Frame _w2vFrame;
   private Key _w2vKey;
 
   private long run_time;
@@ -64,7 +63,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public float[] transform(String target) {
     NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
-    Vec[] vs = _w2vFrame.vecs();
+    Vec[] vs = ((Frame) _w2vKey.get()).vecs();
     ValueString tmp = new ValueString(target);
     return transform(tmp, vocabHM, vs);
   }
@@ -92,7 +91,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   public void findSynonyms(String target, int cnt) {
     if (cnt > 0) {
       NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
-      Vec[] vs = _w2vFrame.vecs();
+      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
       ValueString tmp = new ValueString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
       findSynonyms(tarVec, cnt, vs);
@@ -110,7 +109,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public void findSynonyms(float[] tarVec, int cnt) {
     if (cnt > 0) {
-      Vec[] vs = _w2vFrame.vecs();
+      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
       findSynonyms(tarVec, cnt, vs);
     } else Log.err("Synonym count must be greater than 0.");
   }
@@ -165,8 +164,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   private  NonBlockingHashMap<ValueString, Integer>  buildVocabHashMap() {
     NonBlockingHashMap<ValueString, Integer> vocabHM;
-    Vec word = _w2vFrame.vec(0);
-    final int vocabSize = (int) _w2vFrame.numRows();
+    Vec word = ((Frame) _w2vKey.get()).vec(0);
+    final int vocabSize = (int) ((Frame) _w2vKey.get()).numRows();
     vocabHM = new NonBlockingHashMap<>(vocabSize);
     for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new ValueString(),i),i);
     return vocabHM;
@@ -201,16 +200,16 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     }
 
     fs.blockForPending();
-    _w2vFrame = new Frame(_w2vKey = Key.make("w2v"));
+    Frame fr = new Frame(_w2vKey = Key.make("w2v"));
     //FIXME this ties the word count frame to this one which makes cleanup messy
-    _w2vFrame.add("Word",((Frame)_parms._vocabKey.get()).vec(0));
-    _w2vFrame.add(colNames, vecs);
-    DKV.put(_w2vKey, _w2vFrame);
+    fr.add("Word", ((Frame) _parms._vocabKey.get()).vec(0));
+    fr.add(colNames, vecs);
+    DKV.put(_w2vKey, fr);
   }
 
   @Override public void delete() {
     _parms._vocabKey.remove();
-    _w2vFrame.delete();;
+    _w2vKey.remove();
     remove();
     super.delete();
   }
@@ -222,7 +221,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     Word2Vec.WordModel _wordModel;
     Word2Vec.NormModel _normModel;
     Key _vocabKey;
-    int _minFreq, _vecSize, _windowSize, _epochs, _numNegEx;
+    int _minWordFreq, _vecSize, _windowSize, _epochs, _negSampleCnt;
     float _initLearningRate, _sentSampleRate;
 
     @Override public int sanityCheckParameters() {
@@ -262,9 +261,10 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       _parameters = params;
 
       if(_parameters._vocabKey == null) {
-        _parameters._vocabKey = (new WordCountTask(_parameters._minFreq)).doAll(_parameters.train())._wordCountKey;
+        _parameters._vocabKey = (new WordCountTask(_parameters._minWordFreq)).doAll(_parameters.train())._wordCountKey;
       }
       _vocabSize = (int) ((Frame) _parameters._vocabKey.get()).numRows();
+      _trainFrameSize = getTrainFrameSize(_parameters.train());
 
       //initialize weights to random values
       Random rand = new Random();
