@@ -210,6 +210,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
   @Override public void delete() {
     _parms._vocabKey.remove();
+    _w2vFrame.delete();;
     remove();
     super.delete();
   }
