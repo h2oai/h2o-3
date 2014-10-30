@@ -1,12 +1,7 @@
-package water.string;
+package hex.word2vec;
 
 
-import water.H2O;
-import water.Key;
-import water.DKV;
-import water.MRTask;
-import water.Futures;
-import water.AutoBuffer;
+import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
@@ -79,7 +74,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
   /**
    *  Local reduces should all see same HM.
    *  Merges between nodes is handled in
-   *  {@link #read_impl(AutoBuffer)} method.
+   *  {@link #read_impl(water.AutoBuffer)} method.
    */
   @Override
   public void reduce(WordCountTask that) {

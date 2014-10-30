@@ -1,4 +1,4 @@
-package water.string;
+package hex.word2vec;
 
 import water.H2O;
 import water.MRTask;
@@ -8,9 +8,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
-import water.string.Word2VecParameters.*;
 import water.util.Log;
-
+import hex.word2vec.Word2VecModel.*;
+import hex.word2vec.Word2Vec.*;
 import java.util.Random;
 
 public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
@@ -19,7 +19,8 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   static final int EXP_TABLE_SIZE = 1000;
   static final int MAX_EXP = 6;
 
-  Word2VecParameters _input, _output;
+  private Word2VecModelInfo _input;
+  Word2VecModelInfo _output;
   Frame _vocab;
   static NonBlockingHashMap<ValueString,Integer> _vocabHM;
   final WordModel _wordModel; final NormModel _normModel;
@@ -34,19 +35,24 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   transient int _chkIdx =0;
   transient Random _rand;
 
-  public WordVectorTrainer(Word2VecParameters input) {
+  public WordVectorTrainer( Word2VecModelInfo input) {
     super(null);
-    _input=input; _wordModel = input._wordModel; _normModel = input._normModel;
-    _vocab = input._vocabKey.get(); _vocabSize = (int)_vocab.numRows();
-    _wordVecSize = input._vecSize; _windowSize = input._windowSize;
+    _input=input;
+    _wordModel = input.getParams()._wordModel;
+    _normModel = input.getParams()._normModel;
+    _vocab = input.getParams()._vocabKey.get();
+    _vocabSize = (int)_vocab.numRows();
+    _wordVecSize = input.getParams()._vecSize;
+    _windowSize = input.getParams()._windowSize;
     _syn0 = input._syn0; _syn1 = input._syn1;
-    _initLearningRate = input._initLearningRate;
-    _sentSampleRate = input._sentSampleRate; _epochs = input._epochs;
+    _initLearningRate = input.getParams()._initLearningRate;
+    _sentSampleRate = input.getParams()._sentSampleRate;
+    _epochs = input.getParams()._epochs;
     assert(_output == null);
     assert(_vocab.numRows() > 0);
 
-    if (input._normModel == NormModel.NegSampling){
-      _negExCnt = input._numNegEx;
+    if (input.getParams()._normModel == NormModel.NegSampling){
+      _negExCnt = input.getParams()._numNegEx;
       _unigramTable = input._uniTable;
       _HBWTCode = null;
       _HBWTPoint = null;
@@ -57,6 +63,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
       _HBWTPoint = input._HBWTPoint;
     }
   }
+  final public Word2VecModelInfo getModelInfo() { return _output; }
 
   @Override
   protected void setupLocal() {
@@ -257,7 +264,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     label = 0;
     for (int i = 1; i < negExCnt + 1; i++, f=0) {
       //pick a random vocab.idx from unigram table
-      targetWord = _unigramTable[_rand.nextInt(Word2VecParameters.UNIGRAM_TABLE_SIZE)];
+      targetWord = _unigramTable[_rand.nextInt(Word2VecModelInfo.UNIGRAM_TABLE_SIZE)];
       if (targetWord == curWord) continue;
       l2 = targetWord * vecSize;
 
@@ -285,7 +292,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     label = 0;
     for (int i = 1; i < negExCnt + 1; i++, f=0) {
       //pick a random vocab.idx from unigram table
-      targetWord = _unigramTable[_rand.nextInt(Word2VecParameters.UNIGRAM_TABLE_SIZE)];
+      targetWord = _unigramTable[_rand.nextInt(Word2VecModelInfo.UNIGRAM_TABLE_SIZE)];
       if (targetWord == curWord) continue;
       l2 = targetWord * vecSize;
 
