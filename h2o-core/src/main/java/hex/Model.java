@@ -421,32 +421,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
-    Log.warn("ModelMetrics currently disabled");
-    return null;
-
-    // was leaking modelmetrics badly in a variety of racey bad ways; turned
-    // off till it can be done right
-    
-    //// Always calculate error, regardless of whether this is being called by the REST API or the Java API.
-    //// TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
-    //if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
-    //  SupervisedModel sm = (SupervisedModel)this;
-    //  AUC auc = new AUC();
-    //  ConfusionMatrix cm = new ConfusionMatrix();
-    //  HitRatio hr = new HitRatio();
-    //  sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-    //          true, 20, cm, auc, hr);
-    //  ModelMetrics mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
-    //  _output.addModelMetrics(mm);
-    //  return mm;
-    //} else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
-    //  SupervisedModel sm = (SupervisedModel) this;
-    //  sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-    //          true, 20, null, null, null);
-    //  ModelMetrics mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
-    //  _output.addModelMetrics(mm);
-    //  return mm;
-    //}
+    // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
+    // TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
+    ModelMetrics mm=null;
+    if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
+      SupervisedModel sm = (SupervisedModel)this;
+      AUC auc = new AUC();
+      ConfusionMatrix cm = new ConfusionMatrix();
+      HitRatio hr = new HitRatio();
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, cm, auc, hr);
+      mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+    } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
+      SupervisedModel sm = (SupervisedModel) this;
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, null, null, null);
+      mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+    }
+    if( mm != null ) _output.addModelMetrics(mm);
+    return mm;
   }
 
   /**
