@@ -275,8 +275,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     if( domains == null ) domains=new String[names.length+1][];
     assert domains.length==names.length;
-    assert names.length > 1;
-    assert names[names.length-1] != null; // Have a valid response-column name?
+    //assert names.length > 1;
+    //assert names[names.length-1] != null; // Have a valid response-column name?
     _output._names   = names;
     _output._domains = domains;
 
