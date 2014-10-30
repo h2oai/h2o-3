@@ -7,11 +7,13 @@ import hex.api.ExampleBuilderHandler;
 import hex.api.GBMBuilderHandler;
 import hex.api.GLMBuilderHandler;
 import hex.api.KMeansBuilderHandler;
+import hex.api.Word2VecBuilderHandler;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.gbm.GBM;
 import hex.glm.GLM;
 import hex.kmeans.KMeans;
+import hex.word2vec.Word2Vec;
 
 import java.io.File;
 
@@ -40,6 +42,7 @@ public class H2OApp {
     H2O.registerGET("/GLM",hex.schemas.GLMHandler.class,"train","/GLM","GLM","Model","Train a GLM model on the specified Frame.");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model","Train a KMeans model on the specified Frame.");
     H2O.registerGET("/GBM",hex.schemas.GBMHandler.class,"train","/GBM","GBM","Model","Train a GBM model on the specified Frame.");
+    H2O.registerGET("/Word2Vec",hex.schemas.Word2VecHandler.class,"train","/Word2Vec","Word2Vec","Model","Train a Word2Vec model on the specified Frame.");
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
@@ -57,6 +60,10 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("glm", GLM.class);
     H2O.registerPOST("/2/ModelBuilders/glm", GLMBuilderHandler.class, "train","Train a GLM model on the specified Frame.");
+
+    ModelBuilder.registerModelBuilder("word2vec", Word2Vec.class);
+    H2O.registerPOST("/2/ModelBuilders/word2vec", Word2VecBuilderHandler.class, "train","Train a Word2Vec model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/word2vec/parameters", Word2VecBuilderHandler.class, "validate_parameters","Validate a set of Word2Vec model builder parameters.");
 
     ModelBuilder.registerModelBuilder("example", Example.class);
     H2O.registerPOST("/2/ModelBuilders/example", ExampleBuilderHandler.class, "train","Train an Example model on the specified Frame.");

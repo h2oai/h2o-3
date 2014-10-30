@@ -231,16 +231,16 @@ function(word2vec, target, count) {
 #'
 #' Use a pre-existing word2vec object to transform a target word
 #' into a numeric vector.
-setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
-  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
-  if (missing(target)) stop("`target` must be specified")
-  if (!is.character(target)) stop("`target` must be character")
-  if (length(target) > 1) stop("`target` must be a single word")
-
-  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
-  res <- .h2o.__remoteSend(data@h2o, .h2o.__TRANSFORM, params)
-  res$vec
-})
+#setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
+#  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
+#  if (missing(target)) stop("`target` must be specified")
+#  if (!is.character(target)) stop("`target` must be character")
+#  if (length(target) > 1) stop("`target` must be a single word")
+#
+#  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
+#  res <- .h2o.__remoteSend(data@h2o, .h2o.__TRANSFORM, params)
+#  res$vec
+#})
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
