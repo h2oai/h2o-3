@@ -240,7 +240,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   public static class Word2VecModelInfo extends Iced {
-    static final int UNIGRAM_TABLE_SIZE = 100000000;
+    static final int UNIGRAM_TABLE_SIZE = 10000000;
     static final float UNIGRAM_POWER = 0.75F;
     static final int MAX_CODE_LENGTH = 40;
 
