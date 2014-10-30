@@ -18,7 +18,7 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
   protected static final class Cascade extends Iced {
     // Inputs
     String _ast; // A Lisp-like ast.
-    //TODO: String[] _funs //
+    String[] _funs;
 
     //Outputs
     String   _error;
@@ -36,6 +36,12 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
     Throwable e = null;
     Env env = null;
     try {
+      //learn all fcns
+      if(cascade._funs != null) {
+        for (String f : cascade._funs) {
+          water.cascade.Exec.exec(f);
+        }
+      }
       env = water.cascade.Exec.exec(cascade._ast);
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");

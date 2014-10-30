@@ -80,12 +80,30 @@ public class Exec extends Iced {
     return env;
   }
 
+  public static void new_func(String str) throws IllegalArgumentException {
+    cluster_init();
+    try {
+      Exec ex = new Exec(str, null);
+      ex.parse_fun();
+    } catch( RuntimeException t ) {
+      throw t;
+    }
+  }
+
   protected AST parse() {
     // Parse a token --> look for a function or a special char.
     String tok = parseID();
     //lookup of the token
     AST ast = lookup(tok);
     return ast.parse_impl(this);
+  }
+
+  protected void parse_fun() {
+    // parse a token -> should be "def"
+    String tok = parseID();
+    if (!tok.equals("def")) throw new IllegalArgumentException("Expected function definition but got "+tok);
+    ASTFuncDef ast = new ASTFuncDef();
+    ast.parse_func(this);
   }
 
 

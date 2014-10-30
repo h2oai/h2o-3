@@ -38,6 +38,7 @@ public class Env extends Iced {
   final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
   transient final public StringBuilder _sb; // Holder for print results
   transient final HashSet<Key> _locked;     // The original set of locked frames, these shalt not be DKV.removed.
+  transient final HashSet<Key> _local_locked; // Locked frames in the *local* scope
   final SymbolTable _global;
   final SymbolTable _local;
   final Env _parent;
@@ -53,6 +54,7 @@ public class Env extends Iced {
     _locked = locked;
     _global = new SymbolTable();
     _local  = null;
+    _local_locked = null;
     _parent = null;
     _isGlobal = true;
   }
@@ -64,6 +66,7 @@ public class Env extends Iced {
     _refcnt = new IcedHashMap<>(); // gets a new reference counter
     _sb     = null;
     _locked = e._locked;
+    _local_locked = new HashSet<>();
     _global = e._global;
     _local  = new SymbolTable();
     _parent = e;
@@ -162,7 +165,16 @@ public class Env extends Iced {
     else _refcnt.put(v, new IcedInt(cnt));
   }
 
-  void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }  // MUST be called in conjunction w/ push(frame) or addRef
+  // MUST be called in conjunction w/ push(frame) or addRef
+  void addKeys(Frame fr) {
+    if (_local_locked != null) {
+      for (Vec v : fr.vecs()) _local_locked.add(v._key);
+    } else if (_locked != null || H2O.containsKey(fr._key)) {
+      assert _locked != null;
+      for (Vec v : fr.vecs()) _locked.add(v._key);
+    }
+  }
+
   void addVec(Vec v) { _locked.add(v._key);  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
@@ -487,6 +499,7 @@ public class Env extends Iced {
     HashMap<String, SymbolAttributes> _table;
     public SymbolTable() { _table = new HashMap<>(); }
     void clear() { _table.clear(); }
+    public void copyOver(SymbolTable s) { _table = s._table; }
 
     public void put(String name, int type, String value) {
       if (_table.containsKey(name)) {
@@ -590,7 +603,7 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
-      case STR: return new ASTString('\"', id.value());
+      case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
       // case for FUN
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);
     }

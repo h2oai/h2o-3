@@ -755,7 +755,6 @@ abstract class ASTBinOp extends ASTOp {
 
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
-    boolean toss_fr = false;
     Frame fr0 = null, fr1 = null;
     double d0=0, d1=0;
     String s0=null, s1=null;
@@ -817,7 +816,6 @@ abstract class ASTBinOp extends ASTOp {
             fr0.numRows() != fr1.numRows() )
           throw new IllegalArgumentException("Arrays must be same size: LHS FRAME NUM ROWS/COLS: "+fr0.numRows()+"/"+fr0.numCols() +" vs RHS FRAME NUM ROWS/COLS: "+fr1.numRows()+"/"+fr1.numCols());
         fr = new Frame(fr0).add(fr1);
-        toss_fr = true;
       } else {
         fr = new Frame(fr0);
       }

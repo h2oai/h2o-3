@@ -2,8 +2,6 @@ package water.cascade;
 
 import water.H2O;
 
-import java.util.ArrayList;
-
 /**
  *  The ASTFunc Object
  *
@@ -37,7 +35,7 @@ import java.util.ArrayList;
 
 /**
  * Functions will always have all of their arguments fully specified (even if that means they are filled with null).
- * This means `nargs` arguments are awlays parsed.
+ * This means `nargs` arguments are always parsed.
  */
 public class ASTFunc extends ASTFuncDef {
   ASTFunc() { super(); }
@@ -60,7 +58,16 @@ public class ASTFunc extends ASTFuncDef {
   @Override ASTOp make() { return new ASTFunc(); }
 
   @Override void apply(Env e) {
-    // this Env is the captured environment with the table already set?
+    Env captured = e.capture();
+    for (int i = 0; i < _args.length; ++i) {
+      if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
+      else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
+      else if (_args[i] instanceof ASTFrame) _table.put(_arg_names[i], Env.ARY, _args[i].value());
+      else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
+      else throw H2O.unimpl("Vector arguments are not supported.");
+    }
+    captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
+    _body.exec(captured);
   }
 }
 
@@ -69,7 +76,8 @@ class ASTFuncDef extends ASTOp {
   protected static String _name;
   protected static String[] _arg_names;
   protected static Env.SymbolTable _table;
-  ASTFuncDef() { super(null); }
+  protected ASTStatement _body;
+  ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
 
   void parse_func(Exec E) {
     String name = ((ASTString)E.parse())._s;
@@ -84,22 +92,16 @@ class ASTFuncDef extends ASTOp {
     _table = table;
 
     // parse the function body
-    ArrayList<AST> ast_ary = new ArrayList<>();
-    String[] asts = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
-    if (asts != null) {
-      for (String ast1 : asts) {
-        AST ast = E.parseAST(ast1, E._env);
-        ast_ary.add(ast);
-      }
-    }
+    _body = new ASTStatement().parse_impl(E);
+
     ASTFunc res = (ASTFunc) clone();
-    res._asts = asts == null ? null : ast_ary.toArray(new AST[ast_ary.size()]);
+    res._asts = null;
     putUDF(res, name);
   }
 
-  @Override String opStr() { return null; }
+  @Override String opStr() { return "def"; }
 
-  @Override ASTOp make() { return null; }
+  @Override ASTOp make() { return new ASTFuncDef(); }
 
   @Override void apply(Env e) { throw H2O.fail(); }
 }

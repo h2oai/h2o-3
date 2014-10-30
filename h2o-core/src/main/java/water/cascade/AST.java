@@ -134,7 +134,11 @@ class ASTFrame extends AST {
     _fr = k.get();
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
-  @Override void exec(Env e) { e._locked.add(Key.make(_key)); e.addKeys(_fr); e.push(new ValFrame(_fr)); }
+  @Override void exec(Env e) {
+    if (e._local_locked != null) e._local_locked.add(Key.make(_key)) ; else e._locked.add(Key.make(_key));
+    if (H2O.containsKey(Key.make(_key))) e._locked.add(Key.make(_key));
+    e.addKeys(_fr); e.push(new ValFrame(_fr));
+  }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
 }
@@ -286,7 +290,7 @@ class ASTStatement extends AST {
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
 
-    // an ASTStatement is an array of ASTs. May have statements within statements.
+    // an ASTStatement is an array of ASTs. May have ASTStatements within ASTStatements.
     while (E.hasNextStmnt()) {
       AST ast = E.parse();
       ast_ary.add(ast);
@@ -299,10 +303,10 @@ class ASTStatement extends AST {
   }
   @Override void exec(Env env) {
     for( int i=0; i<_asts.length-1; i++ ) {
-      _asts[i].exec(env);       // Exec all statements
+      env = _asts[i].treeWalk(env);       // Execute the statements by walking the ast
       env.pop();                // Pop all intermediate results
     }
-    _asts[_asts.length-1].exec(env); // Return final statement as result
+    _asts[_asts.length-1].treeWalk(env); // Return final statement as result
   }
 
   @Override String value() { return null; }
@@ -669,7 +673,7 @@ class ASTAssign extends AST {
         Futures fs = new Futures();
         DKV.put(k, fr, fs);
         fs.blockForPending();
-        e._locked.add(fr._key);
+        if (e._local_locked != null) e._local_locked.add(fr._key); else e._locked.add(fr._key);
         e.push(new ValFrame(fr));
         e.put(id._id, Env.ARY, id._id);
       }
