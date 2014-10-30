@@ -137,7 +137,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._score_validation_samples = scorevalidation;
                                       p._classification_stop = -1;
                                       p._regression_stop = -1;
-                                      p._balance_classes = p._classification && balance_classes;
+                                      p._balance_classes = classification && balance_classes;
                                       p._quiet_mode = true;
                                       p._score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
@@ -182,11 +182,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
                                     p._toEnum = classification;
-                                    p.override_with_best_model = override_with_best_model;
-                                    p.epochs = epochs;
-                                    p.seed = seed;
-                                    p.train_samples_per_iteration = train_samples_per_iteration;
-                                    p.balance_classes = classification && balance_classes;
+                                    p._override_with_best_model = override_with_best_model;
+                                    p._epochs = epochs;
+                                    p._seed = seed;
+                                    p._train_samples_per_iteration = train_samples_per_iteration;
+                                    p._balance_classes = classification && balance_classes;
                                     p._train = frame._key;
                                     DeepLearning dl = new DeepLearning(p);
                                     try {

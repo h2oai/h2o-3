@@ -1,6 +1,7 @@
 package hex.kmeans;
 
 import hex.Model;
+import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
 import water.fvec.*;

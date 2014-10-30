@@ -29,7 +29,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
-    return start(new DeepLearningDriver(), (long)(_parms.epochs * _train.numRows()));
+    return start(new DeepLearningDriver(), (long)(_parms._epochs * _train.numRows()));
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -147,23 +147,23 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
-      if (_parms.checkpoint == null) {
+      if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
 
       } else {
-        final DeepLearningModel previous = DKV.get(_parms.checkpoint).get();
+        final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
-        if (_parms.n_folds != 0)
+        if (_parms._n_folds != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
         // Check the column situation is the same... after dropping ignored,
         // constant and bad columns.  Test is probably too strict; I would
         // think having extra columns would be OK.
         if( _train.checksum() != previous.model_info()._train.checksum())
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
-        _parms.autoencoder = previous.model_info().get_params().autoencoder;
-        if (!_parms.autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
+        _parms._autoencoder = previous.model_info().get_params()._autoencoder;
+        if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
         if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
@@ -178,14 +178,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         }
         if( isClassifier() != previous._output.isClassifier() )
           Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
-        _parms.epochs += previous.epoch_counter; //add new epochs to existing model
+        _parms._epochs += previous.epoch_counter; //add new epochs to existing model
         Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
         try {
           final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
-                                              _parms.autoencoder ? 0 : 1, 
-                                              _parms.autoencoder || _parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
-                                              _parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+                                              _parms._autoencoder ? 0 : 1, 
+                                              _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+                                              _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
                                               isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
           DKV.put(dinfo._key,dinfo);
           cp = new DeepLearningModel(dest(), previous, false, _train, dinfo);
@@ -268,8 +268,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = model.model_info().data_info()._adaptedFrame;
-        if (mp.force_load_balance) train = reBalance(train, mp.replicate_training_data /*rebalance into only 4*cores per node*/);
-        if (model._output.isClassifier() && mp.balance_classes) {
+        if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/);
+        if (model._output.isClassifier() && mp._balance_classes) {
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
             if (mp._class_sampling_factors.length != train.lastVec().domain().length)
@@ -278,7 +278,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
 
           train = sampleFrameStratified(
-                  train, train.lastVec(), trainSamplingFactors, (long)(mp.max_after_balance_size*train.numRows()), mp.seed, true, false);
+                  train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
           model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
         }
         model.training_rows = train.numRows();
@@ -298,7 +298,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             adaptedValid.add(validAdapter.getValidAdaptor().adaptedValidationResponse(responseName), validAdapter.getValidAdaptor().getAdaptedValidationResponse2CM());
           }
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
-          if (model._output.isClassifier() && mp.balance_classes && mp.score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
+          if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
             validScoreFrame = sampleFrameStratified(adaptedValid, adaptedValid.lastVec(), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : adaptedValid.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
