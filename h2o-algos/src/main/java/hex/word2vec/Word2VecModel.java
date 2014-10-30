@@ -8,6 +8,8 @@ import water.*;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.AppendableVec;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
@@ -21,6 +23,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   private volatile Word2VecModelInfo _modelInfo;
   void setModelInfo(Word2VecModelInfo mi) { _modelInfo = mi; }
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
+  private Frame _w2vFrame;
+  private Key _w2vKey;
 
   private long run_time;
   private long start_time;
@@ -36,7 +40,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     run_time = 0;
     start_time = System.currentTimeMillis();
     _modelInfo = new Word2VecModelInfo(params);
-    //assert(Arrays.equals(_key._kb, selfKey._kb));
+    assert(Arrays.equals(_key._kb, selfKey._kb));
   }
 
   @Override public boolean isSupervised() {return false;}
@@ -51,20 +55,157 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl();
   }
 
-  public void buildModelOutput() {
-    final int vecSize = _parms._vecSize, vocabSize = _modelInfo._vocabSize;
-    Vec words = ((Frame) _parms._vocabKey.get()).vec(0);
+  /**
+   * Takes an input string can return the word vector for that word.
+   *
+   * @param target - String of desired word
+   * @return float array containing the word vector values or null if
+   *  the word isn't present in the vocabulary.
+   */
+  public float[] transform(String target) {
+    NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
+    Vec[] vs = _w2vFrame.vecs();
+    ValueString tmp = new ValueString(target);
+    return transform(tmp, vocabHM, vs);
+  }
 
-    _output._vocabSize = vocabSize;
-    _output._vecSize = vecSize;
-    _output._word = new String[vocabSize];
-    _output._vecs = new float[vocabSize][];
-    for(int i=0; i< vocabSize; i++) {
-      _output._word[i] = words.atStr(new ValueString(),i).toString();
-      _output._vecs[i] = new float[vecSize];
-      for(int j=0; j< vecSize;j++) _output._vecs[i][j] = _modelInfo._syn0[i*vecSize+j];
+  private float[] transform(ValueString tmp, NonBlockingHashMap<ValueString, Integer> vocabHM, Vec[] vs) {
+    final int vecSize = vs.length-1;
+    float[] vec = new float[vecSize];
+    if (!vocabHM.containsKey(tmp)) {
+      Log.warn("Target word " + tmp + " isn't in vocabulary.");
+      return null;
     }
-    _output.buildVocabHashMap();
+    int row = vocabHM.get(tmp);
+    for(int i=0; i < vecSize; i++) vec[i] = (float) vs[i+1].at(row);
+    return vec;
+  }
+
+  /**
+   * Find synonyms (i.e. wordvectors with the
+   * highest cosine similarity) of the supplied
+   * String and print them to stdout.
+   *
+   * @param target String of desired word
+   * @param cnt Number of synonyms to find
+   */
+  public void findSynonyms(String target, int cnt) {
+    if (cnt > 0) {
+      NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
+      Vec[] vs = _w2vFrame.vecs();
+      ValueString tmp = new ValueString(target);
+      float[] tarVec = transform(tmp, vocabHM, vs);
+      findSynonyms(tarVec, cnt, vs);
+    } else Log.err("Synonym count must be greater than 0.");
+  }
+
+  /**
+   * Find synonyms (i.e. wordvectors with the
+   * highest cosine similarity) of the word vector
+   * for a word.
+   *
+   * @param tarVec word vector of a word
+   * @param cnt number of synonyms to find
+   *
+   */
+  public void findSynonyms(float[] tarVec, int cnt) {
+    if (cnt > 0) {
+      Vec[] vs = _w2vFrame.vecs();
+      findSynonyms(tarVec, cnt, vs);
+    } else Log.err("Synonym count must be greater than 0.");
+  }
+
+  private void findSynonyms(float[] tarVec, int cnt, Vec[] vs) {
+    final int vecSize= vs.length - 1, vocabSize = (int) vs[0].length();
+    int[] matches = new int[cnt];
+    float [] scores = new float[cnt];
+    float[] curVec = new float[vecSize];
+
+    if (tarVec.length != vs.length-1) {
+      Log.warn("Target vector length differs from the vocab's vector length.");
+      return;
+    }
+
+    for (int i=0; i < vocabSize; i++) {
+      for(int j=0; j < vecSize; j++) curVec[j] = (float) vs[j+1].at(i);
+      float score = cosineSimilarity(tarVec, curVec);
+
+      for (int j = 0; j < cnt; j++) {
+        if (score > scores[j] && score < 0.999999) {
+          for (int k = cnt - 1; k > j; k--) {
+            scores[k] = scores[k - 1];
+            matches[k] = matches[k-1];
+          }
+          scores[j] = score;
+          matches[j] = i;
+          break;
+        }
+      }
+    }
+    for (int i=0; i < cnt; i++) System.out.println(vs[0].atStr(new ValueString(), matches[i]) + " " + scores[i]);
+  }
+  /**
+   * Basic calculation of cosine similarity
+   * @param target - a word vector
+   * @param current - a word vector
+   * @return cosine similarity between the two word vectors
+   */
+  public float cosineSimilarity(float[] target, float[] current) {
+    float dotProd = 0, tsqr = 0, csqr = 0;
+    for(int i=0; i< target.length; i++) {
+      dotProd += target[i] * current[i];
+      tsqr += Math.pow(target[i],2);
+      csqr += Math.pow(current[i],2);
+    }
+    return (float) (dotProd / (Math.sqrt(tsqr)*Math.sqrt(csqr)));
+  }
+
+  /**
+   * Hashmap for quick lookup of a word's row number.
+   */
+  private  NonBlockingHashMap<ValueString, Integer>  buildVocabHashMap() {
+    NonBlockingHashMap<ValueString, Integer> vocabHM;
+    Vec word = _w2vFrame.vec(0);
+    final int vocabSize = (int) _w2vFrame.numRows();
+    vocabHM = new NonBlockingHashMap<>(vocabSize);
+    for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new ValueString(),i),i);
+    return vocabHM;
+  }
+
+  public void buildModelOutput() {
+    final int vecSize = _parms._vecSize;
+    Futures fs = new Futures();
+    String[] colNames = new String[vecSize];
+    Vec[] vecs = new Vec[vecSize];
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+
+    //allocate
+    NewChunk cs[] = new NewChunk[vecs.length];
+    AppendableVec avs[] = new AppendableVec[vecs.length];
+    for (int i = 0; i < vecs.length; i++) {
+      avs[i] = new AppendableVec(keys[i]);
+      cs[i] = new NewChunk(avs[i], 0);
+    }
+    //fill in vector values
+    for( int i = 0; i < _modelInfo._vocabSize; i++ ) {
+      for (int j=0;  j < vecSize; j++) {
+        cs[j].addNum(_modelInfo._syn0[i * vecSize + j]);
+      }
+    }
+
+    //finalize vectors
+    for (int i = 0; i < vecs.length; i++) {
+      colNames[i] = new String("V"+i);
+      cs[i].close(0, fs);
+      vecs[i] = avs[i].close(fs);
+    }
+
+    fs.blockForPending();
+    _w2vFrame = new Frame(_w2vKey = Key.make("w2v"));
+    //FIXME this ties the word count frame to this one which makes cleanup messy
+    _w2vFrame.add("Word",((Frame)_parms._vocabKey.get()).vec(0));
+    _w2vFrame.add(colNames, vecs);
+    DKV.put(_w2vKey, _w2vFrame);
   }
 
   @Override public void delete() {
@@ -96,104 +237,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   public static class Word2VecOutput extends Model.Output{
-    private NonBlockingHashMap<String, Integer> _vocabHM;
-    int _vocabSize, _vecSize;
-    public String[] _word;
-    public float[][] _vecs;
-
-    /**
-     * Takes an input string can return the word vector for that word.
-     *
-     * @param target - String of desired word
-     * @return float array containing the word vector values or null if
-     *  the word isn't present in the vocabulary.
-     */
-    public float[] transform(String target) {
-      if (!_vocabHM.containsKey(target)) {
-        Log.warn("Target word " + target + " isn't in vocabulary.");
-        return null;
-      }
-      int row = _vocabHM.get(target);
-      return _vecs[row];
-    }
-
-    /**
-     * Find synonyms (i.e. wordvectors with the
-     * highest cosine similarity) of the supplied
-     * String and print them to stdout.
-     *
-     * @param target String of desired word
-     * @param cnt Number of synonyms to find
-     */
-    public void findSynonyms(String target, int cnt) {
-      if (cnt > 0) {
-        float[] tarVec = transform(target);
-        if (tarVec != null)
-          findSynonyms(tarVec, cnt);
-      } else Log.err("Synonym count must be greater than 0.");
-    }
-
-    /**
-     * Find synonyms (i.e. wordvectors with the
-     * highest cosine similarity) of the word vector
-     * for a word.
-     *
-     * @param tarVec word vector of a word
-     * @param cnt number of synonyms to find
-     *
-     */
-    public void findSynonyms(float[] tarVec, int cnt) {
-      if (cnt > 0) {
-        int[] matches = new int[cnt];
-        float [] scores = new float[cnt];
-
-        if (tarVec.length != _vecSize) {
-          Log.warn("Target vector length differs from the vocab's vector length.");
-          return;
-        }
-
-        for (int i=0; i < _vocabSize; i++) {
-          float score = cosineSimilarity(tarVec, _vecs[i]);
-
-          for (int j = 0; j < cnt; j++) {
-            if (score > scores[j] && score < 0.999999) {
-              for (int k = cnt - 1; k > j; k--) {
-                scores[k] = scores[k - 1];
-                matches[k] = matches[k-1];
-              }
-              scores[j] = score;
-              matches[j] = i;
-              break;
-            }
-          }
-        }
-        for (int i=0; i < cnt; i++) System.out.println(_word[matches[i]] + " " + scores[i]);
-      } else Log.err("Synonym count must be greater than 0.");
-    }
-
-    /**
-     * Basic calculation of cosine similarity
-     * @param target - a word vector
-     * @param current - a word vector
-     * @return cosine similarity between the two word vectors
-     */
-    public float cosineSimilarity(float[] target, float[] current) {
-      float dotProd = 0, tsqr = 0, csqr = 0;
-      for(int i=0; i< target.length; i++) {
-        dotProd += target[i] * current[i];
-        tsqr += Math.pow(target[i],2);
-        csqr += Math.pow(current[i],2);
-      }
-      return (float) (dotProd / (Math.sqrt(tsqr)*Math.sqrt(csqr)));
-    }
-
-    /**
-     * Hashmap for quick lookup of a word's row number.
-     */
-    private void buildVocabHashMap() {
-      _vocabHM = new NonBlockingHashMap<>(_vocabSize);
-      for(int i=0; i < _vocabSize; i++) _vocabHM.put(_word[i],i);
-    }
   }
 
   public static class Word2VecModelInfo extends Iced {
@@ -445,6 +488,5 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
       return count;
     }
-
   }
 }

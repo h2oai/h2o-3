@@ -20,7 +20,6 @@ public class Word2VecTest extends TestUtil {
   @Test public void testW2V_CBOW_HSM() {
     Word2Vec job = null;
     Word2VecModel w2vm = null;
-    Word2VecModel.Word2VecOutput w2vmo = null;
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/text/text8");
@@ -37,8 +36,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      w2vmo = w2vm._output;
-      w2vmo.findSynonyms("cat",5);
+      w2vm.findSynonyms("cat",5);
 
     } finally {
       if( fr  != null ) fr .remove();
@@ -50,7 +48,6 @@ public class Word2VecTest extends TestUtil {
   @Test public void testW2V_CBOW_NS() {
     Word2Vec job = null;
     Word2VecModel w2vm = null;
-    Word2VecModel.Word2VecOutput w2vmo = null;
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/text/text8");
@@ -68,8 +65,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      w2vmo = w2vm._output;
-      w2vmo.findSynonyms("cat",5);
+      w2vm.findSynonyms("cat",5);
 
     } finally {
       if( fr  != null ) fr .remove();
@@ -82,7 +78,6 @@ public class Word2VecTest extends TestUtil {
   @Test public void testW2V_SG_HSM() {
     Word2Vec job = null;
     Word2VecModel w2vm = null;
-    Word2VecModel.Word2VecOutput w2vmo = null;
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/text/text8");
@@ -99,8 +94,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      w2vmo = w2vm._output;
-      w2vmo.findSynonyms("cat",5);
+      w2vm.findSynonyms("cat",5);
 
     } finally {
       if( fr  != null ) fr .remove();
@@ -112,7 +106,6 @@ public class Word2VecTest extends TestUtil {
   @Test public void testW2V_SG_NS() {
     Word2Vec job = null;
     Word2VecModel w2vm = null;
-    Word2VecModel.Word2VecOutput w2vmo = null;
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/text/text8");
@@ -130,8 +123,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      w2vmo = w2vm._output;
-      w2vmo.findSynonyms("cat",5);
+      w2vm.findSynonyms("cat",5);
 
     } finally {
       if( fr  != null ) fr .remove();
