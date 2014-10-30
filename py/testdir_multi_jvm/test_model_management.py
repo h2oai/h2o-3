@@ -286,6 +286,23 @@ print 'Done building KMeans model.'
 #######################################
 # Test DeepLearning parameters validation
 #
+# Default parameters:
+model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['model_builders']['deeplearning']
+dl_test_parameters_list = model_builder['parameters']
+dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
+
+print "deeplearning parameters: "
+pp.pprint(dl_test_parameters)
+
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
+h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
+if 2 != parameters_validation['validation_error_count']:
+    print "validation errors: "
+    pp.pprint(parameters_validation)
+assert 2 == parameters_validation['validation_error_count'], "2 != validation_error_count in good-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
+
 # Good parameters (note: testing with null training_frame):
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
