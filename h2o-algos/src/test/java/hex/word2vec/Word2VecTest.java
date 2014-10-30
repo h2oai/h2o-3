@@ -8,6 +8,8 @@ import water.fvec.Frame;
 /**
  * Data referenced here can be found at:
  * wget http://mattmahoney.net/dc/text8.zip -O text8.gz
+ * Spaces are replaced with newlines via:
+ * gsed -e 's/\s\+/\n/g' text8 > text9
  *
  * It isn't checked in because really data set should
  * generated on the fly for this test to keep the
