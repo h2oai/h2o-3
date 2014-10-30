@@ -161,40 +161,59 @@ h2o.getFrame <- function(h2o, key) {
 #'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
 #'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
 #'  @param epochs - Number of iterations data is run through.
+
+
+#'
+#'  "trainingFrame",
+#'  "minWordFreq",
+#'                "wordModel",
+ #'               "normModel",
+   #'             "negExCnt",
+    #'            "vecSize",
+    #'            "windowSize",
+    #'            "sentSampleRate",
+    #'            "learningRate",
+    #'            "epochs"
+#'
+#'
+#'
 h2o.word2vec<-
-function(data, minFreq, wordModel, normModel, numNegEx = NULL, vocabKey = NULL,
-         vecSize, winSize, sentSampleRate, learningRate, epochs) {
+function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
+         vecSize, windowSize, sentSampleRate, learningRate, epochs) {
 
   # param checking
-  if (!(data %i% "H2OFrame")) stop("`data` must be an H2OFrame")
+  if (!(trainingFrame %i% "H2OFrame")) stop("`data` must be an H2OFrame")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
-  if (!is.null(numNegEx)) {
-    if (numNegEx < 0) stop("`numNegEx` must be >= 0")
-    if (numNegEx != 0 && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received" %p% numNegEx)
+  if (!is.null(negExCnt)) {
+    if (negExCnt < 0) stop("`negExCnt` must be >= 0")
+    if (negExCnt != 0 && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received" %p% negExCnt)
   }
   if (missing(vecSize) || !is.numeric(vecSize)) stop("`vecSize` must be numeric")
-  if (missing(winSize) || !is.numeric(winSize)) stop("`winSize` must be numeric")
+  if (missing(windowSize) || !is.numeric(windowSize)) stop("`windowSize` must be numeric")
   if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
   if (missing(learningRate) || !is.numeric(learningRate)) stop("`learningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
-  if (!(data %i% "H2OParsedData")) invisible(nrow(data))  # try to force the eval of the frame
-  if (!(data %i% "H2OParsedData")) stop("Could not evaluate `data` as an H2O data frame.")
+  if (!(trainingFrame %i% "H2OParsedData")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
+  if (!(trainingFrame %i% "H2OParsedData")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
 
-  params <- list(data = data@key,
+  params <- list(training_frame = trainingFrame@key,
+                 wordModel = wordModel,
                  normModel = normModel,
-                 numNegEx = numNegEx,
-                 vocabKey = vocabKey,
+                 minWordFreq = minWordFreq,
+                 negSampleCnt = negExCnt,
                  vecSize = vecSize,
-                 winSize = winSize,
+                 windowSize = windowSize,
                  sentSampleRate = sentSampleRate,
                  learningRate = learningRate,
                  epochs = epochs)
 
-  res <- .h2o.__remoteSend(data@h2o, .h2o.__W2V, params)
-  w2vecFrame <- h2o.getFrame(res$'_w2vKey')
-  vocabFrame <- h2o.getFrame(res$'_wordCountKey')
-  new("H2OW2V", h2o = data@h2o, key = res$key, word2vec = w2vecFrame, vocab=vocabFrame, train.data = data, params = params)  # return a new h2o-word2vec object
+  res <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__W2V, .params = params)
+  .h2o.__waitOnJob(trainingFrame@h2o, res$job)
+  dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste(.h2o.__JOBS, "/", res$job, sep = ""))$jobs[[1]]$dest$name
+  w2vmodel <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__INSPECT, key = dest_key)
+  w2vmodel$key
+  #new("H2OW2V", h2o = trainingFrame@h2o, key = w2vmodel$key, word2vec = w2vecFrame, vocab=vocabFrame, trainingFrame = trainingFrame, params = params)  # return a new h2o-word2vec object
 }
 
 #'

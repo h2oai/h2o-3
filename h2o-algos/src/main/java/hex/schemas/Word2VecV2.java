@@ -11,7 +11,7 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
 
   public static final class Word2VecParametersV2 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV2> {
     public String[] fields() { return new String[]{
-            "trainingFrame",
+            "training_frame",
             "minWordFreq",
             "wordModel",
             "normModel",
@@ -41,7 +41,7 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
      */
     @API(help="Set threshold for occurrence of words. Those that appear with higher frequency in the training data\n" +
             "\t\twill be randomly down-sampled; default is 1e-3, useful range is (0, 1e-5)", required = true)
-    public double sentSampleRate = 1e-3;
+    public float sentSampleRate = 1e-3f;
 
     /**
      *
