@@ -193,6 +193,12 @@
 #'
 .h2o.__LOGANDECHO   <- "LogAndEcho.json"
 
+#'
+#' Word To Vec
+#'
+.h2o.__W2V          <- "Word2Vec.json"
+.h2o.__SYNONYMS     <- "w2vsynonyms.json"
+.h2o.__TRANSFORM    <- "w2vtransform.json"
 
 #'
 #' The list of H2O1 (old) endpoints
