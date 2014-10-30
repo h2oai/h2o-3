@@ -36,7 +36,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     run_time = 0;
     start_time = System.currentTimeMillis();
     _modelInfo = new Word2VecModelInfo(params);
-    assert(Arrays.equals(_key._kb, selfKey._kb));
+    //assert(Arrays.equals(_key._kb, selfKey._kb));
   }
 
   @Override public boolean isSupervised() {return false;}

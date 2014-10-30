@@ -86,7 +86,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       if (model == null) {
         model = DKV.get(dest()).get();
       }
-      model.write_lock(self());
       Log.info("Starting to train the Word2Vec model.");
 
       // main loop
@@ -102,7 +101,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       model.buildModelOutput();
     }
     catch(RuntimeException ex) {
-      //model = DKV.get(dest()).get();
+      model = DKV.get(dest()).get();
       _state = JobState.CANCELLED; //for JSON REST response
       Log.info("Word2Vec model building was cancelled.");
       throw ex;
