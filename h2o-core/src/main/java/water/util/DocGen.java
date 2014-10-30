@@ -65,7 +65,7 @@ public abstract class DocGen<T extends DocGen> {
     }
 
     public HTML putA4  (String name, int    [] is) { return is==null?f(name, "null"):f0(name).array(is).f1(); } //throw H2O.unimpl(); }
-    public HTML putA4f (String name, float  [] fs) { throw H2O.unimpl(); }
+    public HTML putA4f (String name, float  [] fs) { return fs==null?f(name, "null"):f0(name).array(fs).f1(); } //throw H2O.unimpl(); }
     public HTML putA8  (String name, long   [] ls) { 
       if( ls==null ) return f(name,"null");
       f0(name).arrayHead();
@@ -161,6 +161,11 @@ public abstract class DocGen<T extends DocGen> {
     public HTML array( double[] ds ) {
       arrayHead();
       if( ds != null ) for( double d : ds ) p("<tr>").cell(d).p("</tr>");
+      return arrayTail();
+    }
+    public HTML array( float[] ds ) {
+      arrayHead();
+      if( ds != null ) for( float d : ds ) p("<tr>").cell(d).p("</tr>");
       return arrayTail();
     }
     public HTML array( String[][] sss ) {

@@ -107,8 +107,7 @@ setMethod("show", "H2OParsedData", function(object) {
 #'
 #' This class represents a h2o-word2vec object.
 #'
-setClass("H2OW2V", representation(h2o="H2OClient", key="character", word2vec = "H2OParsedData", vocab="H2OParsedData",
-         train.data="H2OParsedData"))
+setClass("H2OW2V", representation(h2o="H2OClient", key="character", train.data="H2OParsedData"))
 
 #'
 #' The H2OModel object.

@@ -17,6 +17,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word2VecOutput> {
@@ -88,14 +89,16 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    * @param target String of desired word
    * @param cnt Number of synonyms to find
    */
-  public void findSynonyms(String target, int cnt) {
+  public HashMap<String, Float> findSynonyms(String target, int cnt) {
+    HashMap<String, Float> hm = new HashMap<>();
     if (cnt > 0) {
       NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
       Vec[] vs = ((Frame) _w2vKey.get()).vecs();
       ValueString tmp = new ValueString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
-      findSynonyms(tarVec, cnt, vs);
+      hm = findSynonyms(tarVec, cnt, vs);
     } else Log.err("Synonym count must be greater than 0.");
+    return hm;
   }
 
   /**
@@ -114,15 +117,17 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     } else Log.err("Synonym count must be greater than 0.");
   }
 
-  private void findSynonyms(float[] tarVec, int cnt, Vec[] vs) {
+  private HashMap<String, Float> findSynonyms(float[] tarVec, int cnt, Vec[] vs) {
     final int vecSize= vs.length - 1, vocabSize = (int) vs[0].length();
     int[] matches = new int[cnt];
     float [] scores = new float[cnt];
     float[] curVec = new float[vecSize];
 
+    HashMap<String, Float> res = new HashMap<>();
+
     if (tarVec.length != vs.length-1) {
       Log.warn("Target vector length differs from the vocab's vector length.");
-      return;
+      return null;
     }
 
     for (int i=0; i < vocabSize; i++) {
@@ -141,7 +146,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
         }
       }
     }
-    for (int i=0; i < cnt; i++) System.out.println(vs[0].atStr(new ValueString(), matches[i]) + " " + scores[i]);
+    for (int i=0; i < cnt; i++) {
+      res.put(vs[0].atStr(new ValueString(), matches[i]).toString(), scores[i]);
+      //System.out.println(vs[0].atStr(new ValueString(), matches[i]) + " " + scores[i]);
+    }
+    return res;
   }
   /**
    * Basic calculation of cosine similarity

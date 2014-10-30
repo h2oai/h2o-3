@@ -212,8 +212,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
   .h2o.__waitOnJob(trainingFrame@h2o, res$job)
   dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste(.h2o.__JOBS, "/", res$job, sep = ""))$jobs[[1]]$dest$name
   w2vmodel <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__INSPECT, key = dest_key)
-  w2vmodel$key
-  #new("H2OW2V", h2o = trainingFrame@h2o, key = w2vmodel$key, word2vec = w2vecFrame, vocab=vocabFrame, trainingFrame = trainingFrame, params = params)  # return a new h2o-word2vec object
+  new("H2OW2V", h2o = trainingFrame@h2o, key = dest_key, train.data=trainingFrame)
 }
 
 #'
@@ -231,17 +230,19 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- c(data = word2vec@word2vec@key, word2vec@params)
+  params <- list(key = word2vec@key, target=target, cnt=count)
   if (length(target) == 1) {
-    params$target <- target
-    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
-    return(h2o.getFrame(res$key))
+    res <- .h2o.__remoteSend(h, .h2o.__SYNONYMS, .params = params)
+    fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
+    fr <- fr[with(fr, order(-cosine.similarity)),]
+    return(fr)
   } else {
-    vecs <- lapply(target, h2o.transform, word2vec)
-    vec <- colSums(as.data.frame(vecs))
-    params$vec <- vec
-    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
-    return(h2o.getFrame(res$key))
+    stop("unimplemented")
+#    vecs <- lapply(target, h2o.transform, word2vec)
+#    vec <- colSums(as.data.frame(vecs))
+#    params$vec <- vec
+#    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
+#    return(h2o.getFrame(res$key))
   }
 }
 
