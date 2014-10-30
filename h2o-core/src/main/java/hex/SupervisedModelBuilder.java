@@ -29,6 +29,10 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
    *  classes.   */
   @Override public void init() {
     super.init();
+    if( _parms._max_after_balance_size <= 0.0 )
+      error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
+
+    if( _train == null ) return; // Nothing more to check
     if( _train.numCols() <= 1 )
       error("_train", "Training data must have at least 2 features (incl. response).");
 
@@ -45,9 +49,6 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     //if( _parms._toEnum ) _response = _response.toEnum(); // TODO: THIS CAN BE EXPENSIVE; DO IT ELSEWHERE
     _train.add(_parms._response_column, _response);
     _valid.add(_parms._response_column, vresp);
-
-    if( _parms._max_after_balance_size <= 0.0 ) 
-      error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
     // #Classes: 1 for regression, domain-length for enum columns
     _nclass = _response.isEnum() ? _response.domain().length : 1;

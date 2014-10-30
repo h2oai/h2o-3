@@ -122,6 +122,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert _parms != null;      // Parms must already be set in
     assert _error_count == -1;  // Only ran init once
     _error_count = 0;           // No errors so-far
+    if( _parms._train == null ) { error("_train","Missing training frame"); return; }
     Frame tr = _parms.train();
     Frame va = _parms.valid();
     assert Arrays.equals(tr._names,va._names); // Cutout at a higher level
