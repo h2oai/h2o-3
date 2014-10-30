@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser(
     description='Attach to an H2O instance and call its REST API to generate the REST API docs and write them to the filesystem.',
 )
 parser.add_argument('--verbose', '-v', help='verbose output', action='store_true')
+parser.add_argument('--usecloud', help='ip:port to attach to', default='')
 parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
 parser.add_argument('--dest', help='destination directory', default=(here + '/../build/docs/REST'))
@@ -26,6 +27,11 @@ args = parser.parse_args()
 
 h2o.H2O.verbose = True if args.verbose else False
 pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
+
+if (len(args.usecloud) > 0):
+    arr = args.usecloud.split(":")
+    args.host = arr[0]
+    args.port = int(arr[1])
 
 h2o.H2O.verboseprint("connecting to: ", args.host, ":", args.port)
 
