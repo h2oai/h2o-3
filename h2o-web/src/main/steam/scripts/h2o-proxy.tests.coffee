@@ -210,7 +210,7 @@ test 'airlines ingest and model building flow', (t) ->
           go error
         else
           t.pass 'got model builders reply'
-          tdiff t, (readGoldJson 'model-builders-kmeans.json'), result, exclude: [ 'model_builders.kmeans.job' ]
+          tdiff t, (readGoldJson 'model-builders-kmeans.json'), result, exclude: [ 'model_builders.kmeans.job', 'model_builders.kmeans.parameters.#.default_value', 'model_builders.kmeans.parameters.#.actual_value', 'model_builders.kmeans.parameters.#.required' ]
           go null, frameKey
 
     buildAirlinesKmeansModel = (frameKey, go) ->
@@ -253,7 +253,7 @@ test 'airlines ingest and model building flow', (t) ->
           parameters = result.model_builders.deeplearning.parameters
           seedParameter = find parameters, (parameter) -> parameter.name is 'seed'
           seedParameter.default_value = seedParameter.actual_value = 'random'
-          tdiff t, (readGoldJson 'model-builders-deeplearning.json'), result, exclude: [ 'model_builders.deeplearning.job' ]
+          tdiff t, (readGoldJson 'model-builders-deeplearning.json'), result, exclude: [ 'model_builders.deeplearning.job', 'model_builders.deeplearning.parameters.#.default_value', 'model_builders.deeplearning.parameters.#.actual_value', 'model_builders.deeplearning.parameters.#.required' ]
           go null
 
     buildAirlinesDeepLearningModel = (go) ->
