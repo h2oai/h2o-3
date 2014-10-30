@@ -76,7 +76,8 @@ public class L_BFGS_Test  extends TestUtil {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();
-      dinfo = new DataInfo(Key.make(),source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      Frame valid = new Frame(source._names.clone(),source.vecs().clone());
+      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
       DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.vec("CAPSULE").mean(), source.numRows());
       L_BFGS_Params lp = new L_BFGS_Params();
@@ -100,8 +101,9 @@ public class L_BFGS_Test  extends TestUtil {
     DataInfo dinfo = null;
     try {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/arcene.csv");
+      Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       GLMParameters glmp = new GLMParameters(Family.gaussian);
-      dinfo = new DataInfo(Key.make(),source, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
       DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
       L_BFGS.Result r = L_BFGS.solve(dinfo.fullN() + 1, solver, new L_BFGS_Params());

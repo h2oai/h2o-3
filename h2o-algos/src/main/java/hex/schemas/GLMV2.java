@@ -13,13 +13,11 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
 
   public static final class GLMParametersV2 extends ModelParametersSchema<GLMParameters, GLMParametersV2> {
     // TODO: parameters are all wrong. . .
-    public String[] fields() { return new String[] { "destination_key", "K", "max_iters", "normalize", "seed" }; }
+    public String[] fields() { return new String[] { "destination_key", "max_iters", "normalize" }; }
 
     // Input fields
-    public int K;
     public int max_iters;        // Max iterations
     public boolean normalize = true;
-    public long seed;
 
     @Override public GLMParametersV2 fillFromImpl(GLMParameters parms) {
       super.fillFromImpl(parms);
@@ -45,11 +43,6 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
 
   // TODO: refactor ModelBuilder creation
   @Override public GLM createImpl() {
-    if( parameters.K < 2 || parameters.K > 9999999 ) throw new IllegalArgumentException("2<= K && K < 10000000");
-    if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
-    if( parameters.max_iters==0 ) parameters.max_iters = 1000; // Default is 1000 max_iters
-    if( parameters.seed == 0 ) parameters.seed = System.nanoTime();
-
     GLMParameters parms = parameters.createImpl();
     return new GLM(parms);
   }

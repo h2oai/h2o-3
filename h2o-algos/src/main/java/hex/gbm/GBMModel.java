@@ -19,29 +19,14 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {
-      AUTO, bernoulli
-    }
+    public enum Family {  AUTO, bernoulli  }
     public Family _loss = Family.AUTO;
-
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
-    public long _seed;           // RNG seed for balancing classes
-
-    @Override public int sanityCheckParameters() {
-      super.sanityCheckParameters();
-      if( !(0. < _learn_rate && _learn_rate <= 1.0) ) validation_error("learn_rate", "learn_rate must be between 0 and 1");
-      if( _loss == Family.bernoulli &&
-          (!_classification || _nclass != 2) )
-        throw new IllegalArgumentException("Bernoulli requires the response to be a 2-class categorical");
-      return _validation_error_count;
-    }
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
 
-    /** Initially predicted value (for zero trees) */
-    double initialPrediction;
-
+    public GBMOutput( GBM b ) { super(b); }
 
     @Override public int nfeatures() { return _names.length; }
 
@@ -51,9 +36,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     }
   }
 
-  public GBMModel(Key selfKey, Frame fr, GBMParameters parms, GBMOutput output, int ncats) {
-    super(selfKey,fr,parms,output);
-  }
+  public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new GBMModelV2(); }
@@ -72,7 +55,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     float[] p = super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
     if( _parms._loss == GBMParameters.Family.bernoulli ) {
-      double fx = p[1] + _output.initialPrediction;
+      double fx = p[1] + _output._initialPrediction;
       p[2] = 1.0f/(float)(1f+Math.exp(-fx));
       p[1] = 1f-p[2];
       p[0] = water.util.ModelUtils.getPrediction(p, data);
@@ -95,7 +78,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       p[0] = water.util.ModelUtils.getPrediction(p, data);
     } else { // regression
       // Prediction starts from the mean response, and adds predicted residuals
-      preds[0] += _output.initialPrediction;
+      preds[0] += _output._initialPrediction;
     }
     return p;
   }

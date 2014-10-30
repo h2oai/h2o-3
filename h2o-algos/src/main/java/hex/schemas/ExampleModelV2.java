@@ -16,7 +16,7 @@ public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.Examp
     public double[] maxs;
 
     @Override public ExampleModel.ExampleOutput createImpl() {
-      ExampleModel.ExampleOutput impl = new ExampleModel.ExampleOutput();
+      ExampleModel.ExampleOutput impl = new ExampleModel.ExampleOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }

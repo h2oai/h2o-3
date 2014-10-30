@@ -6,81 +6,83 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.ModelUtils;
+import water.util.MRUtils;
 
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends Model.Output> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
 
-  protected float[] _priorClassDist;
-  protected float[] _modelClassDist;
-  public void setModelClassDistribution(float[] classdist) { _modelClassDist = classdist.clone(); }
+  public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
 
-  public boolean isSupervised() { return true; }
-
-  public SupervisedModel( Key selfKey, Frame fr, P parms, O output, float[] priorClassDist ) {
-    this(selfKey,fr.names(),fr.domains(),parms,output,priorClassDist);
-  }
-
-  public SupervisedModel( Key selfKey, String[] names, String[][] domains, P parms, O output, float[] priorClassDist ) {
-    super(selfKey,names,domains,parms,output);
-    _priorClassDist = priorClassDist;
-  }
-
+  /** Supervised Model Parameters includes a response column, and whether or
+   *  not rebalancing classes is desirable.  Also includes a bunch of cheap
+   *  cached convenience fields.  */
   public abstract static class SupervisedParameters extends Model.Parameters {
-    // Values that are set by the caller:
+    /** Supervised models have an expected response they get to train with! */
     public String _response_column; // response column name
 
-    // Derived values, generally caches:
-    public transient Vec _response; // Handy response column
-    public int _nclass;             // Number of classes; 1 for regression; 2+ for classification
-    public boolean _classification; // true for classification, false for regression
-    public int  _ncols;             // Columns to train on, including the response
-    public long _nrows;             // Number of rows where the response is not-NA
+    /** Convert the response column to an enum (forcing a classification
+     *  instead of a regression) as needed. */
+    public boolean _toEnum;
 
-    /**
-     * Sanity check model building parameters and return user-visible warnings or errors if something is wrong.
-     * NOTE: it's up to the caller to get the parameters right.  Do not change them behind the caller's back!
-     */
-    @Override public int sanityCheckParameters() {
-      this.clearValidationErrors();
-      if (_train == null)
-        validation_error("training_frame", "Training frame must be set.");
+    /** Should the minority classes be upsampled to balance the class
+     *  distribution? */
+    public boolean _balance_classes = false;
 
-      if (_response_column == null)
-        validation_error("response_column", "Response column must be set.");
-
-      int ridx = 0;
-      if (_train != null) {
-        ridx = train().find(_response_column);
-        if( ridx == -1 )          // Actually, think should not get here either (cutout at higher layer)
-          validation_error("response_column", "Response column " + _response_column + " not found in frame: " + _train + ".");
-        _response = train().vecs()[ridx];
-        _nclass = _response.domain()==null ? 1 : _response.domain().length;
-
-        // NOTE: classification is no longer considered a parameter; it is derived from the response column.
-        _classification = _response.isEnum();
-        _ncols = train().numCols();
-        _nrows = train().numRows() - _response.naCnt();
-        if( _ncols <= 1 )
-          validation_error("_training_frame", "Training data must have at least 2 features (incl. response).");
-        if( _response.isBad() )
-          validation_error("_response_column", "Response column is all NAs!");
-        if( _response.isConst() )
-          validation_error("_response_column", "Response column is constant!");
-
-        int usableColumns = 0;
-        for( Vec v : train().vecs() ) if( !v.isBad() && !v.isConst() ) usableColumns++;
-        if( usableColumns==0 ) throw new IllegalArgumentException("There is no usable column to generate model!"); // TODO: validation_error
-      }
-
-      return _validation_error_count;
-    }
+    /** When classes are being balanced, limit the resulting dataset size to
+     *  the specified multiple of the original dataset size.  Maximum relative
+     *  size of the training data after balancing class counts (can be less
+     *  than 1.0) */
+    public float _max_after_balance_size = Float.POSITIVE_INFINITY;
 
     @Override public long checksum() {
-      return super.checksum()+_response_column.hashCode();
+      return super.checksum()^_response_column.hashCode()^(_toEnum?1:0)^(_balance_classes?1:0);
     }
   }
+
+  /** Output from all Supervised Models, includes class distribtion
+   */
+  public abstract static class SupervisedOutput extends Model.Output {
+    // Includes the class distribution for all supervised models
+    public long [/*nclass*/] _distribution;  // Count of rows-per-class
+    public float[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
+    public float[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
+
+    /** Any final prep-work just before model-building starts, but after the
+     *  user has clicked "go".  E.g., converting a response column to an enum
+     *  touches the entire column (can be expensive), makes a parallel vec
+     *  (Key/Data leak management issues), and might throw IAE if there are too
+     *  many classes. */
+    public SupervisedOutput( SupervisedModelBuilder b ) {
+      super(b);
+      if( b==null ) return;     // This Output will be filled by the GUI not a Builder
+
+      // flip the response to an ENUM here
+
+      // Capture the data "shape" the model is valid on, after the response is moved to the end
+      _names  = b._train.names  ();
+      _domains= b._train.domains();
+
+      // Compute class distribution, handy for most builders
+      if( b.isClassifier() ) {
+        MRUtils.ClassDist cdmt = new MRUtils.ClassDist(b._nclass).doAll(b._response);
+        _distribution   = cdmt.dist();
+        _priorClassDist = cdmt.rel_dist();
+      } else {                    // Regression; only 1 "class"
+        _distribution   = new long[] { b._train.numRows() };
+        _priorClassDist = new float[] { 1.0f };
+      }
+      _modelClassDist = _priorClassDist;
+    }
+
+    /** @return number of classes; illegal to call before setting distribution */
+    public int nclasses() { return _distribution.length; }
+    public boolean isClassifier() { return nclasses()>1; }
+  }
+
+
+  @Override public boolean isSupervised() { return true; }
 
   /**
    * compute the model error for a given test data set
@@ -176,13 +178,13 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     float[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-    if (_output.isClassifier() && _priorClassDist != null && _modelClassDist != null) {
+    if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
       assert(scored.length == _output.nclasses()+1); //1 label + nclasses probs
       double probsum=0;
       for( int c=1; c<scored.length; c++ ) {
-        final double original_fraction = _priorClassDist[c-1];
+        final double original_fraction = _output._priorClassDist[c-1];
         assert(original_fraction > 0);
-        final double oversampled_fraction = _modelClassDist[c-1];
+        final double oversampled_fraction = _output._modelClassDist[c-1];
         assert(oversampled_fraction > 0);
         assert(!Double.isNaN(scored[c]));
         scored[c] *= original_fraction / oversampled_fraction;

@@ -6,8 +6,6 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 import water.util.PojoUtils;
 
-import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
-
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
@@ -15,7 +13,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     //add output fields
 
     @Override public DeepLearningModel.DeepLearningOutput createImpl() {
-      DeepLearningModel.DeepLearningOutput impl = new DeepLearningModel.DeepLearningOutput();
+      DeepLearningModel.DeepLearningOutput impl = new DeepLearningModel.DeepLearningOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
@@ -40,7 +38,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
   @Override public DeepLearningModel createImpl() {
     DeepLearningV2.DeepLearningParametersV2 p = ((DeepLearningV2.DeepLearningParametersV2)this.parameters);
     DeepLearningModel.DeepLearningParameters parms = p.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, null /*Job*/, p.training_frame._key, prepareDataInfo(parms), parms, null);
+    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningOutput(null), null, null);
   }
 
   // Version&Schema-specific filling from the impl

@@ -96,6 +96,7 @@ build/classes/main/water/init/BuildVersion.class: ../build/BuildVersion.java
 # H2O names win over all other names.
 build/libs/h2o-core.jar: $(main_classes) build/classes/main/water/init/BuildVersion.class
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@rm -rf build/tmp ; mkdir -p build/tmp
 	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 	@jar -cfm build/libs/h2o-core.jar manifest.txt -C build/classes/main . -C build/tmp . -C src/main resources
@@ -103,6 +104,7 @@ build/libs/h2o-core.jar: $(main_classes) build/classes/main/water/init/BuildVers
 
 build/libs/h2o-core-test.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@jar -cfm build/libs/h2o-core-test.jar manifest.txt -C build/classes/test .
 
 # JavaDoc!

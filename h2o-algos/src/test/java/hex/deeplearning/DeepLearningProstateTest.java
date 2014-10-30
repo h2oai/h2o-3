@@ -16,7 +16,7 @@ import java.util.Random;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -120,6 +120,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._train = frame._key;
                                       p._response_column = frame._names[resp];
                                       p._valid = valid==null ? null : valid._key;
+                                      p._toEnum = classification;
 
                                       p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
@@ -142,7 +143,7 @@ public class DeepLearningProstateTest extends TestUtil {
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(p);
                                       try {
-                                        model1 = dl.train().get();
+                                        model1 = dl.trainModel().get();
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
@@ -178,18 +179,18 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p._checkpoint = dest_tmp;
                                     p._n_folds = 0;
 
-                                    p._train = frame._key;
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
-                                    p._override_with_best_model = override_with_best_model;
-                                    p._epochs = epochs;
-                                    p._seed = seed;
-                                    p._train_samples_per_iteration = train_samples_per_iteration;
-                                    p._balance_classes = p._classification && balance_classes;
-
+                                    p._toEnum = classification;
+                                    p.override_with_best_model = override_with_best_model;
+                                    p.epochs = epochs;
+                                    p.seed = seed;
+                                    p.train_samples_per_iteration = train_samples_per_iteration;
+                                    p.balance_classes = classification && balance_classes;
+                                    p._train = frame._key;
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
-                                      model1 = dl.train().get();
+                                      model1 = dl.trainModel().get();
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       throw new RuntimeException(t);

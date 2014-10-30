@@ -63,11 +63,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
   // TODO: refactor ModelBuilder creation
   // TODO: defaults should only be in the impl, not duplicated in the API layer
   @Override public KMeans createImpl() {
-    if( parameters.K < 2 || parameters.K > 9999999 ) throw new IllegalArgumentException("2<= K && K < 10000000");
-    if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
-    if( parameters.max_iters==0 ) parameters.max_iters = 1000; // Default is 1000 max_iters
-    if( parameters.seed == 0 ) parameters.seed = System.nanoTime();
-
     KMeansParameters parms = parameters.createImpl();
     return new KMeans(parms);
   }

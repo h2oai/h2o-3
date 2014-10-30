@@ -409,6 +409,12 @@ public class Frame extends Lockable {
    *  @return The removed column */
   public Vec remove( String name ) { return remove(find(name)); }
 
+  public Frame remove( String[] names ) { 
+    for( String name : names )
+      remove(find(name));
+    return this;
+  }
+
   /** Removes a list of columns by index; the index list must be sorted
    *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
@@ -486,6 +492,16 @@ public class Frame extends Lockable {
     _keys = keys;
     _col0 = null;
     return vecX;
+  }
+
+  /** Restructure a Frame completely */
+  public void restructure( String[] names, Vec[] vecs ) {
+    // Make empty to dodge asserts, then "add()" them all which will check for
+    // compatible Vecs & names.
+    _names = new String[0];
+    _keys  = new Key   [0];
+    _vecs  = new Vec   [0];
+    add(names,vecs);
   }
 
   // --------------------------------------------

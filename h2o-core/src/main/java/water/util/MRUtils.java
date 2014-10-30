@@ -88,7 +88,7 @@ public class MRUtils {
    */
   public static class ClassDist extends ClassDistHelper {
     public ClassDist(final Vec label) { super(label.domain().length); }
-//    public ClassDist(int n) { super(n); }
+    public ClassDist(int n) { super(n); }
     public final long[] dist() { return _ys; }
     public final float[] rel_dist() {
       float[] rel = new float[_ys.length];

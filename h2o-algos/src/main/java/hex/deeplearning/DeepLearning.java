@@ -1,48 +1,53 @@
-
 package hex.deeplearning;
 
 import hex.FrameTask.DataInfo;
-import hex.ModelBuilder;
+import hex.SupervisedModelBuilder;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
-import water.util.*;
-import water.init.NetworkTest;
 import water.init.Linpack;
+import water.init.NetworkTest;
+import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import static hex.deeplearning.DeepLearningModel.prepareDataInfo;
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
 
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
-    super("DeepLearning",parms);
-  }
+public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) { super("DeepLearning",parms); init(); }
 
   public ModelBuilderSchema schema() { return new DeepLearningV2(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
-  @Override public Job<DeepLearningModel> train() {
-    if (_parms.sanityCheckParameters() > 0)
-      throw new IllegalArgumentException("Invalid parameters for DeepLearning: " + _parms.validationErrors());
+  @Override public Job<DeepLearningModel> trainModel() {
+    return start(new DeepLearningDriver(), (long)(_parms.epochs * _train.numRows()));
+  }
 
-    return start(new DeepLearningDriver(), (long)(_parms._epochs * _parms.train().numRows()));
+  /** Initialize the ModelBuilder, validating all arguments and preparing the
+   *  training frame.  This call is expected to be overridden in the subclasses
+   *  and each subclass will start with "super.init();".  This call is made
+   *  by the front-end whenever the GUI is clicked, and needs to be fast;
+   *  heavy-weight prep needs to wait for the trainModel() call.
+   *
+   *  Validate the very large number of arguments in the DL Parameter directly. */
+  @Override public void init() {
+    super.init();
+    _parms.validate(this);
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
+        _parms.lock_frames(DeepLearning.this);
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
@@ -50,6 +55,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         cancel2(t);
         throw t;
       } finally {
+        _parms.unlock_frames(DeepLearning.this);
         done();                 // Job done!
       }
       tryComplete();
@@ -141,24 +147,23 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
-      Frame tra_fr = _parms.train();
-      if (_parms._checkpoint == null) cp = initModel();
-      else {
-        final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
+      if (_parms.checkpoint == null) {
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
+        cp.model_info().initializeMembers();
+
+      } else {
+        final DeepLearningModel previous = DKV.get(_parms.checkpoint).get();
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
-        if (_parms._n_folds != 0) {
+        if (_parms.n_folds != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
-        }
-        else {
-//        ((ValidatedJob)previous.job()).xval_models = null; //remove existing cross-validation keys after checkpoint restart
-        }
-        assert _parms._train != null; // Checked at a higher level
-        if (!_parms._train.equals(previous.model_info().get_params()._train)) {
+        // Check the column situation is the same... after dropping ignored,
+        // constant and bad columns.  Test is probably too strict; I would
+        // think having extra columns would be OK.
+        if( _train.checksum() != previous.model_info()._train.checksum())
           throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
-        }
-        _parms._autoencoder = previous.model_info().get_params()._autoencoder;
-        if (!_parms._autoencoder && (_parms._response_column == null || !tra_fr.vec(_parms._response_column)._key.equals(tra_fr.vec(previous.model_info().get_params()._response_column)._key))) {
+        _parms.autoencoder = previous.model_info().get_params().autoencoder;
+        if (!_parms.autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");
         }
         if (ArrayUtils.difference(_parms._ignored_columns, previous.model_info().get_params()._ignored_columns).length != 0
@@ -166,19 +171,24 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           _parms._ignored_columns = previous.model_info().get_params()._ignored_columns;
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
-        if ((_parms._valid == null) == (previous._parms._valid != null)
-                || (_parms._valid != null && _parms._valid != null && previous._parms._valid != null
+        if ((_parms._valid == null) != (previous._parms._valid == null)
+                || (_parms._valid != null && previous._parms._valid != null
                     && !_parms._valid.equals(previous._parms._valid))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
-        if (_parms._classification != previous.model_info().get_params()._classification) {
-          Log.warn("Automatically switching to " + ((_parms._classification=!_parms._classification) ? "classification" : "regression") + " (same as the checkpointed model).");
-        }
-        _parms._epochs += previous.epoch_counter; //add new epochs to existing model
+        if( isClassifier() != previous._output.isClassifier() )
+          Log.warn("Automatically switching to " + (isClassifier() ? "regression" : "classification") + " (same as the checkpointed model).");
+        _parms.epochs += previous.epoch_counter; //add new epochs to existing model
         Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+
         try {
-          final DataInfo dataInfo = prepareDataInfo(_parms);
-          cp = new DeepLearningModel(previous, dest(), self(), dataInfo);
+          final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
+                                              _parms.autoencoder ? 0 : 1, 
+                                              _parms.autoencoder || _parms.use_all_factor_levels, //use all FactorLevels for auto-encoder
+                                              _parms.autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
+          DKV.put(dinfo._key,dinfo);
+          cp = new DeepLearningModel(dest(), previous, false, _train, dinfo);
           cp.write_lock(self());
           final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
           Object B = _parms;
@@ -212,17 +222,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       trainModel(cp);
 
       // clean up
-      Frame val_fr = _parms._valid==null ? null : _parms.valid();
+      Frame tra_fr = _train;
+      Frame val_fr = _valid;
       int validlen = val_fr!= null ? val_fr.vecs().length : 0;
       Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
       //don't delete the training data
       for (int i = 0; i< tra_fr.vecs().length; ++i)
         keep[i] = tra_fr.vecs()[i]._key;
-      keep[tra_fr.vecs().length] = _parms._train;
+      keep[tra_fr.vecs().length] = _train._key;
       //don't delete the validation data
       for (int i = 0; i< validlen; ++i)
         keep[i] = val_fr.vecs()[i]._key;
-      if (val_fr != null) keep[tra_fr.vecs().length+1] = _parms._valid;
+      if (val_fr != null) keep[tra_fr.vecs().length+1] = _valid._key;
       //don't delete the model
       keep[tra_fr.vecs().length+2] = _dest;
       keep[tra_fr.vecs().length+3] = cp.actual_best_model_key;
@@ -234,28 +245,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
 
     /**
-     * Create an initial Deep Learning model, typically to be trained by trainModel(model)
-     * @return Randomly initialized model
-     */
-    public final DeepLearningModel initModel() {
-      try {
-        _parms.lock_frames(DeepLearning.this);
-        if (_parms.sanityCheckParameters() > 0)
-          throw new IllegalArgumentException("Error(s) in model parameters: " + _parms.validationErrors());
-
-        final DataInfo dinfo = prepareDataInfo(_parms);
-        final Vec resp = dinfo._adaptedFrame.lastVec(); //convention from DataInfo: response is the last Vec
-        float[] priorDist = _parms._classification ? new MRUtils.ClassDist(resp).doAll(resp).rel_dist() : null;
-        final DeepLearningModel model = new DeepLearningModel(dest(), self(), _parms._train, dinfo, (DeepLearningModel.DeepLearningParameters)_parms.clone(), priorDist);
-        model.model_info().initializeMembers();
-        return model;
-      }
-      finally {
-        _parms.unlock_frames(DeepLearning.this);
-      }
-    }
-
-    /**
      * Train a Deep Learning neural net model
      * @param model Input model (e.g., from initModel(), or from a previous training run)
      * @return Trained model
@@ -264,24 +253,23 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       Frame validScoreFrame = null;
       Frame train, trainScoreFrame;
       try {
-        _parms.lock_frames(DeepLearning.this);
 //      if (checkpoint == null && !quiet_mode) logStart(); //if checkpoint is given, some Job's params might be uninitialized (but the restarted model's parameters are correct)
         if (model == null) {
           model = DKV.get(dest()).get();
         }
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
-        Frame tra_fr = _parms.train();
-        Frame val_fr = _parms._valid == null ? null : _parms.valid();
+        Frame tra_fr = _train;
+        Frame val_fr = _valid;
 
-        ValidationAdapter validAdapter = new ValidationAdapter(val_fr, _parms._classification);
+        ValidationAdapter validAdapter = new ValidationAdapter(val_fr, isClassifier());
         validAdapter.prepareValidationWithModel(model);
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = model.model_info().data_info()._adaptedFrame;
-        if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/);
-        if (mp._classification && mp._balance_classes) {
+        if (mp.force_load_balance) train = reBalance(train, mp.replicate_training_data /*rebalance into only 4*cores per node*/);
+        if (model._output.isClassifier() && mp.balance_classes) {
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
             if (mp._class_sampling_factors.length != train.lastVec().domain().length)
@@ -290,8 +278,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           }
 
           train = sampleFrameStratified(
-                  train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size *train.numRows()), mp._seed, true, false);
-          model.setModelClassDistribution(new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist());
+                  train, train.lastVec(), trainSamplingFactors, (long)(mp.max_after_balance_size*train.numRows()), mp.seed, true, false);
+          model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
         }
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
@@ -304,13 +292,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
             int rIndex = 0;
             for( int i = 0; i < tra_fr.names().length; i++ ) {
-              if (tra_fr._names[i] == _parms._response_column) rIndex = i;
+              if (tra_fr._names[i].equals(_parms._response_column)) rIndex = i;
             }
             final String responseName = tra_fr._names != null && rIndex >= 0 ? tra_fr._names[rIndex] : "response_vec";
             adaptedValid.add(validAdapter.getValidAdaptor().adaptedValidationResponse(responseName), validAdapter.getValidAdaptor().getAdaptedValidationResponse2CM());
           }
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
-          if (mp._classification && mp._balance_classes && mp._score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
+          if (model._output.isClassifier() && mp.balance_classes && mp.score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
             validScoreFrame = sampleFrameStratified(adaptedValid, adaptedValid.lastVec(), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : adaptedValid.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
@@ -374,7 +362,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       }
       finally {
         if (model != null) model.unlock(self());
-        _parms.unlock_frames(DeepLearning.this);
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
       return model;
