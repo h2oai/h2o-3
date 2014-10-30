@@ -18,6 +18,7 @@ syn_datasets
 build/
 lib/
 h2o-web/src/main/resources/www/steam
+h2o-web/src/main/resources/www/flow
 h2o*/test-output/
 test-output/
 out/
