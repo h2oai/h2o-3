@@ -50,7 +50,7 @@ test 'empty cloud', (t) ->
     async.waterfall operations, -> go t
 
 test 'airlines ingest and model building flow', (t) ->
-  t.plan 66
+  t.plan 45
 
   createCloud (_, go) ->
     logAndEcho = (go) ->
@@ -339,7 +339,7 @@ test 'airlines ingest and model building flow', (t) ->
       buildAirlinesDeepLearningModel
       pollJob
       inspectAirlinesDeepLearningModel
-      scoreAirlinesDeepLearningModel
+      #scoreAirlinesDeepLearningModel
     ]
     async.waterfall operations, -> go t
 
