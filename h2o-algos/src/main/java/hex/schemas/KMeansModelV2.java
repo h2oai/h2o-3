@@ -26,8 +26,11 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     @API(help="Iterations executed")
     public double iters;
 
+    @API(help="Number of categorical columns trained on")
+    public int ncats;
+
     @Override public KMeansModel.KMeansOutput createImpl() {
-      KMeansModel.KMeansOutput impl = new KMeansModel.KMeansOutput();
+      KMeansModel.KMeansOutput impl = new KMeansModel.KMeansOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
@@ -56,7 +59,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
   @Override public KMeansModel createImpl() {
     KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
     KMeansModel.KMeansParameters parms = p.createImpl();
-    return new KMeansModel( key, p.training_frame, parms, new KMeansModel.KMeansOutput(), 0 );
+    return new KMeansModel( key, parms, null );
   }
 
   // Version&Schema-specific filling from the impl

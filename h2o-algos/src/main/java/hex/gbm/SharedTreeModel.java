@@ -3,8 +3,7 @@ package hex.gbm;
 import hex.Model;
 import hex.SupervisedModel;
 import hex.schemas.SharedTreeModelV2;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.api.ModelSchema;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -13,26 +12,27 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   public abstract static class SharedTreeParameters extends SupervisedModel.SupervisedParameters {
     /** Maximal number of supported levels in response. */
-    private static final int MAX_SUPPORTED_LEVELS = 1000;
+    static final int MAX_SUPPORTED_LEVELS = 1000;
 
-    protected int _ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
+    public int _requested_ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
 
-    protected boolean _importance = false; // compute variable importance
+    public boolean _importance = false; // compute variable importance
 
-    @Override public int sanityCheckParameters() {
-      super.sanityCheckParameters();
-      if( _ntrees < 0 || _ntrees > 100000 ) validation_error("_ntrees", "ntrees must be between 1 and 100000");
-      if (_nclass > MAX_SUPPORTED_LEVELS)
-        throw new IllegalArgumentException("Too many levels in response column!");
-      //if (checkpoint!=null && DKV.get(checkpoint)==null) throw new IllegalArgumentException("Checkpoint "+checkpoint.toString() + " does not exists!");
-      return _validation_error_count;
-    }
+    public long _seed;          // Seed for psuedo-random redistribution
+
+    // A Model Key for restarting a checkpointed Model, or null
+    public Key _checkpoint;
   }
 
-  public abstract static class SharedTreeOutput extends SupervisedModel.Output {
+  public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
 
     /** Initially predicted value (for zero trees) */
     double _initialPrediction;
+
+    /** Number of trees actually in the model (as opposed to requested) */
+    int _ntrees;
+
+    public SharedTreeOutput( SharedTree b ) { super(b); }
 
     @Override public int nfeatures() { return _names.length; }
 
@@ -42,9 +42,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
   }
 
-  public SharedTreeModel(Key selfKey, Frame fr, P parms, O output) {
-    super(selfKey,fr,parms,output,null/*no prior class dist*/);
-  }
+  public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
 
   @Override public boolean isSupervised() {return true;}
 

@@ -18,7 +18,7 @@ import java.util.Random;
 import java.util.TreeMap;
 
 public class DeepLearningReproducibilityTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void run() {
@@ -68,7 +68,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p.reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
           try {
-            mymodel = dl.train().get();
+            mymodel = dl.trainModel().get();
           } catch (Throwable t) {
             t.printStackTrace();
             throw new RuntimeException(t);

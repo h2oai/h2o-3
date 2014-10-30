@@ -1,11 +1,9 @@
 package hex.deeplearning;
 
-import hex.FrameTask;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import org.junit.*;
-import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -76,8 +74,6 @@ public class DeepLearningIrisTest extends TestUtil {
                             for (boolean col_major : new boolean[]{false}) {
                               Scope.enter();
                               DeepLearningModel mymodel = null;
-                              Frame fr = null;
-                              DeepLearningParameters p;
                               Frame trainPredict = null;
                               Frame testPredict = null;
                               try {
@@ -94,12 +90,11 @@ public class DeepLearningIrisTest extends TestUtil {
                                 Random rand;
 
                                 int trial = 0;
-                                FrameTask.DataInfo dinfo;
+                                DeepLearning dl;
                                 do {
                                   Log.info("Trial #" + ++trial);
                                   if (_train != null) _train.delete();
                                   if (_test != null) _test.delete();
-                                  if (fr != null) fr.delete();
 
                                   rand = RandomUtils.getDeterRNG(seed);
 
@@ -121,27 +116,26 @@ public class DeepLearningIrisTest extends TestUtil {
                                   int limit = (int) (frame.numRows() * holdout_ratio);
                                   _train = frame(names, water.util.ArrayUtils.subarray(rows, 0, limit));
                                   _test  = frame(names, water.util.ArrayUtils.subarray(rows, limit, (int) frame.numRows() - limit));
-                                  // Convert response to an enum
-                                  String resp_name = _train.lastVecName();
-                                  _train.add(resp_name, _train.remove(resp_name).toEnum());
-                                  _test .add(resp_name, _test .remove(resp_name).toEnum());
-                                  DKV.put(_train._key, _train);
-                                  DKV.put(_test ._key, _test );
 
-                                  p = new DeepLearningParameters();
+                                  DeepLearningParameters p = new DeepLearningParameters();
                                   p._train = _train._key;
-                                  p._response_column = resp_name;
+                                  p._response_column = _train.lastVecName();
+                                  p._toEnum = true;
                                   p._ignored_columns = null;
-                                  p.ignore_const_cols = true;
-                                  fr = FrameTask.DataInfo.prepareFrame(_train, _train.vec(p._response_column), _train.find(p._ignored_columns), true, p.ignore_const_cols);
-                                  dinfo = new FrameTask.DataInfo(Key.make(),fr, 1, false, FrameTask.DataInfo.TransformType.STANDARDIZE);
+                                  dl = new DeepLearning(p); // Run the init & frame prep
                                 }
                                 // must have all output classes in training data (since that's what the reference implementation has hardcoded)
-                                while (dinfo._adaptedFrame.lastVec().domain().length < 3);
+                                while (dl._response.domain().length < 3);
 
                                 // use the same seed for the reference implementation
                                 DeepLearningMLPReference ref = new DeepLearningMLPReference();
                                 ref.init(activation, RandomUtils.getDeterRNG(seed), holdout_ratio, hidden);
+
+                                DeepLearningParameters p = new DeepLearningParameters();
+                                p._train = _train._key;
+                                p._response_column = _train.lastVecName();
+                                p._toEnum = true;
+                                p._ignored_columns = null;
 
                                 p.seed = seed;
                                 p.hidden = new int[]{hidden};
@@ -161,7 +155,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.momentum_ramp = 0; //do not change - not implemented in reference
                                 p.initial_weight_distribution = dist;
                                 p.initial_weight_scale = scale;
-                                p._classification = true;
                                 p.diagnostics = true;
                                 p._valid = null;
                                 p.quiet_mode = true;
@@ -180,9 +173,9 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.sparse = sparse;
                                 p.col_major = col_major;
                                 p.epochs = 0;
-                                DeepLearning dl = new DeepLearning(p);
+                                dl = new DeepLearning(p);
                                 try {
-                                  mymodel = dl.train().get();
+                                  mymodel = dl.trainModel().get();
                                 } finally {
                                   dl.remove();
                                 }
@@ -218,11 +211,11 @@ public class DeepLearningIrisTest extends TestUtil {
                                 mymodel.delete();
                                 dl = new DeepLearning(p);
                                 try {
-                                  mymodel = dl.train().get();
+                                  mymodel = dl.trainModel().get();
                                 } finally {
                                   dl.remove();
                                 }
-                                Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * fr.numRows());
+                                Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * dl.train().numRows());
 
                                 /**
                                  * Tolerances (should ideally be super tight -> expect the same double/float precision math inside both algos)
@@ -344,7 +337,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 }
                                 if (_train != null) _train.delete();
                                 if (_test != null) _test.delete();
-                                if (fr != null) fr.delete();
                                 if (trainPredict != null) trainPredict.delete();
                                 if (testPredict != null) testPredict.delete();
                                 Scope.exit();

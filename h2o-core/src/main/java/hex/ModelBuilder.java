@@ -1,27 +1,39 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
+import water.fvec.Frame;
+import water.util.Log;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
   /** All the parameters required to build the model. */
-  public P _parms;
+  public final P _parms;
+
+  /** Training frame: derived from the parameter's training frame, excluding
+   *  all ignored columns, all constant & bad columns, perhaps flipping the
+   *  response column to an Enum, etc.  */
+  public final Frame train() { return _train; }
+  protected transient Frame _train;
+
+  /** Validation frame: derived from the parameter's training frame, excluding
+   *  all ignored columns, all constant & bad columns, perhaps flipping the
+   *  response column to an Enum, etc.  Never null; the training frame is used
+   *  if no validation key is set.  */
+  public final Frame valid() { return _valid; }
+  protected transient Frame _valid;
 
   // TODO: tighten up the type
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
 
-  public static final Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
+  public static Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
 
   public static void registerModelBuilder(String name, Class<? extends ModelBuilder> clz) {
     _builders.put(name, clz);
@@ -51,25 +63,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public ModelBuilder(P parms) {
+  public ModelBuilder(P ignore) {
     super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
     throw H2O.unimpl("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
   }
 
-  public ModelBuilder(Key jobKey, Key dest, String desc, P parms) {
-    super(jobKey,dest,desc);
-    this._parms = parms;
-  }
+  /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    super((parms._destination_key== null ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key), desc);
-    _parms = parms;
-    if( parms.sanityCheckParameters() > 0 )
-      throw new IllegalArgumentException("Error(s) in model parameters: " + parms.validationErrors());
+    this((parms==null || parms._destination_key== null) ? Key.make(desc + "Model_" + Key.rand()) : parms._destination_key, desc,parms);
+  }
+
+  /** Default constructor, given all arguments */
+  public ModelBuilder(Key dest, String desc, P parms) { 
+    super(dest,desc); 
+    _parms = parms; 
   }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
   public static ModelBuilder createModelBuilder(String algo) {
-    ModelBuilder modelBuilder = null;
+    ModelBuilder modelBuilder;
 
     try {
       Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
@@ -92,5 +104,99 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Method to launch training of a Model, based on its parameters. */
-  abstract public Job<M> train();
+  abstract public Job<M> trainModel();
+
+
+  // ==========================================================================
+  /** Initialize the ModelBuilder, validating all arguments and preparing the
+   *  training frame.  This call is expected to be overridden in the subclasses
+   *  and each subclass will start with "super.init();".  This call is made
+   *  by the front-end whenever the GUI is clicked, and needs to be fast;
+   *  heavy-weight prep needs to wait for the trainModel() call.
+   *
+   *  The incoming training frame (and validation frame) will have ignored
+   *  columns dropped out, plus whatever work the parent init did.
+   */
+  public void init() {
+    assert _parms != null;      // Parms must already be set in
+    assert _error_count == -1;  // Only ran init once
+    _error_count = 0;           // No errors so-far
+    Frame tr = _parms.train();
+    Frame va = _parms.valid();
+    assert Arrays.equals(tr._names,va._names); // Cutout at a higher level
+
+    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+
+    // Drop explicitly dropped columns
+    if( _parms._ignored_columns != null ) {
+      _train.remove(_parms._ignored_columns);
+      _valid.remove(_parms._ignored_columns);
+      Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
+    }
+    
+    // Drop all-constant and all-bad columns.
+    String cstr="";             // Log of dropped columns
+    for( int i=0; i<_train.vecs().length; i++ ) {
+      if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
+        cstr += _train._names[i]+", "; // Log dropped cols
+        _train.remove(i); _valid.remove(i);  
+        i--; // Re-run at same iteration after dropping a col
+      }
+    }
+    if( cstr.length() > 0 )
+      Log.info("Dropping constant columns: "+cstr);
+
+    if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
+      String nstr="";            // Log of dropped columns
+      for( int i=0; i<_train.vecs().length; i++ ) {
+        float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
+        if( ratio > 0.2 ) {
+          nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
+          _train.remove(i); _valid.remove(i);  
+          i--; // Re-run at same iteration after dropping a col
+        }
+      }
+      if( nstr.length() > 0 )
+        Log.info("Dropping columns with too many missing values: "+nstr);
+    }
+
+    // Check that at least some columns are not-constant and not-all-NAs
+    if( _train.numCols() == 0 )
+      error("_train","There are no usable columns to the generate model");
+  }
+
+  /** A list of field validation issues. */
+  public ValidationMessage[] _messages = new ValidationMessage[0];
+  private int _error_count = -1; // -1 ==> init not run yet
+  public int error_count() { assert _error_count>=0 : "init() not run yet"; return _error_count; }
+  public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
+  public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
+  public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
+  public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
+  private void message(ValidationMessage.MessageType message_type, String field_name, String message) {
+    _messages = Arrays.copyOf(_messages, _messages.length + 1);
+    _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
+  }
+  public String validationErrors() {
+    StringBuilder sb = new StringBuilder();
+    for( ValidationMessage vm : _messages )
+      if( vm.message_type == ValidationMessage.MessageType.ERROR )
+        sb.append(vm.toString()).append("\n");
+    return sb.toString();
+  }
+  public static final class ValidationMessage extends Iced {
+    public enum MessageType { HIDE, INFO, WARN, ERROR }
+    final MessageType message_type;
+    final String field_name;
+    final String message;
+      
+    public ValidationMessage(MessageType message_type, String field_name, String message) {
+      this.message_type = message_type;
+      this.field_name = field_name;
+      this.message = message;
+    }
+      
+    @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
+  }
 }

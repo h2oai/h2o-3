@@ -1,6 +1,8 @@
 package hex.example;
 
-import hex.ModelBuilder;
+import java.util.Arrays;
+
+import hex.SupervisedModelBuilder;
 import hex.schemas.ExampleV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -8,24 +10,33 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
-
-import java.util.Arrays;
+import water.util.MRUtils;
 
 /**
  *  Example model builder... building a trivial ExampleModel
  */
-public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
+public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   // Called from Nano thread; start the Example Job on a F/J thread
-  public Example( ExampleModel.ExampleParameters parms) {
-    super("Example",parms);
-    _parms = parms;
-  }
+  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(); }
 
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
-  @Override public Example train() {
+  @Override public Example trainModel() {
     return (Example)start(new ExampleDriver(), _parms._max_iters);
+  }
+
+  /** Initialize the ModelBuilder, validating all arguments and preparing the
+   *  training frame.  This call is expected to be overridden in the subclasses
+   *  and each subclass will start with "super.init();".  This call is made
+   *  by the front-end whenever the GUI is clicked, and needs to be fast;
+   *  heavy-weight prep needs to wait for the trainModel() call.
+   *
+   *  Validate the max_iters. */
+  @Override public void init() {
+    super.init();
+    if( _parms._max_iters < 1 || _parms._max_iters > 9999999 )
+      error("max_iters", "must be between 1 and a million");
   }
 
   // ----------------------
@@ -35,10 +46,9 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
       ExampleModel model = null;
       try {
         _parms.lock_frames(Example.this); // Fetch & read-lock source frame
-      
+    
         // The model to be built
-        Frame fr = _parms.train();
-        model = new ExampleModel(dest(), fr, _parms, new ExampleModel.ExampleOutput());
+        model = new ExampleModel(dest(), _parms, new ExampleModel.ExampleOutput(Example.this));
         model.delete_and_lock(_key);
 
         // ---
@@ -47,7 +57,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleModel.ExampleParam
         for( ; model._output._iters < _parms._max_iters; model._output._iters++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
 
-          double[] maxs = new Max().doAll(fr)._maxs;
+          double[] maxs = new Max().doAll(_parms.train())._maxs;
 
           // Fill in the model; denormalized centers
           model._output._maxs = maxs;

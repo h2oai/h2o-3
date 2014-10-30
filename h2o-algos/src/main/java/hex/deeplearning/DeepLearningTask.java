@@ -136,7 +136,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
     }
     // output
-    if(params._classification)
+    if(minfo._classification)
       neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length-1]);
     else
       neurons[neurons.length - 1] = new Neurons.Linear(1);
@@ -157,7 +157,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       for (int i=1; i<neurons.length-1; ++i) {
         neurons[i].fprop(seed, training);
       }
-      if (minfo.get_params()._classification) {
+      if (minfo._classification) {
         ((Neurons.Softmax)neurons[neurons.length-1]).fprop();
         if (training) {
           for( int i = 1; i < neurons.length - 1; i++ )

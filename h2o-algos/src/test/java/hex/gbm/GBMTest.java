@@ -158,19 +158,17 @@ public class GBMTest extends TestUtil {
       int idx = prep.prep(fr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      if( idx < 0 ) { parms._classification = false; idx = ~idx; }
+      if( idx < 0 ) { parms._toEnum = false; idx = ~idx; }
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
-      parms._ntrees = 4;
+      parms._requested_ntrees = 4;
       parms._loss = family;
       parms._learn_rate = .2f;
-      parms.sanityCheckParameters();
-      assertEquals(parms._validation_error_count,0);
 
       GBM job = null;
       try {
         job = new GBM(parms);
-        gbm = job.train().get();
+        gbm = job.trainModel().get();
       } finally {
         if (job != null) job.remove();
       }

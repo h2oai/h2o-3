@@ -65,10 +65,12 @@ $(test_classes): build/classes/test/%class: src/test/java/%java
 # Build the h2o-algos.jar file
 build/libs/h2o-algos.jar: $(main_classes)
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@jar -cf build/libs/h2o-algos.jar -C build/classes/main .
 
 build/libs/h2o-algos-test.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@jar -cf build/libs/h2o-algos-test.jar -C build/classes/test .
 
 

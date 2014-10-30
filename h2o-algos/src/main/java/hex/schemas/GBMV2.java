@@ -54,14 +54,6 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
   // TODO: refactor ModelBuilder creation
   // TODO: defaults should only be in the impl, not duplicated in the API layer
   @Override public GBM createImpl() {
-    if( parameters.ntrees == 0 ) parameters.ntrees = 50; // Default
-    if( parameters.ntrees < 0 || parameters.ntrees > 100000 ) throw new IllegalArgumentException("ntrees must be between 1 and 100000");
-    if( parameters.learn_rate == 0.0f ) parameters.learn_rate = 0.1f; // Default
-    if( parameters.learn_rate < 0.0f || parameters.learn_rate > 100000 ) throw new IllegalArgumentException("learn_rate must be between 0.0 and 1.0");
-    if( parameters.loss == null ) parameters.loss = GBMParameters.Family.AUTO;
-    
-    if( parameters.seed == 0 ) parameters.seed = System.nanoTime();
-
     GBMParameters parms = parameters.createImpl();
     return new GBM(parms);
   }

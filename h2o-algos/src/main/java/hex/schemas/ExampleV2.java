@@ -31,9 +31,6 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
 
   // Version&Schema-specific filling into the impl
   @Override public Example createImpl() {
-    if( parameters.max_iters < 0 || parameters.max_iters > 9999999 ) throw new IllegalArgumentException("1<= max_iters && max_iters < 10000000");
-    if( parameters.max_iters == 0 ) parameters.max_iters = 1000; // Default is 1000 max_iters
-
     return new Example(parameters.createImpl());
   }
 

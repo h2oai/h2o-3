@@ -1,11 +1,14 @@
 package hex.schemas;
 
 import hex.ModelBuilder;
+import hex.ModelBuilder.ValidationMessage;
 import water.AutoBuffer;
 import water.Key;
 import water.api.API;
 import water.api.JobV2;
 import water.api.ModelParametersSchema;
+import water.api.ModelParametersSchema.ValidationMessageBase;
+import water.api.ModelParametersSchema.ValidationMessageV2;
 import water.api.Schema;
 import water.util.DocGen;
 
@@ -20,6 +23,12 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
   Key job;
 
+  @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
+  public ValidationMessageBase validation_messages[];
+
+  @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
+  public int validation_error_count;
+
   /** Factory method to create the model-specific parameters schema. */
   abstract public P createParametersSchema();
   abstract public B createImpl();
@@ -33,7 +42,10 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
     job = builder._key;
-
+    this.validation_messages = new ValidationMessageBase[builder._messages.length];
+    int i = 0;
+    for( ValidationMessage vm : builder._messages )
+      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
     return (S)this;

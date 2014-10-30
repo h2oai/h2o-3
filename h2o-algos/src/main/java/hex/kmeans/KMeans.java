@@ -6,7 +6,6 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -32,44 +31,60 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   transient private int reinit_attempts;
 
   // Called from an http request
-  public KMeans( KMeansModel.KMeansParameters parms) {
-    super("K-means",parms);
-  }
+  public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(); }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }
 
 
   /** Start the KMeans training Job on an F/J thread. */
-  @Override public Job<KMeansModel> train() {
+  @Override public Job<KMeansModel> trainModel() {
     return start(new KMeansDriver(), _parms._max_iters);
+  }
+
+  /** Initialize the ModelBuilder, validating all arguments and preparing the
+   *  training frame.  This call is expected to be overridden in the subclasses
+   *  and each subclass will start with "super.init();".
+   *
+   *  Validate K, max_iters and the number of rows.  Precompute the number of
+   *  categorical columns. */
+  @Override public void init() {
+    super.init();
+    if( _parms._K < 2 || _parms._K > 9999999 ) error("K", "K must be between 2 and 10 million");
+    if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("max_iters", "must be between 1 and a million");
+    if( _train.numRows() < _parms._K ) error("K","Cannot make " + _parms._K + " clusters out of " + _train.numRows() + " rows.");
+
+    for( Vec v : _train.vecs() )
+      if( v.isEnum() ) _ncats++;
+
+    // Sort columns, so the categoricals are all up front.  They use a
+    // different distance metric than numeric columns.
+    Vec vecs[] = _train.vecs();
+    int ncats=0, len=vecs.length; // Feature count;
+    while( ncats != len ) {
+      while( ncats < len && vecs[ncats].isEnum() ) ncats++;
+      while( len > 0 && !vecs[len-1].isEnum() ) len--;
+      if( ncats < len-1 ) { _train.swap(ncats,len-1); _valid.swap(ncats,len-1); }
+    }
+    _ncats = ncats;
   }
 
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
 
     @Override protected void compute2() {
+
       KMeansModel model = null;
       try {
         _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
-        
-        // Sort columns, so the categoricals are all up front.  They use a
-        // different distance metric than numeric columns.
-        Frame fr = _parms.train();       // Training frame
-        Vec vecs[] = fr.vecs();
-        final int N = vecs.length; // Feature count
-        int ncats=0, len=N;
-        while( ncats != len ) {
-          while( ncats < len && vecs[ncats].isEnum() ) ncats++;
-          while( len > 0 && !vecs[len-1].isEnum() ) len--;
-          if( ncats < len-1 ) fr.swap(ncats,len-1);
-        }
-        _ncats = ncats;
 
         // The model to be built
-        model = new KMeansModel(dest(), fr, _parms, new KMeansModel.KMeansOutput(), ncats);
+        model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_key);
 
         // means are used to impute NAs
+        model._output._ncats = _ncats;
+        Vec vecs[] = _train.vecs();
+        final int N = vecs.length; // Feature count
         double[] means = new double[N];
         for( int i = 0; i < N; i++ )
           means[i] = vecs[i].mean();
@@ -88,7 +103,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         double clusters[][];    // Normalized cluster centers
         if( _parms._init == Initialization.None ) {
           // Initialize all clusters to random rows
-          clusters = model._output._clusters = new double[_parms._K][fr.numCols()];
+          clusters = model._output._clusters = new double[_parms._K][_train.numCols()];
           for( double[] cluster : clusters )
             randomRow(vecs, rand, cluster, means, mults);
         } else {
@@ -106,8 +121,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
             // Fill in sample clusters into the model
             if( !isRunning() ) return; // Stopped/cancelled
-            model._output._clusters = denormalize(clusters, ncats, means, mults);
-            model._output._mse = sqr._sqr/fr.numRows();
+            model._output._clusters = denormalize(clusters, _ncats, means, mults);
+            model._output._mse = sqr._sqr/_train.numRows();
 
             model._output._iters++;     // One iteration done
 
@@ -159,7 +174,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
 
           // Fill in the model; denormalized centers
-          model._output._clusters = denormalize(task._cMeans, ncats, means, mults);
+          model._output._clusters = denormalize(task._cMeans, _ncats, means, mults);
           model._output._rows = task._rows;
           model._output._mses = task._cSqr;
           double ssq = 0;       // sum squared error
@@ -167,14 +182,14 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             ssq += model._output._mses[i]; // sum squared error all clusters
             model._output._mses[i] /= task._rows[i]; // mse per-cluster
           }
-          model._output._mse = ssq/fr.numRows(); // mse total
+          model._output._mse = ssq/_train.numRows(); // mse total
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
           // Compute change in clusters centers
           double sum=0;
           for( int clu=0; clu<_parms._K; clu++ )
-            sum += distance(clusters[clu],task._cMeans[clu],ncats);
+            sum += distance(clusters[clu],task._cMeans[clu],_ncats);
           sum /= N;             // Average change per feature
           Log.info("KMeans: Change in cluster centers="+sum);
           if( sum < 1e-6 ) break;  // Model appears to be stable
