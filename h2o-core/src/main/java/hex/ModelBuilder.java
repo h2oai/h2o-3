@@ -95,8 +95,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
       Model.Parameters p = pclz.newInstance();
       modelBuilder = constructor.newInstance(p);
-    }
-    catch (Exception e) {
+    } catch (java.lang.reflect.InvocationTargetException e) {
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause());
+    } catch (Exception e) {
       throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
     }
 
