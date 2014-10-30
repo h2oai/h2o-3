@@ -4,6 +4,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import org.junit.*;
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -91,11 +92,10 @@ public class DeepLearningIrisTest extends TestUtil {
                                 Random rand;
 
                                 int trial = 0;
-                                DeepLearning dl;
                                 do {
                                   Log.info("Trial #" + ++trial);
                                   if (_train != null) _train.delete();
-                                  if (_test != null) _test.delete();
+                                  if (_test  != null) _test .delete();
 
                                   rand = RandomUtils.getDeterRNG(seed);
 
@@ -121,19 +121,14 @@ public class DeepLearningIrisTest extends TestUtil {
                                   // Must have all output classes in training
                                   // data (since that's what the reference
                                   // implementation has hardcoded).  But count
-                                  // of classes is not known unless visit all
-                                  // the response data - force that now.
-                                  Vec ve = _train.lastVec().toEnum();
-                                  _train.replace(_train.numCols()-1,ve);
-
-                                  DeepLearningParameters p = new DeepLearningParameters();
-                                  p._train = _train._key;
-                                  p._response_column = _train.lastVecName();
-                                  p._toEnum = true;
-                                  p._ignored_columns = null;
-                                  dl = new DeepLearning(p); // Run the init & frame prep
+                                  // of classes is not known unless we visit
+                                  // all the response data - force that now.
+                                  _train.replace(_train.numCols()-1,_train.lastVec().toEnum());
+                                  _test .replace(_train.numCols()-1,_test .lastVec().toEnum());
+                                  DKV.put(_train._key,_train);
+                                  DKV.put(_test ._key,_test );
                                 }
-                                while (dl._nclass < 3);
+                                while( _train.lastVec().cardinality() < 3);
 
                                 // use the same seed for the reference implementation
                                 DeepLearningMLPReference ref = new DeepLearningMLPReference();
@@ -142,6 +137,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 DeepLearningParameters p = new DeepLearningParameters();
                                 p._train = _train._key;
                                 p._response_column = _train.lastVecName();
+                                assert _train.lastVec().isEnum();
                                 p._toEnum = true;
                                 p._ignored_columns = null;
 
@@ -181,7 +177,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p.sparse = sparse;
                                 p.col_major = col_major;
                                 p.epochs = 0;
-                                dl = new DeepLearning(p);
+                                DeepLearning dl = new DeepLearning(p);
                                 try {
                                   mymodel = dl.trainModel().get();
                                 } finally {
