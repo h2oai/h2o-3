@@ -46,6 +46,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
     int i = 0;
     for( ValidationMessage vm : builder._messages )
       this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
+    this.validation_error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
     return (S)this;
@@ -57,9 +58,15 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
     return ab.href("Poll",url,url);
   }
 
+  // TODO: Drop this writeJSON_impl and use the default one.
+  // TODO: Pull out the help text & metadata into the ParameterSchema for the front-end to display.
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.putJSONStr("job", (null == job ? null : job.toString())); // TODO: is currently null, but probably should never be. . .
+    ab.put1(',');
+    ab.putJSONA("validation_messages", validation_messages);
+    ab.put1(',');
+    ab.putJSON4("validation_error_count", validation_error_count);
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

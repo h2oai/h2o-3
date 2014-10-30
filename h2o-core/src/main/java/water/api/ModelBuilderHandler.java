@@ -15,10 +15,9 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
    * returns a ModelParametersSchema containing the validation messages.
    */
   public Schema train(int version, B builder) {
-    builder.init();
     if (builder.error_count() > 0) {
       S builder_schema = (S) builder.schema().fillFromImpl(builder);
-      return builder_schema.parameters;
+      return builder_schema;
     }
 
     Job j = builder.trainModel();
@@ -26,7 +25,6 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
   }
 
   public P validate_parameters(int version, B builder) {
-    builder.init();
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
     return builder_schema.parameters;
   }
