@@ -4,7 +4,15 @@ import org.junit.*;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.Log;
+
+/**
+ * Data referenced here can be found at:
+ * wget http://mattmahoney.net/dc/text8.zip -O text8.gz
+ *
+ * It isn't checked in because really data set should
+ * generated on the fly for this test to keep the
+ * repo history from containing large binaries.
+ */
 
 public class Word2VecTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
