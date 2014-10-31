@@ -79,10 +79,10 @@ public class GBMTest extends TestUtil {
 //    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
 //  }
 //
-  @Test @Ignore public void testBasicGBM() {
+  @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
-             new PrepData() { int prep(Frame fr ) { DKV.remove(fr.remove("name")._key); return ~fr.find("economy (mpg)"); }});
+             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
 
 //    // Classification tests
 //    basicGBM("./smalldata/test/test_tree.csv","tree.hex",

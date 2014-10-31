@@ -6,7 +6,6 @@ import hex.SupervisedModelBuilder;
 import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.*;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
@@ -48,6 +47,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     @Override protected void compute2() {
       M model = null;    // Resulting model!
       try {
+        Scope.enter();
         _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
         // Compute the response domain
         String[] domain = _response.domain();
@@ -56,10 +56,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Create an INITIAL MODEL based on given parameters
         model = makeModel(_dest, _parms );
+        model.delete_and_lock(_key);
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
-        Frame fr = _parms.train();
+        Frame fr = _train;
         if( _nclass>1 ) {       // Classification?
 
           // Handle imbalanced classes by stratified over/under-sampling.
@@ -83,7 +84,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
         Log.info("Prior class distribution: " + Arrays.toString(model._output._priorClassDist));
         Log.info("Model class distribution: " + Arrays.toString(model._output._modelClassDist));
-
 
         // Also add to the basic working Frame these sets:
         //   nclass Vecs of current forest results (sum across all trees)
@@ -110,12 +110,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         throw H2O.unimpl();
 
       } catch( Throwable t ) {
-        t.printStackTrace();
+        if( model != null ) { model.remove(); model = null; }
         cancel2(t);
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.unlock_frames(SharedTree.this);
+        Scope.exit();
         done();                 // Job done!
       }
       //tryComplete();
