@@ -12,4 +12,7 @@ compileJava {
 dependencies {
   compile project(":h2o-core")
   compile project(":h2o-app")
+
+  // hadoop needs MR client API
+  compile("org.apache.hadoop:hadoop-client:${hadoopVersion}")
 }
