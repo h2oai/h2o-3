@@ -28,8 +28,6 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
     public GBMOutput( GBM b ) { super(b); }
 
-    @Override public int nfeatures() { return _names.length; }
-
     @Override public ModelCategory getModelCategory() {
       throw H2O.unimpl();       // Can be regression or multinomial
       //return Model.ModelCategory.Clustering;

@@ -18,8 +18,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed;          // Seed for psuedo-random redistribution
 
-    // A Model Key for restarting a checkpointed Model, or null
-    public Key _checkpoint;
+    // TRUE: Continue extending an existing checkpointed model
+    // FALSE: Overwrite any prior model
+    public boolean _checkpoint;
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {

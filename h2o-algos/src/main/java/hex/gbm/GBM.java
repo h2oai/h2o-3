@@ -1,9 +1,8 @@
 package hex.gbm;
 
 import hex.schemas.*;
-import water.H2O.H2OCountedCompleter;
 import water.*;
-import water.fvec.Frame;
+import water.util.Timer;
 
 /** Gradient Boosted Trees
  *
@@ -31,8 +30,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     super.init();
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) ) 
       error("learn_rate", "learn_rate must be between 0 and 1");
-    if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli && _nclass != 2 ) 
-      error("loss","Bernoulli requires the response to be a 2-class categorical");
+    if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
+      if( _nclass != 2 ) 
+        error("loss","Bernoulli requires the response to be a 2-class categorical");
+      // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+      double mean = _response.mean();
+      _initialPrediction = Math.log(mean/(1.0f-mean));
+    }
   }
 
   // ----------------------
@@ -41,10 +45,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
     private transient float[/*nfeatures*/] _improvPerVar;
 
-    // Initialize gbm-specific data structures
-    //if( _parms._importance ) _improvPerVar = new float[initialModel.nfeatures()];
+    @Override void buildModel() {
+      // Initialize gbm-specific data structures
+      if( _parms._importance ) _improvPerVar = new float[_nclass];
 
-    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
+      // Reconstruct the working tree state from the checkopoint
+      if( _parms._checkpoint ) {
+        Timer t = new Timer();
+        //new ResidualsCollector(_ncols, _nclass, initialModel.treeKeys).doAll(fr);
+        //Log.info("Reconstructing tree residuals stats from checkpointed model took " + t);
+        throw H2O.unimpl();
+      }
+
+      throw H2O.unimpl();
+    }
+
+    @Override GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this)); 
     }
   }
