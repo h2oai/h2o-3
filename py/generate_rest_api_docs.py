@@ -21,6 +21,7 @@ parser.add_argument('--usecloud', help='ip:port to attach to', default='')
 parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
 parser.add_argument('--dest', help='destination directory', default=(here + '/../build/docs/REST'))
+parser.add_argument('--generate_html', help='translate the Markdown to HTML', action='store_true', default=False)
 parser.add_argument('--github_user', help='github user, for Markdown -> HTML rendering')
 parser.add_argument('--github_password', help='github password, for Markdown -> HTML rendering')
 args = parser.parse_args()
@@ -69,7 +70,8 @@ for num in range(len(endpoints)):
     # create dirs without race:
     try:
         os.makedirs(save_dir_md)
-        os.makedirs(save_dir_html)
+        if args.generate_html:
+            os.makedirs(save_dir_html)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
@@ -78,5 +80,6 @@ for num in range(len(endpoints)):
         the_file.write(markdown)
 
     # use grip to render the .md to .html
-    export(path=save_full_md, gfm=True, out_filename=save_full_html, username=args.github_user, password=args.github_password)
+    if args.generate_html:
+        export(path=save_full_md, gfm=True, out_filename=save_full_html, username=args.github_user, password=args.github_password)
 
