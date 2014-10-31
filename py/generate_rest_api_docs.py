@@ -5,10 +5,6 @@ sys.path.extend(['.','py'])
 import h2o, h2o_util
 import os
 
-# https://github.com/joeyespo/grip
-# Transform GitHub-flavored Markdown to HTML
-from grip import export
-
 # print "ARGV is:", sys.argv
 
 here=os.path.dirname(os.path.realpath(__file__))
@@ -81,5 +77,8 @@ for num in range(len(endpoints)):
 
     # use grip to render the .md to .html
     if args.generate_html:
+        # https://github.com/joeyespo/grip
+        # Transform GitHub-flavored Markdown to HTML
+        from grip import export
         export(path=save_full_md, gfm=True, out_filename=save_full_html, username=args.github_user, password=args.github_password)
 
