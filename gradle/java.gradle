@@ -1,7 +1,6 @@
 // Gradle file for java-based project
 //
 apply plugin: 'java'
-apply plugin: 'application'
 apply plugin: 'jacoco'
 
 sourceCompatibility = 1.7

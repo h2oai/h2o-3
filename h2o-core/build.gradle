@@ -3,8 +3,6 @@ description = "H2O Core"
 apply from: '../gradle/java.gradle'
 apply from: '../gradle/cp.gradle'
 
-mainClassName = "water.H2O"
-
 dependencies {
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"

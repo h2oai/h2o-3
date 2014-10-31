@@ -1,4 +1,5 @@
 apply plugin: 'fatjar'
+apply plugin: 'application'
 
 description = "H2O Application Assembly"
 
@@ -14,6 +15,14 @@ fatJar {
       attributes 'Main-Class': 'water.H2OApp'
    }
 }
+
+// Setup Application plugin
+mainClassName = 'water.H2OApp'
+
+//
+// Support make infrastructure by copying the resulting assembly into parent
+// project build directory
+//
 
 def assembly = "h2o-assembly.jar"
 def allInOne = "h2o.jar"
