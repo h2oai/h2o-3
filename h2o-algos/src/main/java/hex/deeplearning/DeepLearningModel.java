@@ -476,29 +476,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           dl.error("_hidden", "Hidden layer size must be >0.");
 
       if (_valid == null)
-        dl.hide("score_validation_samples", "score_validation_samples requires a validation frame.");
+        dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
 
       if (classification) {
-        dl.hide("regression_stop", "regression_stop is used only with regression.");
+        dl.hide("_regression_stop", "regression_stop is used only with regression.");
       } else {
-        dl.hide("classification_stop", "classification_stop is used only with classification.");
-        dl.hide("max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
-        dl.hide("max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-        dl.hide("balance_classes", "balance_classes is used only with classification.");
+        dl.hide("_classification_stop", "classification_stop is used only with classification.");
+        dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
+        dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+        dl.hide("_balance_classes", "balance_classes is used only with classification.");
       }
 
       if (classification && _balance_classes) {
 
       } else {
-        dl.hide("class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+        dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       }
 
       if (classification && !_balance_classes || !classification)
-        dl.hide("max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
+        dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
 
 
       if (!classification && _valid != null || _valid == null)
-        dl.hide("score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
+        dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
@@ -518,7 +518,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
 
       if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
-        dl.error("input_dropout_ratio", "Input dropout must be in [0,1).");
+        dl.error("_input_dropout_ratio", "Input dropout must be in [0,1).");
 
       if (H2O.CLOUD.size() == 1 && _replicate_training_data) {
         dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
@@ -526,58 +526,58 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         _replicate_training_data = false;
       }
       if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data)) {
-        dl.hide("single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
-        dl.info("single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        dl.hide("_single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
+        dl.info("_single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
         _single_node_mode = false;
       }
 
       if (_autoencoder)
-        dl.hide("use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
+        dl.hide("_use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
       if (!_use_all_factor_levels && _autoencoder ) {
-        dl.warn("use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
+        dl.warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
         _use_all_factor_levels = true;
       }
 
       if (_n_folds != 0)
-        dl.hide("override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
+        dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
       if(_override_with_best_model && _n_folds != 0) {
-        dl.warn("override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
+        dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
         _override_with_best_model = false;
       }
 
       if (_adaptive_rate) {
-        dl.hide("rate", "rate is not used with adaptive_rate.");
-        dl.hide("rate_annealing", "rate_annealing is not used with adaptive_rate.");
-        dl.hide("rate_decay", "rate_decay is not used with adaptive_rate.");
-        dl.hide("momentum_start", "momentum_start is not used with adaptive_rate.");
-        dl.hide("momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
-        dl.hide("momentum_stable", "momentum_stable is not used with adaptive_rate.");
-        dl.hide("nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
+        dl.hide("_rate", "rate is not used with adaptive_rate.");
+        dl.hide("_rate_annealing", "rate_annealing is not used with adaptive_rate.");
+        dl.hide("_rate_decay", "rate_decay is not used with adaptive_rate.");
+        dl.hide("_momentum_start", "momentum_start is not used with adaptive_rate.");
+        dl.hide("_momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
+        dl.hide("_momentum_stable", "momentum_stable is not used with adaptive_rate.");
+        dl.hide("_nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
       } else {
         // ! adaptive_rate
-        dl.hide("rho", "rho is only used with adaptive_rate.");
-        dl.hide("epsilon", "epsilon is only used with adaptive_rate.");
+        dl.hide("_rho", "rho is only used with adaptive_rate.");
+        dl.hide("_epsilon", "epsilon is only used with adaptive_rate.");
       }
       if (!_quiet_mode) {
         if (_adaptive_rate) {
-          dl.info("adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
+          dl.info("_adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
                       + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
           _momentum_start = 0;
           _momentum_stable = 0;
         } else {
-          dl.info("adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
+          dl.info("_adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
                       + "rho, epsilon.");
           _rho = 0;
           _epsilon = 0;
         }
 
         if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
-          dl.hide("initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
-          dl.info("initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
+          dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
+          dl.info("_initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (_n_folds != 0) {
           if (_override_with_best_model) {
-            dl.warn("override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+            dl.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
             _override_with_best_model = false;
           }
         }
@@ -611,11 +611,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (_autoencoder && _loss != Loss.MeanSquare) dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-      if (_autoencoder && classification) { dl.error("classification", "Can only use regression mode for auto-encoder.");}
+      if (_autoencoder && classification) { dl.error("_classification", "Can only use regression mode for auto-encoder.");}
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _valid != null) dl.error("validation_frame", "Cannot specify a validation dataset for auto-encoder.");
+      if (_autoencoder && _valid != null) dl.error("_validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
       if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -884,7 +884,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     final Frame _train;         // Prepared training frame
     final Frame _valid;         // Prepared validation frame
 
-    public DeepLearningModelInfo() { 
+    public DeepLearningModelInfo() {
       _classification = false;
       _train = _valid = null;
     }

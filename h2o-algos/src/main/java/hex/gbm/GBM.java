@@ -28,11 +28,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *  Validate the learning rate and loss family. */
   @Override public void init() {
     super.init();
-    if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) ) 
-      error("learn_rate", "learn_rate must be between 0 and 1");
+    if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
+      error("_learn_rate", "learn_rate must be between 0 and 1");
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      if( _nclass != 2 ) 
-        error("loss","Bernoulli requires the response to be a 2-class categorical");
+      if( _nclass != 2 )
+        error("_loss","Bernoulli requires the response to be a 2-class categorical");
       // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
       double mean = _response.mean();
       _initialPrediction = Math.log(mean/(1.0f-mean));
@@ -61,7 +61,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     @Override GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
-      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this)); 
+      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
   }
 }

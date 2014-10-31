@@ -291,16 +291,13 @@ model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['mod
 dl_test_parameters_list = model_builder['parameters']
 dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
 
-print "deeplearning parameters: "
-pp.pprint(dl_test_parameters)
-
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-if 2 != parameters_validation['validation_error_count']:
+if 1 != parameters_validation['validation_error_count']:
     print "validation errors: "
     pp.pprint(parameters_validation)
-assert 2 == parameters_validation['validation_error_count'], "2 != validation_error_count in good-parameters parameters validation result."
+assert 1 == parameters_validation['validation_error_count'], "1 != validation_error_count in good-parameters parameters validation result."
 assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
 
 # Good parameters (note: testing with null training_frame):
@@ -382,7 +379,9 @@ if h2o.H2O.verbose:
 # Check kmeans_model_name
 found_kmeans = False;
 kmeans_model = None
+print 'looking for model: ', kmeans_model_name
 for model in models['models']:
+    print 'Is it: ', model['key'], '?'
     if model['key'] == kmeans_model_name:
         found_kmeans = True
         kmeans_model = model

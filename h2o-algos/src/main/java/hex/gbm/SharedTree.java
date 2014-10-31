@@ -1,12 +1,15 @@
 package hex.gbm;
 
-import java.util.Arrays;
-
 import hex.SupervisedModelBuilder;
-import water.H2O.H2OCountedCompleter;
 import water.*;
-import water.fvec.*;
-import water.util.*;
+import water.H2O.H2OCountedCompleter;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.Log;
+import water.util.Timer;
+
+import java.util.Arrays;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); }
@@ -36,8 +39,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
       throw new IllegalArgumentException("Too many levels in response column!");
-    if( _parms._requested_ntrees < 0 || _parms._requested_ntrees > 100000 ) 
-      error("requested_ntrees", "Requested ntrees must be between 1 and 100000");
+    if( _parms._requested_ntrees < 0 || _parms._requested_ntrees > 100000 )
+      error("_requested_ntrees", "Requested ntrees must be between 1 and 100000");
     _ntrees = _parms._requested_ntrees;
     if( _parms._checkpoint ) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._destination_key);
@@ -46,12 +49,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _ntrees = _parms._requested_ntrees + checkpointModel._output._ntrees; // Actual trees is requested plus prior actuals
       }
     }
-    _ncols = _train.numCols()-1;
+    if (null != _train)
+      _ncols = _train.numCols()-1;
 
     // Initialize response based on given loss function.
     // Regression: initially predict the response mean
     // Multinomial: Preserve 0s in working columns; use 1-of-K binary trees
-    _initialPrediction = _nclass == 1 ? _response.mean() : 0; 
+    _initialPrediction = _nclass == 1 ? _response.mean() : 0;
   }
 
   // --------------------------------------------------------------------------
@@ -112,11 +116,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         //   nclass Vecs of current forest results (sum across all trees)
         //   nclass Vecs of working/temp data
         //   nclass Vecs of NIDs, allowing 1 tree per class
-        
+
         // Current forest values: results of summing the prior M trees
         for( int i=0; i<_nclass; i++ )
           fr.add("Tree_"+domain[i], _response.makeZero());
-        
+
         // Initial work columns.  Set-before-use in the algos.
         for( int i=0; i<_nclass; i++ )
           fr.add("Work_"+domain[i], _response.makeZero());

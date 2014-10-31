@@ -11,7 +11,10 @@ import water.api.ModelParametersSchema.ValidationMessageBase;
 import water.api.ModelParametersSchema.ValidationMessageV2;
 import water.api.Schema;
 import water.util.DocGen;
+import water.util.Log;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
@@ -41,15 +44,48 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
+    builder.init(); // check params
     job = builder._key;
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
-    for( ValidationMessage vm : builder._messages )
-      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
+    for( ValidationMessage vm : builder._messages ) {
+      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+    }
+    // default fieldname hacks
+    mapValidationMessageFieldNames(new String[] {"train", "valid"}, new String[] {"training_frame", "validation_frame"});
     this.validation_error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
     return (S)this;
+  }
+
+  /**
+   * Map impl field names in the validation messages to schema field names,
+   * called <i>after</i> behavior of stripping leading _ characters.
+   */
+  protected void mapValidationMessageFieldNames(String[] from, String[] to) {
+    if (null == from && null == to)
+      return;
+    if (null == from || null == to)
+      throw new IllegalArgumentException("Bad parameter name translation arrays; one is null and the other isn't.");
+    Map<String, String> translations = new HashMap();
+    for (int i = 0; i < from.length; i++) {
+      translations.put(from[i], to[i]);
+    }
+
+    for( ValidationMessageBase vm : this.validation_messages) {
+      if (null == vm) {
+        Log.err("Null ValidationMessageBase for ModelBuilderSchema: " + this);
+        continue;
+      }
+
+      if (null == vm.field_name) {
+        Log.err("Null field_name: " + vm);
+        continue;
+      }
+      if (translations.containsKey(vm.field_name))
+        vm.field_name = translations.get(vm.field_name);
+    }
   }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {

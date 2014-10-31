@@ -24,9 +24,9 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
     return JobsHandler.jobToSchemaHelper(version, j);
   }
 
-  public P validate_parameters(int version, B builder) {
+  public S validate_parameters(int version, B builder) {
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
-    return builder_schema.parameters;
+    return builder_schema;
   }
 
   abstract protected S schema(int version);

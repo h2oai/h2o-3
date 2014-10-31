@@ -107,6 +107,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Method to launch training of a Model, based on its parameters. */
   abstract public Job<M> trainModel();
 
+  /** Clear whatever was done by init() so it can be run again. */
+  protected void clearInitState() {
+    clearValidationErrors();
+
+  }
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -119,9 +124,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  columns dropped out, plus whatever work the parent init did.
    */
   public void init() {
+    // NOTE: allow re-init:
+    clearInitState();
     assert _parms != null;      // Parms must already be set in
-    assert _error_count == -1;  // Only ran init once
-    _error_count = 0;           // No errors so-far
     if( _parms._train == null ) { error("_train","Missing training frame"); return; }
     Frame tr = _parms.train();
     Frame va = _parms.valid();
@@ -170,16 +175,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** A list of field validation issues. */
   public ValidationMessage[] _messages = new ValidationMessage[0];
-  private int _error_count = -1; // -1 ==> init not run yet
+  private int _error_count = -1; // -1 ==> init not run yet; note, this counts ONLY errors, not WARNs and etc.
   public int error_count() { assert _error_count>=0 : "init() not run yet"; return _error_count; }
   public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
   public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
   public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
   public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
+  private void clearValidationErrors() {
+    _messages = new ValidationMessage[0];
+    _error_count = 0;
+  }
   private void message(ValidationMessage.MessageType message_type, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
   }
+  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
@@ -187,6 +197,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
+
+  /** The result of an abnormal Model.Parameter check.  Contains a
+   *  level, a field name, and a message.
+   *
+   *  Can be an ERROR, meaning the parameters can't be used as-is,
+   *  a HIDE, which means the specified field should be hidden given
+   *  the values of other fields, or a WARN or INFO for informative
+   *  messages to the user.
+   */
   public static final class ValidationMessage extends Iced {
     public enum MessageType { HIDE, INFO, WARN, ERROR }
     final MessageType message_type;

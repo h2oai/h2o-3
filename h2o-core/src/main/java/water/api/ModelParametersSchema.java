@@ -8,6 +8,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -64,7 +65,14 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     public ModelBuilder.ValidationMessage createImpl() { return new ModelBuilder.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
 
     // Version&Schema-specific filling from the implementation object
-    public ValidationMessageBase fillFromImpl(ValidationMessage vm) { PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT); return this; }
+    public ValidationMessageBase fillFromImpl(ValidationMessage vm) {
+      PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
+      if (this.field_name.startsWith("_"))
+        this.field_name = this.field_name.substring(1);
+      else
+        Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      return this;
+    }
   }
 
   public static final class ValidationMessageV2 extends ValidationMessageBase {  }
