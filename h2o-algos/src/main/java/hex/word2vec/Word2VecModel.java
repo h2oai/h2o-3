@@ -90,15 +90,16 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    * @param cnt Number of synonyms to find
    */
   public HashMap<String, Float> findSynonyms(String target, int cnt) {
-    HashMap<String, Float> hm = new HashMap<>();
     if (cnt > 0) {
       NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
       Vec[] vs = ((Frame) _w2vKey.get()).vecs();
       ValueString tmp = new ValueString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
-      hm = findSynonyms(tarVec, cnt, vs);
-    } else Log.err("Synonym count must be greater than 0.");
-    return hm;
+      return findSynonyms(tarVec, cnt, vs);
+    } else {
+      Log.err("Synonym count must be greater than 0.");
+      return null;
+    }
   }
 
   /**

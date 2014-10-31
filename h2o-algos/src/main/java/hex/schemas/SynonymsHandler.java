@@ -1,10 +1,11 @@
-package water.api;
+package hex.schemas;
 
 import hex.word2vec.Word2VecModel;
 import water.DKV;
 import water.Iced;
 import water.Key;
-import water.api.SynonymsHandler.Synonyms;
+import water.api.Handler;
+import hex.schemas.SynonymsHandler.Synonyms;
 
 import java.util.HashMap;
 

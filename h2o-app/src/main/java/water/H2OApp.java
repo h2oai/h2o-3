@@ -43,6 +43,7 @@ public class H2OApp {
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model","Train a KMeans model on the specified Frame.");
     H2O.registerGET("/GBM",hex.schemas.GBMHandler.class,"train","/GBM","GBM","Model","Train a GBM model on the specified Frame.");
     H2O.registerGET("/Word2Vec",hex.schemas.Word2VecHandler.class,"train","/Word2Vec","Word2Vec","Model","Train a Word2Vec model on the specified Frame.");
+    H2O.registerGET("/Synonyms",hex.schemas.SynonymsHandler.class,"findSynonyms","/Synonyms", "Synonyms","Synonyms","Return the synonyms.");
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:

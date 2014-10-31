@@ -1,20 +1,22 @@
-package water.api;
+package hex.schemas;
 
-import water.api.SynonymsHandler.Synonyms;
+import water.api.API;
+import water.api.Schema;
+import hex.schemas.SynonymsHandler.Synonyms;
 import water.Key;
 
 public class SynonymV1 extends Schema<Synonyms, SynonymV1> {
 
   // Input fields
-  @API(help="A word2vec model key.") String key;
-  @API(help="The target string to find synonyms.") String target;
-  @API(help="Find the top `cnt` synonyms of the target word.") int cnt;
+  @API(help="A word2vec model key.") public String key;
+  @API(help="The target string to find synonyms.") public String target;
+  @API(help="Find the top `cnt` synonyms of the target word.") public int cnt;
 
 
   //Outputs
 //    Key      _key;
-  @API(help="The synonyms.", direction=API.Direction.OUTPUT) String[] synonyms;
-  @API(help="The cosine similarities.", direction=API.Direction.OUTPUT) float[]  cos_sim;
+  @API(help="The synonyms.", direction=API.Direction.OUTPUT) public String[] synonyms;
+  @API(help="The cosine similarities.", direction=API.Direction.OUTPUT) public float[]  cos_sim;
 
   @Override public SynonymsHandler.Synonyms createImpl() {
     Synonyms c = new Synonyms();

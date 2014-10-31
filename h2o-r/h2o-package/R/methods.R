@@ -232,7 +232,7 @@ function(word2vec, target, count) {
 
   params <- list(key = word2vec@key, target=target, cnt=count)
   if (length(target) == 1) {
-    res <- .h2o.__remoteSend(h, .h2o.__SYNONYMS, .params = params)
+    res <- .h2o.__remoteSend(word2vec@h2o, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
     fr <- fr[with(fr, order(-cosine.similarity)),]
     return(fr)
