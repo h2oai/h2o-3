@@ -283,7 +283,7 @@ abstract public class Log {
     return (_logger = LogManager.getLogger(Log.class.getName()));
   }
 
-  static String fixedLength(String s, int length) {
+  public static String fixedLength(String s, int length) {
     String r = padRight(s, length);
     if( r.length() > length ) {
       int a = Math.max(r.length() - length + 1, 0);

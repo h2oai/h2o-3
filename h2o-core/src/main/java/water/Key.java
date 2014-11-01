@@ -287,6 +287,7 @@ final public class Key extends Iced implements Comparable {
   /** Factory making a Key from a String
    *  @return Desired Key */ 
   public static Key make(String s) { return make(decodeKeyName(s));}
+  public static Key makeSystem(String s) { return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false);}
   static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
    *  @return Desired Key */ 
