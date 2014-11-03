@@ -80,7 +80,7 @@ class ASTFuncDef extends ASTOp {
   ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
 
   void parse_func(Exec E) {
-    String name = ((ASTString)E.parse())._s;
+    String name = E.parseID();
     _name = name;
 
     // parse the function args: these are just arg names -> will do _local.put(name, Env.NULL, null) (local ST put)
@@ -92,9 +92,9 @@ class ASTFuncDef extends ASTOp {
     _table = table;
 
     // parse the function body
-    _body = new ASTStatement().parse_impl(E);
+    _body = new ASTStatement().parse_impl(E.skipWS());
 
-    ASTFunc res = (ASTFunc) clone();
+    ASTFuncDef res = (ASTFuncDef) clone();
     res._asts = null;
     putUDF(res, name);
   }

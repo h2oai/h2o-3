@@ -95,6 +95,7 @@ public class Env extends Iced {
 
   // pop w/o lowering ref counts
   public Val pop0() { return _stack.pop(); }
+  // push w/0 raising ref counts
   public void push0(Val v) { _stack.push(v); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }
@@ -271,6 +272,12 @@ public class Env extends Iced {
     for (Vec v : _refcnt.keySet()) {  // wiping the reference counts
       if (!_locked.contains(v._key)) fs = removeVec(v, fs);
       extinguishCounts(v);
+    }
+    // zoop over the _local_locked hashset and hose down the KV store
+    if (_local_locked != null) {
+      for (Key k : _local_locked) {
+        Keyed.remove(k, fs);
+      }
     }
     fs.blockForPending();
     _stack.popAll(); // dump the stack, unlock any frames

@@ -83,7 +83,7 @@ public class Exec extends Iced {
   public static void new_func(String str) throws IllegalArgumentException {
     cluster_init();
     try {
-      Exec ex = new Exec(str, null);
+      Exec ex = new Exec(str, new Env(null));
       ex.parse_fun();
     } catch( RuntimeException t ) {
       throw t;

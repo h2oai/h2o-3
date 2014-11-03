@@ -8,6 +8,8 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
   // Input fields
   @API(help="An Abstract Syntax Tree.")
   String ast;
+  @API(help="An array of function defintions.")
+  String[] funs;
 
   // Output
   @API(help="Parsing error, if any"   , direction=API.Direction.OUTPUT) String exception;
@@ -27,13 +29,15 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
 
   @Override public Cascade createImpl() {
     Cascade c = new Cascade();
-    if (ast.equals("")) throw H2O.fail("No ast supplied! Nothing to do.");
+    if (ast.equals("") && funs == null) return null;
     c._ast = ast;
+    c._funs = funs;
     return c;
   }
 
   @Override public CascadeV1 fillFromImpl(Cascade cascade) {
     ast = cascade._ast;
+    funs = cascade._funs;
     key = cascade._key;
     num_rows = cascade._num_rows;
     num_cols = cascade._num_cols;

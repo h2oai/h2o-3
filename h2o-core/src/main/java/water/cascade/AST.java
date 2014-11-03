@@ -75,6 +75,14 @@ abstract public class AST extends Iced {
         throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
       }
 
+
+    } else if(this instanceof ASTStatement) {
+
+      if (this instanceof ASTIf) { this.exec(e); }
+      if (this instanceof ASTElse) { this.exec(e); }
+      if (this instanceof ASTFor) { throw H2O.unimpl("`for` loops are currently unsupported."); }
+      if (this instanceof ASTReturn) { this.exec(e); return e; }
+
     // Check if we have a slice.
     } else if(this instanceof ASTSlice) {
       _asts[0].treeWalk(e); // push hex
@@ -292,7 +300,7 @@ class ASTStatement extends AST {
 
     // an ASTStatement is an array of ASTs. May have ASTStatements within ASTStatements.
     while (E.hasNextStmnt()) {
-      AST ast = E.parse();
+      AST ast = E.skipWS().parse();
       ast_ary.add(ast);
       E.skipEOS();  // skip EOS == End of Statement
     }
@@ -303,8 +311,12 @@ class ASTStatement extends AST {
   }
   @Override void exec(Env env) {
     for( int i=0; i<_asts.length-1; i++ ) {
-      env = _asts[i].treeWalk(env);       // Execute the statements by walking the ast
-      env.pop();                // Pop all intermediate results
+      if (_asts[i] instanceof ASTReturn) {
+       _asts[i].treeWalk(env);
+        return;
+      }
+      env = _asts[i].treeWalk(env);  // Execute the statements by walking the ast
+      env.pop();                     // Pop all intermediate results; needed results will be looked up.
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
   }
@@ -320,19 +332,40 @@ class ASTStatement extends AST {
   }
 }
 
+class ASTReturn extends ASTStatement {
+  protected AST _stmnt;
+  ASTReturn() {}
+
+  @Override ASTReturn parse_impl(Exec E) {
+    AST stmnt = E.skipWS().parse();
+    ASTReturn res = (ASTReturn) clone();
+    res._stmnt = stmnt;
+    return res;
+  }
+
+  @Override void exec(Env e) { _stmnt.treeWalk(e); }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+}
+
 class ASTIf extends ASTStatement {
   protected AST _pred;
-  protected boolean _execed = false;
+  protected ASTElse _else = null;
   ASTIf() {}
 
   // (if pred body)
   @Override ASTIf parse_impl(Exec E) {
     // parse the predicate
     AST pred = E.parse();
-    ASTStatement statement = super.parse_impl(E);
+    ASTStatement statement = super.parse_impl(E.skipWS());
+    ArrayList<AST> ast_list = new ArrayList<>();
+    for (int i = 0; i < statement._asts.length; ++i) {
+      if (statement._asts[i] instanceof ASTElse) _else = (ASTElse)statement._asts[i];
+      else ast_list.add(statement._asts[i]);
+    }
     ASTIf res = (ASTIf) clone();
     res._pred = pred;
-    res._asts = statement._asts;
+    res._asts = ast_list.toArray(new AST[ast_list.size()]);
     return res;
   }
 
@@ -341,25 +374,23 @@ class ASTIf extends ASTStatement {
     captured = _pred.treeWalk(captured);
     double v = captured.popDbl();
     captured.popScope();
-    if (v == 0) return;
-    _execed = true;
-    super.exec(e);  // run the statements
+    if (v == 0) if (_else == null) return; else _else.exec(e);
+    else super.exec(e);  // run the statements
   }
   @Override String value() { return null; }
   @Override int type() { return 0; }
 }
 
 class ASTElse extends ASTStatement {
-  protected boolean _exec = true;
   // (else body)
   ASTElse() {}
   @Override ASTElse parse_impl(Exec E) {
-    ASTStatement statements = super.parse_impl(E);
+    ASTStatement statements = super.parse_impl(E.skipWS());
     ASTElse res = (ASTElse)clone();
     res._asts = statements._asts;
     return res;
   }
-  @Override void exec(Env e) { if (_exec) super.exec(e); }
+  @Override void exec(Env e) { super.exec(e); }
   @Override String value() { return null; }
   @Override int type() { return 0; }
 }
@@ -372,10 +403,11 @@ class ASTElseIf extends ASTIf {
 class ASTFor extends ASTStatement {
   protected int _start;
   protected int _end;
+//  protected Object[] _arr;
 
   // (for #start #end body)
   @Override ASTFor parse_impl(Exec E) {
-    int s = (int)((ASTNum)E.parse())._d;
+    int s = (int)((ASTNum)E.skipWS().parse())._d;
     int e = (int)((ASTNum)E.skipWS().parse())._d;
     ASTStatement stmts = super.parse_impl(E);
     ASTFor res = (ASTFor)clone();

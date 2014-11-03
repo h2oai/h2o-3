@@ -33,15 +33,17 @@ class CascadeHandler extends Handler<Cascade, CascadeV1> {
   }
 
   public CascadeV1 exec(int version, Cascade cascade) {
+    if (cascade == null) return null;
     Throwable e = null;
     Env env = null;
     try {
       //learn all fcns
       if(cascade._funs != null) {
         for (String f : cascade._funs) {
-          water.cascade.Exec.exec(f);
+          water.cascade.Exec.new_func(f);
         }
       }
+      if (cascade._ast.equals("") || cascade._ast == null) return schema(version).fillFromImpl(cascade);
       env = water.cascade.Exec.exec(cascade._ast);
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
