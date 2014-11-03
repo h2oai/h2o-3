@@ -32,9 +32,14 @@ public class DTree extends Iced {
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   int _len;              // Resizable array
+  // Public stats about tree
+  public int _leaves;
+  public int _depth;
+
   public DTree( String[] names, int ncols, char nbins, char nclass, int min_rows ) { this(names,ncols,nbins,nclass,min_rows,-1); }
   public DTree( String[] names, int ncols, char nbins, char nclass, int min_rows, long seed ) {
-    _names = names; _ncols = ncols; _nbins=nbins; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed; }
+    _names = names; _ncols = ncols; _nbins=nbins; _nclass=nclass; _min_rows = min_rows; _ns = new Node[1]; _seed = seed; 
+  }
 
   public final Node root() { return _ns[0]; }
   // One-time local init after wire transfer
@@ -60,10 +65,6 @@ public class DTree extends Iced {
 
   public final int len() { return _len; }
   public final void len(int len) { _len = len; }
-
-  // Public stats about tree
-  public int leaves;
-  public int depth;
 
   // --------------------------------------------------------------------------
   // Abstract node flavor

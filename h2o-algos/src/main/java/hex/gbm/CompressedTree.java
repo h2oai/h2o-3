@@ -3,6 +3,7 @@ package hex.gbm;
 import java.util.Arrays;
 import water.AutoBuffer;
 import water.Iced;
+import water.util.IcedBitSet;
 
 // --------------------------------------------------------------------------
 // Highly compressed tree encoding:
@@ -21,8 +22,11 @@ class CompressedTree extends Iced {
   final int _nclass;
   final long _seed;
   public CompressedTree( byte [] bits, int nclass, long seed ) { _bits = bits; _nclass = nclass; _seed = seed; }
+
+  /** Highly efficient (critical path) tree scoring */
   public float score( final double row[] ) {
     AutoBuffer ab = new AutoBuffer(_bits);
+    IcedBitSet ibs = null;      // Lazily set on hitting first group test
     while(true) {
       int nodeType = ab.get1();
       int colId = ab.get2();
@@ -35,28 +39,14 @@ class CompressedTree extends Iced {
       // Extract value or group to split on
       float splitVal = -1;
       boolean grpContains = false;
-      if(equal == 0 || equal == 1) {
-        splitVal = ab.get4f();
-      } else {
+      if(equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
+        splitVal = ab.get4f();       // Get the float to compare
+      } else {                       // Bitset test
         int off = (equal == 3) ? ab.get2() : 0; // number of zero-bits skipped during serialization
         int sz  = (equal == 3) ? ab.get2() : 4; // size of serialized bitset (part containing some non-zeros) in bytes
-        int idx = (int)row[colId];              // the input value driving decision
-
-        if(Double.isNaN(row[colId]) || idx < off ) {
-          grpContains = false;
-          ab.skip(sz);
-        } else {
-          idx = idx - off;
-          int bbskip = idx >> 3;
-          if (sz-bbskip>0) {
-            ab.skip(bbskip);
-            grpContains = (ab.get1() & ((byte)1 << (idx % 8))) != 0;
-            ab.skip(sz-bbskip-1);
-          } else { // value is not in bit set at all (it is even out of value)
-            grpContains = false;
-            ab.skip(sz);
-          }
-        }
+        if( ibs == null ) ibs = new IcedBitSet(0);
+        ibs.fill(_bits,ab.position(),sz,off);
+        ab.skip(sz);            // Skip inline bitset
       }
 
       // Compute the amount to skip.
@@ -76,10 +66,11 @@ class CompressedTree extends Iced {
       // WARNING: Generated code has to be consistent with this code:
       //   - Double.NaN <  3.7f => return false => BUT left branch has to be selected (i.e., ab.position())
       //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
-      if( !Double.isNaN(row[colId]) ) { // NaNs always go to bin 0
-        if( ( equal==0 && ((float)row[colId]) >= splitVal) ||
-            ( equal==1 && ((float)row[colId]) == splitVal) ||
-            ( (equal==2 || equal==3) && grpContains )) {
+      double d = row[colId];
+      if( !Double.isNaN(d) ) {  // NaNs always go to bin 0
+        if( ( equal==0 && ((float)d) >= splitVal) ||
+            ( equal==1 && ((float)d) == splitVal) ||
+            ( (equal==2 || equal==3) && ibs.contains((int)d) )) {
           ab.skip(skip);        // Skip to the right subtree
           lmask = rmask;        // And set the leaf bits into common place
         }

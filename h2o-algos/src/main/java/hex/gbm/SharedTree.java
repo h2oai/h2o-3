@@ -1,6 +1,7 @@
 package hex.gbm;
 
 import hex.SupervisedModelBuilder;
+import hex.VarImp;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -108,9 +109,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
               //_modelClassDist = cdmt2.rel_dist();
             }
           }
+          Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
+          Log.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
         }
-        Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
-        Log.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
 
         // Also add to the basic working Frame these sets:
         //   nclass Vecs of current forest results (sum across all trees)
@@ -158,6 +159,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Abstract classes implemented by the tree builders
     abstract M makeModel( Key modelKey, P parms );
     abstract void buildModel();
+    abstract protected VarImp doVarImpCalc(boolean scale);
+    // Read the 'tree' columns, do model-specific math and put the results in the
+    // fs[] array, and return the sum.  Dividing any fs[] element by the sum
+    // turns the results into a probability distribution.
+    protected abstract float score1( Chunk chks[], float fs[/*nclass*/], int row );
   }
 
   // --------------------------------------------------------------------------
@@ -190,6 +196,51 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           for( int t=0; t<_nclass; t++ )
             chk_nids(chks,t).set0(row,-1);
     }
+  }
+
+  // --------------------------------------------------------------------------
+  transient long _timeLastScoreStart, _timeLastScoreEnd, _firstScore;
+  protected void doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+    long now = System.currentTimeMillis();
+    if( _firstScore == 0 ) _firstScore=now;
+    long sinceLastScore = now-_timeLastScoreStart;
+    //Score sc = null;
+    //// If validation is specified we use a model for scoring, so we need to update it!
+    //// First we save model with trees (i.e., make them available for scoring)
+    //// and then update it with resulting error
+    //model = makeModel(model, ktrees, tstats);
+    //model.update(self());
+    //// Now model already contains tid-trees in serialized form
+    //if( score_each_iteration ||
+    //    finalScoring ||
+    //    (now-_firstScore < 4000) || // Score every time for 4 secs
+    //    // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+    //    (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
+    //     (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
+    //  _timeLastScoreStart = now;
+    //  // Perform scoring - first get adapted validation response
+    //  Response2CMAdaptor vadaptor = getValidAdaptor();
+    //  sc = new Score().doIt(model, fTrain, vadaptor, oob, build_tree_one_node).report(tid,ktrees);
+    //  _timeLastScoreEnd = System.currentTimeMillis();
+    //}
+    //
+    //// Compute variable importance for this tree if necessary
+    //VarImp varimp = null;
+    //if (importance && ktrees!=null) { // compute this tree votes but skip the first scoring call which is done over empty forest
+    //  Timer vi_timer = new Timer();
+    //  varimp  = doVarImpCalc(model, ktrees, tid-1, fTrain, false);
+    //  Log.info("Computation of variable importance with "+tid+"th-tree took: " + vi_timer.toString());
+    //}
+    //// Double update - after scoring
+    //model = makeModel(model,
+    //                  sc==null ? Double.NaN : sc.mse(),
+    //                  sc==null ? null : (_nclass>1? new ConfusionMatrix(sc._cm):null),
+    //                  varimp,
+    //                  sc==null ? null : (_nclass==2 ? makeAUC(toCMArray(sc._cms), ModelUtils.DEFAULT_THRESHOLDS) : null)
+    //                  );
+    //model.update(self());
+    //return model;
+    throw H2O.unimpl();
   }
 
 }

@@ -1,5 +1,6 @@
 package hex.gbm;
 
+import java.util.Arrays;
 import hex.SupervisedModel;
 import hex.schemas.SharedTreeModelV2;
 import water.*;
@@ -31,13 +32,35 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Number of trees actually in the model (as opposed to requested) */
     int _ntrees;
 
-    public SharedTreeOutput( SharedTree b ) { super(b); }
+    /** More indepth tree stats */
+    final TreeStats _treeStats;
+
+    /** Trees get big, so store each one seperately in the DKV. */
+    Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
+
+    public SharedTreeOutput( SharedTree b ) { 
+      super(b);
+      _ntrees = 0;              // No trees yet
+      _treeKeys = new Key[_ntrees][]; // No tree keys yet
+      _treeStats = new TreeStats();
+    }
 
     @Override public int nfeatures() { return _names.length; }
 
     @Override public ModelCategory getModelCategory() {
       throw H2O.unimpl();       // Can be regression or multinomial
       //return Model.ModelCategory.Clustering;
+    }
+
+    // Append next set of K trees
+    void addKTrees( DTree[] trees ) {
+      _treeKeys = Arrays.copyOf(_treeKeys,_ntrees+1);
+      Key[] keys = _treeKeys[_ntrees] = new Key[nclasses()];
+      // TODO: COMPRESSED TREES not DTree
+      //for( int i=0; i<nclasses(); i++ ) keys[i] = trees[i]._key;
+      _treeStats.updateBy(trees); // Update tree shape
+      _ntrees++;
+      throw H2O.unimpl();
     }
   }
 
@@ -401,40 +424,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 //
 //    protected void generateHTMLAUC(StringBuilder sb) {
 //      validAUC.toHTML(sb);
-//    }
-//
-//    public static class TreeStats extends Iced {
-//      static final int API_WEAVER = 1; // This file has auto-gen'd doc & json fields
-//      static public DocGen.FieldDoc[] DOC_FIELDS; // Initialized from Auto-Gen code.
-//      @API(help="Minimal tree depth.") public int minDepth = Integer.MAX_VALUE;
-//      @API(help="Maximum tree depth.") public int maxDepth = Integer.MIN_VALUE;
-//      @API(help="Average tree depth.") public float meanDepth;
-//      @API(help="Minimal num. of leaves.") public int minLeaves = Integer.MAX_VALUE;
-//      @API(help="Maximum num. of leaves.") public int maxLeaves = Integer.MIN_VALUE;
-//      @API(help="Average num. of leaves.") public float meanLeaves;
-//
-//      transient long sumDepth  = 0;
-//      transient long sumLeaves = 0;
-//      transient int  numTrees = 0;
-//      public boolean isValid() { return minDepth <= maxDepth; }
-//      public void updateBy(DTree[] ktrees) {
-//        if (ktrees==null) return;
-//        for (int i=0; i<ktrees.length; i++) {
-//          DTree tree = ktrees[i];
-//          if( tree == null ) continue;
-//          if (minDepth > tree.depth) minDepth = tree.depth;
-//          if (maxDepth < tree.depth) maxDepth = tree.depth;
-//          if (minLeaves > tree.leaves) minLeaves = tree.leaves;
-//          if (maxLeaves < tree.leaves) maxLeaves = tree.leaves;
-//          sumDepth += tree.depth;
-//          sumLeaves += tree.leaves;
-//          numTrees++;
-//          meanDepth = ((float)sumDepth / numTrees);
-//          meanLeaves = ((float)sumLeaves / numTrees);
-//        }
-//      }
-//
-//      public void setNumTrees(int i) { numTrees = i; }
 //    }
 //
 //    StringBuilder toString(final String res, CompressedTree ct, final StringBuilder sb ) {
