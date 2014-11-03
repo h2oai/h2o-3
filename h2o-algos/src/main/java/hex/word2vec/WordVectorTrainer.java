@@ -133,7 +133,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
 
   @Override public void map(Chunk cs[]) {
     int wrdCnt=0, bagSize=0, sentLen, curWord, winSizeMod;
-    int winWordSentIdx, winWord, l1 = 0;
+    int winWordSentIdx, winWord;
     final int winSize = _windowSize, vecSize = _wordVecSize;
     float[] neu1 = new float[vecSize];
     float[] neu1e = new float[vecSize];
@@ -217,7 +217,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
 
   private final void skipGram(int curWord, int winWord, float[] neu1e) {
     final int vecSize = _wordVecSize;
-    int l1 = winWord * vecSize;
+    final int l1 = winWord * vecSize;
     for (int i = 0; i < vecSize; i++) neu1e[i] = 0;
 
     if (_normModel == NormModel.NegSampling)
@@ -225,23 +225,23 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     else // HSM
       hierarchicalSoftmaxSG(curWord, l1, neu1e);
 
-
     // Learned weights input -> hidden
     for (int i = 0; i < vecSize; i++) _syn0[i + l1] += neu1e[i];
   }
 
-  private void CBOW(final int curWord, final int[] sentence, final int sentIdx, final int sentLen, final int winSizeMod, final int bagSize, final float[] neu1, final float[] neu1e) {
+  private final void CBOW(int curWord, int[] sentence, int sentIdx, int sentLen, int winSizeMod, int bagSize, float[] neu1, float[] neu1e) {
     int winWordSentIdx, winWord;
     final int vecSize = _wordVecSize, winSize = _windowSize;
+    final int curWinSize = _windowSize * 2 + 1 - winSize;
 
-    if (_normModel == NormModel.NegSampling) {
-      for (int i = 0; i < vecSize; i++) neu1[i] /= bagSize;
+    for (int i = 0; i < vecSize; i++) neu1[i] /= bagSize;
+    if (_normModel == NormModel.NegSampling)
       negSamplingCBOW(curWord, neu1, neu1e);
-    } else // HSM
+    else // HSM
       hierarchicalSoftmaxCBOW(curWord, neu1, neu1e);
 
     // hidden -> in
-    for (int winIdx = winSizeMod; winIdx < winSize * 2 + 1 - winSizeMod; winIdx++) {
+    for (int winIdx = winSizeMod; winIdx < curWinSize; winIdx++) {
       if (winIdx != winSize) {
         winWordSentIdx = sentIdx - winSize + winIdx;
         if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
@@ -254,7 +254,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private final void negSamplingCBOW(final int curWord, final float[] neu1, final float[] neu1e) {
     final int vecSize = _wordVecSize, negExCnt = _negExCnt;
     final float alpha = _curLearningRate;
-    float gradient=0, f=0;
+    float gradient, f=0;
     int targetWord, l2;
 
     //i==0
@@ -268,7 +268,8 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     for (int i = 0; i < vecSize; i++) neu1e[i] += gradient * _syn1[i + l2];
     for (int i = 0; i < vecSize; i++) _syn1[i + l2] += gradient * neu1[i];
 
-    for (int i = 1; i < negExCnt + 1; i++, f=0) {
+    for (int i = 1; i < negExCnt + 1; i++) {
+      f=0;
       //pick a random vocab.idx from unigram table
       targetWord = _unigramTable[cheapRandInt(Word2VecModelInfo.UNIGRAM_TABLE_SIZE)];
       if (targetWord == curWord) continue;
@@ -301,7 +302,8 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     for (int i = 0; i < vecSize; i++) neu1e[i] += gradient * _syn1[i + l2];
     for (int i = 0; i < vecSize; i++) _syn1[i + l2] += gradient * _syn0[i + l1];
 
-    for (int i = 1; i < negExCnt + 1; i++, f=0) {
+    for (int i = 1; i < negExCnt + 1; i++) {
+      f=0;
       //pick a random vocab.idx from unigram table
       targetWord = _unigramTable[cheapRandInt(Word2VecModelInfo.UNIGRAM_TABLE_SIZE)];
       if (targetWord == curWord) continue;
@@ -325,7 +327,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     return r > 0 ? r : -r;
   }
 
-  private void hierarchicalSoftmaxCBOW(final int targetWord, float[] neu1, float[] neu1e) {
+  private final void hierarchicalSoftmaxCBOW(final int targetWord, float[] neu1, float[] neu1e) {
     final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
     final float alpha = _curLearningRate;
     float gradient, f=0;
@@ -348,13 +350,13 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
       for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * neu1[j];
     }
   }
-  private void hierarchicalSoftmaxSG(final int targetWord, final int l1, float[] neu1e) {
-    final int vecSize = _wordVecSize;
+  private final void hierarchicalSoftmaxSG(final int targetWord, final int l1, float[] neu1e) {
+    final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
     final float alpha = _curLearningRate;
     float gradient, f=0;
     int l2;
 
-    for (int i = 0; i < _HBWTCode[targetWord].length; i++, f=0) {
+    for (int i = 0; i < tWrdCodeLen; i++, f=0) {
       l2 = _HBWTPoint[targetWord][i] * vecSize;
 
       // Propagate hidden -> output (calc sigmoid)

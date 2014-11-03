@@ -80,7 +80,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
    * @return Trained model
    */
   public final Word2VecModel trainModel(Word2VecModel model) {
-    long start, stop;
+    long start, stop, lastCnt=0;
+    float tDiff;
     try {
       _parms.lock_frames(Word2Vec.this);
       if (model == null) {
@@ -95,7 +96,9 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         stop = System.currentTimeMillis();
         model.getModelInfo().updateLearningRate();
         model.update(_key); // Early version of model is visible
-        Log.info("Epoch "+i+" "+(float)(stop-start)/1000+"s");
+        tDiff = (float)(stop-start)/1000;
+        Log.info("Epoch "+i+" "+tDiff+"s  Words trained/s: "+ (model.getModelInfo().getTotalProcessed()-lastCnt)/tDiff);
+        lastCnt = model.getModelInfo().getTotalProcessed();
       }
       Log.info("Finished training the Word2Vec model.");
       model.buildModelOutput();
