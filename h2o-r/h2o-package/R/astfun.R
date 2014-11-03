@@ -53,11 +53,12 @@
 #'
 #' Mutually recursive functions:
 #'
-#'  For creating the
-#'  .process.stmnt <=> .statement.to.ast.switchboard
+#'  For processing a raw function:
+#'   .process.stmnt <=> .statement.to.ast.switchboard
 #'
-#'
-#'
+#'  For postprocessing the ast:
+#'   .body.visitor <=> .stmnt.visitor
+
 
 #'
 #' Helper function for .is.udf
@@ -417,7 +418,7 @@ function(s) {
     res %p0% s@op
     res %p% visitor(s@condition)$ast
     body <- .body.visitor(s@body)
-    for (b in body) { res %p% b}  #; res %p0% ";;" }
+    for (b in body) {res %p% b}  #; res %p0% ";;" }
     res %p0% ')'
     return(res)
   } else if (s %i% "ASTElse") {

@@ -82,12 +82,8 @@ public class Exec extends Iced {
 
   public static void new_func(String str) throws IllegalArgumentException {
     cluster_init();
-    try {
-      Exec ex = new Exec(str, new Env(null));
-      ex.parse_fun();
-    } catch( RuntimeException t ) {
-      throw t;
-    }
+    Exec ex = new Exec(str, new Env(null));
+    ex.parse_fun();
   }
 
   protected AST parse() {
@@ -106,7 +102,6 @@ public class Exec extends Iced {
     ast.parse_func(this);
   }
 
-
   private AST lookup(String tok) {
     AST sym = ASTOp.SYMBOLS.get(tok);
     if (sym != null) return sym;
@@ -115,8 +110,6 @@ public class Exec extends Iced {
     throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
   }
 
-  protected AST parseAST(String ast, Env env) { return (new Exec(ast, env)).parse(); }
-
   String parseID() {
     StringBuilder sb = new StringBuilder();
     if (peek() == '(') {_x++; return parseID(); } // eat the '('
@@ -124,7 +117,7 @@ public class Exec extends Iced {
     while(_ast[_x] != ' ' && _ast[_x] != ')') {  // while not WS...
       sb.append((char)_ast[_x++]);
     }
-    _x++;
+    _x++; // skip a WS
     return sb.toString();
   }
 
