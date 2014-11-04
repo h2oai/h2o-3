@@ -1,4 +1,4 @@
-package hex.gbm;
+package hex.tree;
 
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
@@ -16,16 +16,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public SharedTree( String name, P parms) { super(name,parms); }
 
   // Number of trees requested, including prior trees from a checkpoint
-  int _ntrees;
+  protected int _ntrees;
 
   // The in-progress model being built
-  M _model;
+  protected M _model;
 
   // Number of columns in training set, not counting the response column
-  int _ncols;
+  protected int _ncols;
 
   // Initially predicted value (for zero trees)
-  double _initialPrediction;
+  protected double _initialPrediction;
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -63,7 +63,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
-  abstract class Driver extends H2OCountedCompleter<Driver> {
+  abstract protected class Driver extends H2OCountedCompleter<Driver> {
 
     // Top-level tree-algo driver function
     @Override protected void compute2() {
@@ -159,13 +159,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract M makeModel( Key modelKey, P parms );
-    abstract void buildModel();
+    abstract protected M makeModel( Key modelKey, P parms );
+    abstract protected void buildModel();
     abstract protected VarImp doVarImpCalc(boolean scale);
     // Read the 'tree' columns, do model-specific math and put the results in the
     // fs[] array, and return the sum.  Dividing any fs[] element by the sum
     // turns the results into a probability distribution.
-    protected abstract float score1( Chunk chks[], float fs[/*nclass*/], int row );
+    abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
   }
 
   // --------------------------------------------------------------------------

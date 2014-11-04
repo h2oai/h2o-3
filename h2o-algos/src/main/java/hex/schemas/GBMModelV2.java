@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.gbm.GBMModel;
+import hex.tree.gbm.GBMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;

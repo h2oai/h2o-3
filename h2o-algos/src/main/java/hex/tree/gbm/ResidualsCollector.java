@@ -1,7 +1,8 @@
-package hex.gbm;
+package hex.tree.gbm;
 
 import java.util.Arrays;
 
+import hex.tree.DTreeScorer;
 import water.Key;
 import water.fvec.Chunk;
 
@@ -14,7 +15,7 @@ public class ResidualsCollector extends DTreeScorer<ResidualsCollector> {
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
     float [] preds = new float[_nclass+1];
-    int ntrees = _trees.length;
+    int ntrees = ntrees();
     Chunk cys   = chk_resp(chks);
     for( int tidx=0; tidx<ntrees; tidx++) { // tree
       for (int row=0; row<cys._len; row++) {

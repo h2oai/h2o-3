@@ -1,4 +1,4 @@
-package hex.gbm;
+package hex.tree;
 
 import java.util.Arrays;
 import hex.SupervisedModel;
@@ -27,7 +27,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
 
     /** Initially predicted value (for zero trees) */
-    double _initialPrediction;
+    public double _initialPrediction;
 
     /** Number of trees actually in the model (as opposed to requested) */
     int _ntrees;
@@ -36,7 +36,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     final TreeStats _treeStats;
 
     /** Trees get big, so store each one seperately in the DKV. */
-    Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
     public SharedTreeOutput( SharedTree b ) { 
       super(b);

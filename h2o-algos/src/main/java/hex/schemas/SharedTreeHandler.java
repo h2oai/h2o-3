@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.gbm.SharedTree;
+import hex.tree.SharedTree;
 import water.api.Handler;
 import water.api.Schema;
 import water.H2O;

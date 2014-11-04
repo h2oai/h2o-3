@@ -1,7 +1,7 @@
 package hex.schemas;
 
-import hex.gbm.GBM;
-import hex.gbm.GBMModel.GBMParameters;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel.GBMParameters;
 import water.H2O;
 
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */

@@ -1,4 +1,4 @@
-package hex.gbm;
+package hex.tree;
 
 import water.AutoBuffer;
 import water.Iced;

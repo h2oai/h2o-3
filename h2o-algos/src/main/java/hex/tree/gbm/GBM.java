@@ -1,8 +1,8 @@
-package hex.gbm;
+package hex.tree.gbm;
 
-//import hex.schemas.*;
-import hex.schemas.GBMV2;
 import hex.VarImp;
+import hex.schemas.GBMV2;
+import hex.tree.*;
 import water.*;
 import water.fvec.Chunk;
 import water.util.Log;
@@ -49,7 +49,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
     private transient float[/*nfeatures*/] _improvPerVar;
 
-    @Override void buildModel() {
+    @Override protected void buildModel() {
       // Initialize gbm-specific data structures
       if( _parms._importance ) _improvPerVar = new float[_nclass];
 
@@ -169,7 +169,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       throw H2O.unimpl();
     }
 
-    @Override GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
+    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
 
