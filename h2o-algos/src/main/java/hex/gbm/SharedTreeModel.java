@@ -13,7 +13,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Maximal number of supported levels in response. */
     static final int MAX_SUPPORTED_LEVELS = 1000;
 
-    public int _requested_ntrees=50; // Number of trees. Grid Search, comma sep values:50,100,150,200
+    public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
     public boolean _importance = false; // compute variable importance
 
@@ -46,11 +46,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
 
     @Override public int nfeatures() { return _names.length; }
-
-    @Override public ModelCategory getModelCategory() {
-      throw H2O.unimpl();       // Can be regression or multinomial
-      //return Model.ModelCategory.Clustering;
-    }
 
     // Append next set of K trees
     void addKTrees( DTree[] trees ) {

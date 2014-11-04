@@ -40,17 +40,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
       throw new IllegalArgumentException("Too many levels in response column!");
-    if( _parms._requested_ntrees < 0 || _parms._requested_ntrees > 100000 )
-      error("_requested_ntrees", "Requested ntrees must be between 1 and 100000");
-    _ntrees = _parms._requested_ntrees;
+    if( _parms._ntrees < 0 || _parms._ntrees > 100000 )
+      error("_ntrees", "Requested ntrees must be between 1 and 100000");
+    _ntrees = _parms._ntrees;   // Total trees in final model
     if( _parms._checkpoint ) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._destination_key);
       if( cv!=null ) {          // Look for prior model
         M checkpointModel = cv.get();
-        _ntrees = _parms._requested_ntrees + checkpointModel._output._ntrees; // Actual trees is requested plus prior actuals
+        if( _parms._ntrees < checkpointModel._output._ntrees+1 )
+          error("_ntrees", "Requested ntrees must be between "+checkpointModel._output._ntrees+1+" and 100000");
+        _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
-    if (null != _train)
+    if( _train != null )
       _ncols = _train.numCols()-1;
 
     // Initialize response based on given loss function.

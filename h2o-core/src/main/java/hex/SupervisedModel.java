@@ -79,6 +79,11 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }
+    @Override public ModelCategory getModelCategory() {
+      return nclasses()==1 
+        ? Model.ModelCategory.Regression
+        : (nclasses()==2 ? Model.ModelCategory.Binomial : Model.ModelCategory.Multinomial);
+    }
   }
 
 

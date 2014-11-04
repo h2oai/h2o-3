@@ -61,9 +61,10 @@ $(main_classes): build/classes/%class: src/main/java/%java
 #	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
 build/libs/h2o-web.jar: $(classes) ../h2o-algos/build/libs/h2o-algos.jar ../h2o-core/build/libs/h2o-core.jar
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@rm -rf build/tmp ; mkdir -p build/tmp
+	@(cd build/tmp; jar xf ../../../h2o-algos/build/libs/h2o-algos.jar; rm -rf META-INF; jar xf ../../../h2o-core/build/libs/h2o-core.jar; rm -rf META-INF )
 	@cp -r build/classes/water build/tmp
-	@(cd build/tmp; jar xf ../../../h2o-algos/build/libs/h2o-algos.jar; jar xf ../../../h2o-core/build/libs/h2o-core.jar )
 	@jar -cfm build/libs/h2o-web.jar manifest.txt -C build/tmp .
 	@rm -rf build/tmp
 

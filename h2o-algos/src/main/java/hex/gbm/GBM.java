@@ -20,7 +20,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> trainModel() {
-    return start(new GBMDriver(), _parms._requested_ntrees/*work for progress bar*/);
+    return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -61,7 +61,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Loop over the K trees
-      for( int tid=0; tid<_parms._requested_ntrees; tid++) {
+      for( int tid=0; tid<_parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms._checkpoint ) // do not make initial scoring if model already exist
