@@ -1,12 +1,12 @@
-package hex.gbm;
+package hex.tree;
 
 import water.*;
 import water.fvec.Chunk;
 
 public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
-  final int _ncols;
-  final int _nclass;
-  final Key[][] _treeKeys;
+  protected final int _ncols;
+  protected final int _nclass;
+  protected final Key[][] _treeKeys;
   protected transient CompressedTree[][] _trees;
 
   public DTreeScorer(int ncols, int nclass, Key[][] treeKeys) {
@@ -14,6 +14,7 @@ public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
     _nclass = nclass;
     _treeKeys = treeKeys;
   }
+  protected int ntrees() { return _trees.length; }
 
   @Override protected final void setupLocal() {
     int ntrees = _treeKeys.length;

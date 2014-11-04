@@ -1,7 +1,8 @@
-package hex.gbm;
+package hex.tree.gbm;
 
 import hex.Model;
 import hex.schemas.GBMModelV2;
+import hex.tree.*;
 import java.util.Arrays;
 import water.H2O;
 import water.Key;

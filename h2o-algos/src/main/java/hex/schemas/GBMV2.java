@@ -1,7 +1,7 @@
 package hex.schemas;
 
-import hex.gbm.GBM;
-import hex.gbm.GBMModel.GBMParameters;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;

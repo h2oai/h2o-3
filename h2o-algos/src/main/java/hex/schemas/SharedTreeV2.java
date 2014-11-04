@@ -1,7 +1,7 @@
 package hex.schemas;
 
-import hex.gbm.SharedTree;
-import hex.gbm.SharedTreeModel.SharedTreeParameters;
+import hex.tree.SharedTree;
+import hex.tree.SharedTreeModel.SharedTreeParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;

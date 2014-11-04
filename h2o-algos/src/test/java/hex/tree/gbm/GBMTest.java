@@ -1,6 +1,6 @@
-package hex.gbm;
+package hex.tree.gbm;
 
-import hex.gbm.GBMModel.GBMParameters.Family;
+import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -161,7 +161,7 @@ public class GBMTest extends TestUtil {
       if( idx < 0 ) { parms._toEnum = false; idx = ~idx; }
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
-      parms._requested_ntrees = 4;
+      parms._ntrees = 4;
       parms._loss = family;
       parms._learn_rate = .2f;
 

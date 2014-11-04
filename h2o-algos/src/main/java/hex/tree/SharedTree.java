@@ -1,4 +1,4 @@
-package hex.gbm;
+package hex.tree;
 
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
@@ -16,16 +16,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public SharedTree( String name, P parms) { super(name,parms); }
 
   // Number of trees requested, including prior trees from a checkpoint
-  int _ntrees;
+  protected int _ntrees;
 
   // The in-progress model being built
-  M _model;
+  protected M _model;
 
   // Number of columns in training set, not counting the response column
-  int _ncols;
+  protected int _ncols;
 
   // Initially predicted value (for zero trees)
-  double _initialPrediction;
+  protected double _initialPrediction;
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -40,17 +40,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
       throw new IllegalArgumentException("Too many levels in response column!");
-    if( _parms._requested_ntrees < 0 || _parms._requested_ntrees > 100000 )
-      error("_requested_ntrees", "Requested ntrees must be between 1 and 100000");
-    _ntrees = _parms._requested_ntrees;
+    if( _parms._ntrees < 0 || _parms._ntrees > 100000 )
+      error("_ntrees", "Requested ntrees must be between 1 and 100000");
+    _ntrees = _parms._ntrees;   // Total trees in final model
     if( _parms._checkpoint ) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._destination_key);
       if( cv!=null ) {          // Look for prior model
         M checkpointModel = cv.get();
-        _ntrees = _parms._requested_ntrees + checkpointModel._output._ntrees; // Actual trees is requested plus prior actuals
+        if( _parms._ntrees < checkpointModel._output._ntrees+1 )
+          error("_ntrees", "Requested ntrees must be between "+checkpointModel._output._ntrees+1+" and 100000");
+        _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
-    if (null != _train)
+    if( _train != null )
       _ncols = _train.numCols()-1;
 
     // Initialize response based on given loss function.
@@ -61,7 +63,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
-  abstract class Driver extends H2OCountedCompleter<Driver> {
+  abstract protected class Driver extends H2OCountedCompleter<Driver> {
 
     // Top-level tree-algo driver function
     @Override protected void compute2() {
@@ -157,13 +159,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract M makeModel( Key modelKey, P parms );
-    abstract void buildModel();
+    abstract protected M makeModel( Key modelKey, P parms );
+    abstract protected void buildModel();
     abstract protected VarImp doVarImpCalc(boolean scale);
     // Read the 'tree' columns, do model-specific math and put the results in the
     // fs[] array, and return the sum.  Dividing any fs[] element by the sum
     // turns the results into a probability distribution.
-    protected abstract float score1( Chunk chks[], float fs[/*nclass*/], int row );
+    abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
   }
 
   // --------------------------------------------------------------------------

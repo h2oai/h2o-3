@@ -1,8 +1,8 @@
-package hex.gbm;
+package hex.tree.gbm;
 
-//import hex.schemas.*;
-import hex.schemas.GBMV2;
 import hex.VarImp;
+import hex.schemas.GBMV2;
+import hex.tree.*;
 import water.*;
 import water.fvec.Chunk;
 import water.util.Log;
@@ -20,7 +20,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> trainModel() {
-    return start(new GBMDriver(), _parms._requested_ntrees/*work for progress bar*/);
+    return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -49,7 +49,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
     private transient float[/*nfeatures*/] _improvPerVar;
 
-    @Override void buildModel() {
+    @Override protected void buildModel() {
       // Initialize gbm-specific data structures
       if( _parms._importance ) _improvPerVar = new float[_nclass];
 
@@ -61,7 +61,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Loop over the K trees
-      for( int tid=0; tid<_parms._requested_ntrees; tid++) {
+      for( int tid=0; tid<_parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms._checkpoint ) // do not make initial scoring if model already exist
@@ -169,7 +169,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       throw H2O.unimpl();
     }
 
-    @Override GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
+    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
 

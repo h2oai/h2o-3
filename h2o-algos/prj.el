@@ -4,7 +4,7 @@
  '(jde-run-working-directory "$DESK/h2o-dev/h2o-core")
  '(jde-run-option-classpath (quote ("./build/classes/main" "./build/classes/test" "./../h2o-core/build/classes/main" "./../h2o-core/build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.17.jar")))
  '(jde-compile-option-directory "./build/classes/main")
- '(jde-run-option-application-args (quote ("hex.gbm.GBMTest")))
+ '(jde-run-option-application-args (quote ("hex.tree.gbm.GBMTest")))
  '(jde-lib-directory-names (quote ("./../lib")))
  '(jde-compile-option-source (quote ("1.7")))
  '(jde-compile-option-classpath (quote ("./build/classes/main" "./build/classes/test" "./../h2o-core/build/classes/main" "./../h2o-core/build/classes/test" "./../lib/commons-collections-3.2.1.jar" "./../lib/commons-logging-1.1.3.jar" "./../lib/guava-16.0.1.jar" "./../lib/hadoop-common-2.5.0-cdh5.2.0.jar" "./../lib/hamcrest-core-1.3.jar" "./../lib/javassist-3.18.2-GA.jar" "./../lib/joda-time-2.3.jar" "./../lib/junit-4.11.jar" "./../lib/log4j-1.2.17.jar")))
