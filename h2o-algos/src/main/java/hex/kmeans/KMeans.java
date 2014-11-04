@@ -28,7 +28,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   private int _ncats;
 
   // Number of reinitialization attempts for preventing empty clusters
-  transient private int reinit_attempts;
+  transient private int _reinit_attempts;
 
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(); }
@@ -49,10 +49,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
    *  categorical columns. */
   @Override public void init() {
     super.init();
-    if( _parms._K < 2 || _parms._K > 9999999 ) error("K", "K must be between 2 and 10 million");
-    if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("max_iters", "must be between 1 and a million");
+    if( _parms._K < 2 || _parms._K > 9999999 ) error("_K", "K must be between 2 and 10 million");
+    if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("_max_iters", "must be between 1 and a million");
     if( _train == null ) return; // Nothing more to check
-    if( _train.numRows() < _parms._K ) error("K","Cannot make " + _parms._K + " clusters out of " + _train.numRows() + " rows.");
+    if( _train.numRows() < _parms._K ) error("_K","Cannot make " + _parms._K + " clusters out of " + _train.numRows() + " rows.");
 
     for( Vec v : _train.vecs() )
       if( v.isEnum() ) _ncats++;
@@ -159,10 +159,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
               if (badrow) {
                 Log.warn("KMeans: Re-running Lloyds to re-init another cluster");
                 model._output._iters--; // Do not count against iterations
-                if (reinit_attempts++ < _parms._K) {
+                if (_reinit_attempts++ < _parms._K) {
                   continue LOOP;  // Rerun Lloyds, and assign points to centroids
                 } else {
-                  reinit_attempts = 0;
+                  _reinit_attempts = 0;
                   break; //give up and accept empty cluster
                 }
               }
