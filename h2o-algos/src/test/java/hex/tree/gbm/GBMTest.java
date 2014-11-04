@@ -4,7 +4,6 @@ import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
 

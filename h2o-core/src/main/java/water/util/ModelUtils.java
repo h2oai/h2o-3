@@ -1,19 +1,21 @@
 package water.util;
 
-import water.H2O;
-
 import java.util.*;
 
+import water.H2O;
+
+
+/**
+ * Shared static code to support modeling, prediction, and scoring.
+ *
+ * <p>Used by interpreted models as well as by generated model code.</p>
+ *
+ * <p><strong>WARNING:</strong> The class should have no other H2O dependencies
+ * since it is provided for generated code as h2o-model.jar which contains
+ * only a few files.</p>
+ *
+ */
 public class ModelUtils {
-  public static String[] createConfusionMatrixHeader( long xs[], String ds[] ) {
-    String ss[] = new String[xs.length]; // the same length
-    for( int i=0; i<ds.length; i++ )
-      if( xs[i] >= 0 || (ds[i] != null && ds[i].length() > 0) && !Integer.toString(i).equals(ds[i]) )
-        ss[i] = ds[i];
-    if( ds.length == xs.length-1 && xs[xs.length-1] > 0 )
-      ss[xs.length-1] = "NA";
-    return ss;
-  }
 
   /** List of default thresholds */
   public static float[] DEFAULT_THRESHOLDS = new float [] {  0.00f,
@@ -28,111 +30,6 @@ public class ModelUtils {
     0.81f, 0.82f, 0.83f, 0.84f, 0.85f, 0.86f, 0.87f, 0.88f, 0.89f, 0.90f,
     0.91f, 0.92f, 0.93f, 0.94f, 0.95f, 0.96f, 0.97f, 0.98f, 0.99f, 1.00f
   };
-
-  //public static void printConfusionMatrix(StringBuilder sb, long[][] cm, String[] domain, boolean html) {
-  //  if (cm == null || domain == null) return;
-  //  for (long[] aCm : cm) assert (cm.length == aCm.length);
-  //  if (html) DocGen.HTML.arrayHead(sb);
-  //  // Sum up predicted & actuals
-  //  long acts [] = new long[cm   .length];
-  //  long preds[] = new long[cm[0].length];
-  //  for( int a=0; a<cm.length; a++ ) {
-  //    long sum=0;
-  //    for( int p=0; p<cm[a].length; p++ ) {
-  //      sum += cm[a][p];
-  //      preds[p] += cm[a][p];
-  //    }
-  //    acts[a] = sum;
-  //  }
-  //  String adomain[] = createConfusionMatrixHeader(acts , domain);
-  //  String pdomain[] = createConfusionMatrixHeader(preds, domain);
-  //  assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
-  //
-  //  String fmt = "";
-  //  String fmtS = "";
-  //
-  //  // Header
-  //  if (html) {
-  //    sb.append("<tr class='warning' style='min-width:60px'>");
-  //    sb.append("<th>&darr; Actual / Predicted &rarr;</th>");
-  //    for (String aPdomain : pdomain)
-  //      if (aPdomain != null)
-  //        sb.append("<th style='min-width:60px'>").append(aPdomain).append("</th>");
-  //    sb.append("<th>Error</th>");
-  //    sb.append("</tr>");
-  //  } else {
-  //    // determine max length of each space-padded field
-  //    int maxlen = 0;
-  //    for( String s : pdomain ) if( s != null ) maxlen = Math.max(maxlen, s.length());
-  //    long lsum = 0;
-  //    for( int a=0; a<cm.length; a++ ) {
-  //      if( adomain[a] == null ) continue;
-  //      for( int p=0; p<pdomain.length; p++ ) { if( pdomain[p] == null ) continue; lsum += cm[a][p]; }
-  //    }
-  //    maxlen = Math.max(8, Math.max(maxlen, String.valueOf(lsum).length()) + 2);
-  //    fmt  = "%" + maxlen + "d";
-  //    fmtS = "%" + maxlen + "s";
-  //    sb.append(String.format(fmtS, "Act/Prd"));
-  //    for( String s : pdomain ) if( s != null ) sb.append(String.format(fmtS, s));
-  //    sb.append("   " + String.format(fmtS, "Error\n"));
-  //  }
-  //
-  //  // Main CM Body
-  //  long terr=0;
-  //  for( int a=0; a<cm.length; a++ ) {
-  //    if( adomain[a] == null ) continue;
-  //    if (html) {
-  //      sb.append("<tr style='min-width:60px'>");
-  //      sb.append("<th style='min-width:60px'>").append(adomain[a]).append("</th>");
-  //    } else {
-  //      sb.append(String.format(fmtS,adomain[a]));
-  //    }
-  //    long correct=0;
-  //    for( int p=0; p<pdomain.length; p++ ) {
-  //      if( pdomain[p] == null ) continue;
-  //      boolean onDiag = adomain[a].equals(pdomain[p]);
-  //      if( onDiag ) correct = cm[a][p];
-  //      String id = "";
-  //      if (html) {
-  //        sb.append(onDiag ? "<td style='min-width: 60px; background-color:LightGreen' "+id+">":"<td style='min-width: 60px;'"+id+">").append(String.format("%,d", cm[a][p])).append("</td>");
-  //      } else {
-  //        sb.append(String.format(fmt,cm[a][p]));
-  //      }
-  //    }
-  //    long err = acts[a]-correct;
-  //    terr += err;
-  //    if (html) {
-  //      sb.append(String.format("<th  style='min-width: 60px;'>%.05f = %,d / %,d</th></tr>", (double)err/acts[a], err, acts[a]));
-  //    } else {
-  //      sb.append("   " + String.format("%.05f = %,d / %d\n", (double)err/acts[a], err, acts[a]));
-  //    }
-  //  }
-  //
-  //  // Last row of CM
-  //  if (html) {
-  //    sb.append("<tr style='min-width:60px'><th>Totals</th>");
-  //  } else {
-  //    sb.append(String.format(fmtS, "Totals"));
-  //  }
-  //  for( int p=0; p<pdomain.length; p++ ) {
-  //    if( pdomain[p] == null ) continue;
-  //    if (html) {
-  //      sb.append("<td style='min-width:60px'>").append(String.format("%,d", preds[p])).append("</td>");
-  //    } else {
-  //      sb.append(String.format(fmt, preds[p]));
-  //    }
-  //  }
-  //  long nrows = 0;
-  //  for (long n : acts) nrows += n;
-  //
-  //  if (html) {
-  //    sb.append(String.format("<th style='min-width:60px'>%.05f = %,d / %,d</th></tr>", (float)terr/nrows, terr, nrows));
-  //    DocGen.HTML.arrayTail(sb);
-  //  } else {
-  //    sb.append("   " + String.format("%.05f = %,d / %,d\n", (float)terr/nrows, terr, nrows));
-  //  }
-  //}
-
 
   /**
    * Create labels from per-class probabilities with pseudo-random tie-breaking, if needed.
@@ -156,7 +53,7 @@ public class ModelUtils {
     for (int i = 1; i < preds.length; ++i) {
       final Float prob = preds[i];
       final int label = i-1;
-      assert(prob >= 0 && prob <= 1);
+      assert(prob >= 0 && prob <= 1) : "prob is not inside [0,1]: " + prob;
       if (prob_idx.containsKey(prob)) {
         prob_idx.get(prob).add(label); //add all ties
       } else {
@@ -164,7 +61,7 @@ public class ModelUtils {
         // 1) don't have K probs yet
         // 2) prob is greater than the smallest prob in the store -> evict the smallest
         if (prob_idx.size() < numK || prob > prob_idx.lastKey()) {
-          List<Integer> li = new LinkedList<>();
+          LinkedList<Integer> li = new LinkedList<>();
           li.add(label);
           prob_idx.put(prob, li);
         }
@@ -250,5 +147,65 @@ public class ModelUtils {
       if( res == preds[best] && --idx < 0 )
         return best-1;          // Return best
     throw H2O.fail();           // Should Not Reach Here
+  }
+
+  /**
+   * Correct a given list of class probabilities produced as a prediction by a model back to prior class distribution
+   *
+   * <p>The implementation is based on Eq. (27) in  <a href="http://gking.harvard.edu/files/0s.pdf">the paper</a>.
+   *
+   * @param scored list of class probabilities beginning at index 1
+   * @param priorClassDist original class distribution
+   * @param modelClassDist class distribution used for model building (e.g., data was oversampled)
+   * @return corrected list of probabilities
+   */
+  public static float[] correctProbabilities(float[] scored, float[] priorClassDist, float[] modelClassDist) {
+    double probsum=0;
+    for( int c=1; c<scored.length; c++ ) {
+      final double original_fraction = priorClassDist[c-1];
+      final double oversampled_fraction = modelClassDist[c-1];
+      assert(!Double.isNaN(scored[c]));
+      if (original_fraction != 0 && oversampled_fraction != 0) scored[c] *= original_fraction / oversampled_fraction;
+      probsum += scored[c];
+    }
+    if (probsum>0) for (int i=1;i<scored.length;++i) scored[i] /= probsum;
+    return scored;
+  }
+
+
+  /**
+   * Sample out-of-bag rows with given rate with help of given sampler.
+   * It returns array of sampled rows. The first element of array contains a number
+   * of sampled rows. The returned array can be larger than number of returned sampled
+   * elements.
+   *
+   * @param nrows number of rows to sample from.
+   * @param rate sampling rate
+   * @param sampler random "dice"
+   * @return an array contains numbers of sampled rows. The first element holds a number of sampled rows. The array length
+   * can be greater than number of sampled rows.
+   */
+  public static int[] sampleOOBRows(int nrows, float rate, Random sampler) {
+    return sampleOOBRows(nrows, rate, sampler, new int[2+Math.round((1f-rate)*nrows*1.2f+0.5f)]);
+  }
+  /**
+   * In-situ version of {@link #sampleOOBRows(int, float, Random)}.
+   *
+   * @param oob an initial array to hold sampled rows. Can be internally reallocated.
+   * @return an array containing sampled rows.
+   *
+   * @see #sampleOOBRows(int, float, Random)
+   */
+  public static int[] sampleOOBRows(int nrows, float rate, Random sampler, int[] oob) {
+    int oobcnt = 0; // Number of oob rows
+    Arrays.fill(oob, 0);
+    for(int row = 0; row < nrows; row++) {
+      if (sampler.nextFloat() >= rate) { // it is out-of-bag row
+        oob[1+oobcnt++] = row;
+        if (1+oobcnt>=oob.length) oob = Arrays.copyOf(oob, Math.round(1.2f*nrows+0.5f)+2);
+      }
+    }
+    oob[0] = oobcnt;
+    return oob;
   }
 }
