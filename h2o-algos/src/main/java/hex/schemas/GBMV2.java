@@ -25,8 +25,17 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
         "seed"}; }
 
     // Input fields
-    @API(help="Number of trees. Grid Search, comma sep values:50,100,150,200")
+    @API(help="Number of trees.  Grid Search, comma sep values:50,100,150,200")
     public int ntrees;
+
+    @API(help="Maximum tree depth.  Grid Search, comma sep values:5,7")
+    public int max_depth;
+
+    @API(help="Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values")
+    public int min_rows;
+
+    @API(help="Build a histogram of this many bins, then split at the best point")
+    public int nbins;
 
     @API(help="Learning rate from 0.0 to 1.0")
     public float learn_rate;
