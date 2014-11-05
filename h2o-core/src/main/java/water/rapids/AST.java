@@ -1,4 +1,4 @@
-package water.cascade;
+package water.rapids;
 
 import water.*;
 import water.fvec.*;

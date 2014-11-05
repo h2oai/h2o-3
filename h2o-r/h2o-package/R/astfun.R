@@ -1,12 +1,12 @@
 #'
-#' Transmogrify A User Defined Function Into A Cascade AST
+#' Transmogrify A User Defined Function Into A Rapids AST
 #'
 #' A function has three parts:
 #'  1. A name
 #'  2. Arguments
 #'  3. A body
 #'
-#' If it has been deteremined that a function is user-defined, then it must become a Cascade AST.
+#' If it has been deteremined that a function is user-defined, then it must become a Rapids AST.
 #'
 #' The overall strategy for collecting up a function is to avoid densely packed recursive calls, each attempting to handle
 #' the various corner cases.
@@ -356,7 +356,7 @@ function(b, is.single = FALSE) {
 }
 
 #'
-#' Transmogrify A User Defined Function Into A Cascade AST
+#' Transmogrify A User Defined Function Into A Rapids AST
 #'
 #' A function has three parts:
 #'  1. A name

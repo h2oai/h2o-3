@@ -1,4 +1,4 @@
-package water.cascade;
+package water.rapids;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -7,7 +7,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 
-public class CascadeTest extends TestUtil {
+public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void test1() {
