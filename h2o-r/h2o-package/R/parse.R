@@ -22,7 +22,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   parseSetup <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE_SETUP, srcs = srcs)
   col.names <- parseSetup$columnNames
   ncols <- parseSetup$ncols
-  parseSetup$hex <- ifelse(key != "", key %<p0-% ".hex", parseSetup$hexName)
+  parseSetup$hex <- ifelse(key != "", key %p0% ".hex", parseSetup$hexName)
   parseSetup$srcs <- srcs
   parseSetup$columnNames <- .collapse(parseSetup$columnNames)
 
@@ -61,17 +61,13 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 .collapse<-
 function(v) {
   v <- paste(v, collapse=",", sep =" ")
-  v <- '['%<p0-% v %<p0-%']'
+  v <- '[' %p0% v %p0% ']'
   v
 }
 
 #Inspect.json?key
 
 .h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, 'Inspect.json?key=' %p0% key)$schema$rows }
-
-#'
-#' Inspect /3/Frames for nrows.
-#.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, '3/Frames.json/' %<p0-% key)$frames[[1]]$rows }
 
 #'
 #' Load H2O Model from HDFS or Local Disk

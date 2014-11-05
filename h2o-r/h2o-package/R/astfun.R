@@ -224,7 +224,7 @@ function(stmnt) {
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   # this `if` is just to make us all feel good... it doesn't do any interesting checking
   if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
-    ast <- '$' %<p0-% deparse(stmnt_list[[1]])
+    ast <- '$' %p0% deparse(stmnt_list[[1]])
     return(ast)
   }
   stop(paste( "Don't know what to do with statement: ", stmnt))
@@ -239,14 +239,14 @@ function(stmnt) {
     if(length(i) > 1) stop("[[]] may only select one column")
     if (!is.numeric(i)) stop("column selection within a function call must be numeric")
     op <- new("ASTApply", op='[')
-    x <- '$' %<p0-% deparse(stmnt_list[[2]])
+    x <- '$' %p0% deparse(stmnt_list[[2]])
     rows <- deparse("null")
     cols <- .eval(substitute(i), parent.frame())
     return(new("ASTNode", root=op, children=list(x, rows, cols)))
   }
   j <- stmnt_list[[4]]  # columns
   op <- new("ASTApply", op='[')
-  x <- '$' %<p0-% deparse(stmnt_list[[2]])
+  x <- '$' %p0% deparse(stmnt_list[[2]])
   rows <- if( missing(i)) deparse("null") else { if ( i %i% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
@@ -287,7 +287,7 @@ function(stmnt) {
   if (s %i% "ASTNode") lhs <- s
   else {
     x <- deparse(stmnt[[2]])
-    lhs <- '!' %<p0-% x
+    lhs <- '!' %p0% x
   }
   y <- .statement.to.ast.switchboard(stmnt_list[[3]])
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))

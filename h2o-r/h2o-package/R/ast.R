@@ -27,7 +27,7 @@ function(node) {
     res %p0% ')'
     list( ast = res)
 
-  } else if (node %<i-% "ASTSeries") {
+  } else if (node %i% "ASTSeries") {
     res %p% node@op
     children <- unlist(lapply(node@children, visitor))
     children <- paste(children, collapse=";",sep="")

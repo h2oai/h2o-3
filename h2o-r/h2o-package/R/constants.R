@@ -36,8 +36,8 @@
 "%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
 "%<-%"   <- function(x,y) {
-  if ( x %<i-% "H2OParsedData" ) x <- x@key
-  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
+  if ( x %i% "H2OParsedData" ) x <- x@key
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %p0% x, right = y)) # assignment node
 }
 
 .uniq.id <- function(prefix = "") {

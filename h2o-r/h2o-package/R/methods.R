@@ -109,7 +109,6 @@ h2o.rm <- function(object, keys) {
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
 }
 
-
 #'
 #' Rename an H2O object.
 #'
@@ -134,7 +133,7 @@ h2o.getFrame <- function(h2o, key) {
     key <- h2o
     h2o <- .retrieveH2O(parent.frame())
   }
-  ast <- new("ASTNode", root = new("ASTApply", op = '$' %<p0-% key))
+  ast <- new("ASTNode", root = new("ASTApply", op = '$' %p0% key))
   ID <- key
   .force.eval(h2o, ast, ID = ID, rID = 'ast')
   ast
@@ -358,16 +357,16 @@ h2o.anyFactor <- function(x) {
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
-  if (!missing(i) && (i %<i-% "ASTNode")) i <- eval(i)
+  if (!missing(i) && (i %i% "ASTNode")) i <- eval(i)
   if (!missing(j) && is.character(j)) {
     col_names <- colnames(x)  # this is a bit expensive since we have to force the eval on x
     if (! any(j %in% col_names)) stop("Undefined column names specified")
     j <- match(j, col_names)
   }
-  if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+  if (x %i% "H2OParsedData") x <- '$' %p0% x@key
 
   op <- new("ASTApply", op='[')
-  rows <- if(missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
+  rows <- if(missing(i)) deparse("null") else { if ( i %i% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
 })
@@ -401,15 +400,15 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   }
 
   if (missing(i) && missing(j)) {
-    if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+    if (x %i% "H2OParsedData") x <- '$' %p0% x@key
     lhs <- x
   } else if (missing(i)) lhs <- do.call("[", list(x=x, j=j))
     else if (missing(j)) lhs <- do.call("[", list(x=x, i=i))
     else lhs <- do.call("[", list(x=x, i=i, j=j))
 
-  if (value %<i-% "ASTNode") rhs <- eval(value)
-  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key
-  else if(value %<i-% "H2OFrame") rhs <- value
+  if (value %i% "ASTNode") rhs <- eval(value)
+  else if(value %i% "H2OParsedData") rhs <- '$' %p0% value@key
+  else if(value %i% "H2OFrame") rhs <- value
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
@@ -429,9 +428,9 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   else idx <- match(name, col_names)                                # re-assign existing column
   lhs <- do.call("[", list(x=x, j=idx))                             # create the lhs ast
 
-  if (value %<i-% "ASTNode") rhs <- eval(value)                     # rhs is already ast, eval it
-  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key  # swap out object for keyname
-  else if(value %<i-% "H2OFrame") rhs <- value                      # rhs is some H2OFrame object
+  if (value %i% "ASTNode") rhs <- eval(value)                     # rhs is already ast, eval it
+  else if(value %i% "H2OParsedData") rhs <- '$' %p0% value@key  # swap out object for keyname
+  else if(value %i% "H2OFrame") rhs <- value                      # rhs is some H2OFrame object
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
 
@@ -443,7 +442,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 })
 
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
-  if( !( value %<i-% "H2OFrame")) stop('Can only append H2O data to H2O data')
+  if( !( value %i% "H2OFrame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
 

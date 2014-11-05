@@ -16,10 +16,10 @@
 function(op, x) {
   if (!is.null(.op.map[[op]])) op <- .op.map[[op]]
   op <- new("ASTApply", op = op)
-  if (x %<i-% "ASTNode") x <- x
-  if (x %<i-% "numeric") x <- '#' %<p0-% x
-  if (x %<i-% "character") x <- deparse(eval(x))
-  if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+  if (x %i% "ASTNode") x <- x
+  if (x %i% "numeric") x <- '#' %p0% x
+  if (x %i% "character") x <- deparse(eval(x))
+  if (x %i% "H2OParsedData") x <- '$' %p0% x@key
   new("ASTNode", root=op, children=list(x))
 }
 
@@ -34,17 +34,17 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[[op]])
 
   # Prep the LHS
-  if (e1 %<i-% "ASTNode")       lhs <- e1
-  if (e1 %<i-% "numeric")       lhs <- '#' %<p0-% e1
-  if (e1 %<i-% "character")     lhs <- deparse(eval(e1))
-  if (e1 %<i-% "H2OParsedData") lhs <- '$' %<p0-% e1@key
+  if (e1 %i% "ASTNode")       lhs <- e1
+  if (e1 %i% "numeric")       lhs <- '#' %p0% e1
+  if (e1 %i% "character")     lhs <- deparse(eval(e1))
+  if (e1 %i% "H2OParsedData") lhs <- '$' %p0% e1@key
   # TODO: e1 inherits ASTFun ?
 
   # Prep the RHS
-  if (e2 %<i-% "ASTNode")       rhs <- e2
-  if (e2 %<i-% "numeric")       rhs <- '#' %<p0-% e2
-  if (e2 %<i-% "character")     rhs <- deparse(eval(e2))
-  if (e2 %<i-% "H2OParsedData") rhs <- '$' %<p0-% e2@key
+  if (e2 %i% "ASTNode")       rhs <- e2
+  if (e2 %i% "numeric")       rhs <- '#' %p0% e2
+  if (e2 %i% "character")     rhs <- deparse(eval(e2))
+  if (e2 %i% "H2OParsedData") rhs <- '$' %p0% e2@key
   # TODO: e2 inherits ASTFun ?
 
   # Return an ASTNode

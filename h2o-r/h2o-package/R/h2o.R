@@ -216,7 +216,7 @@ h2o.clusterInfo <- function(client) {
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
-  page <- 'Jobs.json/' %<p0-% keyName
+  page <- 'Jobs.json/' %p0% keyName
   res <- .h2o.__remoteSend(client, page)
 
   res <- res$jobs

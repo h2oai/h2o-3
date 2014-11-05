@@ -559,11 +559,11 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
 
-.isH2O <- function(x) { x %<i-% "H2OFrame" || x %<i-% "H2OClient" || x %<i-% "H2ORawData" }
+.isH2O <- function(x) { x %i% "H2OFrame" || x %i% "H2OClient" || x %i% "H2ORawData" }
 .retrieveH2O<-
 function(env) {
-  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %<i-% "H2OClient"))
-  e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) %<i-% "H2OClient"))
+  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "H2OClient"))
+  e_list <- unlist(lapply(ls(env), function(x) get(x, envir=env) %i% "H2OClient"))
   if (any(g_list)) {
     if (sum(g_list) > 1) {
       x <- g_list[1]
