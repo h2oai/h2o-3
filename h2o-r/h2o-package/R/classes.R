@@ -108,7 +108,7 @@ setMethod("show", "H2OParsedData", function(object) {
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
 #' the data used to build the model (an object of class H2OParsedData).
-setClass("H2OModel", representation(key="character", data="H2OParsedData", model="list", "VIRTUAL"))
+setClass("H2OModel", representation(h2o="H2OClient", key="character", data="H2OParsedData", model="list", "VIRTUAL"))
 
 # No show method for this type of object.
 
@@ -223,33 +223,33 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
   cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Deep Learning Model Key:", object@key)
 
-  model = object@model
-  cat("\n\nTraining classification error:", model$train_class_error)
-  cat("\nTraining mean square error:", model$train_sqr_error)
-  cat("\n\nValidation classification error:", model$valid_class_error)
-  cat("\nValidation square error:", model$valid_sqr_error)
-
-  if(!is.null(model$confusion)) {
-    cat("\n\nConfusion matrix:\n")
-    if(is.na(object@valid@key)) {
-      if(model$params$nfolds == 0)
-        cat("Reported on", object@data@key, "\n")
-      else
-        cat("Reported on", paste(model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
-    } else
-      cat("Reported on", object@valid@key, "\n")
-    print(model$confusion)
-  }
-
-  if(!is.null(model$hit_ratios)) {
-    cat("\nHit Ratios for Multi-class Classification:\n")
-    print(model$hit_ratios)
-  }
-
-  if(!is.null(object@xval) && length(object@xval) > 0) {
-    cat("\nCross-Validation Models:\n")
-    temp = lapply(object@xval, function(x) { cat(" ", x@key, "\n") })
-  }
+#  model = object@model
+#  cat("\n\nTraining classification error:", model$train_class_error)
+#  cat("\nTraining mean square error:", model$train_sqr_error)
+#  cat("\n\nValidation classification error:", model$valid_class_error)
+#  cat("\nValidation square error:", model$valid_sqr_error)
+#
+#  if(!is.null(model$confusion)) {
+#    cat("\n\nConfusion matrix:\n")
+#    if(is.na(object@valid@key)) {
+#      if(model$params$nfolds == 0)
+#        cat("Reported on", object@data@key, "\n")
+#      else
+#        cat("Reported on", paste(model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+#    } else
+#      cat("Reported on", object@valid@key, "\n")
+#    print(model$confusion)
+#  }
+#
+#  if(!is.null(model$hit_ratios)) {
+#    cat("\nHit Ratios for Multi-class Classification:\n")
+#    print(model$hit_ratios)
+#  }
+#
+#  if(!is.null(object@xval) && length(object@xval) > 0) {
+#    cat("\nCross-Validation Models:\n")
+#    temp = lapply(object@xval, function(x) { cat(" ", x@key, "\n") })
+#  }
   cat("\n")
 })
 

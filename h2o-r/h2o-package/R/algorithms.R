@@ -226,7 +226,7 @@ h2o.deeplearning <- function(x, y, data, key = "",
   .h2o.__waitOnJob(data@h2o, job_key)
   res_model <- list()
   res_model$params <- model_params
-  new("H2ODeepLearningModel", key = dest_key, data = data, model = res_model, valid = new("H2OParsedData", h2o=data@h2o, key="NA"), xval = list())
+  new("H2ODeepLearningModel", h2o = data@h2o, key = dest_key, data = data, model = res_model, valid = new("H2OParsedData", h2o=data@h2o, key="NA"), xval = list())
 
 #  if(noGrid)
 #    .h2o.singlerun.internal("DeepLearning", data, res, nfolds, validation, parms)
@@ -382,6 +382,8 @@ h2o.deeplearning <- function(x, y, data, key = "",
 
   x_ignore <- setdiff(setdiff( cc, x ), y)
   if( length(x_ignore) == 0 ) x_ignore <- ''
+  if (is.character(x)) x <- .collapse(x)
+  if (is.character(x_ignore)) x_ignore <- .collapse(x_ignore)
   list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i)
 }
 

@@ -4,8 +4,8 @@ Type: Package
 Title: H2O R Interface
 Date: 2013-09-13
 Branch: SUBST_PROJECT_BRANCH
-Author: Anqi Fu, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
-Maintainer: Anqi Fu <anqi@0xdata.com>
+Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
+Maintainer: Spencer Aiello <spencer@0xdata.com>
 Description: This is a package for running H2O via its REST API from within R.
 License: Apache License (== 2.0)
 URL: http://www.0xdata.com
@@ -35,3 +35,4 @@ Collate:
          'edicts.R'
          'models.R'
          'algorithms.R'
+         'predict.R'

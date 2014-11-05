@@ -40,6 +40,20 @@
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
 }
 
+.uniq.id <- function(prefix = "") {
+  hex_digits <- c(as.character(0:9), letters[1:6])
+  y_digits <- hex_digits[9:12]
+  tempA <- paste(sample(hex_digits, 8, replace=TRUE), collapse='')
+  tempB <- paste(sample(hex_digits, 4, replace=TRUE), collapse='')
+  tempC <- '4'
+  tempD <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
+  tempE <- paste(sample(y_digits,1), collapse='')
+  tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
+  tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
+  temp <- tempA %p0% tempB %p0% tempC %p0% tempD %p0% tempE %p0% tempF %p0% tempG
+  prefix %p0% '_' %p0% temp
+}
+
 #'
 #' Map of binary operators to their "AST" operator value.
 #'
@@ -178,6 +192,14 @@
 .h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
 .h2o.__DEEPLEARNING_PARAMS <- "DeepLearning.json"
 
+#'
+#' Algorithm Parameter Endpoints
+#'
+
+#'
+#' Model Predict Endpoint
+#'
+.h2o.__PREDICT <- "3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"
 #'
 #' Cascade/Exec3
 #'
