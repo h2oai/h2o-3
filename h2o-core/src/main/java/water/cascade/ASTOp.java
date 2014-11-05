@@ -447,12 +447,12 @@ class ASTLength extends ASTUniPrefixOp {
 class ASTIsFactor extends ASTUniPrefixOp {
   ASTIsFactor() { super(VARS1); }
   @Override String opStr() { return "is.factor"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTIsFactor();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
-    String res = "TRUE";
+    String res = "FALSE";
     if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
-    if (fr.anyVec().isEnum()) res = "FALSE";
+    if (fr.anyVec().isEnum()) res = "TRUE";
     env.cleanup(fr);
     env.push(new ValStr(res));
   }

@@ -87,7 +87,11 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if (!is.null(res$exception)) stop(res$exception, call.=FALSE)
   ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$Last.value))
   if (!is.null(rID)) ID <- rID
-  if (!is.null(res$string)) ret <- res$string
+  if (!is.null(res$string)) {
+    ret <- res$string
+    if (ret == "TRUE") ret = TRUE
+    if (ret == "FALSE") ret = FALSE
+  }
   else if (res$result == "") {
     ret <- .h2o.parsedData(client, res$key$name, res$num_rows, res$num_cols, res$col_names)
   } else {

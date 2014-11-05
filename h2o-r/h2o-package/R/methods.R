@@ -338,11 +338,14 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 #  .h2o.varop("runif", x, min, max, seed)
 #}
 
-#h2o.anyFactor<-
-#function(x) {
-#  if(!(x %<i-% "H2OParsedData")) stop("x must be an H2O parsed data object")
-#  .force.eval
-#}
+#'
+#' Is any column of the H2OParsedData object a enum column
+#'
+#' Returns Boolean.
+h2o.anyFactor <- function(x) {
+  if(!(x %i% "H2OFrame")) stop("x must be an H2O parsed data object")
+  .h2o.unop("any.factor", x)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -657,9 +660,12 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #  res$levels[[1]]
 #})
 
-
-setMethod("is.factor", "H2OFrame", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
-setMethod("is.factor", "H2OParsedData", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
+#'
+#' Is H2O Data Frame column a enum
+#'
+#' Returns Boolean.
+setMethod("is.factor", "H2OFrame", function(x) {.h2o.unop("is.factor", x) })
+setMethod("is.factor", "H2OParsedData", function(x) { .h2o.unop("is.factor", x) })
 
 #quantile.H2OFrame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
 #  if((numCols = ncol(x)) != 1) stop("quantile only operates on a single column")
