@@ -12,7 +12,8 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   /**
-   *  Cascade: A process in which information is successively passed on.
+   *  Rapids:
+   *    A process in which information is successively passed on.
    */
   protected static final class Rapids extends Iced {
     // Inputs
