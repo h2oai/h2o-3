@@ -67,7 +67,7 @@ function(v) {
 
 #Inspect.json?key
 
-.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, 'Inspect.json?key=' %<p0-% key)$schema$rows }
+.h2o.fetchNRows <- function(h2o, key) { .h2o.__remoteSend(h2o, 'Inspect.json?key=' %p0% key)$schema$rows }
 
 #'
 #' Inspect /3/Frames for nrows.

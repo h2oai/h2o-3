@@ -198,10 +198,9 @@ h2o.clusterInfo <- function(client) {
     tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog$prog) },
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
              finally = setTxtProgressBar(pb, 1.0))
-    prog <- .h2o.__poll(client, job_key)
-    if (prog != 1 || !prog$DONE) {
-      threeSeconds <- 3
-      Sys.sleep(threeSeconds)
+    if (!prog$DONE) {
+      tryCatch(while(!(prog <- .h2o.__poll(client, job_key))$DONE) { Sys.sleep(pollInterval/2) },
+               error = function(e) { cat("\nPolling fails:\n"); print(e) })
     }
     close(pb)
   } else
@@ -210,7 +209,7 @@ h2o.clusterInfo <- function(client) {
 }
 
 #'
-#' Return the progress so far.
+#' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
   if(missing(client)) stop("client is missing!")
   if(class(client) != "H2OClient") stop("client must be a H2OClient object")
@@ -231,7 +230,6 @@ h2o.clusterInfo <- function(client) {
   if(is.null(jobRes)) stop("Job key ", keyName, " not found in job queue")
   if(!is.null(jobRes$status) && jobRes$status == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
   else if(!is.null(jobRes$exception) && jobRes$exception == 1) stop(jobRes$status)
-#  if (jobRes$progress < 0 && (jobRes$end_time == "" || is.null(prog$end_time))) return(abs(prog$progress)/100)
   prog$prog <- jobRes$progress
   if (jobRes$status == "DONE") prog$DONE <- TRUE
   prog
