@@ -62,7 +62,7 @@
 
     # POST
     } else {
-      temp <- postForm(myURL, .params = list(...),  style = "POST")
+      temp <- postForm(myURL, .params = .params,  style = "POST")
     }
 
     # post-processing
@@ -82,17 +82,14 @@
 # client -- Connection object returned from h2o.init().
 # page   -- URL to access within the H2O server.
 # parms  -- List of parameters to send to the server.
-.h2o.__remoteSendWithParms <- function(client, page, parms) {
-  cmd = ".h2o.__remoteSend(client, page"
+.h2o.__remoteSendWithParms <- function(client, page, method = "GET", parms) {
+  cmd = ".h2o.__remoteSend(client, page, method =" %p% deparse(method)
 
   for (i in 1:length(parms)) {
     thisparmname = names(parms)[i]
     cmd = sprintf("%s, %s=parms$%s", cmd, thisparmname, thisparmname)
   }
-
   cmd = sprintf("%s)", cmd)
-  #cat(sprintf("TOM: cmd is %s\n", cmd))
-
   rv = eval(parse(text=cmd))
   return(rv)
 }
@@ -201,9 +198,12 @@ h2o.clusterInfo <- function(client) {
     tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog$prog) },
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
              finally = setTxtProgressBar(pb, 1.0))
+    prog <- .h2o.__poll(client, job_key)
+    if (prog != 1 || !prog$DONE) {
+      threeSeconds <- 3
+      Sys.sleep(threeSeconds)
+    }
     close(pb)
-    threeSeconds <- 3
-    Sys.sleep(threeSeconds)
   } else
     tryCatch(while(prog<- .h2o.__poll(client, job_key) != -1 && !prog$DONE) { Sys.sleep(pollInterval) },
              finally = .h2o.__cancelJob(client, job_key))

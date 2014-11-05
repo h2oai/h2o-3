@@ -174,8 +174,9 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__KMEANS       <- "v2/Kmeans.json"
-.h2o.__DEEPLEARNING <- "DeepLearning.json"
+.h2o.__KMEANS_PARAMS       <- "2/Kmeans.json"
+.h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
+.h2o.__DEEPLEARNING_PARAMS <- "DeepLearning.json"
 
 #'
 #' Cascade/Exec3
