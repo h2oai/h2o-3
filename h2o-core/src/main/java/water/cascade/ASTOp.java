@@ -55,7 +55,6 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
     SYMBOLS.put("_", new ASTNot());
-    SYMBOLS.put("elif", new ASTElseIf());
     SYMBOLS.put("if", new ASTIf());
     SYMBOLS.put("else", new ASTElse());
     SYMBOLS.put("for", new ASTFor());
@@ -1227,13 +1226,13 @@ class ASTAND extends ASTBinOp {
 }
 
 class ASTRename extends ASTUniPrefixOp {
-  String _newname;
+  protected String _newname;
   @Override String opStr() { return "rename"; }
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
   ASTRename parse_impl(Exec E) {
     AST ary = E.parse();
-    _newname = E.skipWS().parseID();
+    _newname = ((ASTString)E.skipWS().parse())._s;
     ASTRename res = (ASTRename) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -1241,8 +1240,14 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.pop0Ary();
-    fr = new Frame(Key.make(_newname), fr.names(), fr.vecs());
-    e.push0(new ValFrame(fr));
+    Futures fs = new Futures();
+    Frame ff = DKV.remove(fr._key, fs).get();
+    fs.blockForPending();
+    Frame fr2 = new Frame(Key.make(_newname), ff.names(), ff.vecs());
+    Futures fs2 = new Futures();
+    DKV.put(Key.make(_newname), fr2, fs2);
+    fs2.blockForPending();
+    e.push0(new ValFrame(fr2));  // the vecs have not changed and their refcnts remain the same
   }
 }
 

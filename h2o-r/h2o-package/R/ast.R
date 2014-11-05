@@ -7,7 +7,7 @@
 #'
 #' The AST visitor method.
 #'
-#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON call.
+#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON
 #'
 #' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'
@@ -176,6 +176,7 @@ function(a, name=NULL) {
   } else if (inherits(a, "ASTNode")) {
     a
   } else if (class(a) == "function") {
+
     ret <- .funToAST(a)
     .pkg.env$formals <- names(formals(a))
     ret
@@ -224,6 +225,8 @@ function(...) {
     arg_ts$fun_args <- "ASTSymbolTable"
     names(arg_ts) <- NULL
     arg_types <- arg_ts
+    print(arg_names)
+    stop("elllo")
   } else {
 #    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
     arg_types  <- lapply(list(...), .eval_class)

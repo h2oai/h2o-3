@@ -250,6 +250,7 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
     cat("\nCross-Validation Models:\n")
     temp = lapply(object@xval, function(x) { cat(" ", x@key, "\n") })
   }
+  cat("\n")
 })
 
 #'

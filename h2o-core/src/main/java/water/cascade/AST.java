@@ -395,11 +395,6 @@ class ASTElse extends ASTStatement {
   @Override int type() { return 0; }
 }
 
-class ASTElseIf extends ASTIf {
-  // (elif pred body)
-  ASTElseIf(){}
-}
-
 class ASTFor extends ASTStatement {
   protected int _start;
   protected int _end;

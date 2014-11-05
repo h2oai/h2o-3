@@ -38,7 +38,7 @@ import water.H2O;
  * This means `nargs` arguments are always parsed.
  */
 public class ASTFunc extends ASTFuncDef {
-  ASTFunc() { super(); }
+  public ASTFunc() { super(); }
   AST[] _args;
 
   // (name args)
@@ -69,15 +69,22 @@ public class ASTFunc extends ASTFuncDef {
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
   }
-}
 
+  // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
+  void exec(Env e, AST arg1, AST[] args) {
+    _args = new AST[1 + args.length];
+    _args[0] = arg1;
+    System.arraycopy(args, 0, _args, 1, args.length);
+    apply(e);
+  }
+}
 
 class ASTFuncDef extends ASTOp {
   protected static String _name;
   protected static String[] _arg_names;
   protected static Env.SymbolTable _table;
   protected ASTStatement _body;
-  ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
+  public ASTFuncDef() { super(null); }   // super(null) => _vars[] = null
 
   void parse_func(Exec E) {
     String name = E.parseID();
