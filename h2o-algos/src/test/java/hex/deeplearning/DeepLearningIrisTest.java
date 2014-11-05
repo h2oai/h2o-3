@@ -9,7 +9,6 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.RandomUtils;
 

@@ -182,6 +182,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return data;
   }
 
+  // Builder-specific decision node
+  abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
+
   /** Which rows are in-bag vs out-of-bag for sampling */
   abstract protected boolean outOfBagRow(Chunk[] chks, int row);
 

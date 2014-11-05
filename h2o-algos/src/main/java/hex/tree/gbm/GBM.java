@@ -3,6 +3,9 @@ package hex.tree.gbm;
 import hex.VarImp;
 import hex.schemas.GBMV2;
 import hex.tree.*;
+import hex.tree.DTree.DecidedNode;
+import hex.tree.DTree.LeafNode;
+import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.fvec.Chunk;
 import water.util.Log;
@@ -165,6 +168,126 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // the prior trees.  From LSE2, page 387.  Step 2b ii, iii.
     private void buildNextKTrees() {
 
+      // We're going to build K (nclass) trees - each focused on correcting
+      // errors for a single class.
+      final DTree[] ktrees = new DTree[_nclass];
+      
+      // Initial set of histograms.  All trees; one leaf per tree (the root
+      // leaf); all columns
+      DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
+
+      // Adjust nbins for the top-levels
+      final int top_level_extra_bins = 1<<10;
+      int nbins = Math.max(top_level_extra_bins,_parms._nbins);
+
+      for( int k=0; k<_nclass; k++ ) {
+        // Initially setup as-if an empty-split had just happened
+        if( _model._output._distribution[k] != 0 ) {
+          // The Boolean Optimization
+          // This optimization assumes the 2nd tree of a 2-class system is the
+          // inverse of the first.  This is false for DRF (and true for GBM) -
+          // DRF picks a random different set of columns for the 2nd tree.
+          if( k==1 && _nclass==2 ) continue;
+          ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows);
+          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,nbins,hcs[k][0],false,false) ); // The "root" node
+        }
+      }
+      int[] leafs = new int[_nclass]; // Define a "working set" of leaf splits, from here to tree._len
+
+      // ----
+      // ESL2, page 387.  Step 2b ii.
+      // One Big Loop till the ktrees are of proper depth.
+      // Adds a layer to the trees each pass.
+      int depth=0;
+      for( ; depth<_parms._max_depth; depth++ ) {
+        if( !isRunning() ) return;
+
+//      hcs = buildLayer(fr, ktrees, leafs, hcs, false, false);
+//
+//      // If we did not make any new splits, then the tree is split-to-death
+//      if( hcs == null ) break;
+        throw H2O.unimpl();
+      }
+//
+//    // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
+//    // LeafNodes to hold predictions.
+//    for( int k=0; k<_nclass; k++ ) {
+//      DTree tree = ktrees[k];
+//      if( tree == null ) continue;
+//      int leaf = leafs[k] = tree.len();
+//      for( int nid=0; nid<leaf; nid++ ) {
+//        if( tree.node(nid) instanceof DecidedNode ) {
+//          DecidedNode dn = tree.decided(nid);
+//          for( int i=0; i<dn._nids.length; i++ ) {
+//            int cnid = dn._nids[i];
+//            if( cnid == -1 || // Bottomed out (predictors or responses known constant)
+//                tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
+//                (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
+//                 ((DecidedNode)tree.node(cnid))._split.col()==-1) )
+//              dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
+//          }
+//          // Handle the trivial non-splitting tree
+//          if( nid==0 && dn._split.col() == -1 )
+//            new GBMLeafNode(tree,-1,0);
+//        }
+//      }
+//    } // -- k-trees are done
+//
+//    // ----
+//    // ESL2, page 387.  Step 2b iii.  Compute the gammas, and store them back
+//    // into the tree leaves.  Includes learn_rate.
+//    // For classification (bernoulli):
+//    //    gamma_i = sum res_i / sum p_i*(1 - p_i) where p_i = y_i - res_i
+//    // For classification (multinomial):
+//    //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
+//    // For regression (gaussian):
+//    //    gamma_i = sum res_i / count(res_i)
+//    GammaPass gp = new GammaPass(ktrees,leafs).doAll(fr);
+//    double m1class = _nclass > 1 && family != Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
+//    for( int k=0; k<_nclass; k++ ) {
+//      final DTree tree = ktrees[k];
+//      if( tree == null ) continue;
+//      for( int i=0; i<tree._len-leafs[k]; i++ ) {
+//        double g = gp._gss[k][i] == 0 // Constant response?
+//          ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
+//          : learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
+//        assert !Double.isNaN(g);
+//        ((LeafNode)tree.node(leafs[k]+i))._pred = g;
+//      }
+//    }
+//
+//    // ----
+//    // ESL2, page 387.  Step 2b iv.  Cache the sum of all the trees, plus the
+//    // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
+//    // Tree <== f(Tree)
+//    // Nids <== 0
+//    new MRTask2() {
+//      @Override public void map( Chunk chks[] ) {
+//        // For all tree/klasses
+//        for( int k=0; k<_nclass; k++ ) {
+//          final DTree tree = ktrees[k];
+//          if( tree == null ) continue;
+//          final Chunk nids = chk_nids(chks,k);
+//          final Chunk ct   = chk_tree(chks,k);
+//          for( int row=0; row<nids._len; row++ ) {
+//            int nid = (int)nids.at80(row);
+//            if( nid < 0 ) continue;
+//            // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
+//            // <tree_klazz> fields from tree prediction
+//            ct.set0(row, (float)(ct.at0(row) + (float) ((LeafNode)tree.node(nid))._pred));
+//            nids.set0(row,0);
+//          }
+//        }
+//      }
+//    }.doAll(fr);
+//
+//    // Collect leaves stats
+//    for (int i=0; i<ktrees.length; i++)
+//      if( ktrees[i] != null )
+//        ktrees[i].leaves = ktrees[i].len() - leafs[i];
+//    // DEBUG: Print the generated K trees
+//    // printGenerateTrees(ktrees);
+
       //_model._output.addKTrees(trees);
       throw H2O.unimpl();
     }
@@ -173,6 +296,57 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
 
+  }
+
+  @Override protected DecidedNode makeDecided( UndecidedNode udn, DHistogram hs[] ) {
+    return new GBMDecidedNode(udn,hs);
+  }
+  
+  // ---
+  // GBM DTree decision node: same as the normal DecidedNode, but
+  // specifies a decision algorithm given complete histograms on all
+  // columns.  GBM algo: find the lowest error amongst *all* columns.
+  static class GBMDecidedNode extends DecidedNode {
+    GBMDecidedNode( UndecidedNode n, DHistogram[] hs ) { super(n,hs); }
+    @Override public UndecidedNode makeUndecidedNode(DHistogram[] hs ) {
+      return new GBMUndecidedNode(_tree,_nid,hs);
+    }
+  
+    // Find the column with the best split (lowest score).  Unlike RF, GBM
+    // scores on all columns and selects splits on all columns.
+    @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
+      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
+      if( hs == null ) return best;
+      for( int i=0; i<hs.length; i++ ) {
+        if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
+        DTree.Split s = hs[i].scoreMSE(i);
+        if( s == null ) continue;
+        if( best == null || s.se() < best.se() ) best = s;
+        if( s.se() <= 0 ) break; // No point in looking further!
+      }
+      return best;
+    }
+  }
+  
+  // ---
+  // GBM DTree undecided node: same as the normal UndecidedNode, but specifies
+  // a list of columns to score on now, and then decide over later.
+  // GBM algo: use all columns
+  static class GBMUndecidedNode extends UndecidedNode {
+    GBMUndecidedNode( DTree tree, int pid, DHistogram hs[] ) { super(tree,pid,hs); }
+    // Randomly select mtry columns to 'score' in following pass over the data.
+    // In GBM, we use all columns (as opposed to RF, which uses a random subset).
+    @Override public int[] scoreCols( DHistogram[] hs ) { return null; }
+  }
+  
+  // ---
+  static class GBMLeafNode extends LeafNode {
+    GBMLeafNode( DTree tree, int pid ) { super(tree,pid); }
+    GBMLeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
+    // Insert just the predictions: a single byte/short if we are predicting a
+    // single class, or else the full distribution.
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
+    @Override protected int size() { return 4; }
   }
 
   // No rows out-of-bag, all rows are in-bag and used for training
