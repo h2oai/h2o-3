@@ -1,7 +1,10 @@
 package hex.tree;
 
 import java.util.Arrays;
+import hex.AUC;
+import hex.ConfusionMatrix2;
 import hex.SupervisedModel;
+import hex.VarImp;
 import hex.schemas.SharedTreeModelV2;
 import water.*;
 import water.api.ModelSchema;
@@ -19,6 +22,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed;          // Seed for psuedo-random redistribution
 
+    // Scoring a model on a dataset is not free; sometimes it is THE limiting
+    // factor to model building.  By default, partially built models are only
+    // scored every so many major model iterations - throttled to limit scoring
+    // costs to less than 10% of the build time.  This flag forces scoring for
+    // every iteration, allowing e.g. more fine-grained progress reporting.
+    public boolean _score_each_iteration;
+
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
@@ -30,13 +40,25 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _initialPrediction;
 
     /** Number of trees actually in the model (as opposed to requested) */
-    int _ntrees;
+    public int _ntrees;
 
     /** More indepth tree stats */
     final TreeStats _treeStats;
 
     /** Trees get big, so store each one seperately in the DKV. */
     public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
+
+    /** Normalized Root Mean Squared Error on validation set */
+    public double _nrmse;
+
+    /** Confusion Matrix for classification models, or null otherwise */
+    public ConfusionMatrix2 _cm;
+
+    /** AUC for binomial models, or null otherwise */
+    public AUC _auc;
+
+    /** Variable Importance, if asked for */
+    public VarImp _varimp;
 
     public SharedTreeOutput( SharedTree b ) { 
       super(b);

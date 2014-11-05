@@ -173,30 +173,35 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
 
-    // Read the 'tree' columns, do model-specific math and put the results in the
-    // fs[] array, and return the sum.  Dividing any fs[] element by the sum
-    // turns the results into a probability distribution.
-    @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
-      if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-        fs[1] = 1.0f/(float)(1f+Math.exp(chk_tree(chks,0).at0(row)));
-        fs[2] = 1f-fs[1];
-        return fs[1]+fs[2];
-      }
-      if( _nclass == 1 )          // Classification?
-        return fs[0]=(float)chk_tree(chks,0).at0(row); // Regression.
-      if( _nclass == 2 ) {        // The Boolean Optimization
-        // This optimization assumes the 2nd tree of a 2-class system is the
-        // inverse of the first.  Fill in the missing tree
-        fs[1] = (float)Math.exp(chk_tree(chks,0).at0(row));
-        fs[2] = 1.0f/fs[1]; // exp(-d) === 1/d
-        return fs[1]+fs[2];
-      }
-      float sum=0;
-      for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
-        sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).at0(row)));
-      return sum;
-    }
-
-    @Override protected VarImp doVarImpCalc(boolean scale) { throw H2O.unimpl(); }
   }
+
+  // No rows out-of-bag, all rows are in-bag and used for training
+  @Override protected boolean outOfBagRow(Chunk[] chks, int row) { return false; }
+
+  @Override protected VarImp doVarImpCalc(boolean scale) { throw H2O.unimpl(); }
+
+  // Read the 'tree' columns, do model-specific math and put the results in the
+  // fs[] array, and return the sum.  Dividing any fs[] element by the sum
+  // turns the results into a probability distribution.
+  @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
+    if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
+      fs[1] = 1.0f/(float)(1f+Math.exp(chk_tree(chks,0).at0(row)));
+      fs[2] = 1f-fs[1];
+      return fs[1]+fs[2];
+    }
+    if( _nclass == 1 )          // Classification?
+      return fs[0]=(float)chk_tree(chks,0).at0(row); // Regression.
+    if( _nclass == 2 ) {        // The Boolean Optimization
+      // This optimization assumes the 2nd tree of a 2-class system is the
+      // inverse of the first.  Fill in the missing tree
+      fs[1] = (float)Math.exp(chk_tree(chks,0).at0(row));
+      fs[2] = 1.0f/fs[1]; // exp(-d) === 1/d
+      return fs[1]+fs[2];
+    }
+    float sum=0;
+    for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
+      sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).at0(row)));
+    return sum;
+  }
+
 }

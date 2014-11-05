@@ -1,5 +1,7 @@
 package hex.tree;
 
+import java.util.Arrays;
+
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
 import water.*;
@@ -7,10 +9,7 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
-import water.util.Timer;
-
-import java.util.Arrays;
+import water.util.*;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); }
@@ -161,15 +160,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel( Key modelKey, P parms );
     abstract protected void buildModel();
-    abstract protected VarImp doVarImpCalc(boolean scale);
-    // Read the 'tree' columns, do model-specific math and put the results in the
-    // fs[] array, and return the sum.  Dividing any fs[] element by the sum
-    // turns the results into a probability distribution.
-    abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
   }
 
   // --------------------------------------------------------------------------
-  // Convenvience accessor for a complex chunk layout.
+  // Convenience accessor for a complex chunk layout.
   // Wish I could name the array elements nicer...
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[_ncols]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[_ncols+1+c]; }
@@ -186,6 +180,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     assert data.length == _ncols;
     for(int f=0; f<_ncols; f++) data[f] = chks[f].at0(row);
     return data;
+  }
+
+  /** Which rows are in-bag vs out-of-bag for sampling */
+  abstract protected boolean outOfBagRow(Chunk[] chks, int row);
+
+  // Read the 'tree' columns, do model-specific math and put the results in the
+  // fs[] array, and return the sum.  Dividing any fs[] element by the sum
+  // turns the results into a probability distribution.
+  abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
+
+  abstract protected VarImp doVarImpCalc(boolean scale);
+
+  // Call builder specific score code and then correct probabilities
+  // if it is necessary.
+  float score2(Chunk chks[], float fs[/*nclass*/], int row ) {
+    float sum = score1(chks, fs, row);
+    if( isClassifier() && _model._output._priorClassDist!=null && _model._output._modelClassDist!=null && !Float.isInfinite(sum)  && sum>0f) {
+      ArrayUtils.div(fs, sum);
+      ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+      sum = 1.0f;
+    }
+    return sum;
   }
 
   // --------------------------------------------------------------------------
@@ -206,43 +222,37 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     long now = System.currentTimeMillis();
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
-    //Score sc = null;
-    //// If validation is specified we use a model for scoring, so we need to update it!
-    //// First we save model with trees (i.e., make them available for scoring)
-    //// and then update it with resulting error
-    //model = makeModel(model, ktrees, tstats);
-    //model.update(self());
-    //// Now model already contains tid-trees in serialized form
-    //if( score_each_iteration ||
-    //    finalScoring ||
-    //    (now-_firstScore < 4000) || // Score every time for 4 secs
-    //    // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
-    //    (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
-    //     (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
-    //  _timeLastScoreStart = now;
-    //  // Perform scoring - first get adapted validation response
-    //  Response2CMAdaptor vadaptor = getValidAdaptor();
-    //  sc = new Score().doIt(model, fTrain, vadaptor, oob, build_tree_one_node).report(tid,ktrees);
-    //  _timeLastScoreEnd = System.currentTimeMillis();
-    //}
-    //
-    //// Compute variable importance for this tree if necessary
-    //VarImp varimp = null;
-    //if (importance && ktrees!=null) { // compute this tree votes but skip the first scoring call which is done over empty forest
-    //  Timer vi_timer = new Timer();
-    //  varimp  = doVarImpCalc(model, ktrees, tid-1, fTrain, false);
-    //  Log.info("Computation of variable importance with "+tid+"th-tree took: " + vi_timer.toString());
-    //}
-    //// Double update - after scoring
-    //model = makeModel(model,
-    //                  sc==null ? Double.NaN : sc.mse(),
-    //                  sc==null ? null : (_nclass>1? new ConfusionMatrix(sc._cm):null),
-    //                  varimp,
-    //                  sc==null ? null : (_nclass==2 ? makeAUC(toCMArray(sc._cms), ModelUtils.DEFAULT_THRESHOLDS) : null)
-    //                  );
-    //model.update(self());
-    //return model;
-    throw H2O.unimpl();
+    boolean updated = false;
+    // Now model already contains tid-trees in serialized form
+    if( _parms._score_each_iteration ||
+        finalScoring ||
+        (now-_firstScore < 4000) || // Score every time for 4 secs
+        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+        (sinceLastScore > 4000 && // Limit scoring updates to every 4sec
+         (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
+      // If validation is specified we use a model for scoring, so we need to
+      // update it!  First we save model with trees (i.e., make them available
+      // for scoring) and then update it with resulting error
+      if( !updated ) _model.update(_key);  updated = true;
+
+      _timeLastScoreStart = now;
+      Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
+      _model._output._nrmse = sc.nrmse();
+      _model._output._cm = sc.cm();
+      _model._output._auc = sc.auc();
+      _timeLastScoreEnd = System.currentTimeMillis();
+    }
+
+    // Compute variable importance for this tree if asked; must be done on each tree however
+    if( _parms._importance && _model._output._ntrees > 0 ) { // compute this tree votes but skip the first scoring call which is done over empty forest
+      if( !updated ) _model.update(_key);  updated = true;
+      Timer vi_timer = new Timer();
+      _model._output._varimp = doVarImpCalc(false);
+      Log.info("Computation of variable importance took: " + vi_timer.toString());
+    }
+
+    // Double update - after either scoring or variable importance
+    if( updated ) _model.update(_key);
   }
 
 }
