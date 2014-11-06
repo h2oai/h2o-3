@@ -1,9 +1,7 @@
 package hex.tree.gbm;
 
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -20,7 +18,7 @@ public class GBMTest extends TestUtil {
   //  assert(sb.length() > 0);
   //}
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -78,7 +76,7 @@ public class GBMTest extends TestUtil {
 //    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
 //  }
 //
-  @Test @Ignore public void testBasicGBM() {
+  @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
@@ -154,7 +152,8 @@ public class GBMTest extends TestUtil {
     Frame fr = null, fr2= null;
     try {
       fr = parse_test_file(fname);
-      int idx = prep.prep(fr);
+      int idx = prep.prep(fr); // hack frame per-test
+      water.DKV.put(fr);       // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) { parms._toEnum = false; idx = ~idx; }
@@ -162,7 +161,11 @@ public class GBMTest extends TestUtil {
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;
       parms._loss = family;
+      parms._max_depth = 4;
+      parms._min_rows = 1;
+      parms._nbins = 50;
       parms._learn_rate = .2f;
+//      gbm.score_each_iteration=true;
 
       GBM job = null;
       try {
@@ -175,14 +178,10 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
-//      gbm.max_depth = 4;
-//      gbm.min_rows = 1;
-//      gbm.nbins = 50;
-//      gbm.validation = validation ? new Frame(gbm.source) : null;
-//      gbm.score_each_iteration=true;
 //      testJSON(gbmmodel);
-//      Assert.assertTrue(gbmmodel.get_params().state == Job.JobState.DONE); //HEX-1817
-//
+      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
+      //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
+
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();

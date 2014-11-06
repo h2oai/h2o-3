@@ -59,6 +59,10 @@ public abstract class DKV {
   static public Value put( Key key, Iced v, Futures fs,boolean donCache ) {
     return put(key,new Value(key,v),fs,donCache);
   }
+  /** Make the mapping <em>keyed._key -&gt; keyed</em>.  Blocking, caching.  */
+  static public Value put( Keyed keyed ) { return put(keyed._key,new Value(keyed._key,keyed)); }
+  /** Make the mapping <em>keyed._key -&gt; keyed</em>.  Caching.  */
+  static public Value put( Keyed keyed, Futures fs ) { return put(keyed._key,new Value(keyed._key,keyed),fs); }
 
   /** Make the mapping <em>key -&gt; val</em>.  Blocking, caching.  */
   static public Value put( Key key, Value val ) { 

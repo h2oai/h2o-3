@@ -1,4 +1,4 @@
-package water.cascade;
+package water.rapids;
 
 import water.*;
 import water.fvec.Frame;
@@ -606,7 +606,7 @@ public class Env extends Iced {
     return res;
   }
 
-  AST lookup(water.cascade.ASTId id) {
+  AST lookup(water.rapids.ASTId id) {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());

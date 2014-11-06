@@ -1,9 +1,8 @@
 package water.api;
 
 import water.*;
-import water.api.CascadeHandler.Cascade;
 
-public class CascadeV1 extends Schema<Cascade, CascadeV1> {
+public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
 
   // Input fields
   @API(help="An Abstract Syntax Tree.")
@@ -27,26 +26,26 @@ public class CascadeV1 extends Schema<Cascade, CascadeV1> {
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 
 
-  @Override public Cascade createImpl() {
-    Cascade c = new Cascade();
+  @Override public RapidsHandler.Rapids createImpl() {
+    RapidsHandler.Rapids c = new RapidsHandler.Rapids();
     if (ast.equals("") && funs == null) return null;
     c._ast = ast;
     c._funs = funs;
     return c;
   }
 
-  @Override public CascadeV1 fillFromImpl(Cascade cascade) {
-    ast = cascade._ast;
-    funs = cascade._funs;
-    key = cascade._key;
-    num_rows = cascade._num_rows;
-    num_cols = cascade._num_cols;
-    scalar = cascade._scalar;
-    funstr = cascade._funstr;
-    result = cascade._result;
-    col_names = cascade._col_names;
-    string = cascade._string;
-    exception = cascade._error;
+  @Override public RapidsV1 fillFromImpl(RapidsHandler.Rapids rapids) {
+    ast = rapids._ast;
+    funs = rapids._funs;
+    key = rapids._key;
+    num_rows = rapids._num_rows;
+    num_cols = rapids._num_cols;
+    scalar = rapids._scalar;
+    funstr = rapids._funstr;
+    result = rapids._result;
+    col_names = rapids._col_names;
+    string = rapids._string;
+    exception = rapids._error;
     return this;
   }
 }

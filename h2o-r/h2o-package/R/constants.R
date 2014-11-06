@@ -201,9 +201,9 @@
 #'
 .h2o.__PREDICT <- "3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"
 #'
-#' Cascade/Exec3
+#' Rapids/Exec3
 #'
-.h2o.__CASCADE      <- "Cascade.json"
+.h2o.__RAPIDS      <- "Rapids.json"
 
 #'
 #' Removal

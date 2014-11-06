@@ -1,6 +1,5 @@
 package hex.tree;
 
-import hex.*;
 import water.*;
 import water.fvec.Chunk;
 import water.util.*;
@@ -31,7 +30,7 @@ public class DTree extends Iced {
   final int _min_rows;   // Fewest allowed rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
-  int _len;              // Resizable array
+  public int _len;       // Resizable array
   // Public stats about tree
   public int _leaves;
   public int _depth;
@@ -59,18 +58,14 @@ public class DTree extends Iced {
     _ns[_len] = n;
     return _len++;
   }
-  // Return a deterministic chunk-local RNG.  Can be kinda expensive.
-  // Override this in, e.g. Random Forest algos, to get a per-chunk RNG
-  public Random rngForChunk( int cidx ) { throw H2O.fail(); }
 
   public final int len() { return _len; }
-  public final void len(int len) { _len = len; }
 
   // --------------------------------------------------------------------------
   // Abstract node flavor
   public static abstract class Node extends Iced {
     transient protected DTree _tree;    // Make transient, lest we clone the whole tree
-    final protected int _pid;           // Parent node id, root has no parent and uses -1
+    final public int _pid;    // Parent node id, root has no parent and uses -1
     final protected int _nid;           // My node-ID, 0 is root
     Node( DTree tree, int pid, int nid ) {
       _tree = tree;
@@ -95,13 +90,12 @@ public class DTree extends Iced {
     abstract protected int size();
 
     public final int nid() { return _nid; }
-    public final int pid() { return _pid; }
   }
 
   // --------------------------------------------------------------------------
   // Records a column, a bin to split at within the column, and the MSE.
   public static class Split extends Iced {
-    final int _col, _bin;       // Column to split, bin where being split
+    final public int _col, _bin;// Column to split, bin where being split
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se0, _se1;    // Squared error of each subsplit
@@ -116,20 +110,6 @@ public class DTree extends Iced {
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
-    public final long  rowsLeft () { return _n0; }
-    public final long  rowsRight() { return _n1; }
-    /** Returns empirical improvement in mean-squared error.
-     *
-     *  <p>Formula for node splitting space into two subregions R1,R2 with predictions y1, y2:</p>
-     *  <code>i2(R1,R2) ~ w1*w2 / (w1+w2) * (y1 - y2)^2</code>
-     *
-     *
-     *  <p>For more information see (35), (45) in the paper
-     *  <a href="www-stat.stanford.edu/~jhf/ftp/trebst.pdf"><i>J. Friedman - Greedy Function Approximation: A Gradient boosting machine</i></a></p> */
-    public final float improvement() {
-      double d = (_p0-_p1);
-      return (float) ( d*d*_n0*_n1 / (_n0+_n1) );
-    }
 
     // Split-at dividing point.  Don't use the step*bin+bmin, due to roundoff
     // error we can have that point be slightly higher or lower than the bin
@@ -237,7 +217,7 @@ public class DTree extends Iced {
     }
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append("{"+_col+"/");
+      sb.append("{").append(_col).append("/");
       UndecidedNode.p(sb,_bin,2);
       sb.append(", se0=").append(_se0);
       sb.append(", se1=").append(_se1);
@@ -285,12 +265,12 @@ public class DTree extends Iced {
       printLine(sb).append("\n");
       if( _hs == null ) return sb.append("_hs==null").toString();
       final int ncols = _hs.length;
-      for( int j=0; j<ncols; j++ )
-        if( _hs[j] != null )
-          p(sb,_hs[j]._name+String.format(", %4.1f-%4.1f",_hs[j]._min,_hs[j]._maxEx),colW).append(colPad);
+      for( DHistogram hs : _hs )
+        if( hs != null )
+          p(sb,hs._name+String.format(", %4.1f-%4.1f",hs._min,hs._maxEx),colW).append(colPad);
       sb.append('\n');
-      for( int j=0; j<ncols; j++ ) {
-        if( _hs[j] == null ) continue;
+      for( DHistogram hs : _hs ) {
+        if( hs == null ) continue;
         p(sb,"cnt" ,cntW).append('/');
         p(sb,"min" ,mmmW).append('/');
         p(sb,"max" ,mmmW).append('/');
@@ -413,8 +393,6 @@ public class DTree extends Iced {
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
-
-    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
 
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
@@ -544,15 +522,12 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
-
-    public final double pred() { return _pred; }
-    public final void pred(double pred) { _pred = pred; }
   }
 
-  static public final boolean isRootNode(Node n)   { return n._pid == -1; }
+  static public boolean isRootNode(Node n)   { return n._pid == -1; }
 
   // Build a compressed-tree struct
-  public CompressedTree compress() {
+  public CompressedTree compress(int tid, int cls) {
     int sz = root().size();
     if( root() instanceof LeafNode ) sz += 3; // Oops - tree-stump
     AutoBuffer ab = new AutoBuffer(sz);
@@ -560,18 +535,7 @@ public class DTree extends Iced {
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
     root().compress(ab);      // Compress whole tree
     assert ab.position() == sz;
-    return new CompressedTree(ab.buf(),_nclass,_seed);
-  }
-  /** Save this tree into DKV store under default random Key. */
-  public Key save() { return save(defaultTreeKey()); }
-  /** Save this tree into DKV store under the given Key. */
-  public Key save(Key k) {
-    DKV.put(k, compress());
-    return k;
-  }
-
-  private Key defaultTreeKey() {
-    return Key.makeSystem("__Tree_"+Key.rand());
+    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
   }
 
   private static final SB TO_JAVA_BENCH_FUNC = new SB().

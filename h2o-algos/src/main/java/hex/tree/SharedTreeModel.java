@@ -5,10 +5,7 @@ import hex.AUC;
 import hex.ConfusionMatrix2;
 import hex.SupervisedModel;
 import hex.VarImp;
-import hex.schemas.SharedTreeModelV2;
 import water.*;
-import water.api.ModelSchema;
-import water.fvec.Frame;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
 
@@ -73,24 +70,39 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeStats = new TreeStats();
     }
 
-    @Override public int nfeatures() { return _names.length; }
-
     // Append next set of K trees
-    void addKTrees( DTree[] trees ) {
+    public void addKTrees( DTree[] trees ) {
+      assert nclasses()==trees.length;
+      _treeStats.updateBy(trees); // Update tree shape stats
+      // Compress trees and record tree-keys
       _treeKeys = Arrays.copyOf(_treeKeys,_ntrees+1);
-      Key[] keys = _treeKeys[_ntrees] = new Key[nclasses()];
-      // TODO: COMPRESSED TREES not DTree
-      //for( int i=0; i<nclasses(); i++ ) keys[i] = trees[i]._key;
-      _treeStats.updateBy(trees); // Update tree shape
+      Key[] keys = _treeKeys[_ntrees] = new Key[trees.length];
+      Futures fs = new Futures();
+      for( int i=0; i<nclasses(); i++ ) {
+        CompressedTree ct = trees[i].compress(_ntrees,i);
+        DKV.put(keys[i]=ct._key,ct,fs);
+      }
       _ntrees++;
-      throw H2O.unimpl();
+      fs.blockForPending();
     }
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    throw H2O.unimpl();
+    // Prefetch trees into the local cache if it is necessary
+    // Invoke scoring
+    Arrays.fill(preds,0);
+    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ )
+      score0(data, preds, tidx);
+    return preds;
+  }
+  // Score per line per tree
+  public void score0(double data[], float preds[], int treeIdx) {
+    Key[] keys = _output._treeKeys[treeIdx];
+    for( int c=0; c<keys.length; c++ )
+      if( keys[c] != null )
+        preds[keys.length==1?0:c+1] += DKV.get(keys[c]).<CompressedTree>get().score(data);
   }
 
   // Numeric type used in generated code to hold predicted value between the
@@ -100,6 +112,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   // TODO: once SpeeDRF inherits from SharedTreeModel, remove this and use a
   // v-call for the default compare function (is "<" vs "<=").
   boolean isFromSpeeDRF() { return false; }
+
+  @Override protected Futures remove_impl( Futures fs ) {
+    for( Key ks[] : _output._treeKeys)
+      for( Key k : ks )
+        k.remove(fs);
+    return super.remove_impl(fs);
+  }
 }
 
 //  // --------------------------------------------------------------------------

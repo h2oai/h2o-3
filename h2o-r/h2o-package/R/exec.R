@@ -82,7 +82,7 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 #  stop("end")
 
   # Have H2O evaluate the AST
-  res <- .h2o.__remoteSend(client, .h2o.__CASCADE, ast=expr$ast)
+  res <- .h2o.__remoteSend(client, .h2o.__RAPIDS, ast=expr$ast)
 
   if (!is.null(res$exception)) stop(res$exception, call.=FALSE)
   ID <- ifelse(ID == "Last.value", ID, as.character(as.list(match.call())$Last.value))
