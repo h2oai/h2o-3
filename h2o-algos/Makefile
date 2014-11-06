@@ -1,3 +1,4 @@
+.DELETE_ON_ERROR:
 
 # Source code
 main_javas = $(wildcard src/main/java/hex/*java src/main/java/hex/*/*java)

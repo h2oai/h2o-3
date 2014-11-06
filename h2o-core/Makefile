@@ -1,3 +1,4 @@
+.DELETE_ON_ERROR:
 
 # Source code
 # Note that BuildVersion is not forced to be rebuilt here - so incremental
@@ -84,11 +85,6 @@ $(test_classes): build/classes/test/%class: src/test/java/%java $(filter-out %/A
 	@echo "compiling " $@ " because " $?
 	@[ -d build/classes/test ] || mkdir -p build/classes/test
 	@javac $(JAVAC_ARGS) -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" -sourcepath src/main/java -d build/classes/test $(test_javas)
-
-build/classes/main/water/init/BuildVersion.class: ../build/BuildVersion.java
-	@echo "compiling " $@ " because " $?
-	@[ -d build/classes/main ] || mkdir -p build/classes/main
-	@javac $(JAVAC_ARGS) -sourcepath src/main/java -d build/classes/main $?
 
 # Build the h2o-core.jar file
 # All included jars are unpacked into a flat structure, then repacked into One Jar
