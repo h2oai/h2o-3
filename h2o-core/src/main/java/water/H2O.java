@@ -647,7 +647,8 @@ final public class H2O {
     return "/tmp/h2o-" + u2;
   }
 
-  // Static list of acceptable Cloud members
+  /* Static list of acceptable Cloud members passed via -flatfile option.
+   * It is updated also when a new client appears. */
   public static HashSet<H2ONode> STATIC_H2OS = null;
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
