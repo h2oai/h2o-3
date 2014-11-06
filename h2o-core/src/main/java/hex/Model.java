@@ -140,7 +140,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
      *  (run-time, etc) but that has to wait until Job is split from
      *  ModelBuilder. */
-    //public Job.JobState _state;
+    public Job.JobState _state;
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum

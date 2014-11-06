@@ -989,6 +989,11 @@ public final class AutoBuffer {
     return len == -1 ? null : new String(getA1(len));
   }
 
+  public Enum getEnum(Enum[] values ) {
+    int idx = get1();
+    return idx == -1 ? null : values[idx];
+  }
+
   public AutoBuffer putA1( byte[] ary ) {
     //_arys++;
     if( ary == null ) return putInt(-1);
