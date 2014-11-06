@@ -135,7 +135,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _domains[][];
 
     /** List of all the associated ModelMetrics objects, so we can delete them when we delete this model. */
-    public Key[] model_metrics = new Key[0];
+    public Key[] _model_metrics = new Key[0];
+
+    /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
+     *  (run-time, etc) but that has to wait until Job is split from
+     *  ModelBuilder. */
+    //public Job.JobState _state;
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
@@ -171,8 +176,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected void addModelMetrics(ModelMetrics mm) {
-      model_metrics = Arrays.copyOf(model_metrics, model_metrics.length + 1);
-      model_metrics[model_metrics.length - 1] = mm._key;
+      _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
+      _model_metrics[_model_metrics.length - 1] = mm._key;
     }
 
     public long checksum() {
@@ -571,13 +576,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
 
-  protected Futures remove_impl( Futures fs ) {
-    for (Key k : _output.model_metrics)
-      k.remove();
+  @Override protected Futures remove_impl( Futures fs ) {
+    for( Key k : _output._model_metrics )
+      k.remove(fs);
     return fs;
   }
 
-  public long checksum() {
+  @Override public long checksum() {
     return _parms.checksum() *
             _output.checksum();
   }

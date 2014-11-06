@@ -1,8 +1,7 @@
 package hex.tree;
 
 import java.util.Arrays;
-import water.AutoBuffer;
-import water.Iced;
+import water.*;
 import water.util.IcedBitSet;
 
 // --------------------------------------------------------------------------
@@ -16,12 +15,15 @@ import water.util.IcedBitSet;
 //        1 bit  ( 64) right leaf flag,
 //        1 bit  (128) right leaf type flag (0: subtree, 1: small cat, 2: big cat, 3: float)
 //    left, right: tree | prediction
-//    prediction: 4 bytes of float
-class CompressedTree extends Iced {
+//    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
+class CompressedTree extends Keyed {
   final byte [] _bits;
-  final int _nclass;
+  final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
-  public CompressedTree( byte [] bits, int nclass, long seed ) { _bits = bits; _nclass = nclass; _seed = seed; }
+  public CompressedTree( byte[] bits, int nclass, long seed, int tid, int cls ) {
+    super(Key.makeSystem("tree_"+tid+"_"+cls+"_"+Key.rand()));
+    _bits = bits; _nclass = nclass; _seed = seed; 
+  }
 
   /** Highly efficient (critical path) tree scoring */
   public float score( final double row[] ) {
@@ -80,4 +82,6 @@ class CompressedTree extends Iced {
   }
 
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
+
+  @Override public long checksum() { throw water.H2O.fail(); }
 }

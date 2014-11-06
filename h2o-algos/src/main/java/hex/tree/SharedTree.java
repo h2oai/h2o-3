@@ -2,6 +2,7 @@ package hex.tree;
 
 import java.util.Arrays;
 
+import jsr166y.CountedCompleter;
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
 import water.*;
@@ -151,8 +152,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       } finally {
         if( _model != null ) _model.unlock(_key);
         _parms.unlock_frames(SharedTree.this);
-        Scope.exit();
         done();                 // Job done!
+        Scope.exit(_model._key);
       }
       tryComplete();
     }
@@ -160,6 +161,98 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel( Key modelKey, P parms );
     abstract protected void buildModel();
+  }
+
+  // --------------------------------------------------------------------------
+  // Build an entire layer of all K trees
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean subset, boolean build_tree_one_node) {
+    // Build K trees, one per class.
+
+    // Build up the next-generation tree splits from the current histograms.
+    // Nearly all leaves will split one more level.  This loop nest is
+    //           O( #active_splits * #bins * #ncols )
+    // but is NOT over all the data.
+    H2OCountedCompleter sb1ts[] = new H2OCountedCompleter[_nclass];
+    Vec vecs[] = fr.vecs();
+    for( int k=0; k<_nclass; k++ ) {
+      final DTree tree = ktrees[k]; // Tree for class K
+      if( tree == null ) continue;
+      // Build a frame with just a single tree (& work & nid) columns, so the
+      // nested MRTask2 ScoreBuildHistogram in ScoreBuildOneTree does not try
+      // to close other tree's Vecs when run in parallel.
+      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
+      fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);
+      fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
+      fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
+      // Start building one of the K trees in parallel
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node));
+    }
+    // Block for all K trees to complete.
+    boolean did_split=false;
+    for( int k=0; k<_nclass; k++ ) {
+      final DTree tree = ktrees[k]; // Tree for class K
+      if( tree == null ) continue;
+      sb1ts[k].join();
+      if( ((ScoreBuildOneTree)sb1ts[k])._did_split ) did_split=true;
+    }
+    // The layer is done.
+    return did_split ? hcs : null;
+  }
+
+  private class ScoreBuildOneTree extends H2OCountedCompleter {
+    final int _k;               // The tree
+    final int _nbins;           // Number of histogram bins
+    final DTree _tree;
+    final int _leafs[/*nclass*/];
+    final DHistogram _hcs[/*nclass*/][][];
+    final Frame _fr2;
+    final boolean _build_tree_one_node;
+    final boolean _subset;      // True if working a subset of cols
+    boolean _did_split;
+    ScoreBuildOneTree( int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node ) {
+      _k    = k;
+      _nbins= nbins;
+      _tree = tree;
+      _leafs= leafs;
+      _hcs  = hcs;
+      _fr2  = fr2;
+      _subset = subset;
+      _build_tree_one_node = build_tree_one_node;
+    }
+    @Override public void compute2() {
+      // Fuse 2 conceptual passes into one:
+      // Pass 1: Score a prior DHistogram, and make new Node assignments
+      // to every row.  This involves pulling out the current assigned Node,
+      // "scoring" the row against that Node's decision criteria, and assigning
+      // the row to a new child Node (and giving it an improved prediction).
+      // Pass 2: Build new summary DHistograms on the new child Nodes every row
+      // got assigned into.  Collect counts, mean, variance, min, max per bin,
+      // per column.
+      new ScoreBuildHistogram(this,_k,_ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
+    }
+    @Override public void onCompletion(CountedCompleter caller) {
+      ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
+      //System.out.println(sbh.profString());
+
+      final int leafk = _leafs[_k];
+      int tmax = _tree.len();   // Number of total splits in tree K
+      for( int leaf=leafk; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
+        DTree.UndecidedNode udn = _tree.undecided(leaf);
+        //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
+        // Replace the Undecided with the Split decision
+        DTree.DecidedNode dn = makeDecided(udn,sbh._hcs[leaf-leafk]);
+        //System.out.println("--> Decided node: " + dn +
+        //                   "  > Split: " + dn._split + " L/R:" + dn._split.rowsLeft()+" + "+dn._split.rowsRight());
+        if( dn._split.col() == -1 ) udn.do_not_split();
+        else _did_split = true;
+      }
+      _leafs[_k]=tmax;          // Setup leafs for next tree level
+      int new_leafs = _tree.len()-tmax;
+      _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
+      for( int nl = tmax; nl<_tree.len(); nl ++ )
+        _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
+      if (new_leafs>0) _tree._depth++; // Next layer done but update tree depth only if new leaves are generated
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -236,7 +329,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available
       // for scoring) and then update it with resulting error
-      if( !updated ) _model.update(_key);  updated = true;
+      _model.update(_key);  updated = true;
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
@@ -256,6 +349,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_key);
+  }
+
+  // helper for debugging
+  static protected void printGenerateTrees(DTree[] trees) {
+    for( int k=0; k<trees.length; k++ )
+      if( trees[k] != null )
+        System.out.println(trees[k].root().toString2(new StringBuilder(),0));
   }
 
 }

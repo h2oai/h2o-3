@@ -10,6 +10,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.Log;
 import water.util.Timer;
+import water.util.ArrayUtils;
 
 /** Gradient Boosted Trees
  *
@@ -165,7 +166,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
-    // the prior trees.  From LSE2, page 387.  Step 2b ii, iii.
+    // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
     private void buildNextKTrees() {
 
       // We're going to build K (nclass) trees - each focused on correcting
@@ -202,94 +203,160 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for( ; depth<_parms._max_depth; depth++ ) {
         if( !isRunning() ) return;
 
-//      hcs = buildLayer(fr, ktrees, leafs, hcs, false, false);
-//
-//      // If we did not make any new splits, then the tree is split-to-death
-//      if( hcs == null ) break;
-        throw H2O.unimpl();
-      }
-//
-//    // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
-//    // LeafNodes to hold predictions.
-//    for( int k=0; k<_nclass; k++ ) {
-//      DTree tree = ktrees[k];
-//      if( tree == null ) continue;
-//      int leaf = leafs[k] = tree.len();
-//      for( int nid=0; nid<leaf; nid++ ) {
-//        if( tree.node(nid) instanceof DecidedNode ) {
-//          DecidedNode dn = tree.decided(nid);
-//          for( int i=0; i<dn._nids.length; i++ ) {
-//            int cnid = dn._nids[i];
-//            if( cnid == -1 || // Bottomed out (predictors or responses known constant)
-//                tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
-//                (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-//                 ((DecidedNode)tree.node(cnid))._split.col()==-1) )
-//              dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
-//          }
-//          // Handle the trivial non-splitting tree
-//          if( nid==0 && dn._split.col() == -1 )
-//            new GBMLeafNode(tree,-1,0);
-//        }
-//      }
-//    } // -- k-trees are done
-//
-//    // ----
-//    // ESL2, page 387.  Step 2b iii.  Compute the gammas, and store them back
-//    // into the tree leaves.  Includes learn_rate.
-//    // For classification (bernoulli):
-//    //    gamma_i = sum res_i / sum p_i*(1 - p_i) where p_i = y_i - res_i
-//    // For classification (multinomial):
-//    //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
-//    // For regression (gaussian):
-//    //    gamma_i = sum res_i / count(res_i)
-//    GammaPass gp = new GammaPass(ktrees,leafs).doAll(fr);
-//    double m1class = _nclass > 1 && family != Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
-//    for( int k=0; k<_nclass; k++ ) {
-//      final DTree tree = ktrees[k];
-//      if( tree == null ) continue;
-//      for( int i=0; i<tree._len-leafs[k]; i++ ) {
-//        double g = gp._gss[k][i] == 0 // Constant response?
-//          ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
-//          : learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
-//        assert !Double.isNaN(g);
-//        ((LeafNode)tree.node(leafs[k]+i))._pred = g;
-//      }
-//    }
-//
-//    // ----
-//    // ESL2, page 387.  Step 2b iv.  Cache the sum of all the trees, plus the
-//    // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
-//    // Tree <== f(Tree)
-//    // Nids <== 0
-//    new MRTask2() {
-//      @Override public void map( Chunk chks[] ) {
-//        // For all tree/klasses
-//        for( int k=0; k<_nclass; k++ ) {
-//          final DTree tree = ktrees[k];
-//          if( tree == null ) continue;
-//          final Chunk nids = chk_nids(chks,k);
-//          final Chunk ct   = chk_tree(chks,k);
-//          for( int row=0; row<nids._len; row++ ) {
-//            int nid = (int)nids.at80(row);
-//            if( nid < 0 ) continue;
-//            // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
-//            // <tree_klazz> fields from tree prediction
-//            ct.set0(row, (float)(ct.at0(row) + (float) ((LeafNode)tree.node(nid))._pred));
-//            nids.set0(row,0);
-//          }
-//        }
-//      }
-//    }.doAll(fr);
-//
-//    // Collect leaves stats
-//    for (int i=0; i<ktrees.length; i++)
-//      if( ktrees[i] != null )
-//        ktrees[i].leaves = ktrees[i].len() - leafs[i];
-//    // DEBUG: Print the generated K trees
-//    // printGenerateTrees(ktrees);
+        hcs = buildLayer(_train, nbins, ktrees, leafs, hcs, false, false);
 
-      //_model._output.addKTrees(trees);
-      throw H2O.unimpl();
+        // If we did not make any new splits, then the tree is split-to-death
+        if( hcs == null ) break;
+      }
+
+      // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
+      // LeafNodes to hold predictions.
+      for( int k=0; k<_nclass; k++ ) {
+        DTree tree = ktrees[k];
+        if( tree == null ) continue;
+        int leaf = leafs[k] = tree.len();
+        for( int nid=0; nid<leaf; nid++ ) {
+          if( tree.node(nid) instanceof DecidedNode ) {
+            DecidedNode dn = tree.decided(nid);
+            for( int i=0; i<dn._nids.length; i++ ) {
+              int cnid = dn._nids[i];
+              if( cnid == -1 || // Bottomed out (predictors or responses known constant)
+                  tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
+                  (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
+                   ((DecidedNode)tree.node(cnid))._split.col()==-1) )
+                dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
+            }
+            // Handle the trivial non-splitting tree
+            if( nid==0 && dn._split.col() == -1 )
+              new GBMLeafNode(tree,-1,0);
+          }
+        }
+      } // -- k-trees are done
+
+      // ----
+      // ESL2, page 387.  Step 2b iii.  Compute the gammas, and store them back
+      // into the tree leaves.  Includes learn_rate.
+      // For classification (bernoulli):
+      //    gamma_i = sum res_i / sum p_i*(1 - p_i) where p_i = y_i - res_i
+      // For classification (multinomial):
+      //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
+      // For regression (gaussian):
+      //    gamma_i = sum res_i / count(res_i)
+      GammaPass gp = new GammaPass(ktrees,leafs,_parms._loss == GBMModel.GBMParameters.Family.bernoulli).doAll(_train);
+      double m1class = _nclass > 1 && _parms._loss != GBMModel.GBMParameters.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
+      for( int k=0; k<_nclass; k++ ) {
+        final DTree tree = ktrees[k];
+        if( tree == null ) continue;
+        for( int i=0; i<tree._len-leafs[k]; i++ ) {
+          double g = gp._gss[k][i] == 0 // Constant response?
+            ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
+            : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
+          assert !Double.isNaN(g);
+          ((LeafNode)tree.node(leafs[k]+i))._pred = g;
+        }
+      }
+
+      // ----
+      // ESL2, page 387.  Step 2b iv.  Cache the sum of all the trees, plus the
+      // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
+      // Tree <== f(Tree)
+      // Nids <== 0
+      new MRTask() {
+        @Override public void map( Chunk chks[] ) {
+          // For all tree/klasses
+          for( int k=0; k<_nclass; k++ ) {
+            final DTree tree = ktrees[k];
+            if( tree == null ) continue;
+            final Chunk nids = chk_nids(chks,k);
+            final Chunk ct   = chk_tree(chks,k);
+            for( int row=0; row<nids._len; row++ ) {
+              int nid = (int)nids.at80(row);
+              if( nid < 0 ) continue;
+              // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
+              // <tree_klazz> fields from tree prediction
+              ct.set0(row, (float)(ct.at0(row) + (float) ((LeafNode)tree.node(nid))._pred));
+              nids.set0(row,0);
+            }
+          }
+        }
+      }.doAll(_train);
+
+      // Collect leaves stats
+      for (int i=0; i<ktrees.length; i++)
+        if( ktrees[i] != null )
+          ktrees[i]._leaves = ktrees[i].len() - leafs[i];
+      // DEBUG: Print the generated K trees
+      //printGenerateTrees(ktrees);
+      // Grow the model by K-trees
+      _model._output.addKTrees(ktrees);
+    }
+
+    // ---
+    // ESL2, page 387.  Step 2b iii.
+    // Nids <== f(Nids)
+    private class GammaPass extends MRTask<GammaPass> {
+      final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
+      final int   _leafs[]; // Number of active leaves (per tree)
+      final boolean _isBernoulli;
+      // Per leaf: sum(res);
+      double _rss[/*tree/klass*/][/*tree-relative node-id*/];
+      // Per leaf: multinomial: sum(|res|*1-|res|), gaussian: sum(1), bernoulli: sum((y-res)*(1-y+res))
+      double _gss[/*tree/klass*/][/*tree-relative node-id*/];
+      GammaPass(DTree trees[], int leafs[], boolean isBernoulli) { _leafs=leafs; _trees=trees; _isBernoulli = isBernoulli; }
+      @Override public void map( Chunk[] chks ) {
+        _gss = new double[_nclass][];
+        _rss = new double[_nclass][];
+        final Chunk resp = chk_resp(chks); // Response for this frame
+
+        // For all tree/klasses
+        for( int k=0; k<_nclass; k++ ) {
+          final DTree tree = _trees[k];
+          final int   leaf = _leafs[k];
+          if( tree == null ) continue; // Empty class is ignored
+
+          // A leaf-biased array of all active Tree leaves.
+          final double gs[] = _gss[k] = new double[tree._len-leaf];
+          final double rs[] = _rss[k] = new double[tree._len-leaf];
+          final Chunk nids = chk_nids(chks,k); // Node-ids  for this tree/class
+          final Chunk ress = chk_work(chks,k); // Residuals for this tree/class
+
+          // If we have all constant responses, then we do not split even the
+          // root and the residuals should be zero.
+          if( tree.root() instanceof LeafNode ) continue;
+          for( int row=0; row<nids._len; row++ ) { // For all rows
+            int nid = (int)nids.at80(row);         // Get Node to decide from
+            if( nid < 0 ) continue;                // Missing response
+            if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
+              nid = tree.node(nid)._pid;                  // Then take parent's decision
+            DecidedNode dn = tree.decided(nid);           // Must have a decision point
+            if( dn._split._col == -1 )                    // Unable to decide?
+              dn = tree.decided(nid = dn._pid); // Then take parent's decision
+            int leafnid = dn.ns(chks,row); // Decide down to a leafnode
+            assert leaf <= leafnid && leafnid < tree._len;
+            assert tree.node(leafnid) instanceof LeafNode;
+            // Note: I can which leaf/region I end up in, but I do not care for
+            // the prediction presented by the tree.  For GBM, we compute the
+            // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
+            // leaf, and get our prediction from that.
+            nids.set0(row,leafnid);
+            assert !ress.isNA0(row);
+
+            // Compute numerator (rs) and denominator (gs) of gamma
+            double res = ress.at0(row);
+            double ares = Math.abs(res);
+            if( _isBernoulli ) {
+              double prob = resp.at0(row) - res;
+              gs[leafnid-leaf] += prob*(1-prob);
+            } else
+              gs[leafnid-leaf] += _nclass > 1 ? ares*(1-ares) : 1;
+            rs[leafnid-leaf] += res;
+          }
+        }
+      }
+      @Override public void reduce( GammaPass gp ) {
+        ArrayUtils.add(_gss,gp._gss);
+        ArrayUtils.add(_rss,gp._rss);
+      }
     }
 
     @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {

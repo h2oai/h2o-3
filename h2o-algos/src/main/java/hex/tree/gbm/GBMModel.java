@@ -29,10 +29,6 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
     public GBMOutput( GBM b ) { super(b); }
 
-    @Override public ModelCategory getModelCategory() {
-      throw H2O.unimpl();       // Can be regression or multinomial
-      //return Model.ModelCategory.Clustering;
-    }
   }
 
   public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }
@@ -45,8 +41,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
+    assert chks.length>=tmp.length;
+    for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].at0(row_in_chunk);
     return score0(tmp,preds);
   }
