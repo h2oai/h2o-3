@@ -15,8 +15,7 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling into the impl
-  @Override public Jobs createImpl( ) {
+  @Override public Jobs fillImpl(Jobs j) {
     Job[] jobs = null;
     if (null != this.jobs) {
       jobs = new Job[this.jobs.length];
@@ -25,17 +24,22 @@ public class JobsV2 extends Schema<Jobs,JobsV2> {
     } else {
       jobs = new Job[0];
     }
-    return new Jobs(this.key, jobs);
+    super.fillImpl(j);
+    return j;
   }
 
   // Version&Schema-specific filling from the impl
   @Override public JobsV2 fillFromImpl(Jobs j) {
     this.key = j.key;
     Job[] js = j.jobs;
-    jobs = new JobV2[js.length];
-    for( int i=0; i<js.length; i++ ) {
-      Job job = js[i];
-      jobs[i] = new JobV2(job._key, job._description, job._state.toString(), job.progress(), job.msec(), job.dest(), job._exception);
+    jobs = null;
+    if (null != js) {
+      jobs = new JobV2[js.length];
+
+      for (int i = 0; i < js.length; i++) {
+        Job job = js[i];
+        jobs[i] = new JobV2(job._key, job._description, job._state.toString(), job.progress(), job.msec(), job.dest(), job._exception);
+      }
     }
     return this;
   }

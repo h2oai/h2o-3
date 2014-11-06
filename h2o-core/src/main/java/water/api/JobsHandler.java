@@ -10,7 +10,9 @@ class JobsHandler extends Handler<Jobs,JobsV2> {
 
   /** Impl class for a collection of jobs; only used in the API.  */
   protected static final class Jobs extends Iced {
+    public Jobs() { }
     public Jobs(Key key, Job[] jobs) { this.key = key; this.jobs = jobs; }
+
     // Inputs
     @API(help="Job key")
     public Key key;
@@ -25,7 +27,11 @@ class JobsHandler extends Handler<Jobs,JobsV2> {
   }
 
   @Override public void compute2() { throw H2O.fail(); }                       // TODO: what to do about Key here?
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema list(int version, Jobs jobs) { return schema(version).fillFromImpl(new Jobs(null, Job.jobs())); } // All work in schema
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, Jobs jobs) {
     Key key = jobs.key;
     Value val = DKV.get(key);

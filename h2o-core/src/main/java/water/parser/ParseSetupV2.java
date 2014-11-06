@@ -39,30 +39,6 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   public String[][] data;
 
   //==========================
-  // Customer adapters Go Here
-
-  // Version&Schema-specific filling into the handler
-  @Override public ParseSetup createImpl() {
-    ParseSetup p = new ParseSetup();
-    p._srcs = srcs;
-    p._checkHeader = checkHeader;
-    p._singleQuotes = singleQuotes;
-    return p;
-  }
-
-  // Version&Schema-specific filling from the handler
-  @Override public ParseSetupV2 fillFromImpl(ParseSetup p) {
-    srcs = p._srcs;
-    hexName = p._hexName;
-    pType = p._pType;
-    sep = p._sep;
-    ncols = p._ncols;
-    columnNames = p._columnNames;
-    data = p._data;
-    return this;
-  }
-
-  //==========================
   // Helper so ImportV1 can link to ParseSetupV2
   static public String link(String[] keys) {
     return "ParseSetup?srcs="+Arrays.toString(keys);

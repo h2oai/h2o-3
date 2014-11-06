@@ -5,7 +5,6 @@ import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
@@ -56,9 +55,8 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
       return this;
     }
 
-    public GBMParameters createImpl() {
-      GBMParameters impl = new GBMParameters();
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+    public GBMParameters fillImpl(GBMParameters impl) {
+      super.fillImpl(impl);
       impl._importance = this.variable_importance;
 
       // Sigh:

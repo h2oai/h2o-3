@@ -1,14 +1,19 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
 import water.fvec.Frame;
 import water.util.Log;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -74,9 +79,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Default constructor, given all arguments */
-  public ModelBuilder(Key dest, String desc, P parms) { 
-    super(dest,desc); 
-    _parms = parms; 
+  public ModelBuilder(Key dest, String desc, P parms) {
+    super(dest,desc);
+    _parms = parms;
   }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
@@ -96,9 +101,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Model.Parameters p = pclz.newInstance();
       modelBuilder = constructor.newInstance(p);
     } catch (java.lang.reflect.InvocationTargetException e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause());
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
     } catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
     }
 
     return modelBuilder;
@@ -141,13 +146,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid.remove(_parms._ignored_columns);
       Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-    
+
     // Drop all-constant and all-bad columns.
     String cstr="";             // Log of dropped columns
     for( int i=0; i<_train.vecs().length; i++ ) {
       if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
         cstr += _train._names[i]+", "; // Log dropped cols
-        _train.remove(i); _valid.remove(i);  
+        _train.remove(i); _valid.remove(i);
         i--; // Re-run at same iteration after dropping a col
       }
     }
@@ -160,7 +165,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
         if( ratio > 0.2 ) {
           nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
-          _train.remove(i); _valid.remove(i);  
+          _train.remove(i); _valid.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
@@ -211,13 +216,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final MessageType message_type;
     final String field_name;
     final String message;
-      
+
     public ValidationMessage(MessageType message_type, String field_name, String message) {
       this.message_type = message_type;
       this.field_name = field_name;
       this.message = message;
     }
-      
+
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
   }
 }

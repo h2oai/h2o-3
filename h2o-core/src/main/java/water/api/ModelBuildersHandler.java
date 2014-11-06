@@ -7,7 +7,7 @@ import water.util.IcedHashMap;
 
 import java.util.Map;
 
-class ModelBuildersHandler extends Handler<ModelBuildersHandler.ModelBuilders, ModelBuildersBase> {
+class ModelBuildersHandler<I extends ModelBuildersHandler.ModelBuilders, S extends ModelBuildersBase<I, S>> extends Handler<I, ModelBuildersBase<I, S>> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -18,6 +18,7 @@ class ModelBuildersHandler extends Handler<ModelBuildersHandler.ModelBuilders, M
   }
 
   /** Return all the modelbuilders. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema list(int version, ModelBuilders m) {
     Map<String, Class<? extends ModelBuilder>> builders = ModelBuilder.getModelBuilders();
     m.model_builders = new IcedHashMap<>();
@@ -30,6 +31,7 @@ class ModelBuildersHandler extends Handler<ModelBuildersHandler.ModelBuilders, M
   }
 
   /** Return a single modelbuilder. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, ModelBuilders m) {
     m.model_builders = new IcedHashMap<>();
     m.model_builders.put(m.algo, ModelBuilder.createModelBuilder(m.algo));

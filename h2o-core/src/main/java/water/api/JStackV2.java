@@ -14,11 +14,6 @@ public class JStackV2 extends Schema<JStack,JStackV2> {
     return this._jstack;
   }
 
-  @Override public JStackV2 fillFromImpl(JStack jstack) {
-    this._jstack = jstack;
-    return this;
-  }
-
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
     if (_jstack == null ) return ab;
     StringBuilder sb = new StringBuilder();

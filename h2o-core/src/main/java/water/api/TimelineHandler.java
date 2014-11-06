@@ -22,6 +22,7 @@ public class TimelineHandler extends Handler<Timeline,TimelineV2> {
   @Override public void compute2() { throw H2O.unimpl(); }
 
   // TODO: should return a base class for TimelineVx
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public TimelineV2 fetch(int version, Timeline t) {
     t.snapshot = new TimelineSnapshot(H2O.CLOUD,TimeLine.system_snapshot());
     return schema(version).fillFromImpl(t);

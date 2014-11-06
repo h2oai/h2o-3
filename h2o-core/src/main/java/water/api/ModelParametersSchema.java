@@ -49,9 +49,6 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     return (S)this;
   }
 
-  // Version&Schema-specific filling into the implementation object
-  abstract public P createImpl();
-
   public static class ValidationMessageBase extends Schema<ModelBuilder.ValidationMessage, ValidationMessageBase> {
     @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)", direction=API.Direction.OUTPUT)
     public String message_type;

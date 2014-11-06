@@ -35,13 +35,15 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
     if (null == schema)
       throw H2O.fail("Failed to find a schema for version: " + version + " in: " + this.getClass());
 
-    // Fill a Schema from the request params
-    schema = schema.fillFromParms(parms);
+    // Fill a Schema from the defaults from the impl, and then the request params:
+    I defaults = schema.createImpl();          // get impl defaults
+    schema.fillFromImpl(defaults);             // fill from impl defaults
+    schema = schema.fillFromParms(parms);      // fill from http request params
     if (null == schema)
       throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
 
     // Fill an impl object from the schema
-    final I i = schema.createImpl();  // NOTE: it's ok to get a null implementation object
+    final I i = schema.createAndFillImpl();  // NOTE: it's ok to get a null implementation object
                                       // (as long as handler_method knows what to do with it).
 
     // Run the Handler in the Nano Thread (nano does not grok CPS!)

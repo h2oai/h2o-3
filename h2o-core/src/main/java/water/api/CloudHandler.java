@@ -22,6 +22,7 @@ class CloudHandler extends Handler<Cloud,CloudV1> {
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public CloudV1 status(int version, Cloud cloud) {
     // TODO: this really ought to be in the water package
     cloud._version = H2O.ABV.projectVersion();

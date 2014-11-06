@@ -34,12 +34,16 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   /** Factory method to create the model-specific parameters schema. */
   abstract public P createParametersSchema();
-  abstract public B createImpl();
 
   public S fillFromParms(Properties parms) {
-    this.parameters = createParametersSchema();
     this.parameters.fillFromParms(parms);
     return (S)this;
+  }
+
+  @Override public B fillImpl(B impl) {
+    super.fillImpl(impl);
+    parameters.fillImpl(impl._parms);
+    return impl;
   }
 
   // Generic filling from the impl

@@ -2,7 +2,7 @@ package water.api;
 
 import water.util.PojoUtils;
 
-public class DocsBase extends Schema<DocsHandler.DocsPojo, DocsBase> {
+public class DocsBase<I extends DocsHandler.DocsPojo, S extends DocsBase<I, S>> extends Schema<I, DocsBase<I, S>> {
   @API(help="Number for specifying an endpoint", json=false)
   public int num;
 
@@ -22,12 +22,8 @@ public class DocsBase extends Schema<DocsHandler.DocsPojo, DocsBase> {
   @API(help="List of schemas.")
   public SchemaMetadataBase[] schemas;
 
-  @Override public DocsHandler.DocsPojo createImpl() {
-    DocsHandler.DocsPojo impl = new DocsHandler.DocsPojo();
-    // NOTE: we don't currently have a need to take the routes and schemas in the reverse direction
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT/*, new String[] { "routes", "schemas" }*/);
-    return impl;
-  }
+  // NOTE: we don't currently have a need to take the routes and schemas in the reverse direction,
+  // so no fillImpl() is required.
 
   @Override public DocsBase fillFromImpl(DocsHandler.DocsPojo impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] { "routes", "schemas" });

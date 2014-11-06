@@ -12,6 +12,7 @@ public class JStackHandler extends Handler<JStack,JStackV2> {
   //Output
   JStack _jstack; // for each node in the cloud it contains all threads stack traces
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public JStackV2 fetch(int version, JStack js) {
     _jstack = new JStack();
     _jstack.execImpl();

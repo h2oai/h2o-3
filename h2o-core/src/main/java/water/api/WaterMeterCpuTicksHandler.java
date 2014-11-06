@@ -9,6 +9,7 @@ public class WaterMeterCpuTicksHandler extends Handler<WaterMeterCpuTicks, Water
   @Override public void compute2() { throw H2O.fail(); }
   @Override protected WaterMeterCpuTicksV1 schema(int version) { return new WaterMeterCpuTicksV1(); }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public WaterMeterCpuTicksV1 fetch(int version, WaterMeterCpuTicks obj) {
     obj.doIt();
     return this.schema(version).fillFromImpl(obj);

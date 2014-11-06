@@ -551,8 +551,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
       return this;
     }
 
-    public DeepLearningParameters createImpl() {
-      DeepLearningParameters impl = new DeepLearningParameters();
+    public DeepLearningParameters fillImpl(DeepLearningParameters impl) {
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
       // Sigh:
       impl._train = (this.training_frame == null ? null : this.training_frame._key);

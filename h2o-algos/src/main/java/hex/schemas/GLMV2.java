@@ -19,13 +19,7 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
     public int max_iters;        // Max iterations
     public boolean normalize = true;
 
-    @Override public GLMParametersV2 fillFromImpl(GLMParameters parms) {
-      super.fillFromImpl(parms);
-      return this;
-    }
-
-    public GLMParameters createImpl() {
-      GLMParameters impl = new GLMParameters();
+    public GLMParameters fillImpl(GLMParameters impl) {
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
 
       // Sigh:
