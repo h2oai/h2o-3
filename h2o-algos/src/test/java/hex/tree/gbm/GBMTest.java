@@ -18,7 +18,7 @@ public class GBMTest extends TestUtil {
   //  assert(sb.length() > 0);
   //}
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -152,7 +152,8 @@ public class GBMTest extends TestUtil {
     Frame fr = null, fr2= null;
     try {
       fr = parse_test_file(fname);
-      int idx = prep.prep(fr);
+      int idx = prep.prep(fr); // hack frame per-test
+      water.DKV.put(fr);       // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) { parms._toEnum = false; idx = ~idx; }
