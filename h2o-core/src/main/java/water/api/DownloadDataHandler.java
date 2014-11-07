@@ -21,7 +21,6 @@ public class DownloadDataHandler extends Handler<DownloadData, DownloadDataV1> {
     String filename;
   }
 
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV1 fetch(int version, DownloadData server) {
 
