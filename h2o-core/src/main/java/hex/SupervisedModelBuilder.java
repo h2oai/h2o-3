@@ -14,9 +14,9 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public final boolean isClassifier() { return _nclass > 1; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public SupervisedModelBuilder(P parms) { super(parms); }
-  public SupervisedModelBuilder(String desc, P parms) { super(desc,parms); }
-  public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms); }
+  public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
+  public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
+  public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -27,8 +27,8 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
    *  Validate the response column; move it to the end; flip it to an Enum if
    *  requested.  Validate the max_after_balance_size; compute the number of
    *  classes.   */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     if( _parms._max_after_balance_size <= 0.0 )
       error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
@@ -46,7 +46,10 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column is all NAs!");
     if( _response.isConst() ) 
       error("_response_column", "Response column is constant!");
-    //if( _parms._toEnum ) _response = _response.toEnum(); // TODO: THIS CAN BE EXPENSIVE; DO IT ELSEWHERE
+    if( _parms._toEnum && expensive ) { // Expensive; only do it on demand
+      _response = _response.toEnum();
+      vresp     = vresp    .toEnum();
+    }
     _train.add(_parms._response_column, _response);
     _valid.add(_parms._response_column, vresp);
 

@@ -44,6 +44,9 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Ignored columns", direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
+  @API(help="Score validation set on each major model-building iteration; can be slow", direction=API.Direction.INOUT)
+  public boolean score_each_iteration;
+
   public S fillFromImpl(P parms) {
     PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES );
     return (S)this;

@@ -13,7 +13,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
-  public SharedTree( String name, P parms) { super(name,parms); }
+  public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
 
   // Number of trees requested, including prior trees from a checkpoint
   protected int _ntrees;
@@ -35,8 +35,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *
    *  Validate the requested ntrees; precompute actual ntrees.  Validate
    *  the number of classes to predict on; validate a checkpoint.  */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
       throw new IllegalArgumentException("Too many levels in response column!");
@@ -71,6 +71,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
+        init(true);             // Do any expensive tests & conversions now
 
         _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
 
@@ -333,7 +334,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
-      _model._output._nrmse = sc.nrmse();
+      _model._output._r2 = sc.r2();
       _model._output._cm = sc.cm();
       _model._output._auc = sc.auc();
       _timeLastScoreEnd = System.currentTimeMillis();

@@ -18,12 +18,12 @@ import water.util.MRUtils;
 public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   // Called from Nano thread; start the Example Job on a F/J thread
-  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(); }
+  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example trainModel() {
-    return (Example)start(new ExampleDriver(), _parms._max_iters);
+    init(true); return (Example)start(new ExampleDriver(), _parms._max_iters);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -33,8 +33,8 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
    *  Validate the max_iters. */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     if( _parms._max_iters < 1 || _parms._max_iters > 9999999 )
       error("max_iters", "must be between 1 and a million");
   }

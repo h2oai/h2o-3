@@ -18,7 +18,7 @@ import water.util.ArrayUtils;
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
   // Called from an http request
-  public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(); }
+  public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
 
   @Override public GBMV2 schema() { return new GBMV2(); }
 
@@ -34,8 +34,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
    *  Validate the learning rate and loss family. */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
@@ -57,7 +57,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Initialize gbm-specific data structures
       if( _parms._importance ) _improvPerVar = new float[_nclass];
 
-      // Reconstruct the working tree state from the checkopoint
+      // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
         Timer t = new Timer();
         new ResidualsCollector(_ncols, _nclass, _model._output._treeKeys).doAll(_train);

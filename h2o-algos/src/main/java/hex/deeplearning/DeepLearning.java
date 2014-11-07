@@ -23,7 +23,7 @@ import static water.util.MRUtils.sampleFrameStratified;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
-  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) { super("DeepLearning",parms); init(); }
+  public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) { super("DeepLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new DeepLearningV2(); }
 
@@ -39,14 +39,16 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
    *  Validate the very large number of arguments in the DL Parameter directly. */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     _parms.validate(this);
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     @Override protected void compute2() {
       try {
+        Scope.enter();
+        init(true);
         _parms.lock_frames(DeepLearning.this);
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
@@ -56,6 +58,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         throw t;
       } finally {
         _parms.unlock_frames(DeepLearning.this);
+        Scope.exit();
         done();                 // Job done!
       }
       tryComplete();
@@ -157,11 +160,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info("Resuming from checkpoint.");
         if (_parms._n_folds != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
-        // Check the column situation is the same... after dropping ignored,
-        // constant and bad columns.  Test is probably too strict; I would
-        // think having extra columns would be OK.
-        if( _train.checksum() != previous.model_info()._train.checksum())
-          throw new IllegalArgumentException("source must be the same as for the checkpointed model.");
         _parms._autoencoder = previous.model_info().get_params()._autoencoder;
         if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
           throw new IllegalArgumentException("response_vec must be the same as for the checkpointed model.");

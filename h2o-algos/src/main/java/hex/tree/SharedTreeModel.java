@@ -25,13 +25,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed;          // Seed for psuedo-random redistribution
 
-    // Scoring a model on a dataset is not free; sometimes it is THE limiting
-    // factor to model building.  By default, partially built models are only
-    // scored every so many major model iterations - throttled to limit scoring
-    // costs to less than 10% of the build time.  This flag forces scoring for
-    // every iteration, allowing e.g. more fine-grained progress reporting.
-    public boolean _score_each_iteration;
-
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
@@ -51,8 +44,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    /** Normalized Root Mean Squared Error on validation set */
-    public double _nrmse;
+    /** r2 metric on validation set: 1-(MSE(model) / MSE(mean)) */
+    public double _r2;
 
     /** Confusion Matrix for classification models, or null otherwise */
     public ConfusionMatrix2 _cm;
@@ -78,7 +71,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeKeys = Arrays.copyOf(_treeKeys,_ntrees+1);
       Key[] keys = _treeKeys[_ntrees] = new Key[trees.length];
       Futures fs = new Futures();
-      for( int i=0; i<nclasses(); i++ ) {
+      for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
         CompressedTree ct = trees[i].compress(_ntrees,i);
         DKV.put(keys[i]=ct._key,ct,fs);
       }
@@ -116,7 +109,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   @Override protected Futures remove_impl( Futures fs ) {
     for( Key ks[] : _output._treeKeys)
       for( Key k : ks )
-        k.remove(fs);
+        if( k != null ) k.remove(fs);
     return super.remove_impl(fs);
   }
 }

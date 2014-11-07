@@ -9,15 +9,6 @@ import static org.junit.Assert.assertEquals;
 
 public class GBMTest extends TestUtil {
 
-  // TODO: Should check JSON but not HTML
-  //private void testJSON(GBMModel m) {
-  //  StringBuilder sb = new StringBuilder();
-  //  GBMModelView gbmv = new GBMModelView();
-  //  gbmv.gbm_model = m;
-  //  gbmv.toHTML(sb);
-  //  assert(sb.length() > 0);
-  //}
-
   @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
@@ -81,23 +72,16 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
 
-//    // Classification tests
-//    basicGBM("./smalldata/test/test_tree.csv","tree.hex",
-//             new PrepData() { int prep(Frame fr) { return 1; }
-//             });
-//    basicGBM("./smalldata/test/test_tree_minmax.csv","tree_minmax.hex",
-//             new PrepData() { int prep(Frame fr) { return fr.find("response"); }
-//             });
-//    basicGBM("./smalldata/logreg/prostate.csv","prostate.hex",
-//             new PrepData() {
-//               int prep(Frame fr) {
-//                 assertEquals(380,fr.numRows());
-//                 // Remove patient ID vector
-//                 UKV.remove(fr.remove("ID")._key);
-//                 // Prostate: predict on CAPSULE
-//                 return fr.find("CAPSULE");
-//               }
-//             });
+    // Classification tests
+    basicGBM("./smalldata/junit/test_tree.csv",
+             new PrepData() { int prep(Frame fr) { return 1; }
+             });
+    basicGBM("./smalldata/junit/test_tree_minmax.csv",
+             new PrepData() { int prep(Frame fr) { return fr.find("response"); }
+             });
+    basicGBM("./smalldata/logreg/prostate.csv",
+             new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+             });
 //    basicGBM("./smalldata/cars.csv","cars.hex",
 //             new PrepData() { int prep(Frame fr) { UKV.remove(fr.remove("name")._key); return fr.find("cylinders"); }
 //             });
@@ -165,7 +149,7 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._nbins = 50;
       parms._learn_rate = .2f;
-//      gbm.score_each_iteration=true;
+      parms._score_each_iteration=true;
 
       GBM job = null;
       try {
@@ -178,7 +162,6 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
-//      testJSON(gbmmodel);
       Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
       //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
 

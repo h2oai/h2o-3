@@ -56,11 +56,6 @@ public class DeepLearningProstateTest extends TestUtil {
               }) {
                 for (int resp : responses[i]) {
                   boolean classification = !(i == 0 && resp == 2);
-                  Vec old = frame.vecs()[resp];
-                  if( classification ) {
-                    frame.replace(resp, old.toEnum());
-                    DKV.put(frame._key,frame);
-                  }
                   for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
                           ClassSamplingMethod.Stratified,
                           ClassSamplingMethod.Uniform
@@ -347,9 +342,6 @@ public class DeepLearningProstateTest extends TestUtil {
                       }
                     }
                   }
-                  if( classification )
-                    frame.replace(resp,old).remove();
-                    DKV.put(frame._key,frame);
                 }
               }
             }

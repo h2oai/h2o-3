@@ -31,7 +31,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   transient private int _reinit_attempts;
 
   // Called from an http request
-  public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(); }
+  public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }
 
@@ -40,15 +40,15 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   @Override public Job<KMeansModel> trainModel() {
     return start(new KMeansDriver(), _parms._max_iters);
   }
-
+  
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".
    *
    *  Validate K, max_iters and the number of rows.  Precompute the number of
    *  categorical columns. */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     if( _parms._K < 2 || _parms._K > 9999999 ) error("_K", "K must be between 2 and 10 million");
     if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("_max_iters", "must be between 1 and a million");
     if( _train == null ) return; // Nothing more to check
@@ -76,6 +76,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
       KMeansModel model = null;
       try {
+        init(true);
         _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
 
         // The model to be built

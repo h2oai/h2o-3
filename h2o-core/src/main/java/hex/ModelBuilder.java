@@ -116,14 +116,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
-   *  and each subclass will start with "super.init();".  This call is made
-   *  by the front-end whenever the GUI is clicked, and needs to be fast;
-   *  heavy-weight prep needs to wait for the trainModel() call.
+   *  and each subclass will start with "super.init();".  This call is made by
+   *  the front-end whenever the GUI is clicked, and needs to be fast whenever
+   *  {@link expensive} is false; it will be called once again at the start of
+   *  model building {@link trainModel} with expensive set to true.
    *
    *  The incoming training frame (and validation frame) will have ignored
    *  columns dropped out, plus whatever work the parent init did.
    */
-  public void init() {
+  public void init(boolean expensive) {
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in

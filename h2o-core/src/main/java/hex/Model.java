@@ -57,6 +57,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _dropNA20Cols;    // True if dropping cols > 20% NAs
 
+    // Scoring a model on a dataset is not free; sometimes it is THE limiting
+    // factor to model building.  By default, partially built models are only
+    // scored every so many major model iterations - throttled to limit scoring
+    // costs to less than 10% of the build time.  This flag forces scoring for
+    // every iteration, allowing e.g. more fine-grained progress reporting.
+    public boolean _score_each_iteration;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols(); }
 

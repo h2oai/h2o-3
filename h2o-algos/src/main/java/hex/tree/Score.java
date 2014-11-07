@@ -21,21 +21,28 @@ public class Score extends MRTask<Score> {
   final boolean _oob;           // Computed on OOB
   final boolean _validation;    // Computed on separate validation dataset
   final int     _cmlen;         // Union of train/test response categoricals
-  double  _sum;                 // Sum-squared-relative-error
+  double  _sum;                 // Sum-squared-error
   long    _snrows;              // Count of voted-on rows
   long    _cm[/*actual*/][/*predicted*/]; // Confusion matrix
   long    _cms[/*threshold*/][/*actual*/][/*predicted*/]; // Compute CM per threshold for binary classifiers
 
-  // Normalized Root Mean Squared Error
-  public double nrmse() { return Math.sqrt(_sum/_snrows); }
+  // r2 = 1- MSE(gbm) / MSE(mean)
+  public double r2() {
+    double mse = _sum/_snrows;
+    double stddev = _bldr._response.sigma();
+    double var = stddev*stddev;
+    return 1.0-(mse/var);
+  }
 
   // Confusion Matrix for classification, or null otherwise
   public ConfusionMatrix2 cm() { return _cm == null ? null : new ConfusionMatrix2(_cm); }
 
   public AUC auc() { 
-    if( _cms == null ) return null;
-    // makeAUC(toCMArray(sc._cms), ModelUtils.DEFAULT_THRESHOLDS);
-    throw H2O.unimpl();
+    if( _nclass != 2 ) return null; // Only for binomial models
+    final int n = _cms.length;
+    ConfusionMatrix2[] res = new ConfusionMatrix2[n];
+    for( int i = 0; i < n; i++ ) res[i] = new ConfusionMatrix2(_cms[i]);
+    return new AUC(res, ModelUtils.DEFAULT_THRESHOLDS, _bldr.valid().lastVec().domain());
   }
 
 
@@ -104,14 +111,10 @@ public class Score extends MRTask<Score> {
             : 1.0f-fs[yact+1]/sum;              // Error: distance from predicting ycls as 1.0
         }
         assert !Double.isNaN(err) : "fs[cls]="+fs[yact+1] + ", sum=" + sum;
-        // Scale error by prediction (computing squared-relative-error).
-        // For classification, no scale (scale by 1)
       } else {                // Regression
         err = (float)ys.at0(row) - sum;
-        // Scale error by prediction (computing squared-relative-error).
-        err /= ys.at0(row);
       }
-      _sum += err*err;               // Squared relative error
+      _sum += err*err;               // Squared error
       assert !Double.isNaN(_sum);
       // Pick highest prob for our prediction.
       if (_nclass > 1) {    // fill CM only for classification
@@ -143,7 +146,7 @@ public class Score extends MRTask<Score> {
     int lcnt=0;
     if( trees!=null ) for( DTree t : trees ) if( t != null ) lcnt += t._len;
     long err=_snrows;
-    Log.info("Normalized Root Mean Squared Error is "+nrmse()+", with "+ntrees+"x"+_nclass+" trees (average of "+((float)lcnt/_nclass)+" nodes)");
+    Log.info("r2 is "+r2()+", with "+ntrees+"x"+_nclass+" trees (average of "+((float)lcnt/_nclass)+" nodes)");
     if( _nclass > 1 ) {
       for( int c=0; c<_nclass; c++ ) err -= _cm[c][c];
       Log.info("Total of "+err+" errors on "+_snrows+" rows, CM= "+Arrays.deepToString(_cm));

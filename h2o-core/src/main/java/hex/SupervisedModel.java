@@ -24,7 +24,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
 
     /** Convert the response column to an enum (forcing a classification
      *  instead of a regression) as needed. */
-    public boolean _toEnum;
+    public boolean _toEnum = true;
 
     /** Should the minority classes be upsampled to balance the class
      *  distribution? */
