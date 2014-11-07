@@ -5,7 +5,7 @@ import water.util.JProfile;
 
 import java.util.Arrays;
 
-public class ProfilerV2 extends ProfilerBase<ProfilerV2> {
+public class ProfilerV2 extends ProfilerBase<Profiler, ProfilerV2> {
   // Inputs and Outputs are in ProfilerBase
 
 }
