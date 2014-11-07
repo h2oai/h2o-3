@@ -34,6 +34,7 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
   }
 
   @Override public RapidsV1 fillFromImpl(RapidsHandler.Rapids rapids) {
+    if (rapids == null) return this;
     ast       = rapids._ast;
     funs      = rapids._funs;
     key       = rapids._key;

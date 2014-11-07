@@ -19,7 +19,13 @@ public class InspectHandler extends Handler<InspectPojo,InspectV1> {
     // Outputs
     Schema _schema;        // Schema for viewing
 
+    protected InspectPojo() { }
+
     protected InspectPojo(Value val, long off, int len) {
+      this.init(val, off, len);
+    }
+
+    protected void init(Value val, long off, int len) {
       _val = val;
       _off = off;
       _len = len;

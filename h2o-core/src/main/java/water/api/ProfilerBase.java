@@ -4,7 +4,7 @@ import water.H2O;
 import water.api.ProfilerHandler.Profiler;
 import water.util.DocGen;
 
-abstract class ProfilerBase<S extends Schema<Profiler, S>> extends Schema<Profiler, S> {
+abstract class ProfilerBase<I extends Profiler, S extends Schema<I, S>> extends Schema<I, S> {
   // Input
   @API(help="Stack trace depth", required=true)
   public int depth = 5;
@@ -15,7 +15,7 @@ abstract class ProfilerBase<S extends Schema<Profiler, S>> extends Schema<Profil
   @API(help="Array of Profile Counts, one per Node in the Cluster", direction=API.Direction.OUTPUT)
   public int[][] counts;
 
-  @Override public Profiler fillImpl(Profiler profiler) {
+  @Override public I fillImpl(I profiler) {
     if (depth < 1) throw new IllegalArgumentException("depth must be >= 1.");
 
     super.fillImpl(profiler);
