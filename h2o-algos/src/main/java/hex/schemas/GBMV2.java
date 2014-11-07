@@ -70,15 +70,6 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
   //==========================
   // Custom adapters go here
 
-  @Override public GBMParametersV2 createParametersSchema() { return new GBMParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  // TODO: defaults should only be in the impl, not duplicated in the API layer
-  @Override public GBM createImpl() {
-    GBMParameters parms = parameters.createImpl();
-    return new GBM(parms);
-  }
-
   // TODO: UGH
   // Return a URL to invoke GBM on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/GBM?training_frame="+fr._key; }

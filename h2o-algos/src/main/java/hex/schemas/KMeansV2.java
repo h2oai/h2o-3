@@ -56,14 +56,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
   //==========================
   // Custom adapters go here
 
-  @Override public KMeansParametersV2 createParametersSchema() { return new KMeansParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  @Override public KMeans createImpl() {
-    KMeansParameters parms = (parameters == null ? null : parameters.createImpl());
-    return new KMeans(parms);
-  }
-
   // TODO: UGH
   // Return a URL to invoke KMeans on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }

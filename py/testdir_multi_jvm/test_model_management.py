@@ -52,9 +52,8 @@ def validate_model_builder_result(result, original_params, model_name):
         pp.pprint(original_params)
         print 'Returned result: '
         pp.pprint(result)
-    assert 'validation_error_count' in result, "Failed to find validation_error_count for model: " + model_name
-    assert 'validation_messages' in result, "Failed to find validation_error_count for model: " + model_name
-    assert result['validation_error_count'] == 0, "Failed parameters validation for model (count != 0): " + model_name
+    assert 'jobs' in result, "Failed to find jobs key for model: " + model_name
+    assert 'key' in result, "Failed to find (jobs) key for model: " + model_name
 
 
 def list_to_dict(l, key):
@@ -401,18 +400,18 @@ if h2o.H2O.verbose:
 
 ############################
 # Check kmeans_model_name
-# found_kmeans = False;
-# kmeans_model = None
-# print 'looking for model: ', kmeans_model_name
-# for model in models['models']:
-#     print 'Is it: ', model['key'], '?'
-#     if model['key'] == kmeans_model_name:
-#         found_kmeans = True
-#         kmeans_model = model
-# 
-# assert found_kmeans, 'Did not find ' + kmeans_model_name + ' in the models list.'
-# validate_actual_parameters(kmeans_parameters, kmeans_model['parameters'], prostate_key, None)
-# 
+found_kmeans = False;
+kmeans_model = None
+print 'looking for model: ', kmeans_model_name
+for model in models['models']:
+    print 'Is it: ', model['key'], '?'
+    if model['key'] == kmeans_model_name:
+        found_kmeans = True
+        kmeans_model = model
+
+assert found_kmeans, 'Did not find ' + kmeans_model_name + ' in the models list.'
+validate_actual_parameters(kmeans_parameters, kmeans_model['parameters'], prostate_key, None)
+
 ###################################
 # Check dl_prostate_model_name
 # found_dl = False;

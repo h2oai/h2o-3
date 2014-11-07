@@ -113,7 +113,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract public Job<M> trainModel();
 
   /** Clear whatever was done by init() so it can be run again. */
-  protected void clearInitState() {
+  public void clearInitState() {
     clearValidationErrors();
 
   }

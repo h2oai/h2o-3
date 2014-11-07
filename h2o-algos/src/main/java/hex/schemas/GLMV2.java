@@ -33,14 +33,6 @@ public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
   //==========================
   // Custom adapters go here
 
-  @Override public GLMParametersV2 createParametersSchema() { return new GLMParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  @Override public GLM createImpl() {
-    GLMParameters parms = parameters.createImpl();
-    return new GLM(parms);
-  }
-
   // Return a URL to invoke GLM on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/GLM?training_frame="+fr._key; }
 }
