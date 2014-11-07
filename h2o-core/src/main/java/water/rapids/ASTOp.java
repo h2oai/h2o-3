@@ -987,8 +987,8 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
   final double _init;
-  protected boolean _narm;        // na.rm in R
-  protected int _argcnt;
+  protected static boolean _narm;        // na.rm in R
+  protected static int _argcnt;
   ASTReducerOp( double init) {
     super(new String[]{"","dblary","...", "na.rm"});
     _init = init;
@@ -1089,7 +1089,7 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 
 // Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {
-  protected int argcnt;
+  protected static int argcnt;
   @Override String opStr() { return "cbind"; }
   ASTCbind( ) { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
@@ -1226,7 +1226,7 @@ class ASTAND extends ASTBinOp {
 }
 
 class ASTRename extends ASTUniPrefixOp {
-  protected String _newname;
+  protected static String _newname;
   @Override String opStr() { return "rename"; }
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
@@ -1252,8 +1252,8 @@ class ASTRename extends ASTUniPrefixOp {
 }
 
 class ASTMatch extends ASTUniPrefixOp {
-  protected double _nomatch;
-  protected String[] _matches;
+  protected static double _nomatch;
+  protected static String[] _matches;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
@@ -1335,7 +1335,7 @@ class ASTOR extends ASTBinOp {
 
 // Similar to R's seq_len
 class ASTSeqLen extends ASTUniPrefixOp {
-  protected double _length;
+  protected static double _length;
   @Override String opStr() { return "seq_len"; }
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
   @Override ASTOp make() { return new ASTSeqLen(); }
@@ -1357,9 +1357,9 @@ class ASTSeqLen extends ASTUniPrefixOp {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTUniPrefixOp {
-  protected double _from;
-  protected double _to;
-  protected double _by;
+  protected static double _from;
+  protected static double _to;
+  protected static double _by;
 
   @Override String opStr() { return "seq"; }
   ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
@@ -1411,7 +1411,7 @@ class ASTSeq extends ASTUniPrefixOp {
 }
 
 class ASTRepLen extends ASTUniPrefixOp {
-  protected double _length;
+  protected static double _length;
   @Override String opStr() { return "rep_len"; }
   ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
