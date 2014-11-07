@@ -23,8 +23,10 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public String _response_column; // response column name
 
     /** Convert the response column to an enum (forcing a classification
-     *  instead of a regression) as needed. */
-    public boolean _toEnum = true;
+     *  instead of a regression) as needed.  The default is false, which means
+     *  "do nothing" - accept the response column as-is and that alone drives
+     *  the decision to do a classification vs regression. */
+    public boolean _toEnum = false;
 
     /** Should the minority classes be upsampled to balance the class
      *  distribution? */

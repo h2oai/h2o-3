@@ -18,7 +18,7 @@ import java.util.Arrays;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
-  public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(); }
+  public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() {
     H2O.unimpl();
@@ -40,8 +40,8 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
   */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
 
     if ((_parms.start_column != null) && !_parms.start_column.isInt())
       error("start_column", "start time must be null or of type integer");
@@ -408,6 +408,8 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
     @Override protected void compute2() {
       CoxPHModel model = null;
       try {
+        Scope.enter();
+        init(true);
         _parms.lock_frames(CoxPH.this);
 
         applyScoringFrameSideEffects();
@@ -484,6 +486,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
         throw t;
       } finally {
         _parms.unlock_frames(CoxPH.this);
+        Scope.exit();
         done();                 // Job done!
       }
       tryComplete();

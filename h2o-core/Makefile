@@ -44,36 +44,38 @@ default: build/libs/h2o-core.jar build/libs/h2o-core-test.jar
 classes: $(classes)
 
 
-JVM = nice java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
-# Tests that happen during Cloud startup
-JUNIT_TESTS_BOOT = water.AAA_PreCloudLock
-# Too slow for normal junit runs
-JUNIT_TESTS_SLOW1 = water.KVTest
-JUNIT_TESTS_SLOW2 = water.parser.ParseProgressTest
-JUNIT_TESTS_SLOW3 = water.fvec.WordCountBigTest
-# All Tests minus the excludes
-JUNIT_TESTS0 = $(subst /,.,$(test_clazzes))
-JUNIT_TESTS1 = $(subst $(JUNIT_TESTS_BOOT) ,,$(JUNIT_TESTS0))
-JUNIT_TESTS2 = $(subst $(JUNIT_TESTS_SLOW1),,$(JUNIT_TESTS1))
-JUNIT_TESTS3 = $(subst $(JUNIT_TESTS_SLOW2),,$(JUNIT_TESTS2))
-JUNIT_TESTS4 = $(subst $(JUNIT_TESTS_SLOW3),,$(JUNIT_TESTS3))
-JUNIT_TESTS5 = $(subst water.TestUtil,,$(JUNIT_TESTS4))
-# Tests
-JUNIT_TESTS  = $(JUNIT_TESTS_BOOT) $(JUNIT_TESTS5)
+#JVM = nice java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
+## Tests that happen during Cloud startup
+#JUNIT_TESTS_BOOT = water.AAA_PreCloudLock
+## Too slow for normal junit runs
+#JUNIT_TESTS_SLOW1 = water.KVTest
+#JUNIT_TESTS_SLOW2 = water.parser.ParseProgressTest
+#JUNIT_TESTS_SLOW3 = water.fvec.WordCountBigTest
+## All Tests minus the excludes
+#JUNIT_TESTS0 = $(subst /,.,$(test_clazzes))
+#JUNIT_TESTS1 = $(subst $(JUNIT_TESTS_BOOT) ,,$(JUNIT_TESTS0))
+#JUNIT_TESTS2 = $(subst $(JUNIT_TESTS_SLOW1),,$(JUNIT_TESTS1))
+#JUNIT_TESTS3 = $(subst $(JUNIT_TESTS_SLOW2),,$(JUNIT_TESTS2))
+#JUNIT_TESTS4 = $(subst $(JUNIT_TESTS_SLOW3),,$(JUNIT_TESTS3))
+#JUNIT_TESTS5 = $(subst water.TestUtil,,$(JUNIT_TESTS4))
+## Tests
+#JUNIT_TESTS  = $(JUNIT_TESTS_BOOT) $(JUNIT_TESTS5)
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
-	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
-	-@(pkill java; echo )
-	@exit `cat sandbox/status.0`
+	./testMultiNode.sh
+#	@rm -rf sandbox ; mkdir sandbox
+#	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+#	-@(pkill java; echo )
+#	@exit `cat sandbox/status.0`
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check_slow: $(classes)
-	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) $(JUNIT_TESTS_SLOW) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
-	@pkill java
-	@exit `cat sandbox/status.0`
+	./testMultiNode.sh
+#	@rm -rf sandbox ; mkdir sandbox
+#	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) $(JUNIT_TESTS_SLOW) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+#	@pkill java
+#	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/main/%class: src/main/java/%java

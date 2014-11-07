@@ -23,7 +23,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example trainModel() {
-    init(true); return (Example)start(new ExampleDriver(), _parms._max_iters);
+    return (Example)start(new ExampleDriver(), _parms._max_iters);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -45,8 +45,10 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
     @Override protected void compute2() {
       ExampleModel model = null;
       try {
+        Scope.enter();
         _parms.lock_frames(Example.this); // Fetch & read-lock source frame
-    
+        init(true);
+
         // The model to be built
         model = new ExampleModel(dest(), _parms, new ExampleModel.ExampleOutput(Example.this));
         model.delete_and_lock(_key);
@@ -76,6 +78,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.unlock_frames(Example.this);
+        Scope.exit();
         done();                 // Job done!
       }
       tryComplete();

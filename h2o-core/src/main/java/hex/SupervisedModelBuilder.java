@@ -1,15 +1,20 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
 abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends ModelBuilder<M,P,O> {
 
-  public transient Vec _response; // Handy response column
+  protected transient Vec _response; // Handy response column
+  public Key _response_key; // Handy response column
+  public Vec response() { return _response == null ? (_response = DKV.get(_response_key).<Vec>get()) : _response; }
+
+  protected transient Vec _vresponse; // Handy validation response column
+  public Key _vresponse_key; // Handy response column
+  public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.get(_vresponse_key).<Vec>get()) : _vresponse; }
+
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
   public final boolean isClassifier() { return _nclass > 1; }
 
@@ -41,17 +46,19 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     if( ridx == -1 ) // Actually, think should not get here either (cutout at higher layer)
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms.train() + ".");
     _response = _train.remove(ridx);
-    Vec vresp = _valid.remove(ridx);
+    _vresponse= _valid.remove(ridx);
     if( _response.isBad() ) 
       error("_response_column", "Response column is all NAs!");
     if( _response.isConst() ) 
       error("_response_column", "Response column is constant!");
     if( _parms._toEnum && expensive ) { // Expensive; only do it on demand
-      _response = _response.toEnum();
-      vresp     = vresp    .toEnum();
+       _response=  _response.toEnum();
+      _vresponse= _vresponse.toEnum();
     }
-    _train.add(_parms._response_column, _response);
-    _valid.add(_parms._response_column, vresp);
+    _train.add(_parms._response_column,  _response);
+    _valid.add(_parms._response_column, _vresponse);
+     _response_key =  _response._key;
+    _vresponse_key = _vresponse._key;
 
     // #Classes: 1 for regression, domain-length for enum columns
     _nclass = _response.isEnum() ? _response.domain().length : 1;

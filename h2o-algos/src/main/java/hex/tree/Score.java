@@ -4,10 +4,12 @@ import java.util.Arrays;
 
 import hex.AUC;
 import hex.ConfusionMatrix2;
+import water.DKV;
 import water.MRTask;
 import water.H2O;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.ModelUtils;
@@ -29,7 +31,7 @@ public class Score extends MRTask<Score> {
   // r2 = 1- MSE(gbm) / MSE(mean)
   public double r2() {
     double mse = _sum/_snrows;
-    double stddev = _bldr._response.sigma();
+    double stddev = DKV.get(_bldr._response_key).<Vec>get().sigma();
     double var = stddev*stddev;
     return 1.0-(mse/var);
   }
@@ -42,7 +44,7 @@ public class Score extends MRTask<Score> {
     final int n = _cms.length;
     ConfusionMatrix2[] res = new ConfusionMatrix2[n];
     for( int i = 0; i < n; i++ ) res[i] = new ConfusionMatrix2(_cms[i]);
-    return new AUC(res, ModelUtils.DEFAULT_THRESHOLDS, _bldr.valid().lastVec().domain());
+    return new AUC(res, ModelUtils.DEFAULT_THRESHOLDS, _bldr.vresponse().domain());
   }
 
 
@@ -60,7 +62,7 @@ public class Score extends MRTask<Score> {
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
-    _cmlen = bldr.valid().lastVec().cardinality();
+    _cmlen = bldr.vresponse().cardinality();
   }
 
   Score doIt( final boolean build_tree_one_node ) {
