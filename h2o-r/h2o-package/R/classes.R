@@ -547,7 +547,7 @@ setClass("ASTUnk", representation(key="character", isFormal="logical"), contains
 #-----------------------------------------------------------------------------------------------------------------------
 
 setClass("ASTBody",   representation(statements="list"), contains="Node")
-setClass("ASTFun", representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
 setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
 setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
 setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))

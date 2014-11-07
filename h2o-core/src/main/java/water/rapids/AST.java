@@ -134,7 +134,7 @@ class ASTKey extends AST {
 class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
-  ASTFrame(Frame fr) { _key = null; _fr = fr; }
+  ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(String key) {
     Key k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
@@ -324,7 +324,7 @@ class ASTStatement extends AST {
   @Override String value() { return null; }
   @Override int type() {return 0; }
 
-  @Override public String toString() { return ";;;"; }
+  @Override public String toString() { return toString(new StringBuilder(""), 0).toString() + ";;;"; }
   @Override public StringBuilder toString( StringBuilder sb, int d ) {
     for (int i = 0; i < _asts.length - 1; i++)
       _asts[i].toString(sb, d + 1).append(";\n");

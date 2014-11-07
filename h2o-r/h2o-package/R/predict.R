@@ -26,10 +26,12 @@ function(object, newdata, types) {
 #'
 #' Predict with an object of class H2ODeepLearningModel
 predict.H2ODeepLearningModel <- function(object, newdata, ...) {
-  .validate(object, newdata, types=list(object="H2ODeepLearningModel", newdata="H2OFrame"))
+  stop("unimpl")
+  .validate.predict(object, newdata, types=list(object="H2ODeepLearningModel", newdata="H2OFrame"))
   key_prefix <- "H2ODeepLearningModel"
   rand_pred_key <- .uniq.id(key_prefix)
-#  res <- .h2o.__remoteSend(object@h2o,
+  predict_link <- "3/Predictions.json/models/" %p0% object@key %p0% "/frames/" %p0% newdata@key
+  res <- .h2o.__remoteSend(object@h2o, predict_link, method = "HTTPPOST")
 }
 
 

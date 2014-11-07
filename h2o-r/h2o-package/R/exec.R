@@ -58,7 +58,7 @@ function(op, e1, e2) {
 .h2o.varop<-
 function(op, ...) {
   op <- new("ASTApply", op = op)
-  ASTargs <- .argsToAST(...)
+  ASTargs <- .args.to.ast(...)
   new("ASTNode", root=op, children=ASTargs)
 }
 
@@ -100,6 +100,17 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   }
   if (!is.null(ID)) assign(ID, ret, env = env)
   else assign(rID, ret, env = env)
+}
+
+#'
+#' Have H2O Learn A New Function
+#'
+#' Convenient to have a POST function method.
+.h2o.post.function<-
+function(fun.ast) {
+  expr <- .fun.visitor(fun.ast)
+  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS, funs=.collapse(expr))
+  print(res)
 }
 
 #cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")

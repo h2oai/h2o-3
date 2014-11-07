@@ -33,6 +33,7 @@ public class Env extends Iced {
   final static int SPAN  =5;
   final static int SERIES=6;
   final static int NULL  =99999;
+  final static int LARY  =99;  // special value for arrays in _local_array
 
   final ExecStack _stack;                   // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
@@ -269,6 +270,10 @@ public class Env extends Iced {
   void popScope() {
     _local.clear();  // clear the symbol table
     Futures fs = new Futures();
+    for (String k : _local._local_frames.keySet()) {
+      Frame f = _local._local_frames.remove(k);
+      for (Vec v : f.vecs()) removeVec(v, fs);
+    }
     for (Vec v : _refcnt.keySet()) {  // wiping the reference counts
       if (!_locked.contains(v._key)) fs = removeVec(v, fs);
       extinguishCounts(v);
@@ -503,8 +508,9 @@ public class Env extends Iced {
    */
   class SymbolTable extends Iced {
 
+    HashMap<String, Frame> _local_frames; // these are not in the DKV!
     HashMap<String, SymbolAttributes> _table;
-    public SymbolTable() { _table = new HashMap<>(); }
+    public SymbolTable() { _table = new HashMap<>(); _local_frames = new HashMap<>(); }
     void clear() { _table.clear(); }
     public void copyOver(SymbolTable s) { _table = s._table; }
 
@@ -520,6 +526,11 @@ public class Env extends Iced {
     public int typeOf(String name) {
       if (!_table.containsKey(name)) return NULL;
       return _table.get(name).typeOf();
+    }
+
+    public int typeOf2(String name) {
+      if (_local_frames.containsKey(name)) return LARY;
+      return NULL;
     }
 
     public String valueOf(String name) {
@@ -568,6 +579,11 @@ public class Env extends Iced {
   int getType(String name, boolean search_global) {
     int res = NULL;
 
+    // Check the local_frames first
+    // then back out and look around symbol table for keys that MUST exist in DKV;
+    // frames in _local_frames do NOT exist in DKV.
+    if (_local != null) res = _local.typeOf2(name);
+
     // Check the local scope first if not null
     if (_local != null) res = _local.typeOf(name);
 
@@ -610,6 +626,7 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
+      case LARY:return new ASTFrame(_local._local_frames.get(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
       // case for FUN
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);

@@ -1165,7 +1165,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   myfun <- deparse(substitute(FUN))
   fun.ast <- NULL
   # anon function?
-  if (substr(myfun, 1, nchar("function")) == "function") {
+  if (substr(myfun[1], 1, nchar("function")) == "function") {
     # handle anon fcn
     fun.ast <- .fun.to.ast(FUN, "anon")
   # else named function get the ast
@@ -1177,8 +1177,13 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
 
-  ast <- .h2o.varop("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  .h2o.post.function(fun.ast)
 
+  if(length(l) == 0)
+    ast <- .h2o.varop("apply", X, MARGIN, fun.ast)
+  else
+    ast <- .h2o.varop("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  print(ast)
 })
 
 #str.H2OFrame <- function(object, ...) {

@@ -1,6 +1,12 @@
 package water.rapids;
 
+import water.Futures;
 import water.H2O;
+import water.Key;
+import water.fvec.AppendableVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 /**
  *  The ASTFunc Object
@@ -77,6 +83,54 @@ public class ASTFunc extends ASTFuncDef {
     System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
   }
+
+  double[] map(Env env, double[] in, double[] out, AST[] args) {
+    Futures fs = new Futures();
+    Vec[] vecs = new Vec[in.length];
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    for( int c = 0; c < vecs.length; c++ ) {
+      AppendableVec vec = new AppendableVec(keys[c]);
+      NewChunk chunk = new NewChunk(vec, 0);
+      chunk.addNum(in[c]);
+      chunk.close(0, fs);
+      vecs[c] = vec.close(fs);
+    }
+    fs.blockForPending();
+    Key local_key = Key.make();
+    Frame fr = new Frame(local_key, null, vecs);
+    _table._local_frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
+
+    // execute the function on the row
+    exec(env, new ASTFrame(fr), args);
+
+    // cleanup results and return
+    if (env.isNum()) {
+      if (out==null || out.length<1) out= new double[1];
+      out[0] = env.popDbl();
+    } else if (env.isAry()) {
+      fr = env.pop0Ary();
+      if (fr.numCols() > 1 && fr.numRows() != 1) throw H2O.unimpl("Number of rows returned is > 1");
+      if (fr.numRows() > 1<<8) throw H2O.unimpl("Too many rows!");
+      if (fr.numCols() > 1) {
+        out = new double[fr.numCols()];
+        for (int v = 0; v < fr.vecs().length; ++v) out[v] = fr.vecs()[v].at(0);
+      } else {
+        Vec vec = fr.anyVec();
+        if (out == null || out.length < vec.length()) out = new double[(int) vec.length()];
+        for (long i = 0; i < vec.length(); i++) out[(int) i] = vec.at(i);
+      }
+    } else {
+      H2O.unimpl();
+    }
+    env.cleanup(fr);
+    return out;
+  }
+
+  @Override public StringBuilder toString( StringBuilder sb, int d ) {
+    indent(sb,d).append(this).append(") {\n");
+    _body.toString(sb,d+1).append("\n");
+    return indent(sb,d).append("}");
+  }
 }
 
 class ASTFuncDef extends ASTOp {
@@ -101,7 +155,7 @@ class ASTFuncDef extends ASTOp {
     // parse the function body
     _body = new ASTStatement().parse_impl(E.skipWS());
 
-    ASTFuncDef res = (ASTFuncDef) clone();
+    ASTFunc res = (ASTFunc) clone();
     res._asts = null;
     putUDF(res, name);
   }

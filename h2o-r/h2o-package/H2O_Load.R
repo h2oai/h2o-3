@@ -11,4 +11,4 @@ function() {
 src()
 
 h <- h2o.init()
-hex <- as.h2o(h, iris)
+#hex <- as.h2o(h, iris)
