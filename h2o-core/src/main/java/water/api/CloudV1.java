@@ -134,10 +134,12 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   @Override public CloudV1 fillFromImpl(Cloud c) {
     super.fillFromImpl(c);
 
-    nodes = new Node[c._members.length];
-    for( int i=0; i<c._members.length; i++ ) {
-      nodes[i] = new Node(c._members[i]);
-      if( !nodes[i].healthy ) bad_nodes++;
+    if (null != c._members) {
+      nodes = new Node[c._members.length];
+      for (int i = 0; i < c._members.length; i++) {
+        nodes[i] = new Node(c._members[i]);
+        if (!nodes[i].healthy) bad_nodes++;
+      }
     }
     return this;
   }
