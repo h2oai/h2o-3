@@ -128,6 +128,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     private DataInfo(Key selfKey, DataInfo dinfo, int foldId, int nfolds){
       super(selfKey);
       assert dinfo._catLvls == null:"Should not be called with filtered levels (assuming the selected levels may change with fold id) ";
+      assert dinfo._predictor_transform != null;
+      assert dinfo. _response_transform != null;
       _predictor_transform = dinfo._predictor_transform;
       _response_transform = dinfo._response_transform;
       _responses = dinfo._responses;
@@ -150,6 +152,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       this(selfKey, train, valid, hasResponses,useAllFactorLvls,
         normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
         normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
+      assert predictor_transform != null;
       assert (normSub == null) == (normMul == null);
       assert (normRespSub == null) == (normRespMul == null);
       if(normSub != null) {
@@ -171,6 +174,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
     public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
       super(selfKey);
+      assert predictor_transform != null;
+      assert  response_transform != null;
+      _predictor_transform = predictor_transform;
+      _response_transform  =  response_transform;
+
       _adaptedFrame = fr;
       _catOffsets = MemoryManager.malloc4(catLevels.length+1);
       _catMissing = new int[catLevels.length];
@@ -284,6 +292,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     // later normalization.
     public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform) {
       super(selfKey);
+      assert predictor_transform != null;
+      assert  response_transform != null;
 
       _nfolds = _foldId = 0;
       _predictor_transform = predictor_transform;
@@ -432,6 +442,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     }
 
     public DataInfo filterExpandedColumns(int [] cols){
+      assert _predictor_transform != null;
+      assert  _response_transform != null;
       if(cols == null)return this;
       int i = 0, j = 0, ignoredCnt = 0;
       //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
