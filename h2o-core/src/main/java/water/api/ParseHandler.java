@@ -29,6 +29,7 @@ class ParseHandler extends Handler<Parse,ParseV2> {
   }
 
   // Entry point for parsing.
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV2 parse(int version, Parse parse) {
     ParseSetup setup = new ParseSetup(true,0,0,null,parse._pType,parse._sep,parse._ncols,parse._singleQuotes,parse._columnNames,parse._domains,null,parse._checkHeader, null);
     parse._job = water.parser.ParseDataset2.startParse2(parse._hex,parse._srcs,parse._delete_on_done,setup);

@@ -417,6 +417,7 @@ final public class H2O {
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }
   public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
+  public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.

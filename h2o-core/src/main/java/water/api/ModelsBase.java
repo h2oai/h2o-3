@@ -4,7 +4,7 @@ import hex.Model;
 import water.Key;
 import water.api.ModelsHandler.Models;
 
-abstract class ModelsBase extends Schema<Models, ModelsBase> {
+abstract class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends Schema<I, ModelsBase<I, S>> {
   // Input fields
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public Key key;
@@ -20,21 +20,15 @@ abstract class ModelsBase extends Schema<Models, ModelsBase> {
   FrameV2[] compatible_frames; // TODO: FrameBase
 
   // Non-version-specific filling into the impl
-  @Override public Models createImpl() {
-    Models m = new Models();
-    // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
-    // PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT);
-
-    // Shouldn't need to do this manually. . .
-    m.key = this.key;
-    m.find_compatible_frames = this.find_compatible_frames;
+  @Override public I fillImpl(I m) {
+    super.fillImpl(m);
 
     if (null != models) {
       m.models = new Model[models.length];
 
       int i = 0;
       for (ModelSchema model : this.models) {
-        m.models[i++] = model.createImpl();
+        m.models[i++] = (Model)model.createImpl();
       }
     }
     return m;

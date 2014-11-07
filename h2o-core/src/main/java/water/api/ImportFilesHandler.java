@@ -45,6 +45,7 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
     throw H2O.unimpl();
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ImportFilesV2 importFiles(int version, ImportFiles importFiles) {
     assert importFiles._path != null;
     String path = importFiles._path.toLowerCase();
@@ -60,6 +61,7 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
       return serveLocalDisk(version, importFiles);
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   private ImportFilesV2 serveHDFS(int version, ImportFiles importFiles)  {
     // Fix for S3N kind of URL
     if (isBareS3NBucketWithoutTrailingSlash(importFiles._path)) {
@@ -116,6 +118,7 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
 //    fails = fail.toArray(new String[fail.size()]);
 //  }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   private ImportFilesV2 serveLocalDisk(int version, ImportFiles importFiles) {
     File f = new File(importFiles._path);
     if( !f.exists() ) throw new IllegalArgumentException("File " + importFiles._path + " does not exist!");

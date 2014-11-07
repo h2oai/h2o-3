@@ -13,14 +13,16 @@ import java.util.regex.Pattern;
 */
 final class Route extends Iced {
   // TODO: handlers are now stateless, so create a single instance and stash it here
-  public final String  _http_method;
-  public final Pattern _url_pattern;
-  public final String _summary;
-  public final Class<? extends Handler> _handler_class;
-  public final Method _handler_method;
-  public final Method  _doc_method;
+  public String  _http_method;
+  public Pattern _url_pattern;
+  public String _summary;
+  public Class<? extends Handler> _handler_class;
+  public Method _handler_method;
+  public Method  _doc_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
-  public final String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+  public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+
+  public Route() { }
 
   public Route(String http_method, Pattern url_pattern, String summary, Class<? extends Handler> handler_class, Method handler_method, Method doc_method, String[] path_params) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;

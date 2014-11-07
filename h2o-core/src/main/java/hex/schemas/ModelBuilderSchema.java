@@ -1,18 +1,20 @@
 package hex.schemas;
 
+import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelBuilder.ValidationMessage;
 import water.AutoBuffer;
+import water.H2O;
 import water.Key;
 import water.api.API;
 import water.api.JobV2;
 import water.api.ModelParametersSchema;
 import water.api.ModelParametersSchema.ValidationMessageBase;
-import water.api.ModelParametersSchema.ValidationMessageV2;
 import water.api.Schema;
 import water.util.DocGen;
 import water.util.Log;
+import water.util.ReflectionUtils;
 
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -33,13 +35,54 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public int validation_error_count;
 
   /** Factory method to create the model-specific parameters schema. */
-  abstract public P createParametersSchema();
-  abstract public B createImpl();
+  final public P createParametersSchema() {
+    P impl = null;
+    try {
+    Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+    impl = (P)parameters_class.newInstance();
+    }
+    catch (Exception e) {
+      throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
+    }
+    return impl;
+  }
 
   public S fillFromParms(Properties parms) {
-    this.parameters = createParametersSchema();
     this.parameters.fillFromParms(parms);
     return (S)this;
+  }
+
+  /** Create the corresponding impl object, as well as its parameters object. */
+  @Override final public B createImpl() {
+    B impl = null;
+    try {
+      Class<? extends ModelBuilder> builder_class = (Class<? extends ModelBuilder>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+      Class<? extends Model.Parameters> parameters_class = (Class<? extends Model.Parameters>)this.parameters.getImplClass();
+
+      // NOTE: we want the parameters to be empty except for the destination_key, so that the builder gets created with any passed-in key name.
+      // We then wipe out the impl parameter's destination_key, so we get the correct default.
+      Model.Parameters _parameters = null;
+
+      if (null != parameters) {
+        _parameters = (Model.Parameters)parameters.createImpl();
+        _parameters._destination_key = parameters.destination_key;
+      }
+      Constructor builder_constructor = builder_class.getConstructor(new Class[] {parameters_class});
+      impl = (B)builder_constructor.newInstance(_parameters);
+      impl.clearInitState(); // clear out validation errors from default parameters
+      impl._parms._destination_key = null;
+    }
+    catch (Exception e) {
+      throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
+    }
+    return impl;
+  }
+
+  @Override public B fillImpl(B impl) {
+    super.fillImpl(impl);
+    parameters.fillImpl(impl._parms);
+    impl.init();
+    return impl;
   }
 
   // Generic filling from the impl
@@ -48,8 +91,8 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
     job = builder._key;
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
-    for( ValidationMessage vm : builder._messages ) {
-      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+    for( ModelBuilder.ValidationMessage vm : builder._messages ) {
+      this.validation_messages[i++] = new ModelParametersSchema.ValidationMessageV2().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
     }
     // default fieldname hacks
     mapValidationMessageFieldNames(new String[] {"train", "valid"}, new String[] {"training_frame", "validation_frame"});

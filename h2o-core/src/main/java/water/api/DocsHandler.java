@@ -7,7 +7,7 @@ import water.Iced;
  * Markdown (and in the future perhaps HTML and PDF) documentation for REST API endpoints
  * and payload entities (aka Schemas).
  */
-public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
+public class DocsHandler<I extends DocsHandler.DocsPojo, S extends DocsBase<I, S>> extends Handler<I, DocsBase<I, S>> {
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return 1; }
 
@@ -29,6 +29,7 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
   }
 
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public DocsBase listRoutes(int version, DocsPojo docsPojo) {
     docsPojo.routes = new Route[RequestServer.numRoutes()];
     int i = 0;
@@ -38,6 +39,7 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     return schema(version).fillFromImpl(docsPojo);
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public DocsBase fetchRoute(int version, DocsPojo docsPojo) {
     Route route = null;
     if (null != docsPojo.path && null != docsPojo.http_method) {
@@ -61,6 +63,8 @@ public class DocsHandler extends Handler<DocsHandler.DocsPojo, DocsBase> {
     return result;
   }
 
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public DocsBase fetchSchemaMetadataByClass(int version, DocsPojo docsPojo) {
     DocsBase result = schema(version).fillFromImpl(docsPojo);
     result.schemas = new SchemaMetadataBase[1];

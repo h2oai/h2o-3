@@ -8,7 +8,7 @@ import water.util.IcedHashMap;
 import java.util.Map;
 
 // Input fields
-abstract class ModelBuildersBase extends Schema<ModelBuilders, ModelBuildersBase> {
+abstract class ModelBuildersBase<I extends ModelBuilders, S extends ModelBuildersBase<I, S>> extends Schema<I, ModelBuildersBase<I, S>> {
   @API(help="Algo of ModelBuilder of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   String algo;;
 
@@ -16,9 +16,7 @@ abstract class ModelBuildersBase extends Schema<ModelBuilders, ModelBuildersBase
   @API(help="ModelBuilders", direction=API.Direction.OUTPUT)
   IcedHashMap<String, ModelBuilderSchema> model_builders;
 
-  // Non-version-specific filling into the impl
-  @Override public ModelBuilders createImpl() {
-    ModelBuilders m = new ModelBuilders();
+  @Override public ModelBuilders fillImpl(ModelBuilders m) {
     m.algo = this.algo;
 
     if (null != model_builders) {
@@ -28,7 +26,7 @@ abstract class ModelBuildersBase extends Schema<ModelBuilders, ModelBuildersBase
       for (Map.Entry<String, ModelBuilderSchema> entry : this.model_builders.entrySet()) {
         String algo = entry.getKey();
         ModelBuilderSchema model_builder = entry.getValue();
-        m.model_builders.put(algo, model_builder.createImpl());
+        m.model_builders.put(algo, (ModelBuilder)model_builder.createAndFillImpl());
       }
     }
     return m;

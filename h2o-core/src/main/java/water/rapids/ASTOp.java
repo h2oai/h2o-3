@@ -3,7 +3,7 @@ package water.rapids;
 //import hex.Quantiles;
 
 import water.*;
-import water.api.QuantilesHandler.Quantiles;
+import water.Quantiles;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;

@@ -25,13 +25,9 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
 
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 
-
   @Override public RapidsHandler.Rapids createImpl() {
-    RapidsHandler.Rapids c = new RapidsHandler.Rapids();
     if (ast.equals("") && funs == null) return null;
-    c._ast = ast;
-    c._funs = funs;
-    return c;
+    return super.createImpl();
   }
 
   @Override public RapidsV1 fillFromImpl(RapidsHandler.Rapids rapids) {

@@ -26,6 +26,8 @@ public class ProfilerHandler extends Handler<Profiler, ProfilerV2> { // TODO: re
         throw H2O.fail("Bad version for Profiler schema: " + version);
     }
   }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ProfilerBase fetch(int version, Profiler p) {
     JProfile profile = new JProfile(p._depth).execImpl(true);
     int i=0;

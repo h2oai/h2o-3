@@ -19,8 +19,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
             "seed",
             "init" }; }
 
-    // TODO: we do defaults both here and in the impl; that's no good.
-
     // Input fields
     @API(help = "Number of clusters", required = true)
     public int K;
@@ -39,12 +37,12 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
     @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
       super.fillFromImpl(parms);
+      super.fillFromImpl(parms);
       this.init = KMeans.Initialization.Furthest;
       return this;
     }
 
-    public KMeansParameters createImpl() {
-      KMeansParameters impl = new KMeansParameters();
+    public KMeansParameters fillImpl(KMeansParameters impl) {
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       impl._init = KMeans.Initialization.Furthest;
 
@@ -57,15 +55,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
   //==========================
   // Custom adapters go here
-
-  @Override public KMeansParametersV2 createParametersSchema() { return new KMeansParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  // TODO: defaults should only be in the impl, not duplicated in the API layer
-  @Override public KMeans createImpl() {
-    KMeansParameters parms = parameters.createImpl();
-    return new KMeans(parms);
-  }
 
   // TODO: UGH
   // Return a URL to invoke KMeans on this Frame

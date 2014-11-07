@@ -81,8 +81,9 @@ public final class SchemaMetadata extends Iced {
      */
     boolean json;
 
+    public FieldMetadata() { }
+
     /**
-     *
      * @param name field name
      * @param type field type, which can be a primitive type like "string" or "double" or an H2O type like ModelParameters
      * @param value value of the field, represented as a string
@@ -95,7 +96,6 @@ public final class SchemaMetadata extends Iced {
      * @param json should this field be included in generated JSON?
      */
     public FieldMetadata(String name, String type, boolean is_schema, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
-      super();
       // from the Field, using reflection
       this.name = name;
       this.type = type;

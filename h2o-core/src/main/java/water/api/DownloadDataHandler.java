@@ -21,6 +21,8 @@ public class DownloadDataHandler extends Handler<DownloadData, DownloadDataV1> {
     String filename;
   }
 
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV1 fetch(int version, DownloadData server) {
 
     if (DKV.get(server.src_key) == null) throw new IllegalArgumentException(server.src_key.toString() + " not found.");

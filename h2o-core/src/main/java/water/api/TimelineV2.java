@@ -1,12 +1,13 @@
 package water.api;
 
+import water.*;
+import water.api.TimelineHandler.Timeline;
+import water.init.TimelineSnapshot;
+import water.util.DocGen;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import water.*;
-import water.api.TimelineHandler.Timeline;
-import water.util.DocGen;
-import water.init.TimelineSnapshot;
 
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.
@@ -112,10 +113,6 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     @Override public    String bytes() { return data;}
     @Override public    String toString() { return "I_O('" + ioFlavor + "')"; }
   } // IOEvent
-
-  @Override public Timeline createImpl() {
-    return new Timeline();
-  }
 
   @Override public TimelineV2 fillFromImpl(Timeline timeline) {
     ArrayList<Event> outputEvents = new ArrayList<>();
