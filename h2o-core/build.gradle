@@ -6,6 +6,7 @@ apply from: '../gradle/cp.gradle'
 dependencies {
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
+  compile "gov.nist.math:jama:1.0.3"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
