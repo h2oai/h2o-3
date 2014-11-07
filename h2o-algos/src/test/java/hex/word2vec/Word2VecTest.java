@@ -52,7 +52,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      printResults(w2vm.findSynonyms("cat",5));
+      printResults(w2vm.findSynonyms("dog",5));
 
     } finally {
       if( fr  != null ) fr .remove();
@@ -82,7 +82,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      printResults(w2vm.findSynonyms("cat",5));
+      printResults(w2vm.findSynonyms("dog",5));
     } finally {
       if( fr  != null ) fr .remove();
       if( job != null) job.remove();
@@ -111,7 +111,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      printResults(w2vm.findSynonyms("cat",5));
+      printResults(w2vm.findSynonyms("dog",5));
     } finally {
       if( fr  != null ) fr .remove();
       if( job != null) job.remove();
@@ -140,7 +140,7 @@ public class Word2VecTest extends TestUtil {
       job = new Word2Vec(parms);
       job.train();
       w2vm = job.get();
-      printResults(w2vm.findSynonyms("cat",5));
+      printResults(w2vm.findSynonyms("dog",5));
     } finally {
       if( fr  != null ) fr .remove();
       if( job != null) job.remove();

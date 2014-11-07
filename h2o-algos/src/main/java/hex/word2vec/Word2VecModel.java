@@ -26,19 +26,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
   private Key _w2vKey;
 
-  private long run_time;
-  private long start_time;
-
-  public long actual_train_samples_per_iteration;
-  public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
-  public double epoch_counter;
-  public long training_rows;
-  public long validation_rows;
-
   public Word2VecModel(final Key selfKey, Frame fr, final Word2VecParameters params) {
     super(selfKey, fr, params, new Word2VecOutput());
-    run_time = 0;
-    start_time = System.currentTimeMillis();
     _modelInfo = new Word2VecModelInfo(params);
     assert(Arrays.equals(_key._kb, selfKey._kb));
   }
@@ -147,10 +136,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
         }
       }
     }
-    for (int i=0; i < cnt; i++) {
+    for (int i=0; i < cnt; i++)
       res.put(vs[0].atStr(new ValueString(), matches[i]).toString(), scores[i]);
-      //System.out.println(vs[0].atStr(new ValueString(), matches[i]) + " " + scores[i]);
-    }
+
     return res;
   }
   /**
@@ -211,7 +199,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
     fs.blockForPending();
     Frame fr = new Frame(_w2vKey = Key.make("w2v"));
-    //FIXME this ties the word count frame to this one which makes cleanup messy
+    //FIXME this ties the word count frame to this one which means
+    //FIXME one can't be deleted without destroying the other
     fr.add("Word", ((Frame) _parms._vocabKey.get()).vec(0));
     fr.add(colNames, vecs);
     DKV.put(_w2vKey, fr);
@@ -288,14 +277,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
         buildUnigramTable();
     }
 
-/*
-    Word2VecModelInfo deep_clone() {
-      AutoBuffer ab = new AutoBuffer();
-      this.write(ab);
-      ab.flipForReading();
-      return (Word2VecModelInfo) new Word2VecModelInfo().read(ab);
-    } */
-
     /**
      * Set of functions to accumulate counts of how many
      * words were processed so far.
@@ -346,11 +327,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
 
     /**
-     * Generates a unigram table from the [word, count]
-     * vocab frame.  The unigram table is needed for
-     * normalizing through negative sampling.
+     * Generates a unigram table from the [word, count] vocab frame.
+     * The unigram table is needed for normalizing through negative sampling.
      *
-     * @return - returns a key to a vec holding the unigram table results.
+     * This design consumes memory for speed and simplicity.  It also breaks for
+     * smaller vocabularies.  Alternates should be explored.
      */
     private void buildUnigramTable() {
       float d = 0;
@@ -361,18 +342,15 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       for (int i=0; i < wCount.length(); i++) vocabWordsPow += Math.pow(wCount.at8(i), UNIGRAM_POWER);
       for (int i = 0, j =0; i < UNIGRAM_TABLE_SIZE; i++) {
         _uniTable[i] = j;
-        if (i / (float) UNIGRAM_TABLE_SIZE > d) {
+        if (j >= _vocabSize-1) j = 0;
+        if (i / (float) UNIGRAM_TABLE_SIZE > d)
           d += Math.pow(wCount.at8(++j), UNIGRAM_POWER) / (float) vocabWordsPow;
-        }
-        if (j >= _vocabSize) j = _vocabSize - 1;
       }
     }
 
 /*  Explored packing the unigram table into chunks for the benefit of
    compression.  The random access nature ended up increasing the run
    time of a negative sampling run by ~50%.
-
-   Tests without using this as a giant lookup table don't seem to fair much better.
 
   private Key buildUnigramTable() {
     Futures fs = new Futures();

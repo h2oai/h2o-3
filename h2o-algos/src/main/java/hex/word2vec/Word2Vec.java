@@ -25,7 +25,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     return start(new Word2VecDriver(), _parms._epochs);
   }
 
-  // ----------------------
   private class Word2VecDriver extends H2O.H2OCountedCompleter<Word2VecDriver> {
     @Override
     protected void compute2() {
@@ -49,9 +48,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
    *
    */
   public final void buildModel() {
-    Word2VecModel m = null;
-    Frame tra_fr = _parms.train();
-
+    Word2VecModel m;
     m = initModel();
     trainModel(m);
   }
@@ -81,6 +78,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
    */
   public final Word2VecModel trainModel(Word2VecModel model) {
     long start, stop, lastCnt=0;
+    long tstart, tstop;
     float tDiff;
     try {
       _parms.lock_frames(Word2Vec.this);
@@ -90,6 +88,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       Log.info("Starting to train the Word2Vec model.");
 
       // main loop
+      tstart = System.currentTimeMillis();
       for (int i = 0; i < _parms._epochs; i++) {
         start = System.currentTimeMillis();
         model.setModelInfo(new WordVectorTrainer(model.getModelInfo()).doAll(_parms.train()).getModelInfo());
@@ -100,6 +99,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         Log.info("Epoch "+i+" "+tDiff+"s  Words trained/s: "+ (model.getModelInfo().getTotalProcessed()-lastCnt)/tDiff);
         lastCnt = model.getModelInfo().getTotalProcessed();
       }
+      tstop  = System.currentTimeMillis();
+      Log.info("Total time :" + ((float)(tstop-tstart))/1000f);
       Log.info("Finished training the Word2Vec model.");
       model.buildModelOutput();
     }

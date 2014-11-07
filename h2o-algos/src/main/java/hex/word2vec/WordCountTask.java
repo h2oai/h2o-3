@@ -27,10 +27,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * rewritten to be distributed.</p>
  */
 
-//TODO create version that allows for certain columns to be ignored
-//TODO adapt map functions to not presume one word per field
-//TODO consider a local parallel sort??
-
 public class WordCountTask extends MRTask<WordCountTask> {
   private static NonBlockingHashMap<ValueStringCount, ValueStringCount> VOCABHM;
   private NonBlockingHashMap<ValueStringCount, ValueStringCount> _vocabHM;
@@ -181,7 +177,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
     vecs[1] = cntAV.close(fs);
     fs.blockForPending();
 
-    if(_fr != null) _wordCountKey = Key.make("wca_"+_fr._key.toString());
+    if(_fr != null && _fr._key != null) _wordCountKey = Key.make("wca_"+_fr._key.toString());
     else _wordCountKey = Key.make("wca");
     String[] names = {"Word", "Count"};
     DKV.put(_wordCountKey, new Frame(_wordCountKey, names, vecs));
