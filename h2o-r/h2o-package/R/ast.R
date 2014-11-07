@@ -196,12 +196,49 @@ function(a, name=NULL) {
   }
 }
 
+#.args.to.ast<-
+#function(...) {
+#  arg.names <- names(as.list(substitute(list(...)))[-1])
+#
+#  arg_values <- NULL
+#
+#  arg_values <- lapply(seq_along(list(...)), function(i) {
+#    if (names(list(...))[i] == "fun_args") {
+#      paste(unlist(lapply(unlist(list(...)[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
+#    } else .get.value.from.arg(list(...)[[i]], names(list(...))[i])
+#  })
+#  return(arg_values)
+#}
+
+
+
 .args.to.ast<-
 function(...) {
-  arg_values <- lapply(seq_along(list(...)), function(i) {
-    if (names(list(...))[i] == "fun_args") {
-      paste(unlist(lapply(unlist(list(...)[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
-    } else .get.value.from.arg(list(...)[[i]], names(list(...))[i])
-  })
+  arg.names <- names(as.list(substitute(list(...)))[-1])
+  if ("fun_args" %in% arg.names) {
+    stop("unimpl")
+#    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
+#    to_keep <- which(names(arg_names) == "")
+#    idx_to_change <- which(arg.names != "")
+#    lapply(seq_along(arg.names),
+#      function(i) {
+#        if (arg.names[i] == "") {
+#          arg.names[i] <<- arg_names[to_keep[1]]
+#          to_keep <<- to_keep[-1]
+#        }
+#      }
+#    )
+#    to_keep   <- NULL
+#    arg_names <- arg.names
+#    arg_ts <- lapply(list(...), .eval_class)
+#    arg_ts$fun_args <- "ASTSymbolTable"
+#    names(arg_ts) <- NULL
+#    arg_types <- arg_ts
+#    print(arg_names)
+#    stop("elllo")
+  } else {
+    arg_types  <- lapply(list(...), .eval_class)
+  }
+  arg_values <- lapply(seq_along(list(...)), function(i) { .get.value.from.arg(list(...)[[i]], names(list(...))[i]) })
   return(arg_values)
 }
