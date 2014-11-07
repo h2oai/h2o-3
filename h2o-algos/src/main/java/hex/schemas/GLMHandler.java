@@ -14,12 +14,12 @@ public class GLMHandler extends Handler<GLM, GLMV2> {
   public GLMV2 train(int version, GLM builder) {
     GLMParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
-    builder.train();
+    builder.trainModel();
     GLMV2 schema = schema(version); // TODO: superclass!
     schema.parameters = new GLMV2.GLMParametersV2();
     schema.job = builder._key;
     return schema;
   }
-  @Override protected GLMV2 schema(int version) { return new GLMV2(); }
+  @Override protected GLMV2 schema(int version) { GLMV2 schema = new GLMV2(); schema.parameters = schema.createParametersSchema(); return schema; }
   @Override public void compute2() { throw H2O.fail(); }
 }

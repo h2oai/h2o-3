@@ -55,26 +55,26 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
     B impl = null;
-    try {
-      Class<? extends ModelBuilder> builder_class = (Class<? extends ModelBuilder>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
-      Class<? extends Model.Parameters> parameters_class = (Class<? extends Model.Parameters>)this.parameters.getImplClass();
 
-      // NOTE: we want the parameters to be empty except for the destination_key, so that the builder gets created with any passed-in key name.
-      // We then wipe out the impl parameter's destination_key, so we get the correct default.
-      Model.Parameters _parameters = null;
+      try {
+        Class<? extends ModelBuilder> builder_class = (Class<? extends ModelBuilder>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+        Class<? extends Model.Parameters> parameters_class = (Class<? extends Model.Parameters>) this.parameters.getImplClass();
 
-      if (null != parameters) {
-        _parameters = (Model.Parameters)parameters.createImpl();
-        _parameters._destination_key = parameters.destination_key;
+        // NOTE: we want the parameters to be empty except for the destination_key, so that the builder gets created with any passed-in key name.
+        // We then wipe out the impl parameter's destination_key, so we get the correct default.
+        Model.Parameters _parameters = null;
+
+        if (null != parameters) {
+          _parameters = (Model.Parameters) parameters.createImpl();
+          _parameters._destination_key = parameters.destination_key;
+        }
+        Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
+        impl = (B) builder_constructor.newInstance(_parameters);
+        impl.clearInitState(); // clear out validation errors from default parameters
+        impl._parms._destination_key = null;
+      } catch (Exception e) {
+        throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
       }
-      Constructor builder_constructor = builder_class.getConstructor(new Class[] {parameters_class});
-      impl = (B)builder_constructor.newInstance(_parameters);
-      impl.clearInitState(); // clear out validation errors from default parameters
-      impl._parms._destination_key = null;
-    }
-    catch (Exception e) {
-      throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
-    }
     return impl;
   }
 

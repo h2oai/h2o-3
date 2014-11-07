@@ -18,12 +18,12 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
   public KMeansV2 train(int version, KMeans builder) {
     KMeansParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
-    builder.train();
+    builder.trainModel();
     KMeansV2 schema = schema(version); // TODO: superclass!
     schema.parameters = new KMeansV2.KMeansParametersV2();
     schema.job = builder._key;
     return schema;
   }
-  @Override protected KMeansV2 schema(int version) { return new KMeansV2(); }
+  @Override protected KMeansV2 schema(int version) { KMeansV2 schema = new KMeansV2(); schema.parameters = schema.createParametersSchema(); return schema; }
   @Override public void compute2() { throw H2O.fail(); }
 }
