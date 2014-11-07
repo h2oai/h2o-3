@@ -173,7 +173,8 @@ abstract public class Log {
     String logPathFileName = getLogPathFileNameStem();
 
     // H2O-wide logging
-    p.setProperty("log4j.rootLogger", "TRACE, R1, R2, R3, R4, R5, R6");
+    p.setProperty("log4j.logger.water.default", "TRACE, R1, R2, R3, R4, R5, R6");
+    p.setProperty("log4j.additivity.water.default",   "false");
 
     p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
@@ -280,7 +281,7 @@ abstract public class Log {
       PropertyConfigurator.configure(p);
     }
     
-    return (_logger = LogManager.getLogger(Log.class.getName()));
+    return (_logger = LogManager.getLogger("water.default"));
   }
 
   public static String fixedLength(String s, int length) {
