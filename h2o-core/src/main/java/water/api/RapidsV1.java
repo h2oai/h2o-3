@@ -26,21 +26,24 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 
   @Override public RapidsHandler.Rapids createImpl() {
-    if (ast.equals("") && funs == null) return null;
-    return super.createImpl();
+    RapidsHandler.Rapids c = new RapidsHandler.Rapids();
+    if ((ast == null || ast.equals("")) && funs == null) return null;
+    c._ast = ast;
+    c._funs = funs;
+    return c;
   }
 
   @Override public RapidsV1 fillFromImpl(RapidsHandler.Rapids rapids) {
-    ast = rapids._ast;
-    funs = rapids._funs;
-    key = rapids._key;
-    num_rows = rapids._num_rows;
-    num_cols = rapids._num_cols;
-    scalar = rapids._scalar;
-    funstr = rapids._funstr;
-    result = rapids._result;
+    ast       = rapids._ast;
+    funs      = rapids._funs;
+    key       = rapids._key;
+    num_rows  = rapids._num_rows;
+    num_cols  = rapids._num_cols;
+    scalar    = rapids._scalar;
+    funstr    = rapids._funstr;
+    result    = rapids._result;
     col_names = rapids._col_names;
-    string = rapids._string;
+    string    = rapids._string;
     exception = rapids._error;
     return this;
   }

@@ -324,7 +324,7 @@ class ASTRound extends ASTUniPrefixOp {
     res._asts = new AST[]{ary};
     return res;
   }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTRound(); }
   @Override void apply(Env env) {
     final int digits = _digits;
     if(env.isAry()) {
@@ -371,7 +371,7 @@ class ASTSignif extends ASTUniPrefixOp {
     res._asts = new AST[]{ary};
     return res;
   }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTSignif(); }
   @Override void apply(Env env) {
     final int digits = _digits;
     if(digits < 0)
@@ -411,7 +411,7 @@ class ASTSignif extends ASTUniPrefixOp {
 class ASTNrow extends ASTUniPrefixOp {
   ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTNrow();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numRows();
@@ -423,7 +423,7 @@ class ASTNrow extends ASTUniPrefixOp {
 class ASTNcol extends ASTUniPrefixOp {
   ASTNcol() { super(VARS1); }
   @Override String opStr() { return "ncol"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTNcol();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numCols();
@@ -435,7 +435,7 @@ class ASTNcol extends ASTUniPrefixOp {
 class ASTLength extends ASTUniPrefixOp {
   ASTLength() { super(VARS1); }
   @Override String opStr() { return "length"; }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTLength(); }
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
@@ -462,7 +462,7 @@ class ASTIsFactor extends ASTUniPrefixOp {
 class ASTAnyFactor extends ASTUniPrefixOp {
   ASTAnyFactor() { super(VARS1);}
   @Override String opStr() { return "any.factor"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTAnyFactor();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     String res = "FALSE";
@@ -476,7 +476,7 @@ class ASTAnyFactor extends ASTUniPrefixOp {
 class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
   ASTCanBeCoercedToLogical() { super(VARS1); }
   @Override String opStr() { return "canBeCoercedToLogical"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTCanBeCoercedToLogical();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     String res = "FALSE";
@@ -492,7 +492,7 @@ class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
 class ASTAnyNA extends ASTUniPrefixOp {
   ASTAnyNA() { super(VARS1); }
   @Override String opStr() { return "any.na"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTAnyNA();}
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     String res = "FALSE";
@@ -502,7 +502,7 @@ class ASTAnyNA extends ASTUniPrefixOp {
     env.push(new ValStr(res));
   }
 }
-//
+
 //class ASTIsTRUE extends ASTUniPrefixOp {
 //  ASTIsTRUE() {super(VARS1,new Type[]{Type.DBL,Type.unbound()});}
 //  @Override String opStr() { return "isTRUE"; }
@@ -521,7 +521,7 @@ class ASTScale extends ASTUniPrefixOp {
   double[] _scales;
   ASTScale() { super(new String[]{"ary", "center", "scale"});}
   @Override String opStr() { return "scale"; }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTScale();}
   ASTScale parse_impl(Exec E) {
     AST ary = E.parse();
     parseArg(E, true);  // centers parse
@@ -987,8 +987,8 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
   final double _init;
-  protected static boolean _narm;        // na.rm in R
-  protected static int _argcnt;
+  protected boolean _narm;        // na.rm in R
+  protected int _argcnt;
   ASTReducerOp( double init) {
     super(new String[]{"","dblary","...", "na.rm"});
     _init = init;
@@ -1089,10 +1089,10 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 
 // Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {
-  protected static int argcnt;
+  protected int argcnt;
   @Override String opStr() { return "cbind"; }
   ASTCbind( ) { super(new String[]{"cbind","ary", "..."}); }
-  @Override ASTOp make() {return this;}
+  @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST ary = E.parse();
@@ -1187,7 +1187,7 @@ class ASTMax extends ASTReducerOp {
 // R like binary operator &&
 class ASTAND extends ASTBinOp {
   @Override String opStr() { return "&&"; }
-  ASTAND( ) {super();}
+  ASTAND( ) { super();}
   @Override double op(double d0, double d1) { throw H2O.fail(); }
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot '&&' Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot '&&' Strings.");}
@@ -1252,8 +1252,8 @@ class ASTRename extends ASTUniPrefixOp {
 }
 
 class ASTMatch extends ASTUniPrefixOp {
-  double _nomatch;
-  String[] _matches;
+  protected double _nomatch;
+  protected String[] _matches;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
@@ -1335,10 +1335,10 @@ class ASTOR extends ASTBinOp {
 
 // Similar to R's seq_len
 class ASTSeqLen extends ASTUniPrefixOp {
-  double _length;
+  protected double _length;
   @Override String opStr() { return "seq_len"; }
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTSeqLen(); }
   @Override ASTSeqLen parse_impl(Exec E) {
     _length = E.nextDbl();
     ASTSeqLen res = (ASTSeqLen) clone();
@@ -1357,13 +1357,13 @@ class ASTSeqLen extends ASTUniPrefixOp {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTUniPrefixOp {
-  double _from;
-  double _to;
-  double _by;
+  protected double _from;
+  protected double _to;
+  protected double _by;
 
   @Override String opStr() { return "seq"; }
   ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTSeq(); }
   @Override ASTSeq parse_impl(Exec E) {
     // *NOTE*: This function creates a frame, there is no input frame!
 //    AST ary = E.parse();
@@ -1411,10 +1411,10 @@ class ASTSeq extends ASTUniPrefixOp {
 }
 
 class ASTRepLen extends ASTUniPrefixOp {
-  double _length;
+  protected double _length;
   @Override String opStr() { return "rep_len"; }
   ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
-  @Override ASTOp make() { return this; }
+  @Override ASTOp make() { return new ASTRepLen(); }
   @Override void apply(Env env) {
 
     // two cases if x is a frame: x is a single vec, x is a list of vecs

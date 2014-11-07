@@ -61,8 +61,13 @@
         temp = invisible(getForm(myURL, .params = .params, .checkParams = FALSE))  # Some H2O params overlap with Curl params
 
     # POST
-    } else {
+    } else if (method == "POST") {
       temp <- postForm(myURL, .params = .params,  style = "POST")
+    } else if (method == "HTTPPOST") {
+      hg <- basicHeaderGatherer()
+      tg <- basicTextGatherer()
+      suppressWarnings(postForm(myURL, .checkParams=FALSE, style = "HTTPPOST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), .params =.params))
+      temp <- tg$value()
     }
 
     # post-processing
@@ -75,7 +80,6 @@
       if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
       stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
     }
-#  }
   res
 }
 

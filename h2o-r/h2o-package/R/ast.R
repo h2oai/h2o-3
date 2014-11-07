@@ -67,12 +67,12 @@ function(expr) {
 #' Check if any item in the expression is an H2OParsedData object.
 #'
 #' Useful when trying to unravel an expression
-.anyH2O<-
+.any.h2o<-
 function(expr, envir) {
- l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
- a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
- b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
- any(a|b)
+  l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
+  a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
+  b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
+  any(a|b)
 }
 
 #'
@@ -90,7 +90,7 @@ function(x, ID, top_level_envir, calling_envir) {
 #'
 .eval<-
 function(x, envir, sub_one = TRUE) {
-  if (.anyH2O(x, envir)) return(eval(x),envir)
+  if (.any.h2o(x, envir)) return(eval(x),envir)
   .ast.walker(x,envir, FALSE, sub_one)
 }
 
@@ -169,30 +169,22 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'
 #'                   e.g.: Inside of ddply, we have the following "fun_args" pattern:
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
-.getValueFromArg<-
+.get.value.from.arg<-
 function(a, name=NULL) {
   if (inherits(a, "H2OParsedData")) {
     '$' %p0% a@key
   } else if (inherits(a, "ASTNode")) {
     a
-  } else if (class(a) == "function") {
-
-    ret <- .funToAST(a)
-    .pkg.env$formals <- names(formals(a))
-    ret
-  } else if (!is.null(name) && (name == "fun_args")) {
-    .toSymbolTable(a, .pkg.env$formals)
+  } else if (class(a) == "ASTFun") {
+    '$' %p0% a@name
   } else {
     res <- eval(a)
     if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
       if (length(res) > 1) {
         # wrap the vector up into a ';' separated {} thingy
-#        return(unlist(lapply(res, deparse)))
         tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
-#        return(tt)
         return('{' %p0%   tt  %p0% '}')
-#        return(.ast.walker((substitute(res)), parent.frame()))
       } else {
         if (is.numeric(res)) return('#' %p0% res)
         if (is.logical(res)) return('$' %p0% res)
@@ -204,39 +196,12 @@ function(a, name=NULL) {
   }
 }
 
-.argsToAST<-
+.args.to.ast<-
 function(...) {
-  arg.names <- names(as.list(substitute(list(...)))[-1])
-  if ("fun_args" %in% arg.names) {
-    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
-    to_keep <- which(names(arg_names) == "")
-    idx_to_change <- which(arg.names != "")
-    lapply(seq_along(arg.names),
-      function(i) {
-        if (arg.names[i] == "") {
-          arg.names[i] <<- arg_names[to_keep[1]]
-          to_keep <<- to_keep[-1]
-        }
-      }
-    )
-    to_keep   <- NULL
-    arg_names <- arg.names
-    arg_ts <- lapply(list(...), .eval_class)
-    arg_ts$fun_args <- "ASTSymbolTable"
-    names(arg_ts) <- NULL
-    arg_types <- arg_ts
-    print(arg_names)
-    stop("elllo")
-  } else {
-#    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
-    arg_types  <- lapply(list(...), .eval_class)
-  }
-  arg_values <- lapply(seq_along(list(...)), function(i) { .getValueFromArg(list(...)[[i]], names(list(...))[i]) })
+  arg_values <- lapply(seq_along(list(...)), function(i) {
+    if (names(list(...))[i] == "fun_args") {
+      paste(unlist(lapply(unlist(list(...)[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
+    } else .get.value.from.arg(list(...)[[i]], names(list(...))[i])
+  })
   return(arg_values)
-#  args <- as.data.frame(rbind(arg_names, arg_types, arg_values, arg_numbers = 1:length(arg_names)))
-#  stop("hello")
-#  print(args)
-#  .pkg.env$formals <- NULL
-#  names(args) <- paste("Arg", 1:length(arg_names), sep ="")
-#  unlist(apply(args, 2, .toASTArg))
 }

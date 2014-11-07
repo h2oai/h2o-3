@@ -100,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     @Override
     public long checksum() {throw H2O.unimpl();} // don't really need checksum
 
-    public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN };
+    public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE };
     public TransformType _predictor_transform;
     public TransformType _response_transform;
     public boolean _useAllFactorLevels;
@@ -185,59 +185,93 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _responses = responses;
       _cats = catLevels.length;
       _nums = fr.numCols()-_cats - responses;
-      if((_predictor_transform = predictor_transform) == TransformType.STANDARDIZE && _nums > 0) {
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for (int i = 0; i < _nums; ++i) {
-          Vec v = fr.vec(catLevels.length + i);
-          _normMul[i] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
-          _normSub[i] = v.mean();
+      if(_nums > 0){
+        switch(_predictor_transform) {
+          case STANDARDIZE:
+            _normMul = MemoryManager.malloc8d(_nums);
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+              _normSub[i] = v.mean();
+            }
+            break;
+          case NORMALIZE:
+            _normMul = MemoryManager.malloc8d(_nums);
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              _normSub[i] = v.mean();
+            }
+            break;
+          case DEMEAN:
+            _normMul = null;
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normSub[i] = v.mean();
+            }
+            break;
+          case DESCALE:
+            _normMul = MemoryManager.malloc8d(_nums);;
+            _normSub = null;
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            }
+            break;
+          case NONE:
+            _normMul = null;
+            _normSub = null;
+            break;
+          default:
+            throw H2O.unimpl();
         }
-      } else if((_predictor_transform = predictor_transform) == TransformType.NORMALIZE && _nums > 0){
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for(int i = 0; i < _nums; ++i){
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          _normSub[i] = v.mean();
-        }
-      } else if((_predictor_transform = predictor_transform) == TransformType.DEMEAN && _nums > 0){
-        _normMul = null;
-        _normSub = MemoryManager.malloc8d(_nums);
-        for(int i = 0; i < _nums; ++i){
-          Vec v = fr.vec(catLevels.length+i);
-          _normSub[i] = v.mean();
-        }
-      } else {
-        _normMul = null;
-        _normSub = null;
       }
-      if((_response_transform = response_transform) == TransformType.STANDARDIZE && responses > 0){
-        _normRespMul = MemoryManager.malloc8d(responses);
-        _normRespSub = MemoryManager.malloc8d(responses);
-        for(int i = 0; i < responses; ++i){
-          Vec v = fr.vec(fr.numCols()-responses+i);
-          _normRespSub[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          _normRespSub[i] = v.mean();
+      if(responses > 0){
+        switch(_response_transform) {
+          case STANDARDIZE:
+            _normRespMul = MemoryManager.malloc8d(responses);
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case NORMALIZE:
+            _normRespMul = MemoryManager.malloc8d(responses);
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case DEMEAN:
+            _normRespMul = null;
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case DESCALE:
+            _normRespSub = null;
+            _normRespMul = MemoryManager.malloc8d(responses);;
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            }
+            break;
+          case NONE:
+            _normRespMul = null;
+            _normRespSub = null;
+            break;
+          default:
+            throw H2O.unimpl();
         }
-      } else if((_response_transform = response_transform) == TransformType.NORMALIZE && responses > 0){
-        _normRespMul = MemoryManager.malloc8d(responses);
-        _normRespSub = MemoryManager.malloc8d(responses);
-        for(int i = 0; i < responses; ++i){
-          Vec v = fr.vec(fr.numCols()-responses+i);
-          _normRespSub[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          _normRespSub[i] = v.mean();
-        }
-      } else if((_response_transform = response_transform) == TransformType.DEMEAN && responses > 0){
-        _normRespMul = null;
-        _normRespSub = MemoryManager.malloc8d(responses);
-        for(int i = 0; i < responses; ++i){
-          Vec v = fr.vec(fr.numCols()-responses+i);
-          _normRespSub[i] = v.mean();
-        }
-      } else {
-        _normRespMul = null;
-        _normRespSub = null;
       }
       _useAllFactorLevels = false;
       _adaptedFrame.reloadVecs();
@@ -297,42 +331,98 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
 
       // Compute the mean/sigma for each predictor
-      if(predictor_transform != TransformType.NONE) {
-        _normSub = MemoryManager.malloc8d(nnums);
-        _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);
-      } else _normSub = _normMul = null;
+      switch(predictor_transform) {
+        case STANDARDIZE:
+        case NORMALIZE:
+          _normSub = MemoryManager.malloc8d(nnums);
+          _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);
+          break;
+        case DEMEAN:
+          _normSub = MemoryManager.malloc8d(nnums);
+          _normMul = null;
+          break;
+        case DESCALE:
+          _normSub = null;
+          _normMul = MemoryManager.malloc8d(nnums);
+          break;
+        case NONE:
+          _normSub = _normMul = null;
+          break;
+        default:
+          break;
+      }
       for(int i = 0; i < nnums; ++i){
         names[ncats+i]  =   train._names[nums[i]];
         vvecs2         [ncats+i] = vvecs[nums[i]];
         Vec v = (tvecs2[ncats+i] = tvecs[nums[i]]);
-        if(predictor_transform == TransformType.STANDARDIZE){
-          _normSub[i] = v.mean();
-          _normMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
-        } else if (predictor_transform == TransformType.NORMALIZE) {
-          _normSub[i] = v.mean();
-          _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-        } else if (predictor_transform == TransformType.DEMEAN) {
-          _normSub[i] = v.mean();
+        switch(predictor_transform){
+          case STANDARDIZE:
+            _normSub[i] = v.mean();
+            _normMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+            break;
+          case NORMALIZE:
+            _normSub[i] = v.mean();
+            _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+            break;
+          case DEMEAN:
+            _normSub[i] = v.mean();
+            break;
+          case DESCALE:
+            _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            break;
+          case NONE:
+            break;
+          default:
+            break;
         }
       }
 
       // Compute the mean/sigma for each response
-      if(response_transform != TransformType.NONE && _responses > 0){
-        _normRespSub = MemoryManager.malloc8d(_responses);
-        _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);
-      } else _normRespSub = _normRespMul = null;
-      for(int i = 0; i < _responses; ++i){
-        names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
-        vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
-        Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
-        if(response_transform == TransformType.STANDARDIZE){
-          _normRespSub[i] = v.mean();
-          _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
-        } else if(response_transform == TransformType.NORMALIZE){
-          _normRespSub[i] = v.mean();
-          _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-        } else if(response_transform == TransformType.DEMEAN){
-          _normRespSub[i] = v.mean();
+      if (_responses > 0) {
+        switch(response_transform){
+          case STANDARDIZE:
+          case NORMALIZE:
+            _normRespSub = MemoryManager.malloc8d(_responses);
+            _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);
+            break;
+          case DEMEAN:
+            _normRespSub = MemoryManager.malloc8d(_responses);
+            _normRespMul = null;
+            break;
+          case DESCALE:
+            _normRespSub = null;
+            _normRespMul = MemoryManager.malloc8d(_responses);
+            break;
+          case NONE:
+            _normRespSub = _normRespMul = null;
+            break;
+          default:
+            throw H2O.unimpl();
+        }
+        for(int i = 0; i < _responses; ++i){
+          names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
+          vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
+          Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
+          switch(response_transform){
+            case STANDARDIZE:
+              _normRespSub[i] = v.mean();
+              _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+              break;
+            case NORMALIZE:
+              _normRespSub[i] = v.mean();
+              _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              break;
+            case DEMEAN:
+              _normRespSub[i] = v.mean();
+              break;
+            case DESCALE:
+              _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+              break;
+            case NONE:
+              break;
+            default:
+              throw H2O.unimpl();
+          }
         }
       }
 
