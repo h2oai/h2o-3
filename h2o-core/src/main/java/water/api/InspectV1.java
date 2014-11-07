@@ -28,31 +28,34 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Version&Schema-specific filling into the impl
   transient Value _val; // To avoid a race, cached lookup here
 
-  @Override public InspectPojo createImpl() {
+  @Override public InspectPojo fillImpl(InspectPojo impl) {
     _val = DKV.get(key);
     if( _val == null ) throw new IllegalArgumentException("Key not found");
     if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
     if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
-    InspectPojo i = new InspectPojo(_val,off, len);
-    return i;
+    impl.init(_val,off, len);
+    return impl;
   }
 
   // Version&Schema-specific filling from the impl
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
-    key = i._val._key;
-    if (i._val.isFrame())
-      kind = "frame";
-    else if (i._val.isModel())
-      kind = "model";
-    else if (i._val.isVec())
-      kind = "vec";
-    else if (i._val.isKey())
-      kind = "key";
-    else
-      kind = "unknown";
+    if (null != i._val) {
+      key = i._val._key;
+      if (i._val.isFrame())
+        kind = "frame";
+      else if (i._val.isModel())
+        kind = "model";
+      else if (i._val.isVec())
+        kind = "vec";
+      else if (i._val.isKey())
+        kind = "key";
+      else
+        kind = "unknown";
+    }
 
     schema = i._schema;       // Output schema (container for the returned Schema).
-    schema.fillFromImpl(i._val.get());   // Recursively fill in contained schema
+    if (null != schema)
+      schema.fillFromImpl(null == i._val ? null : i._val.get());   // Recursively fill in contained schema
     return this;
   }
 
