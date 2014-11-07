@@ -112,6 +112,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] = add(a[i],b[i]);
     return a;
   }
+  public static double[][][] add(double[][][] a, double[][][] b) {
+    for(int i = 0; i < a.length; i++ ) a[i] = add(a[i],b[i]);
+    return a;
+  }
 
   public static double avg(double[] nums) {
     double sum = 0;

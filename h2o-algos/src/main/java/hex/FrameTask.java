@@ -17,6 +17,7 @@ import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected transient DataInfo _dinfo;
+  public DataInfo dinfo() { return _dinfo; }
   final Key _dinfoKey;
   final int [] _activeCols;
   final protected Key _jobKey;
@@ -99,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     @Override
     public long checksum() {throw H2O.unimpl();} // don't really need checksum
 
-    public enum TransformType { NONE, STANDARDIZE, NORMALIZE };
+    public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN };
     public TransformType _predictor_transform;
     public TransformType _response_transform;
     public boolean _useAllFactorLevels;
@@ -184,12 +185,12 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _responses = responses;
       _cats = catLevels.length;
       _nums = fr.numCols()-_cats - responses;
-      if((_predictor_transform = predictor_transform) == TransformType.STANDARDIZE && _nums > 0){
+      if((_predictor_transform = predictor_transform) == TransformType.STANDARDIZE && _nums > 0) {
         _normMul = MemoryManager.malloc8d(_nums);
         _normSub = MemoryManager.malloc8d(_nums);
-        for(int i = 0; i < _nums; ++i){
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+        for (int i = 0; i < _nums; ++i) {
+          Vec v = fr.vec(catLevels.length + i);
+          _normMul[i] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
           _normSub[i] = v.mean();
         }
       } else if((_predictor_transform = predictor_transform) == TransformType.NORMALIZE && _nums > 0){
@@ -198,6 +199,13 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         for(int i = 0; i < _nums; ++i){
           Vec v = fr.vec(catLevels.length+i);
           _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+          _normSub[i] = v.mean();
+        }
+      } else if((_predictor_transform = predictor_transform) == TransformType.DEMEAN && _nums > 0){
+        _normMul = null;
+        _normSub = MemoryManager.malloc8d(_nums);
+        for(int i = 0; i < _nums; ++i){
+          Vec v = fr.vec(catLevels.length+i);
           _normSub[i] = v.mean();
         }
       } else {
@@ -218,6 +226,13 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         for(int i = 0; i < responses; ++i){
           Vec v = fr.vec(fr.numCols()-responses+i);
           _normRespSub[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+          _normRespSub[i] = v.mean();
+        }
+      } else if((_response_transform = response_transform) == TransformType.DEMEAN && responses > 0){
+        _normRespMul = null;
+        _normRespSub = MemoryManager.malloc8d(responses);
+        for(int i = 0; i < responses; ++i){
+          Vec v = fr.vec(fr.numCols()-responses+i);
           _normRespSub[i] = v.mean();
         }
       } else {
@@ -296,6 +311,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         } else if (predictor_transform == TransformType.NORMALIZE) {
           _normSub[i] = v.mean();
           _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+        } else if (predictor_transform == TransformType.DEMEAN) {
+          _normSub[i] = v.mean();
         }
       }
 
@@ -314,6 +331,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         } else if(response_transform == TransformType.NORMALIZE){
           _normRespSub[i] = v.mean();
           _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+        } else if(response_transform == TransformType.DEMEAN){
+          _normRespSub[i] = v.mean();
         }
       }
 
