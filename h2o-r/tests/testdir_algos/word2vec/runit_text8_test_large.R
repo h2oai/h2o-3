@@ -1,0 +1,20 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+
+test <- function(conn) {
+    text.hex = h2o.importFile(conn, path = "bigdatadata/laptop/text8.gz", key = "text",header = FALSE)
+
+    w2v = h2o.word2vec(text.hex, wordModel = "CBOW", normModel = "HSM", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.05, epochs = 25, negExCnt = 0)
+    h2o.synonym(word2vec = w2v, target = "dog", count = 10)
+    w2v = h2o.word2vec(text.hex, wordModel = "CBOW", normModel = "NegSampling", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.05, epochs = 15, negExCnt = 15)
+    h2o.synonym(word2vec = w2v, target = "dog", count = 10)
+    w2v = h2o.word2vec(text.hex, wordModel = "SG", normModel = "HSM", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.05, epochs = 2, negExCnt = 0)
+    h2o.synonym(word2vec = w2v, target = "dog", count = 10)
+    w2v = h2o.word2vec(text.hex, wordModel = "SG", normModel = "NegSampling", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.025, epochs = 2, negExCnt = 5)
+    h2o.synonym(word2vec = w2v, target = "dog", count = 10)
+
+    testEnd()
+}
+
+doTest("Run all four word2vec algos on 17M word training set.", test)
