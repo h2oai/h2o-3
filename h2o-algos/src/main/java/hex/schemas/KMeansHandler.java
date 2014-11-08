@@ -19,8 +19,7 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
     KMeansParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
     builder.trainModel();
-    KMeansV2 schema = schema(version); // TODO: superclass!
-    schema.parameters = new KMeansV2.KMeansParametersV2();
+    KMeansV2 schema = schema(version).fillFromImpl(builder); // TODO: superclass!
     schema.job = builder._key;
     return schema;
   }

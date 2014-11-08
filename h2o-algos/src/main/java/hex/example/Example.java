@@ -1,16 +1,15 @@
 package hex.example;
 
-import java.util.Arrays;
-
 import hex.SupervisedModelBuilder;
 import hex.schemas.ExampleV2;
 import hex.schemas.ModelBuilderSchema;
-import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.util.Log;
-import water.util.MRUtils;
+
+import java.util.Arrays;
 
 /**
  *  Example model builder... building a trivial ExampleModel
@@ -78,7 +77,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.unlock_frames(Example.this);
-        Scope.exit();
+        Scope.exit(model._key);
         done();                 // Job done!
       }
       tryComplete();
