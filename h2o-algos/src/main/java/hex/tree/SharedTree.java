@@ -82,6 +82,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         } else {
           _model = makeModel(_dest, _parms ); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
+          _model._output._initialPrediction = _initialPrediction;
         }
 
         // Compute the response domain; makes for nicer printouts

@@ -3,70 +3,77 @@ package hex.tree.gbm;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.TestUtil;
+import water.MRTask;
 import water.fvec.Frame;
+import water.fvec.Chunk;
 
 import static org.junit.Assert.assertEquals;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
-//  @Test public void testGBMRegression() {
-//    File file = TestUtil.find_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
-//    Key fkey = NFSFileVec.make(file);
-//    Key dest = Key.make("mfg.hex");
-//    GBM gbm = new GBM();          // The Builder
-//    GBM.GBMModel gbmmodel = null; // The Model
-//    try {
-//      Frame fr = gbm.source = ParseDataset2.parse(dest,new Key[]{fkey});
-//      UKV.remove(fkey);
-//      gbm.classification = false;  // Regression
-//      gbm.family = GBM.Family.AUTO;
-//      gbm.response = fr.vecs()[1]; // Row in col 0, dependent in col 1, predictor in col 2
-//      gbm.ntrees = 1;
-//      gbm.max_depth = 1;
-//      gbm.min_rows = 1;
-//      gbm.nbins = 20;
-//      gbm.cols = new int[]{2};  // Just column 2
-//      gbm.validation = null;
-//      gbm.learn_rate = 1.0f;
-//      gbm.score_each_iteration=true;
-//      gbm.invoke();
-//      gbmmodel = UKV.get(gbm.dest());
-//      Assert.assertTrue(gbmmodel.get_params().state == Job.JobState.DONE); //HEX-1817
-//
-//      Frame preds = gbm.score(gbm.source);
-//      double sq_err = new CompErr().doAll(gbm.response,preds.vecs()[0])._sum;
-//      double mse = sq_err/preds.numRows();
-//      assertEquals(79152.1233,mse,0.1);
-//
-//      preds.delete();
-//
-//    } finally {
-//      gbm.source.delete();              // Remove original hex frame key
-//      if (gbm.validation != null) gbm.validation.delete(); // Remove validation dataset if specified
-//      if( gbmmodel != null ) gbmmodel.delete(); // Remove the model
-//      gbm.remove();             // Remove GBM Job
-//    }
-//  }
-//
-//  private static class CompErr extends MRTask2<CompErr> {
-//    double _sum;
-//    @Override public void map( Chunk resp, Chunk pred ) {
-//      double sum = 0;
-//      for( int i=0; i<resp._len; i++ ) {
-//        double err = resp.at(i)-pred.at(i);
-//        sum += err*err;
-//      }
-//      _sum = sum;
-//    }
-//    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
-//  }
-//
+  @Test public void testGBMRegression() {
+    GBMModel gbm = null;
+    Frame fr = null, fr2 = null;
+    try {
+      fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = fr._key;
+      parms._loss = Family.AUTO;
+      parms._toEnum = false;     // Regression
+      parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
+      parms._ntrees = 1;
+      parms._max_depth = 1;
+      parms._min_rows = 1;
+      parms._nbins = 20;
+      // Drop Col 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
+      String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
+      xcols[0] = fr._names[0];
+      for( int i=3; i<fr.numCols(); i++ ) xcols[i-2] = fr._names[i];
+      parms._learn_rate = 1.0f;
+      parms._score_each_iteration=true;
+
+      GBM job = null;
+      try {
+        job = new GBM(parms);
+        gbm = job.trainModel().get();
+      } finally {
+        if (job != null) job.remove();
+      }
+      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
+      //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
+
+      // Done building model; produce a score column with predictions
+      fr2 = gbm.score(fr);
+      double sq_err = new CompErr().doAll(job.response(),fr2.vecs()[0])._sum;
+      double mse = sq_err/fr2.numRows();
+      assertEquals(79152.1233,mse,0.1);
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( fr2 != null ) fr2.remove();
+      if( gbm != null ) gbm.delete();
+    }
+  }
+
+  private static class CompErr extends MRTask<CompErr> {
+    double _sum;
+    @Override public void map( Chunk resp, Chunk pred ) {
+      double sum = 0;
+      for( int i=0; i<resp._len; i++ ) {
+        double err = resp.at0(i)-pred.at0(i);
+        sum += err*err;
+      }
+      _sum = sum;
+    }
+    @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
+  }
+
   @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
@@ -82,24 +89,22 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/logreg/prostate.csv",
              new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
              });
-//    basicGBM("./smalldata/cars.csv","cars.hex",
-//             new PrepData() { int prep(Frame fr) { UKV.remove(fr.remove("name")._key); return fr.find("cylinders"); }
+    basicGBM("./smalldata/junit/cars.csv",
+             new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
+             });
+    basicGBM("./smalldata/airlines/allyears2k_headers.zip",
+             new PrepData() { int prep(Frame fr) {
+               for( String s : ignored_aircols ) fr.remove(s).remove();
+               return fr.find("IsArrDelayed"); }
+             });
+//    basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data",
+//             new PrepData() {
+//               int prep(Frame fr) {
+//                 assertEquals(581012,fr.numRows());
+//                 // Covtype: predict on last column
+//                 return fr.numCols()-1;
+//               }
 //             });
-//    basicGBM("./smalldata/airlines/allyears2k_headers.zip","air.hex",
-//             new PrepData() { int prep(Frame fr) {
-//               for( String s : ignored_aircols ) UKV.remove(fr.remove(s)._key);
-//               return fr.find("IsArrDelayed"); }
-//             });
-//    //basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data","covtype.hex",
-//    //         new PrepData() {
-//    //           int prep(Frame fr) {
-//    //             assertEquals(581012,fr.numRows());
-//    //             for( int ign : IGNS )
-//    //               UKV.remove(fr.remove("C"+Integer.toString(ign))._key);
-//    //             // Covtype: predict on last column
-//    //             return fr.numCols()-1;
-//    //           }
-//    //         });
   }
 //
 //  @Test public void testBasicGBMFamily() {
@@ -140,7 +145,7 @@ public class GBMTest extends TestUtil {
       water.DKV.put(fr);       // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      if( idx < 0 ) { parms._toEnum = false; idx = ~idx; }
+      if( idx < 0 ) { parms._toEnum = false; idx = ~idx; } else { parms._toEnum = true; }
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;
