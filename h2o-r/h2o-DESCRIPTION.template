@@ -36,3 +36,4 @@ Collate:
          'models.R'
          'algorithms.R'
          'predict.R'
+         'kmeans.R'
