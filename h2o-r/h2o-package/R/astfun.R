@@ -436,6 +436,8 @@ function(s) {
   } else if (s %i% "character") {
     res %p% s
     return(res)
+  } else if (s %i% "ASTEmpty") {
+    res %p% '$' %p0% s@key
   } else {
     print(s)
     stop("unimplemented")

@@ -43,7 +43,7 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
           water.rapids.Exec.new_func(f);
         }
       }
-      if (rapids._ast.equals("") || rapids._ast == null) return schema(version).fillFromImpl(rapids);
+      if (rapids._ast == null || rapids._ast.equals("")) return schema(version).fillFromImpl(rapids);
       env = water.rapids.Exec.exec(rapids._ast);
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");

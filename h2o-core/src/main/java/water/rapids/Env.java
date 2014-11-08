@@ -287,6 +287,9 @@ public class Env extends Iced {
     Futures fs = new Futures();
     // chop the local frames made in the scope
     for (String k : _local._local_frames.keySet()) {
+      if (isAry()) {
+        if(peekAry()._key != null && peekAry()._key.toString().equals(k)) continue;
+      }
       Frame f = _local._local_frames.remove(k);
       for (Vec v : f.vecs()) removeVec(v, fs);
       f.delete();
@@ -294,6 +297,10 @@ public class Env extends Iced {
     // zoop over the _local_locked hashset and hose down the KV store
     if (_local_locked != null) {
       for (Key k : _local_locked) {
+        if (isAry()) {
+          if (peekAry()._key != null && peekAry()._key == k) continue;
+          if (Arrays.asList(peekAry().keys()).contains(k)) continue;
+        }
         Keyed.remove(k, fs);
       }
     }

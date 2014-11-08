@@ -125,7 +125,7 @@ public class ASTApply extends ASTOp {
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-   env.cleanup(fr);
+//    env.cleanup(fr);
 //    for(Frame ff : cleanup) env.cleanup(ff);
     env.push(new ValFrame(fr2));
   }
@@ -133,27 +133,28 @@ public class ASTApply extends ASTOp {
 
 // --------------------------------------------------------------------------
 // Same as "apply" but defaults to columns.
-//class ASTSApply extends ASTRApply {
-//  static final String VARS[] = new String[]{ "", "ary", "fcn"};
-//  ASTSApply( ) { super(VARS,
-//          new Type[]{ Type.ARY, Type.ARY, Type.fcn(new Type[]{Type.dblary(),Type.ARY}) },
-//          OPF_PREFIX,
-//          OPP_PREFIX,
-//          OPA_RIGHT); }
-//  @Override String opStr(){ return "sapply";}
-//  @Override ASTOp make() {return new ASTSApply();}
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    // Stack: SApply, ary, fcn
-//    //   -->: RApply, ary, 2, fcn
-//    assert env.isFcn(-3);
-//    env._fcn[env._sp-3] = new ASTRApply();
-//    ASTOp fcn = env.popFcn();   // Pop, no ref-cnt
-//    env.push(2.0);
-//    env.push(1);
-//    env._fcn[env._sp-1] = fcn;  // Push, no ref-cnt
-//    super.apply(env,argcnt+1,null);
-//  }
-//}
+class ASTSApply extends ASTApply {
+  static final String VARS[] = new String[]{ "", "ary", "fcn", "..."};
+  public ASTSApply( ) { super(); }
+  @Override String opStr(){ return "sapply";}
+  @Override ASTOp make() {return new ASTSApply();}
+  @Override ASTSApply parse_impl(Exec E) {
+    AST ary = E.parse();
+    _margin = 2;
+    _fun = ((ASTId)E.skipWS().parse())._id;
+    ArrayList<AST> fun_args = new ArrayList<>();
+    while(E.skipWS().hasNext()) {
+      fun_args.add(E.parse());
+    }
+    ASTSApply res = (ASTSApply)clone();
+    res._asts = new AST[]{ary};
+    if (fun_args.size() > 0) _fun_args = fun_args.toArray(new AST[fun_args.size()]);
+    return res;
+  }
+  @Override void apply(Env env) {
+    super.apply(env);
+  }
+}
 
 // --------------------------------------------------------------------------
 // unique(ary)

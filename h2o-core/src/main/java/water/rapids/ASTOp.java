@@ -137,7 +137,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTReduce());
 //    putPrefix(new ASTIfElse());
     putPrefix(new ASTApply());
-//    putPrefix(new ASTSApply());
+    putPrefix(new ASTSApply());
 //    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
 //    putPrefix(new ASTXorSum ());
