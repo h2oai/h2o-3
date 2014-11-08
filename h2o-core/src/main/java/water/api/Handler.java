@@ -25,6 +25,9 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
+//    if (route._url_pattern.toString().endsWith("Inspect")) {
+//      int line_for_setting_a_breakpoint = 1;
+//    }
 
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HttpErrorV1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
