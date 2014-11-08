@@ -6,7 +6,6 @@ import hex.AUC;
 import hex.ConfusionMatrix2;
 import water.DKV;
 import water.MRTask;
-import water.H2O;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;

@@ -145,7 +145,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
       _valid.remove(_parms._ignored_columns);
-      Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
+      if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
     // Drop all-constant and all-bad columns.
@@ -158,7 +158,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     if( cstr.length() > 0 )
-      Log.info("Dropping constant columns: "+cstr);
+      if( expensive ) Log.info("Dropping constant columns: "+cstr);
 
     if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
       String nstr="";            // Log of dropped columns
@@ -171,7 +171,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
       if( nstr.length() > 0 )
-        Log.info("Dropping columns with too many missing values: "+nstr);
+        if( expensive ) Log.info("Dropping columns with too many missing values: "+nstr);
     }
 
     // Check that at least some columns are not-constant and not-all-NAs
