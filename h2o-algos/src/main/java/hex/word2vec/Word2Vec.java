@@ -95,6 +95,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         stop = System.currentTimeMillis();
         model.getModelInfo().updateLearningRate();
         model.update(_key); // Early version of model is visible
+        Job.update(1, self());
         tDiff = (float)(stop-start)/1000;
         Log.info("Epoch "+i+" "+tDiff+"s  Words trained/s: "+ (model.getModelInfo().getTotalProcessed()-lastCnt)/tDiff);
         lastCnt = model.getModelInfo().getTotalProcessed();
