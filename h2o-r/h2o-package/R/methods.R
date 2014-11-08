@@ -1177,7 +1177,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
 
-  .h2o.post.function(fun.ast)
+  invisible(.h2o.post.function(fun.ast))
 
   if(length(l) == 0)
     ast <- .h2o.varop("apply", X, MARGIN, fun.ast)

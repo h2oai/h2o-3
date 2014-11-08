@@ -546,6 +546,7 @@ setClass("ASTUnk", representation(key="character", isFormal="logical"), contains
 # AST Class Defintions: Part 2
 #-----------------------------------------------------------------------------------------------------------------------
 
+setClass("ASTEmpty",  representation(key="character"), contains="Node")
 setClass("ASTBody",   representation(statements="list"), contains="Node")
 setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
 setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")

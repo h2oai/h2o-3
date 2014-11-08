@@ -11,9 +11,9 @@ import java.util.ArrayList;
 * R's `apply`
 */
 public class ASTApply extends ASTOp {
-  protected int _margin;  // 1 => work on rows; 2 => work on columns
-  protected String _fun;
-  protected AST[] _fun_args;
+  protected static int _margin;  // 1 => work on rows; 2 => work on columns
+  protected static String _fun;
+  protected static AST[] _fun_args;
   static final String VARS[] = new String[]{ "", "ary", "MARGIN", "FUN", "..."};
   public ASTApply( ) { super(VARS); }
   @Override String opStr(){ return "apply";}
@@ -23,15 +23,14 @@ public class ASTApply extends ASTOp {
     _margin = (int)((ASTNum)E.skipWS().parse())._d;
     _fun = ((ASTId)E.skipWS().parse())._id;
     ArrayList<AST> fun_args = new ArrayList<>();
-    while(E.hasNext()) {
-      fun_args.add(E.skipWS().parse());
-    }
-    if (fun_args.size() > 0) {
-      _fun_args = fun_args.toArray(new AST[fun_args.size()]);
+    while(E.skipWS().hasNext()) {
+      fun_args.add(E.parse());
     }
     ASTApply res = (ASTApply)clone();
     res._asts = new AST[]{ary};
-    res._fun_args = _fun_args;  // paranoid
+    if (fun_args.size() > 0) {
+      _fun_args = fun_args.toArray(new AST[fun_args.size()]);
+    }
     return res;
   }
   @Override void apply(Env env) {
@@ -40,6 +39,7 @@ public class ASTApply extends ASTOp {
     final ASTFunc op = (ASTFunc)ASTOp.get(_fun);
     Frame fr2 = null;  // results Frame
     Frame fr = env.pop0Ary();
+    ArrayList<Frame> cleanup = new ArrayList<>();
     if( _margin == 2) {     // Work on columns?
       int ncols = fr.numCols();
       double[] row_result = new double[0];
@@ -67,7 +67,9 @@ public class ASTApply extends ASTOp {
       else {
         if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
         vecs_result = new Vec[ncols];
-        vecs_result[0] = env.pop0Ary().anyVec();
+        Frame v = env.pop0Ary();
+        cleanup.add(v);
+        vecs_result[0] = v.anyVec();
       }
 
       // loop over the columns and collect the results.
@@ -122,8 +124,9 @@ public class ASTApply extends ASTOp {
       for (int i = 0; i < names.length; i++) names[i] = "C"+(i+1);
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
-    else throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-    env.cleanup(fr);
+    else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
+   env.cleanup(fr);
+//    for(Frame ff : cleanup) env.cleanup(ff);
     env.push(new ValFrame(fr2));
   }
 }

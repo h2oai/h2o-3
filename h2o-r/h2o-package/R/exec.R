@@ -20,6 +20,7 @@ function(op, x) {
   if (x %i% "numeric") x <- '#' %p0% x
   if (x %i% "character") x <- deparse(eval(x))
   if (x %i% "H2OParsedData") x <- '$' %p0% x@key
+  if (x %i% "ASTEmpty") x <- '$' %p0% x@key
   new("ASTNode", root=op, children=list(x))
 }
 
@@ -38,14 +39,14 @@ function(op, e1, e2) {
   if (e1 %i% "numeric")       lhs <- '#' %p0% e1
   if (e1 %i% "character")     lhs <- deparse(eval(e1))
   if (e1 %i% "H2OParsedData") lhs <- '$' %p0% e1@key
-  # TODO: e1 inherits ASTFun ?
+  if (e1 %i% "ASTEmpty")      lhs <- '$' %p0% e1@key
 
   # Prep the RHS
   if (e2 %i% "ASTNode")       rhs <- e2
   if (e2 %i% "numeric")       rhs <- '#' %p0% e2
   if (e2 %i% "character")     rhs <- deparse(eval(e2))
   if (e2 %i% "H2OParsedData") rhs <- '$' %p0% e2@key
-  # TODO: e2 inherits ASTFun ?
+  if (e2 %i% "ASTEmpty") rhs <- '$' %p0% e2@key
 
   # Return an ASTNode
   new("ASTNode", root=op, children=list(left = lhs, right = rhs))
@@ -79,7 +80,6 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 
   print("AST: ")
   print(expr$ast)
-#  stop("end")
 
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__RAPIDS, ast=expr$ast)
@@ -110,7 +110,7 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
   res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS, funs=.collapse(expr))
-  print(res)
+#  print(res)
 }
 
 #cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")

@@ -170,7 +170,7 @@ function(stmnt) {
 
   # Got an atomic numeric
   if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "numeric") {
-    return('#' %p0% stmnt_list[[1]])
+    return(stmnt_list[[1]])
 
   # Got an atomic string
   } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "character") {
@@ -224,7 +224,7 @@ function(stmnt) {
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   # this `if` is just to make us all feel good... it doesn't do any interesting checking
   if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
-    ast <- '$' %p0% deparse(stmnt_list[[1]])
+    ast <- new("ASTEmpty", key = as.character(stmnt_list[[1]]))
     return(ast)
   }
   stop(paste( "Don't know what to do with statement: ", stmnt))

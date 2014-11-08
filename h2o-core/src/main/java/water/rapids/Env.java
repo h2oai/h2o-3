@@ -137,10 +137,15 @@ public class Env extends Iced {
 
   private void subRef(Val o) {
     assert o instanceof ValFrame;
+    boolean delete = true;
     if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr._key)) {
       for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
     }
-    for(Vec v: ((ValFrame) o)._fr.vecs()) subRef(v);
+    for(Vec v: ((ValFrame) o)._fr.vecs()) delete &= subRef(v);
+    if (delete) {
+      Key k = ((ValFrame)o)._fr._key;
+      if (k != null && !_locked.contains(k))  ((ValFrame)o)._fr.delete();
+    }
   }
 
   private void addRef(Vec v) {
@@ -151,13 +156,21 @@ public class Env extends Iced {
 //      if (v.masterVec()!=null) addRef(vec.masterVec());
   }
 
-  private void subRef(Vec v) {
-    if (_refcnt.get(v) == null) return;
+  private boolean subRef(Vec v) {
+    if (v == null) return false;
+    if (_refcnt.get(v) == null && !_locked.contains(v._key))  {
+      if (_local_locked != null && _local_locked.contains(v._key)) return false;
+      removeVec(v, null);
+      return true;
+    }
+    if (_refcnt.get(v) == null) { return false; }
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       removeVec(v, null);
       extinguishCounts(v);
+      return true;
     } else { _refcnt.put(v, new IcedInt(cnt)); }
+    return false;
   }
 
   private void subRefLocked(Vec v) {
@@ -272,13 +285,11 @@ public class Env extends Iced {
   void popScope() {
     _local.clear();  // clear the symbol table
     Futures fs = new Futures();
+    // chop the local frames made in the scope
     for (String k : _local._local_frames.keySet()) {
       Frame f = _local._local_frames.remove(k);
       for (Vec v : f.vecs()) removeVec(v, fs);
-    }
-    for (Vec v : _refcnt.keySet()) {  // wiping the reference counts
-      if (!_locked.contains(v._key)) fs = removeVec(v, fs);
-      extinguishCounts(v);
+      f.delete();
     }
     // zoop over the _local_locked hashset and hose down the KV store
     if (_local_locked != null) {
@@ -287,7 +298,6 @@ public class Env extends Iced {
       }
     }
     fs.blockForPending();
-    _stack.popAll(); // dump the stack, unlock any frames
   }
 
   // NOTE: this extinguishCounts is slightly suspicious, but might be OK here... Will matter in UDFs
@@ -514,7 +524,10 @@ public class Env extends Iced {
     HashMap<String, SymbolAttributes> _table;
     public SymbolTable() { _table = new HashMap<>(); _local_frames = new HashMap<>(); }
     void clear() { _table.clear(); }
-    public void copyOver(SymbolTable s) { _table = s._table; }
+    public void copyOver(SymbolTable s) {
+      _table = s._table;
+      _local_frames = s._local_frames;
+    }
 
     public void put(String name, int type, String value) {
       if (_table.containsKey(name)) {

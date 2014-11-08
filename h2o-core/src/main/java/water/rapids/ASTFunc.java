@@ -1,5 +1,6 @@
 package water.rapids;
 
+import water.DKV;
 import water.Futures;
 import water.H2O;
 import water.Key;
@@ -45,6 +46,9 @@ import water.fvec.Vec;
  */
 public class ASTFunc extends ASTFuncDef {
   public ASTFunc() { super(); }
+  public ASTFunc(String name, String[] arg_names, Env.SymbolTable table, ASTStatement body) {
+    _name = name; _arg_names = arg_names; _table = table; _body = body;
+  }
   AST[] _args;
 
   // (name args)
@@ -64,23 +68,37 @@ public class ASTFunc extends ASTFuncDef {
   @Override ASTOp make() { return new ASTFunc(); }
 
   @Override void apply(Env e) {
+    Frame cleanme = null;
+    Frame f=null;
     Env captured = e.capture();
     for (int i = 0; i < _args.length; ++i) {
       if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
       else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
-      else if (_args[i] instanceof ASTFrame) _table.put(_arg_names[i], Env.ARY, _args[i].value());
+      else if (_args[i] instanceof ASTFrame) {
+        // have a frame not in the DKV --> put in the DKV
+        if (((ASTFrame)_args[i])._key == null) {
+          cleanme = ((ASTFrame)_args[i])._fr;
+          f = new Frame(Key.make(_arg_names[i]), cleanme.names(), cleanme.vecs());
+          DKV.put(f._key, f); // block n put the key in the DKV
+          _args[i] = new ASTFrame(f._key.toString());
+          _table._local_frames.put(_arg_names[i], f);
+        }
+        _table.put(_arg_names[i], Env.ARY, _args[i].value());
+      }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
       else throw H2O.unimpl("Vector arguments are not supported.");
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
+//    e.cleanup(cleanme, f);
+    captured.popScope();
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
   void exec(Env e, AST arg1, AST[] args) {
-    _args = new AST[1 + args.length];
+    _args = new AST[args == null ? 1 :1 + args.length];
     _args[0] = arg1;
-    System.arraycopy(args, 0, _args, 1, args.length);
+    if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
   }
 
@@ -120,7 +138,7 @@ public class ASTFunc extends ASTFuncDef {
         for (long i = 0; i < vec.length(); i++) out[(int) i] = vec.at(i);
       }
     } else {
-      H2O.unimpl();
+      throw H2O.unimpl();
     }
     env.cleanup(fr);
     return out;
@@ -155,7 +173,7 @@ class ASTFuncDef extends ASTOp {
     // parse the function body
     _body = new ASTStatement().parse_impl(E.skipWS());
 
-    ASTFunc res = (ASTFunc) clone();
+    ASTFunc res = new ASTFunc(_name, _arg_names, _table, _body);
     res._asts = null;
     putUDF(res, name);
   }
