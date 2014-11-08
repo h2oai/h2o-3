@@ -37,7 +37,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
     @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
       super.fillFromImpl(parms);
-      super.fillFromImpl(parms);
       this.init = KMeans.Initialization.Furthest;
       return this;
     }
