@@ -14,6 +14,7 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
         "training_frame",
         "validation_frame",
         "response_column",
+        "ignored_columns",
         "ntrees",
         "max_depth",
         "min_rows",
