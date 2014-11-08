@@ -15,12 +15,12 @@ public class GBMHandler extends SharedTreeHandler<GBM, GBMV2> {
   public GBMV2 train(int version, GBM builder) {
     GBMParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
-    builder.train();
+    builder.trainModel();
     GBMV2 schema = schema(version); // TODO: superclass!
     schema.parameters = new GBMV2.GBMParametersV2();
     schema.job = builder._key;
     return schema;
   }
-  @Override protected GBMV2 schema(int version) { return new GBMV2(); }
+  @Override protected GBMV2 schema(int version) { GBMV2 schema = new GBMV2(); schema.parameters = schema.createParametersSchema(); return schema; }
   @Override public void compute2() { throw H2O.fail(); }
 }

@@ -212,8 +212,10 @@ public class Env extends Iced {
 
   // Done writing into all things.  Allow rollups.
   public void postWrite() {
+    Futures fs = new Futures();
     for( Vec vec : _refcnt.keySet() )
-      vec.postWrite(new Futures());
+      vec.postWrite(fs);
+    fs.blockForPending();
   }
 
   public void remove_and_unlock() {

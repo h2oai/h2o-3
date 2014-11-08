@@ -14,20 +14,6 @@ public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.Ex
     // Input fields
     @API(help="Maximum training iterations.")
     public int max_iters;        // Max iterations
-
-    @Override public ExampleParametersV2 fillFromImpl(ExampleModel.ExampleParameters impl) {
-      super.fillFromImpl(impl);
-
-      // Add any special handling here!
-      return this;
-    }
-
-    @Override public ExampleModel.ExampleParameters fillImpl(ExampleModel.ExampleParameters impl) {
-      super.fillImpl(impl);
-
-      // Add any special handling here!
-      return impl;
-    }
   } // ExampleParametersV2
 
 
