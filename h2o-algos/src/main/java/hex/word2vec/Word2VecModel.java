@@ -344,7 +344,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
         _uniTable[i] = j;
         if (j >= _vocabSize-1) j = 0;
         if (i / (float) UNIGRAM_TABLE_SIZE > d)
-          d += Math.pow(wCount.at8(++j), UNIGRAM_POWER) / (float) vocabWordsPow;
+          d += Math.pow(wCount.at8(j++), UNIGRAM_POWER) / (float) vocabWordsPow;
       }
     }
 
