@@ -9,14 +9,17 @@ from h2o_test import \
 
 from h2o_objects import LocalH2O, RemoteH2O, ExternalH2O
 import h2o_fc
+import h2o_hosts
 
 # print "h2o_bc"
 
+#************************************************************
 def default_hosts_file():
     if os.environ.has_key("H2O_HOSTS_FILE"):
         return os.environ["H2O_HOSTS_FILE"]
     return 'pytest_config-{0}.json'.format(getpass.getuser())
 
+#************************************************************
 # node_count is number of H2O instances per host if hosts is specified.
 # hack: this returns true for the --usecloud/-uc cases, to force it thru build_cloud/build_cloud_with_json/find_cloud
 # also for the -ccj cases
@@ -378,32 +381,6 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
     # save it to a local global copy, in case it's needed for tearDown
     h2o_nodes.nodes[:] = nodeList
     return nodeList
-
-
-def upload_jar_to_remote_hosts(hosts, slow_connection=False):
-    def prog(sofar, total):
-        # output is bad for jenkins.
-        username = getpass.getuser()
-        if username != 'jenkins':
-            p = int((10.0*sofar)/total)
-            sys.stdout.write('\rUploading jar [%s%s] %02d%%' % ('#'*p, ' ' * (10-p), (100*sofar)/total))
-            sys.stdout.flush()
-
-    if not slow_connection:
-        for h in hosts:
-            f = find_file('build/h2o.jar')
-            h.upload_file(f, progress=prog)
-            # skipping progress indicator for the flatfile
-            h.upload_file(flatfile_pathname())
-    else:
-        f = find_file('build/h2o.jar')
-        hosts[0].upload_file(f, progress=prog)
-        hosts[0].push_file_to_remotes(f, hosts[1:])
-
-        f = find_file(flatfile_pathname())
-        hosts[0].upload_file(f, progress=prog)
-        hosts[0].push_file_to_remotes(f, hosts[1:])
-
 
 def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False):
     if h2o_args.sleep_at_tear_down:
