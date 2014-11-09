@@ -1,6 +1,6 @@
-# Step 1: gradle build  -or- gradle build -x test (to skip tests)
+# Step 1: gradle build -or- gradle build -x test (to skip tests)
 # Step 2: cd to R/src/contrib and run R CMD INSTALL h2o_0.1.6.99999.tar.gz  (versioning may change)
-# Step 3: Start the h2o-app jar by hand
+# Step 3: Start ../build/h2o.jar by hand (i.e. h2o-dev/build/h2o.jar in the h2o-dev project root directory)
 # Step 4: Start an R session and load the h2o package:
 
 library(h2o)
