@@ -45,7 +45,7 @@
 #'
 #' NB:
 #' **scope**: Here scopes are defined in terms of a closure.
-#'            *this* scope knows about all functions and all if its parents functions.
+#'            *this* scope knows about all functions and all of its parents functions.
 #'            They are implemented as nested environments.
 #'
 #' The Finer Points
@@ -85,6 +85,7 @@
 #' A call is user defined if its environment is the Global one, or it's a closure inside of a call existing in the Global env.
 .is.udf<-
 function(fun) {
+  if (.is.op(fun)) return(FALSE)
   e <- tryCatch( environment(eval(fun)), error = function(x) FALSE) # get the environment of `fun`
   if (is.logical(e)) return(FALSE)                                  # if e is logical -> no environment found
   tryCatch(.is.closure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
@@ -168,18 +169,14 @@ function(stmnt) {
   # convenience variable
   stmnt_list <- as.list(stmnt)
 
-  # Got an atomic numeric
-  if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "numeric") {
-    return(stmnt_list[[1]])
+  # is null
+  if (is.atomic(stmnt_list[[1]]) && is.null(stmnt_list[[1]])) return(deparse("null"))
 
-  # Got an atomic string
-  } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "character") {
-    return(deparse(stmnt_list[[1]]))
-
-  # Got an atomic logical
-  } else if (is.atomic(stmnt_list[[1]]) && class(stmnt_list[[1]]) == "logical") {
-    return('$' %p0% stmnt_list[[1]])
-  }
+  if (is.atomic(stmnt_list[[1]]))
+    if (stmnt_list[[1]] %i% "numeric"   ||  # Got atomic numeric
+        stmnt_list[[1]] %i% "character" ||  # Got atomic character
+        stmnt_list[[1]] %i% "logical")      # Got atomic logical
+        return(stmnt_list[[1]])
 
   # Got an Op
   if (.is.op(stmnt_list[[1]])) {
@@ -202,8 +199,33 @@ function(stmnt) {
     # all varops
     } else if(.is.varop(op)) {
       args <- lapply(stmnt_list[-1], .statement.to.ast.switchboard)
-      op <- new("ASTApply", op = deparse(op))
-      return(new("ASTNode", root=op, children=args))
+      arg1 <- args[1]
+      if (arg1[[1]] %i% "ASTEmpty") arg1[[1]] <- .get.value.from.arg(arg1[[1]])
+      if (arg1[[1]] %i% "ASTNode")  arg1[[1]] <- visitor(.get.value.from.arg(arg1[[1]]))$ast
+      args[[1]] <- arg1
+
+      # Grab defaults and exchange them with any passed in args
+      op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
+      m <- paste(op, ".H2OFrame", sep ="")    # get the H2OFrame method
+      l <- formals(m)[-1]                     # get the arg list for the method  TODO: will have to use getMethod(m, signature=) in future
+      add_args <- l[names(l) != "..."]        # remove any '...' args
+
+      # if some args were passed in then update those values in add_args
+      if (length(op_args) != 0) {
+        for (a in names(add_args)) {
+          if (a %in% names(op_args)) add_args[a] <- op_args[a]
+        }
+        args <- arg1
+      }
+
+      # simplify the list, names in the list makes things go kablooey
+      names(add_args) <- NULL
+      add_args <- lapply(add_args, .statement.to.ast.switchboard)
+      add_args <- lapply(add_args, .get.value.from.arg)
+
+      # update the args list and then return the node
+      args <- c(args, add_args)
+      return(new("ASTNode", root=new("ASTApply", op = deparse(op)), children=args))
 
     # prefix op, 1 arg
     } else if(.is.prefix(op)) {
@@ -212,20 +234,18 @@ function(stmnt) {
 
     # should never get here
     } else {
-      stop(paste("Fail in statement processing to AST. Failing statement was: ", stmnt))
+      print(paste("Fail in statement processing to AST. Failing statement was: ", stmnt))
+      stop("Please contact support@0xdata.com")
     }
   }
 
   # Got a user-defined function
-  if (.is.udf(stmnt_list[[1]])) {
-    stop("fcn within a fcn unimplemented")
-  }
+  if (.is.udf(stmnt_list[[1]])) stop("fcn within a fcn unimplemented")
 
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   # this `if` is just to make us all feel good... it doesn't do any interesting checking
   if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
-    ast <- new("ASTEmpty", key = as.character(stmnt_list[[1]]))
-    return(ast)
+    return(new("ASTEmpty", key = as.character(stmnt_list[[1]])))
   }
   stop(paste( "Don't know what to do with statement: ", stmnt))
 }
@@ -262,22 +282,9 @@ function(stmnt) {
   new("ASTIf", condition = condition, body = new("ASTBody", statements = body))
 }
 
-.process.for.stmnt<-
-function(stmnt) {
-  stop("`for` unimplemented")
-}
-
-.process.else.stmnt<-
-function(stmnt) {
-  body <- .process.body(stmnt, TRUE)
-  new("ASTElse", body = body)
-}
-
-.process.return.stmnt<-
-function(stmnt) {
-  stmnt_list <- as.list(stmnt)
-  .h2o.unop("return", .statement.to.ast.switchboard(stmnt_list[[2]]))
-}
+.process.for.stmnt    <- function(stmnt) stop("`for` unimplemented")
+.process.else.stmnt   <- function(stmnt) new("ASTElse", body = .process.body(stmnt, TRUE))
+.process.return.stmnt <- function(stmnt) .h2o.unop("return", .statement.to.ast.switchboard(as.list(stmnt)[[2]]))
 
 .process.assign.stmnt<-
 function(stmnt) {
@@ -314,6 +321,7 @@ function(stmnt) {
 #' This switchboard takes exactly ONE statement at a time.
 .statement.to.ast.switchboard<-
 function(stmnt) {
+  if (is.null(stmnt)) return(NULL)
 
   # convenience variable
   stmnt_list <- as.list(stmnt)
@@ -402,17 +410,12 @@ function(astfun) {
   list(ast = res)
 }
 
-.body.visitor<-
-function(b) {
-  stmnts <- lapply(b@statements, .stmnt.visitor)
-}
+.body.visitor <- function(b) stmnts <- lapply(b@statements, .stmnt.visitor)
 
 .stmnt.visitor<-
 function(s) {
   res <- ""
-  if (s %i% "ASTBody") {
-    return(.body.visitor(s))
-  }
+  if (s %i% "ASTBody") return(.body.visitor(s))
   if (s %i% "ASTIf") {
     res %p0% '('
     res %p0% s@op

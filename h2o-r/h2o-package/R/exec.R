@@ -57,9 +57,10 @@ function(op, e1, e2) {
 #'
 #' Operation on an H2OFrame object with some extra parameters.
 .h2o.varop<-
-function(op, ...) {
+function(op, ..., .args=list()) {
   op <- new("ASTApply", op = op)
-  ASTargs <- .args.to.ast(...)
+  if (length(.args) == 0) ASTargs <- .args.to.ast(...)
+  else ASTargs <- .args.to.ast(.args=.args)
   new("ASTNode", root=op, children=ASTargs)
 }
 
@@ -78,8 +79,8 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if (!is.null(ID)) Last.value <- ID %<-% Last.value
   expr <- visitor(Last.value)
 
-  print("AST: ")
-  print(expr$ast)
+#  print("AST: ")
+#  print(expr$ast)
 
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__RAPIDS, ast=expr$ast)

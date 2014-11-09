@@ -673,7 +673,7 @@ public class Frame extends Lockable {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames")));
+      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames_vec")));
       int r = 0;
       int c = 0;
       while (r < rows.length) {
@@ -689,9 +689,9 @@ public class Frame extends Lockable {
       Frame ff = new Frame(new String[]{"rownames"}, new Vec[]{c0});
       Frame fr2 = new Slice(c2, this).doAll(c2.length,ff)
               .outputFrame(names(c2), domains(c2));
-      ff.delete();
-      Keyed.remove(c0._key);  // Remove hidden vector
+      Keyed.remove(c0._key);
       Keyed.remove(av._key);
+      ff.delete();
       return fr2;
     }
     Frame frows = (Frame)orows;

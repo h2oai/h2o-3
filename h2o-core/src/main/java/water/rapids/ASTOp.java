@@ -205,6 +205,8 @@ public abstract class ASTOp extends AST {
   // Special row-wise 'apply'
   double[] map(Env env, double[] in, double[] out) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.fail(); }
+  // special exec for apply calls
+  void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
   @Override int type() { throw H2O.fail(); }
   @Override String value() { throw H2O.fail(); }
 
@@ -239,6 +241,13 @@ abstract class ASTUniOp extends ASTOp {
     res._asts = new AST[]{arg};
     return res;
   }
+
+  @Override void exec(Env e, AST arg1, AST[] args) {
+    if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
+    arg1.exec(e);
+    apply(e);
+  }
+
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
@@ -283,7 +292,7 @@ class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  
 class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sgn" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
 class ASTTrun extends ASTUniPrefixOp { @Override String opStr(){ return "trunc"; } @Override ASTOp make() {return new ASTTrun();} @Override double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
-class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceil"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
+class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceiling"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
 class ASTFlr  extends ASTUniPrefixOp { @Override String opStr(){ return "floor";} @Override ASTOp make() {return new ASTFlr ();} @Override double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniPrefixOp { @Override String opStr(){ return "log";  } @Override ASTOp make() {return new ASTLog ();} @Override double op(double d) { return Math.log(d);}}
 class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  } @Override ASTOp make() {return new ASTExp ();} @Override double op(double d) { return Math.exp(d);}}
@@ -294,7 +303,6 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
     //if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
     Frame fr = env.pop0Ary();
-    final ASTUniOp uni = this;  // Final 'this' so can use in closure
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         for( int i=0; i<nchks.length; i++ ) {
@@ -624,8 +632,8 @@ class ASTScale extends ASTUniPrefixOp {
         }
       }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
     }
-    env.cleanup(fr);
-    if (doScale) env.cleanup(centered);
+//    env.cleanup(fr);
+//    if (doScale) env.cleanup(centered);
     env.push(new ValFrame(scaled));
   }
 }
@@ -1785,8 +1793,25 @@ class ASTMean extends ASTUniPrefixOp {
     return res;
   }
 
+  @Override void exec(Env e, AST arg1, AST[] args) {
+    arg1.exec(e);
+    Frame fr = e.peekAry();
+    if (args != null) {
+      if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
+      for (AST a : args) {
+        if (a instanceof ASTId) {
+          _narm = ((ASTNum) e.lookup((ASTId) a)).dbl() == 1;
+        } else if (a instanceof ASTNum) {
+          _trim = ((ASTNum) a).dbl();
+        }
+      }
+    }
+    apply(e);
+//    fr.delete();
+  }
+
   @Override void apply(Env env) {
-    Frame fr = env.peekAry(); // get the frame w/o popping/sub-reffing
+    Frame fr = env.pop0Ary(); // get the frame w/o sub-reffing
     if (fr.vecs().length > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     if (fr.vecs()[0].isEnum())
@@ -1794,16 +1819,14 @@ class ASTMean extends ASTUniPrefixOp {
     MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
     if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
       double ave = Double.NaN;
-      if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
       env.push(new ValNum(ave));
     } else {
       double ave = t._sum / t._rowcnt;
-      if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
       env.push(new ValNum(ave));
     }
+    env.cleanup(fr);
   }
 
-  // Keep this map for legacy reasons (in case H2O Console is rezzed).
   @Override double[] map(Env env, double[] in, double[] out) {
     if (out == null || out.length < 1) out = new double[1];
     double s = 0;  int cnt=0;
