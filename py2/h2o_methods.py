@@ -28,19 +28,23 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
 def get_cloud(self, noSandboxErrorCheck=False, timeoutSecs=10):
     # hardwire it to allow a 60 second timeout
     a = self.do_json_request('Cloud.json', noSandboxErrorCheck=noSandboxErrorCheck, timeout=timeoutSecs)
-
     verboseprint(dump_json(a))
+
+    version    = a['version']
+    if not version.startswith('0'):
+        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
 
     consensus = a['consensus']
     locked = a['locked']
     cloud_size = a['cloud_size']
     cloud_name = a['cloud_name']
     node_id = self.node_id
-    verboseprint('%s%s %s%s %s%s %s%s' % (
+    verboseprint('%s%s %s%s %s%s %s%s %s%s' % (
         "\tnode_id: ", node_id,
         "\tcloud_size: ", cloud_size,
         "\tconsensus: ", consensus,
         "\tlocked: ", locked,
+        "\tversion: ", version,
     ))
     return a
 
