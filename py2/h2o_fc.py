@@ -72,14 +72,13 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     consensus  = gc['consensus']
     locked     = gc['locked']
     cloud_size = gc['cloud_size']
-    node_name  = gc['node_name']
     cloud_name = gc['cloud_name']
     nodes      = gc['nodes']
 
     # None means don't check
     if expectedSize and (cloud_size!=expectedSize):
         raise Exception("cloud_size %s at %s disagrees with -expectedSize %s" % \
-            (cloud_size, node_name, expectedSize))
+            (cloud_size, cloud_name, expectedSize))
 
     print "here's some info about the java heaps in the cloud you said you already built for me"
     print "Also some info about ncpus"
@@ -88,9 +87,10 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     num_cpus_list = []
     name_list = []
     for i, n in enumerate(nodes):
-        print "free_mem_bytes (GB):", "%0.2f" % ((n['free_mem_bytes']+0.0)/(1024*1024*1024))
-        print "tot_mem_bytes (GB):", "%0.2f" % ((n['tot_mem_bytes']+0.0)/(1024*1024*1024))
-        java_heap_GB = (n['tot_mem_bytes']+0.0)/(1024*1024*1024)
+        print "kevin:", dump_json(n)
+        print "max_mem (GB):", "%0.2f" % ((n['max_mem']+0.0)/(1024*1024*1024))
+        print "tot_mem (GB):", "%0.2f" % ((n['tot_mem']+0.0)/(1024*1024*1024))
+        java_heap_GB = (n['tot_mem']+0.0)/(1024*1024*1024)
         java_heap_GB = int(round(java_heap_GB,0))
         num_cpus = n['num_cpus']
         print "java_heap_GB:", java_heap_GB
@@ -99,7 +99,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
         java_heap_GB_list.append(java_heap_GB)
         num_cpus_list.append(num_cpus)
 
-        name = n['name'].lstrip('/')
+        name = n['h2o']['node'].lstrip('/')
         # print 'name:', name
         ### print dump_json(n)
         name_list.append(name)
