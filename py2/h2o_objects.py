@@ -233,13 +233,13 @@ class H2O(object):
 
         # fatal if no response
         if not r:
-            raise Exception("Maybe bad url? no r in __do_json_request in %s:" % inspect.stack()[1][3])
+            raise Exception("Maybe bad url? no r in do_json_request in %s:" % inspect.stack()[1][3])
 
         # this is used to open a browser on results, or to redo the operation in the browser
         # we don't' have that may urls flying around, so let's keep them all
         h2o_nodes.json_url_history.append(r.url)
         # if r.json():
-        #     raise Exception("Maybe bad url? no r.json in __do_json_request in %s:" % inspect.stack()[1][3])
+        #     raise Exception("Maybe bad url? no r.json in do_json_request in %s:" % inspect.stack()[1][3])
 
         rjson = None
         if returnFast:

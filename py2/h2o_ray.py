@@ -1,6 +1,7 @@
 
 import time
-from h2o_test import verboseprint
+import h2o_methods
+from h2o_test import verboseprint, dump_json
 
 ###################
 # REST API ACCESSORS
@@ -13,8 +14,8 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
     params_dict = {
         'job_key': job_key
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.__do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
+    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -25,12 +26,12 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
     '''
     params_dict = {
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
 
     start_time = time.time()
     while True:
         verboseprint('Polling for job: ' + job_key + '. . .')
-        result = self.__do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         
         if result['jobs'][0]['status'] == 'DONE' or result['jobs'][0]['status'] == 'CANCELLED' or result['jobs'][0]['status'] == 'FAILED':
             verboseprint('Job ' + result['jobs'][0]['status'] + ': ' + job_key + '.')
@@ -48,11 +49,11 @@ def import_files(self, path, timeoutSecs=180):
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
-    a = self.__do_json_request('2/ImportFiles.json',
+    a = self.do_json_request('2/ImportFiles.json',
         timeout=timeoutSecs,
         params={"path": path}
     )
-    verboseprint("\nimport_files result:", h2o_util.dump_json(a))
+    verboseprint("\nimport_files result:", dump_json(a))
     return a
 
 
@@ -74,9 +75,9 @@ def parse(self, key, key2=None,
     parse_setup_params = {
         'srcs': "[" + key + "]"
     }
-    # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
-    setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
-    verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
+    # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
+    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
+    verboseprint("ParseSetup result:", dump_json(setup_result))
 
     # 
     # and then Parse?srcs=<keys list> and params from the ParseSetup result
@@ -101,11 +102,10 @@ def parse(self, key, key2=None,
         'singleQuotes': setup_result['singleQuotes'],
         'columnNames': ascii_column_names,
     }
-    print "parse_params: ", parse_params
-    h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=True)
+    h2o_methods.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=True)
 
-    parse_result = self.__do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
-    verboseprint("Parse result:", h2o_util.dump_json(parse_result))
+    parse_result = self.do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
+    verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['name']
 
@@ -137,12 +137,12 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
     When find_compatible_models is implemented then the top level 
     dict will also contain a "models" list.
     '''
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
     
     if key:
-        result = self.__do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
-        result = self.__do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -155,9 +155,9 @@ def columns(self, key, timeoutSecs=10, **kwargs):
         'offset': 0,
         'len': 100
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
     
-    result = self.__do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -170,9 +170,9 @@ def column(self, key, column, timeoutSecs=10, **kwargs):
         'offset': 0,
         'len': 100
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'column', True)
     
-    result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -185,9 +185,9 @@ def summary(self, key, column, timeoutSecs=10, **kwargs):
         'offset': 0,
         'len': 100
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
-    result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -197,7 +197,7 @@ def delete_frame(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
     '''
     assert key is not None, '"key" parameter is null'
 
-    result = self.__do_json_request('/3/Frames.json/' + key, cmd='delete', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Frames.json/' + key, cmd='delete', timeout=timeoutSecs)
 
     # TODO: look for what?
     if not ignoreMissingKey and 'f00b4r' in result:
@@ -210,7 +210,7 @@ def delete_frames(self, timeoutSecs=60, **kwargs):
     Delete all frames on the h2o cluster.
     '''
     parameters = { }
-    result = self.__do_json_request('/3/Frames.json', cmd='delete', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Frames.json', cmd='delete', timeout=timeoutSecs)
     return result
 
 
@@ -226,12 +226,12 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     '''
     params_dict = {
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
 
     if algo:
-        result = self.__do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
     else:
-        result = self.__do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -257,7 +257,7 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
 
     # TODO: add parameter existence checks
     # TODO: add parameter value validation
-    result = self.__do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
+    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
 
     verboseprint("model parameters validation: " + repr(result))
     return result
@@ -285,7 +285,7 @@ def build_model(self, algo, training_frame, parameters, destination_key = None, 
 
     if destination_key is not None:
         parameters['destination_key'] = destination_key
-    result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
+    result = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
 
     if asynchronous:
         return result
@@ -317,7 +317,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
     assert frames is not None, "/Frames/{0} REST call failed".format(frame)
     assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
-    result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+    result = self.do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
 
     mm = result['model_metrics'][0]
     verboseprint("model metrics: " + repr(mm))
@@ -337,7 +337,7 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
     assert frames is not None, "/Frames/{0} REST call failed".format(frame)
     assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
-    result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
     return result
 
 
@@ -345,7 +345,7 @@ def model_metrics(self, timeoutSecs=60, **kwargs):
     '''
     ModelMetrics list. 
     '''
-    result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+    result = self.do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
     return result
 
 
@@ -362,12 +362,12 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
     params_dict = {
         'find_compatible_frames': False
     }
-    h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'models', True)
 
     if key:
-        result = self.__do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
-        result = self.__do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -377,7 +377,7 @@ def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
     '''
     assert key is not None, '"key" parameter is null'
 
-    result = self.__do_json_request('/3/Models.json/' + key, cmd='delete', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Models.json/' + key, cmd='delete', timeout=timeoutSecs)
 
     # TODO: look for what?
     if not ignoreMissingKey and 'f00b4r' in result:
@@ -390,7 +390,7 @@ def delete_models(self, timeoutSecs=60, **kwargs):
     Delete all models on the h2o cluster.
     '''
     parameters = { }
-    result = self.__do_json_request('/3/Models.json', cmd='delete', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Models.json', cmd='delete', timeout=timeoutSecs)
     return result
 
 
@@ -399,7 +399,7 @@ def endpoints(self, timeoutSecs=60, **kwargs):
     Fetch the list of REST API endpoints.
     '''
     parameters = { }
-    result = self.__do_json_request('/1/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
+    result = self.do_json_request('/1/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
     return result
 
 def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
@@ -407,5 +407,5 @@ def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
     Fetch the metadata for the given numbered REST API endpoint.
     '''
     parameters = { }
-    result = self.__do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
+    result = self.do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
     return result

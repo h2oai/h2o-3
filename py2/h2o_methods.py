@@ -10,6 +10,7 @@ from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sand
 
 # print "h2o_methods"
 
+# this is done before import h2o_ray, which imports h2o_methods!
 def check_params_update_kwargs(params_dict, kw, function, print_params):
     # only update params_dict..don't add
     # throw away anything else as it should come from the model (propagating what RF used)

@@ -16,7 +16,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_simple(self):
-        pass # put the browser in test_simple_browser.py because it fails
+        h2b.browseTheCloud()
 
 if __name__ == '__main__':
     h2o.unit_main()
