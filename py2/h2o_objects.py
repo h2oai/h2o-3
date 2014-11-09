@@ -169,7 +169,7 @@ class H2O(object):
         return u
 
 
-    def do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, returnFast=False,
+    def do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
         cmd='get', extraComment=None, ignoreH2oError=False, noSandboxErrorCheck=False, **kwargs):
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
@@ -195,10 +195,21 @@ class H2O(object):
 
         # file get passed thru kwargs here
         try:
-            if cmd == 'post':
-                r = requests.post(url, timeout=timeout, params=params, **kwargs)
-            else:
+            if 'post' == cmd:
+                # NOTE == cmd: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
+                # This is temporary.
+                # 
+                # This following does application/json (aka, posting JSON in the body):
+                # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
+                # 
+                # This does form-encoded, which doesn't allow POST of nested structures
+                r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
+            elif 'delete' == cmd:
+                r = requests.delete(url, timeout=timeout, params=params, **kwargs)
+            elif 'get' == cmd:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
+            else:
+                raise ValueError("Unknown HTTP command (expected 'get', 'post' or 'delete'): " + cmd)
 
         except Exception, e:
             # rethrow the exception after we've checked for stack trace from h2o
@@ -213,6 +224,12 @@ class H2O(object):
                 time.sleep(2)
                 check_sandbox_for_errors(python_test_name=h2o_args.python_test_name);
             raise exc_info[1], None, exc_info[2]
+
+        if 200 != r.status_code:
+            print "JSON call returned non-200 status: ", url
+            print "r.status_code: " + str(r.status_code)
+            print "r.headers: " + repr(r.headers)
+            print "r.text: " + r.text
 
         # fatal if no response
         if not r:

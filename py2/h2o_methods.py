@@ -225,3 +225,27 @@ def h2o_log_msg(*args, **kwargs):
 
 H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
+
+# attach some methods from ray
+import h2o_ray
+H2O.jobs = h2o_ray.jobs
+H2O.poll_job = h2o_ray.poll_job
+H2O.import_files = h2o_ray.import_files
+H2O.parse = h2o_ray.parse
+H2O.frames = h2o_ray.frames
+H2O.columns = h2o_ray.columns
+H2O.column = h2o_ray.column
+H2O.summary = h2o_ray.summary
+H2O.delete_frame = h2o_ray.delete_frame
+H2O.delete_frames = h2o_ray.delete_frames
+H2O.model_builders = h2o_ray.model_builders
+H2O.validate_model_parameters = h2o_ray.validate_model_parameters
+H2O.build_model = h2o_ray.build_model
+H2O.compute_model_metrics = h2o_ray.compute_model_metrics
+H2O.predict = h2o_ray.predict
+H2O.model_metrics = h2o_ray.model_metrics
+H2O.models = h2o_ray.models
+H2O.delete_model = h2o_ray.delete_model
+H2O.delete_models = h2o_ray.delete_models
+H2O.endpoints = h2o_ray.endpoints
+H2O.endpoint_by_number = h2o_ray.endpoint_by_number
