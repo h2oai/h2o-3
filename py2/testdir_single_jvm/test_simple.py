@@ -1,7 +1,7 @@
 import unittest, sys
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -16,7 +16,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_simple(self):
-        pass
+        h2b.browseTheCloud()
 
 if __name__ == '__main__':
     h2o.unit_main()
