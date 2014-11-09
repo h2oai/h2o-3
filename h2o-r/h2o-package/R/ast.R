@@ -34,6 +34,8 @@ function(node) {
     res %p0% children
     res %p0% "}"
     res
+  } else if (node %i% "ASTEmpty") {
+    node@key
   } else {
     node
   }
@@ -171,12 +173,14 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (inherits(a, "H2OParsedData")) {
+  if (a %i%"H2OParsedData") {
     '$' %p0% a@key
-  } else if (inherits(a, "ASTNode")) {
+  } else if (a %i% "ASTNode") {
     a
-  } else if (class(a) == "ASTFun") {
+  } else if (a %i% "ASTFun") {
     '$' %p0% a@name
+  } else if (a %i% "ASTEmpty") {
+    '$' %p0% a@key
   } else {
     res <- eval(a)
     if (is.null(res)) return(deparse("null"))
@@ -196,49 +200,20 @@ function(a, name=NULL) {
   }
 }
 
-#.args.to.ast<-
-#function(...) {
-#  arg.names <- names(as.list(substitute(list(...)))[-1])
-#
-#  arg_values <- NULL
-#
-#  arg_values <- lapply(seq_along(list(...)), function(i) {
-#    if (names(list(...))[i] == "fun_args") {
-#      paste(unlist(lapply(unlist(list(...)[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
-#    } else .get.value.from.arg(list(...)[[i]], names(list(...))[i])
-#  })
-#  return(arg_values)
-#}
-
-
-
 .args.to.ast<-
-function(...) {
-  arg.names <- names(as.list(substitute(list(...)))[-1])
+function(..., .args = list()) {
+  l <- list(...)
+  if (length(.args) != 0) l <- .args
+  arg.names <- names(as.list(substitute(l))[-1])
+  arg_values <- NULL
   if ("fun_args" %in% arg.names) {
-    stop("unimpl")
-#    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
-#    to_keep <- which(names(arg_names) == "")
-#    idx_to_change <- which(arg.names != "")
-#    lapply(seq_along(arg.names),
-#      function(i) {
-#        if (arg.names[i] == "") {
-#          arg.names[i] <<- arg_names[to_keep[1]]
-#          to_keep <<- to_keep[-1]
-#        }
-#      }
-#    )
-#    to_keep   <- NULL
-#    arg_names <- arg.names
-#    arg_ts <- lapply(list(...), .eval_class)
-#    arg_ts$fun_args <- "ASTSymbolTable"
-#    names(arg_ts) <- NULL
-#    arg_types <- arg_ts
-#    print(arg_names)
-#    stop("elllo")
+    arg_values <- lapply(seq_along(l), function(i) {
+        if (names(l[i]) == "fun_args") {
+          paste(unlist(lapply(unlist(l[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
+        } else .get.value.from.arg(l[[i]], names(l)[i])
+      })
   } else {
-    arg_types  <- lapply(list(...), .eval_class)
+    arg_values <- lapply(seq_along(l), function(i) { .get.value.from.arg(l[[i]], names(l)[i]) })
   }
-  arg_values <- lapply(seq_along(list(...)), function(i) { .get.value.from.arg(list(...)[[i]], names(list(...))[i]) })
   return(arg_values)
 }

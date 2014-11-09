@@ -35,11 +35,13 @@ public class Env extends Iced {
   final static int NULL  =99999;
   final static int LARY  =99;  // special value for arrays in _local_array
 
-  final ExecStack _stack;                   // The stack
-  final IcedHashMap<Vec,IcedInt> _refcnt;   // Ref Counts for each vector
-  transient final public StringBuilder _sb; // Holder for print results
-  transient final HashSet<Key> _locked;     // The original set of locked frames, these shalt not be DKV.removed.
-  transient final HashSet<Key> _local_locked; // Locked frames in the *local* scope
+  final ExecStack _stack;                      // The stack
+  final IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
+  transient final public StringBuilder _sb;    // Holder for print results
+  transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
+  transient final HashSet<Key> _global_frames; // Frame keys in the *global* scope
+  transient final HashSet<Key> _local_frames;  // Frame keys in the *local* scope
+  transient final HashSet<Key> _local_locked;  // Locked frames in the *local* scope
   final SymbolTable _global;
   final SymbolTable _local;
   final Env _parent;
@@ -54,6 +56,8 @@ public class Env extends Iced {
     _sb     = new StringBuilder();
     _locked = locked;
     _global = new SymbolTable();
+    _global_frames = new HashSet<>();
+    _local_frames = null;
     _local  = null;
     _local_locked = null;
     _parent = null;
@@ -64,8 +68,10 @@ public class Env extends Iced {
   Env capture() { return new Env(this); }
   private Env(Env e) {
     _stack  = e._stack;
-    _refcnt = new IcedHashMap<>(); // gets a new reference counter
+    _refcnt = e._refcnt; // same ref cnter
     _sb     = null;
+    _global_frames = e._global_frames;
+    _local_frames = new HashSet<>();
     _locked = e._locked;
     _local_locked = new HashSet<>();
     _global = e._global;
@@ -84,6 +90,12 @@ public class Env extends Iced {
   public int sp() { return _stack._head + 1; }
 
   public void push(Val o) {
+    if (o instanceof ValFrame) {
+      if (_local != null) {
+        String key = Key.make().toString();
+        _local._local_frames.put(key, ((ValFrame)o)._fr);
+      }
+    }
     if (o instanceof ValFrame) { addRef(o); }
     _stack.push(o);
   }
@@ -160,12 +172,29 @@ public class Env extends Iced {
     if (v == null) return false;
     if (_refcnt.get(v) == null && !_locked.contains(v._key))  {
       if (_local_locked != null && _local_locked.contains(v._key)) return false;
+      for (Key kg : _global_frames) {
+        if ( Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
+          return false;
+        }
+      }
       removeVec(v, null);
       return true;
     }
     if (_refcnt.get(v) == null) { return false; }
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
+      for (Key kg : _global_frames) {
+        if ( Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
+          return false;
+        }
+      }
+      if (_local_frames != null) {
+        for (Key kl : _local_frames) {
+          if ( Arrays.asList(((Frame)DKV.get(kl).get()).keys()).contains(v._key)) {
+            return false;
+          }
+        }
+      }
       removeVec(v, null);
       extinguishCounts(v);
       return true;
@@ -242,6 +271,14 @@ public class Env extends Iced {
         default : pop(); break;
       }
     }
+
+    Futures fs = new Futures();
+    for (Vec v : _refcnt.keySet()) {
+      if (_refcnt.get(v)._val == 0) {
+        removeVec(v, fs);
+      }
+    }
+    fs.blockForPending();
   }
 
   void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
@@ -282,25 +319,25 @@ public class Env extends Iced {
     subRef(new ValFrame(fr));
   }
 
+  // currently does not rely on reference counting -- does the hard job of scanning environments and checking if any references exist above this scope.
+  // might as well do the hard work, since it will have to be done in an assert anyway
   void popScope() {
     _local.clear();  // clear the symbol table
     Futures fs = new Futures();
     // chop the local frames made in the scope
     for (String k : _local._local_frames.keySet()) {
+//      if (_global_frames.contains(_local._local_frames.get(k)._key)) continue;
       if (isAry()) {
-        if(peekAry()._key != null && peekAry()._key.toString().equals(k)) continue;
+        if(peekAry()._key != null && peekAry()._key == _local._local_frames.get(k)._key) continue;
       }
-      Frame f = _local._local_frames.remove(k);
+      Frame f = _local._local_frames.get(k);
       for (Vec v : f.vecs()) removeVec(v, fs);
       f.delete();
     }
+    _local._local_frames.clear();
     // zoop over the _local_locked hashset and hose down the KV store
     if (_local_locked != null) {
       for (Key k : _local_locked) {
-        if (isAry()) {
-          if (peekAry()._key != null && peekAry()._key == k) continue;
-          if (Arrays.asList(peekAry().keys()).contains(k)) continue;
-        }
         Keyed.remove(k, fs);
       }
     }

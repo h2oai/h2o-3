@@ -45,6 +45,7 @@ import water.fvec.Vec;
  * This means `nargs` arguments are always parsed.
  */
 public class ASTFunc extends ASTFuncDef {
+  private Env _e;  // a ref to the captures environment
   public ASTFunc() { super(); }
   public ASTFunc(String name, String[] arg_names, Env.SymbolTable table, ASTStatement body) {
     _name = name; _arg_names = arg_names; _table = table; _body = body;
@@ -90,16 +91,19 @@ public class ASTFunc extends ASTFuncDef {
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
-//    e.cleanup(cleanme, f);
+    e.cleanup(cleanme, f);
+    _e = captured;
     captured.popScope();
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
-  void exec(Env e, AST arg1, AST[] args) {
+  @Override void exec(Env e, AST arg1, AST[] args) {
     _args = new AST[args == null ? 1 :1 + args.length];
     _args[0] = arg1;
+    Frame f = ((ASTFrame)_args[0])._fr;
     if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
+    f.delete();
   }
 
   double[] map(Env env, double[] in, double[] out, AST[] args) {
@@ -148,6 +152,16 @@ public class ASTFunc extends ASTFuncDef {
     indent(sb,d).append(this).append(") {\n");
     _body.toString(sb,d+1).append("\n");
     return indent(sb,d).append("}");
+  }
+
+  void trash() {
+    if (_e == null) return;
+    // wipe the _local_frames
+    Futures fs = new Futures();
+    for (Vec v: _e._refcnt.keySet()) {
+      fs = _e._parent.subVec(v, fs);
+    }
+    fs.blockForPending();
   }
 }
 

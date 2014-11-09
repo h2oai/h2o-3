@@ -146,7 +146,8 @@
                     "any" = "any",
                     "all" = "all",
                     "is.na" = "is.na",
-                    "trunc" = "trunc")
+                    "trunc" = "trunc",
+                    "is.factor" = "is.factor")
 
 #'
 #' The variable args operations
@@ -160,7 +161,16 @@
                     "sum" = "sum",
                     "any" = "any",
                     "all" = "all",
+                    "mean"  = "mean",
+                    "var"   = "var",
                     "log" = "log",
+                    "sd"    = "sd",
+                    "scale" = "scale",
+                    "tail" = "tail",
+                    "head" = "head",
+                    "match" = "match",
+                    "cut" = "cut",
+                    "table" = "table",
                     "trunc" = "trunc")
 
 #'

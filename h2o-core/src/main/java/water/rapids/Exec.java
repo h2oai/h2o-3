@@ -82,7 +82,15 @@ public class Exec extends Iced {
 
   public static void new_func(String str) throws IllegalArgumentException {
     cluster_init();
-    Exec ex = new Exec(str, new Env(null));
+    HashSet<Key> locked = new HashSet<>();
+    Env env = new Env(locked);
+
+    // Some global constants
+    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+    Exec ex = new Exec(str, env);
     ex.parse_fun();
   }
 
