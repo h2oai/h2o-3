@@ -164,6 +164,11 @@ public class Frame extends Lockable {
    *  @return the array of column names */
   public String[] names() { return _names; }
 
+  /** The array of keys.
+   * @ return the array of keys for each vec in the frame.
+   */
+  public Key[] keys() { return _keys; }
+
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the DKV. 
    *  @return the internal array of Vecs */
