@@ -12,6 +12,7 @@ browse_disable = True
 browse_json = False
 verbose = False
 ip_from_cmd_line = None
+port_from_cmd_line = None
 network_from_cmd_line = None
 config_json = None
 debugger = False
@@ -76,6 +77,8 @@ def parse_our_args():
     # I guess we don't have a -port at the command line
     parser.add_argument('-ip', '--ip', type=str,
         help='IP address to use for single host H2O with psutil control')
+    parser.add_argument('-p', '--port', type=int,
+        help='port to use for single host H2O with psutil control (used for start of multi jvm too)')
     parser.add_argument('-network', '--network', type=str,
         help='network/mask (shorthand form) to use to resolve multiple possible IPs')
     parser.add_argument('-cj', '--config_json',
@@ -124,7 +127,7 @@ def parse_our_args():
     if args.nocolor:
         h2p.disable_colors()
 
-    global browse_disable, browse_json, verbose, ip_from_cmd_line, config_json, debugger
+    global browse_disable, browse_json, verbose, ip_from_cmd_line, port_from_cmd_line, config_json, debugger
     global random_udp_drop
     global random_seed, beta_features, sleep_at_tear_down, abort_after_import
     global clone_cloud_json, disable_time_stamp, debug_rest, long_test_case, usecloud, usecloud_size
@@ -133,6 +136,7 @@ def parse_our_args():
     browse_json = args.browse_json
     verbose = args.verbose
     ip_from_cmd_line = args.ip
+    port_from_cmd_line = args.port
     network_from_cmd_line = args.network
     config_json = args.config_json
     debugger = args.debugger
@@ -157,7 +161,6 @@ def parse_our_args():
 
 def unit_main():
     # print "unit_main"
-
     parse_our_args()
     global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
     # if I remember correctly there was an issue with using sys.argv[0]

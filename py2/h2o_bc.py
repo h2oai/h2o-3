@@ -78,7 +78,9 @@ def get_base_port(base_port):
             raise Exception("H2O_PORT %s os env variable should be either not set, \
                 or between 54321 and 54999." % b)
 
-    if b:
+    if h2o_args.port_from_cmd_line:
+        base_port = h2o_args.port_from_cmd_line
+    elif b:
         base_port = b
     else:
         if getpass.getuser()=='jenkins':
@@ -409,7 +411,7 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
     return nodeList
 
 # final overrides the disable --usecloud causues
-def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
+def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
     if h2o_args.sleep_at_tear_down:
         print "Opening browser to cloud, and sleeping for 3600 secs, before cloud teardown (for debug)"
         import h2o_browse as h2b
@@ -431,7 +433,7 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
     # also, copy the "delete keys at teardown from testdir_release
     # Assume there's a last "test" that's run to shutdown the cloud 
 
-    if not h2o_args.usecloud and not final:
+    if not h2o_args.usecloud or force:
         try:
             # update: send a shutdown to all nodes. h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
@@ -440,18 +442,18 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
         except:
             pass
 
-    # ah subtle. we might get excepts in issuing the shutdown, don't abort out
-    # of trying the process kills if we get any shutdown exception (remember we go to all nodes)
-    # so we might? nodes are shutting down?
-    # FIX! should we wait a bit for a clean shutdown, before we process kill?
-    # It can take more than 1 sec though.
-    try:
-        time.sleep(2)
-        for n in nodeList:
-            n.terminate()
-            verboseprint("tear_down_cloud n:", n)
-    except:
-        pass
+        # ah subtle. we might get excepts in issuing the shutdown, don't abort out
+        # of trying the process kills if we get any shutdown exception (remember we go to all nodes)
+        # so we might? nodes are shutting down?
+        # FIX! should we wait a bit for a clean shutdown, before we process kill?
+        # It can take more than 1 sec though.
+        try:
+            time.sleep(2)
+            for n in nodeList:
+                n.terminate()
+                verboseprint("tear_down_cloud n:", n)
+        except:
+            pass
 
     check_sandbox_for_errors(sandboxIgnoreErrors=sandboxIgnoreErrors, python_test_name=h2o_args.python_test_name)
     # get rid of all those pesky line marker files. Unneeded now
