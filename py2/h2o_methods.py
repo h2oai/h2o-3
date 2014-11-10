@@ -28,7 +28,7 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
 def get_cloud(self, noSandboxErrorCheck=False, timeoutSecs=10):
     # hardwire it to allow a 60 second timeout
     a = self.do_json_request('Cloud.json', noSandboxErrorCheck=noSandboxErrorCheck, timeout=timeoutSecs)
-    verboseprint(a)
+    # verboseprint(a)
 
     version    = a['version']
     if not version.startswith('0'):
