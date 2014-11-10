@@ -19,6 +19,7 @@ import water.util.AtomicUtils;
  * <dt>Pass 2:</dt><dd>Build new summary DHistograms on the new child UndecidedNodes
  * every row got assigned into.  Collect counts, mean, variance, min,
  * max per bin, per column.</dd>
+ * </dl>
  *
  * <p>The result is a set of DHistogram arrays; one DHistogram array for each
  * unique 'leaf' in the tree being histogramed in parallel.  These have node

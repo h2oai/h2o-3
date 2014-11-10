@@ -23,13 +23,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final P _parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
-   *  all ignored columns, all constant & bad columns, perhaps flipping the
+   *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Enum, etc.  */
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
   /** Validation frame: derived from the parameter's training frame, excluding
-   *  all ignored columns, all constant & bad columns, perhaps flipping the
+   *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Enum, etc.  Never null; the training frame is used
    *  if no validation key is set.  */
   public final Frame valid() { return _valid; }
@@ -123,7 +123,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made by
    *  the front-end whenever the GUI is clicked, and needs to be fast whenever
-   *  {@link expensive} is false; it will be called once again at the start of
+   *  {@code expensive} is false; it will be called once again at the start of
    *  model building {@link trainModel} with expensive set to true.
    *
    *  The incoming training frame (and validation frame) will have ignored

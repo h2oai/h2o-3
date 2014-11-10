@@ -165,7 +165,7 @@ public class Frame extends Lockable {
   public String[] names() { return _names; }
 
   /** The array of keys.
-   * @ return the array of keys for each vec in the frame.
+   * @return the array of keys for each vec in the frame.
    */
   public Key[] keys() { return _keys; }
 
