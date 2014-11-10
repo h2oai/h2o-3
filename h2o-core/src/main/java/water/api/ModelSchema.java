@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.Key;
 import water.util.PojoUtils;
@@ -21,6 +22,9 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   protected Key key;
 
   // Output fields
+  @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
+  protected String algo;
+
   @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
   protected ModelParametersSchema parameters;
 
@@ -57,6 +61,7 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
+    this.algo = ModelBuilder.getAlgo(m);
     this.key = m._key;
     this.checksum = m.checksum();
 
@@ -72,6 +77,8 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.put1(','); // the schema and version fields get written before we get called
+    ab.putJSONStr("algo", algo);
+    ab.put1(',');
     ab.putJSONStr("key", key.toString());
     ab.put1(',');
 

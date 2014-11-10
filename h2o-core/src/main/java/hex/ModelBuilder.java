@@ -7,6 +7,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.util.Log;
+import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
@@ -36,17 +37,44 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Frame _valid;
 
   // TODO: tighten up the type
+  // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
 
-  public static Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
+  // Map the Model class (e.g., DeepLearningModel.class) to the algo name (e.g., "deeplearning"):
+  private static final Map<Class<? extends Model>, String> _model_class_to_algo = new HashMap<>();
 
+  // Map the algo name (e.g., "deeplearning") to the Model class (e.g., DeepLearningModel.class):
+  private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
+
+  /**
+   * Register a ModelBuilder, assigning it an algo name.
+   */
   public static void registerModelBuilder(String name, Class<? extends ModelBuilder> clz) {
     _builders.put(name, clz);
+
+    Class<? extends Model> model_class = (Class<? extends Model>)ReflectionUtils.findActualClassParameter(clz, 0);
+    _model_class_to_algo.put(model_class, name);
+    _algo_to_model_class.put(name, model_class);
   }
 
+  /** Get a Map of all algo names to their ModelBuilder classes. */
+  public static Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
+
+  /** Get the ModelBuilder class for the given algo name. */
   public static Class<? extends ModelBuilder> getModelBuilder(String name) {
     return _builders.get(name);
   }
+
+  /** Get the Model class for the given algo name. */
+  public static Class<? extends Model> getModelClass(String name) {
+    return _algo_to_model_class.get(name);
+  }
+
+  /** Get the algo name for the given Model. */
+  public static String getAlgo(Model model) {
+    return _model_class_to_algo.get(model.getClass());
+  }
+
 
   public static String getModelBuilderName(Class<? extends ModelBuilder> clz) {
     if (! _builders.containsValue(clz))

@@ -84,30 +84,30 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
   @API(help="Version number of this Schema.")
-  public final int version;
-  final int getVersion() { return version; }
+  public final int schema_version;
+  final int getSchemaVersion() { return schema_version; }
 
   /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata. */
   @API(help="Simple name of this Schema.")
-  public final String schema = this.getClass().getSimpleName();
+  public final String schema_name = this.getClass().getSimpleName();
 
   @API(help="Simple name of H2O type that this Schema represents.")
   public final String schema_type = _impl_class.getSimpleName();
 
-  // Registries which map a Schema simpleName to its Iced Class, and an Iced simpleName (type) and version to its Schema Class.
+  // Registries which map a Schema simpleName to its Iced Class, and an Iced simpleName (type) and schema_version to its Schema Class.
   private static Map<String, Class<? extends Iced>> schema_to_iced = new HashMap<>();
   private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
   public Schema() {
     // Check version number
-    assert schema.charAt(schema.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
-    version = schema.charAt(schema.length()-1)-'0';
-    assert 0 <= version && version <= 9 : "Schema classname does not contain version";
+    assert schema_name.charAt(schema_name.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
+    schema_version = schema_name.charAt(schema_name.length()-1)-'0';
+    assert 0 <= schema_version && schema_version <= 9 : "Schema classname does not contain schema_version";
 
-    if (null == schema_to_iced.get(this.schema)) {
-      Log.info("Registering schema: " + this.schema + " version: " + this.version + " with Iced class: " + _impl_class.toString());
-      schema_to_iced.put(this.schema, _impl_class);
-      iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.version), this.getClass());
+    if (null == schema_to_iced.get(this.schema_name)) {
+      Log.info("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      schema_to_iced.put(this.schema_name, _impl_class);
+      iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
     }
   }
 
