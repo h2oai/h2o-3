@@ -2,7 +2,7 @@ package water.api;
 
 import water.util.PojoUtils;
 
-public class RouteBase extends Schema<Route, RouteBase> {
+public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schema<I, RouteBase<I, S>> {
   @API(help="", direction=API.Direction.OUTPUT)
   public String  http_method;
 

@@ -71,6 +71,7 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSONStr("key", key.toString());
     ab.put1(',');
 
