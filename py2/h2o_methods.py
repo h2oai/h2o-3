@@ -69,6 +69,7 @@ def shutdown_all(self):
     try:
         self.do_json_request('Shutdown.json', noSandboxErrorCheck=True)
     except:
+        print "Got exception on Shutdown.json. Ignoring"
         pass
     # don't want delayes between sending these to each node
     # if you care, wait after you send them to each node
@@ -250,6 +251,8 @@ H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
 H2O.jobs_admin = jobs_admin
 H2O.unlock = unlock
+H2O.get_timeline = get_timeline
+# H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray
 import h2o_ray

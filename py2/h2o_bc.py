@@ -440,6 +440,7 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
             # update: send a shutdown to all nodes. h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
             for n in nodeList:
+                print "kevin2"
                 n.shutdown_all()
         except:
             pass
