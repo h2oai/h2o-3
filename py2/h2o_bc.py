@@ -181,6 +181,9 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
         # (we won't report errors from prior tests due to marker stuff?
         ## check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
 
+        # put the test start message in the h2o log, to create a marker
+        nodeList[0].h2o_log_msg()
+
     except:
         # nodeList might be empty in some exception cases?
         # no shutdown issued first, though
@@ -197,8 +200,6 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
     print ""
     h2p.red_print("Ingested from json:", nodeList[0].java_heap_GB, "GB java heap(s) with", len(nodeList), "total nodes")
     print ""
-    # put the test start message in the h2o log, to create a marker
-    nodeList[0].h2o_log_msg()
 
     # save it to a global copy, in case it's needed for tearDown
     h2o_nodes.nodes[:] = nodeList
@@ -357,6 +358,9 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # best to check for any errors due to cloud building right away?
         check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
 
+        # put the test start message in the h2o log, to create a marker
+        nodeList[0].h2o_log_msg()
+
     except:
         # nodeList might be empty in some exception cases?
         # no shutdown issued first, though
@@ -366,8 +370,6 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         raise
 
     print len(nodeList), "total jvms in H2O cloud"
-    # put the test start message in the h2o log, to create a marker
-    nodeList[0].h2o_log_msg()
 
     if h2o_args.config_json:
         # like cp -p. Save the config file, to sandbox

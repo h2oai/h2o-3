@@ -220,8 +220,17 @@ def poll_url(self, response,
         verboseprint(msgUsed, urlUsed, paramsUsedStr, "Response:", dump_json(response))
     return response
 
-def h2o_log_msg(*args, **kwargs):
-    print "WARNING: faking h2o_log_msg"
+def h2o_log_msg(self, message=None, timeoutSecs=15):
+    if 1 == 0:
+        return
+    if not message:
+        message = "\n"
+        message += "\n#***********************"
+        message += "\npython_test_name: " + h2o_args.python_test_name
+        message += "\n#***********************"
+    params = {'message': message}
+    self.do_json_request('LogAndEcho.json', params=params, timeout=timeoutSecs)
+
 
 def jobs_admin (*args, **kwargs):
     print "WARNING: faking jobs admin"
