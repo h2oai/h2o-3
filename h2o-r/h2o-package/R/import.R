@@ -42,8 +42,8 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
     }
   } else stop("All files failed to import!")
   path <- gsub("//", "/", path)
-  h2o.rm(object, "nfs:/" %<p0-% path)
-  h2o.rm(object, "nfs://private" %<p0-% path)
+  h2o.rm(object, "nfs:/" %p0% path)
+  h2o.rm(object, "nfs://private" %p0% path)
   ret
 }
 

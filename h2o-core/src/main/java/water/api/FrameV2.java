@@ -179,13 +179,6 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling into the impl
-  @Override public Frame createImpl( ) {
-    if (null == key)
-      throw H2O.fail("Cannot create a Frame from a null key.");
-    return new Frame(key);
-  }
-
   // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
     this.checksum = f.checksum();

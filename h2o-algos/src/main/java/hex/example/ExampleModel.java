@@ -9,25 +9,18 @@ import water.fvec.Frame;
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   public static class ExampleParameters extends SupervisedModel.SupervisedParameters {
-    public int _max_iters;        // Max iterations
-
-    @Override
-    public int sanityCheckParameters() {
-      if (_max_iters < 0) validation_error("max_iters", "max_iters must be > 0");
-      return _validation_error_count;
-    }
+    public int _max_iters = 1000; // Max iterations
   }
 
-  public static class ExampleOutput extends Model.Output {
+  public static class ExampleOutput extends SupervisedModel.SupervisedOutput {
     // Iterations executed
     public int _iters;
     public double[] _maxs;
+    public ExampleOutput( Example b ) { super(b); }
     @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
   }
 
-  ExampleModel( Key selfKey, Frame fr, ExampleParameters parms, ExampleOutput output) {
-    super(selfKey,fr,parms,output,null);
-  }
+  ExampleModel( Key selfKey, ExampleParameters parms, ExampleOutput output) { super(selfKey,parms,output); }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new ExampleModelV2(); }

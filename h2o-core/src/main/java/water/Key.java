@@ -287,6 +287,7 @@ final public class Key extends Iced implements Comparable {
   /** Factory making a Key from a String
    *  @return Desired Key */ 
   public static Key make(String s) { return make(decodeKeyName(s));}
+  public static Key makeSystem(String s) { return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false);}
   static Key make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
    *  @return Desired Key */ 
@@ -341,10 +342,11 @@ final public class Key extends Iced implements Comparable {
 
   /** Remove a Key from the DKV, including any embedded Keys.
    */
-  public void remove() {
+  public void remove() { remove(new Futures()).blockForPending(); }
+  public Futures remove(Futures fs) {
     Value val = DKV.get(this);
-    if( val==null ) return;
-    ((Keyed)val.get()).remove();
+    if( val!=null ) ((Keyed)val.get()).remove(fs);
+    return fs;
   }
 
   // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY

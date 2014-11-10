@@ -25,23 +25,6 @@ class ImportFilesV2 extends Schema<ImportFiles,ImportFilesV2> {
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling into the impl
-  @Override public ImportFiles createImpl() {
-    ImportFiles i = new ImportFiles();
-    i._path = path;
-    return i;
-  }
-
-  // Version&Schema-specific filling from the impl
-  @Override public ImportFilesV2 fillFromImpl(ImportFiles i) {
-    path  = i._path;
-    files = i._files;
-    keys  = i._keys ;
-    fails = i._fails;
-    dels  = i._dels ;
-    return this;
-  }
-
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ImportFiles");
     if( keys.length == 0 )

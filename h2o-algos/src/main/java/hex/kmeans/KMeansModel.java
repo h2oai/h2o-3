@@ -4,31 +4,22 @@ import hex.Model;
 import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters {
     public int _K;                        // Number of clusters
-    public int _max_iters = 100;          // Max iterations
-    public boolean _normalize = false;    // Normalize columns
-    public long _seed;                    // RNG seed
+    public int _max_iters = 1000;         // Max iterations
+    public boolean _normalize = true;     // Normalize columns
+    public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
-
-    @Override public int sanityCheckParameters() {
-      if (_K < 2) validation_error("K", "K must be >= 2");
-      if (_max_iters < 1) validation_error("max_iters", "max_iters must be > 1");
-      if (train().numRows() < _K) validation_error("K", "Cannot make " + _K + " clusters out of " + train().numRows() + " rows.");
-
-      return _validation_error_count;
-    }
   }
 
   public static class KMeansOutput extends Model.Output {
     // Number of categorical variables in the training set; they are all moved
     // up-front and use a different distance metric than numerical variables
-    public int _ncats; // TODO: final?
+    public int _ncats;
 
     // Iterations executed
     public int _iters;
@@ -46,6 +37,11 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Sum squared distance between each point and its cluster center, divided by rows.
     public double _mse;           // Total MSE, variance
 
+    public KMeansOutput( KMeans b ) { super(b); }
+
+    /** Override because base class implements ncols-1 for features with the
+     *  last column as a response variable; for KMeans all the columns are
+     *  features. */
     @Override public int nfeatures() { return _names.length; }
 
     @Override public ModelCategory getModelCategory() {
@@ -53,27 +49,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     }
   }
 
-  public KMeansModel(Key selfKey, Frame fr, KMeansParameters parms, KMeansOutput output, int ncats) {
-    super(selfKey,fr,parms,output);
-    _output._ncats = ncats;
-  }
+  public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
 
   @Override
   public boolean isSupervised() {return false;}
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
-
-  /** Bulk scoring API for one row.  Chunks are all compatible with the model,
-   *  and expect the last Chunks are for the final distribution and prediction.
-   *  Default method is to just load the data into the tmp array, then call
-   *  subclass scoring logic. */
-  @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
-    return score0(tmp,preds);
-  }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     preds[0] = KMeans.closest(_output._clusters,data,_output._ncats);

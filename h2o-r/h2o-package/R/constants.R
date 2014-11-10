@@ -36,8 +36,22 @@
 "%<p-%"  <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame()) # paste
 "%<-%"   <- function(x,y) {
-  if ( x %<i-% "H2OParsedData" ) x <- x@key
-  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %<p0-% x, right = y)) # assignment node
+  if ( x %i% "H2OParsedData" ) x <- x@key
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %p0% x, right = y)) # assignment node
+}
+
+.uniq.id <- function(prefix = "") {
+  hex_digits <- c(as.character(0:9), letters[1:6])
+  y_digits <- hex_digits[9:12]
+  tempA <- paste(sample(hex_digits, 8, replace=TRUE), collapse='')
+  tempB <- paste(sample(hex_digits, 4, replace=TRUE), collapse='')
+  tempC <- '4'
+  tempD <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
+  tempE <- paste(sample(y_digits,1), collapse='')
+  tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
+  tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
+  temp <- tempA %p0% tempB %p0% tempC %p0% tempD %p0% tempE %p0% tempF %p0% tempG
+  prefix %p0% '_' %p0% temp
 }
 
 #'
@@ -132,7 +146,8 @@
                     "any" = "any",
                     "all" = "all",
                     "is.na" = "is.na",
-                    "trunc" = "trunc")
+                    "trunc" = "trunc",
+                    "is.factor" = "is.factor")
 
 #'
 #' The variable args operations
@@ -146,7 +161,16 @@
                     "sum" = "sum",
                     "any" = "any",
                     "all" = "all",
+                    "mean"  = "mean",
+                    "var"   = "var",
                     "log" = "log",
+                    "sd"    = "sd",
+                    "scale" = "scale",
+                    "tail" = "tail",
+                    "head" = "head",
+                    "match" = "match",
+                    "cut" = "cut",
+                    "table" = "table",
                     "trunc" = "trunc")
 
 #'
@@ -174,13 +198,28 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__KMEANS       <- "v2/Kmeans.json"
-.h2o.__DEEPLEARNING <- "DeepLearning.json"
+.h2o.__Model_Builders       <- "2/ModelBuilders"
+.h2o.__KMEANS_PARAMS       <- "2/ModelBuilders/kmeans.json"
+.h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
+.h2o.__DEEPLEARNING_PARAMS <- "DeepLearning.json"
 
 #'
-#' Cascade/Exec3
+#' Algorithm Parameter Endpoints
 #'
-.h2o.__CASCADE      <- "Cascade.json"
+
+#'
+#' Model Endpoint
+#'
+.h2o.__Models       <- "3/Models.json/"
+
+#'
+#' Model Predict Endpoint
+#'
+.h2o.__PREDICT <- "3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"
+#'
+#' Rapids/Exec3
+#'
+.h2o.__RAPIDS      <- "Rapids.json"
 
 #'
 #' Removal

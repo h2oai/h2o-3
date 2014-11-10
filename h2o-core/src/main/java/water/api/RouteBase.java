@@ -1,9 +1,6 @@
 package water.api;
 
-import water.util.Log;
 import water.util.PojoUtils;
-
-import java.util.regex.Pattern;
 
 public class RouteBase extends Schema<Route, RouteBase> {
   @API(help="", direction=API.Direction.OUTPUT)
@@ -30,19 +27,6 @@ public class RouteBase extends Schema<Route, RouteBase> {
 
   @API(help="", direction=API.Direction.OUTPUT)
   public String markdown;
-
-  @Override public Route createImpl() {
-
-    Route i = null;
-    try {
-      Class<? extends Handler> clz = (Class<? extends Handler>)Class.forName(this.handler_class);
-      i = new Route(this.http_method, Pattern.compile(this.url_pattern), this.summary, clz, null, null, this.path_params); // TODO: methods
-    }
-    catch (Exception e) {
-      Log.warn("Caught exception instantiating a Route: " + e + "; " + this);
-    }
-    return i;
-  }
 
   @Override public RouteBase fillFromImpl(Route impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"url_pattern", "handler_class", "handler_method", "doc_method"} );

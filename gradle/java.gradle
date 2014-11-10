@@ -1,7 +1,6 @@
 // Gradle file for java-based project
 //
 apply plugin: 'java'
-apply plugin: 'application'
 apply plugin: 'jacoco'
 
 sourceCompatibility = 1.7
@@ -29,3 +28,9 @@ artifacts {
 // Enable support for multi-node testing
 apply from: "$rootDir/gradle/multiNodeTesting.gradle"
 
+// Disable java 8 doclint
+if (JavaVersion.current().isJava8Compatible()) {
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+}

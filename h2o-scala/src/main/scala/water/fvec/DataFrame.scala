@@ -45,6 +45,7 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
 
   override def empty : Map[Long,T] = ???
   override def size: Int = numRows.asInstanceOf[Int]
+  override def keys = ???
 
   // If the row is outside the range, return None.
   // Else return an Array of Option; None for any NA values.

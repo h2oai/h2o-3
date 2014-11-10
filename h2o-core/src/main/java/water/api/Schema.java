@@ -1,32 +1,88 @@
 package water.api;
 
+import hex.Model;
 import water.*;
 import water.fvec.Frame;
-import hex.Model;
+import water.util.Log;
 import water.util.MarkdownBuilder;
+import water.util.PojoUtils;
+import water.util.ReflectionUtils;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 
-/** Base Schema Class
+/**
+ * Base Schema Class.  All REST API Schemas inherit from here.
+ * <p>
+ * The purpose of Schemas is to provide a stable, versioned interface to
+ * the functionality in H2O, which allows the back end implementation to
+ * change rapidly without breaking REST API clients such as the Web UI
+ * and R binding.  Schemas also allow for functionality which exposes the
+ * schema metadata to clients, allowing them to do service discovery and
+ * to adapt dynamically to new H2O functionality (e.g., to be able to call
+ * any ModelBuilder, even new ones written since the client was built,
+ * without knowing any details about the specific algo).
+ * <p>
+ * Most schemas have a 1-to-1 mapping to an Iced implementation object.
+ * Both may have children, or (more often) not.  Occasionally, e.g. in
+ * the case of schemas used only to handle HTTP request parameters, there
+ * will not be a backing impl object.
+ * <p>
+ * Schemas have a State section (broken into Input, Output and InOut fields)
+ * and an Adapter section which fills the State to and from the Iced impl objects
+ * and from HTTP request parameters.
+ * <p>
+ * Methods here allow us to convert from Schema to Iced (impl) and back in a
+ * flexible way.  The default behaviour is to map like-named fields back and
+ * forth, often with some default type conversions (e.g., a Keyed object like a
+ * Model will be automagically converted back and forth to a Key).
+ * Subclasses can override methods such as fillImpl or fillFromImpl to
+ * provide special handling when adapting from schema to impl object and back.
+ * <p>
+ * Schema Fields must have a single API annotation describing in their direction
+ * of operation (all fields will be output by default), and any other properties
+ * such as "required".  Transient and static fields are ignored.
+ * @see water.api.API for information on the field annotations
+ * <p>
+ * Some use cases:
+ * <p>
+ * To create a schema object and fill it from an existing impl object (the common case):<br>
+ * {@code
+ * S schema = schema(version);
+ * schema.fillFromImpl(impl);
+ * }
+ * <p>
+ * To create an impl object and fill it from an existing schema object (the common case):<br>
+ * {@code
+ * I impl = schema.createImpl(); // create an empty impl object and any empty children
+ * schema.fillImpl(impl);        // fill the empty impl object and any children from the Schema and its children
+ * }
+ * <p>
+ * or
+ * {@code
+ * I impl = schema.createAndFillImpl();  // helper which does schema.fillImpl(schema.createImpl())
+ * }
+ * <p>
+ * To create a schema object filled from the default values of its impl class and then
+ * overridden by HTTP request params:
+ * {@code
+ * S schema = schema(version);
+ * I defaults = schema.createImpl();
+ * schema.fillFromImpl(defaults);
+ * schema.fillFromParms(parms);
+ * }
  *
- *  All Schemas inherit from here.  Schemas have a State section (broken into
- *  Input fields and Output fields) and an Adapter section to fill the State to
- *  and from URLs and JSON.  The base Adapter logic is here, and will by
- *  default copy same-named fields to and from Schemas to concrete Iced objects.
- *
- *  Schema Fields must have a single API annotation describing in they are an
- *  input field or not (all fields will be output by default), and any extra
- *  requirements on the input (prior field dependencies and other validation
- *  checks).  Transient &amp; Static fields are ignored.
  */
 public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private final transient int _version;
   final int getVersion() { return _version; }
+
   public Schema() {
     // Check version number
     String n = this.getClass().getSimpleName();
@@ -35,20 +91,55 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     assert 0 <= _version && _version <= 9 : "Schema classname does not contain version";
   }
 
-  // TODO: move the algos schemas into water.api (or vice-versa) and make these protected:
+  /**
+   * Create an implementation object and any child objects but DO NOT fill them.
+   * The purpose of a createImpl without a fillImpl is to be able to get the default
+   * values for all the impl's fields.
+   * <p>
+   * For objects without children this method does all the required work. For objects
+   * with children the subclass will need to override, e.g. by calling super.createImpl()
+   * and then calling createImpl() on its children.
+   * <p>
+   * Note that impl objects for schemas which override this method don't need to have
+   * a default constructor (e.g., a Keyed object constructor can still create and set
+   * the Key), but they must not fill any fields which can be filled later from the schema.
+   * <p>
+   * TODO: We *could* handle the common case of children with the same field names here
+   * by finding all of our fields that are themselves Schemas.
+   */
+  public I createImpl() {
+    try {
+      return (I)this.getImplClass().newInstance();
+    }
+    catch (Exception e) {
+      String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
+      Log.err(msg + ": " + e);
+      throw H2O.fail(msg, e);
+    }
+  }
 
-  // Version&Schema-specific filling into the implementation object
-  abstract public I createImpl();
+  /** Fill an impl object and any children from this schema and its children. */
+  public I fillImpl(I impl) {
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+    return impl;
+  }
 
-  // Version&Schema-specific filling from the implementation object
-  abstract public S fillFromImpl(I i); // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
+  /** Convenience helper which creates and fill an impl. */
+  final public I createAndFillImpl() {
+    return this.fillImpl(this.createImpl());
+  }
 
-  // Version&Schema-specific filling of an already filled object from this schema
-  public I fillFromSchema() { return (I)this; }
+  // TODO: we need to pass in the version from the request so the superclass can create versioned sub-schemas.  See the *Base
+  /** Version and Schema-specific filling from the implementation object. */
+  public S fillFromImpl(I impl) {
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);
+    return (S)this;
+  }
 
   public Class<? extends Iced> getImplClass() {
-    Type[] schema_type_parms = ((ParameterizedType)(this.getClass().getGenericSuperclass())).getActualTypeArguments();
-    return  (Class<? extends Iced>)schema_type_parms[0];  // [0] is the impl (Iced) type; [1] is the Schema type
+    return ReflectionUtils.findActualClassParameter(this.getClass(), 0);
   }
 
   // TODO: this really does not belong in the schema layer; it's a hack for the
@@ -56,6 +147,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   // This Schema accepts a Frame as it's first & main argument, used by the
   // Frame Inspect & Parse pages to give obvious options for Modeling, Summary,
   // export-to-CSV etc options.  Return a URL or null if not appropriate.
+  @Deprecated
   protected String acceptsFrame( Frame fr ) { return null; }
 
   // Fill self from parms.  Limited to dumb primitive parsing and simple
@@ -65,7 +157,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   // Dupped args are handled by Nano, as 'parms' can only have a single arg
   // mapping for a given name.
 
-  // Also does various sanity checks for broken Schemas.  Fields must not be
+  // Also does various sanity checks for broken Schemas.  Fields must not b
   // private.  Input fields get filled here, so must not be final.
   public S fillFromParms(Properties parms) {
     // Get passed-in fields, assign into Schema
@@ -174,7 +266,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
-        a = (E[])Array.newInstance(Integer.class,splits.length);
+        a = (E[]) Array.newInstance(Integer.class, splits.length);
       } else {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);

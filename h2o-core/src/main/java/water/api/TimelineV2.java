@@ -1,12 +1,13 @@
 package water.api;
 
+import water.*;
+import water.api.TimelineHandler.Timeline;
+import water.init.TimelineSnapshot;
+import water.util.DocGen;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import water.*;
-import water.api.TimelineHandler.Timeline;
-import water.util.DocGen;
-import water.init.TimelineSnapshot;
 
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.
@@ -113,63 +114,62 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     @Override public    String toString() { return "I_O('" + ioFlavor + "')"; }
   } // IOEvent
 
-  @Override public Timeline createImpl() {
-    return new Timeline();
-  }
-
   @Override public TimelineV2 fillFromImpl(Timeline timeline) {
     ArrayList<Event> outputEvents = new ArrayList<>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
     H2O cloud = TimeLine.getCLOUD();
-    for(TimelineSnapshot.Event event:timeline.snapshot) {
-      H2ONode h2o = cloud.members()[event._nodeId];
-      // The event type.  First get payload.
-      UDP.udp msgType = event.udpType();
-      // Accumulate repeated heartbeats
-      if (msgType == UDP.udp.heartbeat) {
-        heartbeats.add(event);
-        continue;
-      }
-      // Now dump out accumulated heartbeats
-      if (!heartbeats.isEmpty()) {
-        long firstMs = heartbeats.get(0).ms();
-        long lastMs = heartbeats.get(heartbeats.size() - 1).ms();
-        int totalSends = 0;
-        int totalRecvs = 0;
-        int totalDrops = 0;
-        int[] sends = new int[cloud.size()];
-        int[] recvs = new int[cloud.size()];
-        for (TimelineSnapshot.Event h : heartbeats) {
-          if (h.isSend()) {
-            ++totalSends;
-            ++sends[h._nodeId];
-          } else if (h.isDropped()) {
-            ++totalDrops;
-          } else {
-            ++totalRecvs;
-            ++recvs[h._nodeId];
+
+    if (null != timeline.snapshot) {
+      for (TimelineSnapshot.Event event : timeline.snapshot) {
+        H2ONode h2o = cloud.members()[event._nodeId];
+        // The event type.  First get payload.
+        UDP.udp msgType = event.udpType();
+        // Accumulate repeated heartbeats
+        if (msgType == UDP.udp.heartbeat) {
+          heartbeats.add(event);
+          continue;
+        }
+        // Now dump out accumulated heartbeats
+        if (!heartbeats.isEmpty()) {
+          long firstMs = heartbeats.get(0).ms();
+          long lastMs = heartbeats.get(heartbeats.size() - 1).ms();
+          int totalSends = 0;
+          int totalRecvs = 0;
+          int totalDrops = 0;
+          int[] sends = new int[cloud.size()];
+          int[] recvs = new int[cloud.size()];
+          for (TimelineSnapshot.Event h : heartbeats) {
+            if (h.isSend()) {
+              ++totalSends;
+              ++sends[h._nodeId];
+            } else if (h.isDropped()) {
+              ++totalDrops;
+            } else {
+              ++totalRecvs;
+              ++recvs[h._nodeId];
+            }
           }
+          heartbeats.clear();
+          outputEvents.add(new HeartBeatEvent(totalSends, totalRecvs, firstMs, lastMs));
         }
-        heartbeats.clear();
-        outputEvents.add(new HeartBeatEvent(totalSends, totalRecvs, firstMs, lastMs));
-      }
-      long ms = event.ms();
-      long ns = event.ns();
-      if(msgType == UDP.udp.i_o) { // handle io event
-        outputEvents.add(new IOEvent(ms,ns,event.recoH2O().toString(),event.ioflavor(),UDP.printx16(event.dataLo(),event.dataHi())));
-      } else { // network msg
-        String from, to;
-        if( event.isSend() ) {
-          from = h2o.toString();
-          to = event.packH2O() == null ? "multicast" : event.packH2O().toString();
-        } else {
-          from = event.packH2O().toString();
-          to = h2o.toString();
+        long ms = event.ms();
+        long ns = event.ns();
+        if (msgType == UDP.udp.i_o) { // handle io event
+          outputEvents.add(new IOEvent(ms, ns, event.recoH2O().toString(), event.ioflavor(), UDP.printx16(event.dataLo(), event.dataHi())));
+        } else { // network msg
+          String from, to;
+          if (event.isSend()) {
+            from = h2o.toString();
+            to = event.packH2O() == null ? "multicast" : event.packH2O().toString();
+          } else {
+            from = event.packH2O().toString();
+            to = h2o.toString();
+          }
+          outputEvents.add(new NetworkEvent(ms, ns, event.isSend(), event.isTCP() ? "TCP" : "UDP", msgType.toString(), from, to, UDP.printx16(event.dataLo(), event.dataHi())));
         }
-        outputEvents.add(new NetworkEvent(ms,ns,event.isSend(),event.isTCP()?"TCP":"UDP",msgType.toString(),from,to,UDP.printx16(event.dataLo(),event.dataHi())));
       }
-    }
-    events = outputEvents.toArray(new Event[outputEvents.size()]);
+    } // if timeline.snapshot
+    events = outputEvents.toArray(new Event[null == outputEvents ? 0 : outputEvents.size()]);
     return this;
   }
 

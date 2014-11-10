@@ -1,12 +1,12 @@
 package hex.glm;
 
-import hex.FrameTask;
 import hex.FrameTask.DataInfo;
-import hex.ModelBuilder;
+import hex.FrameTask;
+import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.FinalizeAndUnlockTsk;
 import hex.glm.GLMModel.GLMOutput;
-import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
 import hex.glm.GLMTask.LMAXTask;
@@ -14,6 +14,7 @@ import hex.glm.GLMTask.YMUTask;
 import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
+import hex.optimization.L_BFGS;
 import hex.schemas.GLMV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
@@ -36,49 +37,39 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Generalized linear model implementation.
  */
-public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput>{
-  public GLM(Key jobKey, Key dest, String desc, GLMModel.GLMParameters parms) {
-    super(jobKey,dest, desc, parms);
-  }
+public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
+  public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); }
 
   private static class TooManyPredictorsException extends RuntimeException {}
-
-  public GLM(GLMModel.GLMParameters parms) {
-    super("GLM", parms);
-  }
 
   @Override
   public ModelBuilderSchema schema() {
     return new GLMV2();
   }
 
+  private boolean _clean_enums;
   @Override
-  public Job<GLMModel> train() {
-    if (_parms.sanityCheckParameters() > 0)
-      throw new IllegalArgumentException("Invalid parameters for GLM: " + _parms.validationErrors());
-
-    _parms.lock_frames(this);
-    final Frame fr = _parms.train();  // Get training frame
-    Vec response = fr.vec(_parms._response);
-    Frame source = DataInfo.prepareFrame(fr, response, _parms._ignored_cols, false, true,true);
-    DataInfo dinfo = new DataInfo(Key.make(),source, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+  public Job<GLMModel> trainModel() {
+    _clean_enums = _parms._toEnum && !_response.isEnum();
+    init(true);                 // Expensive tests & conversions
+    DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     DKV.put(dinfo._key,dinfo);
+    _parms.lock_frames(this);
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       AtomicBoolean _gotException = new AtomicBoolean(false);
-      @Override
-      public void compute2(){}
+      @Override public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        _parms.unlock_frames(GLM.this);
-        DKV.remove(_progressKey);
         done();
+        _parms.unlock_frames(GLM.this);
+        if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
       }
-      @Override
-      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
+      @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
           cancel2(ex);
-          DKV.remove(_progressKey);
           _parms.unlock_frames(GLM.this);
+          if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
           return true;
         }
         return false;
@@ -496,7 +487,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
    * Contains implementation of the glm algo.
    * It's DTask so it can be computed on other nodes (to distributed single node part of the computation).
    */
-  public static final class GLMDriver extends DTask<GLMDriver> {
+  public final class GLMDriver extends DTask<GLMDriver> {
     final DataInfo _dinfo;
     transient ArrayList<DataInfo> _foldInfos = new ArrayList<DataInfo>();
     final GLMParameters _params;
@@ -519,7 +510,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
       _progressKey = progressKey;
     }
 
-    private static double [] nullBeta(DataInfo dinfo, GLMParameters params, double ymu){
+    private double [] nullBeta(DataInfo dinfo, GLMParameters params, double ymu){
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = params.linkInv(ymu);
       return beta;
@@ -608,7 +599,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
             }
             @Override public void callback(final LMAXTask gLmax){
               // public GLMModel(Key selfKey, String[] names, String[][] domains, GLMParameters parms, GLMOutput output) {
-              GLMOutput glmOutput = new GLMOutput(_dinfo,_params.family == Family.binomial);
+              GLMOutput glmOutput = new GLMOutput(GLM.this,_dinfo,_params.family == Family.binomial);
               String warning = null;
 
               if(_params.lambda_search) {
@@ -640,7 +631,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
               if(lambdas.length > 1)
                 glmOutput.addNullSubmodel(gLmax.lmax(), _params.link(gYmu), gLmax._val);
               _maxLambda = lambdas.length;
-              GLMModel model = new GLMModel(_dstKey, _dinfo, _params, glmOutput,gYmu,gLmax.lmax(),nobs);
+              GLMModel model = new GLMModel(_dstKey, _params, glmOutput, _dinfo, gYmu,gLmax.lmax(),nobs);
               if(warning != null)
                 model.addWarning(warning);
               model.delete_and_lock(_jobKey);
@@ -682,7 +673,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.G
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dstKey.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_params.alpha[0],lmax),objval(lLmax,_params.alpha[0],lLmax.lmax()));
-                        new GLMModel(dstKey, dinfo, params, new GLMOutput(dinfo,_params.family == Family.binomial), lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
+                        new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_params.family == Family.binomial), dinfo, lLmax._ymu, lmax, nobs).delete_and_lock(_jobKey);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
                           // lambda max for this n_fold is > than global lambda max -> it has non-trivial solution for global lambda max, need to compute it first.

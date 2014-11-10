@@ -14,22 +14,21 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
    * parameters pass validation this returns a Job schema; if not it
    * returns a ModelParametersSchema containing the validation messages.
    */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema train(int version, B builder) {
-    builder._parms.sanityCheckParameters();
-
-    if (builder._parms._validation_error_count > 0) {
+    if (builder.error_count() > 0) {
       S builder_schema = (S) builder.schema().fillFromImpl(builder);
-      return builder_schema.parameters;
+      return builder_schema;
     }
 
-    Job j = builder.train();
+    Job j = builder.trainModel();
     return JobsHandler.jobToSchemaHelper(version, j);
   }
 
-  public P validate_parameters(int version, B builder) {
-    builder._parms.sanityCheckParameters();
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S validate_parameters(int version, B builder) {
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
-    return builder_schema.parameters;
+    return builder_schema;
   }
 
   abstract protected S schema(int version);

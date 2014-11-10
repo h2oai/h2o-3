@@ -1,12 +1,12 @@
 package water.api;
 
 import hex.Model;
-import hex.Model.Parameters.ValidationMessage;
-import hex.Model.Parameters.ValidationMessage.MessageType;
-import water.AutoBuffer;
-import water.H2O;
-import water.Key;
+import hex.ModelBuilder;
+import hex.ModelBuilder.ValidationMessage;
+import hex.ModelBuilder.ValidationMessage.MessageType;
+import water.*;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -27,7 +27,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
   public Key destination_key;
 
-  @API(help="Training frame", direction=API.Direction.INOUT)
+  @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public Frame training_frame;
 
   @API(help="Validation frame", direction=API.Direction.INOUT)
@@ -42,34 +42,37 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Ignored columns", direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
-  @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase validation_messages[] = new ValidationMessageBase[0];
+  @API(help="Score validation set on each major model-building iteration; can be slow", direction=API.Direction.INOUT)
+  public boolean score_each_iteration;
 
-  @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
-  public int validation_error_count;
+  public S fillFromImpl(P impl) {
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES );
 
-  public ModelParametersSchema() {
-  }
+    if (null != impl._train) {
+      Value v = DKV.get(impl._train);
+      if (null == v) throw new IllegalArgumentException("Failed to find training_frame: " + impl._train);
+      training_frame = v.get();
+    }
 
-  public S fillFromImpl(P parms) {
-    // TODO: change impl classes so that they are consistent in terms of not having leading _
-    PojoUtils.copyProperties(this, parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "_validation_messages"} );
-
-    this.training_frame = parms._train == null ? null : (Frame)parms._train.get();
-    this.validation_frame = parms._valid == null ? null : (Frame)parms._valid.get();
-
-    this.validation_messages = new ValidationMessageBase[parms._validation_messages.length];
-    int i = 0;
-    for (ValidationMessage vm : parms._validation_messages)
-      this.validation_messages[i++] = new ValidationMessageV2().fillFromImpl(vm); // TODO: version
+    if (null != impl._valid) {
+      Value v = DKV.get(impl._valid);
+      if (null == v) throw new IllegalArgumentException("Failed to find validation_frame: " + impl._valid);
+      validation_frame = v.get();
+    }
 
     return (S)this;
   }
 
-  // Version&Schema-specific filling into the implementation object
-  abstract public P createImpl();
+  public P fillImpl(P impl) {
+    super.fillImpl(impl);
 
-  public static class ValidationMessageBase extends Schema<Model.Parameters.ValidationMessage, ValidationMessageBase> {
+    impl._train = (null == this.training_frame ? null : this.training_frame._key);
+    impl._valid = (null == this.validation_frame ? null : this.validation_frame._key);
+
+    return impl;
+  }
+
+  public static class ValidationMessageBase extends Schema<ModelBuilder.ValidationMessage, ValidationMessageBase> {
     @API(help="Type of validation message (ERROR, WARN, INFO, HIDE)", direction=API.Direction.OUTPUT)
     public String message_type;
 
@@ -79,10 +82,17 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     @API(help="Message text", direction=API.Direction.OUTPUT)
     public String message;
 
-    public Model.Parameters.ValidationMessage createImpl() { return new Model.Parameters.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
+    public ModelBuilder.ValidationMessage createImpl() { return new ModelBuilder.ValidationMessage(MessageType.valueOf(message_type), field_name, message); };
 
     // Version&Schema-specific filling from the implementation object
-    public ValidationMessageBase fillFromImpl(ValidationMessage vm) { PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT); return this; }
+    public ValidationMessageBase fillFromImpl(ValidationMessage vm) {
+      PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
+      if (this.field_name.startsWith("_"))
+        this.field_name = this.field_name.substring(1);
+      else
+        Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      return this;
+    }
   }
 
   public static final class ValidationMessageV2 extends ValidationMessageBase {  }

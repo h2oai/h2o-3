@@ -45,31 +45,6 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   Key job;
 
   //==========================
-  // Custom adapters go here
-
-  // Version&Schema-specific filling into the handler
-  @Override public Parse createImpl() {
-    Parse p = new Parse();
-    p._hex = hex;
-    p._srcs = srcs;
-    p._pType = pType;
-    p._sep = sep;
-    p._ncols = ncols;
-    p._checkHeader = checkHeader;
-    p._singleQuotes = singleQuotes;
-    p._columnNames = columnNames;
-    p._delete_on_done = delete_on_done;
-    p._blocking = blocking;
-    return p;
-  }
-
-  // Version&Schema-specific filling from the impl
-  @Override public ParseV2 fillFromImpl( Parse p ) {
-    job = p._job._key;
-    return this;
-  }
-
-  //==========================
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Parse Started");

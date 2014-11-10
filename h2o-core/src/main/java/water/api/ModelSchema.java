@@ -16,7 +16,6 @@ import water.util.PojoUtils;
  *
  */
 abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O extends Model.Output, S extends ModelSchema<M, P, O, S>> extends Schema<M, S> {
-
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
   protected Key key;
@@ -55,12 +54,6 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
 
   /** Factory method to create the model-specific output schema. */
   abstract public ModelOutputSchema createOutputSchema();
-
-  // Version&Schema-specific filling into the impl
-  @Override public M createImpl() {
-// TODO:    M dummy = new M();
-    return null;
-  }
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {

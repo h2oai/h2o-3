@@ -54,17 +54,6 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
 
     @API(help="Should this field be rendered in the JSON representation?")
     boolean json;
-
-    @Override
-    public FieldMetadata createImpl() {
-      return new FieldMetadata(this.name, this.type, this.is_schema, this.value, this.help, this.label, this.required, this.level, this.direction, this.values, this.json);
-    }
-
-    @Override
-    public FieldMetadataBase fillFromImpl(FieldMetadata impl) {
-      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] {});
-      return this;
-    }
   } // FieldMetadataBase
 
   @Override

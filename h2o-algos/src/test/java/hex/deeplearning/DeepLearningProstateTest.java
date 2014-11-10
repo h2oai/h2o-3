@@ -16,7 +16,7 @@ import java.util.Random;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -56,11 +56,6 @@ public class DeepLearningProstateTest extends TestUtil {
               }) {
                 for (int resp : responses[i]) {
                   boolean classification = !(i == 0 && resp == 2);
-                  Vec old = frame.vecs()[resp];
-                  if( classification ) {
-                    frame.replace(resp, old.toEnum());
-                    DKV.put(frame._key,frame);
-                  }
                   for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
                           ClassSamplingMethod.Stratified,
                           ClassSamplingMethod.Uniform
@@ -95,7 +90,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         500, //>1 epoch per iteration
                                 }) {
                                   DeepLearningModel model1 = null, model2 = null, tmp_model = null;
-                                  Key dest = null, dest_tmp;
+                                  Key dest, dest_tmp;
                                   count++;
                                   if (fraction < rng.nextFloat()) continue;
 
@@ -120,6 +115,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._train = frame._key;
                                       p._response_column = frame._names[resp];
                                       p._valid = valid==null ? null : valid._key;
+                                      p._toEnum = classification;
 
                                       p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
@@ -136,13 +132,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._score_validation_samples = scorevalidation;
                                       p._classification_stop = -1;
                                       p._regression_stop = -1;
-                                      p._balance_classes = p._classification && balance_classes;
+                                      p._balance_classes = classification && balance_classes;
                                       p._quiet_mode = true;
                                       p._score_validation_sampling = csm;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
                                       DeepLearning dl = new DeepLearning(p);
                                       try {
-                                        model1 = dl.train().get();
+                                        model1 = dl.trainModel().get();
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
@@ -178,18 +174,18 @@ public class DeepLearningProstateTest extends TestUtil {
                                     p._checkpoint = dest_tmp;
                                     p._n_folds = 0;
 
-                                    p._train = frame._key;
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
+                                    p._toEnum = classification;
                                     p._override_with_best_model = override_with_best_model;
                                     p._epochs = epochs;
                                     p._seed = seed;
                                     p._train_samples_per_iteration = train_samples_per_iteration;
-                                    p._balance_classes = p._classification && balance_classes;
-
+                                    p._balance_classes = classification && balance_classes;
+                                    p._train = frame._key;
                                     DeepLearning dl = new DeepLearning(p);
                                     try {
-                                      model1 = dl.train().get();
+                                      model1 = dl.trainModel().get();
                                     } catch (Throwable t) {
                                       t.printStackTrace();
                                       throw new RuntimeException(t);
@@ -209,7 +205,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                     }
 
                                     if (valid == null) valid = frame;
-                                    double threshold = 0;
                                     if (model2._output.isClassifier()) {
                                       Frame pred = null, pred2 = null;
                                       try {
@@ -217,7 +212,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         StringBuilder sb = new StringBuilder();
 
                                         AUC auc = new AUC();
-                                        double error = 0;
+                                        double error;
                                         // binary
                                         if (model2._output.nclasses() == 2) {
                                           auc.actual = valid;
@@ -228,7 +223,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           auc.execImpl();
                                           // auc.toASCII(sb);
                                           AUCData aucd = auc.data();
-                                          threshold = aucd.threshold();
+                                          aucd.threshold();
                                           error = aucd.err();
                                           Log.info(sb);
 
@@ -240,7 +235,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                         }
 
                                         // Compute CM
-                                        double CMerrorOrig;
                                         {
                                           sb = new StringBuilder();
                                           ConfusionMatrix CM = new ConfusionMatrix();
@@ -253,7 +247,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           sb.append("Threshold: " + "default\n");
                                           CM.toASCII(sb);
                                           Log.info(sb);
-//                                        CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
+//                                        new ConfusionMatrix2(CM.cm).err();
                                         }
 
                                         // confirm that orig CM was made with threshold 0.5
@@ -346,9 +340,6 @@ public class DeepLearningProstateTest extends TestUtil {
                       }
                     }
                   }
-                  if( classification )
-                    frame.replace(resp,old).remove();
-                    DKV.put(frame._key,frame);
                 }
               }
             }

@@ -397,7 +397,7 @@ final public class H2O {
   static {
     AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
     try {
-      Class klass = Class.forName("water.BuildVersion");
+      Class klass = Class.forName("water.init.BuildVersion");
       java.lang.reflect.Constructor constructor = klass.getConstructor();
       abv = (AbstractBuildVersion) constructor.newInstance();
     } catch (Exception ignore) { }
@@ -417,6 +417,7 @@ final public class H2O {
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }
   public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
+  public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.
@@ -646,7 +647,8 @@ final public class H2O {
     return "/tmp/h2o-" + u2;
   }
 
-  // Static list of acceptable Cloud members
+  /* Static list of acceptable Cloud members passed via -flatfile option.
+   * It is updated also when a new client appears. */
   public static HashSet<H2ONode> STATIC_H2OS = null;
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
@@ -924,7 +926,7 @@ final public class H2O {
     if( old != null && val == null ) old.removePersist(); // Remove the old guy
     if( val != null ) {
       Cleaner.dirty_store(); // Start storing the new guy
-      Scope.track(key);
+      if( old==null ) Scope.track(key); // New Key - start tracking
     }
     return old; // Return success
   }

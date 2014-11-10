@@ -5,7 +5,6 @@ description = "H2O Algorithms"
 
 dependencies {
   compile project(":h2o-core")
-
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testRuntime("org.easyb:easyb-core:1.4") { transitive = true }

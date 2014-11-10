@@ -48,6 +48,16 @@ public abstract class Paxos {
       return 0;
     }
 
+    // I am not client but received client heartbeat in flatfile mode.
+    // Means that somebody is trying to connect to this cloud.
+    // => update list of static hosts (it needs clean up)
+    if (!H2O.ARGS.client && H2O.STATIC_H2OS!=null
+         && h2o._heartbeat._client
+         && !H2O.STATIC_H2OS.contains(h2o)) {
+      // Extend static list of nodes to multicast to propagate information to client
+      H2O.STATIC_H2OS.add(h2o);
+    }
+
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
     if( !PROPOSED.contains(h2o) && !h2o._heartbeat._client ) {
       if( _cloudLocked ) {

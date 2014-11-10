@@ -2,9 +2,7 @@ package hex.glm;
 
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
-import hex.Model;
-import hex.glm.GLMModel.GLMOutput;
-import hex.glm.GLMModel.GLMParameters;
+import hex.SupervisedModel;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
 import water.DTask.DKeyTask;
@@ -19,10 +17,10 @@ import java.util.HashMap;
  * Created by tomasnykodym on 8/27/14.
  * TODO: should be a subclass of SupervisedModel.
  */
-public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
+public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, DataInfo dinfo, GLMParameters parms, GLMOutput output, double ymu, double lambda_max, long nobs) {
-    super(selfKey, dinfo._adaptedFrame.names(), dinfo._adaptedFrame.domains(), parms, output);
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
+    super(selfKey, parms, output);
     _ymu = ymu;
     _lambda_max = lambda_max;
     _nobs = nobs;
@@ -122,9 +120,8 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     return preds;
   }
 
-  public static class GLMParameters extends Model.Parameters {
+  public static class GLMParameters extends SupervisedModel.SupervisedParameters {
     public int _response;
-    public int [] _ignored_cols;
     public boolean _standardize = true;
     public final Family family;
     public final Link   link;
@@ -189,12 +186,6 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
       this.tweedie_link_power = twLnk;
       family = f;
       link = f.defaultLink;
-    }
-
-    @Override
-    public int sanityCheckParameters() {
-      // TODO: fill in!
-      return _validation_error_count;
     }
 
     public final double variance(double mu){
@@ -447,7 +438,7 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
   final long   _nobs;
   long   _run_time;
   
-  public static class GLMOutput extends Model.Output {
+  public static class GLMOutput extends SupervisedModel.SupervisedOutput {
     Submodel [] _submodels;
     int         _best_lambda_idx;
     float       _threshold;
@@ -456,7 +447,8 @@ public class GLMModel extends Model<GLMModel,GLMParameters,GLMOutput> {
     final boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
-    public GLMOutput(DataInfo dinfo, boolean binomial){
+    public GLMOutput(GLM b, DataInfo dinfo, boolean binomial){
+      super(b);
       String [] cnames = dinfo.coefNames();
       String [] pnames = dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);

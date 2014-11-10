@@ -61,8 +61,13 @@
         temp = invisible(getForm(myURL, .params = .params, .checkParams = FALSE))  # Some H2O params overlap with Curl params
 
     # POST
-    } else {
-      temp <- postForm(myURL, .params = list(...),  style = "POST")
+    } else if (method == "POST") {
+      temp <- postForm(myURL, .params = .params,  style = "POST")
+    } else if (method == "HTTPPOST") {
+      hg <- basicHeaderGatherer()
+      tg <- basicTextGatherer()
+      suppressWarnings(postForm(myURL, .checkParams=FALSE, style = "HTTPPOST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), .params =.params))
+      temp <- tg$value()
     }
 
     # post-processing
@@ -75,24 +80,20 @@
       if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
       stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
     }
-#  }
   res
 }
 
 # client -- Connection object returned from h2o.init().
 # page   -- URL to access within the H2O server.
 # parms  -- List of parameters to send to the server.
-.h2o.__remoteSendWithParms <- function(client, page, parms) {
-  cmd = ".h2o.__remoteSend(client, page"
+.h2o.__remoteSendWithParms <- function(client, page, method = "GET", parms) {
+  cmd = ".h2o.__remoteSend(client, page, method =" %p% deparse(method)
 
   for (i in 1:length(parms)) {
     thisparmname = names(parms)[i]
     cmd = sprintf("%s, %s=parms$%s", cmd, thisparmname, thisparmname)
   }
-
   cmd = sprintf("%s)", cmd)
-  #cat(sprintf("TOM: cmd is %s\n", cmd))
-
   rv = eval(parse(text=cmd))
   return(rv)
 }
@@ -201,23 +202,25 @@ h2o.clusterInfo <- function(client) {
     tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog$prog) },
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
              finally = setTxtProgressBar(pb, 1.0))
+    if (!prog$DONE) {
+      tryCatch(while(!(prog <- .h2o.__poll(client, job_key))$DONE) { Sys.sleep(pollInterval/2) },
+               error = function(e) { cat("\nPolling fails:\n"); print(e) })
+    }
     close(pb)
-    threeSeconds <- 3
-    Sys.sleep(threeSeconds)
   } else
     tryCatch(while(prog<- .h2o.__poll(client, job_key) != -1 && !prog$DONE) { Sys.sleep(pollInterval) },
              finally = .h2o.__cancelJob(client, job_key))
 }
 
 #'
-#' Return the progress so far.
+#' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
   if(missing(client)) stop("client is missing!")
   if(class(client) != "H2OClient") stop("client must be a H2OClient object")
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
-  page <- 'Jobs.json/' %<p0-% keyName
+  page <- 'Jobs.json/' %p0% keyName
   res <- .h2o.__remoteSend(client, page)
 
   res <- res$jobs
@@ -231,7 +234,6 @@ h2o.clusterInfo <- function(client) {
   if(is.null(jobRes)) stop("Job key ", keyName, " not found in job queue")
   if(!is.null(jobRes$status) && jobRes$status == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
   else if(!is.null(jobRes$exception) && jobRes$exception == 1) stop(jobRes$status)
-#  if (jobRes$progress < 0 && (jobRes$end_time == "" || is.null(prog$end_time))) return(abs(prog$progress)/100)
   prog$prog <- jobRes$progress
   if (jobRes$status == "DONE") prog$DONE <- TRUE
   prog

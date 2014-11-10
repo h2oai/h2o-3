@@ -6,7 +6,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class ExampleTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   @Test public void testIris() {
     ExampleModel kmm = null;
@@ -20,8 +20,9 @@ public class ExampleTest extends TestUtil {
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
       parms._train = fr._key;
       parms._max_iters = 10;
+      parms._response_column = "class";
 
-      Example job = new Example(parms).train();
+      Example job = new Example(parms).trainModel();
       kmm = job.get();
       job.remove();
 

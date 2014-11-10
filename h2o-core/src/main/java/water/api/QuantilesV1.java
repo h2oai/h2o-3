@@ -1,8 +1,8 @@
 package water.api;
 
+import water.Quantiles;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.api.QuantilesHandler.*;
 
 public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
 
@@ -29,7 +29,7 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
   @API(help = "Result.", direction=API.Direction.OUTPUT)                                                                       public double result;
   @API(help = "Single pass Result.", direction=API.Direction.OUTPUT)                                                           double result_single;
 
-  protected void init() throws IllegalArgumentException {
+  protected void sanityCheck() throws IllegalArgumentException {
     if (column.equals("") || column == null) throw new IllegalArgumentException("Column is missing.");
     Vec _column = source_key.vecs()[source_key.find(column)];
     if (source_key == null) throw new IllegalArgumentException("Source key is missing");
@@ -38,16 +38,18 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
     if (!((interpolation_type == 2) || (interpolation_type == 7))) {
       throw new IllegalArgumentException("Unsupported interpolation type. Currently only allow 2 or 7");
     }
-
   }
 
-  @Override public Quantiles createImpl() {
-    init();
-    return new Quantiles(source_key.vecs()[source_key.find(column)], source_key, quantile, max_qbins, multiple_pass,
+  @Override public Quantiles fillImpl(Quantiles q) {
+    sanityCheck();
+    q.setAllFields(source_key.vecs()[source_key.find(column)], source_key, quantile, max_qbins, multiple_pass,
                          interpolation_type, max_ncols, column_name, quantile_requested, interpolation_type_used,
                          interpolated, iterations, result, result_single);
+    return q;
   }
+
   @Override public QuantilesV1 fillFromImpl(Quantiles q) {
+    sanityCheck();
     source_key = q.source_key;
     column = q.source_key.names()[q.source_key.find(q.column)];
     quantile = q.quantile;

@@ -1,7 +1,8 @@
+.DELETE_ON_ERROR:
 
 # Source code
-main_javas = $(wildcard src/main/java/hex/*java src/main/java/hex/*/*java)
-test_javas = $(wildcard src/test/java/hex/*java src/test/java/hex/*/*java)
+main_javas = $(wildcard src/main/java/hex/*java src/main/java/hex/*/*java src/main/java/hex/*/*/*java)
+test_javas = $(wildcard src/test/java/hex/*java src/test/java/hex/*/*java src/test/java/hex/*/*/*java)
 main_classes = $(patsubst src/main/java/%java,build/classes/main/%class,$(main_javas))
 test_classes = $(patsubst src/test/java/%java,build/classes/test/%class,$(test_javas))
 classes = $(main_classes) $(test_classes)
@@ -40,16 +41,17 @@ default: build/libs/h2o-algos.jar build/libs/h2o-algos-test.jar
 classes: $(classes)
 
 
-JVM = java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
+#JVM = java -ea -cp "build/classes/main$(SEP)build/classes/test$(SEP)$(jars)" 
 # deep learning tests turned off as they are currently not working
-JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest hex.kmeans.KMeansTest hex.example.ExampleTest
+#JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest hex.kmeans.KMeansTest hex.example.ExampleTest hex.tree.gbm.GBMTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
 check: $(classes)
-	@rm -rf sandbox ; mkdir sandbox
-	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
-	-@(pkill java; echo )
-	@exit `cat sandbox/status.0`
+	./testMultiNode.sh
+#	@rm -rf sandbox ; mkdir sandbox
+#	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )
+#	-@(pkill java; echo )
+#	@exit `cat sandbox/status.0`
 
 # Compile just the out-of-date files
 $(main_classes): build/classes/main/%class: src/main/java/%java
@@ -65,10 +67,12 @@ $(test_classes): build/classes/test/%class: src/test/java/%java
 # Build the h2o-algos.jar file
 build/libs/h2o-algos.jar: $(main_classes)
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@jar -cf build/libs/h2o-algos.jar -C build/classes/main .
 
 build/libs/h2o-algos-test.jar: $(test_classes)
 	@echo "jarring " $@ " because " $?
+	@[ -d build/libs ] || mkdir -p build/libs
 	@jar -cf build/libs/h2o-algos-test.jar -C build/classes/test .
 
 

@@ -41,10 +41,12 @@ public class Scope {
     Arrays.sort(arrkeep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (keys.size() > 0) {
+      Futures fs = new Futures();
       for (Key key : keys.pop()) {
         int found = Arrays.binarySearch(arrkeep, key);
-        if (arrkeep.length == 0 || found < 0) Keyed.remove(key);
+        if (arrkeep.length == 0 || found < 0) Keyed.remove(key, fs);
       }
+      fs.blockForPending();
     }
     return keep;
   }

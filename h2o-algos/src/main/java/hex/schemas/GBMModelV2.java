@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.gbm.GBMModel;
+import hex.tree.gbm.GBMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
@@ -15,7 +15,7 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
     public double mse;           // Total MSE, variance
 
     @Override public GBMModel.GBMOutput createImpl() {
-      GBMModel.GBMOutput impl = new GBMModel.GBMOutput();
+      GBMModel.GBMOutput impl = new GBMModel.GBMOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
@@ -40,7 +40,7 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
   @Override public GBMModel createImpl() {
     GBMV2.GBMParametersV2 p = ((GBMV2.GBMParametersV2)this.parameters);
     GBMModel.GBMParameters parms = p.createImpl();
-    return new GBMModel( key, p.training_frame, parms, new GBMModel.GBMOutput(), 0 );
+    return new GBMModel( key, parms, new GBMModel.GBMOutput(null) );
   }
 
   // Version&Schema-specific filling from the impl

@@ -3,11 +3,10 @@ description = "H2O Core"
 apply from: '../gradle/java.gradle'
 apply from: '../gradle/cp.gradle'
 
-mainClassName = "water.H2O"
-
 dependencies {
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
+  compile "gov.nist.math:jama:1.0.3"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -18,7 +17,11 @@ dependencies {
   }
 
   // All unneeded to read from HDFS.
-  compile("org.apache.hadoop:hadoop-client:${hadoopVersion}") 
+  compile("org.apache.hadoop:hadoop-client:${hadoopVersion}") {
+      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-app'
+      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
+      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-jobclient'
+  }
 
   // guava only needed by hadoop now, not by H2O
   compile "com.google.guava:guava:16.0.1"
@@ -56,5 +59,19 @@ test {
   exclude '**'
 }
 
-apply from: '../gradle/javaIgnoreSymbolFile.gradle'
+def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java");
 
+task generateBuildVersionJava {
+  H2OBuildVersion bv = new H2OBuildVersion(rootDir);
+  bv.emitBuildVersionJavaFileIfNecessary(buildVersionFile, version);
+}
+
+compileJava.dependsOn generateBuildVersionJava
+
+task cleanBuildVersionJava(type: Delete) {
+    delete buildVersionFile
+}
+
+clean.dependsOn cleanBuildVersionJava
+
+apply from: '../gradle/javaIgnoreSymbolFile.gradle'

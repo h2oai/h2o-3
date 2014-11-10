@@ -58,6 +58,7 @@ class TutorialsHandler extends Handler<TutorialsHandler.Tutorials,TutorialsV1> {
                     + "</div>";
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public TutorialsV1 nop(int version, TutorialsHandler.Tutorials ignoreme) { return schema(version); }
   // Tutorial Schemas are still at V1, unchanged for V2
   @Override protected TutorialsV1 schema(int version) { return new TutorialsV1(); }

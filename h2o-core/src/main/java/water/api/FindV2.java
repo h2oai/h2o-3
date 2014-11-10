@@ -1,9 +1,7 @@
 package water.api;
 
-import water.api.FindHandler.FindPojo;
-import water.DKV;
 import water.Key;
-import water.Value;
+import water.api.FindHandler.FindPojo;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -33,32 +31,17 @@ class FindV2 extends Schema<FindPojo,FindV2> {
   // Custom adapters go here
 
   // Version&Schema-specific filling into the impl
-  @Override public FindPojo createImpl() {
-    FindPojo f = new FindPojo();
-    // Peel out the Frame from the Key
-    Value val = DKV.get(key);
-    if( val == null ) throw new IllegalArgumentException("Key not found");
-    if( !val.isFrame() ) throw new IllegalArgumentException("Not a Frame");
-    Frame fr = val.get();
+  @Override public FindPojo fillImpl(FindPojo f) {
+    super.fillImpl(f);
 
     // Peel out an optional column; restrict to this column
     if( column != null ) {
-      Vec vec = fr.vec(column);
+      Vec vec = f._fr.vec(column);
       if( vec==null ) throw new IllegalArgumentException("Column "+column+" not found in frame "+key);
-      fr = new Frame(new String[]{column}, new Vec[]{vec});
+      f._fr = new Frame(new String[]{column}, new Vec[]{vec});
     }
 
-    f._fr = fr;
-    f._row = row;
-    f._val = match;
     return f;
-  }
-
-  // Version&Schema-specific filling from the impl
-  @Override public FindV2 fillFromImpl( FindPojo f ) {
-    prev = f._prev;
-    next = f._next;
-    return this;
   }
 
   //==========================

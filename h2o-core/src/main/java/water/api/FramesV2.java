@@ -2,12 +2,12 @@ package water.api;
 
 
 import water.H2O;
-import water.api.FramesHandler.Frames;
 import water.Key;
+import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
 
-class FramesV2 extends FramesBase {
+class FramesV2 extends FramesBase<Frames, FramesV2> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   Key key; // TODO: this should NOT appear in the output
@@ -61,14 +61,14 @@ class FramesV2 extends FramesBase {
       this.is_raw_frame = false; // TODO
     }
 
-    @Override public Frame createImpl(  ) { throw H2O.fail("fillInto should never be called on FrameSummaryV2"); }
+    @Override public Frame createImpl() { throw H2O.fail("createImpl should never be called on FrameSummaryV2"); }
+    @Override public Frame fillImpl(Frame ignoreme) { throw H2O.fail("fillImpl should never be called on FrameSummaryV2"); }
     @Override public FrameSummaryV2 fillFromImpl(Frame f) { throw H2O.fail("fillFromImpl should never be called on FrameSummaryV2"); }
   }
 
 
   // Version-specific filling into the impl
-  @Override public Frames createImpl() {
-    Frames f = new Frames();
+  @Override public Frames fillImpl(Frames f) {
     f.key = this.key;
     f.column = this.column; // NOTE: this is needed for request handling, but isn't really part of state
 

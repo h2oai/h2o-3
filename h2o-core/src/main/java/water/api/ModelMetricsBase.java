@@ -2,6 +2,7 @@ package water.api;
 
 import hex.Model;
 import hex.ModelMetrics;
+import water.util.PojoUtils;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.
@@ -41,13 +42,17 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
 
   // Non-version-specific filling into the impl
   @Override public ModelMetrics createImpl() {
-    ModelMetrics m = new ModelMetrics(this.model.createImpl(),
-                                      this.frame.createImpl(),
-                                      this.duration_in_ms,
-                                      this.scoring_time,
-                                      this.auc.createImpl(),
-                                      null
-                                      /* TODO: choose either ConfusionMatrix or ConfusionMatrix2! this.cm.createImpl()*/);
+    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl()); // TODO: why does the model need a cast but not the frame?
+    return m;
+  }
+
+  public ModelMetrics fillImpl(ModelMetrics m) {
+    PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[] {"auc", "cm"});
+    m.auc = this.auc.createImpl();
+    /*
+     * TODO: choose and set either ConfusionMatrix or ConfusionMatrix2!
+     * m.cm = this.cm.createImpl();
+     */
     return m;
   }
 

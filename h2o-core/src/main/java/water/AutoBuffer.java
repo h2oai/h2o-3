@@ -159,7 +159,7 @@ public final class AutoBuffer {
   }
 
   /** Read from a fixed byte[]; should not be closed. */
-  AutoBuffer( byte[] buf ) { this(buf,0); }
+  public AutoBuffer( byte[] buf ) { this(buf,0); }
   /** Read from a fixed byte[]; should not be closed. */
   AutoBuffer( byte[] buf, int off ) {
     assert buf != null : "null fed to ByteBuffer.wrap";
@@ -187,7 +187,7 @@ public final class AutoBuffer {
   /** Write to a known sized byte[].  Instead of calling close(), call
    * {@link #bufClose()} to retrieve the final byte[].
    */
-  AutoBuffer( int len ) {
+  public AutoBuffer( int len ) {
     _bb = ByteBuffer.wrap(MemoryManager.malloc1(len)).order(ByteOrder.nativeOrder());
     _chan = null;
     _h2o = null;
@@ -374,9 +374,12 @@ public final class AutoBuffer {
   int size() { return _size; }
   //int zeros() { return _zeros; }
 
-  // Available bytes in this buffer to read
-  int position () { return _bb.position (); }
+  public int position () { return _bb.position(); }
   void position(int pos) { _bb.position(pos); }
+  /** Skip over some bytes in the byte buffer.  Caller is responsible for not
+   *  reading off end of the bytebuffer; generally this is easy for
+   *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
+  public void skip(int skip) { _bb.position(_bb.position()+skip); }
 
   // Return byte[] from a writable AutoBuffer
   public final byte[] buf() {
@@ -551,6 +554,7 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public byte   get1 () { return getSp(1).get      (); }
   @SuppressWarnings("unused")  public int    get1U() { return get1() & 0xFF;        }
   @SuppressWarnings("unused")  public char   get2 () { return getSp(2).getChar  (); }
+  @SuppressWarnings("unused")  public int    get3 () { getSp(3); return get1U() | get1U() << 8 | get1U() << 16; }
   @SuppressWarnings("unused")  public int    get4 () { return getSp(4).getInt   (); }
   @SuppressWarnings("unused")  public float  get4f() { return getSp(4).getFloat (); }
   @SuppressWarnings("unused")  public long   get8 () { return getSp(8).getLong  (); }
@@ -558,7 +562,6 @@ public final class AutoBuffer {
 
 
   int    get1U(int off) { return _bb.get    (off)&0xFF; }
-  int    get3 ()        { return get1U() | get1U() << 8 | get1U() << 16; }
   int    get4 (int off) { return _bb.getInt (off); }
   long   get8 (int off) { return _bb.getLong(off); }
 
@@ -984,6 +987,11 @@ public final class AutoBuffer {
   public String getStr( ) {
     int len = getInt();
     return len == -1 ? null : new String(getA1(len));
+  }
+
+  public Enum getEnum(Enum[] values ) {
+    int idx = get1();
+    return idx == -1 ? null : values[idx];
   }
 
   public AutoBuffer putA1( byte[] ary ) {

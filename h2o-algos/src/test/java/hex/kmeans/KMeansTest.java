@@ -21,8 +21,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     try {
       job = new KMeans(parms);
-      job.train();
-      kmm = job.get();
+      kmm = job.trainModel().get();
     } finally {
       if (job != null) job.remove();
     }
@@ -181,14 +180,11 @@ public class KMeansTest extends TestUtil {
       parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
       parms._K = 10; //too high -> will throw
-      parms._normalize = true;
-      parms._max_iters = 100;
-      parms._init = KMeans.Initialization.Furthest;
       kmm = doSeed(parms, System.nanoTime());
 
     } finally {
-      if( fr  != null ) fr .remove();
-      if (kmm != null) kmm.delete();
+      if( fr  != null) fr .remove();
+      if( kmm != null) kmm.delete();
     }
   }
 

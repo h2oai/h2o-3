@@ -164,6 +164,11 @@ public class Frame extends Lockable {
    *  @return the array of column names */
   public String[] names() { return _names; }
 
+  /** The array of keys.
+   * @return the array of keys for each vec in the frame.
+   */
+  public Key[] keys() { return _keys; }
+
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the DKV. 
    *  @return the internal array of Vecs */
@@ -409,6 +414,12 @@ public class Frame extends Lockable {
    *  @return The removed column */
   public Vec remove( String name ) { return remove(find(name)); }
 
+  public Frame remove( String[] names ) { 
+    for( String name : names )
+      remove(find(name));
+    return this;
+  }
+
   /** Removes a list of columns by index; the index list must be sorted
    *  @return an array of the removed columns */
   public Vec[] remove( int[] idxs ) {
@@ -486,6 +497,16 @@ public class Frame extends Lockable {
     _keys = keys;
     _col0 = null;
     return vecX;
+  }
+
+  /** Restructure a Frame completely */
+  public void restructure( String[] names, Vec[] vecs ) {
+    // Make empty to dodge asserts, then "add()" them all which will check for
+    // compatible Vecs & names.
+    _names = new String[0];
+    _keys  = new Key   [0];
+    _vecs  = new Vec   [0];
+    add(names,vecs);
   }
 
   // --------------------------------------------
@@ -652,7 +673,7 @@ public class Frame extends Lockable {
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames")));
+      AppendableVec av = new AppendableVec(Vec.newKey(Key.make("rownames_vec")));
       int r = 0;
       int c = 0;
       while (r < rows.length) {
@@ -668,9 +689,9 @@ public class Frame extends Lockable {
       Frame ff = new Frame(new String[]{"rownames"}, new Vec[]{c0});
       Frame fr2 = new Slice(c2, this).doAll(c2.length,ff)
               .outputFrame(names(c2), domains(c2));
-      ff.delete();
-      Keyed.remove(c0._key);  // Remove hidden vector
+      Keyed.remove(c0._key);
       Keyed.remove(av._key);
+      ff.delete();
       return fr2;
     }
     Frame frows = (Frame)orows;

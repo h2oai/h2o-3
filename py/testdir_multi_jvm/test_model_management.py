@@ -45,6 +45,17 @@ def validate_builder(builder):
     h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
 
 
+def validate_model_builder_result(result, original_params, model_name):
+    if 'validation_error_count' in result:
+        print 'Parameters validation error for model: ', model_name
+        print 'Input parameters: '
+        pp.pprint(original_params)
+        print 'Returned result: '
+        pp.pprint(result)
+    assert 'jobs' in result, "Failed to find jobs key for model: " + model_name
+    assert 'key' in result, "Failed to find (jobs) key for model: " + model_name
+
+
 def list_to_dict(l, key):
     result = {}
     for entry in l:
@@ -186,6 +197,11 @@ cleanup(a_node)
 ################################################
 # Import prostate.csv
 import_result = a_node.import_files(path=os.path.realpath("../../smalldata/logreg/prostate.csv"))
+if h2o.H2O.verbose:
+    print "import_result: "
+    pp.pprint(import_result)
+    print "frames: "
+    pp.pprint(a_node.frames(key=import_result['keys'][0], len=5))
 frames = a_node.frames(key=import_result['keys'][0], len=5)['frames']
 assert frames[0]['isText'], "Raw imported Frame is not isText"
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
@@ -280,30 +296,53 @@ kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the targ
 
 print 'About to build a KMeans model. . .'
 kmeans_parameters = {'K': 2 }
-jobs = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
+result = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
+validate_model_builder_result(result, kmeans_parameters, kmeans_model_name)
 print 'Done building KMeans model.'
+
 
 #######################################
 # Test DeepLearning parameters validation
 #
-# Good parameters:
-dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
-parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+# Default parameters:
+model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['model_builders']['deeplearning']
+dl_test_parameters_list = model_builder['parameters']
+dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
+
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-assert 0 == parameters_validation['validation_error_count'], "0 == validation_error_count in good-parameters parameters validation result."
+if 1 != parameters_validation['validation_error_count']:
+    print "validation errors: "
+    pp.pprint(parameters_validation)
+assert 1 == parameters_validation['validation_error_count'], "1 != validation_error_count in good-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
+
+# Good parameters (note: testing with null training_frame):
+dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
+h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
+if 1 != parameters_validation['validation_error_count']:
+    print "validation errors: "
+    pp.pprint(parameters_validation)
+assert 1 == parameters_validation['validation_error_count'], "1 != validation_error_count in good-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
 
 # Bad parameters (hidden is null):
+# (note: testing with null training_frame)
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
-parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=prostate_key, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters parameters validation result."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters parameters validation result."
-found_error = False
+assert 2 == parameters_validation['validation_error_count'], "2 != validation_error_count in bad-parameters parameters validation result."
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
+
+found_expected_error = False
 for validation_message in parameters_validation['validation_messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-        found_error = True
-assert found_error, "Failed to find error message about input_dropout_ratio in the validation messages."
+        found_expected_error = True
+assert found_expected_error, "Failed to find error message about input_dropout_ratio in the validation messages."
 
 #######################################
 # Build DeepLearning model for Prostate
@@ -312,6 +351,7 @@ dl_prostate_model_name = 'prostate_DeepLearning_1'
 print 'About to build a DeepLearning model. . .'
 dl_prostate_1_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
 jobs = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name, training_frame=prostate_key, parameters=dl_prostate_1_parameters, timeoutSecs=240) # synchronous
+validate_model_builder_result(result, dl_prostate_1_parameters, dl_prostate_model_name)
 print 'Done building DeepLearning model.'
 
 models = a_node.models()
@@ -328,15 +368,16 @@ dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
 print 'About to try to build a DeepLearning model with bad parameters. . .'
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
 parameters_validation = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad, training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+validate_model_builder_result(result, dl_prostate_bad_parameters, dl_prostate_model_name_bad)
 print 'Done trying to build DeepLearning model with bad parameters.'
 
 assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters build result."
 assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters build validation result."
-found_error = False
+found_expected_error = False
 for validation_message in parameters_validation['validation_messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-        found_error = True
-assert found_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
+        found_expected_error = True
+assert found_expected_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
 
 
 #######################################
@@ -346,6 +387,7 @@ dl_airlines_model_name = 'airlines_DeepLearning_1'
 print 'About to build a DeepLearning model. . .'
 dl_airline_1_parameters = {'response_column': 'IsDepDelayed' }
 jobs = a_node.build_model(algo='deeplearning', destination_key=dl_airlines_model_name, training_frame=airlines_key, parameters=dl_airline_1_parameters, timeoutSecs=240) # synchronous
+validate_model_builder_result(result, dl_airline_1_parameters, dl_airlines_model_name)
 print 'Done building DeepLearning model.'
 
 models = a_node.models()
@@ -358,6 +400,7 @@ if h2o.H2O.verbose:
 # Check kmeans_model_name
 found_kmeans = False;
 kmeans_model = None
+print 'looking for model: ', kmeans_model_name
 for model in models['models']:
     if model['key'] == kmeans_model_name:
         found_kmeans = True

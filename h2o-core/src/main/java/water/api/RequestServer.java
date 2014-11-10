@@ -10,11 +10,10 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
 import water.util.Log;
 import water.util.RString;
+import water.util.ReflectionUtils;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -164,7 +163,7 @@ public class RequestServer extends NanoHTTPD {
       "Return all the saved scoring metrics.");
 
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"},
-      "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been scored with the Model then cached results will be returned; otherwise predictions for all rows in the fFrame will be generated and the metrics will be returned.");
+      "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame will be generated and the metrics will be returned.");
     register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict", new String[] {"model", "frame"},
       "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
 
@@ -189,7 +188,7 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
 
-    register("/Cascade"                                          ,"GET"   ,CascadeHandler.class, "exec", "Something something R exec something.");
+    register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
@@ -253,13 +252,7 @@ public class RequestServer extends NanoHTTPD {
       Class iced_class = null;
       // Most of the handlers are parameterized on the Iced and Schema classes,
       // but Inspect isn't, because it can accept any Iced and return any Schema.
-      if (handler_class.getGenericSuperclass() instanceof ParameterizedType) {
-        Type[] handler_type_parms = ((ParameterizedType)(handler_class.getGenericSuperclass())).getActualTypeArguments();
-        iced_class = (Class)handler_type_parms[0];  // [0] is the impl (Iced) type; [1] is the Schema type
-      } else {
-        iced_class = Iced.class; // If the handler isn't parameterized on the Iced class then this has to be Iced.
-      }
-
+      iced_class = ReflectionUtils.findActualClassParameter(handler_class, 0);
       if (null == iced_class)
         throw H2O.fail("Failed to find an implementation class for handler class: " + handler_class + " for method: " + handler_method);
 
@@ -496,7 +489,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   private Response wrap2(String http_code, Schema s) {
-    DownloadData dd = (DownloadData) s.fillFromSchema();
+    DownloadData dd = (DownloadData) s.createAndFillImpl();
     Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
     res.addHeader("Content-Disposition", "filename=" + dd.filename);
     return res;

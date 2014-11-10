@@ -8,7 +8,7 @@ import water.fvec.Vec;
 
 import java.util.*;
 
-class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
+class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler<I, FramesBase<I, S>> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -97,7 +97,8 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     }
   }
 
-  /* /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
+  /** /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema list_or_fetch(int version, Frames f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
@@ -110,6 +111,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** Return all the frames. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema list(int version, Frames f) {
     f.frames = Frames.fetchAll();
 
@@ -125,6 +127,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** NOTE: We really want to return a different schema here! */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema columns(int version, Frames f) {
     // TODO: return *only* the columns. . .  This may be a different schema.
     return fetch(version, f);
@@ -152,6 +155,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
   }
 
   /** Return a single column from the frame. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema column(int version, Frames f) { // TODO: should return a Vec schema
     Frame frame = getFromDKV(f.key);
 
@@ -170,6 +174,7 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return schema;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesBase columnSummary(int version, Frames frames) {
     Frame frame = getFromDKV(frames.key);
     Vec vec = frame.vec(frames.column);
@@ -185,11 +190,13 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return schema(version).fillFromImpl(frames);
   }
 
+  /** Docs for column summary. */
   public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
     return null; // doc(this, version, docs, "docs/columnSummary.md");
   }
 
   /** Return a single frame. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, Frames f) {
     Frame frame = getFromDKV(f.key);
     f.frames = new Frame[1];
@@ -217,14 +224,18 @@ class FramesHandler extends Handler<FramesHandler.Frames, FramesBase> {
     return schema;
   }
 
-  // Remove an unlocked frame.  Fails if frame is in-use
+  /** Remove an unlocked frame.  Fails if frame is in-use. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public void delete(int version, Frames frames) {
     Frame frame = getFromDKV(frames.key);
     frame.delete();             // lock & remove
   }
 
-  // Remove ALL an unlocked frames.  Throws IAE for all deletes that failed
-  // (perhaps because the Frames were locked & in-use).
+  /**
+   * Remove ALL an unlocked frames.  Throws IAE for all deletes that failed
+   * (perhaps because the Frames were locked & in-use).
+   */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public void deleteAll(int version, Frames frames) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {

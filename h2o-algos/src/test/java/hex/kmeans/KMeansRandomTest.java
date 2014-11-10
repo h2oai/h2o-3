@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class KMeansRandomTest extends TestUtil {
   @BeforeClass()
-  public static void setup() { stall_till_cloudsize(3); }
+  public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void run() {
@@ -52,8 +52,7 @@ public class KMeansRandomTest extends TestUtil {
                 parms._init = init;
 
                 KMeans job = new KMeans(parms);
-                job.train();
-                KMeansModel m = job.get();
+                KMeansModel m = job.trainModel().get();
                 Assert.assertTrue("Progress not 100%, but " + job.progress() *100, job.progress() == 1.0);
 
                 Frame score = null;

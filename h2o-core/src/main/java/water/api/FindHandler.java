@@ -27,6 +27,7 @@ class
   // Running all in exec2, no need for backgrounding on F/J threads
   @Override public void compute2() { throw H2O.fail(); }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public FindV2 find(int version, FindPojo find) {
     // Convert the search string into a column-specific flavor
     Vec[] vecs = find._fr.vecs();
@@ -43,9 +44,9 @@ class
       } else if( vecs[i].isTime() ) {
         throw H2O.unimpl();
       } else {
-        try { 
+        try {
           ds[i] = find._val==null ? Double.NaN : Double.parseDouble(find._val);
-        } catch( NumberFormatException e ) { 
+        } catch( NumberFormatException e ) {
           if( vecs.length==1 ) throw new IllegalArgumentException("Not a number: "+find._val);
           ds[i] = Double.longBitsToDouble(0xcafebabe); // Do not match
         }

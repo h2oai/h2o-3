@@ -13,90 +13,31 @@ import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.DocGen.HTML;
 
-/**
- * Iced / Freezable NonBlockingHashMap.  Delegates to a NonBlockingHashMap for all its
- * operations.  Inspired by water.parser.Enum.
+/** Iced / Freezable NonBlockingHashMap.  Delegates to a NonBlockingHashMap for
+ *  all its operations.  Inspired by water.parser.Enum.
  */
-public class IcedHashMap<K, V>
-  extends Iced
-  implements ConcurrentMap<K, V>, Cloneable, Serializable {
+public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Cloneable, Serializable {
 
-  private volatile NonBlockingHashMap<K, V> _map;
-  public IcedHashMap() {
-    _map = new NonBlockingHashMap<K, V>();
-  }
-
-  public V putIfAbsent(K key, V value) {
-    return _map.putIfAbsent(key, value);
-  }
-
-  public boolean remove(Object key, Object value) {
-    return _map.remove(key, value);
-  }
-
-  public boolean replace(K key, V oldValue, V newValue) {
-    return _map.replace(key, oldValue, newValue);
-  }
-
-  public V replace(K key, V value) {
-    return _map.replace(key, value);
-  }
-
-  public int size() {
-    return _map.size();
-  }
-
-  public boolean isEmpty() {
-    return _map.isEmpty();
-  }
-
-  public boolean containsKey(Object key) {
-    return _map.containsKey(key);
-  }
-
-  public boolean containsValue(Object value) {
-    return _map.containsValue(value);
-  }
-
-  public V get(Object key) {
-    return _map.get(key);
-  }
-
-  public V put(K key, V value) {
-    return _map.put(key, value);
-  }
-
-  public V remove(Object key) {
-    return _map.remove(key);
-  }
-
-  public void putAll(Map<? extends K, ? extends V> m) {
-    _map.putAll(m);
-  }
-
-  public void clear() {
-    _map.clear();
-  }
-
-  public Set<K> keySet() {
-    return _map.keySet();
-  }
-
-  public Collection<V> values() {
-    return _map.values();
-  }
-
-  public Set<Entry<K, V>> entrySet() {
-    return _map.entrySet();
-  }
-
-  public boolean equals(Object o) {
-    return _map.equals(o);
-  }
-
-  public int hashCode() {
-    return _map.hashCode();
-  }
+  private final NonBlockingHashMap<K, V> _map;
+  public IcedHashMap() { _map = new NonBlockingHashMap<K, V>(); }
+  public V putIfAbsent(K key, V value)                  { return _map.putIfAbsent(key, value); }
+  public boolean remove(Object key, Object value)       { return _map.remove(key, value);  }
+  public boolean replace(K key, V oldValue, V newValue) { return _map.replace(key, oldValue, newValue); }
+  public V replace(K key, V value)                      { return _map.replace(key, value); }
+  public int size()                                     { return _map.size(); }
+  public boolean isEmpty()                              { return _map.isEmpty(); }
+  public boolean containsKey(Object key)                { return _map.containsKey(key); }
+  public boolean containsValue(Object value)            { return _map.containsValue(value); }
+  public V get(Object key)                              { return _map.get(key); }
+  public V put(K key, V value)                          { return _map.put(key, value); }
+  public V remove(Object key)                           { return _map.remove(key); }
+  public void putAll(Map<? extends K, ? extends V> m)   {        _map.putAll(m); }
+  public void clear()                                   {        _map.clear(); }
+  public Set<K> keySet()                                { return _map.keySet(); }
+  public Collection<V> values()                         { return _map.values(); }
+  public Set<Entry<K, V>> entrySet()                    { return _map.entrySet(); }
+  public boolean equals(Object o)                       { return _map.equals(o); }
+  public int hashCode()                                 { return _map.hashCode(); }
 
   // This comment is stolen from water.parser.Enum:
   //

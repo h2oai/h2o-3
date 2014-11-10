@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.gbm.SharedTreeModel;
+import hex.tree.SharedTreeModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;

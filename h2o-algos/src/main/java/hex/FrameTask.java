@@ -17,6 +17,7 @@ import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected transient DataInfo _dinfo;
+  public DataInfo dinfo() { return _dinfo; }
   final Key _dinfoKey;
   final int [] _activeCols;
   final protected Key _jobKey;
@@ -99,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     @Override
     public long checksum() {throw H2O.unimpl();} // don't really need checksum
 
-    public enum TransformType { NONE, STANDARDIZE, NORMALIZE };
+    public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE };
     public TransformType _predictor_transform;
     public TransformType _response_transform;
     public boolean _useAllFactorLevels;
@@ -127,6 +128,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     private DataInfo(Key selfKey, DataInfo dinfo, int foldId, int nfolds){
       super(selfKey);
       assert dinfo._catLvls == null:"Should not be called with filtered levels (assuming the selected levels may change with fold id) ";
+      assert dinfo._predictor_transform != null;
+      assert dinfo. _response_transform != null;
       _predictor_transform = dinfo._predictor_transform;
       _response_transform = dinfo._response_transform;
       _responses = dinfo._responses;
@@ -145,10 +148,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _catLvls = null;
     }
 
-    public DataInfo(Key selfKey, Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, TransformType predictor_transform, double [] normRespSub, double [] normRespMul){
-      this(selfKey, fr,hasResponses,useAllFactorLvls,
+    public DataInfo(Key selfKey, Frame train, Frame valid, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, TransformType predictor_transform, double [] normRespSub, double [] normRespMul){
+      this(selfKey, train, valid, hasResponses,useAllFactorLvls,
         normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
         normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
+      assert predictor_transform != null;
       assert (normSub == null) == (normMul == null);
       assert (normRespSub == null) == (normRespMul == null);
       if(normSub != null) {
@@ -163,124 +167,18 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
     final int [][] _catLvls;
 
-    /**
-     * Prepare a Frame (with a single response) to be processed by the FrameTask
-     * 1) Place response at the end
-     * 2) (Optionally) Remove columns with constant values or with greater than 20% NaNs
-     * 3) Possibly turn integer categoricals into enums
-     *
-     * @param source A frame to be expanded and sanity checked
-     * @param response (should be part of source)
-     * @param toEnum Whether or not to turn categoricals into enums
-     * @param dropConstantCols Whether or not to drop constant columns
-     * @return Frame to be used by FrameTask
-     */
-    public static Frame prepareFrame(Frame source, Vec response, int[] ignored_cols, boolean toEnum, boolean dropConstantCols, boolean dropNACols) {
-      Frame fr = new Frame(null /* not putting this into KV */, source._names.clone(), source.vecs().clone());
-      if (ignored_cols != null) fr.remove(ignored_cols);
-      final Vec[] vecs =  fr.vecs();
-
-      // put response to the end (if not already)
-      if (response != null) {
-        for (int i = 0; i < vecs.length - 1; ++i) {
-          if (vecs[i] == response) {
-            final String n = fr._names[i];
-            if (toEnum && !vecs[i].isEnum()) fr.add(n, fr.remove(i).toEnum()); //convert int classes to enums
-            else fr.add(n, fr.remove(i));
-            break;
-          }
-        }
-        // special case for when response was at the end already
-        if (toEnum && !response.isEnum() && vecs[vecs.length - 1] == response) {
-          final String n = fr._names[vecs.length - 1];
-          fr.add(n, fr.remove(vecs.length - 1).toEnum());
-        }
-      }
-
-      ArrayList<Integer> constantOrNAs = new ArrayList<>();
-      {
-        ArrayList<Integer> constantCols = new ArrayList<>();
-        ArrayList<Integer> NACols = new ArrayList<>();
-        for(int i = 0; i < vecs.length-1; ++i) {
-          // remove constant cols and cols with too many NAs
-          final boolean dropconstant = dropConstantCols && vecs[i].min() == vecs[i].max();
-          final boolean droptoomanyNAs = dropNACols && vecs[i].naCnt() > vecs[i].length()*1;
-          if(dropconstant) {
-            constantCols.add(i);
-          } else if (droptoomanyNAs) {
-            NACols.add(i);
-          }
-        }
-        constantOrNAs.addAll(constantCols);
-        constantOrNAs.addAll(NACols);
-
-        // Report what is dropped
-        String msg = "";
-        if (constantCols.size() > 0) msg += "Dropping constant column(s): ";
-        for (int i : constantCols) msg += fr._names[i] + " ";
-        if (NACols.size() > 0) msg += "Dropping column(s) with too many missing values: ";
-        for (int i : NACols) msg += fr._names[i] + " (" + String.format("%.2f", vecs[i].naCnt() * 100. / vecs[i].length()) + "%) ";
-        for (String s : msg.split("\n")) Log.info(s);
-      }
-      if(!constantOrNAs.isEmpty()){
-        int [] cols = new int[constantOrNAs.size()];
-        for(int i = 0; i < cols.length; ++i)
-          cols[i] = constantOrNAs.get(i);
-        fr.remove(cols);
-      }
-      return fr;
-    }
-
-    public static Frame prepareFrame(Frame source, int[] ignored_cols, boolean dropConstantCols, boolean dropNACols) {
-      Frame fr = new Frame(null, source._names.clone(), source.vecs().clone());
-      if (ignored_cols != null) fr.remove(ignored_cols);
-      final Vec[] vecs =  fr.vecs();
-
-      ArrayList<Integer> constantOrNAs = new ArrayList<Integer>();
-      {
-        ArrayList<Integer> constantCols = new ArrayList<Integer>();
-        ArrayList<Integer> NACols = new ArrayList<Integer>();
-        for(int i = 0; i < vecs.length; ++i) {
-          // remove constant cols and cols with too many NAs
-          final boolean dropconstant = dropConstantCols && vecs[i].min() == vecs[i].max();
-          final boolean droptoomanyNAs = dropNACols && vecs[i].naCnt() > vecs[i].length()*0.2;
-          if(dropconstant) {
-            constantCols.add(i);
-          } else if (droptoomanyNAs) {
-            NACols.add(i);
-          }
-        }
-        constantOrNAs.addAll(constantCols);
-        constantOrNAs.addAll(NACols);
-
-        // Report what is dropped
-        String msg = "";
-        if (constantCols.size() > 0) msg += "Dropping constant column(s): ";
-        for (int i : constantCols) msg += fr._names[i] + " ";
-        if (NACols.size() > 0) msg += "Dropping column(s) with too many missing values: ";
-        for (int i : NACols) msg += fr._names[i] + " (" + String.format("%.2f", vecs[i].naCnt() * 100. / vecs[i].length()) + "%) ";
-        for (String s : msg.split("\n")) Log.info(s);
-      }
-      if(!constantOrNAs.isEmpty()){
-        int [] cols = new int[constantOrNAs.size()];
-        for(int i = 0; i < cols.length; ++i)
-          cols[i] = constantOrNAs.get(i);
-        fr.remove(cols);
-      }
-      return fr;
-    }
-
-    public static Frame prepareFrame(Frame source, Vec response, int[] ignored_cols, boolean toEnum, boolean dropConstantCols) {
-      return prepareFrame(source, response, ignored_cols, toEnum, dropConstantCols, false);
-    }
-
-    public DataInfo(Key selfKey, Frame fr, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
-      this(selfKey, fr, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
+    public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
+      this(selfKey, train, valid, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
     }
 
     //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
     public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, int foldId, int nfolds){
       super(selfKey);
+      assert predictor_transform != null;
+      assert  response_transform != null;
+      _predictor_transform = predictor_transform;
+      _response_transform  =  response_transform;
+
       _adaptedFrame = fr;
       _catOffsets = MemoryManager.malloc4(catLevels.length+1);
       _catMissing = new int[catLevels.length];
@@ -295,128 +193,257 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _responses = responses;
       _cats = catLevels.length;
       _nums = fr.numCols()-_cats - responses;
-      if((_predictor_transform = predictor_transform) == TransformType.STANDARDIZE && _nums > 0){
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for(int i = 0; i < _nums; ++i){
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          _normSub[i] = v.mean();
+      if(_nums > 0){
+        switch(_predictor_transform) {
+          case STANDARDIZE:
+            _normMul = MemoryManager.malloc8d(_nums);
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+              _normSub[i] = v.mean();
+            }
+            break;
+          case NORMALIZE:
+            _normMul = MemoryManager.malloc8d(_nums);
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              _normSub[i] = v.mean();
+            }
+            break;
+          case DEMEAN:
+            _normMul = null;
+            _normSub = MemoryManager.malloc8d(_nums);
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normSub[i] = v.mean();
+            }
+            break;
+          case DESCALE:
+            _normMul = MemoryManager.malloc8d(_nums);;
+            _normSub = null;
+            for (int i = 0; i < _nums; ++i) {
+              Vec v = fr.vec(catLevels.length+i);
+              _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            }
+            break;
+          case NONE:
+            _normMul = null;
+            _normSub = null;
+            break;
+          default:
+            throw H2O.unimpl();
         }
-      } else if((_predictor_transform = predictor_transform) == TransformType.NORMALIZE && _nums > 0){
-        _normMul = MemoryManager.malloc8d(_nums);
-        _normSub = MemoryManager.malloc8d(_nums);
-        for(int i = 0; i < _nums; ++i){
-          Vec v = fr.vec(catLevels.length+i);
-          _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          _normSub[i] = v.mean();
-        }
-      } else {
-        _normMul = null;
-        _normSub = null;
       }
-      if((_response_transform = response_transform) == TransformType.STANDARDIZE && responses > 0){
-        _normRespMul = MemoryManager.malloc8d(responses);
-        _normRespSub = MemoryManager.malloc8d(responses);
-        for(int i = 0; i < responses; ++i){
-          Vec v = fr.vec(fr.numCols()-responses+i);
-          _normRespSub[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          _normRespSub[i] = v.mean();
+      if(responses > 0){
+        switch(_response_transform) {
+          case STANDARDIZE:
+            _normRespMul = MemoryManager.malloc8d(responses);
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case NORMALIZE:
+            _normRespMul = MemoryManager.malloc8d(responses);
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case DEMEAN:
+            _normRespMul = null;
+            _normRespSub = MemoryManager.malloc8d(responses);
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespSub[i] = v.mean();
+            }
+            break;
+          case DESCALE:
+            _normRespSub = null;
+            _normRespMul = MemoryManager.malloc8d(responses);;
+            for (int i = 0; i < responses; ++i) {
+              Vec v = fr.vec(fr.numCols()-responses+i);
+              _normRespMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            }
+            break;
+          case NONE:
+            _normRespMul = null;
+            _normRespSub = null;
+            break;
+          default:
+            throw H2O.unimpl();
         }
-      } else if((_response_transform = response_transform) == TransformType.NORMALIZE && responses > 0){
-        _normRespMul = MemoryManager.malloc8d(responses);
-        _normRespSub = MemoryManager.malloc8d(responses);
-        for(int i = 0; i < responses; ++i){
-          Vec v = fr.vec(fr.numCols()-responses+i);
-          _normRespSub[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          _normRespSub[i] = v.mean();
-        }
-      } else {
-        _normRespMul = null;
-        _normRespSub = null;
       }
       _useAllFactorLevels = false;
       _adaptedFrame.reloadVecs();
       _nfolds = nfolds;
       _foldId = foldId;
     }
-    public DataInfo(Key selfKey, Frame fr, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform) {
+
+    // Modify the train & valid frames directly; sort the categorical columns
+    // up front according to size; compute the mean/sigma for each column for
+    // later normalization.
+    public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform) {
       super(selfKey);
+      assert predictor_transform != null;
+      assert  response_transform != null;
+
       _nfolds = _foldId = 0;
       _predictor_transform = predictor_transform;
       _response_transform = response_transform;
       _responses = nResponses;
       _useAllFactorLevels = useAllFactorLevels;
       _catLvls = null;
-      final Vec [] vecs = fr.vecs();
-      final int n = vecs.length-_responses;
-      if (n < 1) throw new IllegalArgumentException("Training data must have at least one column.");
+      final Vec[] tvecs = train.vecs();
+      final Vec[] vvecs = valid.vecs();
+
+      // Count categorical-vs-numerical
+      final int n = tvecs.length-_responses;
+      assert n >= 1;            // Checked in init() before
       int [] nums = MemoryManager.malloc4(n);
       int [] cats = MemoryManager.malloc4(n);
       int nnums = 0, ncats = 0;
-      for(int i = 0; i < n; ++i){
-        if(vecs[i].isEnum())
-          cats[ncats++] = i;
-        else
-          nums[nnums++] = i;
-      }
+      for(int i = 0; i < n; ++i)  
+        if(tvecs[i].isEnum()) cats[ncats++] = i;
+        else                  nums[nnums++] = i;
       _nums = nnums;
       _cats = ncats;
       // sort the cats in the decreasing order according to their size
       for(int i = 0; i < ncats; ++i)
         for(int j = i+1; j < ncats; ++j)
-          if(vecs[cats[i]].domain().length < vecs[cats[j]].domain().length){
+          if( tvecs[cats[i]].domain().length < tvecs[cats[j]].domain().length ) {
             int x = cats[i];
             cats[i] = cats[j];
             cats[j] = x;
           }
-      Vec [] vecs2 = vecs.clone();
-      String [] names = fr._names.clone();
+
+      String[] names = new String[train.numCols()];
+      Vec[] tvecs2 = new Vec[train.numCols()];
+      Vec[] vvecs2 = new Vec[train.numCols()];
+
+      // Compute the cardinality of each cat
       _catOffsets = MemoryManager.malloc4(ncats+1);
       _catMissing = new int[ncats];
       int len = _catOffsets[0] = 0;
-
-      for(int i = 0; i < ncats; ++i){
-        Vec v = (vecs2[i] = vecs[cats[i]]);
-        names[i] = fr._names[cats[i]];
+      for(int i = 0; i < ncats; ++i) {
+        names[i]  =   train._names[cats[i]];
+        vvecs2         [i] = vvecs[cats[i]];
+        Vec v = (tvecs2[i] = tvecs[cats[i]]);
         _catMissing[i] = v.naCnt() > 0 ? 1 : 0; //needed for test time
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (v.naCnt()>0?1:0)); //missing values turn into a new factor level
       }
-      if(predictor_transform != TransformType.NONE) {
-        _normSub = MemoryManager.malloc8d(nnums);
-        _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);
-      } else _normSub = _normMul = null;
+
+      // Compute the mean/sigma for each predictor
+      switch(predictor_transform) {
+        case STANDARDIZE:
+        case NORMALIZE:
+          _normSub = MemoryManager.malloc8d(nnums);
+          _normMul = MemoryManager.malloc8d(nnums); Arrays.fill(_normMul, 1);
+          break;
+        case DEMEAN:
+          _normSub = MemoryManager.malloc8d(nnums);
+          _normMul = null;
+          break;
+        case DESCALE:
+          _normSub = null;
+          _normMul = MemoryManager.malloc8d(nnums);
+          break;
+        case NONE:
+          _normSub = _normMul = null;
+          break;
+        default:
+          break;
+      }
       for(int i = 0; i < nnums; ++i){
-        Vec v = (vecs2[i+ncats] = vecs[nums[i]]);
-        names[i+ncats] = fr._names[nums[i]];
-        if(predictor_transform == TransformType.STANDARDIZE){
-          _normSub[i] = v.mean();
-          _normMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
-        } else if (predictor_transform == TransformType.NORMALIZE) {
-          _normSub[i] = v.mean();
-          _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+        names[ncats+i]  =   train._names[nums[i]];
+        vvecs2         [ncats+i] = vvecs[nums[i]];
+        Vec v = (tvecs2[ncats+i] = tvecs[nums[i]]);
+        switch(predictor_transform){
+          case STANDARDIZE:
+            _normSub[i] = v.mean();
+            _normMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+            break;
+          case NORMALIZE:
+            _normSub[i] = v.mean();
+            _normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+            break;
+          case DEMEAN:
+            _normSub[i] = v.mean();
+            break;
+          case DESCALE:
+            _normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+            break;
+          case NONE:
+            break;
+          default:
+            break;
         }
       }
 
-      if(response_transform != TransformType.NONE && _responses > 0){
-        _normRespSub = MemoryManager.malloc8d(_responses);
-        _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);
-      } else _normRespSub = _normRespMul = null;
-      for(int i = 0; i < _responses; ++i){
-        Vec v = (vecs2[nnums+ncats+i] = vecs[nnums+ncats+i]);
-        if(response_transform == TransformType.STANDARDIZE){
-          _normRespSub[i] = v.mean();
-          _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
-        } else if(response_transform == TransformType.NORMALIZE){
-          _normRespSub[i] = v.mean();
-          _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+      // Compute the mean/sigma for each response
+      if (_responses > 0) {
+        switch(response_transform){
+          case STANDARDIZE:
+          case NORMALIZE:
+            _normRespSub = MemoryManager.malloc8d(_responses);
+            _normRespMul = MemoryManager.malloc8d(_responses); Arrays.fill(_normRespMul, 1);
+            break;
+          case DEMEAN:
+            _normRespSub = MemoryManager.malloc8d(_responses);
+            _normRespMul = null;
+            break;
+          case DESCALE:
+            _normRespSub = null;
+            _normRespMul = MemoryManager.malloc8d(_responses);
+            break;
+          case NONE:
+            _normRespSub = _normRespMul = null;
+            break;
+          default:
+            throw H2O.unimpl();
+        }
+        for(int i = 0; i < _responses; ++i){
+          names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
+          vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
+          Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
+          switch(response_transform){
+            case STANDARDIZE:
+              _normRespSub[i] = v.mean();
+              _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+              break;
+            case NORMALIZE:
+              _normRespSub[i] = v.mean();
+              _normRespMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+              break;
+            case DEMEAN:
+              _normRespSub[i] = v.mean();
+              break;
+            case DESCALE:
+              _normRespMul[i] = v.sigma() != 0 ? 1.0/v.sigma() : 1.0;
+              break;
+            case NONE:
+              break;
+            default:
+              throw H2O.unimpl();
+          }
         }
       }
-      _adaptedFrame = new Frame(names,vecs2);
-      _adaptedFrame.reloadVecs();
+
+      train.restructure(names,tvecs2);
+      valid.restructure(names,vvecs2);
+      _adaptedFrame = train;
     }
 
     public DataInfo filterExpandedColumns(int [] cols){
+      assert _predictor_transform != null;
+      assert  _response_transform != null;
       if(cols == null)return this;
       int i = 0, j = 0, ignoredCnt = 0;
       //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
