@@ -1,5 +1,7 @@
 # Change this global variable to match your own system's path
-ROOT.PATH <- "/Users/amy/h2o-dev/h2o-r/h2o-package/R/"
+ROOT.PATH <- "/Users/spencer/0xdata/"
+DEV.PATH <- "h2o-dev/h2o-r/h2o-package/R/"
+ROOT.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
 src <-
 function() {
