@@ -968,8 +968,19 @@ final public class H2O {
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started
 
+    // Copy all ai.h2o.* system properties to the tail of the command line,
+    // effectively overwriting the earlier args.
+    ArrayList<String> args2 = new ArrayList<>(Arrays.asList(args));
+    for( Object p : System.getProperties().keySet() ) {
+      String s = (String)p;
+      if( s.startsWith("ai.h2o.") ) {
+        args2.add("-" + s.substring(7));
+        args2.add(System.getProperty(s));
+      }
+    }
+
     // Parse args
-    parseArguments(args);
+    parseArguments(args2.toArray(args));
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
