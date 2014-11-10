@@ -578,8 +578,8 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
         # only print it when you get consensus
         if cloud_size != node_count:
             verboseprint("\nNodes in cloud while building:")
-            print "kevin"
             for i,ci in enumerate(c['nodes']):
+                verboseprint("ci:", ci)
                 verboseprint(i, ci['h2o']['node'])
 
         if cloud_size > node_count:
