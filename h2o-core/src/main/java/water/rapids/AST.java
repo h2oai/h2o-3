@@ -10,6 +10,7 @@ import java.util.Arrays;
  *   Each node in the syntax tree knows how to parse a piece of text from the passed tree.
  */
 abstract public class AST extends Iced {
+  String[] _arg_names;
   AST[] _asts;
   AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for "+this.getClass()); }
   abstract void exec(Env e);
@@ -146,8 +147,17 @@ class ASTFrame extends AST {
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
-    if (e._local_locked != null) e._local_locked.add(Key.make(_key)) ; else e._locked.add(Key.make(_key));
-    if (H2O.containsKey(Key.make(_key))) e._locked.add(Key.make(_key));
+    if (_key != null) {
+      if (e._local_locked != null) {
+        e._local_locked.add(Key.make(_key));
+        e._local_frames.add(Key.make(_key));
+      }
+      else {
+        e._locked.add(Key.make(_key));
+        e._global_frames.add(Key.make(_key));
+      }
+      if (H2O.containsKey(Key.make(_key))) e._locked.add(Key.make(_key));
+    }
     e.addKeys(_fr); e.push(new ValFrame(_fr));
   }
   @Override int type () { return Env.ARY; }
@@ -313,15 +323,17 @@ class ASTStatement extends AST {
     return res;
   }
   @Override void exec(Env env) {
+    ArrayList<Frame> cleanup = new ArrayList<>();
     for( int i=0; i<_asts.length-1; i++ ) {
       if (_asts[i] instanceof ASTReturn) {
        _asts[i].treeWalk(env);
         return;
       }
-      env = _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      env.pop();                     // Pop all intermediate results; needed results will be looked up.
+      _asts[i].treeWalk(env);  // Execute the statements by walking the ast
+      if (env.isAry()) cleanup.add(env.popAry()); else env.pop();  // Pop all intermediate results; needed results will be looked up.
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
+    for (Frame f : cleanup) f.delete();
   }
 
   @Override String value() { return null; }
@@ -703,7 +715,14 @@ class ASTAssign extends AST {
         Futures fs = new Futures();
         DKV.put(k, fr, fs);
         fs.blockForPending();
-        if (e._local_locked != null) e._local_locked.add(fr._key); else e._locked.add(fr._key);
+        if (e._local_locked != null) {
+          e._local_locked.add(fr._key);
+          e._local_frames.add(fr._key);
+        }
+        else  {
+          e._locked.add(fr._key);
+          e._global_frames.add(fr._key);
+        }
         e.push(new ValFrame(fr));
         e.put(id._id, Env.ARY, id._id);
       }

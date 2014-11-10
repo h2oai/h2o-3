@@ -1144,12 +1144,17 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if(missing(X)) stop("X must be a H2O parsed data object")
   if(missing(MARGIN) || !(length(MARGIN) <= 2 && all(MARGIN %in% c(1,2))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
-  if(missing(FUN) || !is.function(FUN))
+  if(missing(FUN)) stop("FUN must be an R function")
+  .FUN <- NULL
+  if (is.character(FUN)) .FUN <- get(FUN)
+  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
+  else if(is.null(.FUN) && !is.function(FUN))
     stop("FUN must be an R function")
+  if (!is.null(.FUN)) FUN <- as.name(FUN)
 
   l <- list(...)
   if(length(l) > 0) {
-    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "H2OParsedData", "numeric", "character") } )
+    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "H2OParsedData", "numeric", "character", "logical") } )
     if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
 
     idx <- which( sapply(l, function(x)  class(x) %in% c("H2OFrame")) )
@@ -1170,22 +1175,28 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if (substr(myfun[1], 1, nchar("function")) == "function") {
     # handle anon fcn
     fun.ast <- .fun.to.ast(FUN, "anon")
+    a <- invisible(.h2o.post.function(fun.ast))
+    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
   # else named function get the ast
   } else {
-    fun_name <- as.character(FUN)
-    fun <- match.fun(FUN)
-    fun.ast <- .fun.to.ast(FUN, fun_name)
+    if (.is.op(substitute(FUN))) {
+      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+    } else {
+      fun_name <- as.character(FUN)
+      fun <- match.fun(FUN)
+      fun.ast <- .fun.to.ast(FUN, fun_name)
+      a <- invisible(.h2o.post.function(fun.ast))
+      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+    }
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-
-  invisible(.h2o.post.function(fun.ast))
 
   if(length(l) == 0)
     ast <- .h2o.varop("apply", X, MARGIN, fun.ast)
   else
     ast <- .h2o.varop("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-  print(ast)
+  ast
 })
 
 setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
@@ -1209,17 +1220,24 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
       }
     }
 
+  # Process the function. Decide if it's an anonymous fcn, or a named one.
   myfun <- deparse(substitute(FUN))
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1], 1, nchar("function")) == "function") {
     # handle anon fcn
     fun.ast <- .fun.to.ast(FUN, "anon")
+    invisible(.h2o.post.function(fun.ast))
   # else named function get the ast
   } else {
-    fun_name <- as.character(FUN)
-    fun <- match.fun(FUN)
-    fun.ast <- .fun.to.ast(FUN, fun_name)
+    if (.is.op(substitute(FUN))) {
+      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+    } else {
+      fun_name <- as.character(FUN)
+      fun <- match.fun(FUN)
+      fun.ast <- .fun.to.ast(FUN, fun_name)
+      invisible(.h2o.post.function(fun.ast))
+    }
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
@@ -1230,7 +1248,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
     ast <- .h2o.varop("sapply", X, fun.ast)
   else
     ast <- .h2o.varop("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-  print(ast)
+  ast
 })
 
 #str.H2OFrame <- function(object, ...) {

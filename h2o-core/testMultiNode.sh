@@ -15,6 +15,7 @@ esac
 # Run cleanup on interrupt or exit
 function cleanup () {
   kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} >> /dev/null
+  wait
   exit `cat $OUTDIR/status.0`
 }
 trap cleanup SIGTERM SIGINT
@@ -38,14 +39,15 @@ JUNIT_TESTS_SLOW="water.parser.ParseProgressTest\|water.fvec.WordCountBigTest"
 (cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
-$JVM water.H2O 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O 1> $OUTDIR/out.3 2>&1 & PID_3=$!
-$JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+CLUSTER_NAME=junit_cluster_$$
+CLUSTER_BASEPORT=43000
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
 # and tee'd to stdout so we can watch.
-(sleep 2; $JVM org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+(sleep 2; $JVM -Dwater.stall.till.cloudsize.name=$CLUSTER_NAME -Dwater.stall.till.cloudsize.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
 
 cleanup
-
