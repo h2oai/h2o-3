@@ -71,7 +71,7 @@ public class ASTApply extends ASTOp {
         vecs_result = new Vec[ncols];
         Frame v = env.pop0Ary();
         vecs_result[0] = v.anyVec().makeCopy();
-        v.delete();
+        env.cleanup(v);
       }
 
       // loop over the columns and collect the results.
@@ -84,7 +84,7 @@ public class ASTApply extends ASTOp {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
           Frame v = env.pop0Ary();
           vecs_result[i] = v.anyVec().makeCopy();
-          v.delete();
+          env.cleanup(v);
         }
       }
 
@@ -129,7 +129,7 @@ public class ASTApply extends ASTOp {
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-    env.cleanup(fr);
+//    env.cleanup(fr);
     if (op instanceof ASTFunc) {
       // trash the captured env
       ((ASTFunc)op).trash();

@@ -8,9 +8,15 @@ test.apply <- function(conn) {
 
   kalls <- c("mean", "abs", "cos", "sin", "acos", "ceiling",
              "floor", "cosh", "exp", "log", "round",
-             "sqrt", "tan", "tanh")
+             "sqrt", "tan", "scale", "tanh")
 
   lapply(kalls, function(call) { print(apply(hex, 2, call)) })
+
+  print(h2o.ls())
+  print(hex)
+
+  Log.info("Now apply but reverse order of kalls")
+  lapply(rev(kalls), function(call) { print(apply(hex, 2, call)) })
 
   print(h2o.ls())
   print(hex)

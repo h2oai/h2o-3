@@ -278,6 +278,12 @@ public class Env extends Iced {
         removeVec(v, fs);
       }
     }
+
+    for (String k : _global._local_frames.keySet()) {
+      Frame f = _local._local_frames.get(k);
+      for (Vec v : f.vecs()) removeVec(v, fs);
+      f.delete();
+    }
     fs.blockForPending();
   }
 
@@ -326,7 +332,6 @@ public class Env extends Iced {
     Futures fs = new Futures();
     // chop the local frames made in the scope
     for (String k : _local._local_frames.keySet()) {
-//      if (_global_frames.contains(_local._local_frames.get(k)._key)) continue;
       if (isAry()) {
         if(peekAry()._key != null && peekAry()._key == _local._local_frames.get(k)._key) continue;
       }
