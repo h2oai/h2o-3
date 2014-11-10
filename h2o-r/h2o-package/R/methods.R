@@ -60,6 +60,20 @@
 # H2O Methods
 #-----------------------------------------------------------------------------------------------------------------------
 
+#'
+#' Obtain All Keys on the H2O cluster
+#'
+#' Accesses a list of object keys in the running instance of H2O.
+#'
+#' @return Returns a list of hex keys in the current H2O instance.
+#'
+#' @param object An \code{H2OClient} object containing the IP address and port number of the H2O server.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' h2o.ls(localH2O)
 h2o.ls <- function(object) {
   if (missing(object)) object <- .retrieveH2O(parent.frame())
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
@@ -72,6 +86,17 @@ h2o.ls <- function(object) {
 #' Remove All Keys on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
+#'
+#' @param object An \code{H2OClient} object containing the IP address and port number
+#' of the H2O server.
+#' @seealso \code{\link{h2o.rm}}
+#' @example
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' h2o.ls(localH2O)
+#' h2o.removeAll(localH2O)
+#' h2o.ls(localH2O)
 h2o.removeAll<-
 function(object) {
   if (missing(object)) object <- .retrieveH2O(parent.frame())
@@ -83,18 +108,35 @@ function(object) {
 #' Log a message.
 #'
 #' Log a message `m`.
+#'
+#' @param m
+#' @param tmp
+#' @param commandOrErr
+#' @param isPost A boolean, defaults to TRUE.
 h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, commandOrErr, isPost)
 
 #'
 #' Make an HTTP request to the H2O backend.
 #'
 #' Useful for sending a REST command to H2O that is not currently supported.
+#'
+#' @param client An \code{H2OClient} object containing the IP address and port number of the H2O server.
+#' @param page
+#' @param method A string of either "GET" or "POST".
+#' @param ...
+#' @param .params
+#' @example
+#'
 h2o.remoteSend <- function(client, page, method = "GET", ..., .params = list()) .h2o.__remoteSend(client, page, method, ..., .params)
 
-#'
+#
 #' Delete Objects In H2O
 #'
 #' Remove the h2o Big Data object(s) having the key name(s) from keys.
+#'
+#' @param object An \code{H2OClient} object containing the IP address and port number of the H2O server.
+#' @param keys The hex key associated with the object to be removed.
+#' @seealso \code{\link(h2o.assign}}, \code{\link{h2o.assign}}, \code{\link{h2o.ls}}#h2o.rm
 h2o.rm <- function(object, keys) {
 
   # If only object is supplied, then assume this is keys vector.
@@ -113,6 +155,10 @@ h2o.rm <- function(object, keys) {
 #' Rename an H2O object.
 #'
 #' Does a TRUE replacement, not just a copy of the data with the new name.
+#'
+#' @param data An \code{\link{H2OParsedData}} object
+#' @param key The hex key to be associated with the H2O parsed data object
+#' 
 h2o.assign <- function(data, key) {
   if(data %i% "ASTNode") invisible(head(data))
   if(!(data %i% "H2OParsedData")) stop("data must be of class H2OParsedData")
@@ -127,6 +173,9 @@ h2o.assign <- function(data, key) {
 
 #'
 #' Get the reference to a frame with the given key.
+#'
+#' @param h2o
+#' @param key
 h2o.getFrame <- function(h2o, key) {
   if (missing(key)) {
     # means h2o is the one that's missing... retrieve it!
@@ -340,7 +389,7 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 #'
 #' Is any column of the H2OParsedData object a enum column
 #'
-#' Returns Boolean.
+#' @return Returns a boolean.
 h2o.anyFactor <- function(x) {
   if(!(x %i% "H2OFrame")) stop("x must be an H2O parsed data object")
   ast <- .h2o.unop("any.factor", x)
@@ -479,17 +528,87 @@ names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
 length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
 dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
+#' The Number of Rows/Columns of an H2O Dataset
+#'
+#' Returns a count of the number of rows or columns in an \code{\linkS4class{H2OParsedData}} object.
+#'
+#' @name nrow
+#' @param x An \code{\link{H2OParsedData}} object.
+#' @seealso \code{\link{dim}} for all the dimensions. \code{\link[base]{nrow}} for the default R method.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' nrow.H2OParsedData(iris.hex)
+#' ncol.H2OParsedData(iris.hex)
+NULL
+
+#' @rdname nrow
 nrow.H2OParsedData     <- function(x) x@nrows
+#' @rdname nrow
 ncol.H2OParsedData     <- function(x) x@ncols
+
+#'
+#' Returns Column Names for a Parsed H2O Data Object.
+#'
+#' Returns column names for an \code{\linkS4class{H2OParsedData} object.
+#'
+#' @param x An \code{\link{H2OParsedData}} object.
+#' @seealso \code{\link[base]{colnames} for the base R method.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPat)
+#' summary(iris.hex)
+#' colnames.H2OParsedData(iris.hex)
 colnames.H2OParsedData <- function(x) x@col_names
 names.H2OParsedData    <- function(x) colnames(x)
+
+#'
+#' Returns the Length of a Parsed H2O Data Object.
+#'
+#' Returns the lenght of an \code{\linkS4class{H2OParsedData}
+#'
+#' @param x An \code{\link{H2OParsedData}} object.
+#' @seealso \code{\link[base]{length} for the base R method.
+#' @examples
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' length.H2OParsedData(iris.hex)
 length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
+
+#'
+#' Returns the Dimensions of a Parsed H2O Data Object.
+#'
+#' Returns the number of rows and columns for an \code{\link{H2OParsedData}} object.
+#'
+#' @param An \code{\link{H2OParsedData}}
 dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
 
 #'
-#' Head of an H2O Data Frame
+#' Return the Head or Tail of an H2O Dataset.
 #'
-#' Returns as an R data frame.
+#' Returns the first or last rows of an H2O parsed data object.
+#'
+#' @name head
+#' @param x An \code{\link{H2OParsedData}} object.
+#' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
+#' @param ... Arguments to be passed to or from other methods. ##(Currently unimplemented).
+#' @return A data frame containing the first or last n rows of an \code{\link{H2OParsedData}} object.
+#' @example
+#' library(h2o)
+#' localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' head(australia.hex, 10)
+#' tail(australia.hex, 10)
+NULL
+
+#'
+#' @rdname head
 head.H2OParsedData <- function(x, n = 6L, ...) {
   #TODO: when 'x' is an expression
   numRows <- nrow(x)
@@ -504,9 +623,7 @@ head.H2OParsedData <- function(x, n = 6L, ...) {
 }
 
 #'
-#' Tail of an H2O Data Frame
-#'
-#' Returns as an R data frame.
+#' @rdname head
 tail.H2OParsedData <- function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
   endidx <- nrow(x)
@@ -529,7 +646,6 @@ tail.H2OParsedData <- function(x, n = 6L, ...) {
 #' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
 #' calling scope).
 
-#'
 #' Num Rows of an AST.
 #'
 #' Evaluate the AST and produce the nrow of the eval'ed AST.
@@ -761,7 +877,7 @@ var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var"
 sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
 
 #'
-#' Mean of a column.
+#' Mean of a column
 #'
 #' Obtain the mean of a column of data.
 mean.H2OParsedData<-
@@ -907,9 +1023,9 @@ as.data.frame.H2OFrame <- function(x, ...) {
 }
 
 #'
-#' H2O Data -> R data.frame
+#' Converts a Parsed H2O data into a Data Frame
 #'
-#' Download the H2O data and then scan it in to R
+#' Downloads the H2O data and then scan it in to R
 as.data.frame.H2OParsedData <- function(x, ...) {
   if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
   # Versions of R prior to 3.1 should not use hex string.
