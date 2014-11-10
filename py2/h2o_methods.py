@@ -221,6 +221,15 @@ def poll_url(self, response,
     return response
 
 def h2o_log_msg(*args, **kwargs):
+    print "WARNING: faking h2o_log_msg"
+
+def jobs_admin (*args, **kwargs):
+    print "WARNING: faking jobs admin"
+    a = { 'jobs': {} }
+    return a
+
+def unlock (*args, **kwargs):
+    print "WARNING: faking unlock keys"
     pass
 
 #******************************************************************************************8
@@ -230,6 +239,8 @@ def h2o_log_msg(*args, **kwargs):
 
 H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
+H2O.jobs_admin = jobs_admin
+H2O.unlock = unlock
 
 # attach some methods from ray
 import h2o_ray

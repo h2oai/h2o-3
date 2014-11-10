@@ -171,7 +171,9 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
             nodeList.append(newNode)
 
         # If it's an existing cloud, it may already be locked. so never check.
-        verify_cloud_size(nodeList, expectedCloudName=nodeList[0].cloud_name, expectedLocked=None)
+        # we don't have the cloud name in the -ccj since it may change (and the file be static?)
+        # so don't check expectedCloudName
+        verify_cloud_size(nodeList, expectedCloudName=None, expectedLocked=None)
 
         # best to check for any errors right away?
         # (we won't report errors from prior tests due to marker stuff?
@@ -485,6 +487,7 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     cloudVersion = [c['version'] for c in cloudStatus]
 
     # all match 0?
+    # if "(unknown)" starts appearing in version..go to h2o1 h2o_bc.py/h2o_fc.py/h2o_methods.py and copy allowing.
     expectedVersion = cloudVersion[0]
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
     if not expectedVersion.startswith('0'):
