@@ -70,7 +70,7 @@ abstract public class AST extends Iced {
       if (id.isLookup()) {
         // lookup the ID and return an AST
         AST ast = e.lookup(id);
-        e.put(id._id, ast.type(), id._id);
+//        e.put(id._id, ast.type(), id._id);
         ast.exec(e);
       } else if (id.isSet()) {
         e.put(((ASTId) this)._id, Env.ID, "");
