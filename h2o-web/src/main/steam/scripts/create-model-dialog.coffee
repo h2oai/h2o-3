@@ -1,21 +1,3 @@
-algorithms = [
-  key: 'kmeans'
-  title: 'k-means'
-  description: 'A method of vector quantization that is popular for cluster analysis. k-means clustering aims to partition n observations into k clusters in which each observation belongs to the cluster with the nearest mean, serving as a prototype of the cluster.'
-,
-  key: 'deeplearning'
-  title: 'Deep Learning'
-  description: 'Model high-level abstractions in data by using model architectures composed of multiple non-linear transformations.'
-,
-  key: 'glm'
-  title: 'GLM'
-  description: 'No description available'
-,
-  key: 'gbm'
-  title: 'GBM'
-  description: 'No description available'
-]
-
 createTextboxControl = (parameter) ->
   value = node$ parameter.actual_value
 
@@ -192,42 +174,46 @@ Steam.CreateModelDialog = (_, _frameKey, _sourceModel, _go) ->
             #ignoredColumnsParameter.values = columnLabels
         go()
 
-  # If a source model is specified, we already know the algo, so skip algo selection
-  if _sourceModel
-    _title 'Clone Model'
-    _canChangeAlgorithm no
-    _isModelCreationMode yes
-    selectAlgorithm = noop
-    parameters = _sourceModel.parameters
+  _.requestModelBuilders (error, algorithms) ->
+    algorithms = for algorithm in algorithms
+      key: algorithm
+      title: algorithm
 
-    #TODO INSANE SUPERHACK
-    hasRateAnnealing = find _sourceModel.parameters, (parameter) -> parameter.name is 'rate_annealing'
-    algorithm = if hasRateAnnealing
-        find algorithms, (algorithm) -> algorithm.key is 'deeplearning'
-      else
-        find algorithms, (algorithm) -> algorithm.key is 'kmeans'
+    # If a source model is specified, we already know the algo, so skip algo selection
+    if _sourceModel
+      _title 'Clone Model'
+      _canChangeAlgorithm no
+      _isModelCreationMode yes
+      selectAlgorithm = noop
+      parameters = _sourceModel.parameters
 
-    populateFramesAndColumns _frameKey, algorithm, parameters, ->
-      _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
-
-  else
-    _isAlgorithmSelectionMode yes
-    selectAlgorithm = (algorithm) ->
-      _.requestModelBuilders algorithm.key, (error, result) ->
-        if error
-          #TODO handle properly
+      #TODO INSANE SUPERHACK
+      hasRateAnnealing = find _sourceModel.parameters, (parameter) -> parameter.name is 'rate_annealing'
+      algorithm = if hasRateAnnealing
+          find algorithms, (algorithm) -> algorithm.key is 'deeplearning'
         else
-          parameters = result.model_builders[algorithm.key].parameters
-          populateFramesAndColumns _frameKey, algorithm, parameters, ->
-            _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
-            _isModelCreationMode yes
+          find algorithms, (algorithm) -> algorithm.key is 'kmeans'
 
-    _algorithms map algorithms, (algorithm) ->
-      self =
-        title: algorithm.title
-        description: algorithm.description
-        data: algorithm
-        select: -> selectAlgorithm self.data
+      populateFramesAndColumns _frameKey, algorithm, parameters, ->
+        _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
+
+    else
+      _isAlgorithmSelectionMode yes
+      selectAlgorithm = (algorithm) ->
+        _.requestModelBuilder algorithm.key, (error, result) ->
+          if error
+            #TODO handle properly
+          else
+            parameters = result.model_builders[algorithm.key].parameters
+            populateFramesAndColumns _frameKey, algorithm, parameters, ->
+              _modelForm Steam.ModelBuilderForm _, algorithm, parameters, _go
+              _isModelCreationMode yes
+
+      _algorithms map algorithms, (algorithm) ->
+        self =
+          title: algorithm.title
+          data: algorithm
+          select: -> selectAlgorithm self.data
 
   backToAlgorithms = -> _isAlgorithmSelectionMode yes
 
