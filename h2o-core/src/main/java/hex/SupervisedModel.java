@@ -78,6 +78,9 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
       _modelClassDist = _priorClassDist;
     }
 
+    /** @return Returns number of input features */
+    @Override public int nfeatures() { return _names.length - 1; }
+
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }

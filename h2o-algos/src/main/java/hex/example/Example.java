@@ -35,7 +35,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if( _parms._max_iters < 1 || _parms._max_iters > 9999999 )
-      error("max_iters", "must be between 1 and a million");
+      error("max_iters", "must be between 1 and 10 million");
   }
 
   // ----------------------
@@ -60,7 +60,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
 
-          // Fill in the model; denormalized centers
+          // Fill in the model
           model._output._maxs = maxs;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work

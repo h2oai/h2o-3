@@ -29,12 +29,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Clustering
   }
 
-  /**
-   *
-   * Needs to be set correctly otherwise eg scoring does not work.
-   * @return true if there was a response column used during training.
-   */
-  public abstract boolean isSupervised();
+  /** Needs to be set correctly otherwise eg scoring does not work.
+   *  @return true if there was a response column used during training. */
+  public boolean isSupervised() { return false; }
 
   /** Model-specific parameter class.  Each model sub-class contains an
    *  instance of one of these containing its builder parameters, with
@@ -133,8 +130,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-    /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
-    public int nfeatures() { return _names.length - 1; }
+    /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
+    public int nfeatures() { return _names.length; }
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.
@@ -573,7 +570,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  abstract protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds );
+  protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+    assert chks.length>=_output._names.length;
+    for( int i=0; i<_output._names.length; i++ )
+      tmp[i] = chks[i].at0(row_in_chunk);
+    return score0(tmp,preds);
+  }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are

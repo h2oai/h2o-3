@@ -57,17 +57,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
-  /** Bulk scoring API for one row.  Chunks are all compatible with the model,
-   *  and expect the last Chunks are for the final distribution and prediction.
-   *  Default method is to just load the data into the tmp array, then call
-   *  subclass scoring logic. */
-  @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
-    assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
-    return score0(tmp,preds);
-  }
-
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     preds[0] = KMeans.closest(_output._clusters,data,_output._ncats);
     return preds;
