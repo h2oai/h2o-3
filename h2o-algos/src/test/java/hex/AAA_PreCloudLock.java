@@ -35,7 +35,7 @@ public class AAA_PreCloudLock extends TestUtil {
     // Serve some pages and confirm cloud does not lock
     try {
       serve("/",null);
-      serve("/Cloud.html",null);
+      serve("/Cloud.json",null);
       serve("/junk",null);
       serve("/HTTP404",null);
       Properties parms = new Properties();
