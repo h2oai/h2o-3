@@ -27,16 +27,19 @@ public final class ModelMetrics extends Keyed {
   public AUCData auc = null;
   public ConfusionMatrix cm = null;
 
-  public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+  public ModelMetrics(Model model, Frame frame) {
     super(buildKey(model, frame));
     this.model = model._key;
     this.model_checksum = model.checksum();
     this.model_category = model._output.getModelCategory();
     this.frame = frame._key;
     this.frame_checksum = frame.checksum();
+  }
+
+  public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+    this(model, frame);
     this.duration_in_ms = duration_in_ms;
     this.scoring_time = scoring_time;
-
     this.auc = auc;
     this.cm = cm;
   }

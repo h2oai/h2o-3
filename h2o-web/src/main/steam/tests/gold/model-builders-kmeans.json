@@ -43,7 +43,7 @@
           "required": false,
           "type": "int",
           "default_value": "0",
-          "actual_value": "100",
+          "actual_value": "1000",
           "level": "critical",
           "values": []
         },

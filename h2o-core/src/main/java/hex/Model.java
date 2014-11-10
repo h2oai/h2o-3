@@ -29,12 +29,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Clustering
   }
 
-  /**
-   *
-   * Needs to be set correctly otherwise eg scoring does not work.
-   * @return true if there was a response column used during training.
-   */
-  public abstract boolean isSupervised();
+  /** Needs to be set correctly otherwise eg scoring does not work.
+   *  @return true if there was a response column used during training. */
+  public boolean isSupervised() { return false; }
 
   /** Model-specific parameter class.  Each model sub-class contains an
    *  instance of one of these containing its builder parameters, with
@@ -56,6 +53,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _dropNA20Cols;    // True if dropping cols > 20% NAs
+
+    // Scoring a model on a dataset is not free; sometimes it is THE limiting
+    // factor to model building.  By default, partially built models are only
+    // scored every so many major model iterations - throttled to limit scoring
+    // costs to less than 10% of the build time.  This flag forces scoring for
+    // every iteration, allowing e.g. more fine-grained progress reporting.
+    public boolean _score_each_iteration;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols(); }
@@ -126,8 +130,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-    /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
-    public int nfeatures() { return _names.length - 1; }
+    /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
+    public int nfeatures() { return _names.length; }
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.
@@ -135,7 +139,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _domains[][];
 
     /** List of all the associated ModelMetrics objects, so we can delete them when we delete this model. */
-    public Key[] model_metrics = new Key[0];
+    public Key[] _model_metrics = new Key[0];
+
+    /** Job state (CANCELLED, FAILED, DONE).  TODO: Really the whole Job
+     *  (run-time, etc) but that has to wait until Job is split from
+     *  ModelBuilder. */
+    public Job.JobState _state;
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
@@ -171,8 +180,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected void addModelMetrics(ModelMetrics mm) {
-      model_metrics = Arrays.copyOf(model_metrics, model_metrics.length + 1);
-      model_metrics[model_metrics.length - 1] = mm._key;
+      _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
+      _model_metrics[_model_metrics.length - 1] = mm._key;
     }
 
     public long checksum() {
@@ -421,32 +430,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
-    Log.warn("ModelMetrics currently disabled");
-    return null;
-
-    // was leaking modelmetrics badly in a variety of racey bad ways; turned
-    // off till it can be done right
-    
-    //// Always calculate error, regardless of whether this is being called by the REST API or the Java API.
-    //// TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
-    //if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
-    //  SupervisedModel sm = (SupervisedModel)this;
-    //  AUC auc = new AUC();
-    //  ConfusionMatrix cm = new ConfusionMatrix();
-    //  HitRatio hr = new HitRatio();
-    //  sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-    //          true, 20, cm, auc, hr);
-    //  ModelMetrics mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
-    //  _output.addModelMetrics(mm);
-    //  return mm;
-    //} else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
-    //  SupervisedModel sm = (SupervisedModel) this;
-    //  sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-    //          true, 20, null, null, null);
-    //  ModelMetrics mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
-    //  _output.addModelMetrics(mm);
-    //  return mm;
-    //}
+    // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
+    // TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
+    ModelMetrics mm=null;
+    if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
+      SupervisedModel sm = (SupervisedModel)this;
+      AUC auc = new AUC();
+      ConfusionMatrix cm = new ConfusionMatrix();
+      HitRatio hr = new HitRatio();
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, cm, auc, hr);
+      mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
+    } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
+      SupervisedModel sm = (SupervisedModel) this;
+      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
+              true, 20, null, null, null);
+      mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
+    }
+    if( mm != null ) _output.addModelMetrics(mm);
+    return mm;
   }
 
   /**
@@ -568,7 +570,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  abstract protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds );
+  protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+    assert chks.length>=_output._names.length;
+    for( int i=0; i<_output._names.length; i++ )
+      tmp[i] = chks[i].at0(row_in_chunk);
+    return score0(tmp,preds);
+  }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
@@ -578,13 +585,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
 
-  protected Futures remove_impl( Futures fs ) {
-    for (Key k : _output.model_metrics)
-      k.remove();
+  @Override protected Futures remove_impl( Futures fs ) {
+    for( Key k : _output._model_metrics )
+      k.remove(fs);
     return fs;
   }
 
-  public long checksum() {
+  @Override public long checksum() {
     return _parms.checksum() *
             _output.checksum();
   }

@@ -4,7 +4,7 @@ import water.api.FramesHandler.Frames;
 import water.Key;
 import water.fvec.Frame;
 
-abstract class FramesBase extends Schema<Frames, FramesBase> {
+abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I, FramesBase<I, S>> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public Key key; // TODO: change to Frame
@@ -29,18 +29,14 @@ abstract class FramesBase extends Schema<Frames, FramesBase> {
   ModelSchema[] compatible_models;
 
   // Non-version-specific filling into the impl
-  @Override public Frames createImpl() {
-    Frames f = new Frames();
-    // TODO: c'mon, use PojoUtils.copyProperties(). . .
-    f.key = this.key;
-    f.column = this.column; // NOTE: this is needed for request handling, but isn't really part of state
-    f.find_compatible_models = this.find_compatible_models;
+  @Override public I fillImpl(I f) {
+    super.fillImpl(f);
 
     if (null != frames) {
       f.frames = new Frame[frames.length];
 
       int i = 0;
-      for (FrameV2 frame : this.frames) {
+      for (FrameV2 frame : this.frames) { // TODO: base class for FrameV2!
         f.frames[i++] = frame._fr;
       }
     }

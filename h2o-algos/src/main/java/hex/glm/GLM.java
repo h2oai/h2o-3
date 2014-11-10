@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Generalized linear model implementation.
  */
 public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(); }
+  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
   public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); }
 
   private static class TooManyPredictorsException extends RuntimeException {}
@@ -48,23 +48,28 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     return new GLMV2();
   }
 
+  private boolean _clean_enums;
   @Override
   public Job<GLMModel> trainModel() {
-    _parms.lock_frames(this);
+    _clean_enums = _parms._toEnum && !_response.isEnum();
+    init(true);                 // Expensive tests & conversions
     DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     DKV.put(dinfo._key,dinfo);
+    _parms.lock_frames(this);
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       AtomicBoolean _gotException = new AtomicBoolean(false);
       @Override public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        _parms.unlock_frames(GLM.this);
         done();
+        _parms.unlock_frames(GLM.this);
+        if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
       }
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
           cancel2(ex);
           _parms.unlock_frames(GLM.this);
+          if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
           return true;
         }
         return false;

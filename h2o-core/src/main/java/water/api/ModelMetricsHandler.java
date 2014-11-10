@@ -123,8 +123,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBase[] model_metrics;
 
-    @Override public ModelMetricsHandler.ModelMetricsList createImpl() {
-      ModelMetricsList mml = new ModelMetricsList();
+    @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
       if (null != model) {
         Value v = DKV.get(this.model);
         if (null == v)
@@ -188,6 +187,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   }
 
   /** Return a single ModelMetrics. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsList m) {
     m.model_metrics = m.fetch();
     ModelMetricsListSchemaV3 schema = this.schema(version).fillFromImpl(m);
@@ -195,6 +195,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   }
 
   /** Return all ModelMetrics. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 list(int version, ModelMetricsList ignore) {
     ModelMetricsList mm = new ModelMetricsList();
     mm.model = null;
@@ -205,6 +206,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   /**
    * Score a frame with the given model and return just the metrics.
    */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsList parms) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetrics metrics = ModelMetrics.getFromDKV(parms.model, parms.frame);
@@ -221,6 +223,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   /**
    * Score a frame with the given model and return the metrics AND the prediction frame.
    */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsList parms) {
     // No caching for predict()
     Frame predictions = parms.model.score(parms.frame, true);

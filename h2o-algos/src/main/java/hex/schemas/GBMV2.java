@@ -1,11 +1,10 @@
 package hex.schemas;
 
-import hex.gbm.GBM;
-import hex.gbm.GBMModel.GBMParameters;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
@@ -15,15 +14,28 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
         "training_frame",
         "validation_frame",
         "response_column",
+        "ignored_columns",
         "ntrees",
+        "max_depth",
+        "min_rows",
+        "nbins",
         "learn_rate",
         "loss",
         "variable_importance",
         "seed"}; }
 
     // Input fields
-    @API(help="Number of trees. Grid Search, comma sep values:50,100,150,200")
+    @API(help="Number of trees.  Grid Search, comma sep values:50,100,150,200")
     public int ntrees;
+
+    @API(help="Maximum tree depth.  Grid Search, comma sep values:5,7")
+    public int max_depth;
+
+    @API(help="Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values")
+    public int min_rows;
+
+    @API(help="Build a histogram of this many bins, then split at the best point")
+    public int nbins;
 
     @API(help="Learning rate from 0.0 to 1.0")
     public float learn_rate;
@@ -44,9 +56,8 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
       return this;
     }
 
-    public GBMParameters createImpl() {
-      GBMParameters impl = new GBMParameters();
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+    public GBMParameters fillImpl(GBMParameters impl) {
+      super.fillImpl(impl);
       impl._importance = this.variable_importance;
 
       // Sigh:
@@ -59,15 +70,6 @@ public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
   //==========================
   // Custom adapters go here
-
-  @Override public GBMParametersV2 createParametersSchema() { return new GBMParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  // TODO: defaults should only be in the impl, not duplicated in the API layer
-  @Override public GBM createImpl() {
-    GBMParameters parms = parameters.createImpl();
-    return new GBM(parms);
-  }
 
   // TODO: UGH
   // Return a URL to invoke GBM on this Frame

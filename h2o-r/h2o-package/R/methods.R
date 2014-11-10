@@ -109,13 +109,17 @@ h2o.rm <- function(object, keys) {
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
 }
 
+#'
+#' Rename an H2O object.
+#'
+#' Does a TRUE replacement, not just a copy of the data with the new name.
 h2o.assign <- function(data, key) {
-  if(data %<i-% "ASTNode") invisible(head(data))
-  if(!(data %<i-% "H2OParsedData")) stop("data must be of class H2OParsedData")
+  if(data %i% "ASTNode") invisible(head(data))
+  if(!(data %i% "H2OParsedData")) stop("data must be of class H2OParsedData")
   if(!is.character(key)) stop("key must be of class character")
   if(nchar(key) == 0) stop("key cannot be an empty string")
   if(key == data@key) stop(paste("Destination key must differ from data key", data@key))
-  ast <- key %<-% (' $' %<p0-% data@key)
+  ast <- .h2o.varop("rename", data, key)
   .force.eval(.retrieveH2O(parent.frame()), ast, ID = NULL, rID = key)
   assign(deparse(substitute(data)), get(key), envir = parent.frame())
   invisible(get(key))
@@ -129,7 +133,7 @@ h2o.getFrame <- function(h2o, key) {
     key <- h2o
     h2o <- .retrieveH2O(parent.frame())
   }
-  ast <- new("ASTNode", root = new("ASTApply", op = '$' %<p0-% key))
+  ast <- new("ASTNode", root = new("ASTApply", op = '$' %p0% key))
   ID <- key
   .force.eval(h2o, ast, ID = ID, rID = 'ast')
   ast
@@ -234,7 +238,6 @@ function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
   print(ast)
 }
 
-
 #'
 #' cut a numeric column into factors
 cut.H2OParsedData<-
@@ -334,11 +337,16 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 #  .h2o.varop("runif", x, min, max, seed)
 #}
 
-#h2o.anyFactor<-
-#function(x) {
-#  if(!(x %<i-% "H2OParsedData")) stop("x must be an H2O parsed data object")
-#  .force.eval
-#}
+#'
+#' Is any column of the H2OParsedData object a enum column
+#'
+#' Returns Boolean.
+h2o.anyFactor <- function(x) {
+  if(!(x %i% "H2OFrame")) stop("x must be an H2O parsed data object")
+  ast <- .h2o.unop("any.factor", x)
+  .force.eval(.retrieveH2O(parent.frame()), ast, ID = "Last.value", rID = 'ast')
+  ast
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -351,16 +359,16 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
-  if (!missing(i) && (i %<i-% "ASTNode")) i <- eval(i)
+  if (!missing(i) && (i %i% "ASTNode")) i <- eval(i)
   if (!missing(j) && is.character(j)) {
     col_names <- colnames(x)  # this is a bit expensive since we have to force the eval on x
     if (! any(j %in% col_names)) stop("Undefined column names specified")
     j <- match(j, col_names)
   }
-  if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+  if (x %i% "H2OParsedData") x <- '$' %p0% x@key
 
   op <- new("ASTApply", op='[')
-  rows <- if(missing(i)) deparse("null") else { if ( i %<i-% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
+  rows <- if(missing(i)) deparse("null") else { if ( i %i% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if(missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
 })
@@ -394,15 +402,15 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   }
 
   if (missing(i) && missing(j)) {
-    if (x %<i-% "H2OParsedData") x <- '$' %<p0-% x@key
+    if (x %i% "H2OParsedData") x <- '$' %p0% x@key
     lhs <- x
   } else if (missing(i)) lhs <- do.call("[", list(x=x, j=j))
     else if (missing(j)) lhs <- do.call("[", list(x=x, i=i))
     else lhs <- do.call("[", list(x=x, i=i, j=j))
 
-  if (value %<i-% "ASTNode") rhs <- eval(value)
-  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key
-  else if(value %<i-% "H2OFrame") rhs <- value
+  if (value %i% "ASTNode") rhs <- eval(value)
+  else if(value %i% "H2OParsedData") rhs <- '$' %p0% value@key
+  else if(value %i% "H2OFrame") rhs <- value
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
@@ -422,9 +430,9 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   else idx <- match(name, col_names)                                # re-assign existing column
   lhs <- do.call("[", list(x=x, j=idx))                             # create the lhs ast
 
-  if (value %<i-% "ASTNode") rhs <- eval(value)                     # rhs is already ast, eval it
-  else if(value %<i-% "H2OParsedData") rhs <- '$' %<p0-% value@key  # swap out object for keyname
-  else if(value %<i-% "H2OFrame") rhs <- value                      # rhs is some H2OFrame object
+  if (value %i% "ASTNode") rhs <- eval(value)                     # rhs is already ast, eval it
+  else if(value %i% "H2OParsedData") rhs <- '$' %p0% value@key  # swap out object for keyname
+  else if(value %i% "H2OFrame") rhs <- value                      # rhs is some H2OFrame object
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
 
@@ -436,7 +444,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 })
 
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
-  if( !( value %<i-% "H2OFrame")) stop('Can only append H2O data to H2O data')
+  if( !( value %i% "H2OFrame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
 
@@ -653,9 +661,12 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
 #  res$levels[[1]]
 #})
 
-
-setMethod("is.factor", "H2OFrame", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
-setMethod("is.factor", "H2OParsedData", function(x) { stop("hello is.factor"); as.logical(.h2o.unop("is.factor", x)) })
+#'
+#' Is H2O Data Frame column a enum
+#'
+#' Returns Boolean.
+setMethod("is.factor", "H2OFrame", function(x) {.h2o.unop("is.factor", x)})
+setMethod("is.factor", "H2OParsedData", function(x) { .h2o.unop("is.factor", x) })
 
 #quantile.H2OFrame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
 #  if((numCols = ncol(x)) != 1) stop("quantile only operates on a single column")
@@ -679,7 +690,7 @@ setMethod("is.factor", "H2OParsedData", function(x) { stop("hello is.factor"); a
 #  if(names) names(col) <- paste(100*probs, "%", sep="")
 #  return(col)
 #}
-#
+
 ## setMethod("summary", "H2OParsedData", function(object) {
 #summary.H2OFrame <- function(object, ...) {
 #  digits = 12L
@@ -1113,44 +1124,133 @@ cbind.H2OFrame <- function(..., deparse.level = 1) {
 #unique.H2OFrame <- h2o.unique
 
 
-## TODO: Need to change ... to environment variables and pass to substitute method,
-##       Can't figure out how to access outside environment from within lapply
-#setMethod("apply", "H2OParsedData", function(X, MARGIN, FUN, ...) {
-#  if(missing(X) || !class(X) %in% c("H2OParsedData", "H2OParsedDataVA"))
-#   stop("X must be a H2O parsed data object")
-#  if(missing(MARGIN) || !(length(MARGIN) <= 2 && all(MARGIN %in% c(1,2))))
-#    stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
-#  if(missing(FUN) || !is.function(FUN))
-#    stop("FUN must be an R function")
-#
-#  myList <- list(...)
-#  if(length(myList) > 0) {
-#    stop("Unimplemented")
-#    tmp = sapply(myList, function(x) { !class(x) %in% c("H2OParsedData", "H2OParsedDataVA", "numeric") } )
-#    if(any(tmp)) stop("H2O only recognizes H2OParsedData and numeric objects")
-#
-#    idx = which(sapply(myList, function(x) { class(x) %in% c("H2OParsedData", "H2OParsedDataVA") }))
-#    # myList <- lapply(myList, function(x) { if(class(x) %in% c("H2OParsedData", "H2OParsedDataVA")) x@key else x })
-#    myList[idx] <- lapply(myList[idx], function(x) { x@key })
-#
-#    # TODO: Substitute in key name for H2OParsedData objects and push over wire to console
-#    if(any(names(myList) == ""))
-#      stop("Must specify corresponding variable names of ", myList[names(myList) == ""])
-#  }
-#
-#  # Substitute in function name: FUN <- match.fun(FUN)
-#  myfun = deparse(substitute(FUN))
-#  len = length(myfun)
-#  if(len > 3 && substr(myfun[1], nchar(myfun[1]), nchar(myfun[1])) == "{" && myfun[len] == "}")
-#    myfun = paste(myfun[1], paste(myfun[2:(len-1)], collapse = ";"), "}")
-#  else
-#    myfun = paste(myfun, collapse = "")
-#  params = c(X@key, MARGIN, myfun)
-#  expr = paste("apply(", paste(params, collapse = ","), ")", sep="")
-#  res = .h2o.__exec2(X@h2o, expr)
-#  new("H2OParsedData", h2o=X@h2o, key=res$dest_key)
-#})
-#
+#'
+#' Overloaded `apply` method from base::
+#'
+#' `apply` operates on H2OFrames (ASTs or H2OParsedData objects) and returns an object of type H2OParsedData.
+#'
+#'
+#' Overall Plan:
+#'
+#'  passes an AST of the format
+#'
+#'   (apply $X #MARGIN $FUN a1 a2 ...)
+#'
+#'   ASTApply will parse additional arguments to an AST[] _args. This array must be 1 less the number of args passed to
+#'   FUN. Otherwise, throw an exception.
+#'
+#'   Pass the additional by calling _fun.exec(env, _args)
+setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
+  if(missing(X)) stop("X must be a H2O parsed data object")
+  if(missing(MARGIN) || !(length(MARGIN) <= 2 && all(MARGIN %in% c(1,2))))
+    stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
+  if(missing(FUN)) stop("FUN must be an R function")
+  .FUN <- NULL
+  if (is.character(FUN)) .FUN <- get(FUN)
+  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
+  else if(is.null(.FUN) && !is.function(FUN))
+    stop("FUN must be an R function")
+  if (!is.null(.FUN)) FUN <- as.name(FUN)
+
+  l <- list(...)
+  if(length(l) > 0) {
+    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "H2OParsedData", "numeric", "character", "logical") } )
+    if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
+
+    idx <- which( sapply(l, function(x)  class(x) %in% c("H2OFrame")) )
+    extra_arg_names <- as.list(match.call())
+    for (i in idx) {
+      key <- as.character(extra_arg_names[[i]])
+      if (x %i% "H2OParsedData") next
+      x <- l[idx]
+      h2o.assign(x, key)
+      l[idx] <- x
+    }
+  }
+
+  # Process the function. Decide if it's an anonymous fcn, or a named one.
+  myfun <- deparse(substitute(FUN))
+  fun.ast <- NULL
+  # anon function?
+  if (substr(myfun[1], 1, nchar("function")) == "function") {
+    # handle anon fcn
+    fun.ast <- .fun.to.ast(FUN, "anon")
+    a <- invisible(.h2o.post.function(fun.ast))
+    if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+  # else named function get the ast
+  } else {
+    if (.is.op(substitute(FUN))) {
+      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+    } else {
+      fun_name <- as.character(FUN)
+      fun <- match.fun(FUN)
+      fun.ast <- .fun.to.ast(FUN, fun_name)
+      a <- invisible(.h2o.post.function(fun.ast))
+      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+    }
+  }
+
+  if (is.null(fun.ast)) stop("argument FUN was invalid")
+
+  if(length(l) == 0)
+    ast <- .h2o.varop("apply", X, MARGIN, fun.ast)
+  else
+    ast <- .h2o.varop("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  ast
+})
+
+setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
+  if(missing(X)) stop("X must be a H2O parsed data object")
+  if(missing(FUN) || !is.function(FUN))
+    stop("FUN must be an R function")
+
+  l <- list(...)
+    if(length(l) > 0) {
+      tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "H2OParsedData", "numeric", "character") } )
+      if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
+
+      idx <- which( sapply(l, function(x)  class(x) %in% c("H2OFrame")) )
+      extra_arg_names <- as.list(match.call())
+      for (i in idx) {
+        key <- as.character(extra_arg_names[[i]])
+        if (x %i% "H2OParsedData") next
+        x <- l[idx]
+        h2o.assign(x, key)
+        l[idx] <- x
+      }
+    }
+
+  # Process the function. Decide if it's an anonymous fcn, or a named one.
+  myfun <- deparse(substitute(FUN))
+  fun.ast <- NULL
+  # anon function?
+  if (substr(myfun[1], 1, nchar("function")) == "function") {
+    # handle anon fcn
+    fun.ast <- .fun.to.ast(FUN, "anon")
+    invisible(.h2o.post.function(fun.ast))
+  # else named function get the ast
+  } else {
+    if (.is.op(substitute(FUN))) {
+      fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+    } else {
+      fun_name <- as.character(FUN)
+      fun <- match.fun(FUN)
+      fun.ast <- .fun.to.ast(FUN, fun_name)
+      invisible(.h2o.post.function(fun.ast))
+    }
+  }
+
+  if (is.null(fun.ast)) stop("argument FUN was invalid")
+
+  invisible(.h2o.post.function(fun.ast))
+
+  if(length(l) == 0)
+    ast <- .h2o.varop("sapply", X, fun.ast)
+  else
+    ast <- .h2o.varop("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+  ast
+})
+
 #str.H2OFrame <- function(object, ...) {
 #  if (length(l <- list(...)) && any("give.length" == names(l)))
 #    invisible(NextMethod("str", ...))

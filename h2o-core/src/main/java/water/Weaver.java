@@ -231,7 +231,7 @@ public class Weaver {
               "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    read"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.put%u(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.getEnum(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.getEnum(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
@@ -241,7 +241,7 @@ public class Weaver {
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    readJSON"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = %s[ab.get1()];\n",         "    _unsafe.put%u(ice,%dL,%s[ab.get1()]);  //%s\n",
+              "    ice.%s = (%C)ab.getEnum(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.getEnum(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
@@ -276,10 +276,10 @@ public class Weaver {
                   "  protected void copyOver(water.Freezable fdst, water.Freezable fsrc) {\n",
                   "    super.copyOver(fdst,fsrc);\n"+
                   "    "+iced_name+" dst = ("+iced_name+")fdst;\n"+
-                  "    "+iced_name+" training_frame = ("+iced_name+")fsrc;\n",
-                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
-                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
-                  "    dst.%s = training_frame.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(training_frame,%dL));  //%s\n",
+                  "    "+iced_name+" src = ("+iced_name+")fsrc;\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
+                  "    dst.%s = src.%s;\n","    _unsafe.put%u(dst,%dL,_unsafe.get%u(src,%dL));  //%s\n",
                   "  }");
       if( debug_print ) System.out.println(cpbody_impl);
     }

@@ -13,5 +13,7 @@ public class LogAndEchoHandler extends Handler<LogAndEchoHandler.LogAndEcho, Log
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
   @Override protected LogAndEchoV1 schema(int version) { return new LogAndEchoV1(); }
   @Override public void compute2() { throw H2O.unimpl(); }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogAndEchoV1 echo(int version, LogAndEcho u) { Log.info(u._message); return schema(version).fillFromImpl(u); }
 }

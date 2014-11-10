@@ -71,6 +71,7 @@ public class h2odriver extends Configured implements Tool {
   volatile CtrlCHandler ctrlc = null;
   volatile boolean clusterIsUp = false;
   volatile boolean clusterFailedToComeUp = false;
+  volatile boolean clusterHasNodeWithLocalhostIp = false;
 
   public static class H2ORecordReader extends RecordReader<Text, Text> {
     H2ORecordReader() {
@@ -220,6 +221,9 @@ public class h2odriver extends Configured implements Tool {
           // a synthesized flatfile once everyone has arrived.
 
           System.out.println("H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() + " requested flatfile");
+          if (msg.getEmbeddedWebServerIp().equals("127.0.0.1")) {
+            clusterHasNodeWithLocalhostIp = true;
+          }
           _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), _s);
         }
         else if (type == MapperToDriverMessage.TYPE_CLOUD_SIZE) {
@@ -735,6 +739,12 @@ public class h2odriver extends Configured implements Tool {
         if (deltaMillis > (cloudFormationTimeoutSeconds * 1000)) {
           System.out.println("ERROR: Timed out waiting for H2O cluster to come up (" + cloudFormationTimeoutSeconds + " seconds)");
           System.out.println("ERROR: (Try specifying the -timeout option to increase the waiting time limit)");
+          if (clusterHasNodeWithLocalhostIp) {
+            System.out.println("");
+            System.out.println("NOTE: One of the nodes chose 127.0.0.1 as its IP address, which is probably wrong.");
+            System.out.println("NOTE: You may want to specify the -network option, which lets you specify the network interface the mappers bind to.");
+            System.out.println("NOTE: Typical usage is:  -network a.b.c.d/24");
+          }
           job.killJob();
           return 3;
         }

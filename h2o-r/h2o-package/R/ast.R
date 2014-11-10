@@ -7,7 +7,7 @@
 #'
 #' The AST visitor method.
 #'
-#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON call.
+#' This method represents a map between an AST S4 object and a regular R list, which is suitable for rjson::toJSON
 #'
 #' Given a node, the `visitor` function recursively Lisp'ifies the node's S4 slots and then returns the list.
 #'
@@ -20,20 +20,22 @@ visitor<-
 function(node) {
   res <- ""
   if (.hasSlot(node, "root")) {
-    res %<p0-% '('
-    res %<p0-% node@root@op
+    res %p0% '('
+    res %p0% node@root@op
     children <- lapply(node@children, visitor)
-    for (child in children) res %<p-% child
-    res %<p0-% ')'
+    for (child in children) res %p% child
+    res %p0% ')'
     list( ast = res)
 
-  } else if (node %<i-% "ASTSeries") {
-    res %<p-% node@op
+  } else if (node %i% "ASTSeries") {
+    res %p% node@op
     children <- unlist(lapply(node@children, visitor))
     children <- paste(children, collapse=";",sep="")
-    res %<p0-% children
-    res %<p0-% "}"
+    res %p0% children
+    res %p0% "}"
     res
+  } else if (node %i% "ASTEmpty") {
+    node@key
   } else {
     node
   }
@@ -67,12 +69,12 @@ function(expr) {
 #' Check if any item in the expression is an H2OParsedData object.
 #'
 #' Useful when trying to unravel an expression
-.anyH2O<-
+.any.h2o<-
 function(expr, envir) {
- l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
- a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
- b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
- any(a|b)
+  l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
+  a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
+  b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
+  any(a|b)
 }
 
 #'
@@ -90,7 +92,7 @@ function(x, ID, top_level_envir, calling_envir) {
 #'
 .eval<-
 function(x, envir, sub_one = TRUE) {
-  if (.anyH2O(x, envir)) return(eval(x),envir)
+  if (.any.h2o(x, envir)) return(eval(x),envir)
   .ast.walker(x,envir, FALSE, sub_one)
 }
 
@@ -103,7 +105,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   sub <- ifelse(sub_one, 1, 0)
   if (length(expr) == 1) {
     if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
-    if (is.numeric(expr[[1]])) return('#' %<p0-% (eval(expr[[1]], envir=envir) - sub))
+    if (is.numeric(expr[[1]])) return('#' %p0% (eval(expr[[1]], envir=envir) - sub))
     if (is.character(expr[[1]])) return(deparse(expr[[1]]))
     if (is.character(expr)) return(deparse(expr))
   }
@@ -121,14 +123,14 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
       new_expr <- as.list(expr[-1])[[1]]
       if (length(new_expr) == 1) {
         if (is.symbol(new_expr)) new_expr <- get(deparse(new_expr), envir)
-        if (is.numeric(new_expr[[1]])) return ('#-' %<p0-% (eval(new_expr[[1]], envir=envir)))  # do not do the +1
+        if (is.numeric(new_expr[[1]])) return ('#-' %p0% (eval(new_expr[[1]], envir=envir)))  # do not do the +1
       }
 
       if (isGeneric(deparse(new_expr[[1]]))) {
         if ((new_expr[[1]]) == quote(`c`)) {
           if (!identical(new_expr[[2]][[1]], quote(`:`))) {
             children <- lapply(new_expr[-1], .ast.walker, envir, neg, sub_one)
-            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', '-' %<p0-% x) else -x)
+            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', '-' %p0% x) else -x)
             children <- lapply(children, function(x) as.character( as.numeric(as.character(x)) - sub))
             return(new("ASTSeries", op="{", children=children))
           } else {
@@ -139,7 +141,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
       } # otherwise `:` with negative indexing
 
       if (identical(new_expr[[1]], quote(`:`))) {
-        return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %<p0-% (eval(new_expr[[2]],envir=envir)), '#-' %<p0-% (eval(new_expr[[3]],envir=envir)))))
+        return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(new_expr[[2]],envir=envir)), '#-' %p0% (eval(new_expr[[3]],envir=envir)))))
       }
     }
     # end negative expression cases
@@ -147,8 +149,8 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 
   # Create a new ASTSpan
   if (identical(expr[[1]], quote(`:`))) {
-    if (!neg) return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %<p0-% (eval(expr[[2]],envir=envir) - 1), '#' %<p0-% (eval(expr[[3]],envir=envir) - 1))))
-    return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %<p0-% (eval(expr[[2]],envir=envir)), '#-' %<p0-% (eval(expr[[3]],envir=envir)))))
+    if (!neg) return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %p0% (eval(expr[[2]],envir=envir) - 1), '#' %p0% (eval(expr[[3]],envir=envir) - 1))))
+    return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(expr[[2]],envir=envir)), '#-' %p0% (eval(expr[[3]],envir=envir)))))
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
@@ -169,32 +171,27 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'
 #'                   e.g.: Inside of ddply, we have the following "fun_args" pattern:
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
-.getValueFromArg<-
+.get.value.from.arg<-
 function(a, name=NULL) {
-  if (inherits(a, "H2OParsedData")) {
-    '$' %<p0-% a@key
-  } else if (inherits(a, "ASTNode")) {
+  if (a %i%"H2OParsedData") {
+    '$' %p0% a@key
+  } else if (a %i% "ASTNode") {
     a
-  } else if (class(a) == "function") {
-    ret <- .funToAST(a)
-    .pkg.env$formals <- names(formals(a))
-    ret
-  } else if (!is.null(name) && (name == "fun_args")) {
-    .toSymbolTable(a, .pkg.env$formals)
+  } else if (a %i% "ASTFun") {
+    '$' %p0% a@name
+  } else if (a %i% "ASTEmpty") {
+    '$' %p0% a@key
   } else {
     res <- eval(a)
     if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
       if (length(res) > 1) {
         # wrap the vector up into a ';' separated {} thingy
-#        return(unlist(lapply(res, deparse)))
         tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
-#        return(tt)
-        return('{' %<p0-%   tt  %<p0-% '}')
-#        return(.ast.walker((substitute(res)), parent.frame()))
+        return('{' %p0%   tt  %p0% '}')
       } else {
-        if (is.numeric(res)) return('#' %<p0-% res)
-        if (is.logical(res)) return('$' %<p0-% res)
+        if (is.numeric(res)) return('#' %p0% res)
+        if (is.logical(res)) return('$' %p0% res)
         else return(deparse(eval(a)))
       }
     } else {
@@ -203,37 +200,20 @@ function(a, name=NULL) {
   }
 }
 
-.argsToAST<-
-function(...) {
-  arg.names <- names(as.list(substitute(list(...)))[-1])
+.args.to.ast<-
+function(..., .args = list()) {
+  l <- list(...)
+  if (length(.args) != 0) l <- .args
+  arg.names <- names(as.list(substitute(l))[-1])
+  arg_values <- NULL
   if ("fun_args" %in% arg.names) {
-    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
-    to_keep <- which(names(arg_names) == "")
-    idx_to_change <- which(arg.names != "")
-    lapply(seq_along(arg.names),
-      function(i) {
-        if (arg.names[i] == "") {
-          arg.names[i] <<- arg_names[to_keep[1]]
-          to_keep <<- to_keep[-1]
-        }
-      }
-    )
-    to_keep   <- NULL
-    arg_names <- arg.names
-    arg_ts <- lapply(list(...), .eval_class)
-    arg_ts$fun_args <- "ASTSymbolTable"
-    names(arg_ts) <- NULL
-    arg_types <- arg_ts
+    arg_values <- lapply(seq_along(l), function(i) {
+        if (names(l[i]) == "fun_args") {
+          paste(unlist(lapply(unlist(l[i]), function(i) { .get.value.from.arg(i, "") })), collapse= ' ')
+        } else .get.value.from.arg(l[[i]], names(l)[i])
+      })
   } else {
-#    arg_names  <- unlist(lapply(as.list(substitute(list(...)))[-1], as.character))
-    arg_types  <- lapply(list(...), .eval_class)
+    arg_values <- lapply(seq_along(l), function(i) { .get.value.from.arg(l[[i]], names(l)[i]) })
   }
-  arg_values <- lapply(seq_along(list(...)), function(i) { .getValueFromArg(list(...)[[i]], names(list(...))[i]) })
   return(arg_values)
-#  args <- as.data.frame(rbind(arg_names, arg_types, arg_values, arg_numbers = 1:length(arg_names)))
-#  stop("hello")
-#  print(args)
-#  .pkg.env$formals <- NULL
-#  names(args) <- paste("Arg", 1:length(arg_names), sep ="")
-#  unlist(apply(args, 2, .toASTArg))
 }

@@ -50,6 +50,7 @@ class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl clas
   }
 
   @Override public Iced createImpl() { throw H2O.fail(); }
+  @Override public Iced fillImpl(Iced ignoreme) { throw H2O.fail(); }
   @Override public HttpErrorV1 fillFromImpl(Iced i) { throw H2O.fail(); }
 
   // TODO: this is not setting the http header!

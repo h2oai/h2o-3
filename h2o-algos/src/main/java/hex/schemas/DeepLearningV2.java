@@ -551,8 +551,7 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
       return this;
     }
 
-    public DeepLearningParameters createImpl() {
-      DeepLearningParameters impl = new DeepLearningParameters();
+    public DeepLearningParameters fillImpl(DeepLearningParameters impl) {
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
       // Sigh:
       impl._train = (this.training_frame == null ? null : this.training_frame._key);
@@ -566,14 +565,6 @@ public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
   //==========================
   // Custom adapters go here
-
-  @Override public DeepLearningParametersV2 createParametersSchema() { return new DeepLearningParametersV2(); }
-
-  // TODO: refactor ModelBuilder creation
-  @Override public DeepLearning createImpl() {
-    DeepLearningParameters parms = parameters.createImpl();
-    return new DeepLearning(parms);
-  }
 
   // Return a URL to invoke DeepLearning on this Frame
   @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?training_frame="+fr._key; }

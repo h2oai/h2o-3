@@ -21,6 +21,9 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   @API(help="cloud_uptime_millis", direction=API.Direction.OUTPUT)
   private long cloud_uptime_millis;
 
+  @API(help="cloud_healthy", direction=API.Direction.OUTPUT)
+  private boolean cloud_healthy;
+
   @API(help="Nodes reporting unhealthy", direction=API.Direction.OUTPUT)
   private int bad_nodes;
 
@@ -131,26 +134,15 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     }
   }
 
-  //==========================
-  // Custom adapters go here
-
-  // Version&Schema-specific filling into the impl
-  @Override public Cloud createImpl( ) {
-    return new Cloud();                // No inputs
-  }
-
-  // Version&Schema-specific filling from the impl
   @Override public CloudV1 fillFromImpl(Cloud c) {
-    version = c._version;
-    cloud_name = c._cloud_name;
-    cloud_size = c._members.length;
-    cloud_uptime_millis = c._uptime_ms;
-    consensus = c._consensus;
-    locked = c._locked;
-    nodes = new Node[c._members.length];
-    for( int i=0; i<c._members.length; i++ ) {
-      nodes[i] = new Node(c._members[i]);
-      if( !nodes[i].healthy ) bad_nodes++;
+    super.fillFromImpl(c);
+
+    if (null != c._members) {
+      nodes = new Node[c._members.length];
+      for (int i = 0; i < c._members.length; i++) {
+        nodes[i] = new Node(c._members[i]);
+        if (!nodes[i].healthy) bad_nodes++;
+      }
     }
     return this;
   }

@@ -2,12 +2,12 @@ package water.api;
 
 import hex.Model;
 import water.*;
-import water.fvec.Frame;
 import water.api.FramesHandler.Frames;
+import water.fvec.Frame;
 
 import java.util.*;
 
-class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
+class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler<I, ModelsBase<I, S>> {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -93,6 +93,7 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   /** Return all the models. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema list(int version, Models m) {
     m.models = Models.fetchAll();
     return this.schema(version).fillFromImpl(m);
@@ -120,6 +121,7 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
   }
 
   /** Return a single model. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, Models m) {
     Model model = getFromDKV(m.key);
     m.models = new Model[1];
@@ -141,7 +143,8 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
     return schema;
   }
 
-  // Remove an unlocked model.  Fails if model is in-use
+  /** Remove an unlocked model.  Fails if model is in-use. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema delete(int version, Models models) {
     Model model = getFromDKV(models.key);
     if (null == model)
@@ -153,8 +156,10 @@ class ModelsHandler extends Handler<ModelsHandler.Models, ModelsBase> {
     return s;
   }
 
-  // Remove ALL an unlocked models.  Throws IAE for all deletes that failed
-  // (perhaps because the Models were locked & in-use).
+  /** Remove ALL an unlocked models.  Throws IAE for all deletes that failed
+   * (perhaps because the Models were locked & in-use).
+   */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema deleteAll(int version, Models models) {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {

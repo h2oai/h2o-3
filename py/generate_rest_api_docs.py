@@ -5,10 +5,6 @@ sys.path.extend(['.','py'])
 import h2o, h2o_util
 import os
 
-# https://github.com/joeyespo/grip
-# Transform GitHub-flavored Markdown to HTML
-from grip import export
-
 # print "ARGV is:", sys.argv
 
 here=os.path.dirname(os.path.realpath(__file__))
@@ -17,15 +13,22 @@ parser = argparse.ArgumentParser(
     description='Attach to an H2O instance and call its REST API to generate the REST API docs and write them to the filesystem.',
 )
 parser.add_argument('--verbose', '-v', help='verbose output', action='store_true')
+parser.add_argument('--usecloud', help='ip:port to attach to', default='')
 parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
 parser.add_argument('--dest', help='destination directory', default=(here + '/../build/docs/REST'))
+parser.add_argument('--generate_html', help='translate the Markdown to HTML', action='store_true', default=False)
 parser.add_argument('--github_user', help='github user, for Markdown -> HTML rendering')
 parser.add_argument('--github_password', help='github password, for Markdown -> HTML rendering')
 args = parser.parse_args()
 
 h2o.H2O.verbose = True if args.verbose else False
 pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
+
+if (len(args.usecloud) > 0):
+    arr = args.usecloud.split(":")
+    args.host = arr[0]
+    args.port = int(arr[1])
 
 h2o.H2O.verboseprint("connecting to: ", args.host, ":", args.port)
 
@@ -63,7 +66,8 @@ for num in range(len(endpoints)):
     # create dirs without race:
     try:
         os.makedirs(save_dir_md)
-        os.makedirs(save_dir_html)
+        if args.generate_html:
+            os.makedirs(save_dir_html)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
@@ -72,5 +76,9 @@ for num in range(len(endpoints)):
         the_file.write(markdown)
 
     # use grip to render the .md to .html
-    export(path=save_full_md, gfm=True, out_filename=save_full_html, username=args.github_user, password=args.github_password)
+    if args.generate_html:
+        # https://github.com/joeyespo/grip
+        # Transform GitHub-flavored Markdown to HTML
+        from grip import export
+        export(path=save_full_md, gfm=True, out_filename=save_full_html, username=args.github_user, password=args.github_password)
 

@@ -9,7 +9,7 @@ import hex.api.GLMBuilderHandler;
 import hex.api.KMeansBuilderHandler;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
-import hex.gbm.GBM;
+import hex.tree.gbm.GBM;
 import hex.glm.GLM;
 import hex.kmeans.KMeans;
 

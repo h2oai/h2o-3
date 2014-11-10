@@ -386,6 +386,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
     Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
     try{
+      Scope.enter();
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._response = 0;
       params._response_column = fr._names[params._response];
@@ -444,6 +445,7 @@ public class GLMTest  extends TestUtil {
       fr.delete();
       if(model != null)model.delete();
       if( job != null ) job.remove();
+      Scope.exit();
     }
   }
 }

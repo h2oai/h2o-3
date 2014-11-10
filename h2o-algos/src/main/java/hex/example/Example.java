@@ -1,16 +1,15 @@
 package hex.example;
 
-import java.util.Arrays;
-
 import hex.SupervisedModelBuilder;
 import hex.schemas.ExampleV2;
 import hex.schemas.ModelBuilderSchema;
-import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.util.Log;
-import water.util.MRUtils;
+
+import java.util.Arrays;
 
 /**
  *  Example model builder... building a trivial ExampleModel
@@ -18,7 +17,7 @@ import water.util.MRUtils;
 public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   // Called from Nano thread; start the Example Job on a F/J thread
-  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(); }
+  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
@@ -33,10 +32,10 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
    *  Validate the max_iters. */
-  @Override public void init() {
-    super.init();
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
     if( _parms._max_iters < 1 || _parms._max_iters > 9999999 )
-      error("max_iters", "must be between 1 and a million");
+      error("max_iters", "must be between 1 and 10 million");
   }
 
   // ----------------------
@@ -45,8 +44,10 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
     @Override protected void compute2() {
       ExampleModel model = null;
       try {
+        Scope.enter();
         _parms.lock_frames(Example.this); // Fetch & read-lock source frame
-    
+        init(true);
+
         // The model to be built
         model = new ExampleModel(dest(), _parms, new ExampleModel.ExampleOutput(Example.this));
         model.delete_and_lock(_key);
@@ -59,7 +60,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
 
-          // Fill in the model; denormalized centers
+          // Fill in the model
           model._output._maxs = maxs;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -76,6 +77,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.unlock_frames(Example.this);
+        Scope.exit(model._key);
         done();                 // Job done!
       }
       tryComplete();

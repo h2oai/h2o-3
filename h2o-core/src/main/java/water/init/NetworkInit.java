@@ -414,7 +414,8 @@ public class NetworkInit {
             finally { H2O.CLOUD_MULTICAST_SOCKET = null; }
         }
       }
-    } else {                    // Multicast Simulation
+    } else {
+      // Multicast Simulation
       // The multicast simulation is little bit tricky. To achieve union of all
       // specified nodes' flatfiles (via option -flatfile), the simulated
       // multicast has to send packets not only to nodes listed in the node's

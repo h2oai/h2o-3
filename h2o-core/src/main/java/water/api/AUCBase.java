@@ -95,13 +95,6 @@ public class AUCBase extends Schema<AUCData, AUCBase> {
   @API(help="Confusion Matrices for threshold criteria", direction=API.Direction.OUTPUT)
   public long[][][] confusion_matrix_for_criteria;
 
-  // Version&Schema-specific filling into the implementation object
-  public AUCData createImpl() {
-    AUCData auc_data = new AUCData();
-    PojoUtils.copyProperties(auc_data, this, PojoUtils.FieldNaming.CONSISTENT);
-    return auc_data;
-  }
-
   // Version&Schema-specific filling from the implementation object
   public AUCBase fillFromImpl(AUCData i) {
     PojoUtils.copyProperties(this, i, PojoUtils.FieldNaming.CONSISTENT);

@@ -25,6 +25,27 @@ def is_python_test_file(file_name):
 
     return False
 
+
+def is_python_file(file_name):
+    """
+    Return True if file_name matches a regexp for a python program in general.  False otherwise.
+
+    This is a separate function because it's useful to have the scan-for-test operation in 
+    build_test_list() be separated from running the test.
+
+    That allows us to run things explictly named using the --test option.  Such as:
+        run.py --wipeall --numclouds 1 --test generate_rest_api_docs.py
+    """
+
+    if (file_name == "test_config.py"):
+        return False
+
+    if (re.match("^.*\.py$", file_name)):
+        return True
+
+    return False
+
+
 def is_javascript_test_file(file_name):
     """
     Return True if file_name matches a regexp for a javascript test.  False otherwise.
@@ -493,6 +514,11 @@ class Test:
         self.port = port
 
         if (is_python_test_file(self.test_name)):
+            cmd = ["python",
+                   self.test_name,
+                   "--usecloud",
+                   self.ip + ":" + str(self.port)]
+        elif (is_python_file(self.test_name)):
             cmd = ["python",
                    self.test_name,
                    "--usecloud",

@@ -49,20 +49,29 @@ Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
+
+### Common Setup for all Platforms
+
+##### Step 1. Install required python packages
+
+	(possibly sudo)
+	pip install grip
+
+
 ### Setup on Windows
 
-Step 1. Install JDK
+##### Step 1. Install JDK
 
 Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
 
-Step 2. Install Node.js and npm
+##### Step 2. Install Node.js and npm
 
 Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended.
 
-Step 3. Install R and the required packages
+##### Step 3. Install R and the required packages
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
@@ -85,7 +94,7 @@ You may alternatively install these packages from within an R session:
 > install.packages("statmod")
 > install.packages("bitops")
 
-Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
 If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
 
@@ -93,7 +102,7 @@ Download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
-Step 5. Run the top-level gradle build:
+##### Step 5. Run the top-level gradle build:
 
     cd h2o-dev
     gradlew.bat build
@@ -101,16 +110,17 @@ Step 5. Run the top-level gradle build:
 > If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
 
 ### Setup on OS X
+
 If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It makes package management for OS X easy.
 
-Step 1. Install JDK
+##### Step 1. Install JDK
 
 Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
 
-Step 2. Install Node.js and npm
+##### Step 2. Install Node.js and npm
 
 Using Homebrew:
 
@@ -118,7 +128,7 @@ Using Homebrew:
 
 Otherwise install from the [NodeJS website](http://nodejs.org/download/).
 
-Step 3. Install R and the required packages
+##### Step 3. Install R and the required packages
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
@@ -130,13 +140,13 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
     R CMD INSTALL statmod_x.x.xx.tgz
     R CMD INSTALL bitops_x.x-x.tgz
 
-Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
 OS X should have come with Git installed, so just download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
-Step 5. Run the top-level gradle build:
+##### Step 5. Run the top-level gradle build:
 
     cd h2o-dev
     ./gradlew build
@@ -145,19 +155,19 @@ Step 5. Run the top-level gradle build:
 
 ### Setup on Ubuntu 14.04
 
-Step 1. Install Node.js and npm
+##### Step 1. Install Node.js and npm
 
     sudo apt-get install npm
     sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 
-Step 2. Install JDK
+##### Step 2. Install JDK
 
 Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). Check to make sure the command prompt is detecting the correct Java version by running:
 
     javac -version
 
-Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
 
 If you don't already have a Git client,
 
@@ -167,7 +177,7 @@ Download and update h2o-dev source codes:
 
     git clone https://github.com/0xdata/h2o-dev
 
-Step 4. Run the top-level gradle build:
+##### Step 4. Run the top-level gradle build:
 
     cd h2o-dev
     ./gradlew build

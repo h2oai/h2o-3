@@ -1,14 +1,19 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
 import water.fvec.Frame;
 import water.util.Log;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -74,9 +79,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Default constructor, given all arguments */
-  public ModelBuilder(Key dest, String desc, P parms) { 
-    super(dest,desc); 
-    _parms = parms; 
+  public ModelBuilder(Key dest, String desc, P parms) {
+    super(dest,desc);
+    _parms = parms;
   }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
@@ -96,9 +101,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Model.Parameters p = pclz.newInstance();
       modelBuilder = constructor.newInstance(p);
     } catch (java.lang.reflect.InvocationTargetException e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause());
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
     } catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e);
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
     }
 
     return modelBuilder;
@@ -107,21 +112,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Method to launch training of a Model, based on its parameters. */
   abstract public Job<M> trainModel();
 
+  /** Clear whatever was done by init() so it can be run again. */
+  public void clearInitState() {
+    clearValidationErrors();
+
+  }
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
-   *  and each subclass will start with "super.init();".  This call is made
-   *  by the front-end whenever the GUI is clicked, and needs to be fast;
-   *  heavy-weight prep needs to wait for the trainModel() call.
+   *  and each subclass will start with "super.init();".  This call is made by
+   *  the front-end whenever the GUI is clicked, and needs to be fast whenever
+   *  {@link expensive} is false; it will be called once again at the start of
+   *  model building {@link trainModel} with expensive set to true.
    *
    *  The incoming training frame (and validation frame) will have ignored
    *  columns dropped out, plus whatever work the parent init did.
    */
-  public void init() {
+  public void init(boolean expensive) {
+    // NOTE: allow re-init:
+    clearInitState();
     assert _parms != null;      // Parms must already be set in
-    assert _error_count == -1;  // Only ran init once
-    _error_count = 0;           // No errors so-far
+    if( _parms._train == null ) { error("_train","Missing training frame"); return; }
     Frame tr = _parms.train();
     Frame va = _parms.valid();
     assert Arrays.equals(tr._names,va._names); // Cutout at a higher level
@@ -133,20 +145,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
       _valid.remove(_parms._ignored_columns);
-      Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
+      if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-    
+
     // Drop all-constant and all-bad columns.
     String cstr="";             // Log of dropped columns
     for( int i=0; i<_train.vecs().length; i++ ) {
       if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
         cstr += _train._names[i]+", "; // Log dropped cols
-        _train.remove(i); _valid.remove(i);  
+        _train.remove(i); _valid.remove(i);
         i--; // Re-run at same iteration after dropping a col
       }
     }
     if( cstr.length() > 0 )
-      Log.info("Dropping constant columns: "+cstr);
+      if( expensive ) Log.info("Dropping constant columns: "+cstr);
 
     if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
       String nstr="";            // Log of dropped columns
@@ -154,12 +166,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
         if( ratio > 0.2 ) {
           nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
-          _train.remove(i); _valid.remove(i);  
+          _train.remove(i); _valid.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
       if( nstr.length() > 0 )
-        Log.info("Dropping columns with too many missing values: "+nstr);
+        if( expensive ) Log.info("Dropping columns with too many missing values: "+nstr);
     }
 
     // Check that at least some columns are not-constant and not-all-NAs
@@ -169,16 +181,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** A list of field validation issues. */
   public ValidationMessage[] _messages = new ValidationMessage[0];
-  private int _error_count = -1; // -1 ==> init not run yet
+  private int _error_count = -1; // -1 ==> init not run yet; note, this counts ONLY errors, not WARNs and etc.
   public int error_count() { assert _error_count>=0 : "init() not run yet"; return _error_count; }
   public void hide (String field_name, String message) { message(ValidationMessage.MessageType.HIDE , field_name, message); }
   public void info (String field_name, String message) { message(ValidationMessage.MessageType.INFO , field_name, message); }
   public void warn (String field_name, String message) { message(ValidationMessage.MessageType.WARN , field_name, message); }
   public void error(String field_name, String message) { message(ValidationMessage.MessageType.ERROR, field_name, message); _error_count++; }
+  private void clearValidationErrors() {
+    _messages = new ValidationMessage[0];
+    _error_count = 0;
+  }
   private void message(ValidationMessage.MessageType message_type, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(message_type, field_name, message);
   }
+  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
@@ -186,18 +203,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
+
+  /** The result of an abnormal Model.Parameter check.  Contains a
+   *  level, a field name, and a message.
+   *
+   *  Can be an ERROR, meaning the parameters can't be used as-is,
+   *  a HIDE, which means the specified field should be hidden given
+   *  the values of other fields, or a WARN or INFO for informative
+   *  messages to the user.
+   */
   public static final class ValidationMessage extends Iced {
     public enum MessageType { HIDE, INFO, WARN, ERROR }
     final MessageType message_type;
     final String field_name;
     final String message;
-      
+
     public ValidationMessage(MessageType message_type, String field_name, String message) {
       this.message_type = message_type;
       this.field_name = field_name;
       this.message = message;
     }
-      
+
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }
   }
 }

@@ -11,6 +11,8 @@ public class RemoveAllHandler extends Handler<RemoveAllHandler.RemoveAll,RemoveA
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
   @Override protected RemoveAllV1 schema(int version) { return new RemoveAllV1(); }
   @Override public void compute2() { throw H2O.unimpl(); }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public RemoveAllV1 remove(int version, RemoveAll u) {
     Log.info("Removing all keys");
     Futures fs = new Futures();

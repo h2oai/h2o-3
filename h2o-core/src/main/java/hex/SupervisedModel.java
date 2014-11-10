@@ -23,8 +23,10 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public String _response_column; // response column name
 
     /** Convert the response column to an enum (forcing a classification
-     *  instead of a regression) as needed. */
-    public boolean _toEnum;
+     *  instead of a regression) as needed.  The default is false, which means
+     *  "do nothing" - accept the response column as-is and that alone drives
+     *  the decision to do a classification vs regression. */
+    public boolean _toEnum = false;
 
     /** Should the minority classes be upsampled to balance the class
      *  distribution? */
@@ -76,9 +78,17 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
       _modelClassDist = _priorClassDist;
     }
 
+    /** @return Returns number of input features */
+    @Override public int nfeatures() { return _names.length - 1; }
+
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }
+    @Override public ModelCategory getModelCategory() {
+      return nclasses()==1 
+        ? Model.ModelCategory.Regression
+        : (nclasses()==2 ? Model.ModelCategory.Binomial : Model.ModelCategory.Multinomial);
+    }
   }
 
 
