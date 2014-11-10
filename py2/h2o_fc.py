@@ -92,7 +92,6 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     num_cpus_list = []
     name_list = []
     for i, n in enumerate(nodes):
-        print "kevin:", dump_json(n)
         print "max_mem (GB):", "%0.2f" % ((n['max_mem']+0.0)/(1024*1024*1024))
         print "tot_mem (GB):", "%0.2f" % ((n['tot_mem']+0.0)/(1024*1024*1024))
         java_heap_GB = (n['tot_mem']+0.0)/(1024*1024*1024)
