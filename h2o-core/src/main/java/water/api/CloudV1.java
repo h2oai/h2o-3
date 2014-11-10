@@ -21,6 +21,9 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
   @API(help="cloud_uptime_millis", direction=API.Direction.OUTPUT)
   private long cloud_uptime_millis;
 
+  @API(help="cloud_healthy", direction=API.Direction.OUTPUT)
+  private boolean cloud_healthy;
+
   @API(help="Nodes reporting unhealthy", direction=API.Direction.OUTPUT)
   private int bad_nodes;
 
