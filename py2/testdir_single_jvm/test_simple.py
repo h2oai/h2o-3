@@ -16,7 +16,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_simple(self):
-        print "\ncloud is supposed to be good. we faked cloud_size though. cloud_size and locked should be 1, 0 below"
+        print "\ncloud is supposed to be good. cloud_size and locked should be 1, 0 below"
 
         for i in range(10):
             a = h2o.nodes[0].get_cloud()

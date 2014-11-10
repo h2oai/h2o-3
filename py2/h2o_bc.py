@@ -481,8 +481,7 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # cloud size and consensus have to reflect a single grab of information from a node.
     cloudStatus = [n.get_cloud(timeoutSecs=timeoutSecs) for n in nodeList]
 
-    # FIX! hack. increment cloud size reported, for now
-    cloudSizes = [(c['cloud_size']+1) for c in cloudStatus]
+    cloudSizes = [(c['cloud_size']) for c in cloudStatus]
     cloudConsensus = [c['consensus'] for c in cloudStatus]
     cloudName = [c['cloud_name'] for c in cloudStatus]
     cloudLocked = [c['locked'] for c in cloudStatus]
@@ -567,10 +566,7 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
         # don't want to check everything. But this will check that the keys are returned!
         consensus = c['consensus']
         locked = c['locked']
-
-        # FIX! assume h2o-dev is off by 1
-        cloud_size = c['cloud_size'] + 1
-
+        cloud_size = c['cloud_size']
         cloud_name = c['cloud_name']
 
         if 'nodes' not in c:
