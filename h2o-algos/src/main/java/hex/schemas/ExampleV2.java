@@ -9,11 +9,10 @@ import water.fvec.Frame;
 public class ExampleV2 extends ModelBuilderSchema<Example,ExampleV2,ExampleV2.ExampleParametersV2> {
 
   public static final class ExampleParametersV2 extends ModelParametersSchema<ExampleModel.ExampleParameters, ExampleParametersV2> {
-    public String[] fields() { return new String[] {"max_iters"}; }
+    public String[] fields() { return new String[] {"training_frame","ignored_columns","max_iters"}; }
 
     // Input fields
-    @API(help="Maximum training iterations.")
-    public int max_iters;        // Max iterations
+    @API(help="Maximum training iterations.")  public int max_iters;
   } // ExampleParametersV2
 
 
