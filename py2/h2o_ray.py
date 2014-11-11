@@ -24,21 +24,32 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
     '''
     Poll a single job from the /Jobs endpoint until it is "status": "DONE" or "CANCELLED" or "FAILED" or we time out.
     '''
-    params_dict = {
-    }
+    params_dict = {}
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
 
     start_time = time.time()
     while True:
-        verboseprint('Polling for job: ' + job_key + '. . .')
         result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        # print 'Job: ', dump_json(result)
+
+        jobs = result['jobs'][0]
+        description = jobs['description']
+        dest = jobs['dest']
+        dest_name = dest['name']
+        msec = jobs['msec']
+        status = jobs['status']
+        progress = jobs['progress']
+        print description, \
+            "dest_name:", dest_name, \
+            "\tprogress:", "%-10s" % progress, \
+            "\tstatus:", "%-12s" % status, \
+            "\tmsec:", msec
         
-        if result['jobs'][0]['status'] == 'DONE' or result['jobs'][0]['status'] == 'CANCELLED' or result['jobs'][0]['status'] == 'FAILED':
-            verboseprint('Job ' + result['jobs'][0]['status'] + ': ' + job_key + '.')
+        if status=='DONE' or status=='CANCELLED' or status=='FAILED':
             return result
 
         if time.time() - start_time > timeoutSecs:
-            verboseprint('Job: ' + job_key + ' timed out in: ' + timeoutSecs + '.')
+            print "Job:", job_key, "timed out in:", timeoutSecs
             return None
 
         time.sleep(retryDelaySecs)
@@ -57,40 +68,52 @@ def import_files(self, path, timeoutSecs=180):
     return a
 
 
-def parse(self, key, key2=None,
+def parse(self, key=None, key2=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
           noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
     '''
     Parse an imported raw file or files into a Frame.
     '''
+    if not key:
+        raise Exception("key= is required in parse, %s", key)
 
-    #
     # Call ParseSetup?srcs=[keys] . . .
-    #
 
-    if benchmarkLogging:
-        cloudPerfH2O.get_log_save(initOnly=True)
+    # if benchmarkLogging:
+    #     cloudPerfH2O.get_log_save(initOnly=True)
 
     # TODO: multiple keys
+    # if key is a list, create a comma separated string
+    # list or tuple but not string
+    if not isinstance(key, basestring):
+        print "I noticed you're giving me multiple keys %s to parse:" % len(key), key
+        srcs = "[" + ",".join(key) + "]"
+    else:
+        srcs = "[" + key + "]"
+
     parse_setup_params = {
-        'srcs': "[" + key + "]"
+        'srcs': srcs
     }
+
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
-    # 
+    if setup_result['srcs']:
+        setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
+    else:
+        setupSrcs = None
+
     # and then Parse?srcs=<keys list> and params from the ParseSetup result
     # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
     #
 
-    first = True
-    ascii_column_names = '['
-    for s in setup_result['columnNames']:
-        if not first: ascii_column_names += ', '
-        ascii_column_names += str(s)
-        first  = False
-    ascii_column_names += ']'
+    
+    # I suppose we need a way for parameters to parse() to override these
+    if setup_result['columnNames']:
+        ascii_column_names = "[" + ",".join(setup_result['columnNames']) + "]"
+    else:
+        ascii_column_names = None
 
     parse_params = {
         'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
@@ -215,7 +238,7 @@ def delete_frames(self, timeoutSecs=60, **kwargs):
 
 
 # TODO: remove .json
-def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
+def model_builders(self, algo=None, parameters=None, timeoutSecs=10, **kwargs):
     '''
     Return a model builder or all of the model builders known to the
     h2o cluster.  The model builders are contained in a dictionary
@@ -223,15 +246,20 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     dictionary maps algorithm names to parameters lists.  Each of the
     parameters contains all the metdata required by a client to
     present a model building interface to the user.
+
+    if parameters = True, return the parameters?
     '''
-    params_dict = {
-    }
+    params_dict = {}
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
 
+    request = '2/ModelBuilders.json' 
     if algo:
-        result = self.do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
-    else:
-        result = self.do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
+        request + "/" + algo
+
+    if parameters:
+        request + "/parameters"
+
+    result = self.do_json_request(request, timeout=timeoutSecs, params=params_dict)
     return result
 
 

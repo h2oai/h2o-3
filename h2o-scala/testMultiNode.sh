@@ -32,14 +32,15 @@ JVM="nice java -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2
 (cd src/test/scala; /usr/bin/find . -name '*.scala' | cut -c3- | sed 's/.scala$//' | sed -e 's/\//./g') > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
-$JVM water.H2O 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-$JVM water.H2O 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-$JVM water.H2O 1> $OUTDIR/out.3 2>&1 & PID_3=$!
-$JVM water.H2O 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+CLUSTER_NAME=junit_cluster_$$
+CLUSTER_BASEPORT=45000
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
 # and tee'd to stdout so we can watch.
-(sleep 1; $JVM org.junit.runner.JUnitCore `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0
 
 cleanup
-

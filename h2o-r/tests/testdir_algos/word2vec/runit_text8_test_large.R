@@ -3,8 +3,17 @@ source('../../h2o-runit.R')
 
 
 test <- function(conn) {
-    text.hex = h2o.importFile(conn, path = locate("bigdata/laptop/text8.gz"), key = "text.hex",header = FALSE)
+    fPath = tryCatch({
+      locate("bigdata/laptop/text8.gz")
+    }, warning= function(w) {
+      print("File bigdata/laptop/text8.gz could not be found.  Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.")
+    }, error= function(e) {
+      print("File bigdata/laptop/text8.gz could not be found.  Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.")
+    }, finally = {
+      testEnd()
+    })
 
+    text.hex = h2o.importFile(conn, path = fPath, key = "text.hex",header = FALSE)
     w2v = h2o.word2vec(text.hex, wordModel = "CBOW", normModel = "HSM", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.05, epochs = 25, negExCnt = 0)
     h2o.synonym(word2vec = w2v, target = "dog", count = 10)
     w2v = h2o.word2vec(text.hex, wordModel = "CBOW", normModel = "NegSampling", windowSize = 4, vecSize = 100, minWordFreq = 20, sentSampleRate = 0.001, learningRate = 0.05, epochs = 15, negExCnt = 15)

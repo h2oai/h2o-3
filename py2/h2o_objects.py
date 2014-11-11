@@ -226,7 +226,7 @@ class H2O(object):
             raise exc_info[1], None, exc_info[2]
 
         if 200 != r.status_code:
-            print "JSON call returned non-200 status: ", url
+            print "JSON call returned non-200 status with ", (url + paramsStr)
             print "r.status_code: " + str(r.status_code)
             print "r.headers: " + repr(r.headers)
             print "r.text: " + r.text
