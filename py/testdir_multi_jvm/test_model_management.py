@@ -451,6 +451,15 @@ h2o.H2O.verboseprint('mm: ', repr(mm))
 assert 'auc' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
 assert 'cm' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
 assert 'predictions' in mm, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an predictions section."
+assert 'key' in mm['predictions'], "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a key."
+assert 'name' in mm['predictions']['key'], "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a key name."
+
+predictions_key = mm['predictions']['key']['name']
+result = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
+frames = result['frames']
+frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+assert predictions_key in frames_dict, "Failed to find predictions key" + predictions_key + " in Frames list."
+
 predictions = mm['predictions']
 h2o.H2O.verboseprint('p: ', repr(p))
 assert 'columns' in predictions, "Predictions for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an columns section."
