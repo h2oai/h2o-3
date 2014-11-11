@@ -19,7 +19,7 @@ import java.util.HashMap;
  * ./gradlew syncBigdataLaptop
  */
 public class Word2VecTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   private void printResults(HashMap<String, Float> hm) {
     TreeMap<Float, String> reversedMap = new TreeMap<Float, String>();
