@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import water.util.Pair;
 import water.*;
 import water.fvec.Frame;
 import water.util.Log;
@@ -80,15 +81,34 @@ import java.util.Properties;
  *
  */
 public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  private final transient int _version;
-  final int getVersion() { return _version; }
+  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+
+  @API(help="Version number of this Schema.")
+  public final int schema_version;
+  final int getSchemaVersion() { return schema_version; }
+
+  /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata. */
+  @API(help="Simple name of this Schema.")
+  public final String schema_name = this.getClass().getSimpleName();
+
+  @API(help="Simple name of H2O type that this Schema represents.")
+  public final String schema_type = _impl_class.getSimpleName();
+
+  // Registries which map a Schema simpleName to its Iced Class, and an Iced simpleName (type) and schema_version to its Schema Class.
+  private static Map<String, Class<? extends Iced>> schema_to_iced = new HashMap<>();
+  private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
   public Schema() {
     // Check version number
-    String n = this.getClass().getSimpleName();
-    assert n.charAt(n.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
-    _version = n.charAt(n.length()-1)-'0';
-    assert 0 <= _version && _version <= 9 : "Schema classname does not contain version";
+    assert schema_name.charAt(schema_name.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
+    schema_version = schema_name.charAt(schema_name.length()-1)-'0';
+    assert 0 <= schema_version && schema_version <= 9 : "Schema classname does not contain schema_version";
+
+    if (null == schema_to_iced.get(this.schema_name)) {
+      Log.debug("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      schema_to_iced.put(this.schema_name, _impl_class);
+      iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
+    }
   }
 
   /**
@@ -109,7 +129,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    */
   public I createImpl() {
     try {
-      return (I)this.getImplClass().newInstance();
+      return this.getImplClass().newInstance();
     }
     catch (Exception e) {
       String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
@@ -138,8 +158,14 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     return (S)this;
   }
 
-  public Class<? extends Iced> getImplClass() {
-    return ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+  public static Class<? extends Iced> getImplClass(Class<? extends Schema> clz) {
+    return (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
+  }
+
+  public Class<I> getImplClass() {
+    if (null == _impl_class)
+      _impl_class = (Class<I>)ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+    return _impl_class;
   }
 
   // TODO: this really does not belong in the schema layer; it's a hack for the

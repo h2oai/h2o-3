@@ -203,7 +203,7 @@ public abstract class ASTOp extends AST {
   // Standard column-wise function application
   abstract void apply(Env e);
   // Special row-wise 'apply'
-  double[] map(Env env, double[] in, double[] out) { throw H2O.unimpl(); }
+  double[] map(Env env, double[] in, double[] out, AST[] args) { throw H2O.unimpl(); }
   @Override void exec(Env e) { throw H2O.fail(); }
   // special exec for apply calls
   void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
@@ -245,6 +245,7 @@ abstract class ASTUniOp extends ASTOp {
   @Override void exec(Env e, AST arg1, AST[] args) {
     if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
     arg1.exec(e);
+    if (e.isAry()) e._global._local_frames.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -301,7 +302,6 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
-    //if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
     Frame fr = env.pop0Ary();
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -1028,7 +1028,7 @@ abstract class ASTReducerOp extends ASTOp {
     return res;
   }
 
-  @Override double[] map(Env env, double[] in, double[] out) {
+  @Override double[] map(Env env, double[] in, double[] out, AST[] args) {
     double s = _init;
     for (double v : in) if (!_narm || !Double.isNaN(v)) s = op(s,v);
     if (out == null || out.length < 1) out = new double[1];
@@ -1698,44 +1698,70 @@ class ASTVar extends ASTUniPrefixOp {
       if (use.equals("everything")) _narm = false;
       if (use.equals("complete.obs")) _narm = true;
       if (use.equals("all.obs")) _narm = false;
-      final double[/*cols*/][/*rows*/] covars = new double[y.numCols()][fr.numCols()];
-      final CovarTask tsks[][] = new CovarTask[y.numCols()][fr.numCols()];
-      final Frame frs[][] = new Frame[y.numCols()][fr.numCols()];
-      final double xmeans[] = new double[fr.numCols()];
-      final double ymeans[] = new double[y.numCols()];
-      for (int r = 0; r < fr.numCols(); ++r) xmeans[r] = getMean(fr.vecs()[r], _narm, use);
-      for (int c = 0; c < y.numCols(); ++c) ymeans[c]  = getMean( y.vecs()[c], _narm, use);
-      for (int c = 0; c < y.numCols(); ++c) {
-        for (int r = 0; r < fr.numCols(); ++r) {
-          frs[c][r] = new Frame(y.vecs()[c], fr.vecs()[r]);
-          tsks[c][r] = new CovarTask(ymeans[c], xmeans[r]).dfork(frs[c][r]);
-        }
-      }
-      for (int c = 0; c < y.numCols(); c++)
-        for (int r = 0; r < fr.numCols(); r++) {
-          covars[c][r] = tsks[c][r].getResult()._ss / (fr.numRows() - 1);
-          env.remove(frs[c][r], true); //cleanup
-          frs[c][r] = null;
-        }
 
-      if (env.isAry()) env.cleanup(env.popAry()); else env.pop();  // pop fr
-      if (env.isAry()) env.cleanup(env.popAry()); else  env.pop(); // pop y
-      env.pop(); // pop use
+      if (fr.numRows() == 1) {
+        double xmean=0; double ymean=0; double divideby = fr.numCols()-1; double ss=0;
+        for (Vec v : fr.vecs()) xmean+= v.at(0);
+        for (Vec v : y.vecs())  ymean+= v.at(0);
+        xmean /= (divideby+1); ymean /= (divideby+1);
 
-      // Just push the scalar if input is a single col
-      if (covars.length == 1 && covars[0].length == 1) env.push(new ValNum(covars[0][0]));
-      else {
-        // Build output vecs for var-cov matrix
-        Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
-        Vec[] vecs = new Vec[covars.length];
-        for (int i = 0; i < covars.length; i++) {
-          AppendableVec v = new AppendableVec(keys[i]);
-          NewChunk c = new NewChunk(v, 0);
-          for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
-          c.close(0, null);
-          vecs[i] = v.close(null);
+        if (Double.isNaN(xmean) || Double.isNaN(ymean)) { ss = Double.NaN; }
+        else {
+          for (int r = 0; r <= divideby; ++r) {
+            ss += (fr.vecs()[r].at(0) - xmean) * (y.vecs()[r].at(0) - ymean);
+          }
         }
-        env.push(new ValFrame(new Frame(colnames, vecs)));
+        if (env.isAry()) env.cleanup(env.popAry());
+        else env.pop();  // pop fr
+        if (env.isAry()) env.cleanup(env.popAry());
+        else env.pop(); // pop y
+        env.pop(); // pop use
+
+        env.push(new ValNum(ss == Double.NaN ? ss : ss/divideby));
+
+      } else {
+
+        final double[/*cols*/][/*rows*/] covars = new double[y.numCols()][fr.numCols()];
+        final CovarTask tsks[][] = new CovarTask[y.numCols()][fr.numCols()];
+        final Frame frs[][] = new Frame[y.numCols()][fr.numCols()];
+        final double xmeans[] = new double[fr.numCols()];
+        final double ymeans[] = new double[y.numCols()];
+        for (int r = 0; r < fr.numCols(); ++r) xmeans[r] = getMean(fr.vecs()[r], _narm, use);
+        for (int c = 0; c < y.numCols(); ++c) ymeans[c] = getMean(y.vecs()[c], _narm, use);
+        for (int c = 0; c < y.numCols(); ++c) {
+          for (int r = 0; r < fr.numCols(); ++r) {
+            frs[c][r] = new Frame(y.vecs()[c], fr.vecs()[r]);
+            tsks[c][r] = new CovarTask(ymeans[c], xmeans[r]).doAll(frs[c][r]);
+          }
+        }
+        for (int c = 0; c < y.numCols(); c++)
+          for (int r = 0; r < fr.numCols(); r++) {
+            covars[c][r] = tsks[c][r].getResult()._ss / (fr.numRows() - 1);
+            env.remove(frs[c][r], true); //cleanup
+            frs[c][r] = null;
+          }
+
+        if (env.isAry()) env.cleanup(env.popAry());
+        else env.pop();  // pop fr
+        if (env.isAry()) env.cleanup(env.popAry());
+        else env.pop(); // pop y
+        env.pop(); // pop use
+
+        // Just push the scalar if input is a single col
+        if (covars.length == 1 && covars[0].length == 1) env.push(new ValNum(covars[0][0]));
+        else {
+          // Build output vecs for var-cov matrix
+          Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
+          Vec[] vecs = new Vec[covars.length];
+          for (int i = 0; i < covars.length; i++) {
+            AppendableVec v = new AppendableVec(keys[i]);
+            NewChunk c = new NewChunk(v, 0);
+            for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
+            c.close(0, null);
+            vecs[i] = v.close(null);
+          }
+          env.push(new ValFrame(new Frame(colnames, vecs)));
+        }
       }
     }
   }
@@ -1795,7 +1821,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void exec(Env e, AST arg1, AST[] args) {
     arg1.exec(e);
-    Frame fr = e.peekAry();
+    e._global._local_frames.put(Key.make().toString(), e.peekAry());
     if (args != null) {
       if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
       for (AST a : args) {
@@ -1807,27 +1833,42 @@ class ASTMean extends ASTUniPrefixOp {
       }
     }
     apply(e);
-//    fr.delete();
   }
 
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary(); // get the frame w/o sub-reffing
-    if (fr.vecs().length > 1)
+    if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
-    if (fr.vecs()[0].isEnum())
+    for (Vec v : fr.vecs()) if (v.isEnum())
       throw new IllegalArgumentException("mean only applies to numeric vector.");
-    MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
-    if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
-      double ave = Double.NaN;
-      env.push(new ValNum(ave));
+    if (fr.numCols() > 1) {
+      double mean=0;
+      for(Vec v : fr.vecs()) mean += v.at(0);
+      env.push(new ValNum(mean/fr.numCols()));
     } else {
-      double ave = t._sum / t._rowcnt;
-      env.push(new ValNum(ave));
+      MeanNARMTask t = new MeanNARMTask(_narm).doAll(fr.anyVec()).getResult();
+      if (t._rowcnt == 0 || Double.isNaN(t._sum)) {
+        double ave = Double.NaN;
+        env.push(new ValNum(ave));
+      } else {
+        double ave = t._sum / t._rowcnt;
+        env.push(new ValNum(ave));
+      }
     }
     env.cleanup(fr);
   }
 
-  @Override double[] map(Env env, double[] in, double[] out) {
+  @Override double[] map(Env e, double[] in, double[] out, AST[] args) {
+    if (args != null) {
+      if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
+      for (AST a : args) {
+        if (a instanceof ASTId) {
+          _narm = ((ASTNum) e.lookup((ASTId) a)).dbl() == 1;
+        } else if (a instanceof ASTNum) {
+          _trim = ((ASTNum) a).dbl();
+        }
+      }
+    }
     if (out == null || out.length < 1) out = new double[1];
     double s = 0;  int cnt=0;
     for (double v : in) if( !Double.isNaN(v) ) { s+=v; cnt++; }

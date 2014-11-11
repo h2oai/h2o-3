@@ -736,11 +736,6 @@ final public class H2O {
     // an initial histogram state.
     new Cleaner().start();
 
-    // Start the heartbeat thread, to publish the Clouds' existence to other
-    // Clouds. This will typically trigger a round of Paxos voting so we can
-    // join an existing Cloud.
-    new HeartBeatThread().start();
-
     // Start a UDP timeout worker thread. This guy only handles requests for
     // which we have not recieved a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
@@ -968,8 +963,19 @@ final public class H2O {
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started
 
+    // Copy all ai.h2o.* system properties to the tail of the command line,
+    // effectively overwriting the earlier args.
+    ArrayList<String> args2 = new ArrayList<>(Arrays.asList(args));
+    for( Object p : System.getProperties().keySet() ) {
+      String s = (String)p;
+      if( s.startsWith("ai.h2o.") ) {
+        args2.add("-" + s.substring(7));
+        args2.add(System.getProperty(s));
+      }
+    }
+
     // Parse args
-    parseArguments(args);
+    parseArguments(args2.toArray(args));
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
@@ -1020,6 +1026,11 @@ final public class H2O {
     // for users of H2O to know that it's OK to start sending REST API requests.
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
+
+    // Start the heartbeat thread, to publish the Clouds' existence to other
+    // Clouds. This will typically trigger a round of Paxos voting so we can
+    // join an existing Cloud.
+    new HeartBeatThread().start();
   }
 
   // Die horribly

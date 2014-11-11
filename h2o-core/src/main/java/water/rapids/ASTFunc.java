@@ -84,16 +84,16 @@ public class ASTFunc extends ASTFuncDef {
           _args[i] = new ASTFrame(f._key.toString());
           _table._local_frames.put(_arg_names[i], f);
         }
-        _table.put(_arg_names[i], Env.ARY, _args[i].value());
+        _table.put(_arg_names[i], Env.LARY, _args[i].value());
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
       else throw H2O.unimpl("Vector arguments are not supported.");
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
-    e.cleanup(cleanme, f);
+//    e.cleanup(cleanme, f);
     _e = captured;
-    captured.popScope();
+//    captured.popScope();
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
@@ -103,7 +103,7 @@ public class ASTFunc extends ASTFuncDef {
     Frame f = ((ASTFrame)_args[0])._fr;
     if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
-    f.delete();
+//    f.delete();
   }
 
   double[] map(Env env, double[] in, double[] out, AST[] args) {
@@ -132,7 +132,7 @@ public class ASTFunc extends ASTFuncDef {
     } else if (env.isAry()) {
       fr = env.pop0Ary();
       if (fr.numCols() > 1 && fr.numRows() != 1) throw H2O.unimpl("Number of rows returned is > 1");
-      if (fr.numRows() > 1<<8) throw H2O.unimpl("Too many rows!");
+//      if (fr.numRows() > 1<<8) throw H2O.unimpl("Too many rows!");
       if (fr.numCols() > 1) {
         out = new double[fr.numCols()];
         for (int v = 0; v < fr.vecs().length; ++v) out[v] = fr.vecs()[v].at(0);

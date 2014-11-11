@@ -170,7 +170,7 @@ class H2O(object):
 
 
     def do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
-        cmd='get', extraComment=None, ignoreH2oError=False, noSandboxErrorCheck=False, **kwargs):
+        cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
             url = fullUrl
@@ -218,7 +218,7 @@ class H2O(object):
             # because there's no delay, and we don't want to delay all cloud teardowns by waiting.
             exc_info = sys.exc_info()
             # use this to ignore the initial connection errors during build cloud when h2o is coming up
-            if not noSandboxErrorCheck: 
+            if not noExtraErrorCheck: 
                 h2p.red_print(
                     "ERROR: got exception on %s to h2o. \nGoing to check sandbox, then rethrow.." % (url + paramsStr))
                 time.sleep(2)
@@ -311,12 +311,12 @@ class H2O(object):
                 msg = error(self, timeTakenSecs, numberOfRetries)
                 raise Exception(msg)
 
-    def wait_for_node_to_accept_connections(self, nodeList, timeoutSecs=15, noSandboxErrorCheck=False):
+    def wait_for_node_to_accept_connections(self, nodeList, timeoutSecs=15, noExtraErrorCheck=False):
         verboseprint("wait_for_node_to_accept_connections")
 
         def test(n, tries=None, timeoutSecs=timeoutSecs):
             try:
-                n.get_cloud(noSandboxErrorCheck=noSandboxErrorCheck, timeoutSecs=timeoutSecs)
+                n.get_cloud(noExtraErrorCheck=noExtraErrorCheck, timeoutSecs=timeoutSecs)
                 return True
             except requests.ConnectionError, e:
                 # Now using: requests 1.1.0 (easy_install --upgrade requests) 2/5/13
@@ -683,7 +683,7 @@ class RemoteH2O(H2O):
         if self.channel.closed: return False
         if self.channel.exit_status_ready(): return False
         try:
-            self.get_cloud(noSandboxErrorCheck=True)
+            self.get_cloud(noExtraErrorCheck=True)
             return True
         except:
             return False
@@ -697,7 +697,7 @@ class RemoteH2O(H2O):
             # kbn: it should be dead now? want to make sure we don't have zombies
             # we should get a connection error. doing a is_alive subset.
             try:
-                gc_output = self.get_cloud(noSandboxErrorCheck=True)
+                gc_output = self.get_cloud(noExtraErrorCheck=True)
                 raise Exception("get_cloud() should fail after we terminate a node. It isn't. %s %s" % (self, gc_output))
             except:
                 return True

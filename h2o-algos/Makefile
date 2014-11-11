@@ -46,7 +46,7 @@ classes: $(classes)
 #JUNIT_TESTS = hex.deeplearning.DeepLearningIrisTest hex.deeplearning.DeepLearningProstateTest hex.deeplearning.DropoutTest hex.deeplearning.NeuronsTest hex.kmeans.KMeansTest hex.example.ExampleTest hex.tree.gbm.GBMTest
 
 # Run 5 JVMs and check the basic tests work.  Output in sandbox/out.[01234]
-check: $(classes)
+check: default
 	./testMultiNode.sh
 #	@rm -rf sandbox ; mkdir sandbox
 #	-($(JVM) water.H2O 1> sandbox/out.1 2>&1 & $(JVM) water.H2O 1> sandbox/out.2 2>&1 & $(JVM) water.H2O 1> sandbox/out.3 2>&1 & $(JVM) water.H2O 1> sandbox/out.4 2>&1 & (sleep 1; $(JVM) org.junit.runner.JUnitCore $(JUNIT_TESTS) 2>&1 ; echo $$? > sandbox/status.0) | tee sandbox/out.0 )

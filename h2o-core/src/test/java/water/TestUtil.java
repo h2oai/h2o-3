@@ -28,20 +28,7 @@ public class TestUtil extends Iced {
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
     if( !_stall_called_before ) {
-      ArrayList<String> args = new ArrayList<>();
-      String name     = System.getProperty("water.stall.till.cloudsize.name");
-      String baseport = System.getProperty("water.stall.till.cloudsize.baseport");
-      if (name != null) {
-        args.add("-name");
-        args.add(name);
-      }
-      if (baseport != null) {
-        args.add("-baseport");
-        args.add(baseport);
-      }
-      String[] argsArr = args.toArray(new String[0]);
-      H2O.main(argsArr);
-
+      H2O.main(new String[]{});
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, 30000);

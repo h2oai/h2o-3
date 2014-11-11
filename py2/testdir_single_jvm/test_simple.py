@@ -16,7 +16,22 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_simple(self):
-        pass # put the browser in test_simple_browser.py because it fails
+        print "\ncloud is supposed to be good. cloud_size and locked should be 1, 0 below"
+
+        for i in range(10):
+            a = h2o.nodes[0].get_cloud()
+            consensus = a['consensus']
+            locked = a['locked']
+            cloud_size = a['cloud_size']
+            cloud_name = a['cloud_name']
+            version = a['version']
+
+            print 'iteration %s: %s%s %s%s %s%s %s%s %s%s' % (i,
+                "  consensus: ", consensus,
+                "  locked: ", locked,
+                "  cloud_size: ", cloud_size,
+                "  cloud_name: ", cloud_name,
+                "  version: ", version)
 
 if __name__ == '__main__':
     h2o.unit_main()

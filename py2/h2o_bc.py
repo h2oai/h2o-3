@@ -78,7 +78,9 @@ def get_base_port(base_port):
             raise Exception("H2O_PORT %s os env variable should be either not set, \
                 or between 54321 and 54999." % b)
 
-    if b:
+    if h2o_args.port_from_cmd_line:
+        base_port = h2o_args.port_from_cmd_line
+    elif b:
         base_port = b
     else:
         if getpass.getuser()=='jenkins':
@@ -171,11 +173,16 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
             nodeList.append(newNode)
 
         # If it's an existing cloud, it may already be locked. so never check.
-        verify_cloud_size(nodeList, expectedCloudName=nodeList[0].cloud_name, expectedLocked=None)
+        # we don't have the cloud name in the -ccj since it may change (and the file be static?)
+        # so don't check expectedCloudName
+        verify_cloud_size(nodeList, expectedCloudName=None, expectedLocked=None)
 
         # best to check for any errors right away?
         # (we won't report errors from prior tests due to marker stuff?
         ## check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
+
+        # put the test start message in the h2o log, to create a marker
+        nodeList[0].h2o_log_msg()
 
     except:
         # nodeList might be empty in some exception cases?
@@ -193,8 +200,6 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
     print ""
     h2p.red_print("Ingested from json:", nodeList[0].java_heap_GB, "GB java heap(s) with", len(nodeList), "total nodes")
     print ""
-    # put the test start message in the h2o log, to create a marker
-    nodeList[0].h2o_log_msg()
 
     # save it to a global copy, in case it's needed for tearDown
     h2o_nodes.nodes[:] = nodeList
@@ -328,8 +333,9 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         verboseprint("Attempting Cloud stabilize of", totalNodes, "nodes on", hostCount, "hosts")
         start = time.time()
         # UPDATE: best to stabilize on the last node!
+        # FIX! for now, always check sandbox, because h2oddev has TIME_WAIT port problems
         stabilize_cloud(nodeList[0], nodeList,
-            timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, noSandboxErrorCheck=True)
+            timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, noExtraErrorCheck=False)
         verboseprint(len(nodeList), "Last added node stabilized in ", time.time() - start, " secs")
         verboseprint("Built cloud: %d nodes on %d hosts, in %d s" % \
             (len(nodeList), hostCount, (time.time() - start)))
@@ -341,7 +347,8 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # UPDATE: do it for all cases now 2/14/13
         if conservative: # still needed?
             for n in nodeList:
-                stabilize_cloud(n, nodeList, timeoutSecs=timeoutSecs, noSandboxErrorCheck=True)
+                # FIX! for now, always check sandbox, because h2oddev has TIME_WAIT port problems
+                stabilize_cloud(n, nodeList, timeoutSecs=timeoutSecs, noExtraErrorCheck=False)
 
         # this does some extra checking now
         # verifies cloud name too if param is not None
@@ -353,6 +360,9 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # best to check for any errors due to cloud building right away?
         check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
 
+        # put the test start message in the h2o log, to create a marker
+        nodeList[0].h2o_log_msg()
+
     except:
         # nodeList might be empty in some exception cases?
         # no shutdown issued first, though
@@ -362,8 +372,6 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         raise
 
     print len(nodeList), "total jvms in H2O cloud"
-    # put the test start message in the h2o log, to create a marker
-    nodeList[0].h2o_log_msg()
 
     if h2o_args.config_json:
         # like cp -p. Save the config file, to sandbox
@@ -407,7 +415,7 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
     return nodeList
 
 # final overrides the disable --usecloud causues
-def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
+def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
     if h2o_args.sleep_at_tear_down:
         print "Opening browser to cloud, and sleeping for 3600 secs, before cloud teardown (for debug)"
         import h2o_browse as h2b
@@ -429,7 +437,7 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
     # also, copy the "delete keys at teardown from testdir_release
     # Assume there's a last "test" that's run to shutdown the cloud 
 
-    if not h2o_args.usecloud and not final:
+    if not h2o_args.usecloud or force:
         try:
             # update: send a shutdown to all nodes. h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
@@ -438,18 +446,18 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, final=False):
         except:
             pass
 
-    # ah subtle. we might get excepts in issuing the shutdown, don't abort out
-    # of trying the process kills if we get any shutdown exception (remember we go to all nodes)
-    # so we might? nodes are shutting down?
-    # FIX! should we wait a bit for a clean shutdown, before we process kill?
-    # It can take more than 1 sec though.
-    try:
-        time.sleep(2)
-        for n in nodeList:
-            n.terminate()
-            verboseprint("tear_down_cloud n:", n)
-    except:
-        pass
+        # ah subtle. we might get excepts in issuing the shutdown, don't abort out
+        # of trying the process kills if we get any shutdown exception (remember we go to all nodes)
+        # so we might? nodes are shutting down?
+        # FIX! should we wait a bit for a clean shutdown, before we process kill?
+        # It can take more than 1 sec though.
+        try:
+            time.sleep(2)
+            for n in nodeList:
+                n.terminate()
+                verboseprint("tear_down_cloud n:", n)
+        except:
+            pass
 
     check_sandbox_for_errors(sandboxIgnoreErrors=sandboxIgnoreErrors, python_test_name=h2o_args.python_test_name)
     # get rid of all those pesky line marker files. Unneeded now
@@ -477,14 +485,14 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # cloud size and consensus have to reflect a single grab of information from a node.
     cloudStatus = [n.get_cloud(timeoutSecs=timeoutSecs) for n in nodeList]
 
-    # FIX! hack. increment cloud size reported, for now
-    cloudSizes = [(c['cloud_size']+1) for c in cloudStatus]
+    cloudSizes = [(c['cloud_size']) for c in cloudStatus]
     cloudConsensus = [c['consensus'] for c in cloudStatus]
     cloudName = [c['cloud_name'] for c in cloudStatus]
     cloudLocked = [c['locked'] for c in cloudStatus]
     cloudVersion = [c['version'] for c in cloudStatus]
 
     # all match 0?
+    # if "(unknown)" starts appearing in version..go to h2o1 h2o_bc.py/h2o_fc.py/h2o_methods.py and copy allowing.
     expectedVersion = cloudVersion[0]
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
     if not expectedVersion.startswith('0'):
@@ -553,19 +561,21 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     return (sizeStr, consensusStr, expectedSize)
 
 
-def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSandboxErrorCheck=False):
+def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExtraErrorCheck=False):
     node_count = len(nodeList)
 
     # want node saying cloud = expected size, plus thinking everyone agrees with that.
     def test(n, tries=None, timeoutSecs=14.0):
-        c = n.get_cloud(noSandboxErrorCheck=True, timeoutSecs=timeoutSecs)
+        c = n.get_cloud(noExtraErrorCheck=noExtraErrorCheck, timeoutSecs=timeoutSecs)
+
+        # FIX! unique to h2o-dev for now, because of the port reuse problems (TCP_WAIT) compared to h2o
+        # flag them early rather than after timeout
+        check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
+
         # don't want to check everything. But this will check that the keys are returned!
         consensus = c['consensus']
         locked = c['locked']
-
-        # FIX! assume h2o-dev is off by 1
-        cloud_size = c['cloud_size'] + 1
-
+        cloud_size = c['cloud_size']
         cloud_name = c['cloud_name']
 
         if 'nodes' not in c:
@@ -574,10 +584,9 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
 
         # only print it when you get consensus
         if cloud_size != node_count:
-            verboseprint("\nNodes in cloud while building:")
-            print "kevin"
+            print "\nNodes in cloud while building:"
             for i,ci in enumerate(c['nodes']):
-                verboseprint(i, ci['h2o']['node'])
+                print "node %s" % i, ci['h2o']['node']
 
         if cloud_size > node_count:
             emsg = (
@@ -608,7 +617,8 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
 
     # wait to talk to the first one
     node.wait_for_node_to_accept_connections(nodeList,
-        timeoutSecs=timeoutSecs, noSandboxErrorCheck=noSandboxErrorCheck)
+        timeoutSecs=timeoutSecs, noExtraErrorCheck=True)
+
     # then wait till it says the cloud is the right size
     node.stabilize(test, error=('trying to build cloud of size %d' % node_count),
          timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs)

@@ -1,6 +1,7 @@
-import time, sys, json, re, getpass, os, shutil, requests
-import h2o_print as h2p
+import time, sys, json, re, getpass, os, shutil, requests, datetime
 
+import h2o_args
+import h2o_print as h2p
 from h2o_test import get_sandbox_name, check_sandbox_for_errors, dump_json, verboseprint
 
 #*******************************************************************************
@@ -81,6 +82,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     nodes      = gc['nodes']
 
     # None means don't check
+    print "kevin", expectedSize, cloud_size
     if expectedSize and (cloud_size!=expectedSize):
         raise Exception("cloud_size %s at %s disagrees with -expectedSize %s" % \
             (cloud_size, cloud_name, expectedSize))
@@ -92,7 +94,6 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     num_cpus_list = []
     name_list = []
     for i, n in enumerate(nodes):
-        print "kevin:", dump_json(n)
         print "max_mem (GB):", "%0.2f" % ((n['max_mem']+0.0)/(1024*1024*1024))
         print "tot_mem (GB):", "%0.2f" % ((n['tot_mem']+0.0)/(1024*1024*1024))
         java_heap_GB = (n['tot_mem']+0.0)/(1024*1024*1024)
@@ -199,7 +200,7 @@ def find_cloud(ip_port=None,
                     alreadyAdded.add(possMember2)
 
     print "\nDid %s tries" % tries
-    print "len(alreadyAdded):", len(alreadyAdded)
+    print "len(alreadyAdded):", len(alreadyAdded), alreadyAdded
 
     # get rid of the name key we used to hash to it
     h2oNodesList = [v for k, v in h2oNodes.iteritems()]
@@ -223,16 +224,27 @@ def find_cloud(ip_port=None,
             count[ip] = 1
 
     print "Writing", nodesJsonPathname
+    # Figure out some stuff about how this test was run
+    cs_time = str(datetime.datetime.now())
+    cs_cwd = os.getcwd()
+    cs_python_cmd_line = "python %s %s" % (h2o_args.python_test_name, h2o_args.python_cmd_args)
+    cs_python_test_name = h2o_args.python_test_name
+    cs_config_json = nodesJsonPathname
+    cs_username = h2o_args.python_username
+    cs_ip = h2o_args.python_cmd_ip
+
+    # dump the nodes state to a json file # include enough extra info to have someone
+    # rebuild the cloud if a test fails that was using that cloud.
     expandedCloud = {
         'cloud_start':
             {
-            'time': 'null',
-            'cwd': 'null',
-            'python_test_name': 'null',
-            'python_cmd_line': 'null',
-            'config_json': 'null',
-            'username': 'null',
-            'ip': 'null',
+                'time': cs_time,
+                'cwd': cs_cwd,
+                'python_test_name': cs_python_test_name,
+                'python_cmd_line': cs_python_cmd_line,
+                'config_json': cs_config_json,
+                'username': cs_username,
+                'ip': cs_ip,
             },
         'h2o_nodes': h2oNodesList
         }

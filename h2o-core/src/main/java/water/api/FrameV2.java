@@ -204,7 +204,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   }
 
   @Override public HTML writeHTML_impl( HTML ab ) {
-    String[] urls = RequestServer.frameChoices(getVersion(),_fr);
+    String[] urls = RequestServer.frameChoices(getSchemaVersion(),_fr);
     for( String url : urls )
       ab.href("hex",url,url);
 

@@ -190,7 +190,7 @@ public class Env extends Iced {
       }
       if (_local_frames != null) {
         for (Key kl : _local_frames) {
-          if ( Arrays.asList(((Frame)DKV.get(kl).get()).keys()).contains(v._key)) {
+          if (DKV.get(kl) != null && Arrays.asList(((Frame)DKV.get(kl).get()).keys()).contains(v._key)) {
             return false;
           }
         }
@@ -278,6 +278,12 @@ public class Env extends Iced {
         removeVec(v, fs);
       }
     }
+
+    for (String k : _global._local_frames.keySet()) {
+      Frame f = _local._local_frames.get(k);
+      for (Vec v : f.vecs()) removeVec(v, fs);
+      f.delete();
+    }
     fs.blockForPending();
   }
 
@@ -326,7 +332,6 @@ public class Env extends Iced {
     Futures fs = new Futures();
     // chop the local frames made in the scope
     for (String k : _local._local_frames.keySet()) {
-//      if (_global_frames.contains(_local._local_frames.get(k)._key)) continue;
       if (isAry()) {
         if(peekAry()._key != null && peekAry()._key == _local._local_frames.get(k)._key) continue;
       }
@@ -338,6 +343,10 @@ public class Env extends Iced {
     // zoop over the _local_locked hashset and hose down the KV store
     if (_local_locked != null) {
       for (Key k : _local_locked) {
+        if (isAry()) {
+          if(peekAry()._key != null && peekAry()._key == k) continue;
+          if(Arrays.asList(peekAry().keys()).contains(k)) continue;
+        }
         Keyed.remove(k, fs);
       }
     }
@@ -589,6 +598,7 @@ public class Env extends Iced {
 
     public int typeOf2(String name) {
       if (_local_frames.containsKey(name)) return LARY;
+      if (_local_frames.containsKey(getValue(name, false))) return LARY;
       return NULL;
     }
 
@@ -644,7 +654,7 @@ public class Env extends Iced {
     if (_local != null) res = _local.typeOf2(name);
 
     // Check the local scope first if not null
-    if (_local != null) res = _local.typeOf(name);
+    if (res == NULL && _local != null) res = _local.typeOf(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
     if (res == NULL && search_global) res = _global.typeOf(name);
@@ -653,7 +663,7 @@ public class Env extends Iced {
     if (res == NULL && search_global) res = kvLookup(name);
 
     // Still didn't find it? Start looking up the parent scopes.
-    if (res == NULL) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
+    if (res == NULL && _parent != null) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
     if (res == NULL) throw H2O.fail("Failed lookup of variable: "+name);
@@ -685,11 +695,21 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
-      case LARY:return new ASTFrame(_local._local_frames.get(id.value())); // pull the local frame out
+//      case LARY:return new ASTFrame(_local._local_frames.get(id.value())); // pull the local frame out
+      case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
       // case for FUN
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);
     }
+  }
+
+  // take the local id, check if it maps to a Frame in _local_frames
+  // if not, check if the value of id maps to is a key in _local_frames
+  Frame get_local(String id) {
+    if (_local._local_frames.containsKey(id)) return _local._local_frames.get(id);
+    String value = getValue(id, true);
+    if (_local._local_frames.containsKey(value)) return _local._local_frames.get(value);
+    throw new IllegalArgumentException("No Frame Found! Failed to lookup on variable: " + id);
   }
 }
 

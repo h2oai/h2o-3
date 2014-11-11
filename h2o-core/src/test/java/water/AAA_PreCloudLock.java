@@ -36,7 +36,7 @@ public class AAA_PreCloudLock extends TestUtil {
     try {
       TypeMap._check_no_locking=true; // Blow a nice assert if locking
       serve("/",null);
-      serve("/Cloud.html",null);
+      serve("/Cloud.json",null);
       serve("/junk",null);
       serve("/HTTP404",null);
       Properties parms = new Properties();

@@ -766,7 +766,7 @@ public final class ParseDataset2 extends Job<Frame> {
     private void enumCol2StrCol(int colIdx) {
       //build local value2key map for enums
       Enum enums = _enums[colIdx].deepCopy();
-      ValueString emap[] = new ValueString[enums.maxId()];
+      ValueString emap[] = new ValueString[enums.maxId()+1];
       ValueString keys[] = enums._map.keySet().toArray(new ValueString[enums.size()]);
       for (ValueString str:keys)
         // adjust for enum ids using 1-based indexing

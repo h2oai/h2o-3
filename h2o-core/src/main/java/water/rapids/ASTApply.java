@@ -41,7 +41,6 @@ public class ASTApply extends ASTOp {
     final ASTOp op = ASTOp.get(_fun);
     Frame fr2 = null;  // results Frame
     Frame fr = env.pop0Ary();
-    ArrayList<Frame> cleanup = new ArrayList<>();
     if( _margin == 2) {     // Work on columns?
       int ncols = fr.numCols();
       double[] row_result = new double[0];
@@ -71,7 +70,7 @@ public class ASTApply extends ASTOp {
         vecs_result = new Vec[ncols];
         Frame v = env.pop0Ary();
         vecs_result[0] = v.anyVec().makeCopy();
-        v.delete();
+        env.cleanup(v);
       }
 
       // loop over the columns and collect the results.
@@ -84,7 +83,7 @@ public class ASTApply extends ASTOp {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
           Frame v = env.pop0Ary();
           vecs_result[i] = v.anyVec().makeCopy();
-          v.delete();
+          env.cleanup(v);
         }
       }
 
@@ -111,7 +110,7 @@ public class ASTApply extends ASTOp {
       // find out return type
       double[] rowin = new double[fr.vecs().length];
       for (int c = 0; c < rowin.length; c++) rowin[c] = fr.vecs()[c].at(0);
-      final int outlen = op.map(env,rowin,null).length;
+      final int outlen = op.map(env,rowin,null, _fun_args).length;
       final Env env0 = env;
       MRTask mrt = new MRTask() {
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -119,7 +118,7 @@ public class ASTApply extends ASTOp {
           double rowout[] = new double[outlen];
           for (int row = 0; row < cs[0]._len; row++) {
             for (int c = 0; c < cs.length; c++) rowin[c] = cs[c].at0(row);
-            op.map(env0, rowin, rowout);
+            rowout = op.map(env0, rowin, rowout, _fun_args);
             for (int c = 0; c < ncs.length; c++) ncs[c].addNum(rowout[c]);
           }
         }

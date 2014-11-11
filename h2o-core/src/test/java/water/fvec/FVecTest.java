@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.io.File;
-import java.util.Arrays;
 
 import water.*;
 import water.DException.DistributedException;
@@ -25,9 +24,6 @@ public class FVecTest extends TestUtil {
   }
   static final double EPSILON = 1e-6;
 
-  public static  Key makeByteVec(String kname, String... data) {
-    return makeByteVec(Key.make(kname), data);
-  }
   public static  Key makeByteVec(Key k, String... data) {
     byte [][] chunks = new byte[data.length][];
     long [] espc = new long[data.length+1];
@@ -209,7 +205,7 @@ public class FVecTest extends TestUtil {
         v2.set(5, -100);
         assertEquals(-100, v2.min(), 0);
         v2.set(5, 5);
-        // make several rollups requests in parallel with and withou histo and then get histo
+        // make several rollups requests in parallel with and without histo and then get histo
         v2.startRollupStats(fs);
         v2.startRollupStats(fs);
         v2.startRollupStats(fs,true);
@@ -219,13 +215,13 @@ public class FVecTest extends TestUtil {
         // TODO: should test percentiles?
         for(long l:bins) assertEquals(1,l);
         Vec.Writer w = v2.open();
-        try{
+        try {
           v2.min();
           assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-        } catch(DistributedException de){
+        } catch( DistributedException de ) {
           assertTrue(de.getMessage().contains("IllegalArgumentException"));
           // expect to get IAE since we're requesting rollups while also changing the vec
-        } catch(IllegalArgumentException ie){
+        } catch( IllegalArgumentException ie ) {
           // if on local node can get iae directly
         }
         w.close(fs);

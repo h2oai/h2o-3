@@ -60,11 +60,6 @@ public class HeartBeatThread extends Thread {
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
     int counter = 0;
     while( true ) {
-      // Once per second, for the entire cloud a Node will multi-cast publish
-      // itself, so other unrelated Clouds discover each other and form up.
-      try { Thread.sleep(SLEEP); } // Only once-sec per entire Cloud
-      catch( InterruptedException ignore ) { }
-
       // Update the interesting health self-info for publication also
       H2O cloud = H2O.CLOUD;
       HeartBeat hb = H2O.SELF._heartbeat;
@@ -156,6 +151,11 @@ public class HeartBeatThread extends Thread {
         }
       }
       counter++;
+
+      // Once per second, for the entire cloud a Node will multi-cast publish
+      // itself, so other unrelated Clouds discover each other and form up.
+      try { Thread.sleep(SLEEP); } // Only once-sec per entire Cloud
+      catch( InterruptedException ignore ) { }
     }
   }
 }
