@@ -135,7 +135,8 @@ public class Score extends MRTask<Score> {
 
   @Override public void reduce( Score t ) {
     _sum += t._sum;
-    ArrayUtils.add(_cm,t._cm);
+    if (_cm != null)
+      ArrayUtils.add(_cm,t._cm);
     _snrows += t._snrows;
     if (_cms!=null)
       for (int i = 0; i < _cms.length; i++) ArrayUtils.add(_cms[i], t._cms[i]);
