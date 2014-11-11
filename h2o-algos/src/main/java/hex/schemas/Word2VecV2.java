@@ -76,27 +76,6 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
     @API(help="Use the continuous bag of words model or the Skip-Gram model", values = {"CBOW", "SkipGram"}, required = true)
     public Word2Vec.WordModel wordModel;
 
-    @Override public Word2VecParametersV2 fillFromImpl(Word2VecParameters parms) {
-      super.fillFromImpl(parms);
-      return this;
-    }
-
-    @Override public Word2VecParameters createImpl() {
-      Word2VecParameters impl = new Word2VecParameters();
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      return impl;
-    }
-  }
-
-
-  @Override public Word2VecParametersV2 createParametersSchema() { return new Word2VecParametersV2(); }
-
-  // Version&Schema-specific filling into the impl
-  @Override public Word2Vec createImpl() {
-    Word2VecParameters parms = parameters.createImpl();
-    parms.sanityCheckParameters();
-    return new Word2Vec(parms);
   }
 
   // Return a URL to invoke Word2Vec on this Frame

@@ -17,26 +17,25 @@ public class SynonymsHandler extends Handler<Synonyms, SynonymV1> {
   /**
    *  Synonym: A process in which information is successively passed on.
    */
-  protected static final class Synonyms extends Iced {
+  public static final class Synonyms extends Iced {
     // Inputs
-    Key _w2vec_key;
-    String _target;
-    int _cnt;
+    Key key;
+    String target;
+    int cnt;
 
     //Outputs
-//    Key      _key;
-    String[] _synonyms;
-    float[]  _cos_sim;
+    String[] synonyms;
+    float[]  cos_sim;
   }
 
   public SynonymV1 findSynonyms(int version, Synonyms synonym) {
-    Word2VecModel w2vmodel = DKV.get(synonym._w2vec_key).get();
-    HashMap<String, Float> hm = w2vmodel.findSynonyms(synonym._target, synonym._cnt);
-    synonym._synonyms = hm.keySet().toArray(new String[hm.keySet().size()]);
+    Word2VecModel w2vmodel = DKV.get(synonym.key).get();
+    HashMap<String, Float> hm = w2vmodel.findSynonyms(synonym.target, synonym.cnt);
+    synonym.synonyms = hm.keySet().toArray(new String[hm.keySet().size()]);
     Float[] f = hm.values().toArray(new Float[hm.keySet().size()]);
     float[] cos_sim = new float[f.length];
     for(int i = 0; i < f.length; ++i) cos_sim[i] = f[i];
-    synonym._cos_sim = cos_sim;
+    synonym.cos_sim = cos_sim;
     return schema(version).fillFromImpl(synonym);
   }
 

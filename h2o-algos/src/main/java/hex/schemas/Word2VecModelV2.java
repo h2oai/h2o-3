@@ -10,7 +10,7 @@ public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModel.Wo
   public static final class Word2VecModelOutputV2 extends ModelOutputSchema<Word2VecModel.Word2VecOutput, Word2VecModelOutputV2> {
 
     @Override public Word2VecModel.Word2VecOutput createImpl() {
-      Word2VecModel.Word2VecOutput impl = new Word2VecModel.Word2VecOutput();
+      Word2VecModel.Word2VecOutput impl = new Word2VecModel.Word2VecOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
@@ -31,7 +31,7 @@ public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModel.Wo
   @Override public Word2VecModel createImpl() {
     Word2VecV2.Word2VecParametersV2 p = ((Word2VecV2.Word2VecParametersV2)this.parameters);
     Word2VecModel.Word2VecParameters parms = p.createImpl();
-    return new Word2VecModel( key, p.training_frame, parms);
+    return new Word2VecModel( key, parms, null);
   }
 
   // Version&Schema-specific filling from the impl

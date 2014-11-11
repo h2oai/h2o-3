@@ -1,8 +1,18 @@
 package hex.word2vec;
 
 
-import water.*;
-import water.fvec.*;
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.Futures;
+import water.DKV;
+import water.AutoBuffer;
+import water.fvec.Vec;
+import water.fvec.AppendableVec;
+import water.fvec.Chunk;
+import water.fvec.NewChunk;
+import water.fvec.CStrChunk;
+import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ValueString;
 

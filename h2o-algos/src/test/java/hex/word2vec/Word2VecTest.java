@@ -19,7 +19,7 @@ import java.util.HashMap;
  * ./gradlew syncBigdataLaptop
  */
 public class Word2VecTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   private void printResults(HashMap<String, Float> hm) {
     TreeMap<Float, String> reversedMap = new TreeMap<Float, String>();
@@ -49,7 +49,7 @@ public class Word2VecTest extends TestUtil {
       parms._initLearningRate = 0.05f;
       parms._epochs = 25;
       job = new Word2Vec(parms);
-      job.train();
+      job.trainModel();
       w2vm = job.get();
       HashMap hm = w2vm.findSynonyms("dog",10);
       printResults(hm);

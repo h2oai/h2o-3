@@ -1,10 +1,10 @@
 package hex.word2vec;
 
-import hex.*;
-import hex.word2vec.Word2VecModel.*;
-import hex.schemas.Word2VecModelV2;
-import hex.word2vec.Word2VecModel.Word2VecParameters;
-import water.*;
+import water.Key;
+import water.H2O;
+import water.Futures;
+import water.DKV;
+import water.Iced;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -16,6 +16,10 @@ import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import hex.Model;
+import hex.word2vec.Word2VecModel.*;
+import hex.schemas.Word2VecModelV2;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
@@ -26,8 +30,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
   private Key _w2vKey;
 
-  public Word2VecModel(final Key selfKey, Frame fr, final Word2VecParameters params) {
-    super(selfKey, fr, params, new Word2VecOutput());
+  public Word2VecModel(Key selfKey, Word2VecParameters params, Word2VecOutput output) {
+    super(selfKey, params, output);
     _modelInfo = new Word2VecModelInfo(params);
     assert(Arrays.equals(_key._kb, selfKey._kb));
   }
@@ -213,29 +217,26 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     super.delete();
   }
 
-
   public static class Word2VecParameters extends Model.Parameters {
     static final int MAX_VEC_SIZE = 10000;
 
-    Word2Vec.WordModel _wordModel;
-    Word2Vec.NormModel _normModel;
-    Key _vocabKey;
-    int _minWordFreq, _vecSize, _windowSize, _epochs, _negSampleCnt;
-    float _initLearningRate, _sentSampleRate;
-
-    @Override public int sanityCheckParameters() {
-      if (_vecSize > MAX_VEC_SIZE) validation_error("vecSize", "Requested vector size of "+_vecSize+" in Word2Vec, exceeds limit of "+MAX_VEC_SIZE+".");
-      if (_vecSize < 1) validation_error("vecSize", "Requested vector size of "+_vecSize+" in Word2Vec, is not allowed.");
-      if (_windowSize < 1) validation_error("windowSize", "Negative window size not allowed for Word2Vec.  Expected value > 0, received "+_windowSize);
-      if (_sentSampleRate < 0.0) validation_error("sentSampleRate", "Negative sentence sample rate not allowed for Word2Vec.  Expected a value > 0.0, received "+_sentSampleRate);
-      if (_initLearningRate < 0.0) validation_error("initLearningRate", "Negative learning rate not allowed for Word2Vec.  Expected a value > 0.0, received "+ _initLearningRate);
-      if (_epochs < 1) validation_error("epochs", "Negative epoch count not allowed for Word2Vec.  Expected value > 0, received "+_epochs);
-
-      return _validation_error_count;
-    }
+    public Word2Vec.WordModel _wordModel;
+    public Word2Vec.NormModel _normModel;
+    public Key _vocabKey;
+    public int _minWordFreq, _vecSize, _windowSize, _epochs, _negSampleCnt;
+    public float _initLearningRate, _sentSampleRate;
   }
 
   public static class Word2VecOutput extends Model.Output{
+    public Word2Vec.WordModel _wordModel;
+    public Word2Vec.NormModel _normModel;
+    public int _minWordFreq, _vecSize, _windowSize, _epochs, _negSampleCnt;
+    public float _initLearningRate, _sentSampleRate;
+    public Word2VecOutput(Word2Vec b) { super(b);}
+
+    @Override public ModelCategory getModelCategory() {
+      return ModelCategory.Unknown;
+    }
   }
 
   public static class Word2VecModelInfo extends Iced {
