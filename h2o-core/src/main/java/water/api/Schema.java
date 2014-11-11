@@ -129,7 +129,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    */
   public I createImpl() {
     try {
-      return (I)this.getImplClass().newInstance();
+      return this.getImplClass().newInstance();
     }
     catch (Exception e) {
       String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
