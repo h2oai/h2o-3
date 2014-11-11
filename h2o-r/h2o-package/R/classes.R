@@ -152,7 +152,7 @@ setClass("H2OModel", representation(h2o="H2OClient", key="character", data="H2OP
 #'    \item{Precision}{Precision value at best cutoff. Estimated as \eqn{TP/(TP+FP)}.}
 #'    \item{Recall}{Recall value at best cutoff, i.e. the true positive rate \eqn{TP/P}.}
 #'    \item{Specificity}{Specificity value at best cutoff, i.e. the true negative rate \eqn{TN/N}.}
-#'    \item{MCC}{empty}
+#'    \item{MCC}{Mathew's Correlation Coefficient}
 #'    \item{Max per Class Error}{Maximum per class error at best cutoff.}
 #'    \item{Confusion}{Confusion matrix at best cutoff.}
 #' }
@@ -497,8 +497,13 @@ setMethod("show", "H2OKMeansModel", function(object) {
 #' This virtual class represents a grid search performed by H2O.
 #'
 #' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
+#' @slot keys Object of class \code{character}, representing the unique hex key that identifies the model.
+#' @slot data Object of class \code{H2OParsedData}, which is the input data used to build the model.
+#' @slot model Object of class \code{list} containing \code{H2OModel} objects representing the models returned by the grid search algorithm.
+#' @slot sumtable Object of class \code{list} containing summary statistics of all the models returned by the grid search algorithm.
 setClass("H2OGrid", representation(key="character",   data="H2OParsedData", model="list", sumtable="list", "VIRTUAL"))
 
+#' @rdname H2OGrid-class
 setMethod("show", "H2OGrid", function(object) {
   print(object@data@h2o)
   cat("Parsed Data Key:", object@data@key, "\n\n")
@@ -563,6 +568,8 @@ setClass("Node", contains="H2OFrame")
 #'
 #' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
 #' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
+#' @slot root Object of type \code{Node}
+#' @slot children Object of type \code{list}
 setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
 
 setMethod("show", "ASTNode", function(object) {
