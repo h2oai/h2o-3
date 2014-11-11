@@ -25,6 +25,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
     Poll a single job from the /Jobs endpoint until it is "status": "DONE" or "CANCELLED" or "FAILED" or we time out.
     '''
     params_dict = {}
+    # merge kwargs into params_dict
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
 
     start_time = time.time()
@@ -47,6 +48,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
         
         if status=='DONE' or status=='CANCELLED' or status=='FAILED':
             return result
+        # FIX! what are the other legal statuses that we should check for?
 
         if time.time() - start_time > timeoutSecs:
             print "Job:", job_key, "timed out in:", timeoutSecs
@@ -68,21 +70,25 @@ def import_files(self, path, timeoutSecs=180):
     return a
 
 
-def parse(self, key=None, key2=None,
+# key is required
+# FIX! for now h2o doesn't support regex here. just key or list of keys
+def parse(self, key, key2=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
           noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
     '''
     Parse an imported raw file or files into a Frame.
     '''
-    if not key:
-        raise Exception("key= is required in parse, %s", key)
-
-    # Call ParseSetup?srcs=[keys] . . .
-
-    # if benchmarkLogging:
-    #     cloudPerfH2O.get_log_save(initOnly=True)
-
-    # TODO: multiple keys
+    # these should override what parse setup gets below
+    params_dict = {
+        'srcs': None,
+        'hex': None,
+        'pType': None, # This is a list?
+        'sep': None,
+        'ncols': None,
+        'checkHeader': None, # how is this used
+        'singleQuotes': None,
+        'columnNames': None, # list?
+    }
     # if key is a list, create a comma separated string
     # list or tuple but not string
     if not isinstance(key, basestring):
@@ -91,23 +97,29 @@ def parse(self, key=None, key2=None,
     else:
         srcs = "[" + key + "]"
 
-    parse_setup_params = {
-        'srcs': srcs
-    }
+    params_dict['srcs'] = srcs
+
+    # merge kwargs into params_dict
+    # =None overwrites params_dict
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse', print_params=True)
+
+    # Call ParseSetup?srcs=[keys] . . .
+
+    # if benchmarkLogging:
+    #     cloudPerfH2O.get_log_save(initOnly=True)
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
-    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
+    params_setup = {'srcs': srcs}
+    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=params_setup)
     verboseprint("ParseSetup result:", dump_json(setup_result))
+
+    # and then Parse?srcs=<keys list> and params from the ParseSetup result
+    # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
 
     if setup_result['srcs']:
         setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
     else:
         setupSrcs = None
-
-    # and then Parse?srcs=<keys list> and params from the ParseSetup result
-    # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
-    #
-
     
     # I suppose we need a way for parameters to parse() to override these
     if setup_result['columnNames']:
@@ -116,7 +128,7 @@ def parse(self, key=None, key2=None,
         ascii_column_names = None
 
     parse_params = {
-        'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
+        'srcs': setupSrcs,
         'hex': setup_result['hexName'],
         'pType': setup_result['pType'],
         'sep': setup_result['sep'],
@@ -125,9 +137,15 @@ def parse(self, key=None, key2=None,
         'singleQuotes': setup_result['singleQuotes'],
         'columnNames': ascii_column_names,
     }
-    h2o_methods.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=True)
 
-    parse_result = self.do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
+    # merge params_dict into parse_params
+    # don't want =None to overwrite parse_params
+    print "parse_params:", parse_params
+    h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
+        print_params=True, ignoreNone=True)
+    print "parse_params:", parse_params
+    # none of the kwargs passed to here!
+    parse_result = self.do_json_request(jsonRequest="Parse.json", params=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['name']
@@ -141,8 +159,10 @@ def parse(self, key=None, key2=None,
     if job_json:
         dest_key = job_json['jobs'][0]['dest']['name']
         return self.frames(dest_key)
-
-    return None
+    else:
+        # ? we should always get a job_json result
+        raise Exception("parse didn't get a job_json result when it expected one")
+        # return None
 
 
 # TODO: remove .json
