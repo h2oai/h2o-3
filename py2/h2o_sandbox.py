@@ -202,9 +202,6 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     ('[WARN]' in line) or 
                     ('CalcSquareErrorsTasks' in line))
 
-                if foundBadPartial:
-                    print "kevin1: foundBadPartial:", foundBadPartial, "foundBad:", foundBad
-
             if (printing==0 and foundBad):
                 printing = 1
                 lines = 1
