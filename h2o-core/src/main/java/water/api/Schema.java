@@ -238,6 +238,12 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
             for (int i = 0; i < from.length; i++)
               copy[i] = from[i];
             f.set(this, copy);
+          } else if (parse_result.getClass().getComponentType() == Double.class && f.getType().getComponentType() == double.class) {
+            Double[] from = (Double[])parse_result;
+            double[] copy = new double[from.length];
+            for (int i = 0; i < from.length; i++)
+              copy[i] = from[i];
+            f.set(this, copy);
           } else {
             throw H2O.fail("Don't know how to cast an array of: " + parse_result.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
           }
@@ -293,6 +299,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
         a = (E[]) Array.newInstance(Integer.class, splits.length);
+      } else if (afclz == double.class) {
+        a = (E[]) Array.newInstance(Double.class, splits.length);
       } else {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);

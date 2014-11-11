@@ -8,12 +8,9 @@ import water.util.PojoUtils;
 public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput, ExampleModelV2 > {
 
   public static final class ExampleModelOutputV2 extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelOutputV2> {
-    @API(help="Iterations executed")
-    public double iters;
-
     // Output fields
-    @API(help="")
-    public double[] maxs;
+    @API(help="Iterations executed") public int iters;
+    @API(help="") public double[] maxs;
 
     @Override public ExampleModel.ExampleOutput createImpl() {
       ExampleModel.ExampleOutput impl = new ExampleModel.ExampleOutput(null);
