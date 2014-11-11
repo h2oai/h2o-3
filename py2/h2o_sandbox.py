@@ -47,7 +47,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
     else:
         tempFileList = os.listdir(LOG_DIR)
         if verbose:
-            print "kbn1:", tempFileList
+            print "tempFileList:", tempFileList
         # don't search the R stdout/stderr
         # this matches the python h2o captured stdout/stderr, and also any downloaded h2o logs
         # not the commands.log
@@ -61,7 +61,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 goodLogsList.append(filename)
 
         if verbose:
-            print "kbn2:", goodLogsList
+            print "goodLogsList:", goodLogsList
         if len(goodLogsList)==0:
             # let this go...sh2junit.py apparently calls h2o_sandbox() looking for h2o logs?
             emsg = "Unexpected: h2o_sandbox found 0 files in %s that matched the stdout/stderr or log pattern" % LOG_DIR
@@ -110,7 +110,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
         # just in case error/assert is lower or upper case
         # FIX! aren't we going to get the cloud building info failure messages
         # oh well...if so ..it's a bug! "killing" is temp to detect jar mismatch error
-        regex1String = 'found multiple|exception|error|ERRR|assert|killing|killed|required ports'
+        regex1String = 'found multiple|exception|error|ERRR|assert|killing|killed|required ports|FATAL'
         if cloudShutdownIsError:
             regex1String += '|shutdown command'
         regex1 = re.compile(regex1String, re.IGNORECASE)
@@ -163,7 +163,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 #[Loaded java.lang.Error from /usr/lib/jvm/java-7-oracle/jre/lib/rt.jar]
                 foundBadPartial = regex1.search(line)
                 foundBad = foundBadPartial and not (
-                    ('Retrying after IO error') or
+                    ('Retrying after IO error' in line) or
                     ('Error on' in line) or
                     # temporary hack. getting these on shutdown in multi-machine
                     # ApiWatch  ERRR WATER: ApiPortWatchdog: Failed trying to connect to REST API IP and Port (/10.73.149.39:54323, 30000 ms)
@@ -201,6 +201,9 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     ('[Loaded ' in line) or
                     ('[WARN]' in line) or 
                     ('CalcSquareErrorsTasks' in line))
+
+                if foundBadPartial:
+                    print "kevin1: foundBadPartial:", foundBadPartial, "foundBad:", foundBad
 
             if (printing==0 and foundBad):
                 printing = 1

@@ -333,8 +333,9 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         verboseprint("Attempting Cloud stabilize of", totalNodes, "nodes on", hostCount, "hosts")
         start = time.time()
         # UPDATE: best to stabilize on the last node!
+        # FIX! for now, always check sandbox, because h2oddev has TIME_WAIT port problems
         stabilize_cloud(nodeList[0], nodeList,
-            timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, noSandboxErrorCheck=True)
+            timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, noExtraErrorCheck=False)
         verboseprint(len(nodeList), "Last added node stabilized in ", time.time() - start, " secs")
         verboseprint("Built cloud: %d nodes on %d hosts, in %d s" % \
             (len(nodeList), hostCount, (time.time() - start)))
@@ -346,7 +347,8 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # UPDATE: do it for all cases now 2/14/13
         if conservative: # still needed?
             for n in nodeList:
-                stabilize_cloud(n, nodeList, timeoutSecs=timeoutSecs, noSandboxErrorCheck=True)
+                # FIX! for now, always check sandbox, because h2oddev has TIME_WAIT port problems
+                stabilize_cloud(n, nodeList, timeoutSecs=timeoutSecs, noExtraErrorCheck=False)
 
         # this does some extra checking now
         # verifies cloud name too if param is not None
@@ -560,12 +562,17 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     return (sizeStr, consensusStr, expectedSize)
 
 
-def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSandboxErrorCheck=False):
+def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExtraErrorCheck=False):
     node_count = len(nodeList)
 
     # want node saying cloud = expected size, plus thinking everyone agrees with that.
     def test(n, tries=None, timeoutSecs=14.0):
-        c = n.get_cloud(noSandboxErrorCheck=True, timeoutSecs=timeoutSecs)
+        c = n.get_cloud(noExtraErrorCheck=noExtraErrorCheck, timeoutSecs=timeoutSecs)
+
+        # FIX! unique to h2o-dev for now, because of the port reuse problems (TCP_WAIT) compared to h2o
+        # flag them early rather than after timeout
+        check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
+
         # don't want to check everything. But this will check that the keys are returned!
         consensus = c['consensus']
         locked = c['locked']
@@ -578,10 +585,9 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
 
         # only print it when you get consensus
         if cloud_size != node_count:
-            verboseprint("\nNodes in cloud while building:")
+            print "\nNodes in cloud while building:"
             for i,ci in enumerate(c['nodes']):
-                verboseprint("ci:", ci)
-                verboseprint(i, ci['h2o']['node'])
+                print "node %s" % i, ci['h2o']['node']
 
         if cloud_size > node_count:
             emsg = (
@@ -612,7 +618,8 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noSan
 
     # wait to talk to the first one
     node.wait_for_node_to_accept_connections(nodeList,
-        timeoutSecs=timeoutSecs, noSandboxErrorCheck=noSandboxErrorCheck)
+        timeoutSecs=timeoutSecs, noExtraErrorCheck=True)
+
     # then wait till it says the cloud is the right size
     node.stabilize(test, error=('trying to build cloud of size %d' % node_count),
          timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs)

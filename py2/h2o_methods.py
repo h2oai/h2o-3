@@ -25,10 +25,10 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
         sys.stdout.flush()
 
 
-def get_cloud(self, noSandboxErrorCheck=False, timeoutSecs=10):
+def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     # hardwire it to allow a 60 second timeout
-    a = self.do_json_request('Cloud.json', noSandboxErrorCheck=noSandboxErrorCheck, timeout=timeoutSecs)
-    verboseprint(a)
+    a = self.do_json_request('Cloud.json', noExtraErrorCheck=noExtraErrorCheck, timeout=timeoutSecs)
+    # verboseprint(a)
 
     version    = a['version']
     if not version.startswith('0'):
@@ -67,7 +67,7 @@ def get_timeline(self):
 # so request library might retry and get exception. allow that.
 def shutdown_all(self):
     try:
-        self.do_json_request('Shutdown.json', noSandboxErrorCheck=True)
+        self.do_json_request('Shutdown.json', noExtraErrorCheck=True)
     except:
         print "Got exception on Shutdown.json. Ignoring"
         pass

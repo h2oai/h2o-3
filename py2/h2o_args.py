@@ -151,6 +151,7 @@ def parse_our_args():
     debug_rest = args.debug_rest
     long_test_case = args.long_test_case
     usecloud = args.usecloud
+    usecloud_size = args.usecloud_size
 
     # Set sys.argv to the unittest args (leav sys.argv[0] as is)
     # FIX! this isn't working to grab the args we don't care about

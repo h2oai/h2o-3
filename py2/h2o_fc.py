@@ -82,6 +82,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     nodes      = gc['nodes']
 
     # None means don't check
+    print "kevin", expectedSize, cloud_size
     if expectedSize and (cloud_size!=expectedSize):
         raise Exception("cloud_size %s at %s disagrees with -expectedSize %s" % \
             (cloud_size, cloud_name, expectedSize))
