@@ -34,8 +34,7 @@ task copyJar(type: Copy) {
     into "${project.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
-// Execute always copyJar
-fatJar.finalizedBy copyJar
-// Run fatJar as par of build
-build.dependsOn fatJar
+copyJar.dependsOn fatJar
+build.dependsOn copyJar
+
 
