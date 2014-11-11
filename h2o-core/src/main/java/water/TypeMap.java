@@ -28,6 +28,7 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     "water.api.CloudV1",
+    "water.api.CloudV1$Node",
     "water.api.HTTP404V1",
     "water.api.HTTP500V1",
     "water.api.HttpErrorV1",

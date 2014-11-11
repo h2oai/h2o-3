@@ -1,6 +1,7 @@
 package water.api;
 
-import hex.*;
+import hex.Model;
+import hex.ModelMetrics;
 import water.*;
 import water.fvec.Frame;
 import water.util.Log;
@@ -228,7 +229,9 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     // No caching for predict()
     Frame predictions = parms.model.score(parms.frame, true);
     ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
-    mm.model_metrics[0].predictions = new FrameV2(predictions); // TODO: Should call schema(version)
+    Frame persisted = new Frame(Key.make("predictions_" + Key.rand()), predictions.names(), predictions.vecs());
+    DKV.put(persisted);
+    mm.model_metrics[0].predictions = new FrameV2(persisted, 0, 100); // TODO: Should call schema(version)
     return mm;
   }
 

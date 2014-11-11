@@ -8,7 +8,7 @@
     "use_home_for_ice": true,
     "network": "192.168.0.0/16",
 
-    "h2o_per_host": 1, 
+    "h2o_per_host": 3, 
     "java_heap_GB": 4, 
 
     "hdfs_name_node": "172.16.2.176",

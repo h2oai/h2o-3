@@ -141,6 +141,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   // TODO: Pull out the help text & metadata into the ParameterSchema for the front-end to display.
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSONStr("job", (null == job ? null : job.toString())); // TODO: is currently null, but probably should never be. . .
     ab.put1(',');
     ab.putJSONA("validation_messages", validation_messages);

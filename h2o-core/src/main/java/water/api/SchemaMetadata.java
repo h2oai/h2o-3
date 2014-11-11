@@ -194,6 +194,18 @@ public final class SchemaMetadata extends Iced {
         return "List";
 
       // H2O-specific types:
+      // TODO: NOTE, this is a mix of Schema types and Iced types; that's not right. . .
+      // Also, this mapping could/should be moved to Schema.
+      if (Schema.class.isAssignableFrom(clz)) {
+        return Schema.getImplClass((Class<Schema>)clz).getSimpleName();  // same as Schema.schema_type
+      }
+
+      if (Iced.class.isAssignableFrom(clz)) {
+        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in a Schema.");
+        return clz.getSimpleName();
+      }
+
+      /*
       if (hex.Model.class.isAssignableFrom(clz))
         return "Model";
 
@@ -217,6 +229,7 @@ public final class SchemaMetadata extends Iced {
 
       if (CloudV1.Node.class.isAssignableFrom(clz))
         return "Node";
+        */
 
       Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
       return clz.toString();

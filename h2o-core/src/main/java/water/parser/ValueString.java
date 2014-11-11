@@ -3,14 +3,14 @@ package water.parser;
 import java.util.Arrays;
 import water.Iced;
 
-public final class ValueString extends Iced implements Comparable<ValueString> {
+public class ValueString extends Iced implements Comparable<ValueString> {
    private byte [] _buf;
    private int _off;
    private int _len;
 
    ValueString( byte [] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
    ValueString( byte [] buf ) { this(buf,0,buf.length); }
-   ValueString( String from ) { this(from.getBytes()); }
+   public ValueString( String from ) { this(from.getBytes()); }
    // Cloning constructing used during collecting unique enums
    ValueString( ValueString from ) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
    // Used to make a temp recycling ValueString in hot loops

@@ -25,10 +25,10 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
         sys.stdout.flush()
 
 
-def get_cloud(self, noSandboxErrorCheck=False, timeoutSecs=10):
+def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     # hardwire it to allow a 60 second timeout
-    a = self.do_json_request('Cloud.json', noSandboxErrorCheck=noSandboxErrorCheck, timeout=timeoutSecs)
-    verboseprint(a)
+    a = self.do_json_request('Cloud.json', noExtraErrorCheck=noExtraErrorCheck, timeout=timeoutSecs)
+    # verboseprint(a)
 
     version    = a['version']
     if not version.startswith('0'):
@@ -67,8 +67,9 @@ def get_timeline(self):
 # so request library might retry and get exception. allow that.
 def shutdown_all(self):
     try:
-        self.do_json_request('Shutdown.json', noSandboxErrorCheck=True)
+        self.do_json_request('Shutdown.json', noExtraErrorCheck=True)
     except:
+        print "Got exception on Shutdown.json. Ignoring"
         pass
     # don't want delayes between sending these to each node
     # if you care, wait after you send them to each node
@@ -220,8 +221,17 @@ def poll_url(self, response,
         verboseprint(msgUsed, urlUsed, paramsUsedStr, "Response:", dump_json(response))
     return response
 
-def h2o_log_msg(*args, **kwargs):
-    print "WARNING: faking h2o_log_msg"
+def h2o_log_msg(self, message=None, timeoutSecs=15):
+    if 1 == 0:
+        return
+    if not message:
+        message = "\n"
+        message += "\n#***********************"
+        message += "\npython_test_name: " + h2o_args.python_test_name
+        message += "\n#***********************"
+    params = {'message': message}
+    self.do_json_request('LogAndEcho.json', params=params, timeout=timeoutSecs)
+
 
 def jobs_admin (*args, **kwargs):
     print "WARNING: faking jobs admin"
@@ -241,6 +251,8 @@ H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
 H2O.jobs_admin = jobs_admin
 H2O.unlock = unlock
+H2O.get_timeline = get_timeline
+# H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray
 import h2o_ray

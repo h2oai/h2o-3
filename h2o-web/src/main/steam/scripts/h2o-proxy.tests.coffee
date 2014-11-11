@@ -204,7 +204,7 @@ test 'airlines ingest and model building flow', (t) ->
           go null, frameKey
 
     fetchKmeansModelBuilder = (frameKey, go) ->
-      _.requestModelBuilders 'kmeans', (error, result) ->
+      _.requestModelBuilder 'kmeans', (error, result) ->
         if error
           t.fail 'model builders request failed ' + pp error
           go error
@@ -244,7 +244,7 @@ test 'airlines ingest and model building flow', (t) ->
           go null
 
     fetchDeepLearningModelBuilder = (go) ->
-      _.requestModelBuilders 'deeplearning', (error, result) ->
+      _.requestModelBuilder 'deeplearning', (error, result) ->
         if error
           t.fail 'model builders request failed ' + pp error
           go error

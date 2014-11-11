@@ -165,7 +165,7 @@ public class Frame extends Lockable {
   public String[] names() { return _names; }
 
   /** The array of keys.
-   * @ return the array of keys for each vec in the frame.
+   * @return the array of keys for each vec in the frame.
    */
   public Key[] keys() { return _keys; }
 
@@ -283,7 +283,7 @@ public class Frame extends Lockable {
   }
 
   // Add a bunch of vecs
-  private void add( String[] names, Vec[] vecs ) {
+  public void add( String[] names, Vec[] vecs ) {
     if (null == vecs || null == names) return;
     for( int i=0; i<vecs.length; i++ )
       add(names[i],vecs[i]);
