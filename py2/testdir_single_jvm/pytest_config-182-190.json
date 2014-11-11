@@ -6,18 +6,26 @@
     "password": "0xdiag", 
     "h2o_remote_buckets_root": "/home/0xdiag",
     "use_home_for_ice": true,
-    "network": "192.168.0.0/16",
 
-    "h2o_per_host": 3, 
-    "java_heap_GB": 4, 
+    "h2o_per_host": 1, 
+    "java_heap_GB": 20, 
 
-    "hdfs_name_node": "172.16.2.176",
-    "hdfs_version": "cdh4",
+    "hdfs_name_node": "172.16.2.186",
+    "hdfs_version": "hdp2.1",
     "use_hdfs": true,
 
     "use_flatfile": true,
 
     "ip": [
-        "192.168.0.34"
+        "172.16.2.182",
+        "172.16.2.183",
+        "172.16.2.184",
+        "172.16.2.185",
+        "172.16.2.186",
+        "172.16.2.187",
+        "172.16.2.188",
+        "172.16.2.189",
+        "172.16.2.190"
     ]
 }
+
