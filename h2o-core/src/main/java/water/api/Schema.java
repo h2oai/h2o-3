@@ -105,7 +105,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     assert 0 <= schema_version && schema_version <= 9 : "Schema classname does not contain schema_version";
 
     if (null == schema_to_iced.get(this.schema_name)) {
-      Log.info("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      Log.debug("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
       schema_to_iced.put(this.schema_name, _impl_class);
       iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
     }

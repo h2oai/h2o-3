@@ -736,11 +736,6 @@ final public class H2O {
     // an initial histogram state.
     new Cleaner().start();
 
-    // Start the heartbeat thread, to publish the Clouds' existence to other
-    // Clouds. This will typically trigger a round of Paxos voting so we can
-    // join an existing Cloud.
-    new HeartBeatThread().start();
-
     // Start a UDP timeout worker thread. This guy only handles requests for
     // which we have not recieved a timely response and probably need to
     // arrange for a re-send to cover a dropped UDP packet.
@@ -1031,6 +1026,11 @@ final public class H2O {
     // for users of H2O to know that it's OK to start sending REST API requests.
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
+
+    // Start the heartbeat thread, to publish the Clouds' existence to other
+    // Clouds. This will typically trigger a round of Paxos voting so we can
+    // join an existing Cloud.
+    new HeartBeatThread().start();
   }
 
   // Die horribly
