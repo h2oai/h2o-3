@@ -57,6 +57,7 @@ ext {
     hadoopVersion = '2.5.0-cdh5.2.0'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
+    h2oFlowVersion = '0.2.2'
 }
 
 //
@@ -87,6 +88,7 @@ subprojects {
         maven {
           url "http://repo.hortonworks.com/content/repositories/releases/"
         }
+        // mavenLocal()
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
     // to all projects
