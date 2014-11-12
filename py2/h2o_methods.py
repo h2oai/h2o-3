@@ -11,17 +11,21 @@ from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sand
 # print "h2o_methods"
 
 # this is done before import h2o_ray, which imports h2o_methods!
-def check_params_update_kwargs(params_dict, kw, function, print_params):
+# ignoreNone is used if new = None shouldn't overwrite. Normally it does!
+def check_params_update_kwargs(params_dict, kw, function, print_params, ignoreNone=False):
     # only update params_dict..don't add
     # throw away anything else as it should come from the model (propagating what RF used)
-    for k in kw:
+    for k,v in kw.iteritems():
         if k in params_dict:
-            params_dict[k] = kw[k]
+            if v or not ignoreNone:
+                # what if a type conversion happens here? (checkHeader = -1 overwriting an existing value?)
+                params_dict[k] = v
+                print params_dict[k], v
         else:
-            raise Exception("illegal parameter '%s' in %s" % (k, function))
+            raise Exception("illegal parameter '%s' with value '%s' in %s" % (k, v, function))
 
     if print_params:
-        print "%s parameters:" % function, params_dict
+        print "\n%s parameters:" % function, params_dict
         sys.stdout.flush()
 
 

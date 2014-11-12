@@ -1593,12 +1593,6 @@ def main(argv):
 
             possible_h2o_jar_parent_dir = next_possible_h2o_jar_parent_dir
 
-    if (h2o_jar is None):
-        print("")
-        print("ERROR: Could not find h2o.jar")
-        print("")
-        sys.exit(1)
-
     # Override any defaults with the user's choices.
     parse_args(argv)
 
@@ -1638,7 +1632,7 @@ def main(argv):
     signal.signal(signal.SIGTERM, signal_handler)
 
     # Sanity check existence of H2O jar file before starting the cloud.
-    if (not os.path.exists(h2o_jar)):
+    if ((h2o_jar is None) or (not os.path.exists(h2o_jar))):
         print("")
         print("ERROR: H2O jar not found: " + h2o_jar)
         print("")

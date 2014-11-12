@@ -33,12 +33,6 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Validation frame", direction=API.Direction.INOUT)
   public Frame validation_frame;
 
-  // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
-  // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
-  // column names are related to training_frame.
-  @API(help="Response column", direction=API.Direction.INOUT)
-  public String response_column;
-
   @API(help="Ignored columns", direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 

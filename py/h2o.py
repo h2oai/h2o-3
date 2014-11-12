@@ -738,3 +738,21 @@ class H2O(object):
         result = self.__do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
 
         return result
+
+    '''
+    Fetch the list of REST API schemas.
+    '''
+    def schemas(self, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+
+        return result
+
+    '''
+    Fetch the metadata for the given named REST API schema (e.g., FrameV2).
+    '''
+    def schema(self, schemaname, timeoutSecs=60, **kwargs):
+        parameters = { }
+        result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+
+        return result

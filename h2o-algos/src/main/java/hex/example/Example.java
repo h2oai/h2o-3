@@ -56,7 +56,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
         // Run the main Example Loop
         // Stop after enough iterations
         for( ; model._output._iters < _parms._max_iters; model._output._iters++ ) {
-          if( !isRunning() ) return; // Stopped/cancelled
+          if( !isRunning() ) break; // Stopped/cancelled
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
 

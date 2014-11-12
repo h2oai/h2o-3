@@ -110,9 +110,12 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       msg.write(s);
       DriverToMapperMessage msg2 = new DriverToMapperMessage();
       msg2.read(s);
-      if (msg2.getType() != DriverToMapperMessage.TYPE_FETCH_FLATFILE_RESPONSE) {
-        Log.err("DriverToMapperMessage type unrecognized");
-        throw new Exception ("DriverToMapperMessage type unrecognized");
+      char type = msg2.getType();
+      if (type != DriverToMapperMessage.TYPE_FETCH_FLATFILE_RESPONSE) {
+        int typeAsInt = (int)type & 0xff;
+        String str = new String("DriverToMapperMessage type unrecognized (" + typeAsInt + ")");
+        Log.err(str);
+        throw new Exception (str);
       }
       s.close();
       String flatfile = msg2.getFlatfile();

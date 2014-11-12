@@ -23,7 +23,7 @@ beta_features = True
 sleep_at_tear_down = False
 abort_after_import = False
 clone_cloud_json = None
-disable_time_stamp = False
+disable_time_stamp = True # change to default to True, for h2o-dev (for now?)
 debug_rest = False
 long_test_case = False
 usecloud = None
@@ -105,6 +105,9 @@ def parse_our_args():
     parser.add_argument('-dts', '--disable_time_stamp',
         help='Disable the timestamp on all stdout. Useful when trying to capture some stdout (like json prints) for use elsewhere',
         action='store_true')
+    parser.add_argument('-ets', '--enable_time_stamp',
+        help='Enable the timestamp on all stdout. Useful when trying to capture some stdout (like json prints) for use elsewhere',
+        action='store_true')
     parser.add_argument('-debug_rest', '--debug_rest',
         help='Print REST API interactions to rest.log',
         action='store_true')
@@ -147,7 +150,12 @@ def parse_our_args():
     sleep_at_tear_down = args.sleep_at_tear_down
     abort_after_import = args.abort_after_import
     clone_cloud_json = args.clone_cloud_json
-    disable_time_stamp = args.disable_time_stamp
+    
+    if args.disable_time_stamp:
+        disable_time_stamp = True
+    if args.enable_time_stamp:
+        disable_time_stamp = False
+
     debug_rest = args.debug_rest
     long_test_case = args.long_test_case
     usecloud = args.usecloud

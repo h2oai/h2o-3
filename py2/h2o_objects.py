@@ -226,7 +226,7 @@ class H2O(object):
             raise exc_info[1], None, exc_info[2]
 
         if 200 != r.status_code:
-            print "JSON call returned non-200 status: ", url
+            print "JSON call returned non-200 status with ", (url + paramsStr)
             print "r.status_code: " + str(r.status_code)
             print "r.headers: " + repr(r.headers)
             print "r.text: " + r.text
@@ -247,7 +247,7 @@ class H2O(object):
         try:
             rjson = r.json()
         except:
-            print dump_json(r.text)
+            h2p.red_print("r.text:", dump_json(r.text))
             if not isinstance(r, (list, dict)):
                 raise Exception("h2o json responses should always be lists or dicts, see previous for text")
 

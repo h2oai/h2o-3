@@ -4,21 +4,24 @@ import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.Key;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
 import java.util.Random;
 
-public class DeepLearningV2 extends ModelBuilderSchema<DeepLearning,DeepLearningV2,DeepLearningV2.DeepLearningParametersV2> {
+public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,DeepLearningV2,DeepLearningV2.DeepLearningParametersV2> {
 
-  public static final class DeepLearningParametersV2 extends ModelParametersSchema<DeepLearningParameters, DeepLearningParametersV2> {
+  public static final class DeepLearningParametersV2 extends SupervisedModelParametersSchema<DeepLearningParameters, DeepLearningParametersV2> {
     public String[] fields() { return new String[]{
         "destination_key",
         "training_frame",
         "validation_frame",
         "response_column",
         "ignored_columns",
+        "to_enum",
+        "balance_classes",
+        "max_after_balance_size",
         "n_folds",
         "keep_cross_validation_splits",
         "checkpoint",

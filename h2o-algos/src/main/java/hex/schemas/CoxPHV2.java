@@ -20,6 +20,7 @@ public class CoxPHV2 extends ModelBuilderSchema<CoxPH,CoxPHV2,CoxPHV2.CoxPHParam
               "training_frame",
               "validation_frame",
               "response_column",
+
               "ignored_columns",
 
               "start_column",

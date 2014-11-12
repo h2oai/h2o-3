@@ -8,7 +8,7 @@ import java.util.ArrayList;
 /**
  * Schema for the metadata for a Schema.
  */
-public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBase> {
+public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetadataBase<I, S>> extends Schema<I, SchemaMetadataBase<I, S>> {
 
   @API(help="All the public fields of the schema")
   public FieldMetadataBase[] fields;
@@ -57,10 +57,14 @@ public class SchemaMetadataBase extends Schema<SchemaMetadata, SchemaMetadataBas
   } // FieldMetadataBase
 
   @Override
-  public SchemaMetadata createImpl() {
+  public I createImpl() {
     SchemaMetadata impl = new SchemaMetadata();
-    impl.fields = new ArrayList<FieldMetadata>(this.fields.length);
+    return (I)impl;
+  }
 
+  @Override
+  public I fillImpl(I impl) {
+    impl.fields = new ArrayList<FieldMetadata>(this.fields.length);
     int i = 0;
     for (FieldMetadataBase s : this.fields)
       impl.fields.add(s.createImpl());

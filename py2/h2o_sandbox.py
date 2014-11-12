@@ -225,7 +225,8 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 errLines.append(line)
                 sys.stdout.write(line)
 
-            if (printSingleWarning):
+            # don't double print if warning
+            elif (printSingleWarning):
                 # don't print these lines
                 if not (
                     ('Unable to load native-hadoop library' in line) or
