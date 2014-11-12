@@ -242,7 +242,6 @@ def import_only(node=None, schema='local', bucket=None, path=None,
           
         # folderURI = 'nfs:/' + folderPath
         folderURI = 'nfs:/' + os.path.realpath(folderPath)
-        print "kevinA", folderURI
         if importParentDir:
             finalImportString = folderPath
         else:

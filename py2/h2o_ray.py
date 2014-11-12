@@ -1,6 +1,6 @@
 
 import time
-import h2o_methods
+import h2o_methods, h2o_print as h2p
 from h2o_test import verboseprint, dump_json
 
 ###################
@@ -133,6 +133,7 @@ def parse(self, key, key2=None,
     else:
         ascii_column_names = None
 
+
     parse_params = {
         'srcs': setupSrcs,
         'hex': setup_result['hexName'],
@@ -144,12 +145,17 @@ def parse(self, key, key2=None,
         'columnNames': ascii_column_names,
     }
 
+    # HACK: if there are too many column names..don't print! it is crazy output
+    # just check the output of parse setup. Don't worry about columnNames passed as params here. 
+    tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
+    if tooManyColNamesToPrint:
+        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy. See sandbox/commands.log")
+
     # merge params_dict into parse_params
     # don't want =None to overwrite parse_params
-    print "parse_params:", parse_params
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
-        print_params=True, ignoreNone=True)
-    print "parse_params:", parse_params
+        print_params=not tooManyColNamesToPrint, ignoreNone=True)
+
     # none of the kwargs passed to here!
     parse_result = self.do_json_request(jsonRequest="Parse.json", params=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
