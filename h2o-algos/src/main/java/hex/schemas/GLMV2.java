@@ -2,16 +2,16 @@ package hex.schemas;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
-import water.api.ModelParametersSchema;
+import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
 /**
  * Created by tomasnykodym on 8/29/14.
  */
-public class GLMV2 extends ModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
+public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
 
-  public static final class GLMParametersV2 extends ModelParametersSchema<GLMParameters, GLMParametersV2> {
+  public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
     // TODO: parameters are all wrong. . .
     public String[] fields() { return new String[] { "destination_key", "max_iters", "normalize" }; }
 

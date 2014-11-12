@@ -3,18 +3,21 @@ package hex.schemas;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
 
-public class GBMV2 extends ModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
+public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
-  public static final class GBMParametersV2 extends ModelParametersSchema<GBMParameters, GBMParametersV2> {
+  public static final class GBMParametersV2 extends SupervisedModelParametersSchema<GBMParameters, GBMParametersV2> {
     public String[] fields() { return new String[] {
         "destination_key",
         "training_frame",
         "validation_frame",
         "response_column",
         "ignored_columns",
+        "to_enum",
+        "balance_classes",
+        "max_after_balance_size",
         "ntrees",
         "max_depth",
         "min_rows",
