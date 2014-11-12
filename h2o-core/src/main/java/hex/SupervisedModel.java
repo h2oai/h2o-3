@@ -26,6 +26,10 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  instead of a regression) as needed.  The default is false, which means
      *  "do nothing" - accept the response column as-is and that alone drives
      *  the decision to do a classification vs regression. */
+
+    /*
+     * TOM!!!
+     */
     public boolean _toEnum = false;
 
     /** Should the minority classes be upsampled to balance the class

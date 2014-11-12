@@ -131,7 +131,16 @@ public class TypeMap {
   synchronized static private int install( String className, int id ) {
     assert !_check_no_locking : "Locking cloud to assign typeid to "+className;
     Paxos.lockCloud();
-    if( id == -1 ) id = IDS++;  // Leader will get an ID under lock
+
+    if( id == -1 ) {
+      Integer i = MAP.get(className);
+      if (i != null) {
+        return i;
+      }
+
+      id = IDS++;  // Leader will get an ID under lock
+    }
+
     MAP.put(className,id);      // No race on insert, since under lock
     // Expand lists to handle new ID, as needed
     if( id >= CLAZZES.length ) CLAZZES = Arrays.copyOf(CLAZZES,Math.max(CLAZZES.length<<1,id+1));
