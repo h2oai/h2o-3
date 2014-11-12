@@ -38,6 +38,11 @@ public final class SchemaMetadata extends Iced {
     public boolean is_schema;
 
     /**
+     * Schema name for this field, if it is_schema.  Set through reflection.
+     */
+    public String schema_name;
+
+    /**
      * Value for this field.  Set through reflection.
      */
     public String value;
@@ -95,11 +100,12 @@ public final class SchemaMetadata extends Iced {
      * @param values for enum-type fields this is a list of allowed string values
      * @param json should this field be included in generated JSON?
      */
-    public FieldMetadata(String name, String type, boolean is_schema, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
+    public FieldMetadata(String name, String type, boolean is_schema, String schema_name, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
       // from the Field, using reflection
       this.name = name;
       this.type = type;
       this.is_schema = is_schema;
+      this.schema_name = schema_name;
       this.value = value;
 
       // from the @API annotation
@@ -116,7 +122,7 @@ public final class SchemaMetadata extends Iced {
      * Create a new FieldMetadata object for the given Field of the given Schema.
      * @param schema water.api.Schema object
      * @param f java.lang.reflect.Field for the Schema class
-     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean)
+     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, String, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean)
      */
     public FieldMetadata(Schema schema, Field f) {
       super();
@@ -127,8 +133,12 @@ public final class SchemaMetadata extends Iced {
         this.value = consValue(o);
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.type = consType(f.getType());
+        this.type = consType(schema, f.getType());
         this.is_schema = (Schema.class.isAssignableFrom(f.getType()));
+
+        // TODO: NOPE. Note, this has to work when the field is null.
+        if (this.is_schema)
+          this.schema_name = f.getType().getSimpleName();
 
         API annotation = f.getAnnotation(API.class);
 
@@ -170,7 +180,7 @@ public final class SchemaMetadata extends Iced {
     }
 
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-    private static String consType(Class clz) {
+    private static String consType(Schema schema, Class clz) {
       boolean is_enum = Enum.class.isAssignableFrom(clz);
       boolean is_array = clz.isArray();
 
@@ -185,7 +195,7 @@ public final class SchemaMetadata extends Iced {
         return clz.toString();
 
       if (is_array)
-        return consType(clz.getComponentType()) + "[]";
+        return consType(schema, clz.getComponentType()) + "[]";
 
       if (Map.class.isAssignableFrom(clz))
         return "Map";
@@ -201,37 +211,11 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in a Schema.");
+        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass());
         return clz.getSimpleName();
       }
 
-      /*
-      if (hex.Model.class.isAssignableFrom(clz))
-        return "Model";
-
-      if (water.fvec.Frame.class.isAssignableFrom(clz))
-        return "Frame";
-
-      if (water.fvec.Vec.class.isAssignableFrom(clz))
-        return "Vec";
-
-      if (water.Key.class.isAssignableFrom(clz))
-        return "Key";
-
-      if (water.api.JobV2.class.isAssignableFrom(clz))
-        return "Job";
-
-      if (water.api.ModelMetricsBase.class.isAssignableFrom(clz))
-        return "Key";
-
-      if (CloudV1.class.isAssignableFrom(clz))
-        return "Cloud";
-
-      if (CloudV1.Node.class.isAssignableFrom(clz))
-        return "Node";
-        */
-
-      Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
+      Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass());
       return clz.toString();
     }
 
@@ -286,4 +270,5 @@ public final class SchemaMetadata extends Iced {
       throw new IllegalArgumentException(msg);
     }
   }
+
 }

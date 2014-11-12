@@ -22,7 +22,7 @@ class Basic(unittest.TestCase):
 
         # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
         import_result = a_node.import_files(path=find_file("smalldata/poker/poker-hand-testing.data"))
-        print dump_json(import_result)
+        # print dump_json(import_result)
 
         k = import_result['keys'][0]
         # frames_result = a_node.frames(key=k[0], len=5)
@@ -40,7 +40,7 @@ class Basic(unittest.TestCase):
             zeros = c['zeros']
             domain = c['domain']
 
-        print dump_json(frame)
+        # print dump_json(frame)
 
         # how do you parse multiple files
         parse_result = a_node.parse(key=k)

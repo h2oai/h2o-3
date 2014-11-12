@@ -715,21 +715,24 @@ public abstract class Neurons {
           final int N = _dinfo.fullN();
           assert (_a.size() == M);
 
-          //expensive
-          DenseVector orig = new DenseVector(N);
-          for (int i = 0; i < numcat; ++i) orig.set(cats[i], 1f);
-          for (int i = 0; i < nums.length; ++i)
-            orig.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[i]);
-
-          // Random projections based on http://users.soe.ucsc.edu/~optas/papers/jl.pdf
-          Random rng = new Random(params._seed);
+          // sparse random projection
           for (int i = 0; i < M; ++i) {
-            for (int j = 0; j < N; ++j) {
-              final float rnd = rng.nextFloat();
+            for (int c = 0; c < numcat; ++c) {
+              int j = cats[c];
+              Random rng = new Random(params._seed + i*N + j); //TODO: re-use same pool of random numbers with some hashing
               float val = 0;
+              final float rnd = rng.nextFloat();
               if (rnd < 1. / 6.) val = (float) Math.sqrt(3);
               if (rnd > 5. / 6.) val = -(float) Math.sqrt(3);
-              _a.add(i, orig.get(j) * val);
+              _a.add(i, 1f * val);
+            }
+            Random rng = new Random(params._seed + i*N + _dinfo.numStart());
+            for (int n = 0; n < nums.length; ++n) {
+              float val = 0;
+              final float rnd = rng.nextFloat();
+              if (rnd < 1. / 6.) val = (float) Math.sqrt(3);
+              if (rnd > 5. / 6.) val = -(float) Math.sqrt(3);
+              _a.set(i, (Double.isNaN(nums[n]) ? 0f /*Always do MeanImputation during scoring*/ : (float) nums[n]) * val);
             }
           }
         } else if (hash_trick) {

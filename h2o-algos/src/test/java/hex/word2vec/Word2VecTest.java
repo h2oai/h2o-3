@@ -5,6 +5,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
+import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.HashMap;
@@ -18,10 +19,14 @@ import java.util.HashMap;
  * Data referenced here can be retrieved with
  * ./gradlew syncBigdataLaptop
  */
-
-@Ignore("s3sync does not work on home windows machine, so the big test data is not available so these tests fail")
 public class Word2VecTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
+  static final String testFName = "bigdata/laptop/text8.gz";
+  @BeforeClass() public static void setup() {
+    File f = new File(testFName);
+    if(!f.exists())
+      throw new RuntimeException("File "+testFName+" not found.  Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.\"");
+    stall_till_cloudsize(1);
+  }
 
   private void printResults(HashMap<String, Float> hm) {
     TreeMap<Float, String> reversedMap = new TreeMap<Float, String>();
@@ -38,7 +43,7 @@ public class Word2VecTest extends TestUtil {
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("bigdata/laptop/text8.gz");
+      fr = parse_test_file(testFName);
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
@@ -69,7 +74,7 @@ public class Word2VecTest extends TestUtil {
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("bigdata/laptop/text8.gz");
+      fr = parse_test_file(testFName);
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
@@ -101,7 +106,7 @@ public class Word2VecTest extends TestUtil {
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("bigdata/laptop/text8.gz");
+      fr = parse_test_file(testFName);
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
@@ -132,7 +137,7 @@ public class Word2VecTest extends TestUtil {
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("bigdata/laptop/text8.gz");
+      fr = parse_test_file(testFName);
 
       Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
       parms._train = fr._key;
@@ -163,7 +168,7 @@ public class Word2VecTest extends TestUtil {
     Frame fr = null;
     try {
       long start = System.currentTimeMillis();
-      fr = parse_test_file("bigdata/laptop/text8.gz");
+      fr = parse_test_file(testFName);
       System.out.println("Done Parse: "+(float)(System.currentTimeMillis()-start)/1000+"s");
 
       start = System.currentTimeMillis();

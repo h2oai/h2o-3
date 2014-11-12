@@ -17,7 +17,7 @@ class Basic(unittest.TestCase):
 
     def test_simple3(self):
         a = h2o.nodes[0].endpoints()
-        # print h2o.dump_json(a)
+        print h2o.dump_json(a)
         print "There are %s endpoints" % len(a['routes'])
         for l in a['routes']:
             print l['url_pattern']

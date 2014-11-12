@@ -29,12 +29,13 @@ JVM="nice java -ea -cp build/libs/h2o-algos.jar${SEP}build/libs/h2o-algos-test.j
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
 JUNIT_TESTS_BOOT="hex.AAA_PreCloudLock"
+JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
 
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT > $OUTDIR/tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$

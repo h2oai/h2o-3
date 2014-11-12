@@ -50,8 +50,7 @@ class Basic(unittest.TestCase):
     def test_parse_covtype(self):
 
         tryList = [
-            ('covtype.data', 1, 30),
-            ('covtype20x.data', 20, 120),
+            ('covtype200x.data', 200, 360),
         ]
 
         for (csvFilename, multiplyExpected, timeoutSecs) in tryList:

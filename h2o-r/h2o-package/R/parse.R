@@ -20,6 +20,9 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # First go through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE_SETUP, srcs = srcs)
+  parseSetup$schema_name <- NULL
+  parseSetup$schema_version <- NULL
+  parseSetup$schema_type <- NULL
   col.names <- parseSetup$columnNames
   ncols <- parseSetup$ncols
   parseSetup$hex <- ifelse(key != "", key %p0% ".hex", parseSetup$hexName)

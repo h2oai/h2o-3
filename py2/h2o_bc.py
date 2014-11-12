@@ -336,11 +336,19 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # FIX! for now, always check sandbox, because h2oddev has TIME_WAIT port problems
         stabilize_cloud(nodeList[0], nodeList,
             timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, noExtraErrorCheck=False)
-        verboseprint(len(nodeList), "Last added node stabilized in ", time.time() - start, " secs")
-        verboseprint("Built cloud: %d nodes on %d hosts, in %d s" % \
-            (len(nodeList), hostCount, (time.time() - start)))
-        h2p.red_print("Built cloud:", nodeList[0].java_heap_GB, "GB java heap(s) with",
-            len(nodeList), "total nodes")
+        stabilizeTime = time.time() - start
+        verboseprint(len(nodeList), "Last added node stabilized in ", stabilizeTime, " secs")
+
+        # assume all the heap sizes are the same as zero
+        if nodeList[0].java_heap_GB:
+            heapSize = str(nodeList[0].java_heap_GB) + " GB"
+        elif nodeList[0].java_heap_GB:
+            heapSize = str(nodeList[0].java_heap_MB) + " MB"
+        else:
+            heapSize = "(unknown)"
+
+        h2p.red_print("Built cloud: %s java heap(s) with %d nodes on %d hosts, stabilizing in %d secs" % \
+            (heapSize, len(nodeList), hostCount, stabilizeTime))
 
         # FIX! using "consensus" in node[-1] should mean this is unnecessary?
         # maybe there's a bug. For now do this. long term: don't want?
