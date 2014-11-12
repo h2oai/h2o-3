@@ -3,10 +3,13 @@ import java.io.PrintWriter;
 import java.lang.Process;
 import java.lang.ProcessBuilder;
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class H2OBuildVersion {
   File _rootDir;
@@ -76,16 +79,61 @@ public class H2OBuildVersion {
 
   void emitBuildVersionJavaFileIfNecessary(File fileName, String projectVersion) {
     try {
-      boolean needToEmit = true;
-      if (! needToEmit) {
-        return;
-      }
-
       String branchName = calcBranch();
       String lastCommitHash = calcLastCommitHash();
       String describe = calcDescribe();
       String compiledOn = calcCompiledOn();
       String compiledBy = calcCompiledBy();
+
+      boolean needToEmit = false;
+
+      if (! fileName.exists()) {
+        System.out.print("NOTE: emitBuildVersionJava found no file, emitting new file");
+        needToEmit = true;
+      }
+
+      int found = 0;
+      if (! needToEmit) {
+        final String[][] stuffToCheck = {
+                {"branchName", branchName},
+                {"lastCommitHash", lastCommitHash},
+                {"projectVersion", projectVersion}
+        };
+
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        String line = br.readLine();
+
+        while ((! needToEmit) && (line != null)) {
+          for (String[] feature : stuffToCheck) {
+            String name = feature[0];
+            String value = feature[1];
+            Pattern p = Pattern.compile(".*" + name + ".*\"(.*)\";.*");
+            Matcher m = p.matcher(line);
+            boolean b = m.matches();
+            if (b) {
+              found++;
+              String v = m.group(1);
+              if (!value.equals(v)) {
+                System.out.print("NOTE: emitBuildVersionJava found a mismatch, emitting new file (" + value + " not equal " + v + ")");
+                needToEmit = true;
+                break;
+              }
+            }
+          }
+
+          line = br.readLine();
+        }
+      }
+
+      if ((! needToEmit) && (found != 3)) {
+        System.out.print("NOTE: emitBuildVersionJava found too few things to check, emitting new file");
+        needToEmit = true;
+      }
+
+      if (! needToEmit) {
+        System.out.print("NOTE: emitBuildVersionJava found a match, nothing to do");
+        return;
+      }
 
       PrintWriter writer = new PrintWriter(fileName);
       writer.println("package water.init;");
