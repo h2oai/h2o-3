@@ -4,6 +4,18 @@ checkargs <- function(message, ...) {
   if (failed) error(message)
 }
 
+.convertFieldType <- function(json) {
+   type = json$type
+   convert = switch(type,
+   "Key" = as.character,
+   "Frame" = as.character,
+   "int" = as.integer,
+   "boolean" = as.logical,
+   "long" = as.numeric,
+   "enum" = as.character
+   )
+   convert(json$actual_value)
+}
 
 
 

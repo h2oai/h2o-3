@@ -481,7 +481,7 @@ setMethod("show", "H2OPCAModel", function(object) {
 #' The H2OKMeansModel class.
 #'
 #' This class represents the results of a KMeans model.
-setClass("H2OKMeansModel", contains="H2OModel")
+setClass("H2OKMeansModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
@@ -490,11 +490,11 @@ setMethod("show", "H2OKMeansModel", function(object) {
     cat("K-Means Model Key:", object@key)
 
     model = object@model
-    cat("\n\nK-means clustering with", length(model$size), "clusters of sizes "); cat(model$size, sep=", ")
-    cat("\n\nCluster means:\n"); print(model$centers)
-    cat("\nClustering vector:\n"); print(summary(model$cluster))
-    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
-    cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
+    cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
+#    cat("\n\nCluster means:\n"); print(model$centers)
+#    cat("\nClustering vector:\n"); print(summary(model$clusters))
+#    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
+#    cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
     cat("\nAvailable components:\n\n"); print(names(model))
 })
 
