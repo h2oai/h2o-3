@@ -1,7 +1,7 @@
-#'
-#' A collection of methods to parse expressions and produce ASTs.
-#'
-#' R expressions convolved with H2O objects evaluate lazily.
+#
+# A collection of methods to parse expressions and produce ASTs.
+#
+# R expressions convolved with H2O objects evaluate lazily.
 
 
 #'
@@ -15,7 +15,7 @@
 #'
 #'  { 'ast' : { ... }, 'funs' : {[ ... ]} }
 #'
-#' All ASTNodes have children. All nodes with the @root slot has a list in the @children slot that represent operands.
+#' All ASTNodes have children. All nodes with the @@root slot has a list in the @@children slot that represent operands.
 visitor<-
 function(node) {
   res <- ""
