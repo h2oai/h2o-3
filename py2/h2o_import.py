@@ -232,8 +232,17 @@ def import_only(node=None, schema='local', bucket=None, path=None,
         if h2o_args.abort_after_import:
             raise Exception("Aborting due to abort_after_import (-aai) argument's effect in import_only()")
 
+        # FIX! why are we returning importPattern here..it's different than finalImportString if we import a folder?
+        # is it used for key matching by others?
+
+        # FIX! hack ..h2o-dev is creating key names with the absolute path, not the sym link path
+        # messes up for import folders that go thru /home/<user>/home-0xdiag-datasets
+        # importPattern = folderURI + "/" + pattern
+        # could include this on the entire importPattern if we no longer have regex basename in h2o-dev?
           
-        folderURI = 'nfs:/' + folderPath
+        # folderURI = 'nfs:/' + folderPath
+        folderURI = 'nfs:/' + os.path.realpath(folderPath)
+        print "kevinA", folderURI
         if importParentDir:
             finalImportString = folderPath
         else:
@@ -334,8 +343,6 @@ def import_only(node=None, schema='local', bucket=None, path=None,
             raise Exception("schema not understood: %s" % schema)
 
     print "\nimport_only:", h2o_args.python_test_name, schema, "uses", finalImportString
-    # FIX! why are we returning importPattern here..it's different than finalImportString if we import a folder?
-    # is it used for key matching by others?
     importPattern = folderURI + "/" + pattern
     return (importResult, importPattern)
 
