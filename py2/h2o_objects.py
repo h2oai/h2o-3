@@ -247,7 +247,7 @@ class H2O(object):
         try:
             rjson = r.json()
         except:
-            print dump_json(r.text)
+            h2p.red_print("r.text:", dump_json(r.text))
             if not isinstance(r, (list, dict)):
                 raise Exception("h2o json responses should always be lists or dicts, see previous for text")
 

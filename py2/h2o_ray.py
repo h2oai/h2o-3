@@ -20,7 +20,8 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
 
 
 # TODO: add delays, etc.
-def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
+# if a key= is passed, it does a frames on that key while polling (intermediate model results?)
+def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwargs):
     '''
     Poll a single job from the /Jobs endpoint until it is "status": "DONE" or "CANCELLED" or "FAILED" or we time out.
     '''
@@ -32,6 +33,10 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
     while True:
         result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
+
+        if key:
+            frames_result = self.frames(key=key)
+            print 'frames_result for key:', key, dump_json(result)
 
         jobs = result['jobs'][0]
         description = jobs['description']
@@ -74,7 +79,7 @@ def import_files(self, path, timeoutSecs=180):
 # FIX! for now h2o doesn't support regex here. just key or list of keys
 def parse(self, key, key2=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
-          noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
+          noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=True, **kwargs):
     '''
     Parse an imported raw file or files into a Frame.
     '''
@@ -149,12 +154,19 @@ def parse(self, key, key2=None,
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['name']
+    hex_key = parse_params['hex']
 
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:
+        # ??
         return this.jobs(job_key)
 
-    job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+    if intermediateResults:
+        key = hex_key
+    else:
+        key = None
+
+    job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs, key=key)
 
     if job_json:
         dest_key = job_json['jobs'][0]['dest']['name']
