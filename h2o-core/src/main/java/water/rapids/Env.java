@@ -198,7 +198,10 @@ public class Env extends Iced {
       removeVec(v, null);
       extinguishCounts(v);
       return true;
-    } else { _refcnt.put(v, new IcedInt(cnt)); }
+    } else {
+      if(cnt < 0) extinguishCounts(v);
+      else _refcnt.put(v, new IcedInt(cnt));
+    }
     return false;
   }
 
@@ -223,11 +226,11 @@ public class Env extends Iced {
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
       fs = new Futures();
-      DKV.remove(v._key, fs);
+      Keyed.remove(v._key, fs);
       fs.blockForPending();
       return null;
     } else {
-      DKV.remove(v._key, fs);
+      Keyed.remove(v._key, fs);
       return fs;
     }
   }
@@ -261,9 +264,6 @@ public class Env extends Iced {
   }
 
   public void remove_and_unlock() {
-    // Unlock everything
-//    new UnlockTask(true).doAllNodes();
-
     while(!_stack.isEmpty()) {
       int type = peekType();
       switch(type) {
@@ -299,7 +299,7 @@ public class Env extends Iced {
       if (!_locked.contains(v._key)) {
         extinguishCounts(v);
         fs = removeVec(v, fs);
-      }
+      } else { extinguishCounts(v); }
     }
     return fs;
   }

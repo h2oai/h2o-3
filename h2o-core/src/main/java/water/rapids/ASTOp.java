@@ -1421,7 +1421,7 @@ class ASTSeq extends ASTUniPrefixOp {
 class ASTRepLen extends ASTUniPrefixOp {
   protected static double _length;
   @Override String opStr() { return "rep_len"; }
-  ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
+  public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
   @Override void apply(Env env) {
 
@@ -1485,7 +1485,7 @@ class ASTQtile extends ASTUniPrefixOp {
 
   @Override String opStr() { return "quantile"; }
 
-  ASTQtile( ) { super(new String[]{"quantile","x","probs", "na.rm", "names", "type"});}
+  public ASTQtile() { super(new String[]{"quantile","x","probs", "na.rm", "names", "type"});}
   @Override ASTQtile make() { return new ASTQtile(); }
   @Override ASTQtile parse_impl(Exec E) {
     // Get the ary
@@ -1597,7 +1597,7 @@ class ASTRunif extends ASTUniPrefixOp {
   protected static double _max;
   protected static long   _seed;
   @Override String opStr() { return "runif"; }
-  ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
+  public ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
   @Override ASTRunif parse_impl(Exec E) {
     // peel off the ary
