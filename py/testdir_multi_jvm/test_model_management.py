@@ -154,6 +154,31 @@ if h2o.H2O.verbose:
 
 
 ####################################
+# test schemas collection GET
+# print 'Testing /Metadata/schemas. . .'
+# schemas = a_node.schemas(timeoutSecs=240)
+# 
+# # if h2o.H2O.verbose:
+# print 'Schemas: '
+# pp.pprint(schemas)
+
+
+####################################
+# test schemas individual GET
+# print 'Testing /Metadata/schemas/FrameV2. . .'
+# schema = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
+# 
+# if h2o.H2O.verbose:
+#     print 'Schema: '
+#     pp.pprint(schema)
+
+
+
+
+
+
+
+####################################
 # test model_builders collection GET
 print 'Testing /ModelBuilders. . .'
 model_builders = a_node.model_builders(timeoutSecs=240)

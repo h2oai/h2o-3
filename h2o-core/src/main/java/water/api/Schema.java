@@ -1,21 +1,16 @@
 package water.api;
 
 import hex.Model;
-import water.util.Pair;
 import water.*;
 import water.fvec.Frame;
-import water.util.Log;
-import water.util.MarkdownBuilder;
-import water.util.PojoUtils;
-import water.util.ReflectionUtils;
+import water.util.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -83,31 +78,79 @@ import java.util.Properties;
 public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
-  @API(help="Version number of this Schema.")
-  public final int schema_version;
+  @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
+  public int schema_version;
   final int getSchemaVersion() { return schema_version; }
 
-  /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata. */
-  @API(help="Simple name of this Schema.")
-  public final String schema_name = this.getClass().getSimpleName();
+  /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
+  @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
+  public String schema_name = (new CurClassNameGetter()).getClz().getSimpleName(); // this.getClass().getSimpleName();
 
-  @API(help="Simple name of H2O type that this Schema represents.")
+  @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
   public final String schema_type = _impl_class.getSimpleName();
 
-  // Registries which map a Schema simpleName to its Iced Class, and an Iced simpleName (type) and schema_version to its Schema Class.
+  // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
+  // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
+  private static Map<String, Class<? extends Schema>> schemas = new HashMap<>();
+
+  // Registry which maps a Schema simpleName to its Iced Class.
+  // E.g., "DeepLearningParametersV2" -> hex.deeplearning.DeepLearning.DeepLearningParameters
   private static Map<String, Class<? extends Iced>> schema_to_iced = new HashMap<>();
+
+  // Registry which maps an Iced simpleName (type) and schema_version to its Schema Class.
+  // E.g., (DeepLearningParameters, 2) -> "DeepLearningParametersV2"
+  //
+  // Note that iced_to_schema gets lazily filled if a higher version is asked for than is
+  // available (e.g., if the highest version of Frame is FrameV2 and the client asks for
+  // the schema for (Frame, 17) then FrameV2 will be returned, and all the mappings between
+  // 17 and 3 will get added to the Map.
   private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
   public Schema() {
     // Check version number
-    assert schema_name.charAt(schema_name.length()-2)=='V' : "Schema classname does not end in a 'V' and a version #";
-    schema_version = schema_name.charAt(schema_name.length()-1)-'0';
-    assert 0 <= schema_version && schema_version <= 9 : "Schema classname does not contain schema_version";
+    schema_version = extractVersion(schema_name);
+    // We do now to get metadata for base classes: assert schema_version > -1 : "Cannot instantiate a schema whose classname does not end in a 'V' and a version #";
 
     if (null == schema_to_iced.get(this.schema_name)) {
-      Log.debug("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      Log.info("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      if (null != schemas.get(this.schema_name))
+        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.schema_name) + " and: " + this.getClass().toString());
+
+      schemas.put(this.schema_name, this.getClass());
       schema_to_iced.put(this.schema_name, _impl_class);
       iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
+    }
+  }
+
+  protected static Pattern _version_pattern = null;
+  /** Extract the version number from the schema class name.  Returns -1 if there's no version number at the end of the classname. */
+  public static int extractVersion(String clz_name) {
+    if (null == _version_pattern) // can't just use a static initializer
+      _version_pattern = Pattern.compile(".*V(\\d+)");
+    Matcher m =  _version_pattern.matcher(clz_name);
+    if (! m.matches()) return -1;
+    return Integer.valueOf(m.group(1));
+  }
+
+  /** Helper to fetch the class name in a static initializer block. */
+  private static class CurClassNameGetter extends SecurityManager {
+    public Class getClz(){
+      return getClassContext()[1];
+    }
+  }
+
+  // Ensure that all Schema classes get registered up front.
+
+  /** Register the given schema class. */
+  // TODO: walk over the fields and register sub-schemas
+  public static void register(Class<? extends Schema> clz) {
+    if (extractVersion(clz.getSimpleName()) > -1) {
+      try {
+        clz.newInstance();
+      } catch (Exception e) {
+        Log.err("Failed to instantiate schema class: " + clz);
+      }
+      Log.info("Instantiated: " + clz.getSimpleName());
     }
   }
 
@@ -140,7 +183,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   /** Fill an impl object and any children from this schema and its children. */
   public I fillImpl(I impl) {
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // TODO: make consistent and remove
     PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
     return impl;
   }
@@ -154,7 +197,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /** Version and Schema-specific filling from the implementation object. */
   public S fillFromImpl(I impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
     return (S)this;
   }
 
@@ -348,6 +391,114 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
   /**
+   * Return an immutable Map of all the schemas: schema_name -> schema Class.
+   */
+  static Map<String, Class<? extends Schema>> schemas() {
+    return Collections.unmodifiableMap(new HashMap<>(schemas));
+  }
+
+  /**
+   * For a given version and Iced object return the appropriate Schema class, if any.
+   * @see #schemaClass(int, java.lang.String)
+   */
+  static Class<? extends Schema> schemaClass(int version, Iced impl) {
+    return schemaClass(version, impl.getClass().getSimpleName());
+  }
+
+  /**
+   * For a given version and Iced class return the appropriate Schema class, if any.
+   * @see #schemaClass(int, java.lang.String)
+   */
+  static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
+    return schemaClass(version, impl_class.getSimpleName());
+  }
+
+  /**
+   * For a given version and type (Iced class simpleName) return the appropriate Schema
+   * class, if any.
+   * <p>
+   * If a higher version is asked for than is available (e.g., if the highest version of
+   * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
+   * be returned.  This compatibility lookup is cached.
+   */
+  static Class<? extends Schema> schemaClass(int version, String type) {
+    if (version < 1) return null;
+
+    Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
+
+    if (null != clz) return clz; // found!
+
+    clz = schemaClass(version - 1, type);
+
+    if (null != clz) iced_to_schema.put(new Pair(type, version), clz); // found a lower-numbered schema: cache
+    return clz;
+  }
+
+  /**
+   * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
+   */
+  static Class<? extends Schema>  schemaClass(String schema_name) {
+    return schemas.get(schema_name);
+  }
+
+  /**
+   * For a given version and Iced object return an appropriate Schema instance, if any.
+   * @see #schema(int, java.lang.String)
+   */
+  static Schema schema(int version, Iced impl) {
+    return schema(version, impl.getClass().getSimpleName());
+  }
+
+  /**
+   * For a given version and Iced class return an appropriate Schema instance, if any.
+   * @see #schema(int, java.lang.String)
+   */
+  static Schema schema(int version, Class<? extends Iced> impl_class) {
+    return schema(version, impl_class.getSimpleName());
+  }
+
+  private static Schema newInstance(Class<? extends Schema> clz) {
+    Schema s = null;
+    try {
+      s = clz.newInstance();
+    }
+    catch (Exception e) {
+      H2O.fail("Failed to instantiate schema of class: " + clz.getCanonicalName());
+    }
+    return s;
+  }
+
+  /**
+   * For a given version and type (Iced class simpleName) return an appropriate new Schema
+   * object, if any.
+   * <p>
+   * If a higher version is asked for than is available (e.g., if the highest version of
+   * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
+   * of FrameV2 will be returned.  This compatibility lookup is cached.
+   */
+  static Schema schema(int version, String type) {
+    Class<? extends Schema> clz = schemaClass(version, type);
+    if (null == clz) throw H2O.fail("Failed to find schema for version: " + version + " and type: " + type);
+    return Schema.newInstance(clz);
+  }
+
+  /**
+   * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
+   */
+  static Schema schema(String schema_name) {
+    Class<? extends Schema> clz = schemas.get(schema_name);
+    if (null == clz) throw H2O.fail("Failed to find schema for schema_name: " + schema_name);
+    return Schema.newInstance(clz);
+  }
+
+  /**
+   * For a given schema class (e.g., water.api.FrameV2) return a new instance (e.g., a water.api.Framev2).
+   */
+  static Schema schema(Class<? extends Schema> clz) {
+    return Schema.newInstance(clz);
+  }
+
+  /**
    * Generate Markdown documentation for this Schema.
    */
   public StringBuffer markdown(StringBuffer appendToMe) {
@@ -376,10 +527,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "schema?", "default", "description", "values");
+            builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values");
             first = false;
           }
-          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, String.valueOf(field_meta.is_schema), field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, String.valueOf(field_meta.is_schema), field_meta.is_schema ? field_meta.schema_name : "", field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
         }
       }
       if (first)
@@ -390,10 +541,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "type", "schema?", "default", "description", "values");
+            builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values");
             first = false;
           }
-          builder.tableRow(field_meta.name, field_meta.type, String.valueOf(field_meta.is_schema), field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(field_meta.name, field_meta.type, String.valueOf(field_meta.is_schema), field_meta.is_schema ? field_meta.schema_name : "", field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
         }
       }
       if (first)

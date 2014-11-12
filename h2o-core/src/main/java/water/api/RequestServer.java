@@ -108,8 +108,13 @@ public class RequestServer extends NanoHTTPD {
     register("/1/Metadata/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
       "Return a list of all the REST API endpoints.");
 
-    register("/1/Metadata/schemaclasses/(?<classname>.*)"                  ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
+    register("/1/Metadata/schemaclasses/(?<classname>.*)"            ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
             "Return the REST API schema metadata for specified schema class.");
+    register("/1/Metadata/schemas/(?<schemaname>.*)"                 ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata", new String[] {"schemaname"},
+            "Return the REST API schema metadata for specified schema.");
+    register("/1/Metadata/schemas"                                   ,"GET"   ,DocsHandler.class, "listSchemas",
+            "Return list of all REST API schemas.");
+
 
     register("/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
       "Typehead hander for filename completion.");
