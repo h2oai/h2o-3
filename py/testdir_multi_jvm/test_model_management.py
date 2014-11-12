@@ -317,12 +317,12 @@ if h2o.H2O.verbose:
 
 kmeans_builder = a_node.model_builders(algo='kmeans', timeoutSecs=240)['model_builders']['kmeans']
 
-kmeans_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
+kmeans_prostate_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
 
 print 'About to build a KMeans model. . .'
 kmeans_parameters = {'K': 2 }
-result = a_node.build_model(algo='kmeans', destination_key=kmeans_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, kmeans_parameters, kmeans_model_name)
+result = a_node.build_model(algo='kmeans', destination_key=kmeans_prostate_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
+validate_model_builder_result(result, kmeans_parameters, kmeans_prostate_model_name)
 print 'Done building KMeans model.'
 
 
@@ -422,16 +422,16 @@ if h2o.H2O.verbose:
     pp.pprint(models)
 
 ############################
-# Check kmeans_model_name
+# Check kmeans_prostate_model_name
 found_kmeans = False;
 kmeans_model = None
-print 'looking for model: ', kmeans_model_name
+print 'looking for model: ', kmeans_prostate_model_name
 for model in models['models']:
-    if model['key'] == kmeans_model_name:
+    if model['key'] == kmeans_prostate_model_name:
         found_kmeans = True
         kmeans_model = model
 
-assert found_kmeans, 'Did not find ' + kmeans_model_name + ' in the models list.'
+assert found_kmeans, 'Did not find ' + kmeans_prostate_model_name + ' in the models list.'
 validate_actual_parameters(kmeans_parameters, kmeans_model['parameters'], prostate_key, None)
 
 ###################################
@@ -496,6 +496,35 @@ assert 380 == predictions['rows'], "Predictions for scoring: " + dl_prostate_mod
 h2o.H2O.verboseprint("Predictions for scoring: ", dl_prostate_model_name, " on: ", prostate_key, ":  ", repr(p))
 
 ###################################
+# Predict and check ModelMetrics (empty now except for predictions frame) for kmeans_prostate_model_name
+p = a_node.predict(model=kmeans_prostate_model_name, frame=prostate_key)
+assert p is not None, "Got a null result for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key
+assert 'model_metrics' in p, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain a model_metrics object."
+mm = p['model_metrics'][0]
+h2o.H2O.verboseprint('mm: ', repr(mm))
+assert 'auc' in mm, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
+assert 'cm' in mm, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
+assert 'predictions' in mm, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain an predictions section."
+assert 'key' in mm['predictions'], "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain a key."
+assert 'name' in mm['predictions']['key'], "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain a key name."
+
+predictions_key = mm['predictions']['key']['name']
+result = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
+frames = result['frames']
+frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+assert predictions_key in frames_dict, "Failed to find predictions key" + predictions_key + " in Frames list."
+
+predictions = mm['predictions']
+h2o.H2O.verboseprint('p: ', repr(p))
+assert 'columns' in predictions, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain an columns section."
+assert len(predictions['columns']) > 0, "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " does not contain any columns."
+assert 'label' in predictions['columns'][0], "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " column 0 has no label element."
+assert 'predict' == predictions['columns'][0]['label'], "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " column 0 is not 'predict'."
+assert 380 == predictions['rows'], "Predictions for scoring: " + kmeans_prostate_model_name + " on: " + prostate_key + " has an unexpected number of rows."
+
+h2o.H2O.verboseprint("Predictions for scoring: ", kmeans_prostate_model_name, " on: ", prostate_key, ":  ", repr(p))
+
+###################################
 # Check dl_airlines_model_name
 found_dl = False;
 dl_model = None
@@ -508,11 +537,11 @@ assert found_dl, 'Did not find ' + dl_airlines_model_name + ' in the models list
 validate_actual_parameters(dl_airline_1_parameters, dl_model['parameters'], airlines_key, None)
 
 ######################################################################
-# Now look for kmeans_model_name using the one-model API and find_compatible_frames, and check it
-model = a_node.models(key=kmeans_model_name, find_compatible_frames=True)
+# Now look for kmeans_prostate_model_name using the one-model API and find_compatible_frames, and check it
+model = a_node.models(key=kmeans_prostate_model_name, find_compatible_frames=True)
 found_kmeans = False;
 h2o.H2O.verboseprint('k-means model with find_compatible_frames output: ')
-h2o.H2O.verboseprint('/Models/', kmeans_model_name, '?find_compatible_frames=true: ', repr(model))
+h2o.H2O.verboseprint('/Models/', kmeans_prostate_model_name, '?find_compatible_frames=true: ', repr(model))
 h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
 assert prostate_key in model['models'][0]['compatible_frames'], "Failed to find " + prostate_key + " in compatible_frames list."
 
@@ -529,10 +558,10 @@ models_dict = h2o_util.list_to_dict(compatible_models, 'key')
 assert dl_prostate_model_name in models_dict, "Failed to find " + dl_prostate_model_name + " in compatible models list."
 
 assert dl_prostate_model_name in frames[0]['compatible_models']
-assert kmeans_model_name in frames[0]['compatible_models']
+assert kmeans_prostate_model_name in frames[0]['compatible_models']
 h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(result))
 
 if clean_up_after:
-    cleanup(models=[dl_airlines_model_name, dl_prostate_model_name, kmeans_model_name], frames=[prostate_key, airlines_key])
+    cleanup(models=[dl_airlines_model_name, dl_prostate_model_name, kmeans_prostate_model_name], frames=[prostate_key, airlines_key])
 
 

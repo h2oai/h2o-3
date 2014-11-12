@@ -218,7 +218,19 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
     parms.model.score(parms.frame, true); // throw away predictions
-    return this.fetch(version, parms);
+    ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+
+    // TODO: for now only binary predictors write an MM object.
+    // For the others cons one up here to return the predictions frame.
+    if (null == mm)
+      mm = new ModelMetricsListSchemaV3();
+
+    if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
+      mm.model_metrics = new ModelMetricsV3[1];
+      mm.model_metrics[0] = new ModelMetricsV3();
+    }
+
+    return mm;
   }
 
   /**
@@ -229,6 +241,17 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     // No caching for predict()
     Frame predictions = parms.model.score(parms.frame, true);
     ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+
+    // TODO: for now only binary predictors write an MM object.
+    // For the others cons one up here to return the predictions frame.
+    if (null == mm)
+      mm = new ModelMetricsListSchemaV3();
+
+    if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
+      mm.model_metrics = new ModelMetricsV3[1];
+      mm.model_metrics[0] = new ModelMetricsV3();
+    }
+
     Frame persisted = new Frame(Key.make("predictions_" + Key.rand()), predictions.names(), predictions.vecs());
     DKV.put(persisted);
     mm.model_metrics[0].predictions = new FrameV2(persisted, 0, 100); // TODO: Should call schema(version)
