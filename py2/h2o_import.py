@@ -383,11 +383,12 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     if doSummary and not noPoll:
         # if parse blows up, we want error isolation ..i.e. find stack traces here, rather than the next guy blowing up
         check_sandbox_for_errors()
-        inspect = node.inspect(parseResult['destination_key'], timeoutSecs=timeoutSecs)
-        numRows = inspect['numRows']
-        numCols = inspect['numCols']
+        print "WARNING: not doing inspect/summary for now after parse"
+        ## inspect = node.inspect(parseResult['destination_key'], timeoutSecs=timeoutSecs)
+        ## numRows = inspect['numRows']
+        ## numCols = inspect['numCols']
         # we pass numCols, for detecting whether the na cnt means a col is all NAs, (for ignoring min/max/mean/sigma)
-        node.summary_page(parseResult['destination_key'], timeoutSecs=timeoutSecs, noPrint=noPrint, numRows=numRows, numCols=numCols)
+        ## node.summary_page(parseResult['destination_key'], timeoutSecs=timeoutSecs, noPrint=noPrint, numRows=numRows, numCols=numCols)
         # for now, don't worry about error isolating summary 
     else:
         # isolate a parse from the next thing

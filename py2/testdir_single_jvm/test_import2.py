@@ -13,10 +13,15 @@ expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 55112
 
 DO_2X_SRC = False
 DO_TEST_BAD_COLNAME = False
+DO_TEST_BAD_COL_LENGTH = False
+
+DO_IMPORT_PARSE = True
+SINGLE_CSVFILENAME = 'covtype.data.sorted'
+SINGLE_CSVFILENAME = 'covtype.data'
 
 def assertEqualMsg(a, b): assert a == b, "%s %s" % (a, b)
 
-def parseFrameCheck(frames_result, multiplyExpected):
+def parseFrameCheck(frames_result, multiplyExpected, expectedColumnNames):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
@@ -34,7 +39,7 @@ def parseFrameCheck(frames_result, multiplyExpected):
 
         # files are concats of covtype. so multiply expected
         assertEqualMsg(zeros, expectedZeros[i] * multiplyExpected)
-        assertEqualMsg(label,"C%s" % (i+1))
+        assertEqualMsg(label, expectedColumnNames[i])
         assertEqualMsg(stype,"int")
         assertEqualMsg(missing, 0)
         assertEqualMsg(domain, None)
@@ -68,12 +73,12 @@ class Basic(unittest.TestCase):
             kList = []
             for csvFilename in csvFilenameList:
                 csvPathname = importFolderPath + "/" + csvFilename
-                import_result = a_node.import_files(path=csvPathname)
-
-                k = import_result['keys'][0]
-                frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
-                kList.append(k)
-                # print "frames_result from the first import_result key", dump_json(frames_result)
+                if not DO_IMPORT_PARSE:
+                    import_result = a_node.import_files(path=csvPathname)
+                    k = import_result['keys'][0]
+                    frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
+                    kList.append(k)
+            # print "frames_result from the first import_result key", dump_json(frames_result)
 
             print "I think I imported these keys:", kList
 
@@ -99,19 +104,29 @@ class Basic(unittest.TestCase):
             else:
                 basename = "abcd012345"
 
-            columnNames = "[" + ",".join(map(lambda x: basename + "_" + str(x+1), range(1))) + "]"
+            colLength = 1 if DO_TEST_BAD_COL_LENGTH else 55
+            expectedColumnNames = map(lambda x: basename + "_" + str(x+1), range(colLength))
+            columnNames = "[" + ",".join(expectedColumnNames) + "]"
             kwargs = {
                 'columnNames': columnNames,
+                'intermediateResults': False,
             }
             print kwargs
-            parse_result = a_node.parse(key=kList2, timeoutSecs=timeoutSecs, **kwargs)
+            if DO_IMPORT_PARSE:
+                multiplyExpected = 1
+                csvPathname = importFolderPath + "/" + SINGLE_CSVFILENAME
+                parse_result = h2i.import_parse(path=csvPathname, timeoutSecs=timeoutSecs, **kwargs)
+            else:
+                parse_result = a_node.parse(key=kList2, timeoutSecs=timeoutSecs, **kwargs)
+
             k = parse_result['frames'][0]['key']['name']
             # print "parse_result:", dump_json(parse_result)
             frames_result = a_node.frames(key=k, len=5)
             # print "frames_result from the first parse_result key", dump_json(frames_result)
             
             # we doubled the keyList, from what was in tryList
-            parseFrameCheck(frames_result, multiplyExpected)
+
+            parseFrameCheck(frames_result, multiplyExpected, expectedColumnNames)
 
 if __name__ == '__main__':
     h2o.unit_main()

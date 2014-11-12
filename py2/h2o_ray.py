@@ -53,7 +53,8 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
         
         if status=='DONE' or status=='CANCELLED' or status=='FAILED':
             return result
-        # FIX! what are the other legal statuses that we should check for?
+
+        # FIX! what are the other legal polling statuses that we should check for?
 
         if time.time() - start_time > timeoutSecs:
             print "Job:", job_key, "timed out in:", timeoutSecs
@@ -166,15 +167,29 @@ def parse(self, key, key2=None,
     else:
         key = None
 
-    job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs, key=key)
+    job_result = self.poll_job(job_key, timeoutSecs=timeoutSecs, key=key)
 
-    if job_json:
-        dest_key = job_json['jobs'][0]['dest']['name']
+    if job_result:
+        jobs = job_result['jobs'][0]
+        description = jobs['description']
+        dest = jobs['dest']
+        msec = jobs['msec']
+        status = jobs['status']
+        progress = jobs['progress']
+        dest_key = dest['name']
+
+        # can condition this with a parameter if some FAILED are expected by tests.
+        if status=='FAILED':
+            print dump_json(job_result)
+            raise Exception("Taking exception on parse job status: %s %s %s %s %s" % \
+                (status, progress, msec, dest_key, description))
+
         return self.frames(dest_key)
     else:
         # ? we should always get a job_json result
-        raise Exception("parse didn't get a job_json result when it expected one")
+        raise Exception("parse didn't get a job_result when it expected one")
         # return None
+
 
 
 # TODO: remove .json
