@@ -4,7 +4,6 @@ import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 /**
  * Created by tomasnykodym on 8/29/14.
@@ -17,17 +16,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
 
     // Input fields
     public int max_iters;        // Max iterations
-    public boolean normalize = true;
-
-    public GLMParameters fillImpl(GLMParameters impl) {
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
-
-      return impl;
-    }
+    public boolean normalize;
   }
 
   //==========================

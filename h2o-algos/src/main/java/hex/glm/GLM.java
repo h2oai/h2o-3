@@ -14,15 +14,12 @@ import hex.glm.GLMTask.YMUTask;
 import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
-import hex.optimization.L_BFGS;
 import hex.schemas.GLMV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils.ParallelTasks;
@@ -51,7 +48,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private boolean _clean_enums;
   @Override
   public Job<GLMModel> trainModel() {
-    _clean_enums = _parms._toEnum && !_response.isEnum();
+    _clean_enums = _parms._convert_to_enum && !_response.isEnum();
     init(true);                 // Expensive tests & conversions
     DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms.useAllFactorLvls || _parms.lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     DKV.put(dinfo._key,dinfo);

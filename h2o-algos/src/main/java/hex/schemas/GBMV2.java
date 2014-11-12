@@ -15,7 +15,7 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "validation_frame",
         "response_column",
         "ignored_columns",
-        "to_enum",
+        "do_classification",
         "balance_classes",
         "max_after_balance_size",
         "ntrees",
@@ -54,19 +54,16 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
 
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
-      loss = GBMParameters.Family.AUTO;
+
+      loss = GBMParameters.Family.AUTO; // TODO: Why? Defaults should NOT go into the schemas!
       variable_importance = parms._importance;
       return this;
     }
 
     public GBMParameters fillImpl(GBMParameters impl) {
       super.fillImpl(impl);
+
       impl._importance = this.variable_importance;
-
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
-
       return impl;
     }
   }

@@ -115,7 +115,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._train = frame._key;
                                       p._response_column = frame._names[resp];
                                       p._valid = valid==null ? null : valid._key;
-                                      p._toEnum = classification;
+                                      p._convert_to_enum = classification;
 
                                       p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
@@ -176,7 +176,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
-                                    p._toEnum = classification;
+                                    p._convert_to_enum = classification;
                                     p._override_with_best_model = override_with_best_model;
                                     p._epochs = epochs;
                                     p._seed = seed;

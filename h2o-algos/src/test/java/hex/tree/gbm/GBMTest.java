@@ -25,7 +25,7 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._loss = Family.AUTO;
-      parms._toEnum = false;     // Regression
+      parms._convert_to_enum = false;     // Regression
       parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
       parms._ntrees = 1;
       parms._max_depth = 1;
@@ -145,7 +145,7 @@ public class GBMTest extends TestUtil {
       water.DKV.put(fr);       // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      if( idx < 0 ) { parms._toEnum = false; idx = ~idx; } else { parms._toEnum = true; }
+      if( idx < 0 ) { parms._convert_to_enum = false; idx = ~idx; } else { parms._convert_to_enum = true; }
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;

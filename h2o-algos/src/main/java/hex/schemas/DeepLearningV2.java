@@ -6,7 +6,6 @@ import water.Key;
 import water.api.API;
 import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 import java.util.Random;
 
@@ -19,7 +18,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "validation_frame",
         "response_column",
         "ignored_columns",
-        "to_enum",
+        "do_classification",
         "balance_classes",
         "max_after_balance_size",
         "n_folds",
@@ -548,22 +547,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
 
     @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean reproducible = false;
-
-    @Override public DeepLearningParametersV2 fillFromImpl(DeepLearningParameters parms) {
-      super.fillFromImpl(parms);
-      return this;
-    }
-
-    public DeepLearningParameters fillImpl(DeepLearningParameters impl) {
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES); // and some do. . .
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
-      impl._destination_key = destination_key;
-
-      impl._response_column = response_column;
-      return impl;
-    }
   }
 
   //==========================

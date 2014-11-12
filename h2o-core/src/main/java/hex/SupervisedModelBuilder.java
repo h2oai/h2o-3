@@ -1,8 +1,6 @@
 package hex;
 
-import hex.schemas.ModelBuilderSchema;
 import water.*;
-import water.fvec.Frame;
 import water.fvec.Vec;
 
 abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends ModelBuilder<M,P,O> {
@@ -51,7 +49,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column is all NAs!");
     if( _response.isConst() ) 
       error("_response_column", "Response column is constant!");
-    if( _parms._toEnum && expensive ) { // Expensive; only do it on demand
+    if( _parms._convert_to_enum && expensive ) { // Expensive; only do it on demand
        _response=  _response.toEnum();
       _vresponse= _vresponse.toEnum();
     }
