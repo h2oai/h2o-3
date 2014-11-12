@@ -107,7 +107,7 @@ def parse(self, key, key2=None,
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse', print_params=True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
 
     # Call ParseSetup?srcs=[keys] . . .
 
