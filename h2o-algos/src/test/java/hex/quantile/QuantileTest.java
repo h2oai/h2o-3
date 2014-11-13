@@ -1,7 +1,6 @@
 package hex.quantile;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -15,7 +14,7 @@ public class QuantileTest extends TestUtil {
       long start = System.currentTimeMillis();
       System.out.println("Start Parse");
       //fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.data");
+      fr = parse_test_file("../../datasets/UCI/UCI-large/covtype/covtype.csv.gz");
       //fr = parse_test_file("../../datasets/billion_rows.csv.gz");
       System.out.println("Done Parse: "+(System.currentTimeMillis()-start));
 

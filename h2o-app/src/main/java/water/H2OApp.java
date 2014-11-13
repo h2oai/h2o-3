@@ -2,15 +2,10 @@
 package water;
 
 import hex.ModelBuilder;
-import hex.api.DeepLearningBuilderHandler;
-import hex.api.ExampleBuilderHandler;
-import hex.api.QuantileBuilderHandler;
-import hex.api.GBMBuilderHandler;
-import hex.api.GLMBuilderHandler;
-import hex.api.KMeansBuilderHandler;
-import hex.api.Word2VecBuilderHandler;
+import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.kmeans2.KMeans2;
 import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
 import hex.glm.GLM;
@@ -74,6 +69,9 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("quantile", Quantile.class);
     H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
+
+    ModelBuilder.registerModelBuilder("kmeans2", KMeans2.class);
+    H2O.registerPOST("/2/ModelBuilders/kmeans2", KMeans2BuilderHandler.class, "train","Train a KMeans2 model on the specified Frame.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();

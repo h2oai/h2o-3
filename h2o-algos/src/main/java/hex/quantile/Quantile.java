@@ -6,10 +6,7 @@ import hex.schemas.QuantileV2;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.Scope;
-import water.H2O;
-import water.Iced;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -17,7 +14,7 @@ import water.util.Log;
 import java.util.Arrays;
 
 /**
- *  Quantile model builder... building a trivial QuantileModel
+ *  Quantile model builder... building a simple QuantileModel
  */
 public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
@@ -27,7 +24,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   public ModelBuilderSchema schema() { return new QuantileV2(); }
 
   @Override public Quantile trainModel() {
-    return (Quantile)start(new QuantileDriver(), train().numCols());
+    return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -65,31 +62,25 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         Vec vecs[] = train().vecs();
         for( int n=0; n<vecs.length; n++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
+          Vec vec = vecs[n];
+          // Compute top-level histogram
+          Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
 
-
-.... try again... do not optimize for multi passes, except for the 1st one....
-.... each pass does 1 range of bins, no recursion, 
-          // Pass over the data; radix-sort / histogram
-          Histo h = new Histo(vecs[n]);
-          boolean again = true; // Needs another pass?
-          while( again ) {
-            new DoHisto(h).doAll(vecs[n]);
-            h.rollUp();
-            again = false;      // Not yet...
-            // find the quantile for each probability p
-            for( int p = 0; p < _parms._probs.length; p++ ) {
-              double q = h.findQuantile(_parms._probs[p]);
-              if( Double.isNaN(q) ) // My flag for saying "go again"
-                again = true;       // Needs another pass
-              model._output._quantiles[n][p] = q;
+          // For each probability, see if we have it exactly - or else run
+          // passes until we do.
+          for( int p = 0; p < _parms._probs.length; p++ ) {
+            double prob = _parms._probs[p];
+            Histo h = h1;  // Start from the first global histogram
+            while( true ) {
+              double q = model._output._quantiles[n][p] = h.findQuantile(prob);
+              if( !Double.isNaN(q) ) break;      // My flag for saying "go again"
+              h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
             }
-            
+            // Update the model
+            model._output._iters++; // One iter per-prob-per-column
+            model.update(_key); // Update model in K/V store
+            update(1);          // One unit of work
           }
-          model._output._iters = n;
-
-          // Fill in the model
-          model.update(_key); // Update model in K/V store
-          update(1);          // One unit of work
           StringBuilder sb = new StringBuilder();
           sb.append("Quantile: iter: ").append(model._output._iters).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
           Log.info(sb);
@@ -102,10 +93,109 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.unlock_frames(Quantile.this);
-        Scope.exit(model._key);
+        Scope.exit(model == null ? null : model._key);
         done();                 // Job done!
       }
       tryComplete();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+
+  private static class Histo extends MRTask<Histo> {
+    private static final int NBINS=1024; // Default bin count
+    private final int _nbins;            // Actual  bin count
+    private final double _lb;            // Lower bound of bin[0]
+    private final double _step;          // Step-size per-bin
+    private final long _start_row;       // Starting row number for this lower-bound
+    private final long _nrows;           // Total datasets rows
+    private final boolean _isInt;        // Column only holds ints
+
+    // Big Data output result
+    long   _bins [/*nbins*/]; // Rows in each bin
+    double _elems[/*nbins*/]; // Unique element, or NaN if not unique
+
+    private Histo( double lb, double ub, long start_row, long nrows, boolean isInt  ) { 
+      _nbins = NBINS;
+      _lb = lb;
+      _step = (ub-lb)/_nbins;
+      _start_row = start_row;
+      _nrows = nrows;
+      _isInt = isInt;
+    }
+
+    @Override public void map( Chunk chk ) {
+      long   bins [] = _bins =new long  [_nbins];
+      double elems[] = _elems=new double[_nbins];
+      for( int row=0; row<chk._len; row++ ) {
+        double d = chk.at0(row);
+        double idx = (d-_lb)/_step;
+        if( !(0.0 <= idx && idx < bins.length) ) continue;
+        int i = (int)idx;
+        if( bins[i]==0 ) elems[i] = d; // Capture unique value
+        else if( !Double.isNaN(elems[i]) && elems[i]!=d ) 
+          elems[i] = Double.NaN; // Not unique
+        bins[i]++;               // Bump row counts
+      }        
+    }
+    @Override public void reduce( Histo h ) { 
+      for( int i=0; i<_nbins; i++ ) // Keep unique elements
+        if( _bins[i]== 0 ) _elems[i] = h._elems[i]; // Left had none, so keep right unique
+        else if( h._bins[i] > 0 && _elems[i] != h._elems[i] )
+          _elems[i] = Double.NaN; // Left & right both had elements, but not equal
+      ArrayUtils.add(_bins,h._bins);
+    }
+
+
+    private double binEdge( int idx ) { return _lb+_step*idx; }
+
+    /** @return Quantile for probability prob, or NaN if another pass is needed. */
+    double findQuantile( double prob ) {
+      double p2 = prob*(_nrows-1); // Desired fractional row number for this probability
+      long r2 = (long)p2;       // Lower integral row number
+      int loidx = findBin(r2);  // Find bin holding low value
+      double lo = (loidx == _nbins) ? binEdge(_nbins) : _elems[loidx];
+      if( Double.isNaN(lo) ) return Double.NaN; // Needs another pass to refine lo
+      if( r2==p2 ) return lo;   // Exact row number?  Then quantile is exact
+
+      long r3 = r2+1;           // Upper integral row number
+      int hiidx = findBin(r3);  // Find bin holding high value
+      double hi = (hiidx == _nbins) ? binEdge(_nbins) : _elems[hiidx];
+      if( Double.isNaN(hi) ) return Double.NaN; // Needs another pass to refine hi
+      return computeQuantile(lo,hi,r2,_nrows,prob);
+    }
+
+    // bin for row; can be _nbins if just off the end (normally expect 0 to nbins-1)
+    int findBin( long row ) {
+      long sum = _start_row;
+      for( int i=0; i<_nbins; i++ )
+        if( row < (sum += _bins[i]) )
+          return i;
+      return _nbins;
+    }
+
+    // Run another pass over the data, with refined endpoints, to home in on
+    // the exact elements for this probability.
+    Histo refinePass( double prob ) {
+      double prow = prob*(_nrows-1); // Desired fractional row number for this probability
+      long lorow = (long)prow;       // Lower integral row number
+      int loidx = findBin(lorow);    // Find bin holding low value
+      // If loidx is the last bin, then high must be also the last bin - and we
+      // have an exact quantile (equal to the high bin) and we didn't need
+      // another refinement pass
+      assert loidx < _nbins;
+      double lo = binEdge(loidx); // Lower end of range to explore
+      // If probability does not hit an exact row, we need the elements on
+      // either side - so the next row up from the low row
+      long hirow = lorow==prow ? lorow : lorow+1;
+      int hiidx = findBin(hirow);    // Find bin holding high value
+      // Upper end of range to explore - except at the very high end cap
+      double hi = hiidx==_nbins ? binEdge(_nbins) : binEdge(hiidx+1);
+
+      long sum = _start_row;
+      for( int i=0; i<loidx; i++ )
+        sum += _bins[i];
+      return new Histo(lo,hi,sum,_nrows,_isInt);
     }
   }
 
@@ -121,125 +211,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   static double computeQuantile( double lo, double hi, long row, long nrows, double prob ) {
     if( lo==hi ) return lo;     // Equal; pick either
     // Unequal, linear interpolation
-    double plo = (double)(row+0)/(nrows-1);
-    double phi = (double)(row+1)/(nrows-1);
+    double plo = (double)(row+0)/(nrows-1); // Note that row numbers are inclusive on the end point, means we need a -1
+    double phi = (double)(row+1)/(nrows-1); // Passed in the row number for the low value, high is the next row, so +1
     assert plo <= prob && prob < phi;
-    double q = lo + (hi-lo)*(prob-plo)/(phi-plo);
-    return q;
+    return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
 
-  // -------------------------------------------------------------------------
-
-  private static class DoHisto extends MRTask<DoHisto> {
-    private final Histo _h;
-    DoHisto( Histo h ) { _h = h; }
-    @Override public void map( Chunk chk ) {
-      for( int row=0; row<chk._len; row++ )  
-        _h.add(chk.at0(row));
-    }
-    @Override public void reduce( DoHisto h ) { _h.reduce(h._h); }
-  }
-
-  private static class Histo extends Iced {
-    private static final int NBINS=1024; // Default bin count
-    private final int _nbins;            // Actual  bin count
-    private final double _lb;            // Lower bound of bin[0]
-    private final double _step;          // Step-size per-bin
-    private final long _nrows;           // Total datasets rows in this histogram
-    private long _cumBins[/*nbins*/];    // Cumulative row counts
-    private final boolean _isInt;        // Column only holds ints
-
-    // Big Data output result
-    long   _bins [/*nbins*/]; // Rows in each bin
-    double _elems[/*nbins*/]; // Unique element, or NaN if not unique
-
-    private Histo _hs[/*nbins*/];        // Recursive histograms
-
-    /** Top-level histogram covering an entire Vec */
-    Histo( Vec vec ) { this( vec.min(), vec.max(), vec.length(), vec.isInt() ); }
-
-    /** Refined histogram */
-    Histo( Histo parent, int idx ) { this( parent.binEdge(idx), parent.binEdge(idx+1), parent._bins[idx], parent._isInt ); }
-
-    private Histo( double lb, double ub, long nrows, boolean isInt  ) { 
-      _nrows = nrows;
-      _nbins = NBINS;
-      _isInt = isInt;
-      _lb = lb;
-      _step = (ub-lb)/_nbins;
-      _cumBins = new long[_nbins];
-    }
-
-    private double binEdge( int idx ) { return _lb+_step*idx; }
-
-    void add( double d ) {
-      if( _hs == null ) {       // Leaf histogram
-        // Leaf histogram: build the whole thing
-        long   bins [] = _bins ==null ? (_bins =new long  [_nbins]) : _bins ;
-        double elems[] = _elems==null ? (_elems=new double[_nbins]) : _elems;
-        double idx = (d-_lb)/_step;
-        if( !(0.0 <= idx && idx < bins.length) ) return;
-        int i = (int)idx;
-        if( bins[i]==0 ) elems[i] = d; // Capture unique value
-        else if( !Double.isNaN(elems[i]) && elems[i]!=d ) 
-          elems[i] = Double.NaN; // Not unique
-        bins[i]++;               // Bump row counts
-        
-      } else {      // Interior tree histogram; pass along to interested leaves
-        throw H2O.unimpl();
-      }
-    }
-    void reduce( Histo h ) { 
-      for( int i=0; i<_nbins; i++ ) // Keep unique elements
-        if( _bins[i]== 0 ) _elems[i] = h._elems[i]; // Left had none, so keep right
-        else if( h._bins[i] > 0 && _elems[i] != h._elems[i] )
-          _elems[i] = Double.NaN; // Left & right both had elements, but not equal
-      ArrayUtils.add(_bins,h._bins);
-      if( _hs != null ) throw H2O.unimpl();
-    }
-
-
-    Histo rollUp() {
-      _cumBins[0] = _bins[0];
-      for( int i=1; i<_bins.length; i++ ) {
-        _cumBins[i] = _cumBins[i-1]+_bins[i];
-        if( _hs != null && _hs[i] != null )
-          _hs[i].rollUp();
-      }
-      return this;
-    }
-    
-    /** @return Quantile for probability p, or NaN if another pass is needed. */
-    double findQuantile( double p ) {
-      double p2 = p*(_nrows-1); // Desired fractional row number
-      long r2 = (long)p2;       // Lower integral row number
-      int loidx = findBin(r2);  // Find bin holding low value
-      double lo = (loidx == _nbins) ? binEdge(_nbins) : _elems[loidx];
-      if( _hs != null && _hs[loidx] != null )  throw H2O.unimpl();
-
-      long r3 = r2==p2 ? r2 : r2+1; // Upper integral row number
-      int hiidx = findBin(r3);  // Find bin holding high value
-      double hi = (hiidx == _nbins) ? binEdge(_nbins) : _elems[hiidx];
-      if( _hs != null && _hs[hiidx] != null )  throw H2O.unimpl();
-      if( Double.isNaN(lo) ) refineAt(loidx); // Needs another pass to refine lo
-      if( Double.isNaN(hi) ) refineAt(hiidx); // Needs another pass to refine hi
-      return computeQuantile(lo,hi,r2,_nrows,p);
-    }
-
-    // bin for row; can be _nbins if just off the end (normally expect 0 to nbins-1)
-    int findBin( long row ) {
-      for( int i=0; i<_nbins; i++ )
-        if( row < _cumBins[i] )
-          return i;
-      return _nbins;
-    }
-
-
-    /** Add a refining Histogram layer for this bin */
-    void refineAt( int idx ) {
-      if( _hs == null ) _hs = new Histo[_nbins];
-      if( _hs[idx] == null )
-        _hs[idx] = new Histo(this,idx);
-    }
-  }
 }
