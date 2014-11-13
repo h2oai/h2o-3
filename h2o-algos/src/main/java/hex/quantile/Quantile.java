@@ -58,7 +58,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
         // ---
         // Run the main Quantile Loop
-        // Stop after enough iterations
         Vec vecs[] = train().vecs();
         for( int n=0; n<vecs.length; n++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
@@ -71,11 +70,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           for( int p = 0; p < _parms._probs.length; p++ ) {
             double prob = _parms._probs[p];
             Histo h = h1;  // Start from the first global histogram
-            while( true ) {
-              double q = model._output._quantiles[n][p] = h.findQuantile(prob);
-              if( !Double.isNaN(q) ) break;      // My flag for saying "go again"
+
+            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob)) )
               h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
-            }
+
             // Update the model
             model._output._iters++; // One iter per-prob-per-column
             model.update(_key); // Update model in K/V store
@@ -147,8 +145,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
 
-    private double binEdge( int idx ) { return _lb+_step*idx; }
-
     /** @return Quantile for probability prob, or NaN if another pass is needed. */
     double findQuantile( double prob ) {
       double p2 = prob*(_nrows-1); // Desired fractional row number for this probability
@@ -165,8 +161,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       return computeQuantile(lo,hi,r2,_nrows,prob);
     }
 
+    private double binEdge( int idx ) { return _lb+_step*idx; }
+
     // bin for row; can be _nbins if just off the end (normally expect 0 to nbins-1)
-    int findBin( long row ) {
+    private int findBin( long row ) {
       long sum = _start_row;
       for( int i=0; i<_nbins; i++ )
         if( row < (sum += _bins[i]) )
