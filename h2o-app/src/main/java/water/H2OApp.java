@@ -4,12 +4,14 @@ package water;
 import hex.ModelBuilder;
 import hex.api.DeepLearningBuilderHandler;
 import hex.api.ExampleBuilderHandler;
+import hex.api.QuantileBuilderHandler;
 import hex.api.GBMBuilderHandler;
 import hex.api.GLMBuilderHandler;
 import hex.api.KMeansBuilderHandler;
 import hex.api.Word2VecBuilderHandler;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
 import hex.glm.GLM;
 import hex.kmeans.KMeans;
@@ -38,6 +40,7 @@ public class H2OApp {
 
     // Register menu items and service handlers for algos
     H2O.registerGET("/Example",hex.schemas.ExampleHandler.class,"train","/Example","Example","Model","Train an Example model on the specified Frame.");
+    H2O.registerGET("/Quantile",hex.schemas.QuantileHandler.class,"train","/Quantile","Quantile","Model","Train an Quantile model on the specified Frame.");
     H2O.registerGET("/DeepLearning",hex.schemas.DeepLearningHandler.class,"train","/DeepLearning","Deep Learning","Model","Train a Deep Learning model on the specified Frame.");
     H2O.registerGET("/GLM",hex.schemas.GLMHandler.class,"train","/GLM","GLM","Model","Train a GLM model on the specified Frame.");
     H2O.registerGET("/KMeans",hex.schemas.KMeansHandler.class,"train","/KMeans","KMeans","Model","Train a KMeans model on the specified Frame.");
@@ -68,6 +71,9 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("example", Example.class);
     H2O.registerPOST("/2/ModelBuilders/example", ExampleBuilderHandler.class, "train","Train an Example model on the specified Frame.");
+
+    ModelBuilder.registerModelBuilder("quantile", Quantile.class);
+    H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();
