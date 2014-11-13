@@ -1048,6 +1048,18 @@ function(x, trim = 0, na.rm = FALSE, ...) {
 }
 
 #'
+#" Mode of a enum or int column.
+#" Returns single string or int value or an array of strings and int that are tied.
+h2o.mode <-
+function(x) {
+#  if(!(x %i% "H2OFrame") || nrow(x) > 1) stop('x needs to be a H2OFrame object')
+  tabularx = invisible(table(x))
+  maxCount = max(tabularx$Count)
+  modes = tabularx$row.names[tabularx$Count == maxCount]
+  return(unlist(as.list(as.matrix(modes))))
+}
+
+#'
 #' Variance of a column.
 #'
 #' Obtain the variance of a column of a parsed H2O data object.

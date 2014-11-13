@@ -94,7 +94,7 @@ function(h2o, key, nrow, ncol, col_names) {
 #'
 #' Create new H2OParsedData object for predictions
 .h2o.parsedPredData<-
-function(predictions) {
+function(client, predictions) {
   key = predictions$key$name
   col_names = sapply(predictions$columns, function(column) column$label)
   nrows = predictions$rows
@@ -103,5 +103,5 @@ function(predictions) {
   factors = as.data.frame(factors)
   names(factors) = col_names
 
-  new("H2OParsedData", h2o = newdata@h2o, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  new("H2OParsedData", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
 }

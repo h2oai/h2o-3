@@ -47,7 +47,7 @@ predict.H2OKMeansModel <- function(object, newdata, ...) {
   res <- .h2o.__remoteSend(object@h2o, .h2o.__PREDICT, method = "HTTPPOST")
   res = res$model_metrics[[1]]$predictions
   # Grab info to make data frame
-  .h2o.parsedPredData(res)
+  .h2o.parsedPredData(newdata@h2o, res)
 }
 
 #  LEGACY PREDICT BELOW
