@@ -6,7 +6,7 @@ H2O makes Hadoop do math! H2O scales statistics, machine learning and math over 
 Product Vision for first cut
 ------------------------------
 H2O product, the Analytics Engine will scale Classification and Regression.
-- RandomForest, Generalized Linear Modeling (GLM), logistic regression, k-Means, available over R / REST / JSON-API
+- RandomForest, Gradient Boosted Methods (GBM), Generalized Linear Modeling (GLM), Deep Learning and K-Means available over R / REST / JSON-API
 - Basic Linear Algebra as building blocks for custom algorithms
 - High predictive power of the models
 - High speed and scale for modeling and scoring over BigData
