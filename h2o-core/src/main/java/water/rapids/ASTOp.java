@@ -1936,10 +1936,10 @@ class ASTTable extends ASTUniPrefixOp {
 
     if (two != null)
       if (two.numCols() != 1 || one.numCols() != 1)
-        throw new IllegalArgumentException("table supports at *most* two vectors");
+        throw new IllegalArgumentException("`table` supports at *most* two vectors");
     else
       if (one.numCols() < 1 || one.numCols() > 2 )
-        throw new IllegalArgumentException("table supports at *most* two vectors and at least one vector.");
+        throw new IllegalArgumentException("`table` supports at *most* two vectors and at least one vector.");
 
     Frame fr;
     if (two != null) fr = new Frame(one.add(two));
@@ -1988,7 +1988,7 @@ class ASTTable extends ASTUniPrefixOp {
     env.push(new ValFrame(fr2));
   }
 
-  private static class Tabularize extends MRTask<Tabularize> {
+  protected static class Tabularize extends MRTask<Tabularize> {
     public final long[][]  _domains;
     public long[][] _counts;
 

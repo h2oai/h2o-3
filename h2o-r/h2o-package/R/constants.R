@@ -198,7 +198,7 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__Model_Builders      <- "2/ModelBuilders"
+.h2o.__MODEL_BUILDERS      <- "2/ModelBuilders"
 .h2o.__KMEANS              <- "KMeans.json"
 .h2o.__KMEANS_PARAMS       <- "2/ModelBuilders/kmeans.json"
 .h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
@@ -211,12 +211,16 @@
 #'
 #' Model Endpoint
 #'
-.h2o.__Models       <- "3/Models.json/"
+.h2o.__MODELS       <- "3/Models.json/"
 
 #'
 #' Model Predict Endpoint
 #'
 .h2o.__PREDICT <- "3/Predictions.json/models/SUBT_MODEL/frames/SUBT_FRAME"
+#'
+#' Model Predict Endpoint
+#'
+.h2o.__MODEL_METRICS <- "/3/ModelMetrics/models/SUBT_MODEL/frames/SUBT_FRAME"
 #'
 #' Rapids/Exec3
 #'
