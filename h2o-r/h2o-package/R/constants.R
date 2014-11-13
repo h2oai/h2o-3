@@ -216,7 +216,7 @@
 #'
 #' Model Predict Endpoint
 #'
-.h2o.__PREDICT <- "3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"
+.h2o.__PREDICT <- "3/Predictions.json/models/SUBT_MODEL/frames/SUBT_FRAME"
 #'
 #' Rapids/Exec3
 #'

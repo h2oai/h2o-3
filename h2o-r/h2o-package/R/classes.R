@@ -98,16 +98,15 @@ setClass("H2OFrame", contains="VIRTUAL")
 #' This class inherits from H2OFrame.
 #' @slot h2o Object of class \code{H2OClient}, which is the client object that was passed into the function call.
 #' @slot key Object of class \code{character}, which is the hex key assigned to the imported data.
-#' @slot logic Object of class \code{logical}, indicating whether the \code{H2OParsedData} object represents logical data
 #' @slot col_names Object of class \code{vector}, holds the column names of the \code{"H2OParsedData"} object.
 #' @slot nrows Object of class \code{numeric}, holds the number of rows of the \code{H2OParsedData} object.
 #' @slot ncols Object of class \code{numeric}, holds the number of columns of the \code{"H2OParsedData"} object.
 #' @slot any_enum Object of class \code{logical}, indicating whether the frame has any factor columns.
 #' @aliases H2OParsedData
 setClass("H2OParsedData",
-            representation(h2o="H2OClient", key="character", logic="logical", col_names="vector",
-                           nrows="numeric", ncols="numeric", any_enum="logical"),
-            prototype(logic=FALSE, col_names="", ncols=-1, nrows=-1, any_enum = FALSE),
+            representation(h2o="H2OClient", key="character", col_names="vector",
+                           nrows="numeric", ncols="numeric", factors="data.frame"),
+            prototype(col_names="", ncols=-1, nrows=-1),
             contains="H2OFrame")
 
 #' @rdname H2OParsedData-class

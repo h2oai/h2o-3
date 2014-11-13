@@ -34,6 +34,21 @@ predict.H2ODeepLearningModel <- function(object, newdata, ...) {
   res <- .h2o.__remoteSend(object@h2o, predict_link, method = "HTTPPOST")
 }
 
+#'
+#' KMeans H2O Predict Method
+#'
+#' Predict with an object of class H2OKMeansModel
+predict.H2OKMeansModel <- function(object, newdata, ...) {
+  # Validate that the object is a H2OModel and the newdata is a H2OFrame
+  .validate.predict(object, newdata, types = list(object = "H2OKMeansModel", newdata = "H2OFrame"))
+  # Send keys to create predictions
+  .h2o.__PREDICT = gsub("SUBT_MODEL", object@key, .h2o.__PREDICT)
+  .h2o.__PREDICT = gsub("SUBT_FRAME", newdata@key, .h2o.__PREDICT)
+  res <- .h2o.__remoteSend(object@h2o, .h2o.__PREDICT, method = "HTTPPOST")
+  res = res$model_metrics[[1]]$predictions
+  # Grab info to make data frame
+  .h2o.parsedPredData(res)
+}
 
 #  LEGACY PREDICT BELOW
 #h2o.predict <- function(object, newdata, ...) {
