@@ -8,6 +8,7 @@ import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
 import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
 import water.util.DocGen.HTML;
@@ -956,6 +957,10 @@ final public class H2O {
     return sb.toString();
   }
 
+  // Node persistent storage
+  private static NodePersistentStorage NPS;
+  public static NodePersistentStorage getNPS() { return NPS; }
+
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
 
@@ -1011,6 +1016,7 @@ final public class H2O {
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();
+    NPS = new NodePersistentStorage(ICE_ROOT);
 
     // Start network services, including heartbeats
     startNetworkServices();   // start server services
