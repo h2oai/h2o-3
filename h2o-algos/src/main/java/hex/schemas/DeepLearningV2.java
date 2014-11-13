@@ -12,15 +12,8 @@ import java.util.Random;
 public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,DeepLearningV2,DeepLearningV2.DeepLearningParametersV2> {
 
   public static final class DeepLearningParametersV2 extends SupervisedModelParametersSchema<DeepLearningParameters, DeepLearningParametersV2> {
-    public String[] fields() { return new String[]{
-        "destination_key",
-        "training_frame",
-        "validation_frame",
-        "response_column",
-        "ignored_columns",
-        "do_classification",
-        "balance_classes",
-        "max_after_balance_size",
+
+    static public String[] own_fields = new String[] {
         "n_folds",
         "keep_cross_validation_splits",
         "checkpoint",
@@ -77,9 +70,9 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "sparse",
         "col_major",
         "average_activation",
-        "sparsity_beta",
-      };
-    }
+        "sparsity_beta"
+    };
+
 
     @API(help="Number of folds for n-fold cross-validation (0 to n)", direction= API.Direction.INOUT)
     public int n_folds;

@@ -7,6 +7,8 @@ import hex.SupervisedModel;
  */
 abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.SupervisedParameters, S extends SupervisedModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
 
+  static public String[] own_fields = new String[] { "response_column", "do_classification", "balance_classes", "max_after_balance_size" };
+
   // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.

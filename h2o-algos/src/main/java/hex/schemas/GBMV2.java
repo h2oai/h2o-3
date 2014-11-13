@@ -9,15 +9,7 @@ import water.fvec.Frame;
 public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
   public static final class GBMParametersV2 extends SupervisedModelParametersSchema<GBMParameters, GBMParametersV2> {
-    public String[] fields() { return new String[] {
-        "destination_key",
-        "training_frame",
-        "validation_frame",
-        "response_column",
-        "ignored_columns",
-        "do_classification",
-        "balance_classes",
-        "max_after_balance_size",
+    static public String[] own_fields = new String[] {
         "ntrees",
         "max_depth",
         "min_rows",
@@ -25,7 +17,8 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "learn_rate",
         "loss",
         "variable_importance",
-        "seed"}; }
+        "seed"
+    };
 
     // Input fields
     @API(help="Number of trees.  Grid Search, comma sep values:50,100,150,200")

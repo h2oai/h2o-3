@@ -6,9 +6,6 @@ import hex.FrameTask;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import hex.glm.GLM.GLMTaskInfo;
-import hex.glm.GLMModel;
-import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 
 import hex.glm.GLMValidation.GLMXValidation;
@@ -123,7 +120,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     public LMAXTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters params, double ymu, long nobs, float [] thresholds, H2OCountedCompleter cmp) {
       super(jobKey, dinfo, params, false, true, true, params.nullModelBeta(dinfo,ymu), ymu, 1.0/nobs, thresholds, cmp);
       _gPrimeMu = params.linkDeriv(ymu);
-      _alpha = params.alpha[0];
+      _alpha = params._alpha[0];
     }
     @Override public void chunkInit(){
       super.chunkInit();
@@ -248,7 +245,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       _reg = reg;
       _computeGram = computeGram;
       _validate = validate;
-      assert glm.family != Family.binomial || thresholds != null;
+      assert glm._family != Family.binomial || thresholds != null;
       _thresholds = _validate?thresholds:null;
       _computeGradient = computeGradient;
       assert !_computeGradient || validate;
@@ -266,12 +263,12 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     @Override public void processRow(long gid, final double [] nums, final int ncats, final int [] cats, double [] responses){
       ++_nobs;
       final double y = responses[0];
-      assert ((_glm.family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
-      assert ((_glm.family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+      assert ((_glm._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+      assert ((_glm._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
       final double w, eta, mu, var, z;
       final int numStart = _dinfo.numStart();
       double d = 1;
-      if( _glm.family == Family.gaussian){
+      if( _glm._family == Family.gaussian){
         w = 1;
         z = y;
         mu = (_validate || _computeGradient)?computeEta(ncats,cats,nums,_beta):0;
@@ -290,7 +287,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       }
       if(_validate) {
         _val.add(y, mu);
-        if(_glm.family == Family.binomial) {
+        if(_glm._family == Family.binomial) {
           int yi = (int) y;
           if (_ti[yi] == _newThresholds[yi].length)
             sampleThresholds(yi);
@@ -325,14 +322,14 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       if(_beta != null)for(double d:_beta)if(d != 0)++rank;
       if(_validate){
         _val = new GLMValidation(null,_ymu, _glm,rank, _thresholds);
-        if(_glm.family == Family.binomial){
+        if(_glm._family == Family.binomial){
           _ti = new int[2];
           _newThresholds = new float[2][N_THRESHOLDS << 2];
         }
       }
       if(_computeGradient)
         _grad = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
-      if(_glm.family == Family.binomial && _validate){
+      if(_glm._family == Family.binomial && _validate){
         _ti = new int[2];
         _newThresholds = new float[2][4*N_THRESHOLDS];
       }
@@ -347,7 +344,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         for(int i = 0; i < _grad.length; ++i)
           _grad[i] *= _reg;
       _yy *= _reg;
-      if(_validate && _glm.family == Family.binomial) {
+      if(_validate && _glm._family == Family.binomial) {
         assert _val != null;
         _newThresholds[0] = Arrays.copyOf(_newThresholds[0],_ti[0]);
         _newThresholds[1] = Arrays.copyOf(_newThresholds[1],_ti[1]);
@@ -365,7 +362,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         _nobs += git._nobs;
         if (_validate) _val.add(git._val);
         if (_computeGradient) ArrayUtils.add(_grad, git._grad);
-        if(_validate && _glm.family == Family.binomial) {
+        if(_validate && _glm._family == Family.binomial) {
           _newThresholds[0] = ArrayUtils.join(_newThresholds[0], git._newThresholds[0]);
           _newThresholds[1] = ArrayUtils.join(_newThresholds[1], git._newThresholds[1]);
           if (_newThresholds[0].length >= 2 * N_THRESHOLDS) {
@@ -412,7 +409,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       _res = new GLMValidation(null,_model._ymu,_model._parms,_model.rank(_lambda));
       final int nrows = chunks[0]._len;
       double [] row   = MemoryManager.malloc8d(_model._output._names.length);
-      float  [] preds = MemoryManager.malloc4f(_model._parms.family == Family.binomial?3:1);
+      float  [] preds = MemoryManager.malloc4f(_model._parms._family == Family.binomial?3:1);
       OUTER:
       for(int i = 0; i < nrows; ++i){
         if(chunks[chunks.length-1].isNA0(i))continue;
@@ -422,7 +419,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         }
         _model.score0(row, preds);
         double response = chunks[chunks.length-1].at0(i);
-        _res.add(response, _model._parms.family == Family.binomial?preds[2]:preds[0]);
+        _res.add(response, _model._parms._family == Family.binomial?preds[2]:preds[0]);
       }
     }
     @Override public void reduce(GLMValidationTask gval){_res.add(gval._res);}
@@ -451,7 +448,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         _xvals[i] = new GLMValidation(null,_xmodels[i]._ymu,_xmodels[i]._parms,_xmodels[i]._output.rank(),_thresholds);
       final int nrows = chunks[0]._len;
       double [] row   = MemoryManager.malloc8d(_xmodels[0]._output._names.length);
-      float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms.family == Family.binomial?3:1);
+      float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms._family == Family.binomial?3:1);
       OUTER:
       for(int i = 0; i < nrows; ++i){
         if(chunks[chunks.length-1].isNA0(i))continue;
@@ -465,7 +462,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         final GLMValidation val = _xvals[mid];
         model.score0(row, preds);
         double response = chunks[chunks.length-1].at80(i);
-        val.add(response, model._parms.family == Family.binomial?preds[2]:preds[0]);
+        val.add(response, model._parms._family == Family.binomial?preds[2]:preds[0]);
       }
     }
     @Override public void reduce(GLMXValidationTask gval){

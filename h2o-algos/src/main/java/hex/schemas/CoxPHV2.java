@@ -1,28 +1,13 @@
 package hex.schemas;
 
 import hex.coxph.CoxPH;
-import hex.coxph.CoxPHModel;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import water.H2O;
-import water.Key;
-import water.api.API;
 import water.api.ModelParametersSchema;
-import water.fvec.Frame;
-import water.util.PojoUtils;
-
-import java.util.Random;
 
 public class CoxPHV2 extends ModelBuilderSchema<CoxPH,CoxPHV2,CoxPHV2.CoxPHParametersV2> {
   public static final class CoxPHParametersV2 extends ModelParametersSchema<CoxPHParameters, CoxPHParametersV2> {
-    public String[] fields() {
-      return new String[]{
-              "destination_key",
-              "training_frame",
-              "validation_frame",
-              "response_column",
-
-              "ignored_columns",
-
+    static public String[] own_fields = new String[] {
               "start_column",
               "stop_column",
               "event_column",
@@ -35,7 +20,6 @@ public class CoxPHV2 extends ModelBuilderSchema<CoxPH,CoxPHV2,CoxPHV2.CoxPHParam
               "lre_min",
               "iter_max"
       };
-    }
 
     @Override
     public CoxPHParameters createImpl() {

@@ -62,7 +62,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   protected float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms.useAllFactorLvls){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].at0(row_in_chunk) != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(chks[i].at0(row_in_chunk)-1)];
     } else { // do not skip any levels!
@@ -75,7 +75,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
     preds[0] = (float)mu;
-    if( _parms.family == Family.binomial ) { // threshold for prediction
+    if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){
         preds[0] = Float.NaN;
         preds[1] = Float.NaN;
@@ -93,7 +93,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   protected float[] score0(double[] data, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms.useAllFactorLvls){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
     } else { // do not skip any levels!
@@ -106,7 +106,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
     preds[0] = (float)mu;
-    if( _parms.family == Family.binomial ) { // threshold for prediction
+    if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){
         preds[0] = Float.NaN;
         preds[1] = Float.NaN;
@@ -121,57 +121,59 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   public static class GLMParameters extends SupervisedModel.SupervisedParameters {
-    public int _response;
+    // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
-    public final Family family;
-    public final Link   link;
-    public final double tweedie_variance_power;
-    public final double tweedie_link_power;
-    public double [] alpha;
-    public double [] lambda;
-    public double       prior = -1;
-    public boolean lambda_search = false;
-    public int nlambdas = -1;
-    public double lambda_min_ratio = -1; // special
-    public boolean higher_accuracy = false;
-    public boolean useAllFactorLvls = false;
-    public int n_folds;
+    public final Family _family;
+    public final Link _link;
+    public final double _tweedie_variance_power;
+    public final double _tweedie_link_power;
+    public double [] _alpha;
+    public double [] _lambda;
+    public double _prior = -1;
+    public boolean _lambda_search = false;
+    public int _nlambdas = -1;
+    public double _lambda_min_ratio = -1; // special
+    public boolean _higher_accuracy = false;
+    public boolean _use_all_factor_levels = false;
+    public int _n_folds;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
-    public int maxActivePredictors = 10000;
+    public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public GLMParameters(){this(Family.gaussian);}
     public GLMParameters(Family f){this(f,f.defaultLink);}
     public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
-      this.family = f;
-      this.lambda = lambda;
-      this.alpha = alpha;
-      tweedie_link_power = Double.NaN;
-      tweedie_variance_power = Double.NaN;
+      this._family = f;
+      this._lambda = lambda;
+      this._alpha = alpha;
+      _tweedie_link_power = Double.NaN;
+      _tweedie_variance_power = Double.NaN;
+
+      // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
       if(l == Link.family_default)
-        link = family.defaultLink;
+        _link = _family.defaultLink;
       else { // check we have compatible link
         // TODO: refactor these checks into sanityCheckParameters():
-        this.link = l;
-        switch (family) {
+        this._link = l;
+        switch (_family) {
           case gaussian:
-            if (link != Link.identity && link != Link.log && link != Link.inverse)
+            if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only identity, log and inverse links are allowed for family=gaussian.");
             break;
           case binomial:
-            if (link != Link.logit && link != Link.log)
+            if (_link != Link.logit && _link != Link.log)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only logit and log links are allowed for family=binomial.");
             break;
           case poisson:
-            if (link != Link.log && link != Link.identity)
+            if (_link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only log and identity links are allowed for family=poisson.");
             break;
           case gamma:
-            if (link != Link.inverse && link != Link.log && link != Link.identity)
+            if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
           case tweedie:
-            if (link != Link.tweedie)
+            if (_link != Link.tweedie)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
             break;
           default:
@@ -180,16 +182,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
     public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){
-      this.lambda = lambda;
-      this.alpha = alpha;
-      this.tweedie_variance_power = twVar;
-      this.tweedie_link_power = twLnk;
-      family = f;
-      link = f.defaultLink;
+      this._lambda = lambda;
+      this._alpha = alpha;
+      this._tweedie_variance_power = twVar;
+      this._tweedie_link_power = twLnk;
+      _family = f;
+      _link = f.defaultLink;
     }
 
     public final double variance(double mu){
-      switch( family ) {
+      switch(_family) {
         case gaussian:
           return 1;
         case binomial:
@@ -200,7 +202,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           return mu * mu;
         case tweedie:
-          return Math.pow(mu, tweedie_variance_power);
+          return Math.pow(mu, _tweedie_variance_power);
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
@@ -213,13 +215,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public final boolean canonical(){
-      switch(family){
+      switch(_family){
         case gaussian:
-          return link == Link.identity;
+          return _link == Link.identity;
         case binomial:
-          return link == Link.logit;
+          return _link == Link.logit;
         case poisson:
-          return link == Link.log;
+          return _link == Link.log;
         case gamma:
           return false; //return link == Link.inverse;
         case tweedie:
@@ -230,7 +232,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public final double mustart(double y, double ymu) {
-      switch( family ) {
+      switch(_family) {
         case gaussian:
         case binomial:
         case poisson:
@@ -245,7 +247,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
     public final double deviance(double yr, double ym){
-      switch(family){
+      switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
         case binomial:
@@ -260,16 +262,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           // Theory of Dispersion Models: Jorgensen
           // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
           // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-          double one_minus_p = 1 - tweedie_variance_power;
-          double two_minus_p = 2 - tweedie_variance_power;
+          double one_minus_p = 1 - _tweedie_variance_power;
+          double two_minus_p = 2 - _tweedie_variance_power;
           return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
         default:
-          throw new RuntimeException("unknown family " + family);
+          throw new RuntimeException("unknown family " + _family);
       }
     }
 
     public final double link(double x) {
-      switch( link ) {
+      switch(_link) {
         case identity:
           return x;
         case logit:
@@ -281,14 +283,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
         case tweedie:
-          return Math.pow(x, tweedie_link_power);
+          return Math.pow(x, _tweedie_link_power);
         default:
           throw new RuntimeException("unknown link function " + this);
       }
     }
 
     public final double linkDeriv(double x) {
-      switch( link ) {
+      switch(_link) {
         case logit:
           return 1 / (x * (1 - x));
         case identity:
@@ -298,14 +300,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           return -1.0 / (x * x);
         case tweedie:
-          return tweedie_link_power * Math.pow(x, tweedie_link_power - 1);
+          return _tweedie_link_power * Math.pow(x, _tweedie_link_power - 1);
         default:
           throw H2O.unimpl();
       }
     }
 
     public final double linkInv(double x) {
-      switch( link ) {
+      switch(_link) {
         case identity:
           return x;
         case logit:
@@ -316,14 +318,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
         case tweedie:
-          return Math.pow(x, 1/tweedie_link_power);
+          return Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
     }
 
     public final double linkInvDeriv(double x) {
-      switch( link ) {
+      switch(_link) {
         case identity:
           return 1;
         case logit:
@@ -337,8 +339,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return -1 / (xx * xx);
         case tweedie:
-          double vp = (1. - tweedie_link_power) / tweedie_link_power;
-          return (1/tweedie_link_power) * Math.pow(x, vp);
+          double vp = (1. - _tweedie_link_power) / _tweedie_link_power;
+          return (1/ _tweedie_link_power) * Math.pow(x, vp);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
