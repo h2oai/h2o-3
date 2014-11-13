@@ -27,7 +27,7 @@ test {
   exclude '**'
 }
 
-task acceptanceTest << {
+task acceptanceTest(description: "Runs acceptance tests for this project ${project.name}", group: 'Verification') << {
     ant.taskdef(name: "easyb", classname:"org.easyb.ant.BehaviorRunnerTask", classpath: sourceSets.test.runtimeClasspath.asPath)
     def reports = "${project.buildDir}/reports"
     new File(reports).mkdirs()
