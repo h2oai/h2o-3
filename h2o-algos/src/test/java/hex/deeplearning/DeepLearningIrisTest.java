@@ -137,7 +137,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._train = _train._key;
                                 p._response_column = _train.lastVecName();
                                 assert _train.lastVec().isEnum();
-                                p._toEnum = true;
+                                p._convert_to_enum = true;
                                 p._ignored_columns = null;
 
                                 p._seed = seed;

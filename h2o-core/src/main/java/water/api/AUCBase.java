@@ -1,11 +1,10 @@
 package water.api;
 
 import hex.AUCData;
-import water.util.PojoUtils;
 
 import static hex.AUC.ThresholdCriterion;
 
-public class AUCBase extends Schema<AUCData, AUCBase> {
+public class AUCBase<I extends AUCData, S extends AUCBase<I, S>> extends Schema<I, S> {
   @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", direction=API.Direction.OUTPUT)
   public float[] thresholds;
 
@@ -95,9 +94,4 @@ public class AUCBase extends Schema<AUCData, AUCBase> {
   @API(help="Confusion Matrices for threshold criteria", direction=API.Direction.OUTPUT)
   public long[][][] confusion_matrix_for_criteria;
 
-  // Version&Schema-specific filling from the implementation object
-  public AUCBase fillFromImpl(AUCData i) {
-    PojoUtils.copyProperties(this, i, PojoUtils.FieldNaming.CONSISTENT);
-    return this;
-  }
 }

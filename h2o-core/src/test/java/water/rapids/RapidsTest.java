@@ -80,14 +80,12 @@ public class RapidsTest extends TestUtil {
     DKV.put(ahex, fr);
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
-    Object result = env.pop();
-    if (result instanceof ValFrame) {
-      Frame f2 = ((ValFrame)result)._fr;
+    if (env.isAry()) {
+      Frame f2 = env.pop0Ary();
       for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
       f2.delete();
-    }
-    if (result instanceof ValNum) {
-      double d = ((ValNum)result)._d;
+    } else if (env.isNum()) {
+      double d = env.popDbl();
       System.out.println(d);
     }
     fr.delete();

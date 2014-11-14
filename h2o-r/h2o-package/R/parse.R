@@ -90,3 +90,18 @@ h2o.loadModel <- function(object, path="") {
 function(h2o, key, nrow, ncol, col_names) {
   new("H2OParsedData", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 }
+
+#'
+#' Create new H2OParsedData object for predictions
+.h2o.parsedPredData<-
+function(client, predictions) {
+  key = predictions$key$name
+  col_names = sapply(predictions$columns, function(column) column$label)
+  nrows = predictions$rows
+  ncols = length(col_names)
+  factors = sapply(predictions$columns, function(column) if(column$type == "enum") TRUE else FALSE )
+  factors = as.data.frame(factors)
+  names(factors) = col_names
+
+  new("H2OParsedData", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+}

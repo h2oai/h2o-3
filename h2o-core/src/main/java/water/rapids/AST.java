@@ -839,11 +839,13 @@ class ASTAssign extends AST {
         Vec rvecs[] = rhs_ary.vecs();
         Futures fs = new Futures();
         for (int i = 0; i < cs.length; i++) {
+          boolean subit=true;
           int cidx = (int) cs[i];
           Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
           e.addVec(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
+              subit=false;
               e.subVec(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
@@ -851,15 +853,21 @@ class ASTAssign extends AST {
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
+              subit=false;
               e.subVec(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
-            fs = e.subVec(lhs_ary.replace(cidx, rv), fs);
+            Vec v = lhs_ary.replace(cidx, rv);
+            System.out.println(v._key);
+            e._locked.remove(v._key);
+            fs = e.subVec(v, fs);
+            if(subit) e.subVec(rv);
           }
         }
         fs.blockForPending();
         e.cleanup(rhs_ary);
+//        rhs_ary.delete();
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");

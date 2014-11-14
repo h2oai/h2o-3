@@ -105,6 +105,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
 
   /** TODO: refactor using SchemaMetadata. */
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
+    f.setAccessible(true);
     try {
       this.name = f.getName();
       boolean is_array = f.getType().isArray();

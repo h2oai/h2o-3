@@ -20,8 +20,33 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
 
-  /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI. */
-  abstract public String[] fields();
+  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "score_each_iteration" };
+
+  /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
+  private transient String[] __fields_cache = null;
+
+  public String[] fields() {
+    if (null == __fields_cache) {
+      __fields_cache = new String[0];
+      Class<? extends ModelParametersSchema> this_clz = this.getClass();
+
+      try {
+        for (Class<? extends ModelParametersSchema> clz = this_clz; ; clz = (Class<? extends ModelParametersSchema>) clz.getSuperclass()) {
+          String[] fields = (String[]) clz.getField("own_fields").get(clz);
+          String[] tmp = new String[fields.length + __fields_cache.length];
+          System.arraycopy(fields, 0, tmp, 0, fields.length);
+          System.arraycopy(__fields_cache, 0, tmp, fields.length, __fields_cache.length);
+          __fields_cache = tmp;
+
+          if (clz == ModelParametersSchema.class) break;
+        }
+      }
+      catch (Exception e) {
+        throw H2O.fail("Caught exception appending the schema field list for: " + this);
+      }
+    }
+    return __fields_cache;
+  }
 
   // Parameters common to all models:
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
@@ -38,6 +63,13 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   @API(help="Score validation set on each major model-building iteration; can be slow", direction=API.Direction.INOUT)
   public boolean score_each_iteration;
+
+  protected static String[] append_field_arrays(String[] first, String[] second) {
+    String[] appended = new String[first.length + second.length];
+    System.arraycopy(first, 0, appended, 0, first.length);
+    System.arraycopy(second, 0, appended, first.length, second.length);
+    return appended;
+  }
 
   public S fillFromImpl(P impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES );

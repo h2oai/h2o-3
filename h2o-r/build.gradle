@@ -36,17 +36,15 @@ def gzip(String s, String outFile){
     zipStream.close()
 }
 
+def bv = new H2OBuildVersion(rootDir, version)
+
 ext {
-    BUILD_MAJOR_VERSION= project.major          /* From gradle.properties */
-    BUILD_MINOR_VERSION= project.minor          /* From gradle.properties */
-    BUILD_INC_VERSION  = project.incremental    /* From gradle.properties */
-    BUILD_BRANCH       = ""                     /* task getBranchName     */
+    BUILD_BRANCH       = bv.getBranch()
+    PROJECT_VERSION    = bv.getProjectVersion()
     PDF_LATEX          = ""                     /* task pdflatex          */
     R_PLATFORM         = ""                     /* task getRPlatform      */
     R_VERSION          = ""                     /* task getRVersion       */
-    BUILD_NUMBER       = "99999"                /* Should this be in gradle.properties? */
     T                  = getProjectDir().toString()
-    PROJECT_VERSION    = "$BUILD_MAJOR_VERSION.$BUILD_MINOR_VERSION.$BUILD_INC_VERSION.$BUILD_NUMBER"
     SYS_OS             = getOS()
     REPO_PATH_WIN      = ["bin", "windows", "contrib", "3.1"].join(File.separator)
     REPO_PATH_MAC      = ["bin", "macosx",  "contrib", "3.1"].join(File.separator)

@@ -30,7 +30,7 @@ class CompressedTree extends Keyed {
     AutoBuffer ab = new AutoBuffer(_bits);
     IcedBitSet ibs = null;      // Lazily set on hitting first group test
     while(true) {
-      int nodeType = ab.get1();
+      int nodeType = ab.get1U();
       int colId = ab.get2();
       if( colId == 65535 ) return scoreLeaf(ab);
 
@@ -56,10 +56,10 @@ class CompressedTree extends Keyed {
       int rmask = (nodeType & 0xC0) >> 2;
       int skip = 0;
       switch(lmask) {
-      case 0:  skip = ab.get1();  break;
-      case 1:  skip = ab.get2();  break;
-      case 2:  skip = ab.get3();  break;
-      case 3:  skip = ab.get4();  break;
+      case 0:  skip = ab.get1U();  break;
+      case 1:  skip = ab.get2 ();  break;
+      case 2:  skip = ab.get3 ();  break;
+      case 3:  skip = ab.get4 ();  break;
       case 16: skip = _nclass < 256?1:2;  break; // Small leaf
       case 48: skip = 4;          break; // skip the prediction
       default: assert false:"illegal lmask value " + lmask+" at "+ab+" in bitpile "+Arrays.toString(_bits);

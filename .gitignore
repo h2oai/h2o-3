@@ -45,4 +45,6 @@ h2o-r/h2o-package/inst/java/
 h2o-r/h2o-package/inst/source_code_repository_info.txt
 h2o-r/h2o-package/man/h2o-package.Rd
 
+# Data folders
+bigdata/
 

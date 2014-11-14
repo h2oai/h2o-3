@@ -54,6 +54,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private transient float[/*nfeatures*/] _improvPerVar;
 
     @Override protected void buildModel() {
+      // For GBM multinomial, initial predictions are class-distributions
+      // For GBM, keep the original zero guesses
+      //if( _nclass > 2 ) {
+      //  for( int c=0; c<_nclass; c++ ) {
+      //    final double init = _model._output._priorClassDist[c];
+      //    new MRTask() {
+      //      @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set0(i, init); }
+      //    }.doAll(vec_tree(_train,c));
+      //  }
+      //  throw H2O.unimpl("untested");
+      //}
+
       // Initialize gbm-specific data structures
       if( _parms._importance ) _improvPerVar = new float[_nclass];
 
@@ -436,7 +448,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree
       fs[1] = (float)Math.exp(chk_tree(chks,0).at0(row));
-      fs[2] = 1.0f/fs[1]; // exp(-d) === 1/d
+      fs[2] = 1.0f/fs[1]; // exp(-d) === 1/exp(d)
       return fs[1]+fs[2];
     }
     float sum=0;

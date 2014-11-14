@@ -1,0 +1,49 @@
+//
+// Supports dataset synchronization with S3
+//
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "com.monochromeroad.gradle-plugins:gradle-aws-s3-sync:0.8"
+    }
+}
+
+import com.monochromeroad.gradle.plugin.aws.s3.S3Sync
+
+task syncBigdataLaptop(type: S3Sync) {
+    group = "Datasets"
+    description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
+
+    // keys from build-sync user - read-only access
+    accessKey "AKIAJGOMG7R742Z6XF3A"
+    secretKey "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"
+
+    configFile ".synchronizer.properties"
+
+    // follows the jets3t conventions for action names
+    action = 'DOWN'
+
+    from "h2o-public-test-data/bigdata/laptop/"
+    into "$rootDir/bigdata/laptop/"
+}
+
+task syncBigdataServer(type: S3Sync) {
+    group = "Datasets"
+    description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
+
+    // keys from build-sync user - read-only access
+    accessKey "AKIAJGOMG7R742Z6XF3A"
+    secretKey "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"
+
+    configFile ".synchronizer.properties"
+
+    // follows the jets3t conventions for action names
+    action = 'DOWN'
+
+    from "h2o-public-test-data/bigdata/bigserver/"
+    into "$rootDir/bigdata/bigserver/"
+}
+

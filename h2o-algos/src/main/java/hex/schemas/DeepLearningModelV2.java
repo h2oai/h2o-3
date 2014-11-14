@@ -4,26 +4,12 @@ import hex.deeplearning.DeepLearningModel;
 import water.Key;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.PojoUtils;
 
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
     //FIXME
     //add output fields
-
-    @Override public DeepLearningModel.DeepLearningOutput createImpl() {
-      DeepLearningModel.DeepLearningOutput impl = new DeepLearningModel.DeepLearningOutput(null);
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      return impl;
-    }
-
-    // Version&Schema-specific filling from the handler
-    @Override public DeepLearningModelOutputV2 fillFromImpl( DeepLearningModel.DeepLearningOutput impl) {
-      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-      return this;
-    }
-
 
   } // DeepLearningModelOutputV2
 
@@ -39,10 +25,5 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     DeepLearningV2.DeepLearningParametersV2 p = ((DeepLearningV2.DeepLearningParametersV2)this.parameters);
     DeepLearningModel.DeepLearningParameters parms = p.createImpl();
     return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningOutput(null), null, null);
-  }
-
-  // Version&Schema-specific filling from the impl
-  @Override public DeepLearningModelV2 fillFromImpl( DeepLearningModel kmm ) {
-    return super.fillFromImpl(kmm);
   }
 }

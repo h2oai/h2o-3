@@ -175,6 +175,12 @@ public class RequestServer extends NanoHTTPD {
     register("/1/WaterMeterCpuTicks/(?<nodeidx>.*)"                         ,"GET"   ,WaterMeterCpuTicksHandler.class, "fetch", new String[] {"nodeidx"},
       "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
 
+    // Node persistent storage
+    register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"POST"  ,NodePersistentStorageHandler.class, "put_with_name", new String[] {"category", "name"}, "Store a named value.");
+    register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"GET"   ,NodePersistentStorageHandler.class, "get_as_string", new String[] {"category", "name"}, "Return value for a given name.");
+    register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"DELETE",NodePersistentStorageHandler.class, "delete",        new String[] {"category", "name"}, "Delete a key.");
+    register("/3/NodePersistentStorage/(?<category>.*)"                   ,"POST"  ,NodePersistentStorageHandler.class, "put",           new String[] {"category"},         "Store a value.");
+    register("/3/NodePersistentStorage/(?<category>.*)"                   ,"GET"   ,NodePersistentStorageHandler.class, "list",          new String[] {"category"},         "Return all keys stored for a given category.");
 
     // TODO: register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"});
     // TODO: register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"});

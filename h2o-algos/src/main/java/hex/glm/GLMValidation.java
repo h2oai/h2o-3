@@ -49,13 +49,13 @@ public class GLMValidation extends Iced {
     }
   }
   public GLMValidation(Key dataKey, double ymu, GLMModel.GLMParameters glm, int rank){
-    this(dataKey, ymu, glm, rank,glm.family == Family.binomial?ModelUtils.DEFAULT_THRESHOLDS:null);
+    this(dataKey, ymu, glm, rank,glm._family == Family.binomial?ModelUtils.DEFAULT_THRESHOLDS:null);
   }
   public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
     _rank = rank;
     _ymu = ymu;
     _glm = glm;
-    if(_glm.family == Family.binomial){
+    if(_glm._family == Family.binomial){
       _cms = new ConfusionMatrix2[thresholds.length];
       for(int i = 0; i < _cms.length; ++i)
         _cms[i] = new ConfusionMatrix2(2);
@@ -67,13 +67,13 @@ public class GLMValidation extends Iced {
   public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make());}
   public void add(double yreal, double ymodel){
     null_deviance += _glm.deviance(yreal, _ymu);
-    if(_glm.family == Family.binomial) // classification -> update confusion matrix too
+    if(_glm._family == Family.binomial) // classification -> update confusion matrix too
       for(int i = 0; i < thresholds.length; ++i)
         _cms[i].add((int)yreal, (ymodel >= thresholds[i])?1:0);
     residual_deviance  += _glm.deviance(yreal, ymodel);
     ++nobs;
 
-    if( _glm.family == Family.poisson ) { // aic for poisson
+    if( _glm._family == Family.poisson ) { // aic for poisson
       long y = Math.round(yreal);
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
@@ -97,7 +97,7 @@ public class GLMValidation extends Iced {
   public double aic(){return aic;}
   protected void computeAIC(){
     aic = 0;
-    switch( _glm.family ) {
+    switch( _glm._family) {
       case gaussian:
         aic =  nobs * (Math.log(residual_deviance / nobs * 2 * Math.PI) + 1) + 2;
         break;
@@ -112,13 +112,13 @@ public class GLMValidation extends Iced {
         aic = Double.NaN;
         break;
       default:
-        assert false : "missing implementation for family " + _glm.family;
+        assert false : "missing implementation for family " + _glm._family;
     }
     aic += 2*_rank;
   }
 
   protected void computeAUC(){
-    if(_glm.family == Family.binomial){
+    if(_glm._family == Family.binomial){
       for(ConfusionMatrix2 cm:_cms)cm.reComputeErrors();
       AUC auc = new AUC(_cms,thresholds,/*TODO: add CM domain*/null);
       this.auc = auc.data().AUC();

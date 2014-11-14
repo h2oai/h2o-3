@@ -6,5 +6,7 @@ dependencies {
   compile project(":h2o-web")
   compile project(":h2o-algos")
   compile project(":h2o-core")
+  // Add h2o-flow which is external project
+  compile("ai.h2o:h2o-flow:$h2oFlowVersion")
 }
 

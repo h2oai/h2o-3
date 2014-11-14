@@ -9,15 +9,7 @@ import water.fvec.Frame;
 public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
   public static final class GBMParametersV2 extends SupervisedModelParametersSchema<GBMParameters, GBMParametersV2> {
-    public String[] fields() { return new String[] {
-        "destination_key",
-        "training_frame",
-        "validation_frame",
-        "response_column",
-        "ignored_columns",
-        "to_enum",
-        "balance_classes",
-        "max_after_balance_size",
+    static public String[] own_fields = new String[] {
         "ntrees",
         "max_depth",
         "min_rows",
@@ -25,7 +17,8 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "learn_rate",
         "loss",
         "variable_importance",
-        "seed"}; }
+        "seed"
+    };
 
     // Input fields
     @API(help="Number of trees.  Grid Search, comma sep values:50,100,150,200")
@@ -54,19 +47,16 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
 
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
-      loss = GBMParameters.Family.AUTO;
+
+      loss = GBMParameters.Family.AUTO; // TODO: Why? Defaults should NOT go into the schemas!
       variable_importance = parms._importance;
       return this;
     }
 
     public GBMParameters fillImpl(GBMParameters impl) {
       super.fillImpl(impl);
+
       impl._importance = this.variable_importance;
-
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
-
       return impl;
     }
   }

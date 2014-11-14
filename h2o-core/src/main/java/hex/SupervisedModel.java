@@ -26,7 +26,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  instead of a regression) as needed.  The default is false, which means
      *  "do nothing" - accept the response column as-is and that alone drives
      *  the decision to do a classification vs regression. */
-    public boolean _toEnum = false;
+    public boolean _convert_to_enum = false;
 
     /** Should the minority classes be upsampled to balance the class
      *  distribution? */
@@ -39,7 +39,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public float _max_after_balance_size = Float.POSITIVE_INFINITY;
 
     @Override public long checksum() {
-      return super.checksum()^_response_column.hashCode()^(_toEnum?1:0)^(_balance_classes?1:0);
+      return super.checksum()^_response_column.hashCode()^(_convert_to_enum ?1:0)^(_balance_classes?1:0);
     }
   }
 
@@ -50,6 +50,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public long [/*nclass*/] _distribution;  // Count of rows-per-class
     public float[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
     public float[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
+
+    public SupervisedOutput() { this(null); }
 
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum

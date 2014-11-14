@@ -1,8 +1,6 @@
 package hex;
 
-import hex.schemas.ModelBuilderSchema;
 import water.*;
-import water.fvec.Frame;
 import water.fvec.Vec;
 
 abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends ModelBuilder<M,P,O> {
@@ -43,25 +41,27 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
 
     // put response to the end (if not already), and convert to an enum
     int ridx = _train.find(_parms._response_column);
-    if( ridx == -1 ) // Actually, think should not get here either (cutout at higher layer)
+    if( ridx == -1 ) { // Actually, think should not get here either (cutout at higher layer)
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms.train() + ".");
-    _response = _train.remove(ridx);
-    _vresponse= _valid.remove(ridx);
-    if( _response.isBad() ) 
-      error("_response_column", "Response column is all NAs!");
-    if( _response.isConst() ) 
-      error("_response_column", "Response column is constant!");
-    if( _parms._toEnum && expensive ) { // Expensive; only do it on demand
-       _response=  _response.toEnum();
-      _vresponse= _vresponse.toEnum();
-    }
-    _train.add(_parms._response_column,  _response);
-    _valid.add(_parms._response_column, _vresponse);
-     _response_key =  _response._key;
-    _vresponse_key = _vresponse._key;
+    } else {
+      _response = _train.remove(ridx);
+      _vresponse = _valid.remove(ridx);
+      if (_response.isBad())
+        error("_response_column", "Response column is all NAs!");
+      if (_response.isConst())
+        error("_response_column", "Response column is constant!");
+      if (_parms._convert_to_enum && expensive) { // Expensive; only do it on demand
+        _response = _response.toEnum();
+        _vresponse = _vresponse.toEnum();
+      }
+      _train.add(_parms._response_column, _response);
+      _valid.add(_parms._response_column, _vresponse);
+      _response_key = _response._key;
+      _vresponse_key = _vresponse._key;
 
-    // #Classes: 1 for regression, domain-length for enum columns
-    _nclass = _response.isEnum() ? _response.domain().length : 1;
+      // #Classes: 1 for regression, domain-length for enum columns
+      _nclass = _response.isEnum() ? _response.domain().length : 1;
+    }
   }    
 }
 

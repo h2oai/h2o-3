@@ -641,6 +641,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   public static class DeepLearningOutput extends SupervisedModel.SupervisedOutput {
+    public DeepLearningOutput() { super(); }
     public DeepLearningOutput( DeepLearning b ) { super(b); }
     //FIXME
     //add output fields

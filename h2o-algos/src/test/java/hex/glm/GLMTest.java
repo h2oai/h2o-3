@@ -40,9 +40,9 @@ public class GLMTest  extends TestUtil {
       fr = ParseDataset2.parse(parsed, raw);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
-      params._response = 1;
-      params._response_column = fr._names[params._response];
-      params.lambda = new double[]{0};
+      // params._response = 1;
+      params._response_column = fr._names[1];
+      params._lambda = new double[]{0};
       job = new GLM(modelKey,"glm test simple gaussian",params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -75,10 +75,10 @@ public class GLMTest  extends TestUtil {
       System.out.println(v.min() + ", " + v.max()  + ", mean = " + v.mean());
       GLMParameters params = new GLMParameters(Family.poisson);
       params._train = fr._key;
-      params._response = 1;
-      params._response_column = fr._names[params._response];
-      params.lambda = new double[]{0};
-      params.higher_accuracy = true;
+      // params._response = 1;
+      params._response_column = fr._names[1];
+      params._lambda = new double[]{0};
+      params._higher_accuracy = true;
       params._standardize = false;
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
@@ -93,10 +93,10 @@ public class GLMTest  extends TestUtil {
       fr = ParseDataset2.parse(parsed, raw);
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
-      params2._response = 1;
-      params2._response_column = fr._names[params2._response];
-      params2.lambda = new double[]{0};
-      params2.higher_accuracy = true;
+      // params2._response = 1;
+      params2._response_column = fr._names[1];
+      params2._lambda = new double[]{0};
+      params2._higher_accuracy = true;
       params2._standardize = false;
       job = new GLM(modelKey,"glm test simple poisson",params2);
       model = job.trainModel().get();
@@ -132,10 +132,10 @@ public class GLMTest  extends TestUtil {
 //      double [] vals = new double[] {1.0,1.0};
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
-      params._response = 1;
-      params._response_column = fr._names[params._response];
+      // params._response = 1;
+      params._response_column = fr._names[1];
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       Key modelKey = Key.make("gamma_test");
       job = new GLM(modelKey,"glm test simple gamma",params);
       job.trainModel().get();
@@ -206,10 +206,10 @@ public class GLMTest  extends TestUtil {
       fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0});
       params._response_column = "power (hp)";
-      params._response = fr.find(params._response_column);
+      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -231,10 +231,10 @@ public class GLMTest  extends TestUtil {
 
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0});
       params._response_column = "power (hp)";
-      params._response = fr.find(params._response_column);
+      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -253,10 +253,10 @@ public class GLMTest  extends TestUtil {
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
       params._response_column = "power (hp)";
-      params._response = fr.find(params._response_column);
+      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -297,10 +297,10 @@ public class GLMTest  extends TestUtil {
       double [] vals = new double [] {-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "CAPSULE";
-      params._response = fr.find(params._response_column);
+      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"ID"};
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -341,10 +341,10 @@ public class GLMTest  extends TestUtil {
     try {
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "response";
-      params._response = fr.find(params._response_column);
+      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"ID"};
       params._train = parsed;
-      params.lambda = new double[]{0};
+      params._lambda = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -388,19 +388,19 @@ public class GLMTest  extends TestUtil {
     try{
       Scope.enter();
       GLMParameters params = new GLMParameters(Family.gaussian);
-      params._response = 0;
-      params._response_column = fr._names[params._response];
+      // params._response = 0;
+      params._response_column = fr._names[0];
       params._train = parsed;
-      params.lambda_search = true;
-      params.nlambdas = 35;
-      params.lambda_min_ratio = 0.18;
-      params.maxActivePredictors = 200;
-      params.alpha = new double[]{1};
+      params._lambda_search = true;
+      params._nlambdas = 35;
+      params._lambda_min_ratio = 0.18;
+      params._max_active_predictors = 200;
+      params._alpha = new double[]{1};
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
       // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
-      assertEquals(params.nlambdas,model._output._submodels.length);
+      assertEquals(params._nlambdas,model._output._submodels.length);
       GLMValidation val = model.validation();
       // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
       model._output.setSubmodelIdx(model._output._submodels.length-1);
@@ -428,14 +428,14 @@ public class GLMTest  extends TestUtil {
 
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
       params = new GLMParameters(Family.gaussian);
-      params._response = 0;
-      params._response_column = fr._names[params._response];
+      // params._response = 0;
+      params._response_column = fr._names[0];
       params._train = parsed;
-      params.lambda_search = true;
-      params.nlambdas = 35;
-      params.lambda_min_ratio = 0.18;
-      params.maxActivePredictors = 20;
-      params.alpha = new double[]{1};
+      params._lambda_search = true;
+      params._nlambdas = 35;
+      params._lambda_min_ratio = 0.18;
+      params._max_active_predictors = 20;
+      params._alpha = new double[]{1};
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();

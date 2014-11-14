@@ -84,7 +84,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
   @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
-  public String schema_name = (new CurClassNameGetter()).getClz().getSimpleName(); // this.getClass().getSimpleName();
+  public String schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
 
   @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
   public final String schema_type = _impl_class.getSimpleName();
@@ -202,12 +202,19 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   public static Class<? extends Iced> getImplClass(Class<? extends Schema> clz) {
-    return (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
+    Class<? extends Iced> impl_class = (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
+    if (null == impl_class)
+      Log.warn("Failed to find an impl class for Schema: " + clz);
+    return impl_class;
   }
 
   public Class<I> getImplClass() {
     if (null == _impl_class)
-      _impl_class = (Class<I>)ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+      _impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
+
+    if (null == _impl_class)
+      Log.warn("Failed to find an impl class for Schema: " + this.getClass());
+
     return _impl_class;
   }
 

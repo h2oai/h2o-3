@@ -6,7 +6,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -371,8 +373,10 @@ public class NanoHTTPD
               sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but boundary syntax error. Usage: GET /example/file.html" );
             st.nextToken();
             String boundary = st.nextToken();
-            boolean useValueArray = !Pattern.matches("/[0-9]+/.*", uri);  // For /2 and beyond, use fluid vector.
-            fileUpload(boundary,is,parms, useValueArray);
+            boolean handled = fileUpload(boundary, is, parms, uri);
+            if (handled) {
+              return;
+            }
           } else {
             // Handle application/x-www-form-urlencoded
 
@@ -552,14 +556,14 @@ public class NanoHTTPD
       return sz;
     }
 
-    private void fileUpload(String boundary, InputStream in, Properties parms, boolean useValueArray) throws InterruptedException {
+    private boolean fileUpload(String boundary, InputStream in, Properties parms, String uri) throws InterruptedException {
       try {
         String line = readLine(in);
         int i = line.indexOf(boundary);
         if (i!=2)
           sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but next chunk does not start with boundary. Usage: GET /example/file.html" );
         if (line.substring(i+boundary.length()).startsWith("--"))
-          return;
+          return false;
         // read the header
         Properties item = new Properties();
         line = readLine(in);
@@ -575,13 +579,31 @@ public class NanoHTTPD
           if( contentDisposition == null)
             sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but no content-disposition info found. Usage: GET /example/file.html" );
           String key = parms.getProperty("key");
-          //UploadFileVec.readPut(key, new InputStreamWrapper(in, boundary.getBytes()));
-          throw H2O.unimpl();
+          boolean nps = Pattern.matches("/[3-9][0-9]*/NodePersistentStorage.*", uri);
+          if (nps) {
+            Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)");
+            Matcher m = p.matcher(uri);
+            boolean b = m.matches();
+            if (! b) {
+              sendError(HTTP_BADREQUEST, "NodePersistentStorage URL malformed");
+            }
+            String categoryName = m.group(1);
+            UUID uuid = java.util.UUID.randomUUID();
+            H2O.getNPS().put(categoryName, uuid.toString(), new InputStreamWrapper(in, boundary.getBytes()));
+            String responsePayload = "{ key_name : \"" + uuid + "\" }";
+            sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
+            return true;
+          }
+          else {
+            //UploadFileVec.readPut(key, new InputStreamWrapper(in, boundary.getBytes()));
+            throw H2O.unimpl();
+          }
         }
       }
       catch (Exception e) {
         sendError( HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: Exception: " + e.getMessage());
       }
+      return false;
     }
 
     /**

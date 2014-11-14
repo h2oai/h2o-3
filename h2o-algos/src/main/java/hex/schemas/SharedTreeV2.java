@@ -4,17 +4,13 @@ import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
-import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedTreeV2,SharedTreeV2.SharedTreeParametersV2> {
 
   public abstract static class SharedTreeParametersV2 extends ModelParametersSchema<SharedTreeParameters, SharedTreeParametersV2> {
-    public String[] fields() { return new String[] {
-        "destination_key",
-        "training_frame",
+    static public String[] own_fields = new String[] {
         "ntrees"
-      }; }
+    };
 
     // Input fields
     @API(help="Number of trees. Grid Search, comma sep values:50,100,150,200")

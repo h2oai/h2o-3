@@ -1421,7 +1421,7 @@ class ASTSeq extends ASTUniPrefixOp {
 class ASTRepLen extends ASTUniPrefixOp {
   protected static double _length;
   @Override String opStr() { return "rep_len"; }
-  ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
+  public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
   @Override void apply(Env env) {
 
@@ -1485,7 +1485,7 @@ class ASTQtile extends ASTUniPrefixOp {
 
   @Override String opStr() { return "quantile"; }
 
-  ASTQtile( ) { super(new String[]{"quantile","x","probs", "na.rm", "names", "type"});}
+  public ASTQtile() { super(new String[]{"quantile","x","probs", "na.rm", "names", "type"});}
   @Override ASTQtile make() { return new ASTQtile(); }
   @Override ASTQtile parse_impl(Exec E) {
     // Get the ary
@@ -1597,7 +1597,7 @@ class ASTRunif extends ASTUniPrefixOp {
   protected static double _max;
   protected static long   _seed;
   @Override String opStr() { return "runif"; }
-  ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
+  public ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
   @Override ASTRunif parse_impl(Exec E) {
     // peel off the ary
@@ -1936,10 +1936,10 @@ class ASTTable extends ASTUniPrefixOp {
 
     if (two != null)
       if (two.numCols() != 1 || one.numCols() != 1)
-        throw new IllegalArgumentException("table supports at *most* two vectors");
+        throw new IllegalArgumentException("`table` supports at *most* two vectors");
     else
       if (one.numCols() < 1 || one.numCols() > 2 )
-        throw new IllegalArgumentException("table supports at *most* two vectors and at least one vector.");
+        throw new IllegalArgumentException("`table` supports at *most* two vectors and at least one vector.");
 
     Frame fr;
     if (two != null) fr = new Frame(one.add(two));
@@ -1988,7 +1988,7 @@ class ASTTable extends ASTUniPrefixOp {
     env.push(new ValFrame(fr2));
   }
 
-  private static class Tabularize extends MRTask<Tabularize> {
+  protected static class Tabularize extends MRTask<Tabularize> {
     public final long[][]  _domains;
     public long[][] _counts;
 
