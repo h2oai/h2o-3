@@ -13,7 +13,11 @@ $(SUBDIRS):
 	$(MAKE) -C $@
 
 # By default, make all subdirs
-default: subdirs
+default: subdirs build/h2o.jar
+
+build/h2o.jar: h2o-app
+	@rm -f build/h2o.jar
+	@cp h2o-app/build/libs/h2o-web.jar build/h2o.jar
 
 # Build, then run simple tests
 check: subdirs
