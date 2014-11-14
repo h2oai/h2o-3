@@ -74,13 +74,14 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
         // Fill in the model
         model._output._matches = Arrays.copyOf(gg._matches,gg._cnt);
-        model._output._linenos = Arrays.copyOf(gg._linenos,gg._cnt);
         model._output._offsets = Arrays.copyOf(gg._offsets,gg._cnt);
         // model._output._xxx = gg;
         //model.update(_key); // Update model in K/V store
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Grep: ").append(Arrays.toString(model._output._matches));
+        sb.append("Grep: ").append("\n");
+        sb.append(Arrays.toString(model._output._matches)).append("\n");
+        sb.append(Arrays.toString(model._output._offsets)).append("\n");
         Log.info(sb);
 
       } catch( Throwable t ) {
@@ -117,7 +118,6 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     private final String _regex;
     // Outputs, hopefully not too big for once machine!
     String[] _matches;
-    long  [] _linenos;
     long  [] _offsets;
     int _cnt;
 
@@ -130,27 +130,27 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       Matcher m = p.matcher(bs);
       while( m.find() && m.start() < bs._bs0.length )
         add(bs.str(m.start(),m.end()),chk.start()+m.start());
-      // Now find all the linenumbers with another pass through the data
-      int i=0;
-      //for( int m=0; m<_cnt; m++ ) {
-      //
-     // }
-
       update(chk._len);         // Whole chunk of work, done all at once
     }
-    @Override public void reduce( GrepGrep gg ) {
-      throw H2O.unimpl();
+    @Override public void reduce( GrepGrep gg1 ) {
+      GrepGrep gg0 = this;
+      if( gg0._cnt < gg1._cnt ) { gg0 = gg1; gg1 = this; } // Larger result on left
+      for( int i=0; i<gg1._cnt; i++ )
+        gg0.add(gg1._matches[i], gg1._offsets[i]);
+      if( gg0 != this ) {
+        _matches = gg0._matches;
+        _offsets = gg0._offsets;
+        _cnt = gg0._cnt;
+      }
     }
 
     private void add( String s, long off ) {
       // Lazily expand local result holders
       if( _cnt == 0 ) {
         _matches = new String[2];
-        _linenos = new long  [2];
         _offsets = new long  [2];
       } else if( _cnt == _matches.length ) {
         _matches = Arrays.copyOf(_matches ,_cnt<<1);
-        _linenos = Arrays.copyOf(_linenos,_cnt<<1);
         _offsets = Arrays.copyOf(_offsets,_cnt<<1);
       }
       _matches[_cnt] = s;

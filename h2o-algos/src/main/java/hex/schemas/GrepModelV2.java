@@ -11,7 +11,6 @@ public class GrepModelV2 extends ModelSchema<GrepModel, GrepModel.GrepParameters
     // Output fields
     // Assume small-data results: string matches only
     @API(help="Matching strings") public String[] matches;
-    @API(help="Line numbers of matches") public long[] linenos;
     @API(help="Byte offsets of matches") public long[] offsets;
 
     @Override public GrepModel.GrepOutput createImpl() {

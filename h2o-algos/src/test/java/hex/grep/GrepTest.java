@@ -17,13 +17,16 @@ public class GrepTest extends TestUtil {
     GrepModel kmm = null;
     Frame fr = null;
     try {
-      File f = new File("smalldata/iris/iris_wheader.csv");
+      //String regex = "Iris-versicolor";
+      //File f = new File("smalldata/iris/iris_wheader.csv");
+      String regex = "(?:(\\w)\\1){5}";
+      File f = new File("bigdata/laptop/text8.txt");
       NFSFileVec nfs = NFSFileVec.make(f);
       DKV.put(fr = new Frame(Key.make(), new String[]{"text"}, new Vec[]{nfs}));
 
       GrepModel.GrepParameters parms = new GrepModel.GrepParameters();
       parms._train = fr._key;
-      parms._regex = "Iris-versicolor";
+      parms._regex = regex;
 
       Grep job = new Grep(parms).trainModel();
       kmm = job.get();

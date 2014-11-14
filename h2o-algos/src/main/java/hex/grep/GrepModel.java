@@ -15,7 +15,6 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
   public static class GrepOutput extends Model.Output {
     // Iterations executed
     public String[] _matches;
-    public long[] _linenos;
     public long[] _offsets;
     public GrepOutput( Grep b ) { super(b); }
     @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }
