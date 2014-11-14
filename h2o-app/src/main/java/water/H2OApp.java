@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.grep.Grep;
 import hex.kmeans2.KMeans2;
 import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
@@ -72,6 +73,9 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("kmeans2", KMeans2.class);
     H2O.registerPOST("/2/ModelBuilders/kmeans2", KMeans2BuilderHandler.class, "train","Train a KMeans2 model on the specified Frame.");
+
+    ModelBuilder.registerModelBuilder("grep", Grep.class);
+    H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();

@@ -533,7 +533,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
    *  optimized stencil calculations that want to "roll off the end" of a
    *  Chunk, but in a highly optimized way. */
-  Chunk nextChunk( ) { return _vec.nextChunk(this); }
+  public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
