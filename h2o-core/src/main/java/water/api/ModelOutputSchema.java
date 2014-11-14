@@ -13,19 +13,16 @@ abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelO
   @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT)
   public String[][] domains;
 
+  @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"})
+  Model.ModelCategory model_category;
 
   public ModelOutputSchema() {
+    super();
   }
 
-  public ModelOutputSchema(O p) {
+  public S fillFromImpl( O impl ) {
+    super.fillFromImpl(impl);
+    this.model_category = impl.getModelCategory();
+    return (S)this;
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // Version&Schema-specific filling into the handler
-  abstract public O createImpl();
-
-  // Version&Schema-specific filling from the impl
-  abstract public S fillFromImpl( O p );
 }

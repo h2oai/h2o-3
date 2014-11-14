@@ -38,12 +38,14 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   protected long checksum;
 
   public ModelSchema() {
+    super();
   }
 
   /* Key-only constructor, for the times we only want to return the key. */
   ModelSchema( Key key ) { this.key = key; }
 
   public ModelSchema(M m) {
+    this();
     PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this.output, m._output, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
   }

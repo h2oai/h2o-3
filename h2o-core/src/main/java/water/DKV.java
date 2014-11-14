@@ -153,6 +153,13 @@ public abstract class DKV {
           rpc.get();
   }
 
+  static public Keyed getGet(Key key) {
+    if (null == key) return null;
+    Value v = get(key);
+    if (null == v) return null;
+    return v.get();
+  }
+
   /** Return the {@link Value} mapped to Key <em>key</em>, or null if no
    *  mapping.  Blocks till data available, always caches.  
    *  @return The {@link Value} mapped to Key <em>key</em>, or null if no

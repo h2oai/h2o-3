@@ -420,7 +420,7 @@ assert found_expected_error, "Failed to find error message about input_dropout_r
 dl_prostate_model_name = 'prostate_DeepLearning_1'
 
 print 'About to build a DeepLearning model. . .'
-dl_prostate_1_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
+dl_prostate_1_parameters = {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]" }
 jobs = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name, training_frame=prostate_key, parameters=dl_prostate_1_parameters, timeoutSecs=240) # synchronous
 validate_model_builder_result(result, dl_prostate_1_parameters, dl_prostate_model_name)
 print 'Done building DeepLearning model.'
@@ -507,6 +507,8 @@ validate_actual_parameters(dl_iris_1_parameters, model['parameters'], iris_key, 
 # Compute and check ModelMetrics for dl_prostate_model_name
 mm = a_node.compute_model_metrics(model=dl_prostate_model_name, frame=prostate_key)
 assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
+assert 'model_category' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a model_category."
+assert 'Binomial' == mm['model_category'], "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " model_category is not Binomial, it is: " + mm['model_category']
 assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
 assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", dl_prostate_model_name, " on: ", prostate_key, ":  ", repr(mm))
@@ -517,6 +519,11 @@ mms = a_node.model_metrics() # fetch all
 assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
 found_mm = False
 for mm in mms['model_metrics']:
+    assert 'model' in mm, "mm does not contain a model element: " + repr(mm)
+    assert 'key' in mm['model'], "mm[model] does not contain a key: " + repr(mm)
+    assert 'frame' in mm, "mm does not contain a model element: " + repr(mm)
+    assert 'key' in mm['frame'], "mm[frame] does not contain a key: " + repr(mm)
+    assert 'name' in mm['frame']['key'], "mm[frame][key] does not contain a name: " + repr(mm)
     model_key = mm['model']['key']
     frame_key = mm['frame']['key']['name'] # TODO: should match
     if model_key == dl_prostate_model_name and frame_key == prostate_key:

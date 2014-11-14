@@ -181,7 +181,9 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
-    this.checksum = f.checksum();
+    this._fr = f;
+    this.key = f._key;
+    this.checksum = _fr.checksum();
     off = 0;
     rows = _fr.numRows();
     // TODO: pass in offset and column from Inspect page
