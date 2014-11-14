@@ -137,7 +137,7 @@ public class AUC extends Iced {
 
   // Compute CMs for different thresholds via MRTask2
   private static class AUCTask extends MRTask<AUCTask> {
-    /* @OUT CMs */ private final ConfusionMatrix2[] getCMs() { return _cms; }
+    /* @OUT CMs */ private ConfusionMatrix2[] getCMs() { return _cms; }
     private ConfusionMatrix2[] _cms;
     double nullDev;
     double resDev;
@@ -150,7 +150,7 @@ public class AUC extends Iced {
       ymu = mu;
     }
 
-    static final double y_log_y(double y, double mu) {
+    static double y_log_y(double y, double mu) {
       if(y == 0)return 0;
       if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
       return y * Math.log(y / mu);
