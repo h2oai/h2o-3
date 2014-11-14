@@ -45,14 +45,20 @@ def list_to_dict(l, key):
     return result
 
 
+'''
+Validate that a model builder seems to have a well-formed parameters list.
+'''
 def validate_builder(builder):
     assert 'parameters' in builder and isinstance(builder['parameters'], list)
     parameters = builder['parameters']
     assert len(parameters) > 0
-    parameter = parameters[0]
-    h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
+    for parameter in parameters:
+        h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
 
 
+'''
+Validate that a model build result has no parameter validation errors, and that it has a Job with a Key.
+'''
 def validate_model_builder_result(result, original_params, model_name):
     if 'validation_error_count' in result:
         print 'Parameters validation error for model: ', model_name
@@ -64,17 +70,35 @@ def validate_model_builder_result(result, original_params, model_name):
     assert 'key' in result, "Failed to find (jobs) key for model: " + model_name
 
 
-def validate_model_exists(model_name):
-    found = False;
-    for model in models['models']:
-        if model['key'] == model_name:
-            found = True
-            break
+'''
+Check that we got the expected ERROR validation messages for a model build or validation check with bad parameters.
+'''
+def validate_validation_messages(result, expected_error_fields):
+    assert 'validation_error_count' in result, "Failed to find validation_error_count in bad-parameters model build result."
+    assert 0 < result['validation_error_count'], "0 != validation_error_count in bad-parameters model build validation result."
 
-    assert found, 'Did not find ' + model_name + ' in the models list.'
-    return model
+    error_fields = []
+    for validation_message in result['validation_messages']:
+        if validation_message['message_type'] == 'ERROR':
+            error_fields.append(validation_message['field_name'])
+
+    not_found = [item for item in expected_error_fields if item not in error_fields]
+    assert len(not_found) == 0, 'Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(error_fields)
+    assert len(not_found) == 0, 'Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['validation_messages'])
 
 
+'''
+Validate that a given model key is found in the models list.
+'''
+def validate_model_exists(model_name, models):
+    models_dict = list_to_dict(models, 'key')
+    assert model_name in models_dict, "Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
+    return models_dict[model_name]
+
+
+'''
+Validate that the returned parameters list for a model build contains all the values we passed in as input.
+'''
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
     actuals_dict = list_to_dict(actual_parameters, 'name')
     for k, v in input_parameters.iteritems():
@@ -97,6 +121,9 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
+'''
+Validate a /Predictions result.
+'''
 def validate_predictions(result, model_name, frame_key, expected_rows):
     assert p is not None, "Got a null result for scoring: " + model_name + " on: " + frame_key
     assert 'model_metrics' in p, "Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a model_metrics object."
@@ -123,6 +150,9 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert expected_rows == predictions['rows'], "Predictions for scoring: " + model_name + " on: " + frame_key + " has an unexpected number of rows."
 
 
+'''
+DELETE the specified models and frames from H2O.
+'''
 def cleanup(a_node, models=None, frames=None):
     ###################
     # test delete_model
@@ -166,6 +196,32 @@ def cleanup(a_node, models=None, frames=None):
     # test delete_frames
 
 
+'''
+Dictionary which specifies all that's needed to build and validate a model.
+'''
+class ModelSpec(dict):
+    def __init__(self, dest_key, algo, frame_key, params, model_category):
+        self.algo = algo
+        self.frame_key = frame_key
+        self.params = params
+        self.model_category = model_category
+
+        if dest_key is None:
+            self.dest_key = algo + "_" + frame_key
+        else:
+            self.dest_key = dest_key
+
+    def build_and_validate_model(self, a_node):
+        print 'About to build: ' + self.dest_key + ', a ' + self.algo + ' model on frame: ' + self.frame_key + ' with params: ' + repr(self.params)
+        result = a_node.build_model(algo=self.algo, destination_key=self.dest_key, training_frame=self.frame_key, parameters=self.params, timeoutSecs=240) # synchronous
+        model = validate_model_exists(self.dest_key, a_node.models()['models'])
+        validate_model_builder_result(result, self.params, self.dest_key)
+        validate_actual_parameters(self.params, model['parameters'], self.frame_key, None)
+        assert model['model_category'] == self.model_category, 'Expected model_category: ' + model_category + ' but got: ' + model['model_category'] + ' for model: ' + self.dest_key
+        print 'Done building: ' + self.dest_key
+        return model
+
+
 ################
 # The test body:
 ################
@@ -174,7 +230,7 @@ a_node = h2o.H2O(ip, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm'] # TODO: word2vec
 clean_up_after = False
 
 h2o.H2O.verbose = False
@@ -189,7 +245,6 @@ frames = a_node.frames(len=5)
 if h2o.H2O.verbose:
     print 'Frames: '
     pp.pprint(frames)
-
 
 ####################################
 # test schemas collection GET
@@ -259,6 +314,7 @@ cleanup(a_node)
 
 ################################################
 # Import prostate.csv
+print 'Importing and parsing: prostate.csv'
 import_result = a_node.import_files(path=os.path.realpath("../../smalldata/logreg/prostate.csv"))
 if h2o.H2O.verbose:
     print "import_result: "
@@ -341,6 +397,7 @@ assert col['pctiles'][0] == 50.5, 'Failed to find 50.5 as the first pctile for A
 
 ################################################
 # Import allyears2k_headers.zip
+print 'Importing and parsing: allyears2k_headers.zip'
 import_result = a_node.import_files(path=os.path.realpath("../../smalldata/airlines/allyears2k_headers.zip"))
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
 if h2o.H2O.verbose:
@@ -349,27 +406,35 @@ airlines_key = parse_result['frames'][0]['key']['name']
 
 ################################################
 # Import iris_wheader.csv
+print 'Importing and parsing: iris_wheader.csv'
 import_result = a_node.import_files(path=os.path.realpath("../../smalldata/iris/iris_wheader.csv"))
 parse_result = a_node.parse(key=import_result['keys'][0]) # TODO: handle multiple files
 if h2o.H2O.verbose:
     pp.pprint(parse_result)
 iris_key = parse_result['frames'][0]['key']['name']
 
-####################
-# Build KMeans model
-model_builders = a_node.model_builders(timeoutSecs=240)
-if h2o.H2O.verbose:
-    pp.pprint(model_builders)
 
-kmeans_builder = a_node.model_builders(algo='kmeans', timeoutSecs=240)['model_builders']['kmeans']
+####################################################################################################
+# Build and check models
+####################################################################################################
+models_to_build = [
+    ModelSpec('kmeans_prostate', 'kmeans', prostate_key, {'K': 2 }),
 
-kmeans_prostate_model_name = 'prostate_KMeans_1' # TODO: currently can't specify the target key
+    ModelSpec('deeplearning_prostate_binary', 'deeplearning', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]"}),
+    ModelSpec('deeplearning_airlines_binary', 'deeplearning', airlines_key, {'response_column': 'IsDepDelayed'}),
+    ModelSpec('deeplearning_iris_multinomial', 'deeplearning', iris_key, {'response_column': 'class' }),
 
-print 'About to build a KMeans model. . .'
-kmeans_parameters = {'K': 2 }
-result = a_node.build_model(algo='kmeans', destination_key=kmeans_prostate_model_name, training_frame=prostate_key, parameters=kmeans_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, kmeans_parameters, kmeans_prostate_model_name)
-print 'Done building KMeans model.'
+    ModelSpec('glm_prostate_binary', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False),
+
+    ModelSpec('glm_prostate_binary', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True),
+    ModelSpec('glm_airlines_binary', 'glm', airlines_key, {'response_column': 'IsDepDelayed'}),
+    ModelSpec('glm_iris_multinomial', 'glm', iris_key, {'response_column': 'class' }),
+]
+
+built_models = {}
+for model_spec in models_to_build:
+    model = model_spec.build_and_validate_model(a_node)
+    built_models[model_spec.dest_key] = model
 
 
 #######################################
@@ -416,105 +481,25 @@ for validation_message in parameters_validation['validation_messages']:
 assert found_expected_error, "Failed to find error message about input_dropout_ratio in the validation messages."
 
 #######################################
-# Build DeepLearning model for Prostate
-dl_prostate_model_name = 'prostate_DeepLearning_1'
-
-print 'About to build a DeepLearning model. . .'
-dl_prostate_1_parameters = {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]" }
-jobs = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name, training_frame=prostate_key, parameters=dl_prostate_1_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, dl_prostate_1_parameters, dl_prostate_model_name)
-print 'Done building DeepLearning model.'
-
-models = a_node.models()
-
-if h2o.H2O.verbose:
-    print 'After Model build: Models: '
-    pp.pprint(models)
-
-
-#######################################
 # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
-dl_prostate_model_name_bad = 'prostate_DeepLearning_bad'
-
 print 'About to try to build a DeepLearning model with bad parameters. . .'
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
-parameters_validation = a_node.build_model(algo='deeplearning', destination_key=dl_prostate_model_name_bad, training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, dl_prostate_bad_parameters, dl_prostate_model_name_bad)
+parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binary_bad', training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
 print 'Done trying to build DeepLearning model with bad parameters.'
 
-assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in bad-parameters build result."
-assert 0 < parameters_validation['validation_error_count'], "0 != validation_error_count in bad-parameters build validation result."
-found_expected_error = False
-for validation_message in parameters_validation['validation_messages']:
-    if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
-        found_expected_error = True
-assert found_expected_error, "Failed to find error message about input_dropout_ratio in the bad build validation messages."
-
-
-#######################################
-# Build DeepLearning model for Airlines
-dl_airlines_model_name = 'airlines_DeepLearning_1'
-
-print 'About to build a DeepLearning model for Airlines. . .'
-dl_airlines_1_parameters = {'response_column': 'IsDepDelayed' }
-jobs = a_node.build_model(algo='deeplearning', destination_key=dl_airlines_model_name, training_frame=airlines_key, parameters=dl_airlines_1_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, dl_airlines_1_parameters, dl_airlines_model_name)
-print 'Done building DeepLearning model.'
-
-models = a_node.models()
-
-if h2o.H2O.verbose:
-    print 'After Model build: Models: '
-    pp.pprint(models)
-
-#######################################
-# Build DeepLearning model for Iris
-dl_iris_model_name = 'iris_DeepLearning_1'
-
-print 'About to build a DeepLearning model for Iris. . .'
-dl_iris_1_parameters = {'response_column': 'class' }
-jobs = a_node.build_model(algo='deeplearning', destination_key=dl_iris_model_name, training_frame=iris_key, parameters=dl_iris_1_parameters, timeoutSecs=240) # synchronous
-validate_model_builder_result(result, dl_iris_1_parameters, dl_iris_model_name)
-print 'Done building DeepLearning model.'
-
-models = a_node.models()
-
-if h2o.H2O.verbose:
-    print 'After Model build: Models: '
-    pp.pprint(models)
-
-############################
-# Check kmeans_prostate_model_name
-model = validate_model_exists(kmeans_prostate_model_name)
-validate_actual_parameters(kmeans_parameters, model['parameters'], prostate_key, None)
+###################################
+# Compute and check ModelMetrics for 'deeplearning_prostate_binary'
+mm = a_node.compute_model_metrics(model='deeplearning_prostate_binary', frame=prostate_key)
+assert mm is not None, "Got a null result for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key
+assert 'model_category' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain a model_category."
+assert 'Binomial' == mm['model_category'], "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " model_category is not Binomial, it is: " + mm['model_category']
+assert 'auc' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain an AUC."
+assert 'cm' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain a CM."
+h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binary', " on: ", prostate_key, ":  ", repr(mm))
 
 ###################################
-# Check dl_prostate_model_name
-model = validate_model_exists(dl_prostate_model_name)
-validate_actual_parameters(dl_prostate_1_parameters, model['parameters'], prostate_key, None)
-
-###################################
-# Check dl_airlines_model_name
-model = validate_model_exists(dl_airlines_model_name)
-validate_actual_parameters(dl_airlines_1_parameters, model['parameters'], airlines_key, None)
-
-###################################
-# Check dl_iris_model_name
-model = validate_model_exists(dl_iris_model_name)
-validate_actual_parameters(dl_iris_1_parameters, model['parameters'], iris_key, None)
-
-###################################
-# Compute and check ModelMetrics for dl_prostate_model_name
-mm = a_node.compute_model_metrics(model=dl_prostate_model_name, frame=prostate_key)
-assert mm is not None, "Got a null result for scoring: " + dl_prostate_model_name + " on: " + prostate_key
-assert 'model_category' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a model_category."
-assert 'Binomial' == mm['model_category'], "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " model_category is not Binomial, it is: " + mm['model_category']
-assert 'auc' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain an AUC."
-assert 'cm' in mm, "ModelMetrics for scoring: " + dl_prostate_model_name + " on: " + prostate_key + " does not contain a CM."
-h2o.H2O.verboseprint("ModelMetrics for scoring: ", dl_prostate_model_name, " on: ", prostate_key, ":  ", repr(mm))
-
-###################################
-# Check for ModelMetrics for dl_prostate_model_name in full list
+# Check for ModelMetrics for 'deeplearning_prostate_binary' in full list
 mms = a_node.model_metrics() # fetch all
 assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
 found_mm = False
@@ -526,28 +511,28 @@ for mm in mms['model_metrics']:
     assert 'name' in mm['frame']['key'], "mm[frame][key] does not contain a name: " + repr(mm)
     model_key = mm['model']['key']
     frame_key = mm['frame']['key']['name'] # TODO: should match
-    if model_key == dl_prostate_model_name and frame_key == prostate_key:
+    if model_key == 'deeplearning_prostate_binary' and frame_key == prostate_key:
         found_mm = True
-assert found_mm, "Failed to find ModelMetrics object for model: " + dl_prostate_model_name + " and frame: " + prostate_key
+assert found_mm, "Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binary' + " and frame: " + prostate_key
 
 ###################################
-# Predict and check ModelMetrics for dl_prostate_model_name
-p = a_node.predict(model=dl_prostate_model_name, frame=prostate_key)
-validate_predictions(p, dl_prostate_model_name, prostate_key, 380)
-h2o.H2O.verboseprint("Predictions for scoring: ", dl_prostate_model_name, " on: ", prostate_key, ":  ", repr(p))
+# Predict and check ModelMetrics for 'deeplearning_prostate_binary'
+p = a_node.predict(model='deeplearning_prostate_binary', frame=prostate_key)
+validate_predictions(p, 'deeplearning_prostate_binary', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binary', " on: ", prostate_key, ":  ", repr(p))
 
 ###################################
-# Predict and check ModelMetrics (empty now except for predictions frame) for kmeans_prostate_model_name
-p = a_node.predict(model=kmeans_prostate_model_name, frame=prostate_key)
-validate_predictions(p, kmeans_prostate_model_name, prostate_key, 380)
-h2o.H2O.verboseprint("Predictions for scoring: ", kmeans_prostate_model_name, " on: ", prostate_key, ":  ", repr(p))
+# Predict and check ModelMetrics (empty now except for predictions frame) for 'kmeans_prostate'
+p = a_node.predict(model='kmeans_prostate', frame=prostate_key)
+validate_predictions(p, 'kmeans_prostate', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'kmeans_prostate', " on: ", prostate_key, ":  ", repr(p))
 
 ######################################################################
 # Now look for kmeans_prostate_model_name using the one-model API and find_compatible_frames, and check it
-model = a_node.models(key=kmeans_prostate_model_name, find_compatible_frames=True)
+model = a_node.models(key='kmeans_prostate', find_compatible_frames=True)
 found_kmeans = False;
 h2o.H2O.verboseprint('k-means model with find_compatible_frames output: ')
-h2o.H2O.verboseprint('/Models/', kmeans_prostate_model_name, '?find_compatible_frames=true: ', repr(model))
+h2o.H2O.verboseprint('/Models/', 'kmeans_prostate', '?find_compatible_frames=true: ', repr(model))
 h2o_util.assertKeysExist(model['models'][0], '', ['compatible_frames'])
 assert prostate_key in model['models'][0]['compatible_frames'], "Failed to find " + prostate_key + " in compatible_frames list."
 
@@ -561,13 +546,14 @@ assert prostate_key in frames_dict, "Failed to find prostate.hex in Frames list.
 
 compatible_models = result['compatible_models']
 models_dict = h2o_util.list_to_dict(compatible_models, 'key')
-assert dl_prostate_model_name in models_dict, "Failed to find " + dl_prostate_model_name + " in compatible models list."
+assert 'deeplearning_prostate_binary' in models_dict, "Failed to find " + 'deeplearning_prostate_binary' + " in compatible models list."
 
-assert dl_prostate_model_name in frames[0]['compatible_models']
-assert kmeans_prostate_model_name in frames[0]['compatible_models']
+assert 'deeplearning_prostate_binary' in frames[0]['compatible_models']
+assert 'kmeans_prostate' in frames[0]['compatible_models']
 h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(result))
 
+# TODO: use built_models
 if clean_up_after:
-    cleanup(models=[dl_airlines_model_name, dl_prostate_model_name, kmeans_prostate_model_name], frames=[prostate_key, airlines_key])
+    cleanup(models=[dl_airlines_model_name, 'deeplearning_prostate_binary', 'kmeans_prostate'], frames=[prostate_key, airlines_key])
 
 
