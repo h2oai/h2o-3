@@ -36,7 +36,7 @@ class Basic(unittest.TestCase):
         # h2o.sleep(3600)
         h2o.tear_down_cloud()
 
-    def test_parse_200k_cols_fvec(self):
+    def test_parse_100k_cols(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
         tryList = [
             (10, 1000, 'cA', 200, 200),
@@ -73,21 +73,23 @@ class Basic(unittest.TestCase):
 
         
             print "Skipping the row/cols check for now"
-            if 1==0:
+            if 1==1:
                 start = time.time()
-                inspect = h2o_cmd.runInspect(None, parseResult['destination_key'], timeoutSecs=timeoutSecs2)
-                print "Inspect:", parseResult['destination_key'], "took", time.time() - start, "seconds"
-                h2o_cmd.infoFromInspect(inspect, csvPathname)
+                inspect = h2o_cmd.runInspect(None, hex_key, timeoutSecs=timeoutSecs2)
+                print "Inspect:", hex_key, "took", time.time() - start, "seconds"
+                numCols = len(inspect['frames'][0]['columns'])
+                numRows = inspect['frames'][0]['rows']
+                # h2o_cmd.infoFromInspect(inspect, csvPathname)
                 print "\n" + csvPathname, \
-                    "    numRows:", "{:,}".format(inspect['numRows']), \
-                    "    numCols:", "{:,}".format(inspect['numCols'])
+                    "    rows:", "{:,}".format(numRows), \
+                    "    len(columns):", "{:,}".format(numCols)
 
                 # should match # of cols in header or ??
-                self.assertEqual(inspect['numCols'], colCount,
-                    "parse created result with the wrong number of cols %s %s" % (inspect['numCols'], colCount))
-                self.assertEqual(inspect['numRows'], rowCount,
+                self.assertEqual(numCols, colCount,
+                    "parse created result with the wrong number of cols %s %s" % (numCols, colCount))
+                self.assertEqual(numRows, rowCount,
                     "parse created result with the wrong number of rows (header shouldn't count) %s %s" % \
-                    (inspect['numRows'], rowCount))
+                    (numRows, rowCount))
 
             print "Skipping the delete keys for now"
             if 1==0:

@@ -87,7 +87,7 @@ def parse(self, key, key2=None,
     # these should override what parse setup gets below
     params_dict = {
         'srcs': None,
-        'hex': None,
+        'hex': key2,
         'pType': None, # This is a list?
         'sep': None,
         'ncols': None,
