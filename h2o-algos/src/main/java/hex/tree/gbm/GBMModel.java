@@ -57,13 +57,16 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       return p;
     }
     if( _output.nclasses()>1 ) { // classification
+      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+        p[1] += _output._initialPrediction;
+        p[2] = - p[1];
+      }
       // Because we call Math.exp, we have to be numerically stable or else
       // we get Infinities, and then shortly NaN's.  Rescale the data so the
       // largest value is +/-1 and the other values are smaller.
       // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
       float maxval=Float.NEGATIVE_INFINITY;
       float dsum=0;
-      if( _output.nclasses()==2 )  p[2] = - p[1];
       // Find a max
       for( int k=1; k<p.length; k++) maxval = Math.max(maxval,p[k]);
       assert !Float.isInfinite(maxval) : "Something is wrong with GBM trees since returned prediction is " + Arrays.toString(p);
