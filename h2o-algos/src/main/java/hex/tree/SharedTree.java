@@ -55,6 +55,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( _train != null )
       _ncols = _train.numCols()-1;
 
+    if (_response == null) return;
+
     // Initialize response based on given loss function.
     // Regression: initially predict the response mean
     // Binomial: just class 0 (class 1 in the exact inverse prediction)
