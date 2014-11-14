@@ -12,8 +12,8 @@ public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModel.Qu
     public double iters;
 
     // Output fields
-    @API(help="")
-    public double[] maxs;
+    @API(help="Quantiles")
+    public double quantiles[/*N*/][/*Q*/]; // Our N columns, Q quantiles reported
 
     @Override public QuantileModel.QuantileOutput createImpl() {
       QuantileModel.QuantileOutput impl = new QuantileModel.QuantileOutput(null);

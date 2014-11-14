@@ -40,11 +40,13 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
    *  Validate the max_iters. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._regex == null )
-      error("regex","regex is missing");
-    try { Pattern.compile(_parms._regex); }
-    catch( PatternSyntaxException pse ) { error("regex",pse.getMessage()); }
-    if( _parms.train() == null ) return;
+    if( _parms._regex == null ) {
+      error("regex", "regex is missing");
+    } else {
+      try { Pattern.compile(_parms._regex); }
+      catch( PatternSyntaxException pse ) { error("regex", pse.getMessage()); }
+    }
+    if( _parms._train == null ) return;
     Vec[] vecs = _parms.train().vecs();
     if( vecs.length != 1 )
       error("train","Frame must contain exactly 1 Vec (of raw text)");
