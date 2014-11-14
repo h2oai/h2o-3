@@ -2,7 +2,10 @@ package hex;
 
 import water.*;
 import water.api.ModelSchema;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.TransfVec;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -21,7 +24,8 @@ import java.util.HashMap;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
   Model( Key selfkey ) { super(selfkey); }
 
-  public enum ModelCategory {
+  /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
+  public static enum ModelCategory {
     Unknown,
     Binomial,
     Multinomial,

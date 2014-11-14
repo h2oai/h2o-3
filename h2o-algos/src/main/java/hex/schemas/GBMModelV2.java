@@ -4,7 +4,6 @@ import hex.tree.gbm.GBMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.PojoUtils;
 //import water.util.DocGen.HTML;
 
 public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput, GBMModelV2> {
@@ -13,20 +12,6 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
     // Output fields; input fields are in the parameters list
     @API(help="Mean Square Error")
     public double mse;           // Total MSE, variance
-
-    @Override public GBMModel.GBMOutput createImpl() {
-      GBMModel.GBMOutput impl = new GBMModel.GBMOutput(null);
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-      return impl;
-    }
-
-    // Version&Schema-specific filling from the handler
-    @Override public GBMModelOutputV2 fillFromImpl( GBMModel.GBMOutput impl) {
-      PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-      return this;
-    }
-
-
   } // GBMModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
@@ -41,10 +26,5 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
     GBMV2.GBMParametersV2 p = ((GBMV2.GBMParametersV2)this.parameters);
     GBMModel.GBMParameters parms = p.createImpl();
     return new GBMModel( key, parms, new GBMModel.GBMOutput(null) );
-  }
-
-  // Version&Schema-specific filling from the impl
-  @Override public GBMModelV2 fillFromImpl( GBMModel kmm ) {
-    return super.fillFromImpl(kmm);
   }
 }

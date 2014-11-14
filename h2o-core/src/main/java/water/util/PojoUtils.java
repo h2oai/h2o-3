@@ -54,8 +54,8 @@ public class PojoUtils {
     Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
     Field[] orig_fields = Weaver.getWovenFields(origin.getClass());
 
-    for (Field f : orig_fields) {
-      String origin_name = f.getName();
+    for (Field orig_field : orig_fields) {
+      String origin_name = orig_field.getName();
 
       if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
         continue;
@@ -83,105 +83,131 @@ public class PojoUtils {
 
         if( dest_field != null ) {
           dest_field.setAccessible(true);
-          f.setAccessible(true);
-          if (null == f.get(origin)) {
+          orig_field.setAccessible(true);
+          // Log.info("PojoUtils.copyProperties, origin field: " + orig_field + "; destination field: " + dest_field);
+          if (null == orig_field.get(origin)) {
             //
             // Assigning null to dest.
             //
             dest_field.set(dest, null);
-          } else if (dest_field.getType().isArray() && f.getType().isArray() && (dest_field.getType().getComponentType() != f.getType().getComponentType())) {
+          } else if (dest_field.getType().isArray() && orig_field.getType().isArray() && (dest_field.getType().getComponentType() != orig_field.getType().getComponentType())) {
             //
             // Assigning an array to another array.
             //
             // You can't use reflection to set an int[] with an Integer[].  Argh.
             // TODO: other types of arrays. . .
-            if (dest_field.getType().getComponentType() == int.class && f.getType().getComponentType() == Integer.class) {
+            if (dest_field.getType().getComponentType() == int.class && orig_field.getType().getComponentType() == Integer.class) {
               //
               // Assigning an Integer[] to an int[]
               //
-              int[] copy = (int[]) f.get(origin);
+              int[] copy = (int[]) orig_field.get(origin);
               dest_field.set(dest, copy);
-            } else if (dest_field.getType().getComponentType() == Integer.class && f.getType().getComponentType() == int.class) {
+            } else if (dest_field.getType().getComponentType() == Integer.class && orig_field.getType().getComponentType() == int.class) {
               //
               // Assigning an int[] to an Integer[]
               //
-              Integer[] copy = (Integer[]) f.get(origin);
+              Integer[] copy = (Integer[]) orig_field.get(origin);
               dest_field.set(dest, copy);
-            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(f.getType().getComponentType())) {
+            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(orig_field.getType().getComponentType())) {
               //
               // Assigning an array of impl fields to an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
               //
               Class dest_component_class = dest_field.getType().getComponentType();
-              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(f.get(origin)));
+              Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
-              for (Iced impl : ((Iced[])f.get(origin))) {
+              for (Iced impl : ((Iced[])orig_field.get(origin))) {
                 translation[i] = ((Schema)dest_field.getType().newInstance()).fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
-            } else if (Schema.class.isAssignableFrom(f.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
+            } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
               //
               // Assigning an array of schema fields to an array of impl fields, e.g. a DeepLearningParametersV2[] into a DeepLearningParameters[]
               //
               // We can't check against the actual impl class I, because we can't instantiate the schema base classes to get the impl class from an instance:
               // dest_field.getType().getComponentType().isAssignableFrom(((Schema)f.getType().getComponentType().newInstance()).getImplClass())) {
               Class dest_component_class = dest_field.getType().getComponentType();
-              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(f.get(origin)));
+              Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
-              for (Schema s : ((Schema[])f.get(origin))) {
+              for (Schema s : ((Schema[])orig_field.get(origin))) {
                 translation[i] = s.createImpl();
               }
               dest_field.set(dest, translation);
             } else {
-              throw H2O.fail("Don't know how to cast an array of: " + f.getType().getComponentType() + " to an array of: " + dest_field.getType().getComponentType());
+              throw H2O.fail("Don't know how to cast an array of: " + orig_field.getType().getComponentType() + " to an array of: " + dest_field.getType().getComponentType());
             }
             // end of array handling
-          } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(f.getType())) {
+          } else if (dest_field.getType() == Key.class && Keyed.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a Keyed (e.g., a Frame or Model) to a Key.
             //
-            dest_field.set(dest, ((Keyed) f.get(origin))._key);
-          } else if (f.getType() == Key.class && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, ((Keyed) orig_field.get(origin))._key);
+          } else if (orig_field.getType() == Key.class && Keyed.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a Key (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
             //
-            Value v = DKV.get((Key) f.get(origin));
+            Value v = DKV.get((Key) orig_field.get(origin));
             dest_field.set(dest, (null == v ? null : v.get()));
-          } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(f.getType())) {
+          } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a Pattern.
             //
-            dest_field.set(dest, Pattern.compile((String)f.get(origin)));
-          } else if (f.getType() == Pattern.class && String.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, Pattern.compile((String)orig_field.get(origin)));
+          } else if (orig_field.getType() == Pattern.class && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // We are assigning a Pattern to a String.
             //
-            dest_field.set(dest, f.get(origin).toString());
-          } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(f.getType())) {
+            dest_field.set(dest, orig_field.get(origin).toString());
+          } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String into an enum field.
             //
             Class<Enum> dest_class = (Class<Enum>)dest_field.getType();
-            dest_field.set(dest, Enum.valueOf(dest_class, (String) f.get(origin)));
-          } else if (Enum.class.isAssignableFrom(f.getType()) && String.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, Enum.valueOf(dest_class, (String) orig_field.get(origin)));
+          } else if (Enum.class.isAssignableFrom(orig_field.getType()) && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning an enum field into a String.
             //
-            dest_field.set(dest, f.get(origin).toString());
-          } else if (Schema.class.isAssignableFrom(dest_field.getType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(f.getType())) {
+            Object o = orig_field.get(origin);
+            dest_field.set(dest, (o == null ? null : o.toString()));
+          } else if (Schema.class.isAssignableFrom(dest_field.getType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(orig_field.getType())) {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl((Iced) f.get(origin)));
-          } else if (Schema.class.isAssignableFrom(f.getType()) && ((Schema)f.get(origin)).getImplClass().isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl((Iced) orig_field.get(origin)));
+          } else if (Schema.class.isAssignableFrom(orig_field.getType()) && ((Schema)orig_field.get(origin)).getImplClass().isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters.
             //
-            dest_field.set(dest, ((Schema)f.get(origin)).createImpl());
+            Schema s = ((Schema)orig_field.get(origin));
+            dest_field.set(dest, s.fillImpl(s.createImpl()));
+          } else if ((Schema.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType()))) {
+            //
+            // Assigning an impl field fetched via a Key into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
+            // Note that unlike the cases above we don't know the type of the impl class until we fetch in the body of the if.
+            //
+            Key origin_key = (Key) orig_field.get(origin);
+            Value v = DKV.get(origin_key);
+            if (null == v || null == v.get()) {
+              dest_field.set(dest, null);
+            } else {
+              if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
+                dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl(v.get()));
+              } else {
+                Log.err("Can't fill Schema of type: " + dest_field.getType() + " with value of type: " + v.getClass() + " fetched from Key: " + origin_key);
+                dest_field.set(dest, null);
+              }
+            }
+          } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // Assigning a schema field into a Key field, e.g. a DeepLearningV2 into a (DeepLearningParameters) key.
+            //
+            Schema s = ((Schema)orig_field.get(origin));
+            dest_field.set(dest, ((Keyed)s.fillImpl(s.createImpl()))._key);
           } else {
             //
             // Normal case: not doing any type conversion.
             //
-            dest_field.set(dest, f.get(origin));
+            dest_field.set(dest, orig_field.get(origin));
           }
         }
       }
