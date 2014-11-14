@@ -130,3 +130,15 @@ subprojects {
 // Include support for S3 syncing
 apply from: "gradle/s3sync.gradle"
 
+// This task is used by the Jenkins on test.0xdata.com.
+//
+// It creates a directory called 'target', copies everything to be released 
+// there, and everything in that directory gets uploaded to S3.
+//
+// See ~jenkins/bin/buildh2odev.sh.
+task buildH2oDevDist(type: Exec) {
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    def projectVersion = bv.getProjectVersion()
+    environment['PROJECT_VERSION'] = projectVersion
+    commandLine './make-dist.sh'
+}

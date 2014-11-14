@@ -62,8 +62,8 @@ test {
 def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java");
 
 task generateBuildVersionJava {
-  H2OBuildVersion bv = new H2OBuildVersion(rootDir);
-  bv.emitBuildVersionJavaFileIfNecessary(buildVersionFile, version);
+  H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+  bv.emitBuildVersionJavaFileIfNecessary(buildVersionFile);
 }
 
 compileJava.dependsOn generateBuildVersionJava
