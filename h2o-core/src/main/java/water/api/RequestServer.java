@@ -176,7 +176,7 @@ public class RequestServer extends NanoHTTPD {
       "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
 
     // Node persistent storage
-    register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"POST"  ,NodePersistentStorageHandler.class, "put_with_name", new String[] {"category, name"},   "Store a named value.");
+    register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"POST"  ,NodePersistentStorageHandler.class, "put_with_name", new String[] {"category", "name"}, "Store a named value.");
     register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"GET"   ,NodePersistentStorageHandler.class, "get_as_string", new String[] {"category", "name"}, "Return value for a given name.");
     register("/3/NodePersistentStorage/(?<category>.*)/(?<name>.*)"       ,"DELETE",NodePersistentStorageHandler.class, "delete",        new String[] {"category", "name"}, "Delete a key.");
     register("/3/NodePersistentStorage/(?<category>.*)"                   ,"POST"  ,NodePersistentStorageHandler.class, "put",           new String[] {"category"},         "Store a value.");
