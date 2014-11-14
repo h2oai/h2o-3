@@ -19,6 +19,9 @@ mkdir target
 rm -fr h2o-dist/tmp
 mkdir -p $IMAGEDIR
 cp build/h2o.jar $IMAGEDIR
+mkdir $IMAGEDIR/R
+cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
+
 cd $IMAGEDIR/..
 zip -r h2o-dev-${PROJECT_VERSION}.zip h2o-dev-${PROJECT_VERSION}
 mv h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
