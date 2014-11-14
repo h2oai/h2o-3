@@ -46,10 +46,6 @@ public class H2OBuildVersion {
         Matcher m = p.matcher(line);
         boolean b = m.matches();
         if (b) {
-          if (versionFromGradle.endsWith("-SNAPSHOT")) {
-            throw new RuntimeException("Numbered builds cannot have -SNAPSHOT in the build number.");
-          }
-
           br.close();
           String buildNumber = m.group(1);
           return buildNumber;
