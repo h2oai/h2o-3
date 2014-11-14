@@ -51,6 +51,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public float[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
     public float[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
 
+    public SupervisedOutput() { this(null); }
+
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec

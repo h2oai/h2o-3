@@ -1,4 +1,6 @@
 package water.api;
 
-public class AUCV3 extends AUCBase {
+import hex.AUCData;
+
+public class AUCV3 extends AUCBase<AUCData, AUCV3> {
 }

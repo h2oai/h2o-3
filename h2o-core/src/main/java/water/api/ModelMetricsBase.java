@@ -1,7 +1,11 @@
 package water.api;
 
+import hex.AUCData;
 import hex.Model;
 import hex.ModelMetrics;
+import water.DKV;
+import water.H2O;
+import water.fvec.Frame;
 import water.util.PojoUtils;
 
 /**
@@ -48,7 +52,7 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
 
   public ModelMetrics fillImpl(ModelMetrics m) {
     PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[] {"auc", "cm"});
-    m.auc = this.auc.createImpl();
+    m.auc = (AUCData)this.auc.createImpl();
     /*
      * TODO: choose and set either ConfusionMatrix or ConfusionMatrix2!
      * m.cm = this.cm.createImpl();
@@ -57,28 +61,50 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   }
 
   @Override public ModelMetricsBase fillFromImpl(ModelMetrics modelMetrics) {
-    // TODO: this is failing in PojoUtils with an IllegalAccessException.  Why?  Different class loaders?
-    // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
+    // If we're copying in a Model we need a ModelSchema of the right class to fill into.
+    if (null != modelMetrics.model && null != DKV.get(modelMetrics.model) && null != DKV.get(modelMetrics.model).get())
+      this.model = (ModelSchema)Schema.schema(this.schema_version, DKV.get(modelMetrics.model).get().getClass());
 
-    // TODO: fix PojoUtils.copyProperties so we don't need the boilerplate here:
+    // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
+    if (null != modelMetrics.frame && null != DKV.get(modelMetrics.frame) && null != DKV.get(modelMetrics.frame).get())
+      this.frame = (FrameV2)Schema.schema(this.schema_version, DKV.get(modelMetrics.frame).get().getClass());
+
+    // TODO: remove this hack:
+    new AUCV3();
+    new ConfusionMatrixV3();
+    modelMetrics.cm = null; // still have to decide between CM and CM2
+
+
+    if (null != modelMetrics.auc)
+      this.auc = (AUCBase)Schema.schema(this.schema_version, modelMetrics.auc);
+
+    if (null != modelMetrics.cm)
+      this.cm = (ConfusionMatrixBase)Schema.schema(this.schema_version, modelMetrics.cm);
+
+    super.fillFromImpl(modelMetrics);
+
+    // TODO: Schema.fillFromImpl really ought to be able to do this.
+    Model m = (Model)DKV.getGet(modelMetrics.model);
+    if (null != m)
+      if (Model.class.isAssignableFrom(m.getClass()))
+        this.model.fillFromImpl(m);
+      else
+        throw H2O.fail("Can't fill a model schema from a non-Model key: " + modelMetrics.model);
+
+    Frame f = (Frame)DKV.getGet(modelMetrics.frame);
+    if (null != f)
+      if (Frame.class.isAssignableFrom(f.getClass()))
+        this.frame.fillFromImpl(f);
+      else
+        throw H2O.fail("Can't fill a frame schema from a non-Frame key: " + modelMetrics.frame);
+
     // For the Model we want the key and the parameters, but no output.
-    Model model = modelMetrics.model.get();
-    this.model = model.schema().fillFromImpl(model);
-    this.model.output = null;
-    this.model_checksum = modelMetrics.model_checksum;
-    this.frame = new FrameV2(modelMetrics.frame);
-    this.frame_checksum = modelMetrics.frame_checksum;
-    this.model_category = modelMetrics.model_category;
-    this.duration_in_ms = modelMetrics.duration_in_ms;
-    this.scoring_time = modelMetrics.scoring_time;
-    this.auc = new AUCV3().fillFromImpl(modelMetrics.auc); // TODO: shouldn't be version-specific
+    if (null != this.model)
+      this.model.output = null;
+
     // TODO: need to have only one Iced CM class. . .
     // this.cm = new ConfusionMatrixV3().fillFromImpl(modelMetrics.cm);  // TODO: shouldn't be version-specific
 
     return this;
-  }
-
-  public static ModelMetricsBase schema(int version) {
-    return new ModelMetricsV3();
   }
 }
