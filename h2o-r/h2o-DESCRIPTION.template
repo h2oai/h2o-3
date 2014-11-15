@@ -37,4 +37,5 @@ Collate:
          'algorithms.R'
          'predict.R'
          'kmeans.R'
+         'gbm.R'
          'deeplearning.R'

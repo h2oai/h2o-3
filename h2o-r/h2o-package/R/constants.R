@@ -203,6 +203,8 @@
 .h2o.__KMEANS_PARAMS       <- "2/ModelBuilders/kmeans.json"
 .h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
 .h2o.__DEEPLEARNING_PARAMS <- "DeepLearning.json"
+.h2o.__GBM                 <- "2/ModelBuilders/gbm.json"
+.h2o.__GBM_PARAMS          <- "2/ModelBuilders/gbm.json"
 
 #'
 #' Algorithm Parameter Endpoints
