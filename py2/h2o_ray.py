@@ -27,7 +27,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     '''
     params_dict = {}
     # merge kwargs into params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', False)
 
     start_time = time.time()
     while True:
