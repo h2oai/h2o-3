@@ -647,13 +647,13 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
 #-----------------------------------------------------------------------------------------------------------------------
-
-nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
-ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
-colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
-names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
-length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
-dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
+## changed from UseMethod to setMethod
+# nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
+# ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
+# colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
+# names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
+# length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
+# dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
 #' The Number of Rows/Columns of an H2O Dataset
 #'
@@ -672,9 +672,9 @@ dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 NULL
 
 #' @rdname nrow.h2o
-nrow.H2OParsedData     <- function(x) x@nrows
+setMethod("nrow", "H2OParsedData", function(x) x@nrows)
 #' @rdname nrow.h2o
-ncol.H2OParsedData     <- function(x) x@ncols
+setMethod("ncol", "H2OParsedData", function(x) x@ncols)
 
 #'
 #' Returns Column Names for a Parsed H2O Data Object.
@@ -691,11 +691,11 @@ ncol.H2OParsedData     <- function(x) x@ncols
 #' summary(iris.hex)
 #' colnames.H2OParsedData(iris.hex)
 #' @name colnames.h2o
-colnames.H2OParsedData <- function(x) x@col_names
+setMethod("colnames", "H2OParsedData", function(x) x@col_names)
 
 #'
 #' @rdname colnames.h2o
-names.H2OParsedData    <- function(x) colnames(x)
+setMethod("names", "H2OParsedData", function(x) colnames(x))
 
 #'
 #' Returns the Length of a Parsed H2O Data Object.
@@ -710,7 +710,7 @@ names.H2OParsedData    <- function(x) colnames(x)
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
 #' length.H2OParsedData(iris.hex)
 #' @name length.h2o
-length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
+setMethod("length", "H2OParsedData", function(x) if (ncol(x) == 1) nrow(x) else ncol(x))
 
 #'
 #' Returns the Dimensions of a Parsed H2O Data Object.
@@ -725,7 +725,7 @@ length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
 #' dim.H2OParsedData(iris.hex)
 #' @name dim.h2o
-dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
+setMethod("dim", "H2OParsedData", function(x) c(x@nrows, x@ncols))
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
@@ -748,7 +748,7 @@ NULL
 
 #'
 #' @rdname head.h2o
-head.H2OParsedData <- function(x, n = 6L, ...) {
+setMethod("head", "H2OParsedData", function(x, n = 6L, ...) {
   #TODO: when 'x' is an expression
   numRows <- nrow(x)
   stopifnot(length(n) == 1L)
@@ -759,11 +759,11 @@ head.H2OParsedData <- function(x, n = 6L, ...) {
   x.slice <- as.data.frame(tmp_head)
   h2o.rm(tmp_head@key)
   return(x.slice)
-}
+})
 
 #'
 #' @rdname head.h2o
-tail.H2OParsedData <- function(x, n = 6L, ...) {
+setMethod("tail", "H2OParsedData", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
@@ -776,7 +776,7 @@ tail.H2OParsedData <- function(x, n = 6L, ...) {
   h2o.rm(tmp_tail@h2o, tmp_tail@key)
   rownames(x.slice) <- idx
   return(x.slice)
-}
+})
 
 #'
 #' The H2OFrame "lazy" evaluators: Evaulate an AST.
@@ -789,7 +789,7 @@ NULL
 
 #'
 #' @rdname nrow.h2o
-nrow.H2OFrame <- function(x) {
+setMethod("nrow", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
 #  ID <- .eval.assign(x, ID, parent.frame(), environment())
@@ -797,66 +797,66 @@ nrow.H2OFrame <- function(x) {
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   nrow(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname nrow.h2o
-ncol.H2OFrame <- function(x) {
+setMethod("ncol", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   ncol(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname colnames.h2o
-colnames.H2OFrame <- function(x) {
+setMethod("colnames", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   colnames(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname colnames.h2o
-names.H2OFrame <- function(x) {
+setMethod("names", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   names(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname length.h2o
-length.H2OFrame <- function(x) {
+setMethod("length", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   length(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname dim.h2o
-dim.H2OFrame <- function(x) {
+setMethod("dim", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(ID)) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   dim(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname head.h2o
-head.H2OFrame <- function(x, n = 6L, ...) {
+setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -875,11 +875,11 @@ head.H2OFrame <- function(x, n = 6L, ...) {
   if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
   assign(ID, x, parent.frame())
   head(get(ID, parent.frame()))
-}
+})
 
 #'
 #'  @rdname head.h2o
-tail.H2OFrame <- function(x, n = 6L, ...) {
+setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -895,7 +895,7 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   tail(get(ID, parent.frame()))
-}
+})
 
 #setMethod("levels", "H2OParsedData", function(x) {
 #  if(ncol(x) != 1) return(NULL)
