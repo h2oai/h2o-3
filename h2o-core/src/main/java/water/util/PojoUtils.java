@@ -191,7 +191,8 @@ public class PojoUtils {
               dest_field.set(dest, null);
             } else {
               if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
-                dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl(v.get()));
+                Schema s = ((Schema)dest_field.get(dest));
+                dest_field.set(dest, Schema.schema(s.schema_version, s.getImplClass()).fillFromImpl(v.get()));
               } else {
                 Log.err("Can't fill Schema of type: " + dest_field.getType() + " with value of type: " + v.getClass() + " fetched from Key: " + origin_key);
                 dest_field.set(dest, null);
