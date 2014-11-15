@@ -65,7 +65,7 @@ function() {
 #' ‘"&"’, ‘"|"’
 #'
 #' Bonus Operators: ‘"**"’
-setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .binops.fun(0, e1))
+setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic, 0, e2))
 setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .binops.fun(e1, 0))
 setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
 setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
