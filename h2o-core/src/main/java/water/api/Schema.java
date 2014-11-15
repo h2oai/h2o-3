@@ -400,7 +400,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /**
    * Return an immutable Map of all the schemas: schema_name -> schema Class.
    */
-  static Map<String, Class<? extends Schema>> schemas() {
+  public static Map<String, Class<? extends Schema>> schemas() {
     return Collections.unmodifiableMap(new HashMap<>(schemas));
   }
 
@@ -408,7 +408,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * For a given version and Iced object return the appropriate Schema class, if any.
    * @see #schemaClass(int, java.lang.String)
    */
-  static Class<? extends Schema> schemaClass(int version, Iced impl) {
+  public static Class<? extends Schema> schemaClass(int version, Iced impl) {
     return schemaClass(version, impl.getClass().getSimpleName());
   }
 
@@ -416,7 +416,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * For a given version and Iced class return the appropriate Schema class, if any.
    * @see #schemaClass(int, java.lang.String)
    */
-  static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
+  public static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
     return schemaClass(version, impl_class.getSimpleName());
   }
 
@@ -428,7 +428,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
    * be returned.  This compatibility lookup is cached.
    */
-  static Class<? extends Schema> schemaClass(int version, String type) {
+  public static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -444,7 +444,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /**
    * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
    */
-  static Class<? extends Schema>  schemaClass(String schema_name) {
+  public static Class<? extends Schema>  schemaClass(String schema_name) {
     return schemas.get(schema_name);
   }
 
@@ -452,7 +452,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * For a given version and Iced object return an appropriate Schema instance, if any.
    * @see #schema(int, java.lang.String)
    */
-  static Schema schema(int version, Iced impl) {
+  public static Schema schema(int version, Iced impl) {
     return schema(version, impl.getClass().getSimpleName());
   }
 
@@ -460,7 +460,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * For a given version and Iced class return an appropriate Schema instance, if any.
    * @see #schema(int, java.lang.String)
    */
-  static Schema schema(int version, Class<? extends Iced> impl_class) {
+  public static Schema schema(int version, Class<? extends Iced> impl_class) {
     return schema(version, impl_class.getSimpleName());
   }
 
@@ -483,7 +483,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
    * of FrameV2 will be returned.  This compatibility lookup is cached.
    */
-  static Schema schema(int version, String type) {
+  public static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
     if (null == clz) throw H2O.fail("Failed to find schema for version: " + version + " and type: " + type);
     return Schema.newInstance(clz);
@@ -492,7 +492,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /**
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
-  static Schema schema(String schema_name) {
+  public static Schema schema(String schema_name) {
     Class<? extends Schema> clz = schemas.get(schema_name);
     if (null == clz) throw H2O.fail("Failed to find schema for schema_name: " + schema_name);
     return Schema.newInstance(clz);
@@ -501,7 +501,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /**
    * For a given schema class (e.g., water.api.FrameV2) return a new instance (e.g., a water.api.Framev2).
    */
-  static Schema schema(Class<? extends Schema> clz) {
+  public static Schema schema(Class<? extends Schema> clz) {
     return Schema.newInstance(clz);
   }
 

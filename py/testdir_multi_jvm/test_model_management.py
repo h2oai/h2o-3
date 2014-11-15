@@ -428,13 +428,19 @@ models_to_build = [
 
     ModelSpec('glm_prostate_regression', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False}, 'Regression'),
 
-# TODO: do_classification doesn't; it comes out as regression:   ModelSpec('glm_prostate_binomial', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True}, 'Binomial'),
-# TODO: this crashes in the model builder:                       ModelSpec('glm_airlines_binomial', 'glm', airlines_key, {'response_column': 'IsDepDelayed', 'do_classification': True}, 'Binomial'),
-# TODO: do_classification doesn't; it comes out as regression:   ModelSpec('glm_iris_multinomial', 'glm', iris_key, {'response_column': 'class', 'do_classification': True}, 'Multinomial'),
+    ModelSpec('glm_prostate_binomial', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
+    # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', airlines_key, {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
+    # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_key, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
+    ModelSpec('deeplearning_prostate_regression', 'deeplearning', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False}, 'Regression'),
     ModelSpec('deeplearning_prostate_binomial', 'deeplearning', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]"}, 'Binomial'),
     ModelSpec('deeplearning_airlines_binomial', 'deeplearning', airlines_key, {'response_column': 'IsDepDelayed'}, 'Binomial'),
     ModelSpec('deeplearning_iris_multinomial', 'deeplearning', iris_key, {'response_column': 'class' }, 'Multinomial'),
+
+    ModelSpec('gbm_prostate_regression', 'gbm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False}, 'Regression'),
+    ModelSpec('gbm_prostate_binomial', 'gbm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True}, 'Binomial'),
+    ModelSpec('gbm_airlines_binomial', 'gbm', airlines_key, {'response_column': 'IsDepDelayed'}, 'Binomial'),
+    ModelSpec('gbm_iris_multinomial', 'gbm', iris_key, {'response_column': 'class' }, 'Multinomial'),
 ]
 
 built_models = {}
@@ -526,6 +532,24 @@ assert found_mm, "Failed to find ModelMetrics object for model: " + 'deeplearnin
 p = a_node.predict(model='deeplearning_prostate_binomial', frame=prostate_key)
 validate_predictions(p, 'deeplearning_prostate_binomial', prostate_key, 380)
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", prostate_key, ":  ", repr(p))
+
+###################################
+# Predict and check ModelMetrics for 'deeplearning_prostate_regression'
+p = a_node.predict(model='deeplearning_prostate_regression', frame=prostate_key)
+validate_predictions(p, 'deeplearning_prostate_regression', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_regression', " on: ", prostate_key, ":  ", repr(p))
+
+###################################
+# Predict and check ModelMetrics for 'gbm_prostate_binomial'
+p = a_node.predict(model='gbm_prostate_binomial', frame=prostate_key)
+validate_predictions(p, 'gbm_prostate_binomial', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'gbm_prostate_binomial', " on: ", prostate_key, ":  ", repr(p))
+
+###################################
+# Predict and check ModelMetrics for 'gbm_prostate_regression'
+p = a_node.predict(model='gbm_prostate_regression', frame=prostate_key)
+validate_predictions(p, 'gbm_prostate_regression', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'gbm_prostate_regression', " on: ", prostate_key, ":  ", repr(p))
 
 ###################################
 # Predict and check ModelMetrics (empty now except for predictions frame) for 'kmeans_prostate'
