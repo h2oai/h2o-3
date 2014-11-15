@@ -214,22 +214,6 @@ h2o.getFrame <- function(h2o, key) {
 #'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
 #'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
 #'  @param epochs - Number of iterations data is run through.
-
-
-#'
-#'  "trainingFrame",
-#'  "minWordFreq",
-#'                "wordModel",
- #'               "normModel",
-   #'             "negExCnt",
-    #'            "vecSize",
-    #'            "windowSize",
-    #'            "sentSampleRate",
-    #'            "learningRate",
-    #'            "epochs"
-#'
-#'
-#'
 h2o.word2vec<-
 function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
          vecSize, windowSize, sentSampleRate, learningRate, epochs) {
@@ -376,43 +360,12 @@ function(word2vec, target, count) {
 #  unlist(ignore)
 #}
 
-
-## TODO: H2O doesn't support any arguments beyond the single H2OParsedData object (with <= 2 cols)
-#h2o.table <- function(x) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OParsedData")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
-#  if(ncol(x) > 2) stop("Unimplemented")
-#  .h2o.unop("table", x)
-#}
-
-
-table <- function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                           "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-  if (.isH2O(list(...)[[1]])) { UseMethod("table")
-  } else base::table(..., exclude, useNA, dnn, deparse.level)
+h2o.table <- function(x, y = NULL) {
+  if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
+  if (!is.null(y) && !(y %i% "H2OFrame")) stop("`y` must be an H2O Frame.")
+  ast <- .h2o.varop("table", x, y)
 }
 
-table.H2OFrame <-
-    function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                      "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-
-    if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
-    vecs <- list(...)
-    one <- vecs[[1]]
-    two <- if (2 > length(vecs)) NULL else vecs[[2]]
-    ast <- .h2o.varop("table", one, two)
-    print(ast)
-}
-
-table.H2OParsedData <-
-function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                  "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-
-  if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
-  vecs <- list(...)
-  ast <- .h2o.varop("table", vecs[[1]], vecs[[2]])
-  print(ast)
-}
 
 #'
 #' cut a numeric column into factors
