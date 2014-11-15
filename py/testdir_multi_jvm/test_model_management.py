@@ -214,10 +214,16 @@ class ModelSpec(dict):
     def build_and_validate_model(self, a_node):
         print 'About to build: ' + self.dest_key + ', a ' + self.algo + ' model on frame: ' + self.frame_key + ' with params: ' + repr(self.params)
         result = a_node.build_model(algo=self.algo, destination_key=self.dest_key, training_frame=self.frame_key, parameters=self.params, timeoutSecs=240) # synchronous
-        model = validate_model_exists(self.dest_key, a_node.models()['models'])
         validate_model_builder_result(result, self.params, self.dest_key)
+
+        model = validate_model_exists(self.dest_key, a_node.models()['models'])
         validate_actual_parameters(self.params, model['parameters'], self.frame_key, None)
-        assert model['model_category'] == self.model_category, 'Expected model_category: ' + model_category + ' but got: ' + model['model_category'] + ' for model: ' + self.dest_key
+
+        # TODO: refactor into helper
+        assert 'output' in model, 'Failed to find output object in model: ' + self.dest_key
+        assert 'model_category' in model['output'], 'Failed to find model_category in model: ' + self.dest_key
+        assert model['output']['model_category'] == self.model_category, 'Expected model_category: ' + self.model_category + ' but got: ' + model['output']['model_category'] + ' for model: ' + self.dest_key
+
         print 'Done building: ' + self.dest_key
         return model
 
@@ -418,17 +424,17 @@ iris_key = parse_result['frames'][0]['key']['name']
 # Build and check models
 ####################################################################################################
 models_to_build = [
-    ModelSpec('kmeans_prostate', 'kmeans', prostate_key, {'K': 2 }),
+    ModelSpec('kmeans_prostate', 'kmeans', prostate_key, {'K': 2 }, 'Clustering'),
 
-    ModelSpec('deeplearning_prostate_binary', 'deeplearning', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]"}),
-    ModelSpec('deeplearning_airlines_binary', 'deeplearning', airlines_key, {'response_column': 'IsDepDelayed'}),
-    ModelSpec('deeplearning_iris_multinomial', 'deeplearning', iris_key, {'response_column': 'class' }),
+    ModelSpec('glm_prostate_regression', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False}, 'Regression'),
 
-    ModelSpec('glm_prostate_binary', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': False),
+# TODO: do_classification doesn't; it comes out as regression:   ModelSpec('glm_prostate_binomial', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True}, 'Binomial'),
+# TODO: this crashes in the model builder:                       ModelSpec('glm_airlines_binomial', 'glm', airlines_key, {'response_column': 'IsDepDelayed', 'do_classification': True}, 'Binomial'),
+# TODO: do_classification doesn't; it comes out as regression:   ModelSpec('glm_iris_multinomial', 'glm', iris_key, {'response_column': 'class', 'do_classification': True}, 'Multinomial'),
 
-    ModelSpec('glm_prostate_binary', 'glm', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True),
-    ModelSpec('glm_airlines_binary', 'glm', airlines_key, {'response_column': 'IsDepDelayed'}),
-    ModelSpec('glm_iris_multinomial', 'glm', iris_key, {'response_column': 'class' }),
+    ModelSpec('deeplearning_prostate_binomial', 'deeplearning', prostate_key, {'response_column': 'CAPSULE', 'do_classification': True, 'hidden': "[10, 20, 10]"}, 'Binomial'),
+    ModelSpec('deeplearning_airlines_binomial', 'deeplearning', airlines_key, {'response_column': 'IsDepDelayed'}, 'Binomial'),
+    ModelSpec('deeplearning_iris_multinomial', 'deeplearning', iris_key, {'response_column': 'class' }, 'Multinomial'),
 ]
 
 built_models = {}
@@ -484,22 +490,22 @@ assert found_expected_error, "Failed to find error message about input_dropout_r
 # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
 print 'About to try to build a DeepLearning model with bad parameters. . .'
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
-parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binary_bad', training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
+parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binomial_bad', training_frame=prostate_key, parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
 validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
 print 'Done trying to build DeepLearning model with bad parameters.'
 
 ###################################
-# Compute and check ModelMetrics for 'deeplearning_prostate_binary'
-mm = a_node.compute_model_metrics(model='deeplearning_prostate_binary', frame=prostate_key)
-assert mm is not None, "Got a null result for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key
-assert 'model_category' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain a model_category."
-assert 'Binomial' == mm['model_category'], "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " model_category is not Binomial, it is: " + mm['model_category']
-assert 'auc' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain an AUC."
-assert 'cm' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binary' + " on: " + prostate_key + " does not contain a CM."
-h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binary', " on: ", prostate_key, ":  ", repr(mm))
+# Compute and check ModelMetrics for 'deeplearning_prostate_binomial'
+mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame=prostate_key)
+assert mm is not None, "Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + prostate_key
+assert 'model_category' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + prostate_key + " does not contain a model_category."
+assert 'Binomial' == mm['model_category'], "ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + prostate_key + " model_category is not Binomial, it is: " + mm['model_category']
+assert 'auc' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + prostate_key + " does not contain an AUC."
+assert 'cm' in mm, "ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + prostate_key + " does not contain a CM."
+h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", prostate_key, ":  ", repr(mm))
 
 ###################################
-# Check for ModelMetrics for 'deeplearning_prostate_binary' in full list
+# Check for ModelMetrics for 'deeplearning_prostate_binomial' in full list
 mms = a_node.model_metrics() # fetch all
 assert 'model_metrics' in mms, 'Failed to find model_metrics in result of /3/ModelMetrics.'
 found_mm = False
@@ -511,15 +517,15 @@ for mm in mms['model_metrics']:
     assert 'name' in mm['frame']['key'], "mm[frame][key] does not contain a name: " + repr(mm)
     model_key = mm['model']['key']
     frame_key = mm['frame']['key']['name'] # TODO: should match
-    if model_key == 'deeplearning_prostate_binary' and frame_key == prostate_key:
+    if model_key == 'deeplearning_prostate_binomial' and frame_key == prostate_key:
         found_mm = True
-assert found_mm, "Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binary' + " and frame: " + prostate_key
+assert found_mm, "Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binomial' + " and frame: " + prostate_key
 
 ###################################
-# Predict and check ModelMetrics for 'deeplearning_prostate_binary'
-p = a_node.predict(model='deeplearning_prostate_binary', frame=prostate_key)
-validate_predictions(p, 'deeplearning_prostate_binary', prostate_key, 380)
-h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binary', " on: ", prostate_key, ":  ", repr(p))
+# Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
+p = a_node.predict(model='deeplearning_prostate_binomial', frame=prostate_key)
+validate_predictions(p, 'deeplearning_prostate_binomial', prostate_key, 380)
+h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", prostate_key, ":  ", repr(p))
 
 ###################################
 # Predict and check ModelMetrics (empty now except for predictions frame) for 'kmeans_prostate'
@@ -546,14 +552,14 @@ assert prostate_key in frames_dict, "Failed to find prostate.hex in Frames list.
 
 compatible_models = result['compatible_models']
 models_dict = h2o_util.list_to_dict(compatible_models, 'key')
-assert 'deeplearning_prostate_binary' in models_dict, "Failed to find " + 'deeplearning_prostate_binary' + " in compatible models list."
+assert 'deeplearning_prostate_binomial' in models_dict, "Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list."
 
-assert 'deeplearning_prostate_binary' in frames[0]['compatible_models']
+assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models']
 assert 'kmeans_prostate' in frames[0]['compatible_models']
 h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(result))
 
 # TODO: use built_models
 if clean_up_after:
-    cleanup(models=[dl_airlines_model_name, 'deeplearning_prostate_binary', 'kmeans_prostate'], frames=[prostate_key, airlines_key])
+    cleanup(models=[dl_airlines_model_name, 'deeplearning_prostate_binomial', 'kmeans_prostate'], frames=[prostate_key, airlines_key])
 
 

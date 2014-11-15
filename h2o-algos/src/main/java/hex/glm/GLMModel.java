@@ -4,6 +4,7 @@ import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.SupervisedModel;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.schemas.GLMModelV2;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
@@ -49,7 +50,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override
   public ModelSchema schema() {
-    return null;
+    return new GLMModelV2();
   }
 
   public double [] beta(){ return _output._global_beta;}
@@ -445,10 +446,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     int         _best_lambda_idx;
     float       _threshold;
     double   [] _global_beta;
-    final String   [] _coefficient_names;
-    final boolean _binomial;
+    String   [] _coefficient_names;
+    boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
+    public GLMOutput() { }
     public GLMOutput(GLM b, DataInfo dinfo, boolean binomial){
       super(b);
       String [] cnames = dinfo.coefNames();
