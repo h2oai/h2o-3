@@ -14,11 +14,14 @@ def cloud_name():
     return nodes[0].cloud_name
 
 def init(*args, **kwargs):
-    global nodes
+    global nodes, n0
     nodes = h2o_bc.init(*args, **kwargs)
+    # use to save typing?
+    n0 = nodes[0]
 
 def tear_down_cloud(*args, **kwargs):
     h2o_bc.tear_down_cloud(*args, **kwargs)
-    global nodes
+    global nodes, n0
     nodes = []
+    n0 = None
 

@@ -1,7 +1,7 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
 from h2o_test import find_file, dump_json, verboseprint
 
 DO_INTERMEDIATE_RESULTS = False
@@ -20,17 +20,15 @@ class Basic(unittest.TestCase):
 
     def test_simple2(self):
         # h2o-dev doesn't take ../.. type paths? make find_file return absolute path
-        a_node = h2o.nodes[0]
-
-        # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
+        # import_result = h2o.n0.import_files(path=find_file("smalldata/logreg/prostate.csv"))
         csvPathname = find_file("smalldata/poker/poker-hand-testing.data")
-        import_result = a_node.import_files(path=csvPathname)
+        import_result = h2o.n0.import_files(path=csvPathname)
         # print dump_json(import_result)
 
         k = import_result['keys'][0]
-        # frames_result = a_node.frames(key=k[0], len=5)
+        # frames_result = h2o.n0.frames(key=k[0], len=5)
 
-        frames_result = a_node.frames(key=k)
+        frames_result = h2o.n0.frames(key=k)
 
         frame = frames_result['frames'][0]
         byteSize = frame['byteSize']
@@ -45,8 +43,19 @@ class Basic(unittest.TestCase):
 
         # print dump_json(frame)
 
+        # let's see what ray's util does
+        frames = h2o.n0.frames()['frames']
+        frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+        # print "frames:", dump_json(frames)
+        # print "frames_dict:", dump_json(frames_dict)
+        for k,v in frames_dict.items():
+            print "frames_dict key:", k
+
+        # interesting. we can do dictionary comprehensions
+        # { k:v for k,v in my_dict.items() if 'Peter' in k }
+
         # how do you parse multiple files
-        parse_result = a_node.parse(key=k, intermediateResults=DO_INTERMEDIATE_RESULTS)
+        parse_result = h2o.n0.parse(key=k, intermediateResults=DO_INTERMEDIATE_RESULTS)
 
         frame = parse_result['frames'][0]
         hex_key = frame['key']['name']
