@@ -14,7 +14,7 @@
 #' Operation on an object that inherits from H2OFrame.
 .h2o.unop<-
 function(op, x) {
-  if (!is.null(.op.map[[op]])) op <- .op.map[[op]]
+  if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
   if (x %i% "ASTNode") x <- x
   if (x %i% "numeric") x <- '#' %p0% x
@@ -32,7 +32,7 @@ function(op, x) {
 function(op, e1, e2) {
 
   # Prep the op
-  op <- new("ASTApply", op=.op.map[[op]])
+  op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
   if (e1 %i% "ASTNode")       lhs <- e1
@@ -111,8 +111,5 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
   res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS, funs=.collapse(expr))
-#  print(res)
 }
 
-#cat(toJSON(visitor(h2o.cut(hex[,1], seq(0,1,0.01)))), "\n")
-#cat(toJSON(visitor( h2o.ddply(hex, .("Sepal.Length", "Sepal.Width", "Petal.Length"), f, "hello", "from", "ddply") )), "\n")

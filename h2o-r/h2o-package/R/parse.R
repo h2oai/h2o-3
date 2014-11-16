@@ -3,6 +3,10 @@
 #'
 #' The second phase in the data ingestion step.
 
+# API ENDPOINTS
+.h2o.__PARSE_SETUP <- "ParseSetup.json"  # Sample Usage: ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
+.h2o.__PARSE       <- "Parse.json"       # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
+
 #'
 #' Parse the Raw Data produced by the import phase.
 h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {

@@ -39,3 +39,4 @@ Collate:
          'kmeans.R'
          'gbm.R'
          'deeplearning.R'
+         'word2vec.R'

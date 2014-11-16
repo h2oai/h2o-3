@@ -5,6 +5,9 @@
 #' including a header file, separator type, and in the future column type. Additionally, the import phase provides
 #' feedback on whether or not a folder or group of files may be imported together.
 
+#' API ENDPOINT
+.h2o.__IMPORT <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
+
 #'
 #' Import a Folder of Files
 #'
