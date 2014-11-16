@@ -6,6 +6,8 @@ package water.api;
 //import org.apache.hadoop.fs.Path;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,7 +15,9 @@ import java.util.regex.Pattern;
 import org.apache.hadoop.fs.Path;
 import water.H2O;
 import water.Iced;
+import water.Key;
 import water.api.ImportFilesHandler.ImportFiles;
+import water.fvec.UploadFileVec;
 import water.persist.PersistHdfs;
 import water.util.FileIntegrityChecker;
 import water.util.Log;
@@ -55,8 +59,10 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
       return serveHDFS(version, importFiles);
     //else if( p2.startsWith("maprfs:/") ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
-    //else if( p2.startsWith("http://" ) ) serveHttp();
-    //else if( p2.startsWith("https://") ) serveHttp();
+    else if( path.startsWith("http://" ) )
+      return serveHttp(version, importFiles);
+    else if( path.startsWith("https://") )
+      return serveHttp(version, importFiles);
     else
       return serveLocalDisk(version, importFiles);
   }
@@ -134,29 +140,31 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
     return schema(version).fillFromImpl(importFiles);
   }
 
-//  private void serveHttp() {
-//    try {
-//      java.net.URL url = new URL(path);
-//      Key k = Key.make(path);
-//      InputStream is = url.openStream();
-//      if( is == null ) {
-//        Log.err("Unable to open stream to URL " + path);
-//      }
-//
-//      UploadFileVec.readPut(k, is);
-//      fails = new String[0];
-//      String[] filesArr = { path };
-//      files = filesArr;
-//      String[] keysArr = { k.toString() };
-//      keys = keysArr;
-//    }
-//    catch( Throwable e) {
-//      String[] arr = { path };
-//      fails = arr;
-//      files = new String[0];
-//      keys = new String[0];
-//    }
-//  }
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  private ImportFilesV2 serveHttp(int version, ImportFiles importFiles) {
+    try {
+      java.net.URL url = new URL(importFiles._path);
+      Key k = Key.make(importFiles._path);
+      InputStream is = url.openStream();
+      if( is == null ) {
+        Log.err("Unable to open stream to URL " + importFiles._path);
+      }
+
+      UploadFileVec.readPut(k, is);
+      importFiles._fails = new String[0];
+      String[] filesArr = { importFiles._path };
+      importFiles._files = filesArr;
+      String[] keysArr = { k.toString() };
+      importFiles._keys = keysArr;
+    }
+    catch( Throwable e) {
+      String[] arr = { importFiles._path };
+      importFiles._fails = arr;
+      importFiles._files = new String[0];
+      importFiles._keys = new String[0];
+    }
+    return schema(version).fillFromImpl(importFiles);
+  }
 //
 //  // HTML builder
 //  @Override protected boolean toHTML( StringBuilder sb ) {

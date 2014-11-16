@@ -648,7 +648,7 @@ public class Vec extends Keyed {
     return val;
   }
 
-  private boolean checkMissing(int cidx, Value val) {
+  protected boolean checkMissing(int cidx, Value val) {
     if( val != null ) return true;
     System.out.println("Error: Missing chunk "+cidx+" for "+_key);
     return false;
