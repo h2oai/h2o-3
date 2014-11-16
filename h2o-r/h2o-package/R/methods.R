@@ -188,133 +188,6 @@ h2o.getFrame <- function(h2o, key) {
   ast
 }
 
-#'
-#' Word2Vec
-#'
-#' Create a word2vec object.
-#'
-#' Two cases below: 1. Negative Sampling; 2. Hierarchical Softmax
-#'
-#' * Constructor used for specifying the number of negative sampling cases.
-#'  @param wordModel - SkipGram or CBOW
-#'  @param normModel - Hierarchical softmax or Negative sampling
-#'  @param numNegEx - Number of negative samples used per word
-#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
-#'  @param vecSize - Size of word vectors
-#'  @param winSize - Size of word window
-#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
-#'  @param epochs - Number of iterations data is run through.
-#'
-#' * Constructor used for hierarchical softmax cases.
-#'  @param wordModel - SkipGram or CBOW
-#'  @param vocabKey - Key pointing to frame of [Word, Cnt] vectors
-#'  @param vecSize - Size of word vectors
-#'  @param winSize - Size of word window
-#'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
-#'  @param epochs - Number of iterations data is run through.
-
-
-#'
-#'  "trainingFrame",
-#'  "minWordFreq",
-#'                "wordModel",
- #'               "normModel",
-   #'             "negExCnt",
-    #'            "vecSize",
-    #'            "windowSize",
-    #'            "sentSampleRate",
-    #'            "learningRate",
-    #'            "epochs"
-#'
-#'
-#'
-h2o.word2vec<-
-function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
-         vecSize, windowSize, sentSampleRate, learningRate, epochs) {
-
-  # param checking
-  if (!(trainingFrame %i% "H2OFrame")) stop("`data` must be an H2OFrame")
-  if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
-  if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
-  if (!is.null(negExCnt)) {
-    if (negExCnt < 0) stop("`negExCnt` must be >= 0")
-    if (negExCnt != 0 && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received" %p% negExCnt)
-  }
-  if (missing(vecSize) || !is.numeric(vecSize)) stop("`vecSize` must be numeric")
-  if (missing(windowSize) || !is.numeric(windowSize)) stop("`windowSize` must be numeric")
-  if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
-  if (missing(learningRate) || !is.numeric(learningRate)) stop("`learningRate` must be numeric")
-  if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
-  if (!(trainingFrame %i% "H2OParsedData")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!(trainingFrame %i% "H2OParsedData")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
-
-  params <- list(training_frame = trainingFrame@key,
-                 wordModel = wordModel,
-                 normModel = normModel,
-                 minWordFreq = minWordFreq,
-                 negSampleCnt = negExCnt,
-                 vecSize = vecSize,
-                 windowSize = windowSize,
-                 sentSampleRate = sentSampleRate,
-                 learningRate = learningRate,
-                 epochs = epochs)
-
-  res <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__W2V, .params = params)
-  .h2o.__waitOnJob(trainingFrame@h2o, res$job)
-  dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste(.h2o.__JOBS, "/", res$job, sep = ""))$jobs[[1]]$dest$name
-  w2vmodel <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__INSPECT, key = dest_key)
-  new("H2OW2V", h2o = trainingFrame@h2o, key = dest_key, train.data=trainingFrame)
-}
-
-#'
-#' Find Synonyms Using an H2OW2V object
-#'
-#'  @param word2vec: An H2OW2V model.
-#'  @param target: A single word, or a vector of words.
-#'  @param count: The top `count` synonyms will be returned.
-#'
-h2o.synonym<-
-function(word2vec, target, count) {
-  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")
-  if (missing(target)) stop("`target` must be specified")
-  if (!is.character(target)) stop("`target` must be character")
-  if (missing(count)) stop("`count` must be specified")
-  if (!is.numeric(count)) stop("`count` must be numeric")
-
-  params <- list(key = word2vec@key, target=target, cnt=count)
-  if (length(target) == 1) {
-    res <- .h2o.__remoteSend(word2vec@h2o, .h2o.__SYNONYMS, .params = params)
-    fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
-    fr <- fr[with(fr, order(-cosine.similarity)),]
-    return(fr)
-  } else {
-    stop("unimplemented")
-#    vecs <- lapply(target, h2o.transform, word2vec)
-#    vec <- colSums(as.data.frame(vecs))
-#    params$vec <- vec
-#    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
-#    return(h2o.getFrame(res$key))
-  }
-}
-
-#'
-#' Transform A Word to A Vec Using Word2Vec
-#'
-#' Use a pre-existing word2vec object to transform a target word
-#' into a numeric vector.
-#setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
-#  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
-#  if (missing(target)) stop("`target` must be specified")
-#  if (!is.character(target)) stop("`target` must be character")
-#  if (length(target) > 1) stop("`target` must be a single word")
-#
-#  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
-#  res <- .h2o.__remoteSend(data@h2o, .h2o.__TRANSFORM, params)
-#  res$vec
-#})
-
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
 #  if(!is.numeric(cols)) stop("rows must be a numeric value")
@@ -376,43 +249,12 @@ function(word2vec, target, count) {
 #  unlist(ignore)
 #}
 
-
-## TODO: H2O doesn't support any arguments beyond the single H2OParsedData object (with <= 2 cols)
-#h2o.table <- function(x) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OParsedData")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
-#  if(ncol(x) > 2) stop("Unimplemented")
-#  .h2o.unop("table", x)
-#}
-
-
-table <- function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                           "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-  if (.isH2O(list(...)[[1]])) { UseMethod("table")
-  } else base::table(..., exclude, useNA, dnn, deparse.level)
+h2o.table <- function(x, y = NULL) {
+  if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
+  if (!is.null(y) && !(y %i% "H2OFrame")) stop("`y` must be an H2O Frame.")
+  ast <- .h2o.varop("table", x, y)
 }
 
-table.H2OFrame <-
-    function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                      "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-
-    if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
-    vecs <- list(...)
-    one <- vecs[[1]]
-    two <- if (2 > length(vecs)) NULL else vecs[[2]]
-    ast <- .h2o.varop("table", one, two)
-    print(ast)
-}
-
-table.H2OParsedData <-
-function(..., exclude = if (useNA == "no") c(NA, NaN), useNA = c("no",
-                  "ifany", "always"), dnn = list.names(...), deparse.level = 1) {
-
-  if (length(list(...)) > 2) stop("table cannot handle more than two vectors")
-  vecs <- list(...)
-  ast <- .h2o.varop("table", vecs[[1]], vecs[[2]])
-  print(ast)
-}
 
 #'
 #' cut a numeric column into factors
@@ -647,13 +489,13 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
 #-----------------------------------------------------------------------------------------------------------------------
-
-nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
-ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
-colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
-names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
-length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
-dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
+## changed from UseMethod to setMethod
+# nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
+# ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
+# colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
+# names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
+# length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
+# dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
 #' The Number of Rows/Columns of an H2O Dataset
 #'
@@ -672,9 +514,9 @@ dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 NULL
 
 #' @rdname nrow.h2o
-nrow.H2OParsedData     <- function(x) x@nrows
+setMethod("nrow", "H2OParsedData", function(x) x@nrows)
 #' @rdname nrow.h2o
-ncol.H2OParsedData     <- function(x) x@ncols
+setMethod("ncol", "H2OParsedData", function(x) x@ncols)
 
 #'
 #' Returns Column Names for a Parsed H2O Data Object.
@@ -691,11 +533,11 @@ ncol.H2OParsedData     <- function(x) x@ncols
 #' summary(iris.hex)
 #' colnames.H2OParsedData(iris.hex)
 #' @name colnames.h2o
-colnames.H2OParsedData <- function(x) x@col_names
+setMethod("colnames", "H2OParsedData", function(x) x@col_names)
 
 #'
 #' @rdname colnames.h2o
-names.H2OParsedData    <- function(x) colnames(x)
+setMethod("names", "H2OParsedData", function(x) colnames(x))
 
 #'
 #' Returns the Length of a Parsed H2O Data Object.
@@ -710,7 +552,7 @@ names.H2OParsedData    <- function(x) colnames(x)
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
 #' length.H2OParsedData(iris.hex)
 #' @name length.h2o
-length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
+setMethod("length", "H2OParsedData", function(x) if (ncol(x) == 1) nrow(x) else ncol(x))
 
 #'
 #' Returns the Dimensions of a Parsed H2O Data Object.
@@ -725,7 +567,7 @@ length.H2OParsedData   <- function(x) if (ncol(x) == 1) nrow(x) else ncol(x)
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
 #' dim.H2OParsedData(iris.hex)
 #' @name dim.h2o
-dim.H2OParsedData      <- function(x) c(x@nrows, x@ncols)
+setMethod("dim", "H2OParsedData", function(x) c(x@nrows, x@ncols))
 
 #'
 #' Return the Head or Tail of an H2O Dataset.
@@ -748,7 +590,7 @@ NULL
 
 #'
 #' @rdname head.h2o
-head.H2OParsedData <- function(x, n = 6L, ...) {
+setMethod("head", "H2OParsedData", function(x, n = 6L, ...) {
   #TODO: when 'x' is an expression
   numRows <- nrow(x)
   stopifnot(length(n) == 1L)
@@ -759,11 +601,11 @@ head.H2OParsedData <- function(x, n = 6L, ...) {
   x.slice <- as.data.frame(tmp_head)
   h2o.rm(tmp_head@key)
   return(x.slice)
-}
+})
 
 #'
 #' @rdname head.h2o
-tail.H2OParsedData <- function(x, n = 6L, ...) {
+setMethod("tail", "H2OParsedData", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
@@ -776,7 +618,7 @@ tail.H2OParsedData <- function(x, n = 6L, ...) {
   h2o.rm(tmp_tail@h2o, tmp_tail@key)
   rownames(x.slice) <- idx
   return(x.slice)
-}
+})
 
 #'
 #' The H2OFrame "lazy" evaluators: Evaulate an AST.
@@ -789,7 +631,7 @@ NULL
 
 #'
 #' @rdname nrow.h2o
-nrow.H2OFrame <- function(x) {
+setMethod("nrow", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
 #  ID <- .eval.assign(x, ID, parent.frame(), environment())
@@ -797,66 +639,66 @@ nrow.H2OFrame <- function(x) {
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   nrow(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname nrow.h2o
-ncol.H2OFrame <- function(x) {
+setMethod("ncol", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   ncol(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname colnames.h2o
-colnames.H2OFrame <- function(x) {
+setMethod("colnames", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   colnames(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname colnames.h2o
-names.H2OFrame <- function(x) {
+setMethod("names", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   names(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname length.h2o
-length.H2OFrame <- function(x) {
+setMethod("length", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   length(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname dim.h2o
-dim.H2OFrame <- function(x) {
+setMethod("dim", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(ID)) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   dim(get(ID, parent.frame()))
-}
+})
 
 #'
 #' @rdname head.h2o
-head.H2OFrame <- function(x, n = 6L, ...) {
+setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -875,11 +717,11 @@ head.H2OFrame <- function(x, n = 6L, ...) {
   if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
   assign(ID, x, parent.frame())
   head(get(ID, parent.frame()))
-}
+})
 
 #'
 #'  @rdname head.h2o
-tail.H2OFrame <- function(x, n = 6L, ...) {
+setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -895,7 +737,7 @@ tail.H2OFrame <- function(x, n = 6L, ...) {
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
   tail(get(ID, parent.frame()))
-}
+})
 
 #setMethod("levels", "H2OParsedData", function(x) {
 #  if(ncol(x) != 1) return(NULL)

@@ -1,7 +1,6 @@
 import h2o, h2o_cmd, h2o_jobs, h2o_print as h2p
-import getpass, time, re, os
-import h2o_args
-import h2o_nodes
+import getpass, time, re, os, fnmatch
+import h2o_args, h2o_util, h2o_nodes
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors
 
 #****************************************************************************************
@@ -165,6 +164,13 @@ def import_only(node=None, schema='local', bucket=None, path=None,
     timeoutSecs=30, retryDelaySecs=0.1, initialDelaySecs=0, pollTimeoutSecs=180, noise=None,
     benchmarkLogging=None, noPoll=False, doSummary=True, src_key=None, noPrint=False, 
     importParentDir=True, **kwargs):
+
+    # FIX! hack all put to local, since h2o-dev doesn't have put yet?
+    # multi-machine put will fail as a result.
+    if schema=='put':
+        h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
+            "\nMeans multi-machine with 'put' will fail")
+        schema = 'local'
 
     if src_key and schema!='put':
         raise Exception("can only specify a 'src_key' param for schema='put'. You have %s %s" % (schema, src_key))
@@ -353,8 +359,17 @@ def parse_only(node=None, pattern=None, hex_key=None,
     benchmarkLogging=None, noPoll=False, **kwargs):
 
     if not node: node = h2o_nodes.nodes[0]
+    # Get the list of all keys and use those that match the pattern
+    # FIX! this can be slow. Can we use h2o to filter the list for us?
+    framesResult = node.frames()
+    matchingList = []
+    for frame in framesResult['frames']:
+        # print frame
+        key_name = frame['key']['name']
+        if fnmatch.fnmatch(key_name, pattern):
+            matchingList.append(key_name)
 
-    parseResult = node.parse(key=pattern, key2=hex_key,
+    parseResult = node.parse(key=matchingList, hex_key=hex_key,
         timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, 
         initialDelaySecs=initialDelaySecs, pollTimeoutSecs=pollTimeoutSecs, noise=noise,
         benchmarkLogging=benchmarkLogging, noPoll=noPoll, **kwargs)
@@ -369,6 +384,13 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     timeoutSecs=30, retryDelaySecs=0.1, initialDelaySecs=0, pollTimeoutSecs=180, noise=None,
     benchmarkLogging=None, noPoll=False, doSummary=True, noPrint=True, 
     importParentDir=True, **kwargs):
+
+    # FIX! hack all put to local, since h2o-dev doesn't have put yet?
+    # multi-machine put will fail as a result.
+    if schema=='put':
+        h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
+            "\nMeans multi-machine with 'put' will fail")
+        schema = 'local'
 
     if not node: node = h2o_nodes.nodes[0]
 
@@ -402,20 +424,31 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
 
     return parseResult
 
+#****************************************************************************************
 
 # returns full key name, from current store view
 def find_key(pattern=None):
-    found = None
-    kwargs = {'filter': pattern}
-    storeViewResult = h2o_nodes.nodes[0].store_view(**kwargs)
-    keys = storeViewResult['keys']
-    if len(keys) == 0:
+    try:
+        patternObj = re.compile(pattern)
+    except:
+        raise Exception("Need legal pattern in find_key, not %s", pattern)
+
+    frames = h2o_nodes.nodes[0].frames()['frames']
+    frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+
+    result = []
+    for key in frames_dict:
+        if patternObj.search(key):
+            result.append(key)
+
+    if len(result) == 0:
+        verboseprint("Warning: No match for %s" % pattern)
         return None
 
-    if len(keys) > 1:
-        verboseprint("Warning: multiple imported keys match the key pattern given, Using: %s" % keys[0]['key'])
+    if len(result) > 1:
+        verboseprint("Warning: multiple imported keys match the key pattern %s, Using: %s" % (pattern, result[0]))
 
-    return keys[0]['key']
+    return result[0]
 
 
 #****************************************************************************************

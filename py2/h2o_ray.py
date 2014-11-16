@@ -27,7 +27,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     '''
     params_dict = {}
     # merge kwargs into params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', False)
 
     start_time = time.time()
     while True:
@@ -78,16 +78,17 @@ def import_files(self, path, timeoutSecs=180):
 
 # key is required
 # FIX! for now h2o doesn't support regex here. just key or list of keys
-def parse(self, key, key2=None,
+# FIX! default turn off intermediateResults until NPE is fixed.
+def parse(self, key, hex_key=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
-          noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=True, **kwargs):
+          noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=False, **kwargs):
     '''
     Parse an imported raw file or files into a Frame.
     '''
     # these should override what parse setup gets below
     params_dict = {
         'srcs': None,
-        'hex': key2,
+        'hex': hex_key, 
         'pType': None, # This is a list?
         'sep': None,
         'ncols': None,
@@ -98,9 +99,16 @@ def parse(self, key, key2=None,
     # if key is a list, create a comma separated string
     # list or tuple but not string
     if not isinstance(key, basestring):
-        print "I noticed you're giving me multiple keys %s to parse:" % len(key), key
+        # it's a list of some kind (tuple ok?)
+        # if len(key) > 1:
+        #     print "I noticed you're giving me a list of > 1 keys %s to parse:" % len(key), key
+
+        # len 1 is ok here. 0 not. what if None or [None] here
+        if not key:
+            raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
         srcs = "[" + ",".join(key) + "]"
     else:
+        # what if None here
         srcs = "[" + key + "]"
 
     params_dict['srcs'] = srcs
@@ -168,6 +176,7 @@ def parse(self, key, key2=None,
         # ??
         return this.jobs(job_key)
 
+    # does Frame also, while polling
     if intermediateResults:
         key = hex_key
     else:
@@ -202,8 +211,8 @@ def parse(self, key, key2=None,
 def frames(self, key=None, timeoutSecs=10, **kwargs):
     params_dict = {
         'find_compatible_models': 0,
-        'offset': 0,
-        'len': 100     # TODO: len and offset are not working yet
+        'offset': 0, # is offset working yet?
+        'len': 5,
     }
     '''
     Return a single Frame or all of the Frames in the h2o cluster.  The
