@@ -193,7 +193,6 @@ function(stmnt) {
     # Case 1, 3A above unless it's `log`, or `[`, or `$`
     } else if (.is.unop(op)) {
       if (.is.slice(op)) return(.process.slice.stmnt(stmnt))
-      stop("GOT AN OP: " %p% op)
       x <- .statement.to.ast.switchboard(stmnt_list[[2]])
       return(.h2o.unop(deparse(op), x))
 
