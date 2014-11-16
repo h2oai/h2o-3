@@ -6,6 +6,11 @@ def runStoreView(*args, **kwargs):
     a = {'keys': {}}
     return a
 
+def runSummary(node=None, key=None, timeoutSecs=30, **kwargs):
+    if not key: raise Exception('No key for Summary')
+    if not node: node = h2o_nodes.nodes[0]
+    return node.summary(key, timeoutSecs=timeoutSecs, **kwargs)
+
 def runInspect(node=None, key=None, timeoutSecs=30, verbose=False, **kwargs):
     if not key: raise Exception('No key for Inspect')
     if not node: node = h2o_nodes.nodes[0]
@@ -13,6 +18,24 @@ def runInspect(node=None, key=None, timeoutSecs=30, verbose=False, **kwargs):
     if verbose:
         print "inspect of %s:" % key, dump_json(a)
     return a
+
+def infoFromParse(parse):
+    if not parse:
+        raise Exception("parse is empty for infoFromParse")
+    # assumes just one result from Frames
+    if 'frames' not in parse:
+        raise Exception("infoFromParse expects parse= param from parse result: %s" % parse)
+    if len(parse['frames'])!=1:
+        raise Exception("infoFromParse expects parse= param from parse result: %s " % parse['frames'])
+
+    # it it index[0] or key '0' in a dictionary?
+    frame = parse['frames'][0]
+    # need more info about this dataset for debug
+    numCols = len(frame['columns'])
+    numRows = frame['rows']
+    key_name = frame['key']['name']
+
+    return numRows, numCols, key_name
 
 
 # make this be the basic way to get numRows, numCols

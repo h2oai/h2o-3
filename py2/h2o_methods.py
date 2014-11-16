@@ -223,14 +223,17 @@ def poll_url(self, response,
     return response
 
 #*******************************************************************************
-def jobs_admin (*args, **kwargs):
+def jobs_admin (self, *args, **kwargs):
     print "WARNING: faking jobs admin"
     a = { 'jobs': {} }
     return a
 
-def unlock (*args, **kwargs):
+def unlock (self, *args, **kwargs):
     print "WARNING: faking unlock keys"
     pass
+
+def remove_all_keys(self, timeoutSecs=120):
+    return self.do_json_request('RemoveAll.json', timeout=timeoutSecs)
 
 def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
     params = {
@@ -253,8 +256,6 @@ def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
 
     print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
 
-
-
 #******************************************************************************************8
 # attach methods to H2O object
 # this happens before any H2O instances are created
@@ -266,6 +267,7 @@ H2O.jobs_admin = jobs_admin
 H2O.unlock = unlock
 H2O.get_timeline = get_timeline
 H2O.csv_download = csv_download
+H2O.remove_all_keys = remove_all_keys
 # H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray

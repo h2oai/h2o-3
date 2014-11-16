@@ -262,7 +262,7 @@ def column(self, key, column, timeoutSecs=10, **kwargs):
 
 
 # TODO: remove .json
-def summary(self, key, column, timeoutSecs=10, **kwargs):
+def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     '''
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
