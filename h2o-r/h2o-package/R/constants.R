@@ -159,6 +159,7 @@
                 "match" = "match",
                 "cut" = "cut",
                 "table" = "table",
+                "xorsum" = "xorsum",
                 "trunc" = "trunc")
 
 #'
