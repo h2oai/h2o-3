@@ -61,7 +61,7 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o
 #' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
 #' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
 #' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
-setMethod("Math", signature(x = "H2OFrame"), function(x) { stop(.Generic); .h2o.unop(.Generic,x) })
+setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unop(.Generic,x) })
 
 #'
 #' Math2 Generics:
