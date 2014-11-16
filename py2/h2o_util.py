@@ -1,9 +1,80 @@
 import subprocess
-import gzip, shutil, random, time, re
+import gzip, shutil, random, time, re, copy
 import os, zipfile, simplejson as json, csv
 import sys, math
-from h2o_test import verboseprint
+import errno
+from h2o_test import verboseprint, dump_json
+import h2o_print as h2p
 
+#************************************************************************
+# stuff from ray
+# list or tuple is okay. so are dicts. strings not okay
+# or should we strictly check for list,tuple?
+def list_to_dict(l, key):
+    # assert not isinstance(l, basestring)
+    assert isinstance(l, (list, tuple, dict))
+    # print 'list_to_dict key: ', key
+    keySplit = key.split("/")
+    result = {}
+    for v in l:
+        # print 'list_to_dict v: ', v
+        k = followPath(v, keySplit)
+        # print 'list_to_dict k: ', k
+        result[k] = v
+    print "list_to_dict created dict with %s entries" % len(result)
+    return result
+
+# Assertion-type stuff
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+# was d mutable to caller before? suppose not if the local assign is a new object.
+def followPath(d, path_elems):
+    dCopy = copy.deepcopy(d)
+    for path_elem in path_elems:
+        # print "followPath path_elem:", path_elem
+        if "" != path_elem:
+            idx = -1
+            if path_elem.endswith("]"):
+                idx = int(path_elem[path_elem.find("[") + 1:path_elem.find("]")])
+                path_elem = path_elem[:path_elem.find("[")]
+            assert path_elem in dCopy, "Failed to find key: " + path_elem + " in dict: " + dCopy
+
+            # does this create a new object so the caller is not affected?
+            if -1 == idx:
+                dCopy = dCopy[path_elem]
+            else:
+                dCopy = dCopy[path_elem][idx]
+
+    return dCopy
+
+
+def assertKeysExist(d, path, keys):
+    path_elems = path.split("/")
+    d = followPath(d, path_elems)
+    for key in keys:
+        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
+
+def assertKeysExistAndNonNull(d, path, keys):
+    path_elems = path.split("/")
+    d = followPath(d, path_elems)
+    for key in keys:
+        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
+        assert d[key] != None, "Value unexpectedly null: " + key + " in dict: " + repr(d)
+
+def assertKeysDontExist(d, path, keys):
+    path_elems = path.split("/")
+    d = followPath(d, path_elems)
+    for key in keys:
+        assert key not in d, "Unexpectedly found key: " + key + " in dict: " + repr(d)
+
+
+
+#************************************************************************
 # Return file size.
 def get_file_size(f):
     return os.path.getsize(f)

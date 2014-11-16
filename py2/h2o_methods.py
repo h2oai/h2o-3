@@ -52,15 +52,13 @@ def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     return a
 
 def h2o_log_msg(self, message=None, timeoutSecs=15):
-    if 1 == 0:
-        return
     if not message:
         message = "\n"
         message += "\n#***********************"
         message += "\npython_test_name: " + h2o_args.python_test_name
         message += "\n#***********************"
     params = {'message': message}
-    self.do_json_request('2/LogAndEcho', params=params, timeout=timeoutSecs)
+    self.do_json_request('2/LogAndEcho.json', params=params, timeout=timeoutSecs)
 
 def get_timeline(self):
     return self.do_json_request('Timeline.json')
@@ -224,18 +222,7 @@ def poll_url(self, response,
         verboseprint(msgUsed, urlUsed, paramsUsedStr, "Response:", dump_json(response))
     return response
 
-def h2o_log_msg(self, message=None, timeoutSecs=15):
-    if 1 == 0:
-        return
-    if not message:
-        message = "\n"
-        message += "\n#***********************"
-        message += "\npython_test_name: " + h2o_args.python_test_name
-        message += "\n#***********************"
-    params = {'message': message}
-    self.do_json_request('LogAndEcho.json', params=params, timeout=timeoutSecs)
-
-
+#*******************************************************************************
 def jobs_admin (*args, **kwargs):
     print "WARNING: faking jobs admin"
     a = { 'jobs': {} }
@@ -244,6 +231,29 @@ def jobs_admin (*args, **kwargs):
 def unlock (*args, **kwargs):
     print "WARNING: faking unlock keys"
     pass
+
+def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
+    params = {
+        'key': key
+    }
+
+    paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
+    url = self.url('DownloadDataset.json')
+    log('Start ' + url + paramsStr, comment=csvPathname)
+
+    # do it (absorb in 1024 byte chunks)
+    r = requests.get(url, params=params, timeout=timeoutSecs)
+    print "csv_download r.headers:", r.headers
+    if r.status_code == 200:
+        f = open(csvPathname, 'wb')
+        for chunk in r.iter_content(1024):
+            f.write(chunk)
+    else:
+        raise Exception("unexpected status for DownloadDataset: %s" % r.status_code)
+
+    print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
+
+
 
 #******************************************************************************************8
 # attach methods to H2O object
@@ -255,6 +265,7 @@ H2O.h2o_log_msg = h2o_log_msg
 H2O.jobs_admin = jobs_admin
 H2O.unlock = unlock
 H2O.get_timeline = get_timeline
+H2O.csv_download = csv_download
 # H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray
