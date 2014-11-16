@@ -75,8 +75,6 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         // Fill in the model
         model._output._matches = Arrays.copyOf(gg._matches,gg._cnt);
         model._output._offsets = Arrays.copyOf(gg._offsets,gg._cnt);
-        // model._output._xxx = gg;
-        //model.update(_key); // Update model in K/V store
 
         StringBuilder sb = new StringBuilder();
         sb.append("Grep: ").append("\n");
@@ -123,6 +121,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
     GrepGrep( String regex ) { _regex = regex; }
     @Override public void map( Chunk chk ) {
+      _matches = new String[1]; // Result holders; will lazy expand
+      _offsets = new long  [1];
       ByteSeq bs = new ByteSeq(chk,chk.nextChunk());
       Pattern p = Pattern.compile(_regex);
       // We already checked that this is an instance of a ByteVec, which means
@@ -145,17 +145,12 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     }
 
     private void add( String s, long off ) {
-      // Lazily expand local result holders
-      if( _cnt == 0 ) {
-        _matches = new String[2];
-        _offsets = new long  [2];
-      } else if( _cnt == _matches.length ) {
-        _matches = Arrays.copyOf(_matches ,_cnt<<1);
+      if( _cnt == _matches.length ) {
+        _matches = Arrays.copyOf(_matches,_cnt<<1);
         _offsets = Arrays.copyOf(_offsets,_cnt<<1);
       }
-      _matches[_cnt] = s;
-      _offsets[_cnt] = off;
-      _cnt++;
+      _matches[_cnt  ] = s;
+      _offsets[_cnt++] = off;
     }
   }
 }
