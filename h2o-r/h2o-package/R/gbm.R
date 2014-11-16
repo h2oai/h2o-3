@@ -60,8 +60,8 @@ h2o.gbm <- function(x, y, data, key="",
   parms = .addLongParm(parms, k = "max_after_balance_size", v = max_after_balance_size )
   #parms = .addBooleanParm(parms, k = "group_split", v = group_split )
 
-  model_params <- .h2o.__remoteSend(data@h2o, method = "POST", .h2o.__GBM_PARAMS, .params = parms)
-  res <- .h2o.__remoteSend(data@h2o, method = "POST", .h2o.__GBM, .params = parms)
+  model_params <- .h2o.__remoteSend(data@h2o, method = "POST", '2/GBM.json', .params = parms)
+  res <- .h2o.__remoteSend(data@h2o, method = "POST", h2o.__MODEL_BUILDERS('gbm'), .params = parms)
 
   #parms$h2o <- data@h2o
   parms$h2o <- data@h2o

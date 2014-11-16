@@ -2,8 +2,8 @@
 #' H2O Predict Methods
 #'
 #'
-#' Here are gathered the preponderance of predict methods for the various machine
-#' learning models that H2O may construct.
+#' Here are gathered the preponderance of predict methods for the various
+#' machine learning models that H2O may construct.
 #'
 
 
@@ -22,15 +22,22 @@ function(object, newdata, types) {
 }
 
 #'
+#' Model Predict Endpoint
+#'
+.h2o.__PREDICT <- function(modelKey, frameKey) {
+  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
+}
+
+#'
 #' Deeplearing H2O Predict Method
 #'
 #' Predict with an object of class H2ODeepLearningModel
 predict.H2ODeepLearningModel <- function(object, newdata, ...) {
-  .validate.predict(object, newdata, types=list(object="H2ODeepLearningModel", newdata="H2OFrame"))
+  .validate.predict(object, newdata, types=list(object="H2ODeepLearningModel", 
+                                                newdata="H2OFrame"))
   # Send keys to create predictions
-  .h2o.__PREDICT = gsub("SUBT_MODEL", object@key, .h2o.__PREDICT)
-  .h2o.__PREDICT = gsub("SUBT_FRAME", newdata@key, .h2o.__PREDICT)
-  res <- .h2o.__remoteSend(object@h2o, .h2o.__PREDICT, method = "HTTPPOST")
+  url <- .h2o.__PREDICT(object@key, newdata@key)
+  res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
   res <- res$model_metrics[[1]]$predictions
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@h2o, res)
@@ -42,11 +49,11 @@ predict.H2ODeepLearningModel <- function(object, newdata, ...) {
 #' Predict with an object of class H2OKMeansModel
 predict.H2OKMeansModel <- function(object, newdata, ...) {
   # Validate that the object is a H2OModel and the newdata is a H2OFrame
-  .validate.predict(object, newdata, types = list(object = "H2OKMeansModel", newdata = "H2OFrame"))
+  .validate.predict(object, newdata, types = list(object = "H2OKMeansModel",
+                                                  newdata = "H2OFrame"))
   # Send keys to create predictions
-  .h2o.__PREDICT = gsub("SUBT_MODEL", object@key, .h2o.__PREDICT)
-  .h2o.__PREDICT = gsub("SUBT_FRAME", newdata@key, .h2o.__PREDICT)
-  res <- .h2o.__remoteSend(object@h2o, .h2o.__PREDICT, method = "HTTPPOST")
+  url <- .h2o.__PREDICT(object@key, newdata@key)
+  res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
   res <- res$model_metrics[[1]]$predictions
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@h2o, res)
@@ -54,11 +61,11 @@ predict.H2OKMeansModel <- function(object, newdata, ...) {
 
 predict.H2OGBMModel <- function(object, newdata, ...) {
   # Validate that the object is a H2OModel and the newdata is a H2OFrame
-  .validate.predict(object, newdata, types = list(object = "H2OGBMModel", newdata = "H2OFrame"))
+  .validate.predict(object, newdata, types = list(object = "H2OGBMModel",
+                                                  newdata = "H2OFrame"))
   # Send keys to create predictions
-  .h2o.__PREDICT = gsub("SUBT_MODEL", object@key, .h2o.__PREDICT)
-  .h2o.__PREDICT = gsub("SUBT_FRAME", newdata@key, .h2o.__PREDICT)
-  res <- .h2o.__remoteSend(object@h2o, .h2o.__PREDICT, method = "HTTPPOST")
+  url <- .h2o.__predict_url(object@key, newdata@key)
+  res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
   res <- res$model_metrics[[1]]$predictions$key
   h2o.getFrame(res)
 }

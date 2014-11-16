@@ -174,16 +174,6 @@
                     "trunc" = "trunc")
 
 #'
-#' H2O API endpoints
-#'
-#'
-#' Import/Parse Endpointss
-.h2o.__IMPORT       <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
-.h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://path/to/data]
-.h2o.__PARSE        <- "Parse.json"         # Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
-.h2o.__PARSE_SETUP  <- "ParseSetup.json"    # ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
-
-#'
 #' Inspect/Summary Endpoints
 #'
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
@@ -198,13 +188,7 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__MODEL_BUILDERS      <- "2/ModelBuilders"
-.h2o.__KMEANS              <- "KMeans.json"
-.h2o.__KMEANS_PARAMS       <- "2/ModelBuilders/kmeans.json"
-.h2o.__DEEPLEARNING        <- "2/ModelBuilders/deeplearning.json"
-.h2o.__DEEPLEARNING_PARAMS <- "DeepLearning.json"
-.h2o.__GBM                 <- "2/ModelBuilders/gbm.json"
-.h2o.__GBM_PARAMS          <- "2/ModelBuilders/gbm.json"
+.h2o.__MODEL_BUILDERS <- function(algo) "2/ModelBuilders/" %p0% algo %p0% '.json'
 
 #'
 #' Algorithm Parameter Endpoints
@@ -215,14 +199,6 @@
 #'
 .h2o.__MODELS       <- "3/Models.json/"
 
-#'
-#' Model Predict Endpoint
-#'
-.h2o.__PREDICT <- "3/Predictions.json/models/SUBT_MODEL/frames/SUBT_FRAME"
-#'
-#' Model Predict Endpoint
-#'
-.h2o.__MODEL_METRICS <- "/3/ModelMetrics/models/SUBT_MODEL/frames/SUBT_FRAME"
 #'
 #' Rapids/Exec3
 #'

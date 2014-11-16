@@ -483,8 +483,7 @@ setClass("H2OKMeansModel", representation(valid="H2OParsedData", xval="list"), c
 
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
-    print(object@data@h2o)
-    cat("Parsed Data Key:", object@data@key, "\n\n")
+#    cat("Parsed Data Key:", object@data@key, "\n\n")
     cat("K-Means Model Key:", object@key)
 
     model = object@model
