@@ -100,7 +100,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/wrapper.R", "/constants.R", "/logging.R", "/h2o.R", "/exec.R", "/classes.R", "/ops.R", "/methods.R", "/ast.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/algorithms.R", "/predict.R", "/kmeans.R", "/deeplearning.R")
+  to_src <- c("/wrapper.R", "/constants.R", "/logging.R", "/h2o.R", "/exec.R", "/classes.R", "/ops.R", "/methods.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/algorithms.R", "/predict.R", "/kmeans.R", "/deeplearning.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
@@ -117,7 +117,7 @@ function(ROOT.PATH) {
 root.path  <- locate("h2o-package/R/", "h2o-r")
 utils.path <- locate("tests/Utils/", "h2o-r")
 src.utils(utils.path)
-#src(root.path)   # uncomment to source R code directly  (overrides package load)
+src(root.path)   # uncomment to source R code directly  (overrides package load)
 
 
 #The master seed is set by the runnerSetup.R script.

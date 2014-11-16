@@ -35,27 +35,6 @@
 #'
 #' See also groupGeneric.
 
-#'
-#' Prefix, Binary Infix (Ops), and Variable Ops Generics
-#'
-#' Handle all of the ops with these simple functions!
-#'
-#' Scrape the function call for the operator. Cast the sys.calls() to a list and extracting the root.
-.unops.fun  <- function(x)      .h2o.unop (deparse(as.list(as.list(sys.calls())[[length(sys.calls())-1]])[[1]]), x     )
-.binops.fun <- function(e1,e2)  .h2o.binop(.getValidBinOp(), e1, e2)
-.varops.fun <- function(x, ...) .h2o.varop(deparse(as.list(as.list(sys.calls())[[length(sys.calls())-1]])[[1]]), x, ...)
-
-#'
-#' Get the binary operator off the stack.
-#'
-#' Return the first valid binary operator encountered
-.getValidBinOp<-
-function() {
-  stack <- as.list(sys.calls())
-  for (s in stack) {
-    if (!is.null(.op.map[[ deparse(as.list(s)[[1]]) ]])) return(deparse(as.list(s)[[1]]))
-  }
-}
 
 #'
 #' Ops Generics:
@@ -65,13 +44,13 @@ function() {
 #' ‘"&"’, ‘"|"’
 #'
 #' Bonus Operators: ‘"**"’
-setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic, 0, e2))
-setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .binops.fun(e1, 0))
-setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
-setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
-setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .binops.fun(e1,e2))
-setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .binops.fun(e1,e2))
-setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .binops.fun(e1,e2))
+setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,0,e2))
+setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binop(.Generic,e1,0))
+setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
 
 #'
 #' Math Generics:
@@ -82,23 +61,20 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .bin
 #' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
 #' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
 #' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
-setMethod("Math", signature(x = "H2OFrame"), function(x) .unops.fun(x))
+setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unop(.Generic,x) })
 
 #'
 #' Math2 Generics:
 #'
 #' ‘"round"’, ‘"signif"’
-setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .varops.fun(x, digits))
+setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.varop(.Generic,x,digits))
 
 #'
 #' Summary Generics:
 #'
 #' ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
-  ast <- .varops.fun(x, ..., na.rm)
-#  ID  <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  ID <- ifelse(ID == "Last.value", ID, ast@key)
+  ast <- .h2o.varop(.Generic, x, ..., na.rm)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast, ID = ID, rID = 'ast')
   ast
