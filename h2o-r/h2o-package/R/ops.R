@@ -91,7 +91,9 @@ setMethod("is.na", "H2OFrame", function(x) .h2o.unop("is.na", x) )
 setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )
 setMethod("log",   "H2OFrame", function(x, ...) .h2o.varop("log", x, ...))
 setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))
-
+xorsum <- function(x, ..., na.rm=TRUE) UseMethod("xorsum")
+xorsum.H2OFrame <- function(x, ...,na.rm=TRUE) .h2o.varop("xorsum", x, ..., na.rm)
+#setMethod("xorsum","H2OFrame", function(x, ...) .h2o.varop("xorsum", x, ...))
 
 
 ## WORK IN PROGRESS: Get these to work? (if possible...)

@@ -140,7 +140,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSApply());
 //    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
-//    putPrefix(new ASTXorSum ());
+    putPrefix(new ASTXorSum ());
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
@@ -2271,38 +2271,39 @@ class ASTLs extends ASTOp {
 
 // WIP
 
-//class ASTXorSum extends ASTReducerOp { ASTXorSum() {super(0,false); }
-//  @Override String opStr(){ return "xorsum";}
-//  @Override ASTOp make() {return new ASTXorSum();}
-//  @Override double op(double d0, double d1) {
-//    long d0Bits = Double.doubleToLongBits(d0);
-//    long d1Bits = Double.doubleToLongBits(d1);
-//    long xorsumBits = d0Bits ^ d1Bits;
-//    // just need to not get inf or nan. If we zero the upper 4 bits, we won't
-//    final long ZERO_SOME_SIGN_EXP = 0x0fffffffffffffffL;
-//    xorsumBits = xorsumBits & ZERO_SOME_SIGN_EXP;
-//    double xorsum = Double.longBitsToDouble(xorsumBits);
-//    return xorsum;
-//  }
-//  @Override double[] map(Env env, double[] in, double[] out) {
-//    if (out == null || out.length < 1) out = new double[1];
-//    long xorsumBits = 0;
-//    long vBits;
-//    // for dp ieee 754 , sign and exp are the high 12 bits
-//    // We don't want infinity or nan, because h2o will return a string.
-//    double xorsum = 0;
-//    for (double v : in) {
-//      vBits = Double.doubleToLongBits(v);
-//      xorsumBits = xorsumBits ^ vBits;
-//    }
-//    // just need to not get inf or nan. If we zero the upper 4 bits, we won't
-//    final long ZERO_SOME_SIGN_EXP = 0x0fffffffffffffffL;
-//    xorsumBits = xorsumBits & ZERO_SOME_SIGN_EXP;
-//    xorsum = Double.longBitsToDouble(xorsumBits);
-//    out[0] = xorsum;
-//    return out;
-//  }
-//}
+class ASTXorSum extends ASTReducerOp {
+
+  ASTXorSum() {super(0); }
+  @Override String opStr(){ return "xorsum";}
+  @Override ASTOp make() {return new ASTXorSum();}
+  @Override double op(double d0, double d1) {
+    long d0Bits = Double.doubleToLongBits(d0);
+    long d1Bits = Double.doubleToLongBits(d1);
+    long xorsumBits = d0Bits ^ d1Bits;
+    // just need to not get inf or nan. If we zero the upper 4 bits, we won't
+    final long ZERO_SOME_SIGN_EXP = 0x0fffffffffffffffL;
+    xorsumBits = xorsumBits & ZERO_SOME_SIGN_EXP;
+    return Double.longBitsToDouble(xorsumBits);
+  }
+  @Override double[] map(Env env, double[] in, double[] out, AST[] args) {
+    if (out == null || out.length < 1) out = new double[1];
+    long xorsumBits = 0;
+    long vBits;
+    // for dp ieee 754 , sign and exp are the high 12 bits
+    // We don't want infinity or nan, because h2o will return a string.
+    double xorsum = 0;
+    for (double v : in) {
+      vBits = Double.doubleToLongBits(v);
+      xorsumBits = xorsumBits ^ vBits;
+    }
+    // just need to not get inf or nan. If we zero the upper 4 bits, we won't
+    final long ZERO_SOME_SIGN_EXP = 0x0fffffffffffffffL;
+    xorsumBits = xorsumBits & ZERO_SOME_SIGN_EXP;
+    xorsum = Double.longBitsToDouble(xorsumBits);
+    out[0] = xorsum;
+    return out;
+  }
+}
 
 
 // Legacy Items: On the chopping block
