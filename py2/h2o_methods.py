@@ -8,6 +8,8 @@ import h2o_browse as h2b
 from h2o_objects import H2O
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sandbox_name, log
 
+import urllib
+
 # print "h2o_methods"
 
 # this is done before import h2o_ray, which imports h2o_methods!
@@ -93,35 +95,28 @@ def remove_all_keys(self, timeoutSecs=120):
     return self.do_json_request('RemoveAll.json', timeout=timeoutSecs)
 
 def rapids(self, timeoutSecs=120, **kwargs):
+    # FIX! assume both of these are strings for now, not lists
+    if 'ast' in kwargs: 
+        assert isinstance(kwargs['ast'], basestring), "only string assumed? %s" % ast
+    if 'funs' in kwargs: 
+        assert isinstance(kwargs['funs'], basestring), "only string assumed? %s" % funs
+
     params_dict = {
         'ast': None,
-        'fun': None,
+        'funs': None,
     }
 
-    def quotewrap(ast):
+    def urlencode(ast):
         if ast not in kwargs: return None
         if not kwargs[ast]: return None
-        
         astv = kwargs[ast]
-        r1 = re.compile(r"'.*'$") # surrounded with single quote
-        r2 = re.compile(r'".*"$') # surrounded with double quote
-        if r1.match(astv):
-            pass
-        elif r2.match(astv):
-            pass
-        elif "'" in astv and '"' in astv:
-            raise Exception("Mixed single and double quote in ast, but not wrapped with one or the other %s" % astv)
-        elif "'" in astv: # can wrap in double quote
-            astv = '"' + astv + '"'
-        else: # can wrap in single quote
-            astv = "'" + astv + "'"
+        astv = urllib.quote(astv)
         print "astv:", astv
         return astv
-    
 
     # surround the ast with single quote if not there?
-    kwargs['ast'] = quotewrap('ast')
-    kwargs['fun'] = quotewrap('fun')
+    kwargs['ast'] = urlencode('ast')
+    kwargs['funs'] = urlencode('funs')
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
 
     result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)

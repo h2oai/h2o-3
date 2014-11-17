@@ -10,8 +10,10 @@ from h2o_test import dump_json, verboseprint
 exprList = [
         # !x means assign to x
         # $TRUE means remove NAs (this is default)
-        '(= !x (1))',
-        '(= !x (sum ([ r1 "null" #0) $TRUE))',
+        # '',
+        '(= !keys (ls))',
+        '(= !x #1)',
+        # '(= !x (sum ([ r1 "null" #0) $TRUE))',
         # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))',
         # '(= !x (xorsum ([ r1 "null" (: #0 #0)) $TRUE))',
         ]
@@ -131,9 +133,10 @@ class Basic(unittest.TestCase):
                     for r in range(10):
                         start = time.time()
                         execResult = h2o_cmd.runExec(ast=execExpr, timeoutSecs=30)
+                        print r, 'exec took', time.time() - start, 'seconds'
                         fpResult = execResult['scalar']
                         # (execResult, fpResult) = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey='h', timeoutSecs=300)
-                        print r, 'exec took', time.time() - start, 'seconds'
+                        # print dump_json(h2o.n0.frames(key="r1"))
                         print r, "execResult:", h2o.dump_json(execResult)
                         h2o_cmd.runStoreView()
 

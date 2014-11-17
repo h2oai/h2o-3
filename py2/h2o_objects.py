@@ -188,8 +188,11 @@ class H2O(object):
         else:
             paramsStr = ''
 
-        if extraComment:
-            log('Start ' + url + paramsStr, comment=extraComment)
+        extraComment2 = repr(postData)+";" if cmd=='post' else ""
+        extraComment2 += extraComment if extraComment else ""
+
+        if len(extraComment2) > 0:
+            log('Start ' + url + paramsStr, comment=extraComment2)
         else:
             log('Start ' + url + paramsStr)
 

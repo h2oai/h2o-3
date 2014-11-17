@@ -13,7 +13,7 @@ def pickRandKMeansParams(paramDict, params):
         params[randomKey] = randomValue
 
 
-class KmeansOutput(object):
+class KMeansOutput(object):
     def __init__(self, output):
         assert isinstance(output, dict)
         for k,v in output.iteritems():
@@ -21,9 +21,6 @@ class KmeansOutput(object):
 
 # parameters is what I sent to kmeans?
 # might not be full set?
-
-def assertEqual(a,b):
-    asse
 def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     # labels should have the ignored columns removed
     # numCols should be decremented by the ignored columns
@@ -32,7 +29,7 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     output = modelResult['models'][0]['output']
     # print "model output:", dump_json(output)
     # find out what results we get
-    ko = self.KmeansOutput(output)
+    ko = KMeansOutput(output)
     if 1==0:
         for attr, value in ko.__dict__.iteritems():
             # create some python prints to use
