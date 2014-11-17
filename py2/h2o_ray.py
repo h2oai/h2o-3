@@ -222,7 +222,7 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
     When find_compatible_models is implemented then the top level 
     dict will also contain a "models" list.
     '''
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', False)
     
     if key:
         result = self.do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
@@ -300,7 +300,7 @@ def delete_frames(self, timeoutSecs=60, **kwargs):
 
 
 # TODO: remove .json
-def model_builders(self, algo=None, parameters=None, timeoutSecs=10, **kwargs):
+def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     '''
     Return a model builder or all of the model builders known to the
     h2o cluster.  The model builders are contained in a dictionary
@@ -312,22 +312,21 @@ def model_builders(self, algo=None, parameters=None, timeoutSecs=10, **kwargs):
     if parameters = True, return the parameters?
     '''
     params_dict = {}
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', False)
 
     request = '2/ModelBuilders.json' 
     if algo:
-        request + "/" + algo
-
-    if parameters:
-        request + "/parameters"
+        request += "/" + algo
 
     result = self.do_json_request(request, timeout=timeoutSecs, params=params_dict)
+    verboseprint(request, "result:", dump_json(result))
     return result
 
 
 def validate_model_parameters(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
     '''
-    Check a dictionary of model builder parameters on the h2o cluster using the given algorithm and model parameters.
+    Check a dictionary of model builder parameters on the h2o cluster 
+    using the given algorithm and model parameters.
     '''
     assert algo is not None, '"algo" parameter is null'
     # Allow this now: assert training_frame is not None, '"training_frame" parameter is null'
@@ -342,18 +341,28 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     if training_frame is not None:
         frames = self.frames(key=training_frame)
         assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+
+        key_name = frames['frames'][0]['key']['name']
+        assert key_name==training_frame, \
+            "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
+
         parameters['training_frame'] = training_frame
 
     # TODO: add parameter existence checks
     # TODO: add parameter value validation
-    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
+
+    # FIX! why ignoreH2oError here?
+    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', 
+        timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
 
     verboseprint("model parameters validation: " + repr(result))
     return result
 
 
-def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
+# should training_frame be required? or in parameters. same with destination_key
+# because validation_frame is in parameters
+def build_model(self, algo, training_frame, parameters, destination_key=None, 
+    timeoutSecs=60, asynchronous=False, **kwargs):
     '''
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
@@ -362,6 +371,7 @@ def build_model(self, algo, training_frame, parameters, destination_key = None, 
     assert training_frame is not None, '"training_frame" parameter is null'
     assert parameters is not None, '"parameters" parameter is null'
 
+    # why always check that the algo is in here?
     model_builders = self.model_builders(timeoutSecs=timeoutSecs)
     assert model_builders is not None, "/ModelBuilders REST call failed"
     assert algo in model_builders['model_builders']
@@ -370,25 +380,33 @@ def build_model(self, algo, training_frame, parameters, destination_key = None, 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=training_frame)
     assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-    assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+
+    key_name = frames['frames'][0]['key']['name'] 
+    assert key_name==training_frame, \
+        "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
     parameters['training_frame'] = training_frame
 
     if destination_key is not None:
         parameters['destination_key'] = destination_key
-    result = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
+
+    result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
+        timeout=timeoutSecs, postData=parameters)
 
     if asynchronous:
-        return result
-    elif 'validation_error_count' in result:
+        result = result1
+    elif 'validation_error_count' in result1:
+        h2p.yellow_print("parameter error in model_builders")
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
-        return result
+        result = result1
     else:
-        job = result['jobs'][0]
+        job = result1['jobs'][0]
         job_key = job['key']['name']
         verboseprint("model building job_key: " + repr(job_key))
-        job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
-        return job_json
+        result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+
+    verboseprint("result:", result)
+    return result
 
 
 def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
@@ -458,6 +476,8 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
         result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+    
+    verboseprint("models result:", dump_json(result))
     return result
 
 
@@ -472,6 +492,8 @@ def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
     # TODO: look for what?
     if not ignoreMissingKey and 'f00b4r' in result:
         raise ValueError('Model key not found: ' + key)
+
+    verboseprint("delete_model result:", dump_json(result))
     return result
 
 

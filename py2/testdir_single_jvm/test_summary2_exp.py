@@ -85,6 +85,7 @@ class Basic(unittest.TestCase):
 
         class Column(object):
             def __init__(self, column):
+                assert isinstance(column, dict)
                 for k,v in column.iteritems():
                     setattr(self, k, v) # achieves self.k = v
 
