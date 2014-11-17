@@ -20,12 +20,13 @@ class Basic(unittest.TestCase):
 
     def test_parse_manyfile_hack(self):
 
-        for trial in range(50):
+        for trial in range(2):
             importFolderPath = "/home/0xdiag/datasets/manyfiles-nflx-gz"
 
             importList = []
-            maxi = 2
-            for i in range(1, maxi+1):
+            maxi = 50
+            # 4-9 don't exist?
+            for i in range(10, 10+maxi+1):
                 csvFilename = "file_%s.dat.gz" % i
                 csvPathname = importFolderPath + "/" + csvFilename
                 importResult = h2o.n0.import_files(path=csvPathname)
