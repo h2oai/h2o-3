@@ -80,6 +80,8 @@ class Basic(unittest.TestCase):
             # this prints too
             tuplesSorted, iters, mse, names = \
                 h2o_kmeans.simpleCheckKMeans(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
+            
+            h2o_cmd.runStoreView()
 
             # zip with * is it's own inverse here. It's sorted by centers for easy comparisons
             ids, mses, rows, clusters = zip(*tuplesSorted)
@@ -146,6 +148,8 @@ class Basic(unittest.TestCase):
                 timeoutSecs=10) 
 
             modelResult = h2o.n0.models(key=model_key)
+
+            h2o_cmd.runStoreView()
 
             tuplesSorted, iters, mse, names = \
                 h2o_kmeans.simpleCheckKMeans(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)

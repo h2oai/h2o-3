@@ -1,20 +1,43 @@
 
 import h2o_nodes
+from h2o_test import dump_json
 
-def runStoreView(*args, **kwargs):
-    print "WARNING: faking store view"
-    a = {'keys': {}}
+def runStoreView(node=None, **kwargs):
+    if not node: node = h2o_nodes.nodes[0]
+
+    print "\nStoreView:"
+    # FIX! are there keys other than frames and models
+    a = node.frames()
+    # print "storeview frames:", dump_json(a)
+    frameList = [af['key']['name'] for af in a['frames']]
+
+    for f in frameList:
+        print "frame:", f
+    print "# of frames:", len(frameList)
+
+    b = node.models()
+    # print "storeview models:", dump_json(b)
+    modelList = [bm['key'] for bm in b['models']]
+    for m in modelList:
+        print "model:", m
+    print "# of models:", len(modelList)
+    
+    return frameList + modelList
+
+def runExec(node=None, **kwargs):
+    if not node: node = h2o_nodes.nodes[0]
+    a = node.rapids(**kwargs)
     return a
 
-def runSummary(node=None, key=None, timeoutSecs=30, **kwargs):
+def runSummary(node=None, key=None, **kwargs):
     if not key: raise Exception('No key for Summary')
     if not node: node = h2o_nodes.nodes[0]
-    return node.summary(key, timeoutSecs=timeoutSecs, **kwargs)
+    return node.summary(key, **kwargs)
 
-def runInspect(node=None, key=None, timeoutSecs=30, verbose=False, **kwargs):
+def runInspect(node=None, key=None, verbose=False, **kwargs):
     if not key: raise Exception('No key for Inspect')
     if not node: node = h2o_nodes.nodes[0]
-    a = node.frames(key, timeoutSecs=timeoutSecs, **kwargs)
+    a = node.frames(key, **kwargs)
     if verbose:
         print "inspect of %s:" % key, dump_json(a)
     return a
