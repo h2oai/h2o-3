@@ -11,11 +11,13 @@ exprList = [
         # !x means assign to x
         # $TRUE means remove NAs (this is default)
         # '',
-        '(= !keys (ls))',
-        '(= !x #1)',
-        # '(= !x (sum ([ r1 "null" #0) $TRUE))',
+        # '(= !keys (ls))',
+        # '(= !x #1)',
+        # r1 is unimplemented $r1 works
+        # '(= !x (sum ([ $r1 "null" #0) $TRUE))',
         # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))',
-        # '(= !x (xorsum ([ r1 "null" (: #0 #0)) $TRUE))',
+        '(= !x (xorsum ([ $r1 "null" #0) $TRUE))',
+        # '(= !x (xorsum ([ $r1 "null" (: #0 #0)) $TRUE))',
         ]
 
 ROWS = 100000

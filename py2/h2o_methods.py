@@ -106,19 +106,7 @@ def rapids(self, timeoutSecs=120, **kwargs):
         'funs': None,
     }
 
-    def urlencode(ast):
-        if ast not in kwargs: return None
-        if not kwargs[ast]: return None
-        astv = kwargs[ast]
-        astv = urllib.quote(astv)
-        print "astv:", astv
-        return astv
-
-    # surround the ast with single quote if not there?
-    kwargs['ast'] = urlencode('ast')
-    kwargs['funs'] = urlencode('funs')
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-
     result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
     return result
 
