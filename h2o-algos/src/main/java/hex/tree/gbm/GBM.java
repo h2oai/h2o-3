@@ -300,7 +300,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // DEBUG: Print the generated K trees
       //printGenerateTrees(ktrees);
       // Grow the model by K-trees
-      _model._output.addKTrees(ktrees);
+      double mse_train = Double.NaN;
+      double mse_test  = Double.NaN;
+      _model._output.addKTrees(ktrees, mse_train, mse_test);
     }
 
     // ---
@@ -371,8 +373,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms ) {
-      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
+    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms, double mse_train, double mse_test ) {
+      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this,mse_train,mse_test));
     }
 
   }
