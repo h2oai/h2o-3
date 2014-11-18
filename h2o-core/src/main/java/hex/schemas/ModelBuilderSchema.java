@@ -150,7 +150,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
-    ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema());
+    ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema().fillFromImpl((Model.Parameters)parameters.createImpl()));
     return ab;
   }
 
