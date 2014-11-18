@@ -12,23 +12,23 @@ import java.util.HashSet;
  *
  * Trees have a Lisp-like structure with the following "reserved" special characters:
  *
- *     '('  signals the parser to begin a function application, next token is an identifier or a (single char) flag
- *     '#'  signals the parser to parse a double: attached_token
- *     '"'  signals the parser to parse a String (double quote): attached_token
- *     "'"  signals the parser to parse a String (single quote): attached_token
- *     '$'  signals a variable lookup: attached_token
- *     '!'  signals a variable set: attached_token
- *     '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
- *     'f'  signals the parser to a parse a function: (f  name args body).
- *     '='  signals the parser to assign the RHS to the LHS.
- *     'g'  signals &gt;
- *     'G'  signals &gt;=
- *     'l'  signals &lt;
- *     'L'  signals &lt;=
- *     'n'  signals ==
- *     'N'  signals !=
- *     '_'  signals negation (!)
- *     '{'  signals the parser to begin parsing a ';'-separated array of things (ASTSeries is the resulting AST)
+ *     '('   signals the parser to parse a function name, the next token is an identifier or a (single char) flag
+ *     '#'   signals the parser to parse a double: attached_token
+ *     '"'   signals the parser to parse a String (double quote): attached_token
+ *     "'"   signals the parser to parse a String (single quote): attached_token
+ *     '$'   signals a variable lookup: attached_token
+ *     '!'   signals a variable set: attached_token
+ *     '['   signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
+ *     'def' signals the parser to a parse a function: (def name args body).
+ *     '='   signals the parser to assign the RHS to the LHS.
+ *     'g'   signals &gt;
+ *     'G'   signals &gt;=
+ *     'l'   signals &lt;
+ *     'L'   signals &lt;=
+ *     'n'   signals ==
+ *     'N'   signals !=
+ *     '_'   signals negation (!)
+ *     '{'   signals the parser to begin parsing a ';'-separated array of flagged inputs (#, $, ", ') (ASTSeries is the resulting AST)
  *
  * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
  * variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
