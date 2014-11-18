@@ -1,14 +1,11 @@
 package hex.tree.gbm;
 
-import hex.Model;
 import hex.schemas.GBMModelV2;
 import hex.tree.*;
 import java.util.Arrays;
-import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
@@ -31,7 +28,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
   public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }
 
-  // Default publically visible Schema is V2
+  // Default publicly visible Schema is V2
   @Override public ModelSchema schema() { return new GBMModelV2(); }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,

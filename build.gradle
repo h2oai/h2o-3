@@ -128,7 +128,7 @@ subprojects {
 }
 
 // Include support for S3 syncing
-apply from: "gradle/s3sync.gradle"
+//apply from: "gradle/s3sync.gradle"
 
 // This task is used by the Jenkins on test.0xdata.com.
 //
