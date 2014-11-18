@@ -840,9 +840,10 @@ setMethod("is.factor", "H2OParsedData", function(x) { .h2o.unop("is.factor", x) 
 # Summary Statistics Operations
 #-----------------------------------------------------------------------------------------------------------------------
 
-mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
-var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else stats::var(x,y,na.rm,use)
-sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
+## Replaced by setMethod
+# mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
+# var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else stats::var(x,y,na.rm,use)
+# sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
 
 #'
 #' Mean of a column
@@ -860,8 +861,7 @@ sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
 #' mean.H2OParsedData(prostate.hex$AGE)
 #' @name mean.h2o
-mean.H2OParsedData<-
-function(x, trim = 0, na.rm = FALSE, ...) {
+setMethod("mean", "H2OParsedData", function(x, trim = 0, na.rm = FALSE, ...) {
   if(ncol(x) != 1) stop("Can only compute the mean of a single column")
   if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
   if (trim < 0) trim <- 0
@@ -870,14 +870,13 @@ function(x, trim = 0, na.rm = FALSE, ...) {
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
   ast.mean
-}
+})
 
 #'
 #" Mean of a column, backed by AST.
 #" Expression is evaluated <=> this operation is top-level.
 #' @rdname mean.h2o
-mean.H2OFrame<-
-function(x, trim = 0, na.rm = FALSE, ...) {
+setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   if (trim != 0) stop("Unimplemented: trim must be 0", call.=FALSE)
   if (trim < 0) trim <- 0
   if (trim > .5) trim <- .5
@@ -887,7 +886,7 @@ function(x, trim = 0, na.rm = FALSE, ...) {
   ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
   ast.mean
-}
+})
 
 #'
 #" Mode of a enum or int column.
@@ -917,29 +916,33 @@ function(x) {
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
 #' var.H2OParsedData(prostate.hex$AGE)
 #' @name var.h2o
-var.H2OParsedData<-
-function(x, y = NULL, na.rm = FALSE, use = "everything") {
-  if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+setMethod("var", "H2OParsedData",
+          function(x, y = NULL, na.rm = FALSE, use) {
+  if(!missing(use)){
+    if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+  } else use <- "everything"
   ast.var <- .h2o.varop("var", x, y, na.rm, use)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.var, ID = ID, rID = 'ast.var')
   ast.var
-}
+})
 
 #'
 #" Variance of a column, backed by AST.
 #" Expression is evaluated <=> this operation is top-level.
 #' @rdname var.h2o
-var.H2OFrame<-
-function(x, y = NULL, na.rm = FALSE, use = "everything") {
-  if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+setMethod("var", "H2OFrame",
+          function(x, y = NULL, na.rm = FALSE, use) {
+  if(!missing(use)){
+    if (use %in% c("pairwise.complete.obs", "na.or.complete")) stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+  } else use <- "everthing"
   ast.var <- .h2o.varop("var", x, y, na.rm, use)
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(ID)) > 1) ID <- "Last.value"
   ID <- ifelse(ID == "Last.value", ID, ast.var@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.var, ID = ID, rID = 'ast.var')
   ast.var
-}
+})
 
 #'
 #' Standard Deviation of a column of data.
@@ -955,28 +958,26 @@ function(x, y = NULL, na.rm = FALSE, use = "everything") {
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
 #' sd.H2OParsedData(prostate.hex$AGE)
 #' @name sd.h2o
-sd.H2OParsedData<-
-function(x, na.rm = FALSE) {
+setMethod("sd", "H2OParsedData", function(x, na.rm = FALSE) {
   if(ncol(x) != 1) stop("Can only compute sd of a single column.")
   ast.sd <- .h2o.varop("sd", x, na.rm)
   ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
   ast.sd
-}
+})
 
 #'
 #" Standard Deviation of a column, backed by AST.
 #" Expression is evaluated <=> this operation is top-level.
 #' @rdname sd.h2o
-sd.H2OFrame<-
-function(x, na.rm = FALSE) {
+setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
   ast.sd <- .h2o.varop("sd", x, na.rm)
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(ID)) > 1) ID <- "Last.value"
   ID <- ifelse(ID == "Last.value", ID, ast.sd@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.sd, ID = ID, rID = 'ast.sd')
   ast.sd
-}
+})
 
 #'
 #' Scaling of an H2O Key
