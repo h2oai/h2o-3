@@ -330,7 +330,12 @@ class ASTRound extends ASTUniPrefixOp {
     AST ary = E.parse();
     // Get the digits
     if (!(E.skipWS().hasNext())) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    _digits = (int)((ASTNum)(E.parse())).dbl();
+    try {
+      _digits = (int) ((ASTNum) (E.parse())).dbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Expected a number for `digits` argument.");
+    }
     ASTRound res = (ASTRound) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -379,7 +384,12 @@ class ASTSignif extends ASTUniPrefixOp {
     AST ary = E.parse();
     if (!(E.skipWS().hasNext())) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     // Get the digits
-    _digits = (int)((ASTNum)(E.parse())).dbl();
+    try {
+      _digits = (int) ((ASTNum) (E.parse())).dbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Expected a double for `digits` argument.");
+    }
     ASTRound res = (ASTRound) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -550,9 +560,20 @@ class ASTScale extends ASTUniPrefixOp {
       String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
       if (centers == null) {
         // means `center` is boolean
-        AST a = E._env.lookup((ASTId)E.skipWS().parse());
-        _center = ((ASTNum)a).dbl() == 1;
-        _centers = null;
+        AST a;
+        try {
+          a = E._env.lookup((ASTId) E.skipWS().parse());
+        } catch (ClassCastException e) {
+          e.printStackTrace();
+          throw new IllegalArgumentException("Expected to get an ASTId. Badly formed AST.");
+        }
+        try {
+          _center = ((ASTNum) a).dbl() == 1;
+          _centers = null;
+        } catch (ClassCastException e) {
+          e.printStackTrace();
+          throw new IllegalArgumentException("Expected to get a number for the `center` argument.");
+        }
       } else {
         for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
         _centers = new double[centers.length];
@@ -563,9 +584,20 @@ class ASTScale extends ASTUniPrefixOp {
       String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
       if (centers == null) {
         // means `scale` is boolean
-        AST a = E._env.lookup((ASTId)E.skipWS().parse());
-        _scale = ((ASTNum)a).dbl() == 1;
-        _scales = null;
+        AST a;
+        try {
+          a = E._env.lookup((ASTId) E.skipWS().parse());
+        } catch (ClassCastException e) {
+          e.printStackTrace();
+          throw new IllegalArgumentException("Expected to get an ASTId. Badly formed AST.");
+        }
+        try {
+          _scale = ((ASTNum) a).dbl() == 1;
+          _scales = null;
+        } catch (ClassCastException e) {
+          e.printStackTrace();
+          throw new IllegalArgumentException("Expected to get a number for the `scale` argument.");
+        }
       } else {
         for (int i = 0; i < centers.length; ++i) centers[i] = centers[i].replace("\"", "").replace("\'", "");
         _scales = new double[centers.length];
@@ -1290,7 +1322,13 @@ class ASTMatch extends ASTUniPrefixOp {
     // cleanup _matches
     for (int i = 0; i < _matches.length; ++i) _matches[i] = _matches[i].replace("\"", "").replace("\'", "");
     // `nomatch` is just a number in case no match
-    ASTNum nomatch = (ASTNum)E.skipWS().parse(); _nomatch = nomatch.dbl();
+    try {
+      ASTNum nomatch = (ASTNum) E.skipWS().parse();
+      _nomatch = nomatch.dbl();
+    } catch(ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `nomatch` expected a number.");
+    }
     // drop the incomparables arg for now ...
     AST incomp = E.skipWS().parse();
     ASTMatch res = (ASTMatch) clone();
@@ -1365,7 +1403,12 @@ class ASTSeqLen extends ASTUniPrefixOp {
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
   @Override ASTOp make() { return new ASTSeqLen(); }
   @Override ASTSeqLen parse_impl(Exec E) {
-    _length = E.nextDbl();
+    try {
+      _length = E.nextDbl();
+    } catch(ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `n` expected to be a number.");
+    }
     ASTSeqLen res = (ASTSeqLen) clone();
     res._asts = new AST[]{};
     return res;
@@ -1393,11 +1436,29 @@ class ASTSeq extends ASTUniPrefixOp {
     // *NOTE*: This function creates a frame, there is no input frame!
 //    AST ary = E.parse();
     // Get the from
-    _from = E.nextDbl();
+    try {
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST. Missing `from` argument.");
+      _from = E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `from` expected to be a number.");
+    }
     // Get the to
-    _to = E.nextDbl();
+    try {
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST. Missing `to` argument.");
+      _to = E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `to` expected to be a number.");
+    }
     // Get the by
-    _by = E.nextDbl();
+    try {
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST. Missing `by` argument.");
+      _by = E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `by` expected to be a number.");
+    }
     // Finish the rest
     ASTSeq res = (ASTSeq) clone();
     res._asts = new AST[]{}; // in reverse order so they appear correctly on the stack.
@@ -1528,7 +1589,12 @@ class ASTQtile extends ASTUniPrefixOp {
     AST b = E._env.lookup((ASTId)E.skipWS().parse());
     _names = ((ASTNum)b).dbl() == 1;
     //Get the type
-    _type = (int)((ASTNum)E.skipWS().parse()).dbl();
+    try {
+      _type = (int) ((ASTNum) E.skipWS().parse()).dbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `type` expected to be a number.");
+    }
     // Finish the rest
     ASTQtile res = (ASTQtile) clone();
     res._asts = seq == null ? new AST[]{ary} : new AST[]{ary, seq}; // in reverse order so they appear correctly on the stack.
@@ -1620,11 +1686,26 @@ class ASTRunif extends ASTUniPrefixOp {
     // peel off the ary
     AST ary = E.parse();
     // parse the min
-    _min = E.nextDbl();
+    try {
+      _min = E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `min` expected to be a number.");
+    }
     // parse the max
-    _max = E.nextDbl();
+    try {
+      _max = E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `max` expected to be a number.");
+    }
     // parse the seed
-    _seed = (long)E.nextDbl();
+    try {
+      _seed = (long) E.nextDbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `seed` expected to be a number.");
+    }
     ASTRunif res = (ASTRunif) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -1689,9 +1770,20 @@ class ASTVar extends ASTUniPrefixOp {
     if (y instanceof ASTString && ((ASTString)y)._s.equals("null")) {_ynull = true; y = ary; }
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.skipWS().parse());
-    _narm = ((ASTNum)a).dbl() == 1;
+    try {
+      _narm = ((ASTNum) a).dbl() == 1;
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `na.rm` expected to be a number.");
+    }
     // Get the `use`
-    ASTString use = (ASTString) E.skipWS().parse();
+    ASTString use;
+    try {
+      use = (ASTString) E.skipWS().parse();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `use` expected to be a string.");
+    }
     // Finish the rest
     ASTVar res = (ASTVar) clone();
     res._asts = new AST[]{use,y,ary}; // in reverse order so they appear correctly on the stack.
@@ -1826,10 +1918,20 @@ class ASTMean extends ASTUniPrefixOp {
     // Get the ary
     AST ary = E.parse();
     // Get the trim
-    _trim = ((ASTNum)(E.skipWS().parse())).dbl();
+    try {
+      _trim = ((ASTNum) (E.skipWS().parse())).dbl();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `trim` expected to be a number.");
+    }
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.skipWS().parse());
-    _narm = ((ASTNum)a).dbl() == 1;
+    try {
+      _narm = ((ASTNum) a).dbl() == 1;
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `na.rm` expected to be a number.");
+    }
     // Finish the rest
     ASTMean res = (ASTMean) clone();
     res._asts = new AST[]{ary};
@@ -2129,25 +2231,52 @@ class ASTCut extends ASTUniPrefixOp {
   ASTCut parse_impl(Exec E) {
     AST ary = E.parse();
     // breaks first
-    String[] cuts = E.skipWS().peek() == '{'
-            ? E.xpeek('{').parseString('}').split(";")
-            : E.peek() == '#' ? new String[]{Double.toString( ((ASTNum)E.parse()).dbl() )}
-            : new String[]{E.parseString(E.peekPlus())};
+    String[] cuts;
+    try {
+      cuts = E.skipWS().peek() == '{'
+              ? E.xpeek('{').parseString('}').split(";")
+              : E.peek() == '#' ? new String[]{Double.toString(((ASTNum) E.parse()).dbl())}
+              : new String[]{E.parseString(E.peekPlus())};
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `breaks` was malformed. Bad AST input.");
+    }
     for (int i = 0; i < cuts.length; ++i) cuts[i] = cuts[i].replace("\"", "").replace("\'", "");
     _cuts = new double[cuts.length];
     for (int i = 0; i < cuts.length; ++i) _cuts[i] = Double.valueOf(cuts[i]);
     // labels second
-    _labels = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    try {
+      _labels = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `labels` was malformed. Bad AST input.");
+    }
     // cleanup _labels
     for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
     if (_labels.length==1 && _labels[0].equals("null")) _labels = null;
     AST inc_lowest = E.skipWS().parse();
     inc_lowest = E._env.lookup((ASTId)inc_lowest);
-    _includelowest = ((ASTNum)inc_lowest).dbl() == 1;
+    try {
+      _includelowest = ((ASTNum) inc_lowest).dbl() == 1;
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `include.lowest` expected to be TRUE/FALSE.");
+    }
     AST right = E.skipWS().parse();
     right = E._env.lookup((ASTId)right);
-    _right = ((ASTNum)right).dbl() == 1;
-    ASTNum diglab = (ASTNum)E.skipWS().parse();
+    try {
+      _right = ((ASTNum) right).dbl() == 1;
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `right` expected to be a TRUE/FALSE.");
+    }
+    ASTNum diglab;
+    try {
+      diglab = (ASTNum) E.skipWS().parse();
+    } catch (ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `dig.lab` expected to be a number.");
+    }
     _diglab = diglab.dbl();
     _diglab = _diglab >= 12 ? 12 : _diglab; // cap at 12 digits
     ASTCut res = (ASTCut) clone();

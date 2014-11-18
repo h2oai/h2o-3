@@ -175,7 +175,12 @@ class ASTNum extends AST {
   ASTNum(double d) { _d = d; }
   ASTNum parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    return new ASTNum(Double.valueOf(E.parseID()));
+    try {
+      return new ASTNum(Double.valueOf(E.parseID()));
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Unexpected numerical argument. Badly formed AST.");
+    }
   }
   @Override public String toString() { return Double.toString(_d); }
   @Override void exec(Env e) { e.push(new ValNum(_d)); }
