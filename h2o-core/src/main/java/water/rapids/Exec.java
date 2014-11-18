@@ -122,7 +122,7 @@ public class Exec extends Iced {
     StringBuilder sb = new StringBuilder();
     if (peek() == '(') {_x++; return parseID(); } // eat the '('
     if ( isSpecial(peek())) { return sb.append((char)_ast[_x++]).toString(); } // if attached_token, then use parse_impl
-    while(_ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';') {  // while not WS...
+    while(_x < _ast.length && _ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';') {  // while not WS...
       sb.append((char)_ast[_x++]);
     }
     _x++; // skip a WS

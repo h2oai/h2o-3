@@ -236,6 +236,7 @@ abstract class ASTUniOp extends ASTOp {
   double op( double d ) { throw H2O.fail(); }
   protected ASTUniOp( String[] vars) { super(vars); }
   ASTUniOp parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST arg = E.parse();
     ASTUniOp res = (ASTUniOp) clone();
     res._asts = new AST[]{arg};
@@ -325,9 +326,11 @@ class ASTRound extends ASTUniPrefixOp {
   ASTRound() { super(new String[]{"round", "x", "digits"}); }
   @Override ASTRound parse_impl(Exec E) {
     // Get the ary
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     // Get the digits
-    _digits = (int)((ASTNum)(E.skipWS().parse())).dbl();
+    if (!(E.skipWS().hasNext())) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    _digits = (int)((ASTNum)(E.parse())).dbl();
     ASTRound res = (ASTRound) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -372,9 +375,11 @@ class ASTSignif extends ASTUniPrefixOp {
   ASTSignif() { super(new String[]{"signif", "x", "digits"}); }
   @Override ASTRound parse_impl(Exec E) {
     // Get the ary
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
+    if (!(E.skipWS().hasNext())) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     // Get the digits
-    _digits = (int)((ASTNum)(E.skipWS().parse())).dbl();
+    _digits = (int)((ASTNum)(E.parse())).dbl();
     ASTRound res = (ASTRound) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -531,6 +536,7 @@ class ASTScale extends ASTUniPrefixOp {
   @Override String opStr() { return "scale"; }
   @Override ASTOp make() {return new ASTScale();}
   ASTScale parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     parseArg(E, true);  // centers parse
     parseArg(E, false); // scales parse
@@ -540,7 +546,8 @@ class ASTScale extends ASTUniPrefixOp {
   }
   private void parseArg(Exec E, boolean center) {
     if (center) {
-      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
       if (centers == null) {
         // means `center` is boolean
         AST a = E._env.lookup((ASTId)E.skipWS().parse());
@@ -552,7 +559,8 @@ class ASTScale extends ASTUniPrefixOp {
         for (int i = 0; i < centers.length; ++i) _centers[i] = Double.valueOf(centers[i]);
       }
     } else {
-      String[] centers = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+      String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
       if (centers == null) {
         // means `scale` is boolean
         AST a = E._env.lookup((ASTId)E.skipWS().parse());
@@ -749,8 +757,10 @@ abstract class ASTBinOp extends ASTOp {
   ASTBinOp() { super(VARS2); } // binary ops are infix ops
 
   ASTBinOp parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
-    AST r = E.skipWS().parse();
+    if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    AST r = E.parse();
     ASTBinOp res = (ASTBinOp) clone();
     res._asts = new AST[]{l,r};
     return res;
@@ -1004,11 +1014,13 @@ abstract class ASTReducerOp extends ASTOp {
 
   ASTReducerOp parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     dblarys.add(ary);
     AST a;
     E.skipWS();
     while (true) {
+      if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
       a = E.skipWS().parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
@@ -1103,6 +1115,7 @@ class ASTCbind extends ASTUniPrefixOp {
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     dblarys.add(ary);
     AST a = null;
@@ -1239,8 +1252,10 @@ class ASTRename extends ASTUniPrefixOp {
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
   ASTRename parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
-    _newname = ((ASTString)E.skipWS().parse())._s;
+    if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    _newname = ((ASTString)E.parse())._s;
     ASTRename res = (ASTRename) clone();
     res._asts = new AST[]{ary};
     return res;
@@ -1267,9 +1282,11 @@ class ASTMatch extends ASTUniPrefixOp {
   @Override ASTOp make() { return new ASTMatch(); }
   ASTMatch parse_impl(Exec E) {
     // First parse out the `ary` arg
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     // The `table` arg
-    _matches = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
+    if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    _matches = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : new String[]{E.parseString(E.peekPlus())};
     // cleanup _matches
     for (int i = 0; i < _matches.length; ++i) _matches[i] = _matches[i].replace("\"", "").replace("\'", "");
     // `nomatch` is just a number in case no match
@@ -2272,7 +2289,6 @@ class ASTLs extends ASTOp {
 // WIP
 
 class ASTXorSum extends ASTReducerOp {
-
   ASTXorSum() {super(0); }
   @Override String opStr(){ return "xorsum";}
   @Override ASTOp make() {return new ASTXorSum();}
