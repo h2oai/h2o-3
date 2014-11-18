@@ -116,7 +116,7 @@ class Basic(unittest.TestCase):
             missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
             print "\n" + csvFilename
             # column 0?
-            summaryResult = h2o_cmd.runSummary(key=hex_key)
+            summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
             h2o.verboseprint("Summary2 summaryResult:", h2o.dump_json(summaryResult))
 
             # default_pctiles
@@ -203,8 +203,8 @@ class Basic(unittest.TestCase):
             # FIX! we should do an exec and compare using the exec quantile too
             compareActual = mn[0], pt[3], pt[5], pt[7], mx[0]
             h2p.green_print("min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
-            print "co.maxs co.label:", co.label, "(2 places):", mx
-            print "co.mins co.label:", co.label, "(2 places):", mn
+            print "co.label:", co.label, "co.maxs (2 places):", mx
+            print "co.label:", co.label, "co.mins (2 places):", mn
 
             trial += 1
             h2o.nodes[0].remove_all_keys()

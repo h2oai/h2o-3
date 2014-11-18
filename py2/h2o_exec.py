@@ -5,6 +5,62 @@ import h2o_nodes
 import h2o_browse as h2b
 from h2o_test import dump_json, verboseprint, check_sandbox_for_errors
 
+#********************************************************************************
+def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False):
+    if not node:
+        node = h2o_nodes.nodes[0]
+    kwargs = {'ast': execExpr} 
+    start = time.time()
+    resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
+    verboseprint('exec took', time.time() - start, 'seconds')
+    print "exec:", dump_json(resultExec)
+
+    # when do I get cols?
+
+    # "result": "1.0351050710011848E-300", 
+    # "scalar": 1.0351050710011848e-300, 
+    # "funstr": null, 
+
+    # "key": null, 
+    # "col_names": null, 
+    # "num_cols": 0, 
+    # "num_rows": 0, 
+
+    # "exception": null, 
+
+    # echoing?
+    # "string": null
+    # "funs": null, 
+    # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))", 
+
+    if 'cols' in resultExec and resultExec['cols']: # not null
+        if 'funstr' in resultExec and resultExec['funstr']: # not null
+            raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
+        else:
+            print "Frame return"
+            # if test said to look at a resultKey, it's should be in h2o k/v store
+            # inspect a result key?
+            # Should we get the key name from the exec return?
+            if resultKey is not None:
+                kwargs = {'ast': resultKey} 
+                resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
+                print "exec key result:", dump_json(resultExec)
+
+            # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
+            result = resultExec['cols'][0]['min']
+        
+    else: 
+        if 'funstr' in resultExec and resultExec['funstr']: # not null
+            print "function return"
+            result = resultExec['funstr']
+        else:
+            print "scalar return"
+            result = resultExec['scalar']
+            
+    return resultExec, result
+
+#********************************************************************************
+
 def checkForBadFP(value, name='min_value', nanOkay=False, infOkay=False, json=None):
     # if we passed the json, dump it for debug
     if 'Infinity' in str(value) and not infOkay:
@@ -95,44 +151,6 @@ def fill_in_expr_template(exprTemplate, colX=None, n=None, row=None, keyX=None, 
     ### verboseprint("\nexecExpr:", execExpr)
     print "execExpr:", execExpr
     return execExpr
-
-
-def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False):
-    if not node:
-        node = h2o_nodes.nodes[0]
-    start = time.time()
-    # FIX! Exec has 'escape_nan' arg now. should we test?
-    # 5/14/13 removed escape_nan=0
-
-    kwargs = {'str': execExpr} 
-    resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
-    verboseprint('exec took', time.time() - start, 'seconds')
-    verboseprint(resultExec)
-
-    if 'cols' in resultExec and resultExec['cols']: # not null
-        if 'funstr' in resultExec and resultExec['funstr']: # not null
-            raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
-        else:
-            print "Frame return"
-            # if test said to look at a resultKey, it's should be in h2o k/v store
-            # inspect a result key?
-            if resultKey is not None:
-                kwargs = {'str': resultKey} 
-                resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
-                verboseprint("resultExec2:", dump_json(resultExec))
-
-            # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
-            result = resultExec['cols'][0]['min']
-        
-    else: 
-        if 'funstr' in resultExec and resultExec['funstr']: # not null
-            print "function return"
-            result = resultExec['funstr']
-        else:
-            print "scalar return"
-            result = resultExec['scalar']
-            
-    return resultExec, result
 
 
 def exec_zero_list(zeroList,timeoutSecs=60):
