@@ -68,7 +68,7 @@ public class Exec extends Iced {
 
       // Parse
       AST ast = ex.parse();
-      if (ex.hasNext()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
+      if (ex.skipWS().hasNext()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
 
       // Execute
       env = ast.treeWalk(env);
