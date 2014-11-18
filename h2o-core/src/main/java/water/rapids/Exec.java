@@ -39,12 +39,14 @@ public class Exec extends Iced {
 
   //parser
   final byte[] _ast;
+  final String _str;
   int _x;
 
   //global env
   final Env _env;
 
   public Exec(String ast, Env env) {
+    _str = ast;
     _ast = ast == null ? null : ast.getBytes();
     _env = env;
   }
@@ -66,6 +68,7 @@ public class Exec extends Iced {
 
       // Parse
       AST ast = ex.parse();
+      if (ex.hasNext()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
 
       // Execute
       env = ast.treeWalk(env);
@@ -187,6 +190,22 @@ public class Exec extends Iced {
   private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
 
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
+
+  static AST throwErr( String msg, Exec E) {
+    int idx = E._ast.length-1;
+    int lo = E._x, hi=idx;
+
+    String str = E._str;
+    if( idx < lo ) { lo = idx; hi=lo; }
+    String s = msg+ '\n'+str+'\n';
+    int i;
+    for( i=0; i<lo; i++ ) s+= ' ';
+    s+='^'; i++;
+    for( ; i<hi; i++ ) s+= '-';
+    if( i<=hi ) s+= '^';
+    s += '\n';
+    throw new IllegalArgumentException(s);
+  }
 
   // To avoid a class-circularity hang, we need to force other members of the
   // cluster to load the Exec & AST classes BEFORE trying to execute code
