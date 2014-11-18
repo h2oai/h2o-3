@@ -12,23 +12,23 @@ import java.util.HashSet;
  *
  * Trees have a Lisp-like structure with the following "reserved" special characters:
  *
- *     '('  signals the parser to begin a function application, next token is an identifier or a (single char) flag
- *     '#'  signals the parser to parse a double: attached_token
- *     '"'  signals the parser to parse a String (double quote): attached_token
- *     "'"  signals the parser to parse a String (single quote): attached_token
- *     '$'  signals a variable lookup: attached_token
- *     '!'  signals a variable set: attached_token
- *     '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
- *     'f'  signals the parser to a parse a function: (f  name args body).
- *     '='  signals the parser to assign the RHS to the LHS.
- *     'g'  signals &gt;
- *     'G'  signals &gt;=
- *     'l'  signals &lt;
- *     'L'  signals &lt;=
- *     'n'  signals ==
- *     'N'  signals !=
- *     '_'  signals negation (!)
- *     '{'  signals the parser to begin parsing a ';'-separated array of things (ASTSeries is the resulting AST)
+ *     '('   signals the parser to parse a function name, the next token is an identifier or a (single char) flag
+ *     '#'   signals the parser to parse a double: attached_token
+ *     '"'   signals the parser to parse a String (double quote): attached_token
+ *     "'"   signals the parser to parse a String (single quote): attached_token
+ *     '$'   signals a variable lookup: attached_token
+ *     '!'   signals a variable set: attached_token
+ *     '['   signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
+ *     'def' signals the parser to a parse a function: (def name args body).
+ *     '='   signals the parser to assign the RHS to the LHS.
+ *     'g'   signals &gt;
+ *     'G'   signals &gt;=
+ *     'l'   signals &lt;
+ *     'L'   signals &lt;=
+ *     'n'   signals ==
+ *     'N'   signals !=
+ *     '_'   signals negation (!)
+ *     '{'   signals the parser to begin parsing a ';'-separated array of flagged inputs (#, $, ", ') (ASTSeries is the resulting AST)
  *
  * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
  * variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
@@ -39,12 +39,14 @@ public class Exec extends Iced {
 
   //parser
   final byte[] _ast;
+  final String _str;
   int _x;
 
   //global env
   final Env _env;
 
   public Exec(String ast, Env env) {
+    _str = ast;
     _ast = ast == null ? null : ast.getBytes();
     _env = env;
   }
@@ -66,6 +68,7 @@ public class Exec extends Iced {
 
       // Parse
       AST ast = ex.parse();
+      if (ex.skipWS().hasNext()) throwErr("Note that only a single statement can be processed at a time. Junk at the end of the statement: ",ex);
 
       // Execute
       env = ast.treeWalk(env);
@@ -120,9 +123,9 @@ public class Exec extends Iced {
 
   String parseID() {
     StringBuilder sb = new StringBuilder();
-    if (peek() == '(') {_x++; return parseID(); } // eat the '('
+    if (peek() == '(') {_x++; skipWS(); return parseID(); } // eat the '(' and any ws.
     if ( isSpecial(peek())) { return sb.append((char)_ast[_x++]).toString(); } // if attached_token, then use parse_impl
-    while(_ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';') {  // while not WS...
+    while(_x < _ast.length && _ast[_x] != ' ' && _ast[_x] != ')' && _ast[_x] != ';') {  // while not WS...
       sb.append((char)_ast[_x++]);
     }
     _x++; // skip a WS
@@ -187,6 +190,22 @@ public class Exec extends Iced {
   private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
 
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
+
+  static AST throwErr( String msg, Exec E) {
+    int idx = E._ast.length-1;
+    int lo = E._x, hi=idx;
+
+    String str = E._str;
+    if( idx < lo ) { lo = idx; hi=lo; }
+    String s = msg+ '\n'+str+'\n';
+    int i;
+    for( i=0; i<lo; i++ ) s+= ' ';
+    s+='^'; i++;
+    for( ; i<hi; i++ ) s+= '-';
+    if( i<=hi ) s+= '^';
+    s += '\n';
+    throw new IllegalArgumentException(s);
+  }
 
   // To avoid a class-circularity hang, we need to force other members of the
   // cluster to load the Exec & AST classes BEFORE trying to execute code

@@ -94,7 +94,8 @@ def unlock (self, *args, **kwargs):
 def remove_all_keys(self, timeoutSecs=120):
     return self.do_json_request('RemoveAll.json', timeout=timeoutSecs)
 
-def rapids(self, timeoutSecs=120, **kwargs):
+#******************************************************************************************8
+def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     # FIX! assume both of these are strings for now, not lists
     if 'ast' in kwargs: 
         assert isinstance(kwargs['ast'], basestring), "only string assumed? %s" % ast
@@ -108,8 +109,30 @@ def rapids(self, timeoutSecs=120, **kwargs):
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
     result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+
+    # FIX! maybe add something for ignoring conditionally?
+    if 'exception' in result and result['exception']:
+        exception = result['exception']
+        raise Exception('rapids with kwargs:\n%s\ngot exception:\n"%s"\n' % (dump_json(kwargs), exception))
+
     return result
 
+#******************************************************************************************8
+def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
+    params_dict = {
+        'source_key': None,
+        'column': None,
+        'quantile': None,
+        'max_qbins': None,
+        'interpolation_type': None,
+        'multiple_pass': None,
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'quantiles', print_params)
+    a = self.do_json_request('Quantiles.json', timeout=timeoutSecs, params=params_dict)
+    verboseprint("\nquantiles result:", dump_json(a))
+    return a
+
+#******************************************************************************************8
 def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
     params = {
         'key': key
