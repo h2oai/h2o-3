@@ -206,8 +206,14 @@ function(stmnt) {
 
       # Grab defaults and exchange them with any passed in args
       op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
-      m <- paste(op, ".H2OFrame", sep ="")    # get the H2OFrame method
-      l <- formals(m)[-1]                     # get the arg list for the method  TODO: will have to use getMethod(m, signature=) in future
+      # m <- paste(op, ".H2OFrame", sep ="")    # get the H2OFrame method
+      # l <- formals(m)[-1]                     # get the arg list for the method  TODO: will have to use getMethod(m, signature=) in future
+      # stop(is.character(op))
+      l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
+      l <- lapply(l, function(i)
+      if (length(i=="") != 0) {
+        if(i == "") NULL else i
+      } else i)
       add_args <- l[names(l) != "..."]        # remove any '...' args
 
       # if some args were passed in then update those values in add_args
