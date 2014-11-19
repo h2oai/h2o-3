@@ -34,10 +34,13 @@ def get_ip_address(ipFromCmdLine=None):
     except:
         pass
 
-    if ip.startswith('127'):
-        # drills down into family
-        ip = socket.getaddrinfo(hostname, None)[0][4][0]
-        verboseprint("get_ip case 3:", ip)
+    try:
+        if ip.startswith('127'):
+            # drills down into family
+            ip = socket.getaddrinfo(hostname, None)[0][4][0]
+            verboseprint("get_ip case 3:", ip)
+    except:
+        pass
 
     ipa = None
     # we had some hosts that didn't support gethostbyname_ex().

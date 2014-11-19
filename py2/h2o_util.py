@@ -114,6 +114,10 @@ def unsignedLongLongToDouble(Q):
 def twoDecimals(l):
     if isinstance(l, list):
         return ["%.2f" % v for v in l]
+    elif isinstance(l, basestring):
+        return "%s" % l
+    elif l is None:
+        return None
     else:
         return "%.2f" % l
 
