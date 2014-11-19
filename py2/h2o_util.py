@@ -142,7 +142,6 @@ def _float_approxEqual(x, y, tol=1e-18, rel=1e-7, **kwargs):
     if tol is not None: tests.append(abs(tol))
     if rel is not None: tests.append(abs(rel*x))
     assert tests
-    print "kevin tol", tol, "rel", rel, "x", x, "y", y, "tests", tests
     return abs(abs(x) - abs(y)) <= max(tests)
 
 # from http://code.activestate.com/recipes/577124-approximately-equal/

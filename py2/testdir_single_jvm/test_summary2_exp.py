@@ -116,7 +116,7 @@ class Basic(unittest.TestCase):
             missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
             print "\n" + csvFilename
             # column 0?
-            summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
+            summaryResult = h2o_cmd.runSummary(key=hex_key, column='C1')
             h2o.verboseprint("Summary2 summaryResult:", h2o.dump_json(summaryResult))
 
             # default_pctiles

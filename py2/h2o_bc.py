@@ -32,7 +32,7 @@ def decide_if_localhost():
         return True
 
     if h2o_args.clone_cloud_json:
-        print "* Using description of already built cloud, in JSON you passed as -ccj argument:", h2o_args.clone_json
+        print "* Using description of already built cloud, in JSON you passed as -ccj argument:", h2o_args.clone_cloud_json
         return True
 
     if h2o_args.config_json:
@@ -127,6 +127,11 @@ def write_flatfile(node_count=2, base_port=None, hosts=None, rand_shuffle=True):
 
 # assume h2o_nodes_json file in the current directory
 def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
+
+    # local sandbox may not exist. Don't clean if it does, just append
+    if not os.path.exists(LOG_DIR):
+        os.mkdir(LOG_DIR)
+
     log("#*********************************************************************")
     log("Starting new test: " + h2o_args.python_test_name + " at build_cloud_with_json()")
     log("#*********************************************************************")
@@ -262,10 +267,16 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         else: 
             useCloudExpectedSize = usecloud_size
 
-        nodesJsonObject = h2o_fc.find_cloud(ip_port=ip_port,
-            expectedSize=useCloudExpectedSize, nodesJsonPathname=nodesJsonPathname, **kwargs)
-            # potentially passed in kwargs
-            # hdfs_version='cdh4', hdfs_config=None, hdfs_name_node='172.16.1.176', 
+        if (h2o_args.usecloud or usecloud):
+            nodesJsonObject = h2o_fc.find_cloud(ip_port=ip_port,
+                expectedSize=useCloudExpectedSize, nodesJsonPathname=nodesJsonPathname, **kwargs)
+                # potentially passed in kwargs
+                # hdfs_version='cdh4', hdfs_config=None, hdfs_name_node='172.16.1.176', 
+        else:
+            if h2o_args.clone_cloud_json:
+                nodesJsonPathname = h2o_args.clone_cloud_json
+            else:
+                nodesJsonPathname = clone_cloud
 
         nodeList = build_cloud_with_json(h2o_nodes_json=nodesJsonPathname)
         return nodeList
@@ -445,7 +456,9 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
     # also, copy the "delete keys at teardown from testdir_release
     # Assume there's a last "test" that's run to shutdown the cloud 
 
-    if not h2o_args.usecloud or force:
+    # don't tear down with -ccj either
+    # FIX! what about usecloud or cloud_cloud_json params from build_cloud time?
+    if force or not (h2o_args.usecloud or h2o_args.clone_cloud_json):
         try:
             # update: send a shutdown to all nodes. h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
