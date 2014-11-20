@@ -1,0 +1,48 @@
+Package: testthat
+Version: 0.9.1.9000
+Title: Testthat code. Tools to make testing fun :)
+Description: A testing package specifically tailored for R
+    that's fun, flexible and easy to set up.
+Authors@R: as.person(c(
+    "Hadley Wickham <hadley@rstudio.com> [aut, cre]",
+    "RStudio [cph]"))
+URL: https://github.com/hadley/testthat
+BugReports: https://github.com/hadley/testthat/issues
+Depends:
+    R (>= 3.1.0),
+    methods
+Imports:
+    digest,
+    crayon
+Suggests:
+    devtools
+License: MIT + file LICENSE
+Collate:
+    'auto-test.r'
+    'colour-text.r'
+    'compare.r'
+    'context.r'
+    'describe.r'
+    'evaluate-promise.r'
+    'expect-that.r'
+    'expectation.r'
+    'expectations.r'
+    'library.r'
+    'make-expectation.r'
+    'mock.r'
+    'reporter.r'
+    'reporter-list.r'
+    'reporter-minimal.r'
+    'reporter-multi.r'
+    'reporter-silent.r'
+    'reporter-stop.r'
+    'reporter-summary.r'
+    'reporter-tap.r'
+    'reporter-teamcity.r'
+    'reporter-zzz.r'
+    'test-files.r'
+    'test-package.r'
+    'test-that.r'
+    'traceback.r'
+    'utils.r'
+    'watcher.r'
