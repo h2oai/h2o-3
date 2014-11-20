@@ -1,0 +1,18 @@
+citHeader("To cite the testthat package in publications, use:")
+
+citEntry(
+  entry = "Article", 
+  author = personList(as.person("Hadley Wickham")),
+  title = "testthat: Get Started with Testing", 
+  journal = "The R Journal", 
+  year = 2011, 
+  volume = 3, 
+  pages = "5--10", 
+  url = "http://journal.r-project.org/archive/2011-1/RJournal_2011-1_Wickham.pdf", 
+  textVersion = paste(
+    "Hadley Wickham. testthat: Get Started with Testing.",
+    "The R Journal, vol. 3, no. 1, pp. 5--10, 2011"
+  )
+)
+  
+citFooter("As testthat is continually evolving, you may want to cite its version number. Find it with 'help(package=testthat)'.")
