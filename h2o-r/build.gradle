@@ -265,7 +265,7 @@ task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
 
 task runRTests() {
-    def folders = ["${projectDir}/h2o-r/src/test/R"]
+    def folders = ["${projectDir}/src/test/R"]
     def testMarker = ~/test.+\.r/
 
     def getTests = {
@@ -273,11 +273,11 @@ task runRTests() {
         (what == null)?[]:what.toList()
     }
 
-
     def pickActions = {from->
         def answer = []
         from.each{
             getTests(it).each{item->
+                logger.info "Found test ${item} in folder ${it}"
                 answer.add(new Tuple<String,String>(it, item))
             }
         }
@@ -296,6 +296,9 @@ task runRTests() {
 task reporting (dependsOn: runRTests) << {
     def group = "acceptance"
     def rootFolder = project.getRootDir()
+
+    project.ext.R_test_folders = ["${projectDir}/src/test/R"]
+    project.ext.Regex_test_marker = ~/test.+\.Rout/
 }
 
 

@@ -141,18 +141,16 @@ class convertR2html implements Plugin<Project> {
     void apply(Project project){
         project.task('Rout2Html', dependsOn: 'reporting') << {
             new File("build/reports/site").mkdirs()
-            //TODO: make here folders tokens relative to project.projectDir()
 
-            def folders = [ "testthat" ]
-            def testMarker = ~/test.+\.Rout/
-
-            def getTests = {
-                def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
-                (what == null)?[]:what.toList()
-            }
-
+            def folders = project.ext.R_test_folders as List<String>
+            def testMarker = project.ext.Regex_test_marker as java.util.regex.Pattern
+            logger.info " ** Looking into ${folders.toString()}"
             def pickResults = {from->
                 def answer = []
+                def getTests = {
+                    def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
+                    (what == null)?[]:what.toList()
+                }
                 from.each{
                     getTests(it).each{item->
                         answer.add(new Tuple<String,String>(it, item))
@@ -164,6 +162,7 @@ class convertR2html implements Plugin<Project> {
             def testResults = [:]
 
             def processTestResults = {file, into ->
+                logger.info "Processing test results from " + file.getCanonicalPath()
                 def lines = file as String[]
                 /*  we care here about two kind of lines
                 Basic tests : ........
@@ -178,14 +177,15 @@ class convertR2html implements Plugin<Project> {
                 def exclusions = ["Warning messages"] as Set
 
                 lines.eachWithIndex{line, i->
+                    logger.warn line
                     Matcher m1 = (line =~ summaryPattern)
                     Matcher m2 = (line =~ detailPattern)
                     if ( m1.matches() ){
                         if ( !exclusions.contains(m1[0][1]) ){
-                            println "Context:${m1[0][1]}; Results:${m1[0][2]}"
+                            //println " * ${m1[0][1]} : ${m1[0][2]}"
                         }
                     }
-                    if ( m2.matches() )println "#" + line
+                    //if ( m2.matches() )println "#" + line
                 }
             }
 
