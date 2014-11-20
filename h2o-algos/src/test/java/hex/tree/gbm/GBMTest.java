@@ -156,7 +156,6 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) { parms._convert_to_enum = false; idx = ~idx; } else { parms._convert_to_enum = true; }
       parms._train = fr._key;
-      parms._valid = validation ? new Frame(fr)._key : null;
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;
       parms._loss = family;
@@ -165,6 +164,11 @@ public class GBMTest extends TestUtil {
       parms._nbins = 50;
       parms._learn_rate = .2f;
       parms._score_each_iteration=true;
+      if( validation ) {        // Make a validation frame thats a clone of the training data
+        Frame vfr = new Frame(fr);
+        water.DKV.put(vfr);
+        parms._valid = vfr._key;
+      }
 
       GBM job = null;
       try {
