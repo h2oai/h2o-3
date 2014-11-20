@@ -147,7 +147,8 @@ class convertR2html implements Plugin<Project> {
             def testMarker = ~/test.+\.Rout/
 
             def getTests = {
-                new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter).toList()
+                def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
+                (what == null)?[]:what.toList()
             }
 
             def pickResults = {from->
