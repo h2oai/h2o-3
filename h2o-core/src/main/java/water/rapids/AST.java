@@ -115,7 +115,10 @@ class ASTId extends AST {
   final String _id;
   final char _type; // either '$' or '!'
   ASTId(char type, String id) { _type = type; _id = id; }
-  ASTId parse_impl(Exec E) { return new ASTId(_type, E.parseID()); }
+  ASTId parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    return new ASTId(_type, E.parseID());
+  }
   @Override public String toString() { return _type+_id; }
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
   @Override int type() { return Env.ID; }
@@ -128,7 +131,10 @@ class ASTId extends AST {
 class ASTKey extends AST {
   final String _key;
   ASTKey(String key) { _key = key; }
-  ASTKey parse_impl(Exec E) { return new ASTKey(E.parseID()); }
+  ASTKey parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    return new ASTKey(E.parseID());
+  }
   @Override public String toString() { return _key; }
   @Override void exec(Env e) { (new ASTFrame(_key)).exec(e); }
   @Override int type () { return Env.NULL; }
@@ -167,7 +173,15 @@ class ASTFrame extends AST {
 class ASTNum extends AST {
   final double _d;
   ASTNum(double d) { _d = d; }
-  ASTNum parse_impl(Exec E) { return new ASTNum(Double.valueOf(E.parseID())); }
+  ASTNum parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    try {
+      return new ASTNum(Double.valueOf(E.parseID()));
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Unexpected numerical argument. Badly formed AST.");
+    }
+  }
   @Override public String toString() { return Double.toString(_d); }
   @Override void exec(Env e) { e.push(new ValNum(_d)); }
   @Override int type () { return Env.NUM; }
@@ -184,7 +198,9 @@ class ASTSpan extends AST {
   boolean _isCol; boolean _isRow;
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
   ASTSpan parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();
     return new ASTSpan((ASTNum)l, (ASTNum)r);
   }
@@ -226,6 +242,7 @@ class ASTSeries extends AST {
   ASTSeries parse_impl(Exec E) {
     ArrayList<Long> l_idxs = new ArrayList<>();
     ArrayList<ASTSpan> s_spans = new ArrayList<>();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String[] strs = E.parseString('}').split(";");
     for (String s : strs) {
       if (s.charAt(0) == '(') {
@@ -352,6 +369,7 @@ class ASTReturn extends ASTStatement {
   ASTReturn() {}
 
   @Override ASTReturn parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST stmnt = E.skipWS().parse();
     ASTReturn res = (ASTReturn) clone();
     res._stmnt = stmnt;
@@ -371,6 +389,7 @@ class ASTIf extends ASTStatement {
   // (if pred body)
   @Override ASTIf parse_impl(Exec E) {
     // parse the predicate
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST pred = E.parse();
     ASTStatement statement = super.parse_impl(E.skipWS());
     ArrayList<AST> ast_list = new ArrayList<>();
@@ -400,6 +419,7 @@ class ASTElse extends ASTStatement {
   // (else body)
   ASTElse() {}
   @Override ASTElse parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     ASTStatement statements = super.parse_impl(E.skipWS());
     ASTElse res = (ASTElse)clone();
     res._asts = statements._asts;
@@ -417,7 +437,9 @@ class ASTFor extends ASTStatement {
 
   // (for #start #end body)
   @Override ASTFor parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     int s = (int)((ASTNum)E.skipWS().parse())._d;
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     int e = (int)((ASTNum)E.skipWS().parse())._d;
     ASTStatement stmts = super.parse_impl(E);
     ASTFor res = (ASTFor)clone();
@@ -473,7 +495,10 @@ class ASTString extends AST {
   final String _s;
   final char _eq;
   ASTString(char eq, String s) { _eq = eq; _s = s; }
-  ASTString parse_impl(Exec E) { return new ASTString(_eq, E.parseString(_eq)); }
+  ASTString parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    return new ASTString(_eq, E.parseString(_eq));
+  }
   @Override public String toString() { return _s; }
   @Override void exec(Env e) { e.push(new ValStr(_s)); }
   @Override int type () { return Env.STR; }
@@ -513,6 +538,7 @@ class ASTNull extends AST {
 class ASTAssign extends AST {
   ASTAssign parse_impl(Exec E) {
     AST l = E.parse();            // parse the ID on the left, or could be a column, or entire frame, or a row
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();
     res._asts = new AST[]{l,r};
@@ -889,11 +915,14 @@ class ASTSlice extends AST {
   ASTSlice() {}
 
   ASTSlice parse_impl(Exec E) {
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST hex = E.parse();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST rows = E.skipWS().parse();
     if (rows instanceof ASTString) rows = new ASTNull();
     if (rows instanceof ASTSpan) ((ASTSpan) rows).setSlice(true, false);
     if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST cols = E.skipWS().parse();
     if (cols instanceof ASTString) cols = new ASTNull();
     if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);

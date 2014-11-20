@@ -272,7 +272,7 @@ def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
-    result = self.do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Frames.json/%s/columns/%s/summary' % (key, column), timeout=timeoutSecs, params=params_dict)
     return result
 
 

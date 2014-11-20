@@ -69,6 +69,7 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("example", Example.class);
     H2O.registerPOST("/2/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();

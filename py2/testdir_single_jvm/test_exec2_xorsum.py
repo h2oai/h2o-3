@@ -11,11 +11,13 @@ exprList = [
         # !x means assign to x
         # $TRUE means remove NAs (this is default)
         # '',
-        '(= !keys (ls))',
-        '(= !x #1)',
-        # '(= !x (sum ([ r1 "null" #0) $TRUE))',
+        # '(= !keys (ls))',
+        # '(= !x #1)',
+        # r1 is unimplemented $r1 works
+        # '(= !x (sum ([ $r1 "null" #0) $TRUE))',
         # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))',
-        # '(= !x (xorsum ([ r1 "null" (: #0 #0)) $TRUE))',
+        '(= !x (xorsum ([ $r1 "null" #0) $TRUE))',
+        # '(= !x (xorsum ([ $r1 "null" (: #0 #0)) $TRUE))',
         ]
 
 ROWS = 100000
@@ -131,10 +133,14 @@ class Basic(unittest.TestCase):
                 # xorsum will zero out the sign and exponent
                 for execExpr in exprList:
                     for r in range(10):
-                        start = time.time()
-                        execResult = h2o_cmd.runExec(ast=execExpr, timeoutSecs=30)
-                        print r, 'exec took', time.time() - start, 'seconds'
-                        fpResult = execResult['scalar']
+        
+                        if 1==0:
+                            execResult = h2o_cmd.runExec(ast=execExpr, timeoutSecs=30)
+                            fpResult = execResult['scalar']
+                        else:
+                            (execResult, fpResult) = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey='x', timeoutSecs=300)
+                            # print dump_json(h2o.n0.frames(key="h"))
+
                         # (execResult, fpResult) = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey='h', timeoutSecs=300)
                         # print dump_json(h2o.n0.frames(key="r1"))
                         print r, "execResult:", h2o.dump_json(execResult)
@@ -150,8 +156,10 @@ class Basic(unittest.TestCase):
                         # allow diff of the lsb..either way
                         # if ullResult!=expectedUllSum and abs((ullResult-expectedUllSum)>3):
                         if ullResult!=expectedUllSum:
-                            raise Exception("h2o didn't get the same xorsum as python. 0x%0.16x 0x%0.16x" % (ullResult, expectedUllSum))
-                            print "h2o didn't get the same xorsum as python. 0x%0.16x 0x%0.16x" % (ullResult, expectedUllSum)
+                            raise Exception("h2o didn't get the same xorsum as python. 0x%0.16x 0x%0.16x" % \
+                                (ullResult, expectedUllSum))
+                            print "h2o didn't get the same xorsum as python. 0x%0.16x 0x%0.16x" % \
+                                (ullResult, expectedUllSum)
 
                 h2o.check_sandbox_for_errors()
 

@@ -114,6 +114,10 @@ def unsignedLongLongToDouble(Q):
 def twoDecimals(l):
     if isinstance(l, list):
         return ["%.2f" % v for v in l]
+    elif isinstance(l, basestring):
+        return "%s" % l
+    elif l is None:
+        return None
     else:
         return "%.2f" % l
 
@@ -142,7 +146,6 @@ def _float_approxEqual(x, y, tol=1e-18, rel=1e-7, **kwargs):
     if tol is not None: tests.append(abs(tol))
     if rel is not None: tests.append(abs(rel*x))
     assert tests
-    print "kevin tol", tol, "rel", rel, "x", x, "y", y, "tests", tests
     return abs(abs(x) - abs(y)) <= max(tests)
 
 # from http://code.activestate.com/recipes/577124-approximately-equal/

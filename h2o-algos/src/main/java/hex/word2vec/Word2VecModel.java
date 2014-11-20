@@ -220,11 +220,16 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   public static class Word2VecParameters extends Model.Parameters {
     static final int MAX_VEC_SIZE = 10000;
 
-    public Word2Vec.WordModel _wordModel;
-    public Word2Vec.NormModel _normModel;
+    public Word2Vec.WordModel _wordModel = Word2Vec.WordModel.SkipGram;
+    public Word2Vec.NormModel _normModel = Word2Vec.NormModel.HSM;
     public Key _vocabKey;
-    public int _minWordFreq, _vecSize, _windowSize, _epochs, _negSampleCnt;
-    public float _initLearningRate, _sentSampleRate;
+    public int _minWordFreq = 5;
+    public int _vecSize = 100;
+    public int _windowSize = 5;
+    public int _epochs = 5;
+    public int _negSampleCnt = 5;
+    public float _initLearningRate = 0.05f;
+    public float _sentSampleRate = 1e-3f;
   }
 
   public static class Word2VecOutput extends Model.Output{

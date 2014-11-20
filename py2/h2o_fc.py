@@ -82,7 +82,6 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     nodes      = gc['nodes']
 
     # None means don't check
-    print "kevin", expectedSize, cloud_size
     if expectedSize and (cloud_size!=expectedSize):
         raise Exception("cloud_size %s at %s disagrees with -expectedSize %s" % \
             (cloud_size, cloud_name, expectedSize))
@@ -155,6 +154,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
             'hdfs_version': hdfs_version, # something is checking for this.
             'hdfs_name_node': hdfs_name_node, # Do we need this for hdfs url generation correctly?
             'hdfs_config': hdfs_config,
+            'aws_credentials': 'false',
         }
 
         # this is the total list so far

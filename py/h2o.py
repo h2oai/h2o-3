@@ -381,7 +381,7 @@ class H2O(object):
     '''
     Parse an imported raw file or files into a Frame.
     '''
-    def parse(self, key, key2=None,
+    def parse(self, key, dest_key=None,
               timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
               noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
@@ -415,7 +415,7 @@ class H2O(object):
 
         parse_params = {
             'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
-            'hex': setup_result['hexName'],
+            'hex': dest_key if dest_key else setup_result['hexName'],
             'pType': setup_result['pType'],
             'sep': setup_result['sep'],
             'ncols': setup_result['ncols'],

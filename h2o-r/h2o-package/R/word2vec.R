@@ -13,7 +13,7 @@
 #'  @param vecSize - Size of word vectors
 #'  @param winSize - Size of word window
 #'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+#'  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
 #'  @param epochs - Number of iterations data is run through.
 #'
 #' * Constructor used for hierarchical softmax cases.
@@ -22,11 +22,11 @@
 #'  @param vecSize - Size of word vectors
 #'  @param winSize - Size of word window
 #'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
-#'  @param learningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
+#'  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
 #'  @param epochs - Number of iterations data is run through.
 h2o.word2vec<-
 function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
-         vecSize, windowSize, sentSampleRate, learningRate, epochs) {
+         vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
   if (!(trainingFrame %i% "H2OFrame")) stop("`data` must be an H2OFrame")
@@ -39,7 +39,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
   if (missing(vecSize) || !is.numeric(vecSize)) stop("`vecSize` must be numeric")
   if (missing(windowSize) || !is.numeric(windowSize)) stop("`windowSize` must be numeric")
   if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
-  if (missing(learningRate) || !is.numeric(learningRate)) stop("`learningRate` must be numeric")
+  if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
   if (!(trainingFrame %i% "H2OParsedData")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!(trainingFrame %i% "H2OParsedData")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
@@ -52,7 +52,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
                  vecSize = vecSize,
                  windowSize = windowSize,
                  sentSampleRate = sentSampleRate,
-                 learningRate = learningRate,
+                 initLearningRate = initLearningRate,
                  epochs = epochs)
 
   res <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__W2V, .params = params)
