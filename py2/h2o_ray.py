@@ -95,7 +95,10 @@ def parse(self, key, hex_key=None,
         'checkHeader': None, # how is this used
         'singleQuotes': None,
         'columnNames': None, # list?
+        'delete_on_done': None,
+        'blocking': None,
     }
+        
     # if key is a list, create a comma separated string
     # list or tuple but not string
     if not isinstance(key, basestring):
@@ -151,13 +154,17 @@ def parse(self, key, hex_key=None,
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
         'columnNames': ascii_column_names,
+        # how come these aren't in setup_result?
+        'delete_on_done': params_dict['delete_on_done'],
+        'blocking': params_dict['blocking'],
     }
 
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
     tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
     if tooManyColNamesToPrint:
-        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy. See sandbox/commands.log")
+        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
+        h2p.yellow_print("See sandbox/commands.log")
 
     # merge params_dict into parse_params
     # don't want =None to overwrite parse_params

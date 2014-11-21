@@ -441,15 +441,22 @@ def find_key(pattern=None):
     try:
         patternObj = re.compile(pattern)
     except:
-        raise Exception("Need legal pattern in find_key, not %s", pattern)
+        raise Exception("Need legal string pattern in find_key, not %s", pattern)
 
     frames = h2o_nodes.nodes[0].frames()['frames']
-    frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+    keyList = [f['key']['name'] for f in frames] 
+    print "find_key keyList:", keyList
 
     result = []
-    for key in frames_dict:
+    for key in keyList:
         if patternObj.search(key):
             result.append(key)
+
+    if not result:
+        for key in keyList:
+            # if python regex didn't find anything, maybe the pattern is unix-style file match
+            if fnmatch.fnmatch(key, pattern):
+                result.append(key)
 
     if len(result) == 0:
         verboseprint("Warning: No match for %s" % pattern)
