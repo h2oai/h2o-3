@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -106,13 +106,7 @@ public class GBMTest extends TestUtil {
 //               return fr.find("TARGET_B"); }});
 
 //    basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data",
-//             new PrepData() {
-//               int prep(Frame fr) {
-//                 assertEquals(581012,fr.numRows());
-//                 // Covtype: predict on last column
-//                 return fr.numCols()-1;
-//               }
-//             });
+//             new PrepData() { int prep(Frame fr) { return fr.numCols()-1; } });
   }
 //
 //  @Test public void testBasicGBMFamily() {
@@ -141,9 +135,6 @@ public class GBMTest extends TestUtil {
 //  public GBMModel basicGBM(String fname, PrepData prep, boolean validation) {
 //    return basicGBM(fname, prep, validation, Family.AUTO);
 //  }
-  public void basicGBM(String fname, PrepData prep, Family family) {
-    basicGBM(fname, prep, false, family);
-  }
   public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, Family family) {
     GBMModel gbm = null;
     Frame fr = null, fr2= null, vfr=null;
