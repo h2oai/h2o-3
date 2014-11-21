@@ -25,6 +25,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public long _seed;          // Seed for psuedo-random redistribution
 
+    // holds the name of the vec that weights each row
+    public String _weight_column;
+
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;

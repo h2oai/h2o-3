@@ -81,9 +81,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override public void map( Chunk[] chks ) {
-    assert chks.length==_ncols+4;
-    final Chunk wrks = chks[_ncols+2];
-    final Chunk nids = chks[_ncols+3];
+    final Chunk wrks = chks[SharedTree.work_idx(0, _ncols, 1)];
+    final Chunk nids = chks[SharedTree.nids_idx(0, _ncols, 1)];
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current

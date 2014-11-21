@@ -17,7 +17,8 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "learn_rate",
         "loss",
         "variable_importance",
-        "seed"
+        "seed",
+        "weights_column"
     };
 
     // Input fields
@@ -44,6 +45,10 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
 
     @API(help = "Compute variable importance", level = API.Level.critical)
     public boolean variable_importance;
+
+    @API(help="Weights column", direction=API.Direction.INOUT)
+    public String weights_column;
+
 
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);

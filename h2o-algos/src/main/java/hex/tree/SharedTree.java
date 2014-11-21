@@ -7,9 +7,7 @@ import hex.SupervisedModelBuilder;
 import hex.VarImp;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
@@ -26,6 +24,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Initially predicted value (for zero trees)
   protected double _initialPrediction;
+
+  // Weights
+  protected transient Vec _weights; // Handy weights column
+  public Key _weights_key; // Handy weights column
+  public Vec weights() { return _weights  == null ? (_weights  = DKV.get(_weights_key).<Vec>get()) : _weights ; }
+
+  protected transient Vec _vweights; // Handy validation weights column
+  public Key _vweights_key; // Handy validation weights column
+  public Vec vweights() { return _vweights == null ? (_vweights = DKV.get(_vweights_key).<Vec>get()) : _vweights; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -56,6 +63,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _ncols = _train.numCols()-1;
 
     if (_response == null) return;
+
+    if(_parms._weight_column != null){
+      assert(!_parms._weight_column.isEmpty());
+      int idx = _train.find(_parms._weight_column);
+      if(idx == -1){
+        error("_weight_column",
+              "Weight column " + _parms._weight_column + " not found in frame: " + _parms.train() + ".");
+      }else{
+        Vec trainWeights = _train.vec(idx);
+        Vec validWeights = _train.vec(idx);
+        if(trainWeights.isBad()){
+          error("_weights_column", "Training weight column is all NAs!");
+        }
+        if(validWeights.isBad()){
+          error("_weights_column", "Validation weight column is all NAs!");
+        }
+        if(!trainWeights.isNumeric()){
+          error("_weights_column", "Weights MUST be numeric.  Weights column are not numeric.");
+        }
+      }
+    }
+
 
     // Initialize response based on given loss function.
     // Regression: initially predict the response mean
@@ -141,6 +170,21 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           Log.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
         }
 
+        // Set up weights column
+        String wname = _parms._weight_column == null ? "weights" : _parms._weight_column;
+        _weights =     _parms._weight_column == null ? _train.anyVec().makeCon(1.0) : _train.remove(_train.find(wname));
+        _train.add(wname, _weights);
+        _weights_key = _weights._key;
+
+        if(_valid != null){
+          _vweights = _parms._weight_column == null ? _valid.anyVec().makeCon(1.0) : _valid.remove(_valid.find(wname));
+          _valid.add(wname, _vweights);
+          _vweights_key = _vweights._key;
+        }
+
+
+
+
         // Also add to the basic working Frame these sets:
         //   nclass Vecs of current forest results (sum across all trees)
         //   nclass Vecs of working/temp data
@@ -176,6 +220,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         cancel2(t);
         throw t;
       } finally {
+        if(_parms._weight_column == null){
+          _weights.remove();
+          if(_valid != null){
+            _vweights.remove();
+          }
+        }
         if( _model != null ) _model.unlock(_key);
         _parms.unlock_frames(SharedTree.this);
         done();                 // Job done!
@@ -206,10 +256,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask2 ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
-      fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
+      // Use _ncols+2 to grab both the response and the weights
+      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+2), Arrays.copyOf(vecs,_ncols+2));
+      fr2.add(fr._names[tree_idx(k)],vecs[tree_idx(k)]);
+      fr2.add(fr._names[work_idx(k)],vecs[work_idx(k)]);
+      fr2.add(fr._names[nids_idx(k)],vecs[nids_idx(k)]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node));
     }
@@ -284,16 +335,30 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // --------------------------------------------------------------------------
   // Convenience accessor for a complex chunk layout.
   // Wish I could name the array elements nicer...
+  // @Eric use of these functions returning a chunk should be replaced
+  // by the pattern below simply accessing the idx so they can be applied
+  // to all arrays equally (chunks, names, vecs, etc.)
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[_ncols]; }
-  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[_ncols+1+c]; }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
-  protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  protected Chunk chk_wght( Chunk chks[]        ) { return chks[_ncols+1];}
+  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[_ncols+2+c]; }
+  protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+2+_nclass+c]; }
+  protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+2+_nclass+_nclass+t]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
-  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
+  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+2+_nclass+_nclass+_nclass]; }
 
-  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
+  protected int tree_idx(int c) { return _ncols+2+c; }
+  protected int work_idx(int c) { return _ncols+2+_nclass+c; }
+  protected int nids_idx(int c) { return _ncols+2+_nclass+_nclass+c; }
+
+  static int tree_idx(int c, int ncols, int nclass) { return ncols+2+c; }
+  static int work_idx(int c, int ncols, int nclass) { return ncols+2+nclass+c; }
+  static int nids_idx(int c, int ncols, int nclass) { return ncols+2+nclass+nclass+c; }
+
+  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+2+_nclass+_nclass+t]; }
   protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
-  protected final Vec vec_tree( Frame fr, int c ) { return fr.vecs()[_ncols+1+c]; }
+  protected final Vec vec_tree( Frame fr, int c ) { return fr.vecs()[_ncols+2+c]; }
+
+  // static
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
