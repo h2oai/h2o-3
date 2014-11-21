@@ -300,9 +300,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // DEBUG: Print the generated K trees
       //printGenerateTrees(ktrees);
       // Grow the model by K-trees
-      double mse_train = Double.NaN;
-      double mse_test  = Double.NaN;
-      _model._output.addKTrees(ktrees, mse_train, mse_test);
+      _model._output.addKTrees(ktrees);
     }
 
     // ---

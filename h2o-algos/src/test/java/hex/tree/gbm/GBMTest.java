@@ -54,7 +54,6 @@ public class GBMTest extends TestUtil {
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.1233,mse,0.1);
       assertEquals(79152.1233,gbm._output._mse_train[1],0.1);
-      assertEquals(79152.1233,gbm._output._mse_test [1],0.1);
 
     } finally {
       if( fr  != null ) fr .remove();
@@ -147,7 +146,7 @@ public class GBMTest extends TestUtil {
   }
   public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, Family family) {
     GBMModel gbm = null;
-    Frame fr = null, fr2= null;
+    Frame fr = null, fr2= null, vfr=null;
     try {
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
@@ -165,7 +164,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = .2f;
       parms._score_each_iteration=true;
       if( validation ) {        // Make a validation frame thats a clone of the training data
-        Frame vfr = new Frame(fr);
+        vfr = new Frame(fr);
         water.DKV.put(vfr);
         parms._valid = vfr._key;
       }
@@ -188,6 +187,7 @@ public class GBMTest extends TestUtil {
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
+      if( vfr != null ) vfr.remove();
       if( gbm != null ) gbm.delete();
     }
   }
@@ -325,19 +325,12 @@ public class GBMTest extends TestUtil {
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_test;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
-//
-//  @Test public void testModelMSEEqualityOnTitanic() {
-//    final PrepData titanicPrep =
-//            new PrepData() {
-//              @Override int prep(Frame fr) {
-//                assertEquals(1309,fr.numRows());
-//                // Airlines: predict on CAPSULE
-//                return fr.find("survived");
-//              }
-//    };
-//    double[] mseWithoutVal = basicGBM("./smalldata/titanicalt.csv","titanic.hex", titanicPrep, false).errs;
-//    double[] mseWithVal    = basicGBM("./smalldata/titanicalt.csv","titanic.hex", titanicPrep, true ).errs;
-//    Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
-//  }
+
+  @Test public void testModelMSEEqualityOnTitanic() {
+    final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
+    double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.AUTO)._mse_train;
+    double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_test;
+    Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
+  }
 
 }

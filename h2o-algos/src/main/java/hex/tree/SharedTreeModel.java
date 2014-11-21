@@ -72,7 +72,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
 
     // Append next set of K trees
-    public void addKTrees( DTree[] trees, double mse_train, double mse_test ) {
+    public void addKTrees( DTree[] trees) {
       assert nclasses()==trees.length;
       _treeStats.updateBy(trees); // Update tree shape stats
       // Compress trees and record tree-keys
@@ -86,11 +86,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train= Arrays.copyOf(_mse_train,_ntrees+1);
-      _mse_train[_ntrees] = mse_train;
-      if( _mse_test != null ) {
+      if( _mse_test != null )
         _mse_test = Arrays.copyOf(_mse_test ,_ntrees+1);
-        _mse_test [_ntrees] = mse_test ;
-      }
       fs.blockForPending();
     }
   }

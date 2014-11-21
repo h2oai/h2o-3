@@ -364,9 +364,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
-      _model._output._r2 = sc.r2();
-      _model._output._cm = sc.cm();
-      _model._output._auc = sc.auc();
+      // Store score results in the model output
+      SharedTreeModel.SharedTreeOutput out = _model._output;
+      out._r2 = sc.r2();
+      out._cm = sc.cm();
+      out._auc = sc.auc();
+      out._mse_train[out._ntrees] = _parms._valid==null ? sc.mse() : Double.NaN;
+      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : sc.mse();
       _timeLastScoreEnd = System.currentTimeMillis();
     }
 
