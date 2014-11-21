@@ -83,10 +83,11 @@ def get_base_port(base_port):
     elif b:
         base_port = b
     else:
-        if getpass.getuser()=='jenkins':
-            base_port = 54340
-        else:
-            base_port = 54321
+        if not base_port:
+            if getpass.getuser()=='jenkins':
+                base_port = 54340
+            else:
+                base_port = 54321
 
         if a:
             base_port += a
