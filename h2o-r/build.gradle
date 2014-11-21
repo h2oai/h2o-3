@@ -287,7 +287,7 @@ task runRTests() {
     pickActions(folders).each{ tuple->
         exec{
             workingDir tuple.get(0)
-            commandLine '/usr/bin/R', 'CMD', 'BATCH', '--slave', tuple.get(1)
+            commandLine 'R', 'CMD', 'BATCH', '--slave', tuple.get(1)
             ignoreExitValue true
         }
     }
