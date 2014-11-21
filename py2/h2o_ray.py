@@ -319,7 +319,7 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
         request += "/" + algo
 
     result = self.do_json_request(request, timeout=timeoutSecs, params=params_dict)
-    verboseprint(request, "result:", dump_json(result))
+    # verboseprint(request, "result:", dump_json(result))
     return result
 
 
@@ -389,8 +389,10 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     if destination_key is not None:
         parameters['destination_key'] = destination_key
 
+    print "build_model parameters", parameters
     result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
+    verboseprint("build_model result", dump_json(result1))
 
     if asynchronous:
         result = result1
@@ -400,10 +402,37 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
         result = result1
     else:
-        job = result1['jobs'][0]
-        job_key = job['key']['name']
-        verboseprint("model building job_key: " + repr(job_key))
-        result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+        job_result = result1['jobs'][0]
+        job_key = job_result['key']['name']
+        verboseprint("build_model job_key: " + repr(job_key))
+
+        job_result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+        verboseprint(job_result)
+
+        if job_result:
+            jobs = job_result['jobs'][0]
+            description = jobs['description']
+            dest = jobs['dest']
+            msec = jobs['msec']
+            status = jobs['status']
+            progress = jobs['progress']
+
+            # can condition this with a parameter if some FAILED are expected by tests.
+            if status=='FAILED':
+                print dump_json(job_result)
+                raise Exception("Taking exception on build_model job status: %s %s %s %s" % \
+                    (status, progress, msec, description))
+
+            result = job_result
+        else:
+            # ? we should always get a job_json result
+            raise Exception("build_model didn't get a job_result when it expected one")
+            # return None
+
+        return result
+
+
+
 
     verboseprint("result:", result)
     return result

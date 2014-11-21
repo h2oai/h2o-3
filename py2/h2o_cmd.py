@@ -135,7 +135,7 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         if not desiredResult or (column and column==label):
             desiredResult = summaryResult
         
-        verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
+        # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
 
         # this should be the same for all the cols? Or does the checksum change?
         frame = summaryResult['frames'][0]

@@ -109,9 +109,10 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
     result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+    verboseprint("rapids result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?
-    if 'exception' in result and result['exception']:
+    if 'exception' in result and result['exception'] and not ignoreH2oError:
         exception = result['exception']
         raise Exception('rapids with kwargs:\n%s\ngot exception:\n"%s"\n' % (dump_json(kwargs), exception))
 
