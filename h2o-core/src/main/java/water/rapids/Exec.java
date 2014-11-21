@@ -99,7 +99,9 @@ public class Exec extends Iced {
 
   protected AST parse() {
     // Parse a token --> look for a function or a special char.
+    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String tok = parseID();
+    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     //lookup of the token
     AST ast = lookup(tok);
     return ast.parse_impl(this);
@@ -141,7 +143,7 @@ public class Exec extends Iced {
     return sb.toString();
   }
 
-  boolean hasNext() { return _x != _ast.length; }
+  boolean hasNext() { return _x < _ast.length; }
   boolean hasNextStmnt() {
     if (hasNext()) {
       if (_x+1 >= _ast.length) return false;

@@ -197,6 +197,7 @@ class ASTSpan extends AST {
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
+  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;}
   ASTSpan parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
@@ -233,6 +234,7 @@ class ASTSeries extends AST {
   final ASTSpan[] _spans;
   boolean _isCol;
   boolean _isRow;
+  int[] _order; // a sequence of 0s and 1s. 0 -> span; 1 -> index
 
   ASTSeries(long[] idxs, ASTSpan[] spans) {
     _idxs = idxs;
@@ -244,16 +246,25 @@ class ASTSeries extends AST {
     ArrayList<ASTSpan> s_spans = new ArrayList<>();
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String[] strs = E.parseString('}').split(";");
+    _order = new int[strs.length];
+    int o = 0;
     for (String s : strs) {
       if (s.charAt(0) == '(') {
+        _order[o++] = 0;
         s_spans.add((ASTSpan) (new Exec(s, null)).parse());
-      } else l_idxs.add(Long.valueOf(s));
+      } else {
+        _order[o++] = 1;
+        if (s.charAt(0) == '#') s = s.substring(1, s.length());
+        l_idxs.add(Long.valueOf(s));
+      }
     }
     long[] idxs = new long[l_idxs.size()];
     ASTSpan[] spans = new ASTSpan[s_spans.size()];
     for (int i = 0; i < idxs.length; ++i) idxs[i] = l_idxs.get(i);
     for (int i = 0; i < spans.length; ++i) spans[i] = s_spans.get(i);
-    return new ASTSeries(idxs, spans);
+    ASTSeries aa = new ASTSeries(idxs, spans);
+    aa._order = _order;
+    return aa;
   }
 
   boolean contains(long a) {
@@ -267,14 +278,12 @@ class ASTSeries extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
 
-  void setSlice(boolean row, boolean col) {
-    _isRow = row;
-    _isCol = col;
-  }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
 
   @Override
   void exec(Env e) {
     ValSeries v = new ValSeries(_idxs, _spans);
+    v._order = _order;
     v.setSlice(_isRow, _isCol);
     e.push(v);
   }
