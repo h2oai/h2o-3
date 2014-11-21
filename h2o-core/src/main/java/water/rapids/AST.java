@@ -1002,7 +1002,7 @@ class ASTSlice extends AST {
       if (a.isColSelector()) return a.toArray();
 
       // Check the case where we have c(1), e.g., a series of a single digit...
-      if (a.isNum()) return select(len, new ValNum(a.toNum()), env, isCol);
+      if (a.isNum() && !a.all_neg()) return select(len, new ValNum(a.toNum()), env, isCol);
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();
