@@ -1,3 +1,0 @@
-.Rproj.user
-.Rhistory
-.RData

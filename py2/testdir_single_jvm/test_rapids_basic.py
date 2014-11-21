@@ -112,22 +112,59 @@ initList = [
         '= !x _ % #1 % #1 (% #1 _ #1)',
 
 
-        # can't have space between ( and function
-        '= !x1 (sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2 (sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2a (sum ([ $r1 "null" #0) $TRUE )',
+        # can have space between ( and function
+        '= !x1 ( sum ([ $r1 "null" #0) $TRUE)',
+        '= !x2 ( sum ([ $r1 "null" #0) $TRUE)',
+        '= !x2a ( sum ([ $r1 "null" #0) $TRUE )',
 
-        # can't have space after (
-        '= !x3 (sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3a (sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3b (sum ([ $r1 "null" #0 ) $TRUE )',
-        '= !x4 (sum ([ $r1 " null " #0 ) $TRUE )',
+        # can have space after (
+        '= !x3 ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x3a ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )',
+        '= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )',
 
-        # can't have space after (
-        '(= !x3 (sum ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a (sum ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b (sum ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 (sum ([ $r1 " null " #0 ) $TRUE )))',
+        # can have space after (
+        '(= !x3 ( sum ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( sum ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )))',
+
+        '(= !x3 ( max ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( max ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( max ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( max ([ $r1 " null " #0 ) $TRUE )))',
+
+        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( min ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
+
+        # '{ #1 #1 }',
+        # '(= !x4 { #1 #1 })',
+
+        #  r1[c(1,5,8,10,33),]  
+        # commas are illegal (var name?)
+
+        # vectors can be strings or numbers only, not vars or keys
+        # h2o objects can't be in a vector
+
+        # should work soon
+        # '(= !x (c {#1;#5;#8;#10;#33}))',
+        # '(= !x (c {(: #0 #5) }))',
+        # '(= !x (c {(: #5 #5) }))',
+        # '(= !x (c {(: #5 #0) }))',
+        '([ $r1 {(: #5 #1);8;10;33} "null")',
+        '([ $r1 {(: #1 #5);8;10;33} "null")',
+        '([ $r1 {(: #1 #5) ;8;10;33} "null")',
+        # space after : should be optional
+        '([ $r1 { (:,#1,#5); 8.0e0;10;33} "null")',
+        '([ $r1 { (: #1 #5); 8;10;33} "null")',
+        '([ $r1 { (: #1 #5); #8; #10;#33} "null")',
+        '([ $r1 { (: #1 #5); #8; #10;#33} "null" )',
+        '([ $r1 {#1;#5;#8;#10;#33} "null")',
+
+# c(1,2,3,4)
+
         # '= !x (sum $r1 )'
         # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
 
