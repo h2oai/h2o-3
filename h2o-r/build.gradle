@@ -10,6 +10,7 @@ description = "H2O R Package"
 apply plugin : 'java'
 apply plugin: 'groovy'
 apply plugin: 'water.gradle.plugins.convertR2html'
+apply plugin: 'water.gradle.plugins.manageClouds'
 
 dependencies { compile project(":h2o-assembly") }
 
@@ -264,7 +265,7 @@ cleaner.dependsOn rbuild
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
 
-task runRTests() {
+task runRTests(dependsOn: manageClouds) {
     def folders = ["${projectDir}/src/test/R"]
     def testMarker = ~/test.+\.r/
 
@@ -299,6 +300,11 @@ task reporting (dependsOn: runRTests) << {
 
     project.ext.R_test_folders = ["${projectDir}/src/test/R"]
     project.ext.Regex_test_marker = ~/test.+\.Rout/
+
+    project.ext.clouds = {
+        type='testLocal'
+        jar='build/h2o.jar'
+    }
 }
 
 
