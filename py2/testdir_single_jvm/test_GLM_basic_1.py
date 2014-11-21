@@ -81,7 +81,7 @@ class Basic(unittest.TestCase):
             }
 
 
-            model_key = 'benign_k.hex'
+            model_key = 'benign_glm.hex'
             glmResult = h2o.n0.build_model(
                 algo='glm', 
                 destination_key=model_key,
@@ -89,11 +89,6 @@ class Basic(unittest.TestCase):
                 parameters=parameters, 
                 timeoutSecs=10) 
 
-            mmResult = h2o.n0.compute_model_metrics(
-                model=model_key, 
-                frame=parse_key, 
-                timeoutSecs=60)
-    
             gr = self.GLMOutput(glmResult)
             for k,v in gr:
                 if k != 'parameters':
@@ -106,6 +101,18 @@ class Basic(unittest.TestCase):
                 if k != 'parameters':
                     print "mr", k, dump_json(v)
 
+            cmmResult = h2o.n0.compute_model_metrics(
+                model=model_key, 
+                frame=parse_key, 
+                timeoutSecs=60)
+
+            print "cmmResult", dump_json(cmmResult)
+
+            mmResult = h2o.n0.model_metrics(
+                model=model_key, 
+                frame=parse_key, 
+                timeoutSecs=60)
+    
             print "mmResult", dump_json(mmResult)
 
             # this prints too
@@ -113,72 +120,6 @@ class Basic(unittest.TestCase):
             #    h2o_glm.simpleCheckGLM(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
             
             h2o_cmd.runStoreView()
-
-
-    def notest_glm_prostate(self):
-
-        importFolderPath = "logreg"
-        csvFilename = "prostate.csv"
-        hex_key = "prostate.hex"
-        csvPathname = importFolderPath + "/" + csvFilename
-
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
-            timeoutSecs=180, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
-
-        # loop, to see if we get same centers
-
-        expected = [ ] 
-        # all are multipliers of expected tuple value
-        allowedDelta = 0
-
-        labelListUsed = list(labelList)
-        labelListUsed.remove('ID')
-        numColsUsed = numCols - 1
-
-        for trial in range(1):
-            parameters = {
-                'validation_frame': parse_key,
-                'ignored_columns': None,
-                'score_each_iteration': True,
-                'response_column': None,
-                # can we do classification with probabilities?
-                'do_classification': None,
-                'balance_classes': False,
-                'max_after_balance_size': None,
-                'standardize': False,
-                'family': binomial, # [u'gaussian', u'binomial', u'poisson', u'gamma', u'tweedie']
-                'link': None, # [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
-                'tweedie_variance_power': None,
-                'tweedie_link_power': None,
-                'alpha': 1e-4,
-                'lambda': 0.5,
-                'prior1': None,
-                'lambda_search': None,
-                'nlambdas': None,
-                'lambda_min_ratio': None,
-                'higher_accuracy': True,
-                'use_all_factor_levels': False,
-                'n_folds': 1,
-            }
-
-            model_key = 'prostate_k.hex'
-            glmResult = h2o.n0.build_model(
-                algo='glm', 
-                training_frame=parse_key,
-                parameters=parameters, 
-                timeoutSecs=10) 
-
-            modelResult = h2o.n0.models(key=model_key)
-
-            h2o_cmd.runStoreView()
-
-            tuplesSorted, iters, mse, names = \
-                h2o_glm.simpleCheckGLM(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
-
 
 if __name__ == '__main__':
     h2o.unit_main()
