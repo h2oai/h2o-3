@@ -141,18 +141,16 @@ class convertR2html implements Plugin<Project> {
     void apply(Project project){
         project.task('Rout2Html', dependsOn: 'reporting') << {
             new File("build/reports/site").mkdirs()
-            //TODO: make here folders tokens relative to project.projectDir()
 
-            def folders = [ "testthat" ]
-            def testMarker = ~/test.+\.Rout/
-
-            def getTests = {
-                def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
-                (what == null)?[]:what.toList()
-            }
-
+            def folders = project.ext.R_test_folders as List<String>
+            def testMarker = project.ext.Regex_test_marker as java.util.regex.Pattern
+            logger.info " ** Looking into ${folders.toString()}"
             def pickResults = {from->
                 def answer = []
+                def getTests = {
+                    def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
+                    (what == null)?[]:what.toList()
+                }
                 from.each{
                     getTests(it).each{item->
                         answer.add(new Tuple<String,String>(it, item))
@@ -162,8 +160,15 @@ class convertR2html implements Plugin<Project> {
             }
 
             def testResults = [:]
+            /*will end up being something like
+            [
+            test1:[tests:5, failures:2, errors:1, skipped:2],
+            test2:[tests:7, failures:0, errors:0, skipped:0]
+            ]
+            */
 
             def processTestResults = {file, into ->
+                logger.warn "Processing test results from " + file.getCanonicalPath()
                 def lines = file as String[]
                 /*  we care here about two kind of lines
                 Basic tests : ........
@@ -176,138 +181,51 @@ class convertR2html implements Plugin<Project> {
                 def summaryPattern = ~/(\w[^:]+)\s*:\s*(.*)/
                 def detailPattern = ~/(.)\.\s*(.+)\(@.+\.r#\d*\):\s*(.+)/
                 def exclusions = ["Warning messages"] as Set
-
+                def tempBuffer = []
+                def buffer = []
                 lines.eachWithIndex{line, i->
-                    Matcher m1 = (line =~ summaryPattern)
-                    Matcher m2 = (line =~ detailPattern)
-                    if ( m1.matches() ){
-                        if ( !exclusions.contains(m1[0][1]) ){
-                            println "Context:${m1[0][1]}; Results:${m1[0][2]}"
+                    logger.warn line
+                    if ( 0 == line.trim().length() ){
+                        if ( tempBuffer.size() > 0 ){
+                            buffer << tempBuffer.clone()
+                            tempBuffer.clear()
                         }
                     }
-                    if ( m2.matches() )println "#" + line
+                    else{
+                        tempBuffer << line.trim()
+                        logger.warn "adding to temp: " + tempBuffer.toString()
+                    }
+//                    Matcher m1 = (line =~ summaryPattern)
+//                    Matcher m2 = (line =~ detailPattern)
+//                    if ( m1.matches() ){
+//                        if ( !exclusions.contains(m1[0][1]) ){
+//                            //println " * ${m1[0][1]} : ${m1[0][2]}"
+//                        }
+//                    }
+//                    if ( m2.matches() )println "#" + line
                 }
+                if ( tempBuffer.size() > 0 ) buffer << tempBuffer
+/*
+                --
+                Basic tests : .......
+                Functional tests : ....12.
+                Integration tests : .......
+                Smoke tests : .......
+                --
+                1. Failure(@test-functional.r#14): equality holds ------------------------------
+                5 not equal to 6
+                Mean relative difference: 0.1666667
+                --
+                2. Failure(@test-functional.r#15): equality holds ------------------------------
+                10 is not identical to 11. Differences:
+                Mean relative difference: 0.09090909
+*/
+                //populate 'into' structure
+
             }
 
-/*
-Bare expectations : ......
-Basic tests : .......
-Colours : 123456789abc
-Compare : ...........
-Contexts : ....
-Describe : ...........
-Environment :
-expect_that : ....
-Expectations : .............................
-Line Numbers : ............
-Mock : ...............................d.................
-Negations : .........
-ListReporter : .......
-MultiReporter : .
-Reporter : ......
-source_dir : ....
-test_dir : ...
-Watcher components : .............S
-Testing test_that : ..........
-
-
-1. Failure(@test-colour.r#17): We have colours if we want to -------------------
-c1 isn't true
-
-2. Failure(@test-colour.r#18): We have colours if we want to -------------------
-c2 isn't true
-
-3. Failure(@test-colour.r#19): We have colours if we want to -------------------
-c3 isn't true
-
-4. Failure(@test-colour.r#42): We don't have colours if we don't want to -------
-c1 isn't false
-
-5. Failure(@test-colour.r#43): We don't have colours if we don't want to -------
-c2 isn't false
-
-6. Failure(@test-colour.r#44): We don't have colours if we don't want to -------
-c3 isn't false
-
-7. Failure(@test-colour.r#45): We don't have colours if we don't want to -------
-c4 isn't false
-
-8. Failure(@test-colour.r#46): We don't have colours if we don't want to -------
-c5 isn't false
-
-9. Failure(@test-colour.r#47): We don't have colours if we don't want to -------
-c6 isn't false
-
-a. Failure(@test-colour.r#48): We don't have colours if we don't want to -------
-c7 isn't false
-
-b. Failure(@test-colour.r#49): We don't have colours if we don't want to -------
-c8 isn't false
-
-c. Failure(@test-colour.r#50): We don't have colours if we don't want to -------
-c9 isn't false
-
-d. Failure(@test-mock.r#119): can mock if package is not loaded ----------------
-"package:devtools" %in% search() isn't false
-
-Error: Test failures
-In addition: Warning messages:
-1: In getPackageName(where) :
-  Created a package name, ‘2014-11-14 10:49:52’, when none found
-2: In getPackageName(where) :
-  Created a package name, ‘2014-11-14 10:49:52’, when none found
-Execution halted
-
-
-or another is ...
-Bare expectations : ......
-Basic tests : .......
-Compare : ...........
-Contexts : ....
-Describe : ...........
-Environment :
-expect_that : ....
-Expectations : .............................
-Line Numbers : ............
-Negations : .........
-ListReporter : .......
-MultiReporter : .
-Reporter : ......
-source_dir : ....
-test_dir : ...
-Watcher components : .............S
-Testing test_that : ..........
-
-Nice code.
-
-Warning messages:
-1: In getPackageName(where) :
-  Created a package name, ‘2014-11-19 14:30:56’, when none found
-2: In getPackageName(where) :
-  Created a package name, ‘2014-11-19 14:30:57’, when none found
-
-or if all is ok, we get:
-Bare expectations : ......
-Basic tests : .......
-Compare : ...........
-Contexts : ....
-Describe : ...........
-Environment :
-expect_that : ....
-Expectations : .............................
-Line Numbers : ............
-Negations : .........
-ListReporter : .......
-MultiReporter : .
-Reporter : ......
-source_dir : ....
-test_dir : ...
-Testing test_that : ..........
-
-Nice code.
-
-*/
             pickResults(folders).each{tuple->
+                //TODO: what's happening with testResults if we digest multiple files?
                 processTestResults(
                     new File([tuple.get(0), tuple.get(1)].join(System.getProperty('file.separator'))),
                     testResults

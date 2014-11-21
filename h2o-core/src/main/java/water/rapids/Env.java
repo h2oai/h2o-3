@@ -792,6 +792,7 @@ class ValSeries extends Val {
   final ASTSpan[] _spans;
   boolean _isCol;
   boolean _isRow;
+  int[] _order;
 
   ValSeries(long[] idxs, ASTSpan[] spans) {
     _idxs = idxs;
