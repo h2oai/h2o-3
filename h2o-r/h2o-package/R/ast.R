@@ -16,6 +16,7 @@
 #'  { 'ast' : { ... }, 'funs' : {[ ... ]} }
 #'
 #' All ASTNodes have children. All nodes with the @@root slot has a list in the @@children slot that represent operands.
+#TODO: this must become hidden. visitor -> .visitor
 visitor<-
 function(node) {
   res <- ""
@@ -92,7 +93,7 @@ function(x, ID, top_level_envir, calling_envir) {
 #'
 .eval<-
 function(x, envir, sub_one = TRUE) {
-  if (.any.h2o(x, envir)) return(eval(x),envir)
+  if (.any.h2o(x, envir)) return(.ast.walker(eval(x,envir),envir,FALSE,sub_one))
   .ast.walker(x,envir, FALSE, sub_one)
 }
 
@@ -100,6 +101,7 @@ function(x, envir, sub_one = TRUE) {
 #' Walk the R AST directly
 #'
 #' Handles all of the 1 -> 0 indexing issues.
+#' TODO: this method needs to be cleaned up and re-written
 .ast.walker<-
 function(expr, envir, neg = FALSE, sub_one = TRUE) {
   sub <- ifelse(sub_one, 1, 0)
@@ -113,35 +115,40 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
     # Have a vector => ASTSeries
     if ((expr[[1]]) == quote(`c`)) {
       children <- lapply(expr[-1], .ast.walker, envir, neg, sub_one)
-      # ASTSeries single numbers should have no leading '#', so strip it.
-      children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', x) else x)
       return(new("ASTSeries", op="{", children = children))
 
     # handle the negative indexing cases
     } else if (expr[[1]] == quote(`-`)) {
       # got some negative indexing!
+
+      # disallow binary ops here
+      if (length(expr) == 3) {  # have a binary operation, e.g. 50 - 1
+        stop("Unimplemented: binary operations (+, -, *, /) within a slice.")
+      }
+
       new_expr <- as.list(expr[-1])[[1]]
       if (length(new_expr) == 1) {
         if (is.symbol(new_expr)) new_expr <- get(deparse(new_expr), envir)
-        if (is.numeric(new_expr[[1]])) return ('#-' %p0% (eval(new_expr[[1]], envir=envir)))  # do not do the +1
+        if (is.numeric(new_expr[[1]])) return('#-' %p0% (eval(new_expr[[1]], envir=envir)))  # do not do the +1
       }
 
       if (isGeneric(deparse(new_expr[[1]]))) {
         if ((new_expr[[1]]) == quote(`c`)) {
           if (!identical(new_expr[[2]][[1]], quote(`:`))) {
             children <- lapply(new_expr[-1], .ast.walker, envir, neg, sub_one)
-            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', '-' %p0% x) else -x)
-            children <- lapply(children, function(x) as.character( as.numeric(as.character(x)) - sub))
+            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', '-' %p0% x) else -x) # scrape off the '#', put in the - and continue...
+            children <- lapply(children, function(x) '#' %p0% (as.numeric(as.character(x)) - sub))
             return(new("ASTSeries", op="{", children=children))
           } else {
             if (length( as.list(new_expr[-1])) < 2) new_expr <- as.list(new_expr[-1])
             else return(.ast.walker(substitute(new_expr), envir, neg=TRUE, sub_one))
           }
         }
-      } # otherwise `:` with negative indexing
+      }
 
-      if (identical(new_expr[[1]], quote(`:`))) {
-        return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(new_expr[[2]],envir=envir)), '#-' %p0% (eval(new_expr[[3]],envir=envir)))))
+      # otherwise `:` with negative indexing
+      if (identical(new_expr[[1]][[1]], quote(`:`))) {
+        return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(new_expr[[1]][[2]],envir=envir)), '#-' %p0% (eval(new_expr[[1]][[3]],envir=envir)))))
       }
     }
     # end negative expression cases
@@ -154,11 +161,10 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
-      children <- lapply(expr, .ast.walker, envir, neg, sub_one)
-      # ASTSeries single numbers should have no leading '#', so strip it.
-      children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', x) else x)
-      return(new("ASTSeries", op="{", children = children))
-    }
+    children <- lapply(expr, .ast.walker, envir, neg, sub_one)
+    return(new("ASTSeries", op="{", children = children))
+  }
+  stop("No suitable AST could be formed from the expression.")
 }
 
 #'
