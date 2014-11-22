@@ -42,8 +42,8 @@ class Basic(unittest.TestCase):
             'do_classification': True,
             # 'balance_classes':
             # 'max_after_balance_size':
-            'ntrees': 4,
-            'max_depth': 20,
+            'ntrees': 2,
+            'max_depth': 10,
             'min_rows': 3,
             'nbins': 40,
             'learn_rate': 0.2,
@@ -53,29 +53,27 @@ class Basic(unittest.TestCase):
             # 'seed': 
         }
 
-        model_key = 'benign_dl.hex'
+        model_key = 'benign_gbm.hex'
         bmResult = h2o.n0.build_model(
             algo='gbm',
             destination_key=model_key,
             training_frame=parse_key,
             parameters=parameters,
-            timeoutSecs=10)
+            timeoutSecs=60)
         bm = OutputObj(bmResult, 'bm')
 
         modelResult = h2o.n0.models(key=model_key)
         model = OutputObj(modelResult['models'][0]['output'], 'model')
 
-        cmmResult = h2o.n0.compute_model_metrics(
-            model=model_key,
-            frame=parse_key,
-            timeoutSecs=60)
+        cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
 
-        mmResult = h2o.n0.model_metrics(
-            model=model_key,
-            frame=parse_key,
-            timeoutSecs=60)
+        mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         mm = OutputObj(mmResult, 'mm')
+
+        print "Skipping predict"
+        # prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+        # pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
         h2o_cmd.runStoreView()
 

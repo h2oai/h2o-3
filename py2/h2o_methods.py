@@ -2,8 +2,7 @@
 import os, sys, time, requests, zipfile, StringIO, re
 import h2o_args
 # from h2o_cmd import runInspect, infoFromSummary
-import h2o_cmd, h2o_util
-import h2o_browse as h2b
+import h2o_cmd, h2o_util, h2o_browse as h2b, h2o_sandbox
 
 from h2o_objects import H2O
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sandbox_name, log
@@ -116,6 +115,7 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
         exception = result['exception']
         raise Exception('rapids with kwargs:\n%s\ngot exception:\n"%s"\n' % (dump_json(kwargs), exception))
 
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 #******************************************************************************************8
@@ -131,6 +131,7 @@ def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
     check_params_update_kwargs(params_dict, kwargs, 'quantiles', print_params)
     a = self.do_json_request('Quantiles.json', timeout=timeoutSecs, params=params_dict)
     verboseprint("\nquantiles result:", dump_json(a))
+    h2o_sandbox.check_sandbox_for_errors()
     return a
 
 #******************************************************************************************8
@@ -154,6 +155,11 @@ def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
         raise Exception("unexpected status for DownloadDataset: %s" % r.status_code)
 
     print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
+    h2o_sandbox.check_sandbox_for_errors()
+
+    # FIX! we're skipping all the checks in do_json_request. And no json return?
+    return 
+    
 
 #******************************************************************************************8
 # attach methods to H2O object

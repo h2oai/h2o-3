@@ -138,16 +138,6 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    class w2vOutput(object):
-        def __init__(self, output):
-            assert isinstance(output, dict)
-            for k,v in output.iteritems():
-                setattr(self, k, v) # achieves self.k = v
-
-        def __iter__(self):
-            for attr, value in self.__dict__.iteritems():
-                yield attr, value
-
     def test_w2v_basic_1(self):
         global SYNDATASETS_DIR
         SYNDATASETS_DIR = h2o.make_syn_dir()
@@ -173,13 +163,11 @@ class Basic(unittest.TestCase):
             parseResult = h2i.import_parse(path=csvPathname, hex_key=hex_key, 
                 checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
+
             inspectResult = h2o_cmd.runInspect(key=parse_key)
             missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
 
             src_key = h2i.find_key('syn_.*csv')
-
-            expected = []
-            allowedDelta = 0
 
             # no cols ignored
             labelListUsed = list(labelList)
@@ -215,17 +203,14 @@ class Basic(unittest.TestCase):
                 modelResult = h2o.n0.models(key=model_key)
                 model = OutputObj(modelResult['models'][0]['output'], 'model')
 
-                cmmResult = h2o.n0.compute_model_metrics(
-                    model=model_key, 
-                    frame=parse_key, 
-                    timeoutSecs=60)
+                cmmResult = h2o.n0.compute_model_metrics( model=model_key, frame=parse_key, timeoutSecs=60)
                 cmm = OutputObj(cmmResult, 'cmm')
 
-                mmResult = h2o.n0.model_metrics(
-                    model=model_key, 
-                    frame=parse_key, 
-                    timeoutSecs=60)
-                mm = OutputObj(mmResult, 'mm')
+                mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
+                mm = OutputObj(mmResult['model_metrics'][0], 'mm')
+
+                prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+                pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
         
                 h2o_cmd.runStoreView()
 

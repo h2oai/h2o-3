@@ -1,6 +1,6 @@
 
 import time
-import h2o_methods, h2o_print as h2p
+import h2o_methods, h2o_print as h2p, h2o_sandbox
 from h2o_test import verboseprint, dump_json
 
 ###################
@@ -30,6 +30,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', False)
 
     start_time = time.time()
+    pollCount = 0
     while True:
         result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
@@ -52,15 +53,24 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             "\tmsec:", msec
         
         if status=='DONE' or status=='CANCELLED' or status=='FAILED':
+            h2o_sandbox.check_sandbox_for_errors()
             return result
 
         # FIX! what are the other legal polling statuses that we should check for?
 
         if time.time() - start_time > timeoutSecs:
-            print "Job:", job_key, "timed out in:", timeoutSecs
+            h2o_sandbox.check_sandbox_for_errors()
+            emsg = "Job:", job_key, "timed out in:", timeoutSecs
+            raise Exception(emsg)
+            print emsg
             return None
 
+        # check every other poll, for now
+        if (pollCount % 2) == 0:
+            h2o_sandbox.check_sandbox_for_errors()
+
         time.sleep(retryDelaySecs)
+        pollCount += 1
 
 
 def import_files(self, path, timeoutSecs=180):
@@ -73,6 +83,7 @@ def import_files(self, path, timeoutSecs=180):
         params={"path": path}
     )
     verboseprint("\nimport_files result:", dump_json(a))
+    h2o_sandbox.check_sandbox_for_errors()
     return a
 
 
@@ -128,6 +139,7 @@ def parse(self, key, hex_key=None,
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     params_setup = {'srcs': srcs}
     setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=params_setup)
+    h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
     # and then Parse?srcs=<keys list> and params from the ParseSetup result
@@ -181,6 +193,7 @@ def parse(self, key, hex_key=None,
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:
         # ??
+        h2o_sandbox.check_sandbox_for_errors()
         return this.jobs(job_key)
 
     # does Frame also, while polling
@@ -280,6 +293,7 @@ def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
     result = self.do_json_request('3/Frames.json/%s/columns/%s/summary' % (key, column), timeout=timeoutSecs, params=params_dict)
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -327,6 +341,7 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
 
     result = self.do_json_request(request, timeout=timeoutSecs, params=params_dict)
     # verboseprint(request, "result:", dump_json(result))
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -436,12 +451,8 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
             raise Exception("build_model didn't get a job_result when it expected one")
             # return None
 
-        return result
-
-
-
-
     verboseprint("result:", result)
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -465,6 +476,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
 
     mm = result['model_metrics'][0]
     verboseprint("model metrics: " + repr(mm))
+    h2o_sandbox.check_sandbox_for_errors()
     return mm
 
 
@@ -482,6 +494,8 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
     assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
     result = self.do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -490,6 +504,7 @@ def model_metrics(self, timeoutSecs=60, **kwargs):
     ModelMetrics list. 
     '''
     result = self.do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -514,6 +529,7 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
     
     verboseprint("models result:", dump_json(result))
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 

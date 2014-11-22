@@ -243,7 +243,6 @@ class H2O(object):
         h2o_nodes.json_url_history.append(r.url)
         # if r.json():
         #     raise Exception("Maybe bad url? no r.json in do_json_request in %s:" % inspect.stack()[1][3])
-
         rjson = None
         if returnFast:
             return

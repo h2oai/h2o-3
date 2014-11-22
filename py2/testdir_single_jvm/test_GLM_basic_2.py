@@ -80,17 +80,14 @@ class Basic(unittest.TestCase):
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
 
-            cmmResult = h2o.n0.compute_model_metrics(
-                model=model_key,
-                frame=parse_key,
-                timeoutSecs=60)
+            cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
-            mmResult = h2o.n0.model_metrics(
-                model=model_key,
-                frame=parse_key,
-                timeoutSecs=60)
+            mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mm = OutputObj(mmResult, 'mm')
+
+            prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+            pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
             h2o_cmd.runStoreView()
 
