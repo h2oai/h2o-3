@@ -13,19 +13,20 @@ class Basic(unittest.TestCase):
         global SEED
         SEED = h2o.setup_random_seed()
 
-        h2o.init(1)
+        h2o.init(3)
 
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_GLM_basic_2(self):
-        importFolderPath = "logreg"
-        csvFilename = "prostate.csv"
-        hex_key = "prostate.hex"
+    def test_GLM_covtype(self):
+        importFolderPath = "standard"
+        csvFilename = "covtype.data"
+        hex_key = "covtype.hex"
+        bucket = "home-0xdiag-datasets"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, hex_key=hex_key, 
             checkHeader=1, timeoutSecs=180, doSummary=False)
         numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
         inspectResult = h2o_cmd.runInspect(key=parse_key)
@@ -35,9 +36,8 @@ class Basic(unittest.TestCase):
         allowedDelta = 0
 
         labelListUsed = list(labelList)
-        labelListUsed.remove('ID')
-        labelListUsed.remove('CAPSULE')
-        numColsUsed = numCols - 2
+        labelListUsed.remove('C54')
+        numColsUsed = numCols - 1
         for trial in range(1):
             # family [u'gaussian', u'binomial', u'poisson', u'gamma', u'tweedie']
             # link [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
@@ -45,9 +45,10 @@ class Basic(unittest.TestCase):
             # are only lambda and alpha grid searchable?
             parameters = {
                 'validation_frame': parse_key,
-                'ignored_columns': '[ID]',
+                'ignored_columns': None,
                 'score_each_iteration': True,
-                'response_column': 'CAPSULE',
+                # FIX! for now just use a column that's binomial
+                'response_column': 'C54',
                 # FIX! when is this needed? redundant for binomial?
                 'do_classification': True,
                 'balance_classes': False,
@@ -58,7 +59,7 @@ class Basic(unittest.TestCase):
                 'tweedie_variance_power': None,
                 'tweedie_link_power': None,
                 'alpha': '[1e-4]',
-                'lambda': '[0.5]',
+                'lambda': '[0.5,0.25, 0.1]',
                 'prior1': None,
                 'lambda_search': None,
                 'nlambdas': None,
@@ -69,17 +70,18 @@ class Basic(unittest.TestCase):
                 'n_folds': 1,
             }
 
-            model_key = 'prostate_glm.hex'
+            model_key = 'covtype_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
-                timeoutSecs=10)
+                timeoutSecs=60)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
+
             h2o_glm.newSimpleCheckGLM(self, model, parameters, labelList, labelListUsed)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)

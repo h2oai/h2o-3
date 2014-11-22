@@ -1,6 +1,6 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
 from h2o_test import verboseprint, dump_json, OutputObj
 
 
@@ -38,7 +38,8 @@ class Basic(unittest.TestCase):
 
         labelListUsed = list(labelList)
         labelListUsed.remove('STR')
-        numColsUsed = numCols - 1
+        labelListUsed.remove('FNDX') # response removed also
+        numColsUsed = numCols - 2
         for trial in range(1):
             # family [u'gaussian', u'binomial', u'poisson', u'gamma', u'tweedie']
             # link [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
@@ -81,6 +82,7 @@ class Basic(unittest.TestCase):
 
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
+            h2o_glm.newSimpleCheckGLM(self, model, parameters, labelList, labelListUsed)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
