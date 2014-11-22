@@ -139,7 +139,7 @@ class convertR2html implements Plugin<Project> {
     }
 
     void apply(Project project){
-        project.task('Rout2Html', dependsOn: 'reporting') << {
+        project.task('reportAcceptanceTests', dependsOn: 'prepareAcceptanceHtmlReports') << {
             new File("build/reports/site").mkdirs()
 
             def folders = project.ext.R_test_folders as List<String>
