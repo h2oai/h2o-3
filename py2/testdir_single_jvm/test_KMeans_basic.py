@@ -1,7 +1,7 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
-from h2o_test import verboseprint, dump_json
+from h2o_test import verboseprint, dump_json, OutputObj
 
 
 class Basic(unittest.TestCase):
@@ -140,14 +140,29 @@ class Basic(unittest.TestCase):
             }
 
             model_key = 'prostate_k.hex'
-            kmeansResult = h2o.n0.build_model(
+            bmResult = h2o.n0.build_model(
                 algo='kmeans', 
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 
 
+            bm = OutputObj(bmResult, 'bm')
+
             modelResult = h2o.n0.models(key=model_key)
+            model = OutputObj(modelResult['models'][0]['output'], 'model')
+
+            cmmResult = h2o.n0.compute_model_metrics(
+                model=model_key,
+                frame=parse_key,
+                timeoutSecs=60)
+            cmm = OutputObj(cmmResult, 'cmm')
+
+            mmResult = h2o.n0.model_metrics(
+                model=model_key,
+                frame=parse_key,
+                timeoutSecs=60)
+            mm = OutputObj(mmResult, 'mm')
 
             h2o_cmd.runStoreView()
 

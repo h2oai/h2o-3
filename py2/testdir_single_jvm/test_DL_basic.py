@@ -1,7 +1,7 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
-from h2o_test import verboseprint, dump_json
+from h2o_test import verboseprint, dump_json, OutputObj
 
 
 class Basic(unittest.TestCase):
@@ -19,24 +19,14 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    class DLOutput(object):
-        def __init__(self, output):
-            assert isinstance(output, dict)
-            for k,v in output.iteritems():
-                setattr(self, k, v) # achieves self.k = v
-
-        def __iter__(self):
-            for attr, value in self.__dict__.iteritems():
-                yield attr, value
-
     def test_DL_basic(self):
         importFolderPath = "logreg"
         csvFilename = "benign.csv"
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
-            timeoutSecs=180, doSummary=False)
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
+            checkHeader=1, timeoutSecs=180, doSummary=False)
         numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
         inspectResult = h2o_cmd.runInspect(key=parse_key)
         missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
@@ -46,13 +36,14 @@ class Basic(unittest.TestCase):
 
         # no cols ignored
         labelListUsed = list(labelList)
-        numColsUsed = numCols
+        labelListUsed.remove('STR')
+        numColsUsed = numCols - 1
         for trial in range(1):
             parameters = {
                 'validation_frame': parse_key, # Frame None
-                'ignored_columns': None, # string[] None
+                'ignored_columns': '[STR]', # string[] None
                 'score_each_iteration': None, # boolean false
-                'response_column': None, # string None
+                'response_column': 'FNDX', # string None
                 'do_classification': None, # boolean false
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
@@ -117,46 +108,32 @@ class Basic(unittest.TestCase):
                 'sparsity_beta': None, # double 0.0
             }
 
-
             model_key = 'benign_dl.hex'
-            dlResult = h2o.n0.build_model(
+            bmResult = h2o.n0.build_model(
                 algo='deeplearning', 
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 
-
-            gr = self.DLOutput(dlResult)
-            for k,v in gr:
-                if k != 'parameters':
-                    print "gr", k, dump_json(v)
+            bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)
-
-            mr = self.DLOutput(modelResult['models'][0]['output'])
-            for k,v in mr:
-                if k != 'parameters':
-                    print "mr", k, dump_json(v)
+            model = OutputObj(modelResult['models'][0]['output'], 'model')
 
             cmmResult = h2o.n0.compute_model_metrics(
-                model=model_key, 
-                frame=parse_key, 
+                model=model_key,
+                frame=parse_key,
                 timeoutSecs=60)
-
-            print "cmmResult", dump_json(cmmResult)
+            cmm = OutputObj(cmmResult, 'cmm')
 
             mmResult = h2o.n0.model_metrics(
-                model=model_key, 
-                frame=parse_key, 
+                model=model_key,
+                frame=parse_key,
                 timeoutSecs=60)
-    
-            print "mmResult", dump_json(mmResult)
+            mm = OutputObj(mmResult['model_metrics'][0], 'mm')
 
-            # this prints too
-            # tuplesSorted, iters, mse, names = \
-            #    h2o_dl.simpleCheckDL(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
-            
             h2o_cmd.runStoreView()
+
 
 if __name__ == '__main__':
     h2o.unit_main()
