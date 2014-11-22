@@ -4,14 +4,16 @@ import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.TestUtil;
 import water.MRTask;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 
 import static org.junit.Assert.assertEquals;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -108,33 +110,26 @@ public class GBMTest extends TestUtil {
 //    basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data",
 //             new PrepData() { int prep(Frame fr) { return fr.numCols()-1; } });
   }
-//
-//  @Test public void testBasicGBMFamily() {
-//    Scope.enter();
-//    // Classification with Bernoulli family
-//    basicGBM("./smalldata/logreg/prostate.csv","prostate.hex",
-//        new PrepData() {
-//          int prep(Frame fr) {
-//            assertEquals(380,fr.numRows());
-//            // Remove patient ID vector
-//            UKV.remove(fr.remove("ID")._key);
-//            // Change CAPSULE and RACE to categoricals
-//            Scope.track(fr.factor(fr.find("CAPSULE"))._key);
-//            Scope.track(fr.factor(fr.find("RACE"   ))._key);
-//            // Prostate: predict on CAPSULE
-//            return fr.find("CAPSULE");
-//          }
-//        }, Family.bernoulli);
-//    Scope.exit();
-//  }
-//
+
+  @Test public void testBasicGBMFamily() {
+    Scope.enter();
+    // Classification with Bernoulli family
+    basicGBM("./smalldata/logreg/prostate.csv",
+             new PrepData() {
+               int prep(Frame fr) {
+                 fr.remove("ID").remove(); // Remove not-predictive ID
+                 int ci = fr.find("RACE"); // Change RACE to categorical
+                 Scope.track(fr.replace(ci,fr.vecs()[ci].toEnum())._key);
+                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
+               }
+             }, false, Family.bernoulli);
+    Scope.exit();
+  }
+
   // ==========================================================================
   public void basicGBM(String fname, PrepData prep) {
     basicGBM(fname, prep, false, Family.AUTO);
   }
-//  public GBMModel basicGBM(String fname, PrepData prep, boolean validation) {
-//    return basicGBM(fname, prep, validation, Family.AUTO);
-//  }
   public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, Family family) {
     GBMModel gbm = null;
     Frame fr = null, fr2= null, vfr=null;
