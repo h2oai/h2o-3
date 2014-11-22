@@ -27,12 +27,13 @@ public class Score extends MRTask<Score> {
   long    _cm[/*actual*/][/*predicted*/]; // Confusion matrix
   long    _cms[/*threshold*/][/*actual*/][/*predicted*/]; // Compute CM per threshold for binary classifiers
 
-  // r2 = 1- MSE(gbm) / MSE(mean)
+  public double mse() { return _sum/_snrows; }
+
+  // r2 = 1- MSE(gbm) / MSE(response)
   public double r2() {
-    double mse = _sum/_snrows;
     double stddev = DKV.get(_bldr._response_key).<Vec>get().sigma();
     double var = stddev*stddev;
-    return 1.0-(mse/var);
+    return 1.0-(mse()/var);
   }
 
   // Confusion Matrix for classification, or null otherwise
@@ -65,18 +66,17 @@ public class Score extends MRTask<Score> {
   }
 
   Score doIt( final boolean build_tree_one_node ) {
+    // TODO: Better answer: keep incremental scores for validation set.  As new
+    // trees are added, only need to score on the new trees (not on all trees,
+    // as this does).
+    if( _bldr._parms._valid == null ) return doAll(_bldr.train(), build_tree_one_node);
+
     // If given a validation dataset, score it "the hard way" (apply the model)
     // getting the class distribution.
-    if( _bldr._parms._valid != null ) {
-      // TODO: Better answer: keep incremental scores for validation set.  As
-      // new trees are added, only need to score on the new trees (not on all
-      // trees, as this does).
-      Frame res = _bldr._model.score(_bldr.valid(), false);
-      doAll( res  , build_tree_one_node);
-      res.delete();
-    } else { // Else have the training set predicted class distribution already
-      doAll(_bldr.train(), build_tree_one_node);
-    }
+    Frame res = _bldr._model.score(_bldr.valid(), false);
+    // Now compute CM & AUC on the pre-scored data
+    doAll(new Frame(_bldr.valid()).add(res));
+    res.delete();    // Delete temp keys
     return this;
   }
 
@@ -92,7 +92,7 @@ public class Score extends MRTask<Score> {
       float sum;
       if( _validation ) {     // Passed in a class distribution from scoring
         for( int i=0; i<_nclass; i++ )
-          fs[i+1] = (float)chks[i+1].at0(row); // Get the class distros
+          fs[i+1] = (float)_bldr.chk_tree(chks,i+1).at0(row); // Get the class distros
         if (_nclass > 1 ) sum = 1.0f;  // Sum of a distribution is 1.0 for classification
         else              sum = fs[1]; // Sum is the same as prediction for regression.
       } else {               // Passed in the model-specific columns
@@ -126,7 +126,7 @@ public class Score extends MRTask<Score> {
             _cms[i][yact][p]++; // Increase matrix
           }
         }
-        int ypred = _validation ? (int) _bldr.chk_work(chks,0).at80(row) : ModelUtils.getPrediction(fs, row);
+        int ypred = _validation ? (int) _bldr.chk_tree(chks,0).at80(row) : ModelUtils.getPrediction(fs, row);
         _cm[yact][ypred]++;      // actual v. predicted
       }
       _snrows++;

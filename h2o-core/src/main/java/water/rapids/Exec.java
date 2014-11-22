@@ -218,7 +218,6 @@ public class Exec extends Iced {
     new MRTask() {
       @Override public void setupLocal() {
         new ASTPlus(); // Touch a common class to force loading
-        tryComplete();
       }
     }.doAllNodes();
     _inited = true;

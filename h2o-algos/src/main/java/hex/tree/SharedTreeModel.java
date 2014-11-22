@@ -47,6 +47,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** r2 metric on validation set: 1-(MSE(model) / MSE(mean)) */
     public double _r2;
 
+    /** Train and test errors per-tree (scored).  Zero index is the no-tree
+     *  error, guessing only the class distribution.  Not all trees are
+     *  scored, NaN represents trees not scored. */
+    public double _mse_train[/*_ntrees+1*/];
+    public double _mse_test [/*_ntrees+1*/];
+
     /** Confusion Matrix for classification models, or null otherwise */
     public ConfusionMatrix2 _cm;
 
@@ -56,19 +62,21 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Variable Importance, if asked for */
     public VarImp _varimp;
 
-    public SharedTreeOutput( SharedTree b ) { 
+    public SharedTreeOutput( SharedTree b, double mse_train, double mse_test ) { 
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
+      _mse_train = new double[]{mse_train};
+      _mse_test  = Double.isNaN(mse_test) ? null : new double[]{mse_test };
     }
 
     // Append next set of K trees
-    public void addKTrees( DTree[] trees ) {
+    public void addKTrees( DTree[] trees) {
       assert nclasses()==trees.length;
       _treeStats.updateBy(trees); // Update tree shape stats
       // Compress trees and record tree-keys
-      _treeKeys = Arrays.copyOf(_treeKeys,_ntrees+1);
+      _treeKeys = Arrays.copyOf(_treeKeys ,_ntrees+1);
       Key[] keys = _treeKeys[_ntrees] = new Key[trees.length];
       Futures fs = new Futures();
       for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
@@ -76,6 +84,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         DKV.put(keys[i]=ct._key,ct,fs);
       }
       _ntrees++;
+      // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
+      _mse_train= Arrays.copyOf(_mse_train,_ntrees+1);
+      if( _mse_test != null )
+        _mse_test = Arrays.copyOf(_mse_test ,_ntrees+1);
       fs.blockForPending();
     }
   }

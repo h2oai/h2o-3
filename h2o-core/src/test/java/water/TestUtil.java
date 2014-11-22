@@ -103,6 +103,8 @@ public class TestUtil extends Iced {
     if( !file.exists() )
       file = new File("../" + fname);
     if( !file.exists() )
+      file = new File("../../" + fname);
+    if( !file.exists() )
       file = new File("../target/" + fname);
     if( !file.exists() )
       file = null;
