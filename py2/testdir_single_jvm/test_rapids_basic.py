@@ -3,6 +3,29 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 initList = [
+        '(= !x (c {#1;#5;#8;#10;#33}))',
+        '(= !x (c {(: #0 #5) }))',
+        '(= !x (c {(: #5 #5) }))',
+
+        # why is num_rows = -4 here? Will blow up if we  use it?
+        '(= !x (c {(: #5 #0) }))',
+
+        '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
+        '(= !v2 (+ $v $v))',
+        '111+4',
+
+        # FIX! test with space after { and before }
+        '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);#45001085})',
+        '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
+
+        # remember need $v to reference
+        '(= !v2 $v )',
+
+        '(= !v2 (n $v $v))',
+        '(= !v2 (N $v $v))',
+
+        '(= !v2 (= $v $v))',
+        '(= !v2 (+ $v $v))',
 
         # '(= !keys (ls))', # works
         # '(= !x #1)', # works
@@ -86,6 +109,8 @@ initList = [
         '= !x G #1 G #1 (G #1 #1)',
         '= !x g #1 g #1 (g #1 #1)',
 
+        '= !x (* (* #1 #1) (* #1 #1))',
+
         '= !x * #1 * #1 (* #1 #1)',
         '= !x - #1 - #1 (- #1 #1)',
         '= !x ^ #1 ^ #1 (^ #1 #1)',
@@ -139,10 +164,15 @@ initList = [
         '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
         '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
 
-        '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
 
         '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
+
+        '(= !x3 (+ (sum ([ $r1 "null" #0) $TRUE) (sum ([ $r1 "null" #0) $TRUE) )',
+        '(= !x3 (+ (xorsum ([ $r1 "null" #0) $TRUE) (xorsum ([ $r1 "null" #0) $TRUE) )',
+
+        # FIX! these should be like sum
+        # '(= !x3 (+ (max ([ $r1 "null" #0) $TRUE) (max ([ $r1 "null" #0) $TRUE) )',
+        # '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
 
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
@@ -153,15 +183,6 @@ initList = [
         # vectors can be strings or numbers only, not vars or keys
         # h2o objects can't be in a vector
 
-        # should work soon
-        # '(= !x (c {#1;#5;#8;#10;#33}))',
-        # '(= !x (c {(: #0 #5) }))',
-        # '(= !x (c {(: #5 #5) }))',
-        # '(= !x (c {(: #5 #0) }))',
-        # space after : should be optional
-
-        # this doesn't work
-        # '(= !v (c { #1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085 })',
 
         # c(1,2,3,4)
 
@@ -232,7 +253,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1)
+        h2o.init(1, base_port=54333)
 
     @classmethod
     def tearDownClass(cls):
@@ -244,8 +265,16 @@ class Basic(unittest.TestCase):
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
+        keys = []
         for execExpr in initList:
-            h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=4)
+            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=4)
+            if execResult['num_rows']:
+                keys.append(execExpr)
+            
+
+        print "\nExpressions that created keys"
+        for k in keys:
+            print k
 
         # for execExpr in exprList:
         #     h2e.exec_expr(execExpr=execExpr, resultKey=None, timeoutSecs=10)

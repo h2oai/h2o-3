@@ -188,7 +188,7 @@ class H2O(object):
         else:
             paramsStr = ''
 
-        extraComment2 = repr(postData)+";" if cmd=='post' else ""
+        extraComment2 = " " + repr(postData)+";" if cmd=='post' else ""
         extraComment2 += extraComment if extraComment else ""
 
         if len(extraComment2) > 0:

@@ -233,7 +233,7 @@ def log(cmd, comment=None):
         if cmd:
             f.write(urlparse.unquote(cmd))
             if comment:
-                f.write('    #')
+                f.write('    # ')
                 f.write(comment)
             f.write("\n")
         elif comment: # for comment-only
