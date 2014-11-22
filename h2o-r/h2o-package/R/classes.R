@@ -278,9 +278,9 @@ setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="lis
 
 #' @rdname H2ODeepLearningModel-class
 setMethod("show", "H2ODeepLearningModel", function(object) {
-  print(object@data@h2o)
-  cat("Parsed Data Key:", object@data@key, "\n\n")
-  cat("Deep Learning Model Key:", object@key)
+#  print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
+#  cat("Deep Learning Model Key:", object@key)
 
 #  model = object@model
 #  cat("\n\nTraining classification error:", model$train_class_error)

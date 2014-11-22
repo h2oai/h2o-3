@@ -3,6 +3,7 @@ package hex.coxph;
 import Jama.Matrix;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
+import hex.Model;
 import hex.SupervisedModelBuilder;
 // import hex.schemas.CoxPHV2;
 import hex.schemas.ModelBuilderSchema;
@@ -18,6 +19,13 @@ import java.util.Arrays;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[] {
+      Model.ModelCategory.Unknown,
+    };
+  }
+
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() {

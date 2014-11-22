@@ -1,7 +1,7 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i
-from h2o_test import dump_json, verboseprint
+from h2o_test import dump_json, verboseprint, OutputObj
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -23,9 +23,16 @@ class Basic(unittest.TestCase):
         train_key = 'covtype.train.hex'
         model_key = 'GBMModelKey'
         timeoutSecs = 1800
+        csvPathname = importFolderPath + "/" + trainFilename
 
-        parseTrainResult = h2i.import_parse(bucket=bucket, path=importFolderPath + "/" + trainFilename, schema='local',
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
             hex_key=train_key, timeoutSecs=timeoutSecs)
+        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
+        inspectResult = h2o_cmd.runInspect(key=parse_key)
+        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+
+        labelListUsed = list(labelList)
+        numColsUsed = numCols
 
         parameters = {
             'validation_frame': train_key,
@@ -46,15 +53,31 @@ class Basic(unittest.TestCase):
             # 'seed': 
         }
 
-        kmeansResult = h2o.n0.build_model(
+        model_key = 'benign_dl.hex'
+        bmResult = h2o.n0.build_model(
             algo='gbm',
             destination_key=model_key,
-            training_frame=train_key,
+            training_frame=parse_key,
             parameters=parameters,
             timeoutSecs=10)
+        bm = OutputObj(bmResult, 'bm')
 
         modelResult = h2o.n0.models(key=model_key)
-        print "gbm modelResult:", dump_json(modelResult)
+        model = OutputObj(modelResult['models'][0]['output'], 'model')
+
+        cmmResult = h2o.n0.compute_model_metrics(
+            model=model_key,
+            frame=parse_key,
+            timeoutSecs=60)
+        cmm = OutputObj(cmmResult, 'cmm')
+
+        mmResult = h2o.n0.model_metrics(
+            model=model_key,
+            frame=parse_key,
+            timeoutSecs=60)
+        mm = OutputObj(mmResult, 'mm')
+
+        h2o_cmd.runStoreView()
 
 if __name__ == '__main__':
     h2o.unit_main()

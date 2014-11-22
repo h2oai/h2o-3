@@ -20,6 +20,9 @@ import java.util.Map;
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
+  /** List containing the categories of models that this builder can build. Each ModelBuilder must have one of these. */
+  abstract public Model.ModelCategory[] can_build();
+
   /** All the parameters required to build the model. */
   public final P _parms;
 

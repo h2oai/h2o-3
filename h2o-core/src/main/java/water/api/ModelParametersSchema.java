@@ -10,6 +10,7 @@ import water.util.Log;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iters for KMeans).
@@ -58,7 +59,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Validation frame", direction=API.Direction.INOUT)
   public Frame validation_frame;
 
-  @API(help="Ignored columns", direction=API.Direction.INOUT)
+  @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
   @API(help="Score validation set on each major model-building iteration; can be slow", direction=API.Direction.INOUT)
@@ -123,6 +124,48 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   public static final class ValidationMessageV2 extends ValidationMessageBase {  }
 
+  private static void compute_transitive_closure_of_is_mutually_exclusive(ModelParameterSchemaV2[] metadata) {
+    // Form the transitive closure of the is_mutually_exclusive field lists by visiting
+    // all fields and collecting the fields in a Map of Sets.  Then pass over them a second
+    // time setting the full lists.
+    Map<String, Set<String>> field_exclusivity_groups = new HashMap<>();
+    for (int i = 0; i < metadata.length; i++) {
+      ModelParameterSchemaV2 param = metadata[i];
+      String name = param.name;
+
+      // Turn param.is_mutually_exclusive_with into a List which we will walk over twice
+      List<String> me = new ArrayList<String>();
+      me.add(name);
+      me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
+
+      // Make a new Set which contains ourselves, fields we have already been connected to,
+      // and fields *they* have already been connected to.
+      Set new_set = new HashSet();
+      for (String s : me) {
+        // Were we mentioned by a previous field?
+        if (field_exclusivity_groups.containsKey(s))
+          new_set.addAll(field_exclusivity_groups.get(s));
+        else
+          new_set.add(s);
+      }
+
+      // Now point all the fields in our Set to the Set.
+      for (String s : me) {
+        field_exclusivity_groups.put(s, new_set);
+      }
+    }
+
+    // Now walk over all the fields and create new comprehensive is_mutually_exclusive arrays, not containing self.
+    for (int i = 0; i < metadata.length; i++) {
+      ModelParameterSchemaV2 param = metadata[i];
+      String name = param.name;
+      Set<String> me = field_exclusivity_groups.get(name);
+      Set<String> not_me = new HashSet(me);
+      not_me.remove(name);
+      param.is_mutually_exclusive_with = not_me.toArray(new String[not_me.size()]);
+    }
+  }
+
   /**
    * Write the parameters, including their metadata, into an AutoBuffer.  Used by
    * ModelBuilderSchema#writeJSON_impl and ModelSchema#writeJSON_impl.
@@ -146,6 +189,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     } catch (NoSuchFieldException e) {
       throw H2O.fail("Caught exception accessing field: " + field_name + " for schema object: " + parameters + ": " + e.toString());
     }
+
+    compute_transitive_closure_of_is_mutually_exclusive(metadata);
 
     ab.putJSONA("parameters", metadata);
     return ab;

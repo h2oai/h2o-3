@@ -1,7 +1,7 @@
 import unittest, time, sys, random, re
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
-from h2o_test import verboseprint, dump_json
+from h2o_test import verboseprint, dump_json, OutputObj
 
 
 targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park', 
@@ -204,41 +204,29 @@ class Basic(unittest.TestCase):
                 }
 
                 model_key = 'benign_w2v.hex'
-                w2vResult = h2o.n0.build_model(
+                bmResult = h2o.n0.build_model(
                     algo='word2vec', 
                     destination_key=model_key,
                     training_frame=src_key,
                     parameters=parameters, 
                     timeoutSecs=10) 
-
-                gr = self.w2vOutput(w2vResult)
-                for k,v in gr:
-                    if k != 'parameters':
-                        print "gr", k, dump_json(v)
+                bm = OutputObj(bmResult, 'bm')
 
                 modelResult = h2o.n0.models(key=model_key)
-
-                mr = self.w2vOutput(modelResult['models'][0]['output'])
-                for k,v in mr:
-                    if k != 'parameters':
-                        print "mr", k, dump_json(v)
+                model = OutputObj(modelResult['models'][0]['output'], 'model')
 
                 cmmResult = h2o.n0.compute_model_metrics(
                     model=model_key, 
                     frame=parse_key, 
                     timeoutSecs=60)
-
-                print "cmmResult", dump_json(cmmResult)
+                cmm = OutputObj(cmmResult, 'cmm')
 
                 mmResult = h2o.n0.model_metrics(
                     model=model_key, 
                     frame=parse_key, 
                     timeoutSecs=60)
+                mm = OutputObj(mmResult, 'mm')
         
-                print "mmResult", dump_json(mmResult)
-
-                # h2o_w2v.simpleCheckw2v(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
-                
                 h2o_cmd.runStoreView()
 
 if __name__ == '__main__':

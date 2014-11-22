@@ -18,7 +18,13 @@ class OutputObj(object):
         self.name = name
 
         for k,v in self:
-            if k != 'parameters':
+            if k == 'parameters':
+                print "Not showing 'parameters'"
+            elif k == 'frame':
+                print "Not showing 'frame'"
+            elif k == 'model':
+                print "Not showing 'model'"
+            else:
                 print self.name, k, dump_json(v)
 
 

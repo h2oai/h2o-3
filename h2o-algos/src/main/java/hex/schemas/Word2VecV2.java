@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.Model;
 import hex.word2vec.Word2Vec;
 import hex.word2vec.Word2VecModel.Word2VecParameters;
 import water.api.API;
@@ -7,7 +8,6 @@ import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 
 public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV2.Word2VecParametersV2> {
-
   public static final class Word2VecParametersV2 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV2> {
     static public String[] own_fields = new String[] {
             "training_frame",
