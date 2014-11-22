@@ -21,6 +21,7 @@ public final class SchemaMetadata extends Iced {
   public List<FieldMetadata> fields;
   public String markdown;
 
+  // TODO: combine with ModelParameterSchemaV2.
   static public final class FieldMetadata extends Iced {
     /**
      * Field name in the POJO.    Set through reflection.
@@ -86,6 +87,21 @@ public final class SchemaMetadata extends Iced {
      */
     boolean json;
 
+    /**
+     * For Vec-type fields this is the set of Frame-type fields which must contain the named column.
+     * For example, for a SupervisedModel the response_column must be in both the training_frame
+     * and (if it's set) the validation_frame.
+     */
+    String[] is_member_of_frames;
+
+    /**
+     * For Vec-type fields this is the set of other Vec-type fields which must contain
+     * mutually exclusive values.  For example, for a SupervisedModel the response_column
+     * must be mutually exclusive with the weights_column.
+     */
+    String[] is_mutually_exclusive_with;
+
+
     public FieldMetadata() { }
 
     /**
@@ -100,7 +116,7 @@ public final class SchemaMetadata extends Iced {
      * @param values for enum-type fields this is a list of allowed string values
      * @param json should this field be included in generated JSON?
      */
-    public FieldMetadata(String name, String type, boolean is_schema, String schema_name, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json) {
+    public FieldMetadata(String name, String type, boolean is_schema, String schema_name, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json, String[] is_member_of_frames, String[] is_mutually_exclusive_with) {
       // from the Field, using reflection
       this.name = name;
       this.type = type;
@@ -116,13 +132,15 @@ public final class SchemaMetadata extends Iced {
       this.direction = direction;
       this.values = values;
       this.json = json;
+      this.is_member_of_frames = is_member_of_frames;
+      this.is_mutually_exclusive_with = is_mutually_exclusive_with;
     }
 
     /**
      * Create a new FieldMetadata object for the given Field of the given Schema.
      * @param schema water.api.Schema object
      * @param f java.lang.reflect.Field for the Schema class
-     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, String, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean)
+     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, String, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean, String[], String[])
      */
     public FieldMetadata(Schema schema, Field f) {
       super();
@@ -151,6 +169,8 @@ public final class SchemaMetadata extends Iced {
           this.direction = annotation.direction();
           this.values = annotation.values();
           this.json = annotation.json();
+          this.is_member_of_frames = annotation.is_member_of_frames();
+          this.is_mutually_exclusive_with = annotation.is_mutually_exclusive_with(); // TODO: need to form the transitive closure
 
           // If the field is an enum then the values annotation field had better be set. . .
           if (is_enum && (null == this.values || 0 == this.values.length)) {

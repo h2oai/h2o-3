@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.FrameTask.DataInfo;
 import hex.FrameTask;
+import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.FinalizeAndUnlockTsk;
 import hex.glm.GLMModel.GLMOutput;
@@ -33,8 +34,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by tomasnykodym on 8/27/14.
  *
  * Generalized linear model implementation.
+ * TODO: GLM will use a threshold during predict to do binomial classification, but
+ * GLMModel currently never returns Binomial as its ModelCategory.
  */
 public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{
+            Model.ModelCategory.Regression,
+            // Model.ModelCategory.Binomial, // see TODO comment above.
+    };
+  }
+
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
   public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); }
 

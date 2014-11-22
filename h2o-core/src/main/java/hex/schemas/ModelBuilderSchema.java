@@ -20,11 +20,17 @@ import java.util.Map;
 import java.util.Properties;
 
 public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
+  // NOTE: currently ModelBuilderSchema has its own JSON serializer.
+  // If you add more fields here you MUST add them to writeJSON_impl() below.
+
   // Input fields
   @API(help="Model builder parameters.")
   public P parameters;
 
   // Output fields
+  @API(help="Model categories this ModelBuilder can build.", direction = API.Direction.OUTPUT)
+  public Model.ModelCategory[] can_build;
+
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
   Key job;
 
@@ -88,6 +94,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
     builder.init(false); // check params
+    this.can_build = builder.can_build();
     job = builder._key;
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
@@ -143,6 +150,8 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSONStr("job", (null == job ? null : job.toString())); // TODO: is currently null, but probably should never be. . .
+    ab.put1(',');
+    ab.putJSONAEnum("can_build", can_build);
     ab.put1(',');
     ab.putJSONA("validation_messages", validation_messages);
     ab.put1(',');

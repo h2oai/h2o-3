@@ -630,6 +630,37 @@ public final class AutoBuffer {
     return ((long)x<<32)|(long)nz; // Return both ints
   }
 
+  @SuppressWarnings("unused")
+  // TODO: untested. . .
+  public AutoBuffer putAEnum(String name, Enum[] enums) {
+    return putAEnum(enums);
+  }
+
+  @SuppressWarnings("unused")
+  // TODO: untested. . .
+  public AutoBuffer putAEnum(Enum[] enums) {
+    //_arys++;
+    long xy = putZA(enums);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putEnum(enums[i]);
+    return this;
+  }
+
+  public Enum[] getAEnum(Enum[] values) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    Enum[] ts = new Enum[x+y+z];
+    for( int i = x; i < x+y; ++i ) ts[i] = getEnum(values);
+    return ts;
+  }
+
+
 
   public AutoBuffer putA(Freezable[] fs) {
     //_arys++;
@@ -1398,6 +1429,20 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSON1  (String name, byte b    ) { return putJSONStr(name).put1(':').putJSON1(b); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONA1 (String name, byte b[]  ) { return putJSONStr(name).put1(':').putJSONA1(b); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA1(String name, byte b[][]) { return putJSONStr(name).put1(':').putJSONAA1(b); }
+
+  public AutoBuffer putJSONAEnum(String name, Enum[] enums) {
+    return putJSONStr(name).put1(':').putJSONAEnum(enums);
+  }
+  public AutoBuffer putJSONAEnum( Enum[] enums ) {
+    if( enums == null ) return putJNULL();
+    put1('[');
+    for( int i=0; i<enums.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSONEnum(enums[i]);
+    }
+    return put1(']');
+  }
+
 
   AutoBuffer putJSON2( char c ) { return putJSON4(c); }
   AutoBuffer putJSON2( String name, char c ) { return putJSONStr(name).put1(':').putJSON2(c); }

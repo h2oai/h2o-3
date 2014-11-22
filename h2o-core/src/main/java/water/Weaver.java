@@ -159,15 +159,13 @@ public class Weaver {
       if( javassist.Modifier.isTransient(mods) || javassist.Modifier.isStatic(mods) )
         continue;  // Only serialize not-transient instance fields (not static)
       // Check for enum
-      String sig = ctf.getSignature();
-      if( sig.charAt(0) != 'L' ) continue; // Not an enum
-      String clz = sig.substring(1,sig.length()-1).replace('/', '.');
-      if( _pool.get(clz).subtypeOf(_enum) ) {
-        CtClass base = ctft;
-        while( base.isArray() ) base = base.getComponentType();
+      CtClass base = ctft;
+      while( base.isArray() ) base = base.getComponentType();
+
+      if( base.subtypeOf(_enum) ) { // either an enum or an array of enum
         // Insert in the Icer, a copy of the enum values() array from Iced
         // e.g. private final myEnum[] _fld = myEnum.values();
-        String src = "  private final "+ctft.getName().replace('$', '.')+"[] "+name+" = "+base.getName().replace('$', '.')+".values();\n";
+        String src = "  private final "+base.getName().replace('$', '.')+"[] "+name+" = "+base.getName().replace('$', '.')+".values();\n";
         if( debug_print ) System.out.println(src);
         CtField ctfr = CtField.make(src,icer_cc);
         icer_cc.addField(ctfr);
@@ -221,7 +219,8 @@ public class Weaver {
     String wbodyH= "  protected water.util.DocGen.HTML writeHTML(water.util.DocGen.HTML ab, water.Freezable ice) {\n"+
       "    return writeHTML"+id+"(ab,("+iced_name+")ice);\n"+
       "  }";
-    if( debug_print ) System.out.println(wbodyH);
+    if( debug_print )
+      System.out.println(wbodyH);
     addMethod(wbodyH,icer_cc);
 
 
@@ -231,7 +230,7 @@ public class Weaver {
               "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    read"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = (%C)ab.getEnum(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.getEnum(%s));\n",
+              "    ice.%s = (%C)ab.get%z(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.get%z(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
@@ -241,11 +240,12 @@ public class Weaver {
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               "    readJSON"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
-              "    ice.%s = (%C)ab.getEnum(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.getEnum(%s));\n",
+              "    ice.%s = (%C)ab.get%z(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.get%z(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
               "    return ice;\n" +
               "  }");
-    if( debug_print ) System.out.println(rbodyJ_impl);
+    if( debug_print )
+      System.out.println(rbodyJ_impl);
 
     // The generic override method.  Called virtually at the start of a
     // serialization call.  Only calls thru to the named static method.

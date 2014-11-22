@@ -55,4 +55,18 @@ public @interface API {
    * Should this field be rendered in the JSON representation?
    */
   boolean json() default true;
+
+  /**
+   * For Vec-type fields this is the set of Frame-type fields which must contain the named column.
+   * For example, for a SupervisedModel the response_column must be in both the training_frame
+   * and (if it's set) the validation_frame.
+   */
+  String[] is_member_of_frames() default {};
+
+  /**
+   * For Vec-type fields this is the set of other Vec-type fields which must contain
+   * mutually exclusive values.  For example, for a SupervisedModel the response_column
+   * must be mutually exclusive with the weights_column.
+   */
+  String[] is_mutually_exclusive_with() default {};
 }

@@ -12,7 +12,7 @@ abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.
   // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.
-  @API(help="Response column", direction=API.Direction.INOUT)
+  @API(help="Response column", is_member_of_frames={"training_frame", "validation_frame"}, is_mutually_exclusive_with={"ignored_columns"}, direction=API.Direction.INOUT)
   public String response_column;
 
   @API(help="Convert the response column to an enum (forcing a classification instead of a regression) if needed.", direction=API.Direction.INOUT)

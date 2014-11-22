@@ -45,13 +45,18 @@ def list_to_dict(l, key):
     return result
 
 
-def validate_builder(builder):
+def validate_builder(algo, builder):
     ''' Validate that a model builder seems to have a well-formed parameters list. '''
-    assert 'parameters' in builder and isinstance(builder['parameters'], list)
+    assert 'parameters' in builder, "Failed to find parameters list in builder: " + algo + " (" + repr(builder) + ")"
+    assert isinstance(builder['parameters'], list), "'parameters' element is not a list in builder: " + algo + " (" + repr(builder) + ")"
     parameters = builder['parameters']
     assert len(parameters) > 0
     for parameter in parameters:
         h2o_util.assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
+
+    assert 'can_build' in builder, "Failed to find can_build list in builder: " + algo + " (" + repr(builder) + ")"
+    assert isinstance(builder['can_build'], list), "'can_build' element is not a list in builder: " + algo + " (" + repr(builder) + ")"
+    assert len(builder['can_build']) > 0, "'can_build' list is empty in builder: " + algo + " (" + repr(builder) + ")"
 
 
 def validate_model_builder_result(result, original_params, model_name):
@@ -351,7 +356,7 @@ if h2o.H2O.verbose:
 for algo in algos:
     assert algo in model_builders['model_builders'], "Failed to find algo: " + algo
     builder = model_builders['model_builders'][algo]
-    validate_builder(builder)
+    validate_builder(algo, builder)
     
 
 ####################################
@@ -361,7 +366,7 @@ for algo in algos:
     model_builder = a_node.model_builders(algo=algo, timeoutSecs=240)
     assert algo in model_builder['model_builders'], "Failed to find algo: " + algo
     builder = model_builders['model_builders'][algo]
-    validate_builder(builder)
+    validate_builder(algo, builder)
 
 ####################################
 # test model_metrics collection GET
@@ -504,8 +509,8 @@ for model_spec in models_to_build:
 model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
 
 # Do we know about all of them?
-servers_algos = model_builders.keys()
-assert len(set(servers_algos) - set(algos)) == 0, "Our set of algos doesn't match what the server knows about.  Ours: " + repr(algos) + "; server's: " + repr(servers_algos)
+server_algos = model_builders.keys()
+assert len(set(server_algos) - set(algos)) == 0, "Our set of algos doesn't match what the server knows about.  Ours: " + repr(algos) + "; server's: " + repr(server_algos)
 
 for algo, model_builder in model_builders.iteritems():
     parameters_list = model_builder['parameters']

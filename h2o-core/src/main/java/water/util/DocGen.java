@@ -34,6 +34,7 @@ public abstract class DocGen<T extends DocGen> {
     private final StringBuilder _sb = new StringBuilder();
     public byte[] getBytes() { return _sb.toString().getBytes(); }
     @Override public HTML p(String s) { _sb.append(s); return this; }
+    /* @Override */ public HTML p(Enum e) { _sb.append(e); return this; }
     @Override public String toString() { return _sb.toString(); }
     private HTML p(char c) { _sb.append(c); return this; }
 
@@ -54,6 +55,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML put8d (String name, double  d) { return f(name,Double .toString(d)); }
     public HTML put   (String name, Freezable f){return f==null?f(name,"null"):f.writeHTML(f0(name)).f1(); }
     public HTML putEnum(String name, Enum   e) { return f(name,e.toString()); }
+    public HTML putAEnum(String name, Enum[] es) { return es==null?f(name,"null"):f0(name).array(es).f1(); }
 
     public HTML putAStr(String name, String [] ss) { return ss==null?f(name,"null"):f0(name).array(ss).f1(); }
     public HTML putA1  (String name, byte   [] bs) { throw H2O.unimpl(); }
@@ -168,6 +170,11 @@ public abstract class DocGen<T extends DocGen> {
       if( ds != null ) for( float d : ds ) p("<tr>").cell(d).p("</tr>");
       return arrayTail();
     }
+    public HTML array( Enum[] es ) {
+      arrayHead();
+      if( es != null ) for( Enum e : es ) p("<tr>").cell(e).p("</tr>");
+      return arrayTail();
+    }
     public HTML array( String[][] sss ) {
       arrayHead();
       for( String[] ss : sss ) {
@@ -213,6 +220,7 @@ public abstract class DocGen<T extends DocGen> {
       }
       return arrayTail();
     }
+    public HTML cell( Enum e ) { return p("<td>").p(e).p("</td>"); }
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
     public HTML cell( long l )   { return cell(Long.toString(l)); }
     public HTML cell( double d ) { return cell(Double.toString(d)); }
