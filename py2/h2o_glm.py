@@ -1,4 +1,4 @@
-import h2o_cmd, h2o, h2o_util, h2o_gbm
+import h2o_cmd, h2o, h2o_util
 import re, random, math
 from h2o_test import check_sandbox_for_errors, dump_json, verboseprint
 import h2o_nodes
@@ -283,7 +283,9 @@ def simpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=False
         predErr = cm['_predErr']
         classErr = cm['_classErr']
         # compare to predErr
-        pctWrong = h2o_gbm.pp_cm_summary(cm['_arr']);
+        # pctWrong = h2o_gbm.pp_cm_summary(cm['_arr']);
+        # FIX!
+        pctWrong = 0
         print "predErr:", predErr
         print "calculated pctWrong from cm:", pctWrong
         print "classErr:", classErr
@@ -291,7 +293,7 @@ def simpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=False
         # self.assertLess(pctWrong, 9,"Should see less than 9% error (class = 4)")
 
         print "\nTrain\n==========\n"
-        print h2o_gbm.pp_cm(cm['_arr'])
+        # print h2o_gbm.pp_cm(cm['_arr'])
 
 
     if family=="poisson" or family=="gaussian":
