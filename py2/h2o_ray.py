@@ -1,6 +1,6 @@
 
 import time
-import h2o_methods, h2o_print as h2p
+import h2o_methods, h2o_print as h2p, h2o_sandbox
 from h2o_test import verboseprint, dump_json
 
 ###################
@@ -30,6 +30,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'poll_job', False)
 
     start_time = time.time()
+    pollCount = 0
     while True:
         result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
@@ -52,15 +53,24 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             "\tmsec:", msec
         
         if status=='DONE' or status=='CANCELLED' or status=='FAILED':
+            h2o_sandbox.check_sandbox_for_errors()
             return result
 
         # FIX! what are the other legal polling statuses that we should check for?
 
         if time.time() - start_time > timeoutSecs:
-            print "Job:", job_key, "timed out in:", timeoutSecs
+            h2o_sandbox.check_sandbox_for_errors()
+            emsg = "Job:", job_key, "timed out in:", timeoutSecs
+            raise Exception(emsg)
+            print emsg
             return None
 
+        # check every other poll, for now
+        if (pollCount % 2) == 0:
+            h2o_sandbox.check_sandbox_for_errors()
+
         time.sleep(retryDelaySecs)
+        pollCount += 1
 
 
 def import_files(self, path, timeoutSecs=180):
@@ -73,6 +83,7 @@ def import_files(self, path, timeoutSecs=180):
         params={"path": path}
     )
     verboseprint("\nimport_files result:", dump_json(a))
+    h2o_sandbox.check_sandbox_for_errors()
     return a
 
 
@@ -95,7 +106,10 @@ def parse(self, key, hex_key=None,
         'checkHeader': None, # how is this used
         'singleQuotes': None,
         'columnNames': None, # list?
+        'delete_on_done': None,
+        'blocking': None,
     }
+        
     # if key is a list, create a comma separated string
     # list or tuple but not string
     if not isinstance(key, basestring):
@@ -125,6 +139,7 @@ def parse(self, key, hex_key=None,
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     params_setup = {'srcs': srcs}
     setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=params_setup)
+    h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
     # and then Parse?srcs=<keys list> and params from the ParseSetup result
@@ -151,13 +166,17 @@ def parse(self, key, hex_key=None,
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
         'columnNames': ascii_column_names,
+        # how come these aren't in setup_result?
+        'delete_on_done': params_dict['delete_on_done'],
+        'blocking': params_dict['blocking'],
     }
 
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
     tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
     if tooManyColNamesToPrint:
-        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy. See sandbox/commands.log")
+        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
+        h2p.yellow_print("See sandbox/commands.log")
 
     # merge params_dict into parse_params
     # don't want =None to overwrite parse_params
@@ -174,6 +193,7 @@ def parse(self, key, hex_key=None,
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:
         # ??
+        h2o_sandbox.check_sandbox_for_errors()
         return this.jobs(job_key)
 
     # does Frame also, while polling
@@ -222,7 +242,7 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
     When find_compatible_models is implemented then the top level 
     dict will also contain a "models" list.
     '''
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', False)
     
     if key:
         result = self.do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
@@ -262,7 +282,7 @@ def column(self, key, column, timeoutSecs=10, **kwargs):
 
 
 # TODO: remove .json
-def summary(self, key, column, timeoutSecs=10, **kwargs):
+def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     '''
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
@@ -272,7 +292,8 @@ def summary(self, key, column, timeoutSecs=10, **kwargs):
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
-    result = self.do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Frames.json/%s/columns/%s/summary' % (key, column), timeout=timeoutSecs, params=params_dict)
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -300,7 +321,7 @@ def delete_frames(self, timeoutSecs=60, **kwargs):
 
 
 # TODO: remove .json
-def model_builders(self, algo=None, parameters=None, timeoutSecs=10, **kwargs):
+def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     '''
     Return a model builder or all of the model builders known to the
     h2o cluster.  The model builders are contained in a dictionary
@@ -312,22 +333,22 @@ def model_builders(self, algo=None, parameters=None, timeoutSecs=10, **kwargs):
     if parameters = True, return the parameters?
     '''
     params_dict = {}
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', False)
 
     request = '2/ModelBuilders.json' 
     if algo:
-        request + "/" + algo
-
-    if parameters:
-        request + "/parameters"
+        request += "/" + algo
 
     result = self.do_json_request(request, timeout=timeoutSecs, params=params_dict)
+    # verboseprint(request, "result:", dump_json(result))
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
 def validate_model_parameters(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
     '''
-    Check a dictionary of model builder parameters on the h2o cluster using the given algorithm and model parameters.
+    Check a dictionary of model builder parameters on the h2o cluster 
+    using the given algorithm and model parameters.
     '''
     assert algo is not None, '"algo" parameter is null'
     # Allow this now: assert training_frame is not None, '"training_frame" parameter is null'
@@ -342,18 +363,28 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     if training_frame is not None:
         frames = self.frames(key=training_frame)
         assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+
+        key_name = frames['frames'][0]['key']['name']
+        assert key_name==training_frame, \
+            "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
+
         parameters['training_frame'] = training_frame
 
     # TODO: add parameter existence checks
     # TODO: add parameter value validation
-    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
+
+    # FIX! why ignoreH2oError here?
+    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', 
+        timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
 
     verboseprint("model parameters validation: " + repr(result))
     return result
 
 
-def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
+# should training_frame be required? or in parameters. same with destination_key
+# because validation_frame is in parameters
+def build_model(self, algo, training_frame, parameters, destination_key=None, 
+    timeoutSecs=60, asynchronous=False, **kwargs):
     '''
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
@@ -362,6 +393,7 @@ def build_model(self, algo, training_frame, parameters, destination_key = None, 
     assert training_frame is not None, '"training_frame" parameter is null'
     assert parameters is not None, '"parameters" parameter is null'
 
+    # why always check that the algo is in here?
     model_builders = self.model_builders(timeoutSecs=timeoutSecs)
     assert model_builders is not None, "/ModelBuilders REST call failed"
     assert algo in model_builders['model_builders']
@@ -370,25 +402,58 @@ def build_model(self, algo, training_frame, parameters, destination_key = None, 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=training_frame)
     assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-    assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+
+    key_name = frames['frames'][0]['key']['name'] 
+    assert key_name==training_frame, \
+        "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
     parameters['training_frame'] = training_frame
 
     if destination_key is not None:
         parameters['destination_key'] = destination_key
-    result = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
+
+    print "build_model parameters", parameters
+    result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
+        timeout=timeoutSecs, postData=parameters)
+    verboseprint("build_model result", dump_json(result1))
 
     if asynchronous:
-        return result
-    elif 'validation_error_count' in result:
+        result = result1
+    elif 'validation_error_count' in result1:
+        h2p.yellow_print("parameter error in model_builders")
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
-        return result
+        result = result1
     else:
-        job = result['jobs'][0]
-        job_key = job['key']['name']
-        verboseprint("model building job_key: " + repr(job_key))
-        job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
-        return job_json
+        job_result = result1['jobs'][0]
+        job_key = job_result['key']['name']
+        verboseprint("build_model job_key: " + repr(job_key))
+
+        job_result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+        verboseprint(job_result)
+
+        if job_result:
+            jobs = job_result['jobs'][0]
+            description = jobs['description']
+            dest = jobs['dest']
+            msec = jobs['msec']
+            status = jobs['status']
+            progress = jobs['progress']
+
+            # can condition this with a parameter if some FAILED are expected by tests.
+            if status=='FAILED':
+                print dump_json(job_result)
+                raise Exception("Taking exception on build_model job status: %s %s %s %s" % \
+                    (status, progress, msec, description))
+
+            result = job_result
+        else:
+            # ? we should always get a job_json result
+            raise Exception("build_model didn't get a job_result when it expected one")
+            # return None
+
+    verboseprint("result:", result)
+    h2o_sandbox.check_sandbox_for_errors()
+    return result
 
 
 def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
@@ -411,6 +476,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
 
     mm = result['model_metrics'][0]
     verboseprint("model metrics: " + repr(mm))
+    h2o_sandbox.check_sandbox_for_errors()
     return mm
 
 
@@ -428,6 +494,8 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
     assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
     result = self.do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -436,6 +504,7 @@ def model_metrics(self, timeoutSecs=60, **kwargs):
     ModelMetrics list. 
     '''
     result = self.do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -458,6 +527,9 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
         result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+    
+    verboseprint("models result:", dump_json(result))
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 
@@ -472,6 +544,8 @@ def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
     # TODO: look for what?
     if not ignoreMissingKey and 'f00b4r' in result:
         raise ValueError('Model key not found: ' + key)
+
+    verboseprint("delete_model result:", dump_json(result))
     return result
 
 

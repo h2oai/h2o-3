@@ -103,8 +103,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
           _model = DKV.get(_dest).get();
           _model.write_lock(_key); // do not delete previous model; we are extending it
-        } else {
-          _model = makeModel(_dest, _parms ); // Make a fresh model
+        } else {                   // New Model
+          // Compute the zero-tree error - guessing only the class distribution.
+          // MSE is stddev squared when guessing for regression.
+          // For classification, guess the largest class.
+          _model = makeModel(_dest, _parms, 
+                             initial_MSE(response(), response()), 
+                             initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
           _model._output._initialPrediction = _initialPrediction;
         }
@@ -179,13 +184,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( _model != null ) _model.unlock(_key);
         _parms.unlock_frames(SharedTree.this);
         done();                 // Job done!
-        Scope.exit(_model._key);
+        Scope.exit(_model==null ? null : _model._key);
       }
       tryComplete();
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms );
+    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_test );
     abstract protected void buildModel();
   }
 
@@ -293,7 +298,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
   protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
-  protected final Vec vec_tree( Frame fr, int c ) { return fr.vecs()[_ncols+1+c]; }
+  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[_ncols+1+c]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
@@ -359,9 +364,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
-      _model._output._r2 = sc.r2();
-      _model._output._cm = sc.cm();
-      _model._output._auc = sc.auc();
+      // Store score results in the model output
+      SharedTreeModel.SharedTreeOutput out = _model._output;
+      out._r2 = sc.r2();
+      out._cm = sc.cm();
+      out._auc = sc.auc();
+      out._mse_train[out._ntrees] = _parms._valid==null ? sc.mse() : Double.NaN;
+      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : sc.mse();
       _timeLastScoreEnd = System.currentTimeMillis();
     }
 
@@ -384,4 +393,21 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         System.out.println(trees[k].root().toString2(new StringBuilder(),0));
   }
 
+  double initial_MSE( Vec train, Vec test ) {
+    if( train.isEnum() ) {
+      // Guess the class of the most populous class; call the fraction of those
+      // Q.  Then Q of them are "mostly correct" - error is (1-Q) per element.
+      // The remaining 1-Q elements are "mostly wrong", error is Q (our guess,
+      // which is wrong).
+      int cls = ArrayUtils.maxIndex(train.bins());
+      double guess = train.bins()[cls]/(train.length()-train.naCnt());
+      double actual= test .bins()[cls]/(test .length()-test .naCnt());
+      return guess*guess+actual-2.0*actual*guess;
+    } else {              // Regression
+      // Guessing the training data mean, but actual is validation set mean
+      double stddev = test.sigma();
+      double bias = train.mean()-test.mean();
+      return stddev*stddev+bias*bias;
+    }
+  }
 }

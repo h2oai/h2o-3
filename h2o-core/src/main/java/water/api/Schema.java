@@ -534,10 +534,21 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values");
+            builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
             first = false;
           }
-          builder.tableRow(field_meta.name, String.valueOf(field_meta.required), field_meta.level.name(), field_meta.type, String.valueOf(field_meta.is_schema), field_meta.is_schema ? field_meta.schema_name : "", field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(
+                  field_meta.name,
+                  String.valueOf(field_meta.required),
+                  field_meta.level.name(),
+                  field_meta.type,
+                  String.valueOf(field_meta.is_schema),
+                  field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
+                  field_meta.help,
+                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
+          );
         }
       }
       if (first)
@@ -548,10 +559,18 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
         if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
           if (first) {
-            builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values");
+            builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
             first = false;
           }
-          builder.tableRow(field_meta.name, field_meta.type, String.valueOf(field_meta.is_schema), field_meta.is_schema ? field_meta.schema_name : "", field_meta.value, field_meta.help, (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)));
+          builder.tableRow(field_meta.name,
+                  field_meta.type,
+                  String.valueOf(field_meta.is_schema),
+                  field_meta.is_schema ? field_meta.schema_name : "",
+                  field_meta.value,
+                  field_meta.help,
+                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
         }
       }
       if (first)

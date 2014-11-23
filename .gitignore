@@ -25,6 +25,7 @@ out/
 .idea/
 *.ipr
 *.iws
+*.Rout
 .settings/*
 gradle-app.setting
 .gradle

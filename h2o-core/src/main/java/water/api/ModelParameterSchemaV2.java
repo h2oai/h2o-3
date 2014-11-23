@@ -3,8 +3,8 @@ package water.api;
 import water.H2O;
 import water.Iced;
 import water.Keyed;
-import water.util.PojoUtils;
 import water.util.Log;
+import water.util.PojoUtils;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 /**
  * An instance of a ModelParameters schema contains the metadata for a single Model build parameter (e.g., K for KMeans).
  * TODO: add a superclass.
+ * TODO: refactor this into with FieldMetadataBase.
  */
 public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
   @API(help="name in the JSON, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
@@ -44,6 +45,11 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   @API(help="list of valid values for use by the front-end", direction=API.Direction.OUTPUT)
   public String[] values;
 
+  @API(help="For Vec-type fields this is the set of other Vec-type fields which must contain mutually exclusive values; for example, for a SupervisedModel the response_column must be mutually exclusive with the weights_column")
+  String[] is_member_of_frames;
+
+  @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
+  String[] is_mutually_exclusive_with;
 
   public ModelParameterSchemaV2() {
   }
@@ -136,6 +142,14 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
         if (is_enum && (null == this.values || 0 == this.values.length)) {
           throw H2O.fail("Didn't find values annotation for enum field: " + this.name);
         }
+
+        // NOTE: we just set the raw value here.  We compute the transitive closure
+        // before serializing to JSON.  We have to do this automagically since we
+        // need to combine the values from multiple fields in multiple levels of the
+        // inheritance hierarchy.
+        this.is_member_of_frames = annotation.is_member_of_frames();
+
+        this.is_mutually_exclusive_with = annotation.is_mutually_exclusive_with(); // NOTE: later we walk all the fields in the Schema and form the transitive closure of these lists.
       }
     }
     catch (Exception e) {

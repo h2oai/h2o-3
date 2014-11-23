@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.Model;
 import hex.word2vec.Word2Vec;
 import hex.word2vec.Word2VecModel.Word2VecParameters;
 import water.api.API;
@@ -7,7 +8,6 @@ import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 
 public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV2.Word2VecParametersV2> {
-
   public static final class Word2VecParametersV2 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV2> {
     static public String[] own_fields = new String[] {
             "training_frame",
@@ -19,28 +19,28 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
             "vecSize",
             "windowSize",
             "sentSampleRate",
-            "learningRate",
+            "initLearningRate",
             "epochs"
     };
 
     /**
      *
      */
-    @API(help="Set size of word vectors; default is 100", required = true)
-    public int vecSize = 100;
+    @API(help="Set size of word vectors", required = true)
+    public int vecSize;
 
     /**
      *
      */
-    @API(help="Set max skip length between words; default is 5", required = true)
-    public int windowSize = 5;
+    @API(help="Set max skip length between words", required = true)
+    public int windowSize;
 
     /**
      *
      */
     @API(help="Set threshold for occurrence of words. Those that appear with higher frequency in the training data\n" +
-            "\t\twill be randomly down-sampled; default is 1e-3, useful range is (0, 1e-5)", required = true)
-    public float sentSampleRate = 1e-3f;
+            "\t\twill be randomly down-sampled; useful range is (0, 1e-5)", required = true)
+    public float sentSampleRate;
 
     /**
      *
@@ -51,24 +51,24 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
     /**
      *
      */
-    @API(help="Number of negative examples; default is 5, common values are 3 - 10 (0 = not used)")
-    public int negSampleCnt = 5;
+    @API(help="Number of negative examples, common values are 3 - 10 (0 = not used)")
+    public int negSampleCnt;
 
     /**
      *
      */
-    @API(help="Number of training iterations to run (default 5)",  required = true)
-    public int epochs = 5;
+    @API(help="Number of training iterations to run",  required = true)
+    public int epochs;
     /**
      *
      */
-    @API(help="This will discard words that appear less than <int> times; default is 5", required = true)
-    public int minWordFreq = 5;
+    @API(help="This will discard words that appear less than <int> times", required = true)
+    public int minWordFreq;
     /**
      *
      */
-    @API(help="Set the starting learning rate; default is 0.05", required = true)
-    public double learningRate = 0.05;
+    @API(help="Set the starting learning rate", required = true)
+    public float initLearningRate;
     /**
      *
      */

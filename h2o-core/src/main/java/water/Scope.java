@@ -51,7 +51,7 @@ public class Scope {
     return keep;
   }
 
-  static void track( Key k ) {
+  static public void track( Key k ) {
     if( !k.user_allowed() && !k.isVec() ) return; // Not tracked
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if( scope == null ) return; // Not tracking this thread

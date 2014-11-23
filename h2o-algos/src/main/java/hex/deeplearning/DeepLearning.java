@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.FrameTask.DataInfo;
+import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
@@ -23,6 +24,15 @@ import static water.util.MRUtils.sampleFrameStratified;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{
+            Model.ModelCategory.Regression,
+            Model.ModelCategory.Binomial,
+            Model.ModelCategory.Multinomial,
+    };
+  }
+
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
     super("DeepLearning",parms); init(false);
   }

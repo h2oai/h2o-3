@@ -56,7 +56,7 @@ ext {
     hadoopVersion = '2.5.0-cdh5.2.0'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
-    h2oFlowVersion = '0.2.7'
+    h2oFlowVersion = '0.2.8'
 }
 
 //
@@ -128,7 +128,7 @@ subprojects {
 }
 
 // Include support for S3 syncing
-apply from: "gradle/s3sync.gradle"
+//apply from: "gradle/s3sync.gradle"
 
 // This task is used by the Jenkins on test.0xdata.com.
 //

@@ -1,5 +1,6 @@
 package hex.word2vec;
 
+import hex.Model;
 import water.Job;
 import water.H2O;
 import water.util.Log;
@@ -10,6 +11,13 @@ import hex.schemas.ModelBuilderSchema;
 import hex.word2vec.Word2VecModel.*;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{
+            Model.ModelCategory.Unknown,
+    };
+  }
+
   public enum WordModel { SkipGram, CBOW }
   public enum NormModel { HSM, NegSampling }
 

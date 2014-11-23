@@ -1,6 +1,6 @@
 import h2o, h2o_cmd, h2o_jobs, h2o_print as h2p
 import getpass, time, re, os, fnmatch
-import h2o_args, h2o_util, h2o_nodes
+import h2o_args, h2o_util, h2o_nodes, h2o_print as h2p
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors
 
 #****************************************************************************************
@@ -354,20 +354,29 @@ def import_only(node=None, schema='local', bucket=None, path=None,
 
 #****************************************************************************************
 # can take header, header_from_file, exclude params
-def parse_only(node=None, pattern=None, hex_key=None,
+def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None, 
     timeoutSecs=30, retryDelaySecs=0.1, initialDelaySecs=0, pollTimeoutSecs=180, noise=None,
     benchmarkLogging=None, noPoll=False, **kwargs):
 
     if not node: node = h2o_nodes.nodes[0]
     # Get the list of all keys and use those that match the pattern
     # FIX! this can be slow. Can we use h2o to filter the list for us?
-    framesResult = node.frames()
+
+    # HACK. to avoid the costly frames, pass the imported key list during import_parse
+    # won't work for cases where we do multiple import_only, then parse (for multi-dir import)
     matchingList = []
-    for frame in framesResult['frames']:
-        # print frame
-        key_name = frame['key']['name']
-        if fnmatch.fnmatch(key_name, pattern):
-            matchingList.append(key_name)
+    if importKeyList:
+        # the pattern is a full path/key name, so no false matches
+        for key_name in importKeyList:
+            if fnmatch.fnmatch(key_name, pattern):
+                matchingList.append(key_name)
+    else:
+        h2p.yellow_print("WARNING: using frames to look up key names for possible parse regex")
+        framesResult = node.frames(timeoutSecs=timeoutSecs)
+        for frame in framesResult['frames']:
+            key_name = frame['key']['name']
+            if fnmatch.fnmatch(key_name, pattern):
+                matchingList.append(key_name)
 
     parseResult = node.parse(key=matchingList, hex_key=hex_key,
         timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, 
@@ -401,7 +410,8 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     verboseprint("importPattern:", importPattern)
     verboseprint("importResult", dump_json(importResult))
 
-    parseResult = parse_only(node, importPattern, hex_key,
+    assert len(importResult['keys']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
+    parseResult = parse_only(node, importPattern, hex_key, importResult['keys'],
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, **kwargs)
     verboseprint("parseResult:", dump_json(parseResult))
@@ -431,15 +441,22 @@ def find_key(pattern=None):
     try:
         patternObj = re.compile(pattern)
     except:
-        raise Exception("Need legal pattern in find_key, not %s", pattern)
+        raise Exception("Need legal string pattern in find_key, not %s", pattern)
 
     frames = h2o_nodes.nodes[0].frames()['frames']
-    frames_dict = h2o_util.list_to_dict(frames, 'key/name')
+    keyList = [f['key']['name'] for f in frames] 
+    print "find_key keyList:", keyList
 
     result = []
-    for key in frames_dict:
+    for key in keyList:
         if patternObj.search(key):
             result.append(key)
+
+    if not result:
+        for key in keyList:
+            # if python regex didn't find anything, maybe the pattern is unix-style file match
+            if fnmatch.fnmatch(key, pattern):
+                result.append(key)
 
     if len(result) == 0:
         verboseprint("Warning: No match for %s" % pattern)

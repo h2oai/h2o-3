@@ -8,6 +8,8 @@ import static java.nio.file.StandardCopyOption.*;
 defaultTasks 'build_rh2o'
 description = "H2O R Package"
 apply plugin : 'java'
+apply plugin: 'groovy'
+apply plugin: 'water.gradle.plugins.convertR2html'
 
 dependencies { compile project(":h2o-assembly") }
 
@@ -261,3 +263,42 @@ rbuild.dependsOn cpToR2
 cleaner.dependsOn rbuild
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
+
+task runRTests() {
+    def folders = ["${projectDir}/src/test/R"]
+    def testMarker = ~/test.+\.r/
+
+    def getTests = {
+        def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
+        (what == null)?[]:what.toList()
+    }
+
+    def pickActions = {from->
+        def answer = []
+        from.each{
+            getTests(it).each{item->
+                logger.info "Found test ${item} in folder ${it}"
+                answer.add(new Tuple<String,String>(it, item))
+            }
+        }
+        answer
+    }
+
+    pickActions(folders).each{ tuple->
+        exec{
+            workingDir tuple.get(0)
+            commandLine 'R', 'CMD', 'BATCH', '--slave', tuple.get(1)
+            ignoreExitValue true
+        }
+    }
+}
+
+task reporting (dependsOn: runRTests) << {
+    def group = "acceptance"
+    def rootFolder = project.getRootDir()
+
+    project.ext.R_test_folders = ["${projectDir}/src/test/R"]
+    project.ext.Regex_test_marker = ~/test.+\.Rout/
+}
+
+

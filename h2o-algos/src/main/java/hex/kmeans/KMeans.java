@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.KMeansV2;
 import hex.schemas.ModelBuilderSchema;
@@ -20,6 +21,13 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{
+      Model.ModelCategory.Clustering,
+    };
+  }
+
   public enum Initialization {
     None, PlusPlus, Furthest
   }

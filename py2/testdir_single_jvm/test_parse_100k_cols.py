@@ -77,12 +77,10 @@ class Basic(unittest.TestCase):
                 start = time.time()
                 inspect = h2o_cmd.runInspect(None, hex_key, timeoutSecs=timeoutSecs2)
                 print "Inspect:", hex_key, "took", time.time() - start, "seconds"
-                numCols = len(inspect['frames'][0]['columns'])
-                numRows = inspect['frames'][0]['rows']
-                # h2o_cmd.infoFromInspect(inspect, csvPathname)
+                missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 print "\n" + csvPathname, \
-                    "    rows:", "{:,}".format(numRows), \
-                    "    len(columns):", "{:,}".format(numCols)
+                    "    numRows:", "{:,}".format(numRows), \
+                    "    numCols:", "{:,}".format(numCols)
 
                 # should match # of cols in header or ??
                 self.assertEqual(numCols, colCount,

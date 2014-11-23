@@ -20,6 +20,9 @@ import java.util.Map;
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
+  /** List containing the categories of models that this builder can build. Each ModelBuilder must have one of these. */
+  abstract public Model.ModelCategory[] can_build();
+
   /** All the parameters required to build the model. */
   public final P _parms;
 
@@ -152,7 +155,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  and each subclass will start with "super.init();".  This call is made by
    *  the front-end whenever the GUI is clicked, and needs to be fast whenever
    *  {@code expensive} is false; it will be called once again at the start of
-   *  model building {@link trainModel} with expensive set to true.
+   *  model building {@see #trainModel()} with expensive set to true.
    *
    *  The incoming training frame (and validation frame) will have ignored
    *  columns dropped out, plus whatever work the parent init did.

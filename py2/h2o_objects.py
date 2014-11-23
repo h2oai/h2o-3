@@ -188,8 +188,11 @@ class H2O(object):
         else:
             paramsStr = ''
 
-        if extraComment:
-            log('Start ' + url + paramsStr, comment=extraComment)
+        extraComment2 = " " + repr(postData)+";" if cmd=='post' else ""
+        extraComment2 += extraComment if extraComment else ""
+
+        if len(extraComment2) > 0:
+            log('Start ' + url + paramsStr, comment=extraComment2)
         else:
             log('Start ' + url + paramsStr)
 
@@ -240,7 +243,6 @@ class H2O(object):
         h2o_nodes.json_url_history.append(r.url)
         # if r.json():
         #     raise Exception("Maybe bad url? no r.json in do_json_request in %s:" % inspect.stack()[1][3])
-
         rjson = None
         if returnFast:
             return
