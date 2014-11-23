@@ -64,16 +64,15 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_rexec import rFrame, rVector, rUnary, rBinary, rCall, rSequence, \
-                rColon, rAssign, rNum, rExec
+            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xCall, xSequence, xColon, xAssign, xNum, xExec
 
             REPEAT = 1
             for i in range(REPEAT):
                 hex_key_i = hex_key + "_" + str(i)
 
-                resultExec, result = rExec(rAssign(hex_key_i, rFrame(hex_key, '#1', None)))
-                resultExec, result = rExec(rAssign(hex_key_i, rFrame(hex_key, rColon('#1', '#100'), None)))
-                resultExec, result = rExec(rAssign(hex_key_i, rFrame(hex_key, rColon('#1', rNum(rowCount-10)), None)))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, '#1', None)))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, xColon('#1', '#100'), None)))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, xColon('#1', xNum(rowCount-10)), None)))
 
                 inspect = h2o_cmd.runInspect(None, hex_key_i, timeoutSecs=timeoutSecs)
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
