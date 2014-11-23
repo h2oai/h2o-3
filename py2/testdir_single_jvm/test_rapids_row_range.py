@@ -70,9 +70,10 @@ class Basic(unittest.TestCase):
             for i in range(REPEAT):
                 hex_key_i = hex_key + "_" + str(i)
 
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, '#1', None)))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, xColon('#1', '#100'), None)))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, xColon('#1', xNum(rowCount-10)), None)))
+                # take advantage of default params for row/col (None)
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row='#1')))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', '#100'))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', xNum(rowCount-10)))))
 
                 inspect = h2o_cmd.runInspect(None, hex_key_i, timeoutSecs=timeoutSecs)
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
