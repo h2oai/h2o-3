@@ -55,6 +55,11 @@ An ASTFunc pulls the function ast produced by the front-end and creates a refere
 
 A function has a body (which may be empty), and a body is a list of statements.
 
+[] for multiple functions (single too?)
+
+(def f {args} {body})
+Separator is ';;' final statement ends with ';;;'
+
 Statements that are possible:
 
 if statements

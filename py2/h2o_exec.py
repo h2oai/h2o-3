@@ -6,10 +6,15 @@ import h2o_browse as h2b
 from h2o_test import dump_json, verboseprint, check_sandbox_for_errors
 
 #********************************************************************************
-def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False):
+def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False, doFuns=False):
     if not node:
         node = h2o_nodes.nodes[0]
-    kwargs = {'ast': execExpr} 
+
+    if doFuns:
+        kwargs = {'funs': execExpr} 
+    else:
+        kwargs = {'ast': execExpr} 
+
     start = time.time()
     resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
     verboseprint('exec took', time.time() - start, 'seconds')

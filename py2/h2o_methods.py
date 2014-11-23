@@ -101,6 +101,7 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     if 'funs' in kwargs: 
         assert isinstance(kwargs['funs'], basestring), "only string assumed? %s" % funs
 
+    # currently runExec only does one or the other
     params_dict = {
         'ast': None,
         'funs': None,
@@ -121,12 +122,12 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
 #******************************************************************************************8
 def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
     params_dict = {
-        'source_key': None,
-        'column': None,
-        'quantile': None,
-        'max_qbins': None,
-        'interpolation_type': None,
-        'multiple_pass': None,
+        'destination_key': None,
+        'training_frame': None,
+        'validation_frame': None,
+        'ignored_columns': None,
+        'score_each_iteration': None,
+        'probs': None,
     }
     check_params_update_kwargs(params_dict, kwargs, 'quantiles', print_params)
     a = self.do_json_request('Quantiles.json', timeout=timeoutSecs, params=params_dict)
@@ -166,6 +167,7 @@ def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
 # this happens before any H2O instances are created
 # this file is imported into h2o
 
+H2O.quantiles = quantiles
 H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
 H2O.jobs_admin = jobs_admin

@@ -170,7 +170,6 @@ def parse(self, key, hex_key=None,
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
-
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
     tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
@@ -182,6 +181,9 @@ def parse(self, key, hex_key=None,
     # don't want =None to overwrite parse_params
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
+
+    print "parse srcs is length:", len(parse_params['srcs'])
+    print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
     parse_result = self.do_json_request(jsonRequest="Parse.json", params=parse_params, timeout=timeoutSecs)

@@ -85,13 +85,18 @@ def infoFromInspect(inspect):
     # look for nonzero num_missing_values count in each col
     missingList = []
     labelList = []
+    typeList = []
     for i, colDict in enumerate(columns): # columns is a list
         missing = colDict['missing']
         label = colDict['label']
+        stype = colDict['type']
         missingList.append(missing)
         labelList.append(label)
+        typeList.append(stype)
         if missing!=0:
             print "%s: col: %s %s, missing: %d" % (key_name, i, label, missing)
+
+    print "inspect typeList:", typeList
 
     # make missingList empty if all 0's
     if sum(missingList)==0:

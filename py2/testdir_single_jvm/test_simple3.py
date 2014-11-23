@@ -39,7 +39,7 @@ class Basic(unittest.TestCase):
 
     
     def test_b_algo_parameters(self):
-        for algo in ['kmeans', 'gbm', 'deeplearning', 'glm', 'word2vec', 'example']:
+        for algo in ['kmeans', 'gbm', 'deeplearning', 'glm', 'word2vec', 'example', 'quantile', 'grep']:
             paramResult = h2o.n0.model_builders(algo=algo)
             self.print_params(paramResult)
             mmResult = h2o.n0.model_metrics(algo=algo)
