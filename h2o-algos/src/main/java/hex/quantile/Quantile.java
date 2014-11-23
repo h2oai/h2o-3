@@ -1,5 +1,6 @@
 package hex.quantile;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.QuantileV2;
@@ -25,6 +26,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   @Override public Quantile trainModel() {
     return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
+  }
+
+  @Override public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

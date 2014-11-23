@@ -6,7 +6,6 @@ import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.grep.Grep;
-import hex.kmeans2.KMeans2;
 import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
 import hex.glm.GLM;
@@ -42,7 +41,6 @@ public class H2OApp {
     H2O.registerGET("/GBM",          hex.schemas.GBMHandler.class,          "train",        "/GBM","GBM","Model",                     "Train a GBM model on the specified Frame.");
     H2O.registerGET("/Word2Vec",     hex.schemas.Word2VecHandler.class,     "train",        "/Word2Vec","Word2Vec","Model",           "Train a Word2Vec model on the specified Frame.");
     H2O.registerGET("/Synonyms",     hex.schemas.SynonymsHandler.class,     "findSynonyms", "/Synonyms", "Synonyms","Synonyms",       "Return the synonyms.");
-    H2O.registerGET("/KMeans2",      hex.schemas.KMeans2Handler.class,      "train",        "/KMeans2","KMeans2","Model",             "Train a KMeans2 model on the specified Frame.");
     H2O.registerGET("/Grep",         hex.schemas.GrepHandler.class,         "train",        "/Grep","Grep","Model",                   "Run Grep on the specified Frame.");
     H2O.registerGET("/Quantile",     hex.schemas.QuantileHandler.class,     "train",        "/Quantile","Quantile","Model",           "Train a Quantile model on the specified Frame.");
 
@@ -74,9 +72,6 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("quantile", Quantile.class);
     H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
-
-    ModelBuilder.registerModelBuilder("kmeans2", KMeans2.class);
-    H2O.registerPOST("/2/ModelBuilders/kmeans2", KMeans2BuilderHandler.class, "train","Train a KMeans2 model on the specified Frame.");
 
     ModelBuilder.registerModelBuilder("grep", Grep.class);
     H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");

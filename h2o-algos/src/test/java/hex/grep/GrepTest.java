@@ -11,14 +11,14 @@ import water.fvec.Vec;
 import java.io.File;
 
 public class GrepTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
   
   @Test public void testIris() {
     GrepModel kmm = null;
     Frame fr = null;
     try {
       String regex = "Iris-versicolor";
-      File f = new File("smalldata/iris/iris_wheader.csv");
+      File f = find_test_file("smalldata/iris/iris_wheader.csv");
       //String regex = "(?:(\\w)\\1){5}";
       //File f = new File("bigdata/laptop/text8.txt");
       NFSFileVec nfs = NFSFileVec.make(f);

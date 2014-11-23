@@ -1,5 +1,6 @@
 package hex.grep;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.GrepV2;
 import hex.schemas.ModelBuilderSchema;
@@ -29,6 +30,10 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   @Override public Grep trainModel() {
     return (Grep)start(new GrepDriver(), _parms.train().numRows());
+  }
+
+  @Override public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{Model.ModelCategory.Unknown};
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
