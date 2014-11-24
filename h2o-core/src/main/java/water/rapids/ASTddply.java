@@ -99,14 +99,9 @@ public class ASTddply extends ASTOp {
     int numgrps = p1._groups.size();
     int csz = H2O.CLOUD.size();
     ddplyPass2 p2 = new ddplyPass2(p1,numgrps,csz).doAllNodes();
-    // vecs[] iteration order exactly matches p1._groups.keySet()
     Key rows[] = p2.close();
-    // Push the execution env around the cluster
-//    Key envkey = Key.make();
-//    DKV.put(envkey, env);
 
     // Pass 3: Send Groups 'round the cluster
-    int grpnum; // vecs[] iteration order exactly matches p1._groups.keySet()
     AppendableVec av;
     ArrayList<AppendableVec> grpCols = new ArrayList<>();
     ArrayList<NewChunk> nchks = new ArrayList<>();
@@ -123,10 +118,8 @@ public class ASTddply extends ASTOp {
     }
     fs.blockForPending();       // Wait for all functions to finish
 
-
-
-    // inflate all result vecs into NewChunk's and rbind them...
-    // get single uber-chunks from RemoteExec and make one uber chunk per column.
+    // inflate all result vecs into NewChunk's and rbind them.
+    // get single numgrps/nodes uber-chunks from RemoteExec and we make one uber chunk per column out of these.
     AppendableVec[] grpColz = new AppendableVec[results[0]._vs.length];
     NewChunk[] nchkz = new NewChunk[results[0]._vs.length];
     for (int i=0; i<nchkz.length;++i) {
@@ -143,7 +136,7 @@ public class ASTddply extends ASTOp {
       }
     }
 
-    //Fold results together; currently stored in Iced Result objects
+    // single-threaded result folding -- could be made distrubted/|| for moar speed
     for (Group g: p1._groups.keySet()) {
       int c = 0;
       for (double d : g._ds) nchks.get(c++).addNum(d);
@@ -233,14 +226,6 @@ public class ASTddply extends ASTOp {
     @Override public int hashCode() { return _hash; }
     @Override public String toString() { return Arrays.toString(_ds); }
   }
-
-  private static class Result extends Iced {
-    NewChunk[] _nchks;
-    AppendableVec[] _grpCols;
-    public Result(){}
-    public Result(NewChunk[] ncs, AppendableVec[] avs) {_nchks = ncs; _grpCols = avs; }
-  }
-
 
   // ---
   // Pass1: Find unique groups, based on a subset of columns.
@@ -427,11 +412,8 @@ public class ASTddply extends ASTOp {
     String _fun;
     AST[] _fun_args;
     // OUTS
-    Chunk[] _chks;           // a collection of new chunks
-    AppendableVec[] _grpCols;
-    int _ncols;                  // Number of result columns
-    Key _rez;
-    Key[] _vs;
+    int _ncols;  // Number of result columns
+    Key[] _vs;  // keys of the vecs created, 1 row per group results
 
     private int nGroups() {
       H2ONode[] array = H2O.CLOUD.members();
@@ -473,6 +455,7 @@ public class ASTddply extends ASTOp {
     // Execute the function on the group
     @Override public void compute2() {
       NewChunk[] _nchks=null;             // a collection of new chunks
+      AppendableVec[] _grpCols=null;
       int ngrps = nGroups();
       int grp_start = grpStartIdx();
       int grp_end = grp_start + ngrps;
@@ -481,7 +464,6 @@ public class ASTddply extends ASTOp {
       Vec[] data = f.vecs();    // Full data columns
       for (; grp_start < grp_end; ) {
 
-  //        if (DKV.get(_rows[grp_start]) == null) Log.info("_rows["+grp_start+"] = "+ _rows[grp_start] +" get was null. ");
         Vec rows = DKV.get(_rows[grp_start++]).get();
 
         Vec[] gvecs = new Vec[data.length];
