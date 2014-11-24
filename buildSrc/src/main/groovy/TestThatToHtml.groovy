@@ -14,17 +14,17 @@ dependencies {
 class convertR2html implements Plugin<Project> {
     def eol = System.getProperty('line.separator')
 
-    def styleDefinitions = {
+    def styleDefinitions = {project->
         def writer = new StringWriter()
-        new File("src/test/resources/testHtmlTemplates/style.txt").eachLine{
+        new File(project.projectDir.canonicalPath + "/src/test/resources/testHtmlTemplates/style.txt").eachLine{
             writer << it << eol
         }
         writer.toString()
     }
 
-    def scriptDefinitions = {
+    def scriptDefinitions = {project->
         def writer = new StringWriter()
-        new File("src/test/resources/testHtmlTemplates/script.txt").eachLine{
+        new File(project.projectDir.canonicalPath + "/src/test/resources/testHtmlTemplates/script.txt").eachLine{
             writer << it << eol
         }
         writer.toString()
@@ -41,7 +41,7 @@ class convertR2html implements Plugin<Project> {
         writer.toString()
     }
 
-    def html4test = {fileName ->
+    def html4test = {project, fileName ->
         def writer = new StringWriter()
         def xml = new MarkupBuilder(writer)
         def firstLines = [
@@ -49,10 +49,10 @@ class convertR2html implements Plugin<Project> {
         """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">"""]
         xml.'html'('xmlns':'http://www.w3.org/1999/xhtml'){
             head{
-                mkp.yieldUnescaped( styleDefinitions() )
+                mkp.yieldUnescaped( styleDefinitions(project) )
             }
             body{
-                mkp.yieldUnescaped(scriptDefinitions())
+                mkp.yieldUnescaped(scriptDefinitions(project))
 
                 div(class: 'heading'){
                     h1("Unit test report")
@@ -138,9 +138,20 @@ class convertR2html implements Plugin<Project> {
         out << writer.toString() << eol
     }
 
+    def stopCloudsOn = {project->
+        if ( null != project.ext.cloudsPid ){
+            project.logger.warn "Stopping the following processes: " + project.ext.cloudsPid
+            project.ext.cloudsPid.split(",").each{
+                project.logger.info "kill -9 ${it}".execute().text
+            }
+        }
+    }
+
     void apply(Project project){
         project.task('reportAcceptanceTests', dependsOn: 'prepareAcceptanceHtmlReports') << {
             new File("build/reports/site").mkdirs()
+
+            stopCloudsOn(project)
 
             def folders = project.ext.R_test_folders as List<String>
             def testMarker = project.ext.Regex_test_marker as java.util.regex.Pattern
@@ -233,7 +244,7 @@ class convertR2html implements Plugin<Project> {
             }
 
             def reportLocation = new File("build/seeme.html").getCanonicalPath()
-            html4test(reportLocation)
+            html4test(project, reportLocation)
 
             def links = ""
             def details = ""

@@ -267,7 +267,7 @@ cleaner.dependsOn rbuild
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
 
-task testAcceptanceinR(dependsOn: manageLocalClouds) {
+task testAcceptanceR(dependsOn: manageLocalClouds) {
     def folders = ["${projectDir}/src/test/R"]
     def testMarker = ~/test.+\.r/
 
@@ -296,7 +296,7 @@ task testAcceptanceinR(dependsOn: manageLocalClouds) {
     }
 }
 
-task prepareAcceptanceHtmlReports ( dependsOn: testAcceptanceinR ) << {
+task prepareAcceptanceHtmlReports ( dependsOn: testAcceptanceR ) << {
     project.ext.testGroup = "acceptance"
     project.ext.R_test_folders = ["${projectDir}/src/test/R"]
     project.ext.Regex_test_marker = ~/test.+\.Rout/
