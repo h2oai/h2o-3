@@ -42,7 +42,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       Frame[] preds = new Frame[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
-          NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/weather/weather.csv"));
+          NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset2.parse(Key.make("data.hex"), file._key);
 
           // Create holdout test data on clean data (before adding missing values)
