@@ -219,7 +219,7 @@ public class Exec extends Iced {
   // remotely, because e.g. ddply runs functions on all nodes.
   private static boolean _inited;       // One-shot init
   static void cluster_init() {
-//    if( _inited ) return;
+    if( _inited ) return;
     new MRTask() {
       @Override public void setupLocal() {
         new ASTPlus(); // Touch a common class to force loading

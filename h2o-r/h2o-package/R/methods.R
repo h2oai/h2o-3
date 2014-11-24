@@ -1212,7 +1212,7 @@ cbind.H2OFrame <- function(..., deparse.level = 1) {
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
 
-
+# TODO: Cleanup the cruft!
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
   if( missing(.data) ) stop('must specify .data')
   if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
@@ -1300,7 +1300,6 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #  .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 }
 
-#ddply <- h2o.ddply
 
 # TODO: how to avoid masking plyr?
 #`h2o..` <- function(...) {

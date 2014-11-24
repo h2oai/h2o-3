@@ -42,6 +42,7 @@ public class ASTddply extends ASTOp {
 
     } catch (ClassCastException e) {
 
+      assert s != null;
       try {
         _cols = new long[]{(long)((ASTNum)s).dbl()};
       } catch (ClassCastException e2) {
@@ -99,79 +100,75 @@ public class ASTddply extends ASTOp {
     int csz = H2O.CLOUD.size();
     ddplyPass2 p2 = new ddplyPass2(p1,numgrps,csz).doAllNodes();
     // vecs[] iteration order exactly matches p1._groups.keySet()
-    Vec vecs[] = p2.close();
+    Key rows[] = p2.close();
     // Push the execution env around the cluster
-    Key envkey = Key.make();
+//    Key envkey = Key.make();
 //    DKV.put(envkey, env);
 
     // Pass 3: Send Groups 'round the cluster
-    // Single-threaded per-group work.
-    // Send each group to some remote node for execution
-    int grpnum=0; // vecs[] iteration order exactly matches p1._groups.keySet()
-    int nlocals[] = new int[csz]; // Count of local group#
-    ArrayList<AppendableVec> grpCols = new ArrayList<AppendableVec>();
-    ArrayList<NewChunk> nchks = new ArrayList<NewChunk>();
-    for (long col : _cols) {
-      AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
-      grpCols.add(av);
+    int grpnum; // vecs[] iteration order exactly matches p1._groups.keySet()
+    AppendableVec av;
+    ArrayList<AppendableVec> grpCols = new ArrayList<>();
+    ArrayList<NewChunk> nchks = new ArrayList<>();
+    for (long ignored : _cols) {
+      grpCols.add(av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()));
       nchks.add(new NewChunk(av, 0));
     }
     Futures fs = new Futures();
-    int ncols;
-    for( Group g : p1._groups.keySet() ) {
-      // vecs[] iteration order exactly matches p1._groups.keySet()
-      Vec rows = vecs[grpnum++]; // Rows for this Vec
-      Vec[] data = fr.vecs();    // Full data columns
-      Vec[] gvecs = new Vec[data.length];
-      Key[] keys = rows.group().addVecs(data.length);
-      for( int c=0; c<data.length; c++ ) {
-        gvecs[c] = new SubsetVec(rows._key, data[c]._key, keys[c], rows.get_espc());
-        gvecs[c].setDomain(data[c].domain());
-        DKV.put(gvecs[c]._key, gvecs[c]);
-      }
-      Key grpkey = Key.make("ddply_grpkey_"+(grpnum-1));
-      Frame fg = new Frame(grpkey, fr._names,gvecs);
-      DKV.put(grpkey, fg);
+    RemoteExec[] results = new RemoteExec[csz];
+    // do more work in ||
+    for (int i = 0; i < csz; ++i) {
       // Non-blocking, send a group to a remote node for execution
-      final int nidx = g.hashCode()%csz;
-      fs.add(RPC.call(H2O.CLOUD._memary[nidx],(new RemoteExec((grpnum-1),p2._nlocals[nidx],g._ds,fg,envkey, _fun, _fun_args))));
+      fs.add(RPC.call(H2O.CLOUD._memary[i],results[i] = (new RemoteExec(numgrps, fr._key, rows, _fun, _fun_args))));
     }
     fs.blockForPending();       // Wait for all functions to finish
 
+
+
+    // inflate all result vecs into NewChunk's and rbind them...
+    // get single uber-chunks from RemoteExec and make one uber chunk per column.
+    AppendableVec[] grpColz = new AppendableVec[results[0]._vs.length];
+    NewChunk[] nchkz = new NewChunk[results[0]._vs.length];
+    for (int i=0; i<nchkz.length;++i) {
+      nchkz[i] = new NewChunk(grpColz[i]=new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
+      Chunk src = ((Vec)DKV.get(results[0]._vs[i]).get()).chunkForChunkIdx(0);
+      nchkz[i].add(src.inflate_impl(new NewChunk(src)));
+    }
+
+    // fold in rest of the chunks
+    for (int i=1; i<results.length;++i) {
+      for (int j=0;j<nchkz.length;++j) {
+        Chunk src = ((Vec)DKV.get(results[i]._vs[j]).get()).chunkForChunkIdx(0);
+        nchkz[j].add(src.inflate_impl(new NewChunk(src)));
+      }
+    }
+
     //Fold results together; currently stored in Iced Result objects
-    grpnum = 0;
     for (Group g: p1._groups.keySet()) {
       int c = 0;
       for (double d : g._ds) nchks.get(c++).addNum(d);
-      Key rez_key = Key.make("ddply_RemoteRez_"+grpnum++);
-      Result rg = DKV.get(rez_key).get();
-      if (rg == null) Log.info("Result was null: grp_id = " + (grpnum - 1) + " rez_key = " + rez_key);
-      assert rg != null;
-      ncols = rg.isRow() ? rg.resultR().length : 1;
-      if (nchks.size() < ncols + _cols.length) {
-        for(int i = 0; i < ncols;++i) {
-          AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
-          grpCols.add(av);
-          nchks.add(new NewChunk(av, 0));
-        }
-      }
-      for (int i = 0; i < ncols; ++i) nchks.get(c++).addNum(rg.isRow() ? rg.resultR()[i] : rg.resultD());
-      DKV.remove(rez_key);
     }
 
-    Vec vres[] = new Vec[grpCols.size()];
-    for (int i = 0; i < vres.length; ++i) {
-      nchks.get(i).close(0, fs);
-      vres[i] = grpCols.get(i).close(fs);
+    Vec vres[] = new Vec[grpCols.size() + grpColz.length];
+    for (int i=0,j=0; i < vres.length; ++i) {
+      if (i < grpCols.size()) nchks.get(i).close(0, fs);
+      else nchkz[j].close(0,fs);
+      vres[i] = i < grpCols.size() ? grpCols.get(i).close(fs) : grpColz[j++].close(fs);
     }
     fs.blockForPending();
     // Result Frame
-    String[] names = new String[grpCols.size()];
+    String[] names = new String[grpCols.size()+grpColz.length];
     for( int i = 0; i < _cols.length; i++) {
       names[i] = fr._names[(int)_cols[i]];
       vres[i].setDomain(fr.vecs()[(int)_cols[i]].domain());
     }
+    Vec rm;
     for( int i = _cols.length; i < names.length; i++) names[i] = "C"+(i-_cols.length+1);
+    for (int i = 0; i < vres.length; ++i) {
+      if (vres[0].group().equals(vres[i].group())) continue;
+      vres[i] = vres[0].align(rm = vres[i]); // align makes a copy
+      Keyed.remove(rm._key);
+    }
     Frame ff = new Frame(names,vres);
 
     // Cleanup pass: Drop NAs (groups with no data and NA groups, basically does na.omit: drop rows with NA)
@@ -185,7 +182,7 @@ public class ASTddply extends ASTOp {
           int rows = cs[0]._len;
           int cols = cs.length;
           boolean[] NACols = new boolean[cols];
-          ArrayList<Integer> xrows = new ArrayList<Integer>();
+          ArrayList<Integer> xrows = new ArrayList<>();
           for (int i = 0; i < cols; ++i) NACols[i] = (cs[i].vec().naCnt() != 0);
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c)
@@ -206,7 +203,6 @@ public class ASTddply extends ASTOp {
       ff.delete();
     }
     // Delete the group row vecs
-    Keyed.remove(envkey);
     env.push(new ValFrame(res));
   }
 
@@ -239,12 +235,10 @@ public class ASTddply extends ASTOp {
   }
 
   private static class Result extends Iced {
-    double   _d;  // Result was a single double
-    double[] _r;  // Result was a row
-    Result(double d, double[] r) {_d = d; _r = r; }
-    boolean isRow() { return _r != null; }
-    double[] resultR () { return _r; }
-    double resultD () { return _d; }
+    NewChunk[] _nchks;
+    AppendableVec[] _grpCols;
+    public Result(){}
+    public Result(NewChunk[] ncs, AppendableVec[] avs) {_nchks = ncs; _grpCols = avs; }
   }
 
 
@@ -272,7 +266,7 @@ public class ASTddply extends ASTOp {
 
     // Build a Map mapping Groups to a NewChunk of row #'s
     @Override public void map( Chunk chks[] ) {
-      _groups = new NonBlockingHashMap<>();
+      _groups = new NonBlockingHashMap<>(1<<18);
       Group g = new Group(_cols.length);
       NewChunk nc = makeNC();
       Chunk C = chks[(int)_cols[0]];
@@ -344,7 +338,7 @@ public class ASTddply extends ASTOp {
       _uniq = ab.get();
       int len = ab.get4();
       if( len == 0 ) return this;
-      _groups = new NonBlockingHashMap<Group,NewChunk>();
+      _groups = new NonBlockingHashMap<>();
       for( int i=0; i<len; i++ )
         _groups.put(ab.get(Group.class),new NewChunk(null,-99));
       return this;
@@ -408,17 +402,16 @@ public class ASTddply extends ASTOp {
       fs.blockForPending();
       _p1key = null;            // No need to return these
       _dss = null;
-      tryComplete();
     }
     @Override public void reduce( ddplyPass2 p2 ) {
       for( int i=0; i<_avs.length; i++ )
         _avs[i].reduce(p2._avs[i]);
     }
     // Close all the AppendableVecs & return normal Vecs.
-    Vec[] close() {
+    Key[] close() {
       Futures fs = new Futures();
-      Vec vs[] = new Vec[_avs.length];
-      for( int i=0; i<_avs.length; i++ ) vs[i] = _avs[i].close(fs);
+      Key vs[] = new Key[_avs.length];
+      for( int i=0; i<_avs.length; i++ ) vs[i] = (_avs[i].close(fs))._key;
       fs.blockForPending();
       return vs;
     }
@@ -428,17 +421,46 @@ public class ASTddply extends ASTOp {
   // Called once-per-group, it executes the given function on the group.
   private static class RemoteExec extends DTask<RemoteExec> implements Freezable {
     // INS
-    final int _grpnum, _numgrps; // This group # out of total groups
-    double _ds[];                // Displayable name for this group
-    Frame _fr;                   // Frame for this group
-    Key _envkey;                 // Key for the execution environment
+    final Key _key;
+    final Key[] _rows;
+    final int _numgrps; // This group # out of total groups
     String _fun;
     AST[] _fun_args;
     // OUTS
+    Chunk[] _chks;           // a collection of new chunks
+    AppendableVec[] _grpCols;
     int _ncols;                  // Number of result columns
+    Key _rez;
+    Key[] _vs;
 
-    RemoteExec( int grpnum, int numgrps, double ds[], Frame fr, Key envkey, String fun, AST[] fun_args ) {
-      _grpnum = grpnum; _numgrps = numgrps; _ds=ds; _fr=fr; _envkey=envkey; _fun = fun; _fun_args = fun_args;
+    private int nGroups() {
+      H2ONode[] array = H2O.CLOUD.members();
+      Arrays.sort(array);
+      // Give each H2ONode ngrps/#nodes worth of groups.  Round down for later nodes,
+      // and round up for earlier nodes
+      int ngrps = _numgrps / array.length;
+      if( Arrays.binarySearch(array, H2O.SELF) < _numgrps - ngrps*array.length )
+        ++ngrps;
+      Log.info("Processing "+ngrps+" groups.");
+      return ngrps;
+    }
+
+    private int grpStartIdx() {
+      H2ONode[] array = H2O.CLOUD.members();
+      Arrays.sort(array);
+      int ngrps = _numgrps / array.length;
+      int self = Arrays.binarySearch(array, H2O.SELF);
+      int grp_start = 0;
+      grp_start += ngrps * (self);
+      // now +1 for any node idx satisfying the rounding prop
+      for (int i = 0; i < self; ++i) {
+        if (i < _numgrps - ngrps*array.length) grp_start++;
+      }
+      return grp_start;
+    }
+
+    RemoteExec(int numgrps, Key key, Key[] rows, String fun, AST[] fun_args ) {
+      _key = key; _rows = rows; _numgrps = numgrps; _fun = fun; _fun_args = fun_args;
       // Always 1 higher priority than calling thread... because the caller will
       // block & burn a thread waiting for this MRTask2 to complete.
       Thread cThr = Thread.currentThread();
@@ -450,40 +472,55 @@ public class ASTddply extends ASTOp {
 
     // Execute the function on the group
     @Override public void compute2() {
-//      Env shared_env = DKV.get(_envkey).get();
-      // Clone a private copy of the environment for local execution
-      Env env = new Env(new HashSet<Key>());
-      final ASTOp op = (ASTOp)ASTOp.get(_fun).clone();
-      Key fr_key = Key.make("ddply_grpkey_" + _grpnum);
-      Frame aa = DKV.get(fr_key).get();
-//      Frame tmp = new Frame(new String[]{aa.names()[0]}, new Vec[]{aa.vecs()[0].makeCopy()});
-      op.exec(env, new ASTFrame(aa), _fun_args);
+      NewChunk[] _nchks=null;             // a collection of new chunks
+      int ngrps = nGroups();
+      int grp_start = grpStartIdx();
+      int grp_end = grp_start + ngrps;
+      Log.info("Processing groups " + grp_start + "-" + (grp_end) + ".");
+      Frame f = DKV.get(_key).get();
+      Vec[] data = f.vecs();    // Full data columns
+      for (; grp_start < grp_end; ) {
 
-      // Inspect the results; figure the result column count
-      Frame fr = null;
-      if( env.isAry() && (fr=env.pop0Ary()).numRows() != 1 )
-        throw new IllegalArgumentException("Result of ddply can only return 1 row but instead returned "+fr.numRows());
-      _ncols = fr == null ? 1 : fr.numCols();
+  //        if (DKV.get(_rows[grp_start]) == null) Log.info("_rows["+grp_start+"] = "+ _rows[grp_start] +" get was null. ");
+        Vec rows = DKV.get(_rows[grp_start++]).get();
 
-      double[] r = null;
-      double d = Double.NaN;
-      if (fr == null) d = env.popDbl();
-      else {
-        r = new double[_ncols];
-        for (int i = 0; i < _ncols; ++i) r[i] = fr.vecs()[i].at(0);
+        Vec[] gvecs = new Vec[data.length];
+        Key[] keys = rows.group().addVecs(data.length);
+        for (int c = 0; c < data.length; c++) {
+          gvecs[c] = new SubsetVec(rows._key, data[c]._key, keys[c], rows.get_espc());
+          gvecs[c].setDomain(data[c].domain());
+          DKV.put(gvecs[c]._key, gvecs[c]);
+        }
+        Frame aa = new Frame(Key.make(), f._names, gvecs);
+
+        // Clone a private copy of the environment for local execution
+        Env env = new Env(new HashSet<Key>());
+        final ASTOp op = (ASTOp) ASTOp.get(_fun).clone();
+        op.exec(env, new ASTFrame(aa), _fun_args);
+
+        // Inspect the results; figure the result column count
+        Frame fr = null;
+        if (env.isAry() && (fr = env.pop0Ary()).numRows() != 1)
+          throw new IllegalArgumentException("Result of ddply can only return 1 row but instead returned " + fr.numRows());
+        _ncols = fr == null ? 1 : fr.numCols();
+
+        if (_nchks == null) {
+          _nchks = new NewChunk[_ncols];
+          _grpCols = new AppendableVec[_ncols];
+          for (int i = 0; i < _ncols; ++i)
+            _nchks[i] = new NewChunk(_grpCols[i] = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
+        }
+        for (int i = 0; i < _ncols; ++i) {
+          _nchks[i].addNum(_ncols == 1 ? env.popDbl() : fr.vecs()[i].at(0));
+        }
+        aa.delete(); // nuke the group frame
       }
-      Key resultKey = Key.make("ddply_RemoteRez_"+_grpnum);
-      Result rez = new Result(d, r);
+      assert _nchks!=null;
+      _vs = new Key[_nchks.length];
       Futures fs = new Futures();
-      DKV.put(resultKey, rez, fs);
+      for (int i=0; i < _vs.length;++i) _nchks[i].close(0, fs);
+      for (int i =0; i < _vs.length;++i) _vs[i] = _grpCols[i].close(fs)._key;
       fs.blockForPending();
-
-      // No need to return any results here.
-      _fr.delete();
-      aa.delete();
-      _fr = null;
-      _ds = null;
-      _envkey= null;
       tryComplete();
     }
   }
