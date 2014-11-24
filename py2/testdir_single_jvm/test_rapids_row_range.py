@@ -64,11 +64,12 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xNum, xExec, xC
+            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xAssignE, xNum, xExec, xC
 
             REPEAT = 1
+            data_key = hex_key
             for i in range(REPEAT):
-                hex_key_i = hex_key + "_" + str(i)
+                result_key = data_key + "_" + str(i)
 
                 resultExec, result = xExec( xAssign('seq1', xSeq(range(5)) ))
                 # take advantage of default params for row/col (None)
@@ -88,29 +89,36 @@ class Basic(unittest.TestCase):
 
                 # can't have sequence of sequences?
                 # make sure key is created with c()
-                resultExec, result = xExec(xAssign('seq1', xFcn('c', xSeq(xColon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52)) ) ))
+                # xAssignE is xExec(xAssign(..)..)
+                resultExec, result = xAssignE('seq1', 
+                    xFcn('c', xSeq(xColon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) )) )
+
                 inspect = h2o_cmd.runInspect(key='seq1')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==313
                 assert numCols==1
+            
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xSeq(range(1, 5))) )
+                resultExec, result = xAssignE('seq1', xFrame(data_key, row=xSeq(xColon(99, 400), "#2", 1, range(1,5))) )
 
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xSeq(range(1,5))) ))
-
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row='#1')))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', '#100'))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon(1, 100))))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row='#1'))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', '#100')))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(1, 100)))
                 # this should fail rapids because of reverse msb/lsb
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#100', '#1'))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#-2', '#-1'))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon(-2, -1))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#-1', '#-2'))))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#100', '#1')))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-2', '#-1')))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(-2, -1)))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-1', '#-2')))
                 # take advantage of number to string conversion
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', rowCount-10))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, col=xColon('#1', colCount-1, ))))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', rowCount-10)))
+                resultExec, result = xAssignE(result_key, xFrame(data_key, col=xColon('#1', colCount-1, )))
 
                 # no assign
-                resultExec, result = xExec(xFrame(hex_key, row=xColon('#1', rowCount-10)))
-                resultExec, result = xExec(xFrame(hex_key, col=xColon('#1', colCount-1,)))
+                resultExec, result = xExec(xFrame(data_key, row=xColon('#1', rowCount-10)))
+                resultExec, result = xExec(xFrame(data_key, col=xColon('#1', colCount-1,)))
+
+                # do some function translation
+                resultExec, result = xExec(xFcn('==', 1, xFrame(data_key, col=xColon('#1', colCount-1,))) )
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \
