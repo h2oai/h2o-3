@@ -1031,7 +1031,7 @@ class ASTSlice extends AST {
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.popAry(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
+      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
       env.push(new ValFrame(fr2));
     }
   }

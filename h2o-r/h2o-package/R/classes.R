@@ -614,11 +614,6 @@ setClass("ASTApply", representation(op="character"), contains="Node")
 setClass("ASTUnk", representation(key="character", isFormal="logical"), contains="Node",
          prototype(node_type = "ASTUnk"))
 
-#'
-#' The ASTFun class.
-#'
-#' This class represents a UDF.
-#setClass("ASTFun", representation(name="character", arguments="character", body="ASTBody"), contains="Node")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # AST Class Defintions: Part 2

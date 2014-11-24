@@ -200,6 +200,10 @@ public class Env extends Iced {
           if (DKV.get(kl) != null && Arrays.asList(((Frame)DKV.get(kl).get()).keys()).contains(v._key)) {
             return false;
           }
+          // needed for cases where we need to re-use the local frame, keep it in a local_locked since not in DKV and above check will miss it...
+          if (_local_locked != null) {
+            if (_local_locked.contains(kl)) return false;
+          }
         }
       }
       removeVec(v, null);
