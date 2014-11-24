@@ -147,7 +147,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
             'username': '0xcustomer', # most found clouds are run by 0xcustomer. This doesn't matter?
             'redirect_import_folder_to_s3_path': 'false', # no..we're not on ec2
             'redirect_import_folder_to_s3n_path': 'false', # no..we're not on ec2
-            'delete_keys_at_teardown': 'true', # yes we want each test to clean up after itself
+            'delete_keys_at_teardown': 'false', # yes we want each test to clean up after itself. UPDATE: leave as is, for debug for now
             'use_hdfs': use_hdfs,
             'use_maprfs': use_maprfs,
             'h2o_remote_buckets_root': 'false',
