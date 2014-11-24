@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -815,7 +816,8 @@ public class Frame extends Lockable {
         if(pred.at0(i) != 0) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
-            if( chk._vec.isUUID() ) nchks[j].addUUID(chk,i);
+            if( chk._vec.isUUID() ) nchks[j].addUUID(chk, i);
+            else if(chk._vec.isString()) nchks[j].addStr((chk.atStr0(new ValueString(), i)));
             else nchks[j].addNum(chk.at0(i));
           }
         }
@@ -898,6 +900,7 @@ public class Frame extends Lockable {
             if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
             else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
             else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
+            else if (vs[i].isString()) sb.append(vs[i].atStr(new ValueString(), _row));
             else {
               double d = vs[i].at(_row);
               // R 3.1 unfortunately changed the behavior of read.csv().
