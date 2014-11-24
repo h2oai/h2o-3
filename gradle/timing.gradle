@@ -1,0 +1,77 @@
+// Taken from 
+// http://stackoverflow.com/questions/13031538/track-execution-time-per-task-in-gradle-script
+
+class Timing {
+    Timing(double s, String n) {
+        secs = s
+        name = n
+    }
+
+    double secs
+    String name
+}
+
+// Log timings per task.
+class TimingsListener implements TaskExecutionListener, BuildListener {
+    private Clock clock
+    private timings = []
+
+    @Override
+    void beforeExecute(Task task) {
+        clock = new org.gradle.util.Clock()
+    }
+
+    @Override
+    void afterExecute(Task task, TaskState taskState) {
+        def secs = (double)(clock.timeInMs / 1000.0)
+        def timing = new Timing(secs, task.path)
+        timings.add(timing)
+        task.project.logger.warn "${task.path} took ${secs} secs"
+    }
+
+    @Override
+    void buildFinished(BuildResult result) {
+        def sortedTimings = timings.sort { -it.secs }
+
+        def maxNumItemized = 15
+        println ""
+        println "Task timings:"
+        def i = 0
+        for ( ; ; i++) {
+            if (i >= sortedTimings.size()) {
+               break
+            }
+
+            if (i >= maxNumItemized) {
+               break
+            }
+
+            if (sortedTimings[i].secs < 0.100) {
+               break
+            }
+
+            printf "%8.3f secs  %s\n", sortedTimings[i].secs, sortedTimings[i].name
+        }
+        def otherSecs = 0.0
+        for ( ; i < sortedTimings.size(); i++) {
+            otherSecs += sortedTimings[i].secs
+        }
+        if (otherSecs > 0.100) {
+            printf "%8.3f secs  %s\n", otherSecs, "All others"
+        }
+    }
+
+    @Override
+    void buildStarted(Gradle gradle) {}
+
+    @Override
+    void projectsEvaluated(Gradle gradle) {}
+
+    @Override
+    void projectsLoaded(Gradle gradle) {}
+
+    @Override
+    void settingsEvaluated(Settings settings) {}
+}
+
+gradle.addListener new TimingsListener()
