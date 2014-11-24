@@ -30,8 +30,10 @@ class Basic(unittest.TestCase):
             # execExpr = "[(def fcn {a b c}{%s;;;})]" % execExpr
             execExpr = "[(def cn{aa}{(c {#1,#2})};;(c {#1,#2});;;})]" 
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, doFuns=True, resultKey=None, timeoutSecs=4)
-            if execResult['num_rows']:
+            # rows might be zero!
+            if execResult['num_rows'] or execResult['num_cols']:
                 keys.append(execExpr)
+
             
 
         print "\nExpressions that created keys"

@@ -235,17 +235,19 @@ class Basic(unittest.TestCase):
 
                 if 1==1:
                     start = time.time()
-                    xAssignE(fKey, random.choice(rowExprList))
+                    xAssignE(fKey, random.choice(rowExprList), justPrint=True)
                     elapsed = time.time() - start
                     execTime = elapsed
                     print "exec 2 took", elapsed, "seconds."
                 
                     inspect = h2o_cmd.runInspect(key=fKey)
-                    inspect = h2o_cmd.infoFromInspect(inspect)
                     missingList, valueList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
 
                 if numRows==0 or numCols!=colCount:
                     h2p.red_print("Warning: Cut resulted in", numRows, "rows and", numCols, "cols. Quantile will abort")
+
+                # FIX! put quantile back in?
+                quantileTime = 0
 
                 # remove all keys*******************************************************
                 # what about hex_key?

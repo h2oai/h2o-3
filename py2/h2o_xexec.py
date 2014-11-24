@@ -279,11 +279,41 @@ def xAssign(lhs='xResult', rhs='xTemp'):
     # FIX! what about checking rhs references have $ for keys.
     return "(= !%s %s)" % (lhs, rhs)
 
-def xExec(execExpr, timeoutSecs=30):
-    resultExec, result = h2e.exec_expr(execExpr=execExpr, timeoutSecs=30)
+# FIX! update option for funs= string
+def xExec(execExpr, timeoutSecs=30, justPrint=False):
+    # for debugging things. Don't do the Rapids
+    if justPrint:
+        print "justPrint: ast=", execExpr
+        result = 0.0
+        resultExec = {
+              "ast": "",
+              "col_names": [
+                "C1", 
+                "C2", 
+                "C3"
+              ], 
+              "exception": None,
+              "funs": None,
+              "funstr": None,
+              "key": {
+                "name": "e5"
+              }, 
+              "num_cols": 3, 
+              "num_rows": 0, 
+              "result": "", 
+              "scalar": 0.0, 
+              "schema_name": "RapidsV1", 
+              "schema_type": "Rapids", 
+              "schema_version": 1, 
+              "string": None
+            }
+
+    else:
+        resultExec, result = h2e.exec_expr(execExpr=execExpr, timeoutSecs=30)
+
     return resultExec, result 
 
 # xAssign, with a xExec wrapper
-def xAssignE(lhs='xResult', rhs='xTemp', timeoutSecs=30):
+def xAssignE(lhs='xResult', rhs='xTemp', timeoutSecs=30, justPrint=False):
     execExpr = xAssign(lhs, rhs)
-    return xExec(execExpr=execExpr, timeoutSecs=timeoutSecs)
+    return xExec(execExpr, timeoutSecs, justPrint)

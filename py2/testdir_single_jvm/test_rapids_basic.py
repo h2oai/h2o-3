@@ -279,9 +279,9 @@ class Basic(unittest.TestCase):
         keys = []
         for execExpr in initList:
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=4)
-            if execResult['num_rows']:
+            # rows might be zero!
+            if execResult['num_rows'] or execResult['num_cols']:
                 keys.append(execExpr)
-            
 
         print "\nExpressions that created keys"
         for k in keys:
