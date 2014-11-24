@@ -14,6 +14,11 @@ abstract class WrappedVec extends Vec {
     _masterVecKey = masterVecKey;
   }
 
+  public WrappedVec(Key masterVecKey, Key key, long[] espc) {
+    super(key, espc);
+    _masterVecKey = masterVecKey;
+  }
+
   @Override protected Vec masterVec() {
     return _masterVec!=null ? _masterVec : (_masterVec = _masterVecKey.get());
   }

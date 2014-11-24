@@ -198,7 +198,7 @@ public class Vec extends Keyed {
   /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Enum column.  */
-  public final boolean isEnum   (){ return _type==T_ENUM; }
+  public final boolean isEnum   (){ return _type==T_ENUM || _domain != null; }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
@@ -275,6 +275,8 @@ public class Vec extends Keyed {
   boolean readable() { return true ; }
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
+  /** Get the _espc long[]. */
+  public long[] get_espc() { return _espc; }
   
   // ======= Create zero/constant Vecs ======
 

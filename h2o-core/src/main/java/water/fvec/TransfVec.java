@@ -62,7 +62,7 @@ public class TransfVec extends WrappedVec {
     @Override boolean set_impl(int idx, double d) { return false; }
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
-    @Override NewChunk inflate_impl(NewChunk nc) {
+    @Override public NewChunk inflate_impl(NewChunk nc) {
       nc.set_sparseLen(nc.set_len(0));
       for( int i=0; i< _len; i++ )
         if(isNA0(i))nc.addNA();
