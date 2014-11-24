@@ -73,7 +73,15 @@ class Basic(unittest.TestCase):
                 # take advantage of default params for row/col (None)
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row='#1')))
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', '#100'))))
-                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', xNum(rowCount-10)))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon(1, 100))))
+                # this should fail rapids because of reverse msb/lsb
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#100', '#1'))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#-2', '#-1'))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon(-2, -1))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#-1', '#-2'))))
+                # take advantage of number to string conversion
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', rowCount-10))))
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, col=xColon('#1', colCount-1, ))))
 
                 inspect = h2o_cmd.runInspect(None, hex_key_i, timeoutSecs=timeoutSecs)
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
