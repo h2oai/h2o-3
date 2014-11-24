@@ -6,14 +6,13 @@ import org.junit.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -136,7 +135,7 @@ public class GBMTest extends TestUtil {
     try {
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
-      water.DKV.put(fr);       // Update frame after hacking it
+      DKV.put(fr);             // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) { parms._convert_to_enum = false; idx = ~idx; } else { parms._convert_to_enum = true; }
@@ -151,7 +150,7 @@ public class GBMTest extends TestUtil {
       parms._score_each_iteration=true;
       if( validation ) {        // Make a validation frame thats a clone of the training data
         vfr = new Frame(fr);
-        water.DKV.put(vfr);
+        DKV.put(vfr);
         parms._valid = vfr._key;
       }
 
@@ -185,8 +184,9 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv" )._key;
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      parms._train = train._key;
       train.remove("Site").remove();     // Remove unique ID
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
       parms._convert_to_enum = true;
       parms._ntrees = 5;
@@ -266,17 +266,17 @@ public class GBMTest extends TestUtil {
       fr.remove("Site").remove();        // Remove unique ID
       parms._response_column = "Angaus"; // Train on the outcome
       parms._ntrees = 10;
-      parms._max_depth = 5;
+      parms._max_depth = 10;
       parms._min_rows = 1;
       parms._nbins = 20;
       parms._learn_rate = .2f;
       gbm = new GBM(parms);
       gbm.trainModel();
-      try { Thread.sleep(10); } catch( Exception ignore ) { }
+      try { Thread.sleep(50); } catch( Exception ignore ) { }
 
       try {
         fr.delete();            // Attempted delete while model-build is active
-        throw H2O.fail();       // Should toss IAE instead of reaching here
+        Assert.fail("Should toss IAE instead of reaching here");
       } catch( IllegalArgumentException ignore ) {
       } catch( DException.DistributedException de ) {
         assertTrue( de.getMessage().contains("java.lang.IllegalArgumentException") );
