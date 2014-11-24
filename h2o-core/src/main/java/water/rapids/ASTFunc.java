@@ -85,6 +85,7 @@ public class ASTFunc extends ASTFuncDef {
           _table._local_frames.put(_arg_names[i], f);
         }
         _table.put(_arg_names[i], Env.LARY, _args[i].value());
+        _table._local_frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
       else throw H2O.unimpl("Vector arguments are not supported.");
@@ -189,7 +190,7 @@ class ASTFuncDef extends ASTOp {
 
     ASTFunc res = new ASTFunc(_name, _arg_names, _table, _body);
     res._asts = null;
-    putUDF(res, name);
+    putUDF(res, name);  // not all nodes get this...
   }
 
   @Override String opStr() { return "def"; }

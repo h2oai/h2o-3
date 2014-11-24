@@ -1212,41 +1212,94 @@ cbind.H2OFrame <- function(..., deparse.level = 1) {
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
 
-#
-#h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
-#  if( missing(.data) ) stop('must specify .data')
-#  if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
-#  if( missing(.variables) ) stop('must specify .variables')
-#  if( missing(.fun) ) stop('must specify .fun')
-#
-#  mm <- match.call()
-#
-#  # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
-#  # as column names.  This is a bit complicated
-#  if( class(.variables) == 'character'){
-#    vars <- .variables
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'H2Oquoted' ){
-#    vars <- as.character(.variables)
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'quoted' ){ # plyr overwrote our . fn
-#    vars <- names(.variables)
-#    idx <- match(vars, colnames(.data))
-#  } else if( class(.variables) == 'integer' ){
-#    vars <- .variables
-#    idx <- .variables
-#  } else if( class(.variables) == 'numeric' ){   # this will happen eg c(1,2,3)
-#    vars <- .variables
-#    idx <- as.integer(.variables)
-#  }
-#
-#  #TODO: Put these on the back end
-#  #  bad <- is.na(idx) | idx < 1 | idx > ncol(.data)
-#  #  if( any(bad) ) stop( sprintf('can\'t recognize .variables %s', paste(vars[bad], sep=',')) )
-#
+
+h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
+  if( missing(.data) ) stop('must specify .data')
+  if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
+  if( missing(.variables) ) stop('must specify .variables')
+  if( missing(.fun) ) stop('must specify .fun')
+
+  mm <- match.call()
+
+  # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
+  # as column names.  This is a bit complicated
+  if( class(.variables) == 'character'){
+    vars <- .variables
+    idx <- match(vars, colnames(.data))
+  } else if( class(.variables) == 'H2Oquoted' ){
+    vars <- as.character(.variables)
+    idx <- match(vars, colnames(.data))
+  } else if( class(.variables) == 'quoted' ){ # plyr overwrote our . fn
+    vars <- names(.variables)
+    idx <- match(vars, colnames(.data))
+  } else if( class(.variables) == 'integer' ){
+    vars <- .variables
+    idx <- .variables
+  } else if( class(.variables) == 'numeric' ){   # this will happen eg c(1,2,3)
+    vars <- .variables
+    idx <- as.integer(.variables)
+  }
+  FUN <- .fun
+  .FUN <- NULL
+  if (is.character(FUN)) .FUN <- get(FUN)
+  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
+  else if(is.null(.FUN) && !is.function(FUN))
+    stop("FUN must be an R function")
+  if (!is.null(.FUN)) FUN <- as.name(FUN)
+
+  l <- list(...)
+  if(length(l) > 0) {
+    tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "H2OParsedData", "numeric", "character", "logical") } )
+    if(any(tmp)) stop("H2O only recognizes H2OFrame, numeric, and character objects.")
+
+    idx <- which( sapply(l, function(x)  class(x) %in% c("H2OFrame")) )
+    extra_arg_names <- as.list(match.call())
+    for (i in idx) {
+      key <- as.character(extra_arg_names[[i]])
+      if (x %i% "H2OParsedData") next
+      x <- l[idx]
+      h2o.assign(x, key)
+      l[idx] <- x
+    }
+  }
+
+    # Process the function. Decide if it's an anonymous fcn, or a named one.
+    myfun <- deparse(substitute(FUN))
+    fun.ast <- NULL
+    # anon function?
+    if (substr(myfun[1], 1, nchar("function")) == "function") {
+      # handle anon fcn
+      fun.ast <- .fun.to.ast(FUN, "anon")
+      a <- invisible(.h2o.post.function(fun.ast))
+      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+    # else named function get the ast
+    } else {
+      if (.is.op(substitute(FUN))) {
+        fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
+      } else {
+        fun_name <- as.character(FUN)
+        fun <- match.fun(FUN)
+        fun.ast <- .fun.to.ast(FUN, fun_name)
+        a <- invisible(.h2o.post.function(fun.ast))
+        if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      }
+    }
+
+    if (is.null(fun.ast)) stop("argument FUN was invalid")
+
+#    if(length(l) == 0)
+#      ast <- .h2o.varop("apply", X, MARGIN, fun.ast)
+#    else
+#      ast <- .h2o.varop("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+#    ast
+
+
+#  vars <- '{' %p0% paste(vars, collapse = ";") %p0% '}'
+
+  .h2o.varop("h2o.ddply", .data, vars, fun.ast)
 #  .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
-#}
-#
+}
+
 #ddply <- h2o.ddply
 
 # TODO: how to avoid masking plyr?

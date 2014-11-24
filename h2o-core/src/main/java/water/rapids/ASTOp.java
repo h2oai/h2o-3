@@ -138,7 +138,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTIfElse());
     putPrefix(new ASTApply());
     putPrefix(new ASTSApply());
-//    putPrefix(new ASTddply ());
+    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum ());
     putPrefix(new ASTRunif ());
@@ -432,7 +432,7 @@ class ASTSignif extends ASTUniPrefixOp {
 }
 
 class ASTNrow extends ASTUniPrefixOp {
-  ASTNrow() { super(VARS1); }
+  public ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
   @Override ASTOp make() {return new ASTNrow();}
   @Override void apply(Env env) {

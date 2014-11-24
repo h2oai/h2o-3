@@ -83,18 +83,23 @@ public class Exec extends Iced {
     return env;
   }
 
-  public static void new_func(String str) throws IllegalArgumentException {
+  public static void new_func(final String str) throws IllegalArgumentException {
     cluster_init();
-    HashSet<Key> locked = new HashSet<>();
-    Env env = new Env(locked);
 
-    // Some global constants
-    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
-    Exec ex = new Exec(str, env);
-    ex.parse_fun();
+    new MRTask() {
+      @Override public void setupLocal() {
+        HashSet<Key> locked = new HashSet<>();
+        Env env = new Env(locked);
+
+        // Some global constants
+        env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+        env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+        env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+        env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+        Exec ex = new Exec(str, env);
+        ex.parse_fun();
+      }
+    }.doAllNodes();
   }
 
   protected AST parse() {
@@ -214,7 +219,7 @@ public class Exec extends Iced {
   // remotely, because e.g. ddply runs functions on all nodes.
   private static boolean _inited;       // One-shot init
   static void cluster_init() {
-    if( _inited ) return;
+//    if( _inited ) return;
     new MRTask() {
       @Override public void setupLocal() {
         new ASTPlus(); // Touch a common class to force loading
