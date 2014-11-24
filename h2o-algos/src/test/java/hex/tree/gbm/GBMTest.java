@@ -220,10 +220,10 @@ public class GBMTest extends TestUtil {
 
 //  // Adapt a trained model to a test dataset with different enums
 //  @Test public void testModelAdapt() {
-//    File file1 = TestUtil.find_test_file("./smalldata/kaggle/KDDTrain.arff.gz");
+//    File file1 = TestUtil.find_test_file("./smalldata/junit/KDDTrain.arff.gz");
 //    Key fkey1 = NFSFileVec.make(file1);
 //    Key dest1 = Key.make("KDDTrain.hex");
-//    File file2 = TestUtil.find_test_file("./smalldata/kaggle/KDDTest.arff.gz");
+//    File file2 = TestUtil.find_test_file("./smalldata/junit/KDDTest.arff.gz");
 //    Key fkey2 = NFSFileVec.make(file2);
 //    Key dest2 = Key.make("KDDTest.hex");
 //    GBM gbm = new GBM();

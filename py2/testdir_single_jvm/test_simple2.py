@@ -21,7 +21,7 @@ class Basic(unittest.TestCase):
     def test_simple2(self):
         # h2o-dev doesn't take ../.. type paths? make find_file return absolute path
         # import_result = h2o.n0.import_files(path=find_file("smalldata/logreg/prostate.csv"))
-        csvPathname = find_file("smalldata/poker/poker-hand-testing.data")
+        csvPathname = find_file("bigdata/laptop/poker-hand-testing.data")
         import_result = h2o.n0.import_files(path=csvPathname)
         # print dump_json(import_result)
 
