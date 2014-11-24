@@ -1,10 +1,11 @@
 package hex.tree.gbm;
 
+import hex.ConfusionMatrix2;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
-import water.fvec.Frame;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 
 import static org.junit.Assert.assertEquals;
@@ -176,60 +177,47 @@ public class GBMTest extends TestUtil {
       if( gbm != null ) gbm.delete();
     }
   }
-//
-//  // Test-on-Train.  Slow test, needed to build a good model.
-//  @Test public void testGBMTrainTest() {
-//    File file1 = TestUtil.find_test_file("smalldata/gbm_test/ecology_model.csv");
-//    if( file1 == null ) return; // Silently ignore if file not found
-//    Key fkey1 = NFSFileVec.make(file1);
-//    Key dest1 = Key.make("train.hex");
-//    File file2 = TestUtil.find_test_file("smalldata/gbm_test/ecology_eval.csv");
-//    Key fkey2 = NFSFileVec.make(file2);
-//    Key dest2 = Key.make("test.hex");
-//    GBM gbm = new GBM();          // The Builder
-//    GBM.GBMModel gbmmodel = null; // The Model
-//    Frame ftest = null, fpreds = null;
-//    try {
-//      Frame fr = ParseDataset2.parse(dest1,new Key[]{fkey1});
-//      UKV.remove(fr.remove("Site")._key); // Remove unique ID; too predictive
-//      gbm.response = fr.vecs()[fr.find("Angaus")];   // Train on the outcome
-//      gbm.source = fr;
-//      gbm.ntrees = 5;
-//      gbm.max_depth = 10;
-//      gbm.learn_rate = 0.2f;
-//      gbm.min_rows = 10;
-//      gbm.nbins = 100;
-//      gbm.invoke();
-//      gbmmodel = UKV.get(gbm.dest());
-//      testHTML(gbmmodel);
-//      Assert.assertTrue(gbmmodel.get_params().state == Job.JobState.DONE); //HEX-1817
-//
-//      // Test on the train data
-//      ftest = ParseDataset2.parse(dest2,new Key[]{fkey2});
-//      fpreds = gbm.score(ftest);
-//
-//      // Build a confusion matrix
-//      ConfusionMatrix CM = new ConfusionMatrix();
-//      CM.actual = ftest;
-//      CM.vactual = ftest.vecs()[ftest.find("Angaus")];
-//      CM.predict = fpreds;
-//      CM.vpredict = fpreds.vecs()[fpreds.find("predict")];
-//      CM.invoke();               // Start it, do it
-//
-//      StringBuilder sb = new StringBuilder();
-//      CM.toASCII(sb);
-//      System.out.println(sb);
-//
-//    } finally {
-//      gbm.source.delete(); // Remove the original hex frame key
-//      if( ftest  != null ) ftest .delete();
-//      if( fpreds != null ) fpreds.delete();
-//      if( gbmmodel != null ) gbmmodel.delete(); // Remove the model
-//      UKV.remove(gbm.response._key);
-//      gbm.remove();           // Remove GBM Job
-//    }
-//  }
-//
+
+  // Test-on-Train.  Slow test, needed to build a good model.
+  @Test public void testGBMTrainTest() {
+    GBMModel gbm = null;
+    try {
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv" )._key;
+      Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      parms._train = train._key;
+      train.remove("Site").remove();     // Remove unique ID
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._convert_to_enum = true;
+      parms._ntrees = 5;
+      parms._max_depth = 10;
+      parms._min_rows = 10;
+      parms._nbins = 100;
+      parms._learn_rate = .2f;
+      parms._loss = Family.AUTO;
+
+      GBM job = null;
+      try {
+        job = new GBM(parms);
+        gbm = job.trainModel().get();
+      } finally {
+        if( job != null ) job.remove();
+      }
+
+      double auc = gbm._output._auc.data().AUC();
+      Assert.assertTrue(0.80 <= auc && auc < 0.83); // Sanely good model
+      ConfusionMatrix2 cmf1 = gbm._output._auc.data().CM();
+      Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
+
+    } finally {
+      if( gbm != null ) {
+        gbm._parms._train.remove();
+        gbm._parms._valid.remove();
+        gbm.delete();
+      }
+    }
+  }
+
 //  // Adapt a trained model to a test dataset with different enums
 //  @Test public void testModelAdapt() {
 //    File file1 = TestUtil.find_test_file("./smalldata/kaggle/KDDTrain.arff.gz");
@@ -273,10 +261,10 @@ public class GBMTest extends TestUtil {
     Frame fr=null;
     try {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
-      for( String s : ignored_aircols ) fr.remove(s).remove();
+      fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       parms._train = fr._key;
-      parms._response_column = fr._names[fr.find("IsArrDelayed")];
+      fr.remove("Site").remove();        // Remove unique ID
+      parms._response_column = "Angaus"; // Train on the outcome
       parms._ntrees = 10;
       parms._max_depth = 5;
       parms._min_rows = 1;
@@ -284,7 +272,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = .2f;
       gbm = new GBM(parms);
       gbm.trainModel();
-      try { Thread.sleep(100); } catch( Exception ignore ) { }
+      try { Thread.sleep(10); } catch( Exception ignore ) { }
 
       try {
         fr.delete();            // Attempted delete while model-build is active
