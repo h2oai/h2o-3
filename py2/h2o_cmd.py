@@ -25,7 +25,7 @@ def runStoreView(node=None, **kwargs):
         print "model:", m
     print "# of models:", len(modelList)
     
-    return frameList + modelList
+    return {'keys': frameList + modelList}
 
 #************************************************************************
 def runExec(node=None, **kwargs):

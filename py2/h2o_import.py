@@ -487,6 +487,8 @@ def delete_keys(node=None, pattern=None, timeoutSecs=120):
         storeViewResult = h2o_cmd.runStoreView(node, timeoutSecs=timeoutSecs, view=20, **kwargs)
         # we get 20 at a time with default storeView
         keys = storeViewResult['keys']
+        print "kevin", keys
+        
         if not keys:
             break
 
@@ -517,28 +519,35 @@ def delete_keys(node=None, pattern=None, timeoutSecs=120):
 
 # could detect if pattern is used, and use the h2o "delete all keys" method if not
 def delete_keys_at_all_nodes(node=None, pattern=None, timeoutSecs=120):
-    print "Going to delete all keys one at a time (slower than 'remove all keys')"
-    # TEMP: change this to remove_all_keys which ignores locking and removes keys?
-    # getting problems when tests fail in multi-test-on-one-h2o-cluster runner*sh tests
-    if not node: node = h2o_nodes.nodes[0]
-    print "Will cancel any running jobs, because we can't unlock keys on running jobs"
-    # I suppose if we used a pattern, we wouldn't have to worry about running jobs..oh well.
-    h2o_jobs.cancelAllJobs()
-    print "unlock all keys first to make sure broken keys get removed"
-    node.unlock()
-    totalDeletedCnt = 0
-    deletedCnt = delete_keys(node, pattern=pattern, timeoutSecs=timeoutSecs)
-    totalDeletedCnt += deletedCnt
-
-    if pattern:
-        print "Total: Deleted", totalDeletedCnt, "keys with filter=", pattern, "at", len(h2o_nodes.nodes), "nodes"
+    print "Frame is too slow to look up key names when a lot of unparsed files were imported"
+    print "Just using remove_all_keys and saying 0 removed"
+    print "WARNING: pattern is ignored"
+    if 1==1:
+        h2o.n0.remove_all_keys()
+        return 0
     else:
-        print "Total: Deleted", totalDeletedCnt, "keys at", len(h2o_nodes.nodes), "nodes"
-        # do a remove_all_keys to clean out any locked keys also (locked keys will complain above)
-        # doesn't work if you remove job keys first, since it looks at the job list and gets confused
-        ### node.remove_all_keys(timeoutSecs=timeoutSecs)
+        print "Going to delete all keys one at a time (slower than 'remove all keys')"
+        # TEMP: change this to remove_all_keys which ignores locking and removes keys?
+        # getting problems when tests fail in multi-test-on-one-h2o-cluster runner*sh tests
+        if not node: node = h2o_nodes.nodes[0]
+        print "Will cancel any running jobs, because we can't unlock keys on running jobs"
+        # I suppose if we used a pattern, we wouldn't have to worry about running jobs..oh well.
+        h2o_jobs.cancelAllJobs()
+        print "unlock all keys first to make sure broken keys get removed"
+        node.unlock()
+        totalDeletedCnt = 0
+        deletedCnt = delete_keys(node, pattern=pattern, timeoutSecs=timeoutSecs)
+        totalDeletedCnt += deletedCnt
 
-    return totalDeletedCnt
+        if pattern:
+            print "Total: Deleted", totalDeletedCnt, "keys with filter=", pattern, "at", len(h2o_nodes.nodes), "nodes"
+        else:
+            print "Total: Deleted", totalDeletedCnt, "keys at", len(h2o_nodes.nodes), "nodes"
+            # do a remove_all_keys to clean out any locked keys also (locked keys will complain above)
+            # doesn't work if you remove job keys first, since it looks at the job list and gets confused
+            ### node.remove_all_keys(timeoutSecs=timeoutSecs)
+
+        return totalDeletedCnt
 
 
 def count_keys(node=None, pattern=None, timeoutSecs=90):
