@@ -64,13 +64,38 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xCall, xSequence, xColon, xAssign, xNum, xExec
+            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xNum, xExec, xC
 
             REPEAT = 1
             for i in range(REPEAT):
                 hex_key_i = hex_key + "_" + str(i)
 
+                resultExec, result = xExec( xAssign('seq1', xSeq(range(5)) ))
                 # take advantage of default params for row/col (None)
+                # need the 'c' function, to make sure the key is created
+
+                resultExec, result = xExec( xAssign('seq1', xFcn('c', xSeq(range(5)) )))
+                inspect = h2o_cmd.runInspect(key='seq1')
+                missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
+                assert numRows==5
+                assert numCols==1
+
+                resultExec, result = xExec( xAssign('seq2', xC(xSeq(range(5))) ))
+                inspect = h2o_cmd.runInspect(key='seq2')
+                missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
+                assert numRows==5
+                assert numCols==1
+
+                # can't have sequence of sequences?
+                # make sure key is created with c()
+                resultExec, result = xExec(xAssign('seq1', xFcn('c', xSeq(xColon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52)) ) ))
+                inspect = h2o_cmd.runInspect(key='seq1')
+                missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
+                assert numRows==313
+                assert numCols==1
+
+                resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xSeq(range(1,5))) ))
+
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row='#1')))
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', '#100'))))
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon(1, 100))))
@@ -83,8 +108,10 @@ class Basic(unittest.TestCase):
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, row=xColon('#1', rowCount-10))))
                 resultExec, result = xExec(xAssign(hex_key_i, xFrame(hex_key, col=xColon('#1', colCount-1, ))))
 
-                inspect = h2o_cmd.runInspect(None, hex_key_i, timeoutSecs=timeoutSecs)
-                missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
+                # no assign
+                resultExec, result = xExec(xFrame(hex_key, row=xColon('#1', rowCount-10)))
+                resultExec, result = xExec(xFrame(hex_key, col=xColon('#1', colCount-1,)))
+
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \
                     "    numCols:", "{:,}".format(numCols)
