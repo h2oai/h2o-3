@@ -235,7 +235,7 @@ class Basic(unittest.TestCase):
 
                 if 1==1:
                     start = time.time()
-                    xAssignE(fKey, random.choice(rowExprList), justPrint=True)
+                    xAssignE(fKey, random.choice(rowExprList), justPrint=False)
                     elapsed = time.time() - start
                     execTime = elapsed
                     print "exec 2 took", elapsed, "seconds."

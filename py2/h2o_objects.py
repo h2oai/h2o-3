@@ -207,6 +207,7 @@ class H2O(object):
                 # 
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
+                print "post r.headers: " + repr(r.headers)
             elif 'delete' == cmd:
                 r = requests.delete(url, timeout=timeout, params=params, **kwargs)
             elif 'get' == cmd:
