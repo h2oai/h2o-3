@@ -163,7 +163,7 @@ class Basic(unittest.TestCase):
             hex_key = "not_used.hex"
 
             # just parse to make sure it's good
-            parseResult = h2i.import_parse(path=csvPathname, hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname,
                 checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
 
@@ -178,10 +178,9 @@ class Basic(unittest.TestCase):
             for trial in range(1):
 
                 parameters = {
-                    'validation_frame': src_key, # Frame False []
+                    'validation_frame': parse_key, # Frame False []
                     'ignored_columns': None, # string[] None []
                     'score_each_iteration': None, # boolean false []
-                    'training_frame': None, # Frame None []
 
                     'minWordFreq': 1, # int 5 []
                     'wordModel': 'CBOW', # enum [u'CBOW', u'SkipGram']
@@ -198,7 +197,7 @@ class Basic(unittest.TestCase):
                 bmResult = h2o.n0.build_model(
                     algo='word2vec', 
                     destination_key=model_key,
-                    training_frame=src_key,
+                    training_frame=parse_key,
                     parameters=parameters, 
                     timeoutSecs=10) 
                 bm = OutputObj(bmResult, 'bm')
