@@ -23,7 +23,7 @@ public class C8Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem,(idx<<3),_NA); return true; }
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     for( int i=0; i< _len; i++ )
       if(isNA0(i))nc.addNA();
       else nc.addNum(at80(i),0);

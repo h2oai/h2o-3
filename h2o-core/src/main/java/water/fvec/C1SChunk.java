@@ -37,7 +37,7 @@ public class C1SChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)C1Chunk._NA; return true; }
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     double dx = Math.log10(_scale);
     assert water.util.PrettyPrint.fitsIntoInt(dx);
     nc.set_sparseLen(0);

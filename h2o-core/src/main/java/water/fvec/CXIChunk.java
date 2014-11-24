@@ -1,9 +1,10 @@
 package water.fvec;
 
-import java.util.Iterator;
 import water.AutoBuffer;
 import water.H2O;
 import water.util.UnsafeUtils;
+
+import java.util.Iterator;
 
 // Sparse chunk.
 public class CXIChunk extends Chunk {
@@ -72,7 +73,7 @@ public class CXIChunk extends Chunk {
     return getIValue(off) == NAS[_valsz_log];
   }
 
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
     nc.set_len(_len);
     nc.set_sparseLen(slen);
