@@ -1,4 +1,4 @@
-    <title>Unit Test Report</title>
+    <title>H2O Reporting</title>
     <meta name="generator" content="HTMLTestRunner 0.8.1"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 

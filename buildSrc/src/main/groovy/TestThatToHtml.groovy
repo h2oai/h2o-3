@@ -58,11 +58,11 @@ class convertR2html implements Plugin<Project> {
                 mkp.yieldUnescaped(scriptDefinitions(project, details))
 
                 div(class: 'heading'){
-                    h1("Unit test report")
+                    h1(details['title'])
                     //TODO: add strong as in <p class='attribute'><strong>Start Time:</strong> 2014-11-14 12:19:45</p>
-                    p(class: 'attribute', "Start Time: " + "2014-11-14 12:19:45" )
-                    p(class: 'attribute', "Duration: " + "0:00:00.105188")
-                    p(class: 'attribute', "Status: " + "Pass 3")
+                    p(class: 'attribute', "Start Time: " + details['startTime'] )
+                    p(class: 'attribute', "Duration: " + details['duration'])
+                    p(class: 'attribute', "Status: " + details['statusSummary'])
                     p(class: 'description')
                 }
 
@@ -91,44 +91,33 @@ class convertR2html implements Plugin<Project> {
                         td("View")
                     }
                     tr(class:'passClass'){
-                        td("proboscis.case:MethodTest")
+                        td(details['title'])
                         td("0.00")
-                        td("3")
-                        td("3")
-                        td("0")
-                        td("0")
+                        td(details['count'].toString()) //count
+                        td(details['pass'].toString()) //pass
+                        td(details['fail'].toString()) //fail
+                        td(details['error'].toString()) //error
                         td{
-                            a(href:"javascript:showClassDetail('c1',3)", "Detail")
+                            a(href:"javascript:showClassDetail('c1',${details['count'].toString()})", "Detail")
                         }
                     }
-                    tr(id:'pt1.1', class:'hiddenRow'){
-                        td(class:'none'){
-                            div(class:'testcase', 'testD')
+                    (1..details['count']).each{
+                        tr(id:"pt1.${it.toString()}", class:'hiddenRow'){
+                            td(class:'none'){
+                                //replace '' below with a test name if known
+                                div(class:'testcase', '')
+                            }
+                            td("0.00")
+                            td(colspan:'5', align:'center', 'pass')
                         }
-                        td("0.00")
-                        td(colspan:'5', align:'center', 'pass')
-                    }
-                    tr(id:'pt1.2', class:'hiddenRow'){
-                        td(class:'none'){
-                            div(class:'testcase', 'testE')
-                        }
-                        td("0.00")
-                        td(colspan:'5', align:'center', 'pass')
-                    }
-                    tr(id:'pt1.3', class:'hiddenRow'){
-                        td(class:'none'){
-                            div(class:'testcase', 'testF')
-                        }
-                        td("0.00")
-                        td(colspan:'5', align:'center', 'pass')
                     }
                     tr(id: 'total_row'){
                         td("Total")
                         td("0.00")
-                        td("3")
-                        td("3")
-                        td("0")
-                        td("0")
+                        td(details['count'].toString()) //total count
+                        td(details['pass'].toString()) //total pass
+                        td(details['fail'].toString()) //total fail
+                        td(details['error'].toString()) //total error
                         td( mkp.yieldUnescaped("&nbsp;") )
                     }
                 }
@@ -177,6 +166,7 @@ class convertR2html implements Plugin<Project> {
 
             def getTestDetails = {
                 //'it' is something like ........ or ......12.....
+                //TODO: find correct values here and return the map
                 [tests:5, failures:2, errors:1, skipped:2]
             }
 
@@ -271,10 +261,19 @@ class convertR2html implements Plugin<Project> {
             def links = ""
             def details = ""
             def q = { "\"" + it + "\""}
-            def space2_ = { it.replace(" ", "_") }
+            def space2_ = { it.replaceAll("\\s", "_") }
 
             testResults.each{k,v->
-                def testDetails = [:]
+                def testDetails = [
+                    title:k,
+                    startTime:'',
+                    duration:'',
+                    statusSummary: v.toString(),
+                    count: 4,
+                    pass: 4,
+                    fail: 0,
+                    error: 0
+                ]
                 def reportLocation =
                     new File(project.projectDir.canonicalPath + "/build/${space2_(k)}.html").getCanonicalPath()
                 html4test(project, reportLocation, testDetails)
