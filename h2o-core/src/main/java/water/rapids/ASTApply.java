@@ -140,7 +140,7 @@ public class ASTApply extends ASTOp {
 // --------------------------------------------------------------------------
 // Same as "apply" but defaults to columns.
 class ASTSApply extends ASTApply {
-  static final String VARS[] = new String[]{ "", "ary", "fcn", "..."};
+//  static final String VARS[] = new String[]{ "", "ary", "fcn", "..."};
   public ASTSApply( ) { super(); }
   @Override String opStr(){ return "sapply";}
   @Override ASTOp make() {return new ASTSApply();}

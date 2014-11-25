@@ -69,8 +69,8 @@ public class ASTFunc extends ASTFuncDef {
   @Override ASTOp make() { return new ASTFunc(); }
 
   @Override void apply(Env e) {
-    Frame cleanme = null;
-    Frame f=null;
+    Frame cleanme;
+    Frame f;
     Env captured = e.capture();
     for (int i = 0; i < _args.length; ++i) {
       if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
@@ -101,7 +101,7 @@ public class ASTFunc extends ASTFuncDef {
   @Override void exec(Env e, AST arg1, AST[] args) {
     _args = new AST[args == null ? 1 :1 + args.length];
     _args[0] = arg1;
-    Frame f = ((ASTFrame)_args[0])._fr;
+//    Frame f = ((ASTFrame)_args[0])._fr;
     if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
 //    f.delete();
