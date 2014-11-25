@@ -165,22 +165,10 @@ class convertR2html implements Plugin<Project> {
             def testResults = [:]
 
             def getTestDetails = {
-                //'it' is something like ........ or ......12.....
                 //TODO: find correct values here and return the map
                 [tests:5, failures:2, errors:1, skipped:2]
             }
 
-/* first list looks like
- Basic tests : .......
- Functional tests : ....12.
- Integration tests : .......
- Smoke tests : .......
- this will translate into
- [
- 'Basic tests':[tests:7, failures:0, errors:0, skipped:0],
- 'Functional tests':[tests:7, failures:2, errors:0, skipped:0], etc.
- ]
-*/
             def processTest = {line, into->
                 def summaryPattern = ~/(\w[^:]+)\s*:\s*(.*)/
                 def exclusions = ["Warning messages"] as Set
@@ -209,45 +197,18 @@ class convertR2html implements Plugin<Project> {
                     else{
                         tempBuffer << line.trim()
                     }
-//                    Matcher m1 = (line =~ summaryPattern)
-//                    Matcher m2 = (line =~ detailPattern)
-//                    if ( m1.matches() ){
-//                        if ( !exclusions.contains(m1[0][1]) ){
-//                            //println " * ${m1[0][1]} : ${m1[0][2]}"
-//                        }
-//                    }
-//                    if ( m2.matches() )println "#" + line
                 }
                 if ( tempBuffer.size() > 0 ) buffer << tempBuffer
                 buffer.eachWithIndex{list, index->
                     switch ( index ){
                         case 0:
-                            /* first list looks like
-                            Basic tests : .......
-                            Functional tests : ....12.
-                            Integration tests : .......
-                            Smoke tests : .......
-                            this will translate into
-                            [
-                            'Basic tests':[tests:7, failures:0, errors:0, skipped:0],
-                            'Functional tests':[tests:7, failures:2, errors:0, skipped:0], etc.
-                            ]
-                             */
                             list.each{processTest(it, into)}
                             break;
                         default:
-                            /*
-                            1. Failure(@test-functional.r#14): equality holds ------------------------------
-                            5 not equal to 6
-                            Mean relative difference: 0.1666667
-                            --
-                            2. Failure(@test-functional.r#15): equality holds ------------------------------
-                            10 is not identical to 11. Differences:
-                            Mean relative difference: 0.09090909
-                             */
                             break;
                     }
                 }
+                into.put("output", lines)
             }
 
             pickResults(folders).each{tuple->
@@ -277,21 +238,34 @@ class convertR2html implements Plugin<Project> {
                 def reportLocation =
                     new File(project.projectDir.canonicalPath + "/build/${space2_(k)}.html").getCanonicalPath()
                 html4test(project, reportLocation, testDetails)
-                v.put('resultsHtml', reportLocation)
+                if (!"output".equals(k)) v.put('resultsHtml', reportLocation)
             }
 
             testResults.each{k,v->
-                def href = q(v['resultsHtml'])
-                def title= q(k)
-                links += "<a href=${href} title=${title}>$k</a>\n"
-                details +=
-                        "<pre>" +
-                        "<b>${k}<b/><br />Tests: ${v['tests']}<br />" +
-                        "Failures: ${v['failures']}<br />" +
-                        "Errors: ${v['errors']}<br />" +
-                        "Skipped: ${v['skipped']}" +
-                        "</pre>\n"
+                project.logger.warn " > ${k} -> ${v.toString()}"
             }
+//  For the R testing, just pick the testthat summary and display it
+            testResults.each{k,v->
+                if ("output".equals(k)){
+                    details = "<pre>"
+                    v.each{
+                        details += "<b>${it}<b/><br />"
+                    }
+                    details += "</pre>\n"
+                }
+                else{
+                    def href = q(v['resultsHtml'])
+                    def title= q(k)
+                    links += "<a href=${href} title=${title}>$k</a>\n"
+                }
+//                        "<pre>" +
+//                        "<b>${k}<b/><br />Tests: ${v['tests']}; " +
+//                        "Failures: ${v['failures']}; " +
+//                        "Errors: ${v['errors']}; " +
+//                        "Skipped: ${v['skipped']}" +
+//                        "</pre>\n"
+            }
+
             //ant copy seems to choke on token substitution if binary files are included. need to go in two passes
             ant.copy(toDir: "build/reports/site", filtering: true, force: true, overwrite: true){
                 fileset(dir: "src/test/resources/site"){
