@@ -4,7 +4,7 @@ conn <- h2o.init(ip=Sys.getenv("H2O_IP"), port=as.integer(Sys.getenv("H2O_PORT")
 hex <- as.h2o(conn, iris)
 
 model <- tryCatch({
-	h2o.kmeans(data=hex, centers=1)
+	h2o.kmeans(data=hex, centers=5)
 }, error = function(err) { 
 	return(err)
 })
