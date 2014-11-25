@@ -1,6 +1,7 @@
-import unittest, random, sys, time
+import unittest, random, sys, time, re
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
+import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
+from h2o_test import dump_json, verboseprint
 
 initList = [
         '(+ (* #2 #2) (* #5 #5))',
@@ -11,7 +12,8 @@ initList = [
         '(= !x (c {(: #5 #5) }))',
 
         # why is num_rows = -4 here? Will blow up if we  use it?
-        '(= !x (c {(: #5 #0) }))',
+        # illegal? assertion
+        # '(= !x (c {(: #5 #0) }))',
 
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
         '(= !v2 (+ $v $v))',
@@ -24,6 +26,8 @@ initList = [
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
         '(= !v2 $v )',
 
+        # FIX! if i use v here now, it has to be assigned within the function or an input to the function?
+        # maybe always pass v for use in the function (in the latter function)
         '(= !v2 (n $v $v))',
         '(= !v2 (N $v $v))',
 
@@ -282,6 +286,19 @@ class Basic(unittest.TestCase):
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=4)
             execExpr2 = '(apply $r1 #2 $anon)'
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=4)
+
+            # see if the execExpr had a lhs assign. If so, it better be in the storeview
+            r = re.search('![a-z][A-Z][0-9]+', execExpr)
+            if r:
+                lhs = r.group(0)[1:]
+                print "Found key lhs assign", lhs
+                storeview = h2o_cmd.runStoreView()
+                print "\nstoreview:", dump_json(storeview)
+                if not k in storeView['keys']:
+                    raise Exception("Expected to find %s in %s", (k, storeView['keys']))
+            else: 
+                print "No key lhs assign"
+
             # rows might be zero!
             if execResult['num_rows'] or execResult['num_cols']:
                 keys.append(execExpr2)

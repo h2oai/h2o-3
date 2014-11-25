@@ -298,6 +298,31 @@ We support "everything" (default), "complete.obs", and "all.obs"
 
 
 
+On 11/25/2014 12:19 AM, Spencer Aiello wrote:
+> not sure what the deal is with this one, currently debugging it
+
+I had a question about whether I needed () around the body of the function statements.
+
+It seemed to work with or without
+
+i.e. is the syntax this
+
+(def anon {x} ( (var ...));;;)
+
+or this:
+
+(def anon {x} (var ...);;;)
+
+it matters for deciding what the 2 expression syntax is
+
+this
+(def anon {x} ( (var ...);;(var ...));;;)
+
+or this
+(def anon {x} (var ...);;(var ...);;;)
 
 
+or is the syntax something else
 
+you used to have {} in the function body in an old email, I think
+that's what was new to me in your example. the function body syntax.
