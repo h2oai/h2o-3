@@ -120,7 +120,7 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, 
 #'
 #' Make an HTTP request to the H2O backend.
 #'
-#' Useful for sending a REST command to H2O that is not currently supported.
+#' Useful for sending a REST command to H2O that is not currently supported by R.
 #'
 #' @param client An \code{H2OClient} object containing the IP address and port number of the H2O server.
 #' @param page An endpoint not supplied by the h2o package. See constants.R.
