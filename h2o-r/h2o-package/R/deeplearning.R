@@ -17,12 +17,7 @@
 #' @param activation A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
 #' @param hidden Hidden layer sizes (e.g. c(100,100))
 #' @param epochs How many times the dataset shoud be iterated (streamed), can be fractional
-#' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration. Special values are
-#'  \describe{
-#'    \item{0}{one epoch}
-#'    \item{-1}{all available data (e.g., replicated training data)}
-#'    \item{-2}{auto-tuning (default)}
-#'   }
+#' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration. Special values are: \bold{0} one epoch; \bold{-1} all available data (e.g., replicated training data); or \bold{-2} auto-tuning (default)
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates)
@@ -62,6 +57,17 @@
 #' @param shuffle_training_data Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}
 #' @param sparse Sparse data handling (Experimental)
 #' @param col_major Use a column major weight matrix for input layer. Can speed up forward proagation, but might slow down backpropagation (Experimental)
+#' @seealso \code\link{predict.H2ODeepLearningModel} for prediction.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#'
+#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' indep <- names(iris.hex)[1:4]
+#' dep <- names(iris.hex)[5]
+#' iris.dl = h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
+
 h2o.deeplearning <- function(x, y, data, key = "",
                              override_with_best_model,
                              classification = TRUE,
