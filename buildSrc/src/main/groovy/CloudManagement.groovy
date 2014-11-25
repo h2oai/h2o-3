@@ -31,11 +31,13 @@ class manageLocalClouds implements Plugin<Project> {
 
     def createClouds = {project, config ->
         def jar = [project.parent.buildDir.canonicalPath,jarName].join(System.getProperty('file.separator'))
+        assert new File(jar).exists()
         def mem = config.cloud.mem.toString()
         def name = config.cloud.name
         def port = config.cloud.port.toString()
         def cmd = "-Xmx${mem} -ea -jar ${jar} -name ${name} -baseport ${port}"
         project.logger.warn cmd
+        project.buildDir.mkdirs()
         (1..config.cloud.size).each{
             project.ant.exec(
                 executable: 'java',

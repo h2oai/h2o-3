@@ -14,7 +14,7 @@ dependencies {
 class convertR2html implements Plugin<Project> {
     def eol = System.getProperty('line.separator')
 
-    def styleDefinitions = {project->
+    def styleDefinitions = {project, details->
         def writer = new StringWriter()
         new File(project.projectDir.canonicalPath + "/src/test/resources/testHtmlTemplates/style.txt").eachLine{
             writer << it << eol
@@ -22,7 +22,7 @@ class convertR2html implements Plugin<Project> {
         writer.toString()
     }
 
-    def scriptDefinitions = {project->
+    def scriptDefinitions = {project, details->
         def writer = new StringWriter()
         new File(project.projectDir.canonicalPath + "/src/test/resources/testHtmlTemplates/script.txt").eachLine{
             writer << it << eol
@@ -41,7 +41,10 @@ class convertR2html implements Plugin<Project> {
         writer.toString()
     }
 
-    def html4test = {project, fileName ->
+    /**
+     * creates the html file with details for each test context
+     */
+    def html4test = {project, fileName, details ->
         def writer = new StringWriter()
         def xml = new MarkupBuilder(writer)
         def firstLines = [
@@ -49,10 +52,10 @@ class convertR2html implements Plugin<Project> {
         """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">"""]
         xml.'html'('xmlns':'http://www.w3.org/1999/xhtml'){
             head{
-                mkp.yieldUnescaped( styleDefinitions(project) )
+                mkp.yieldUnescaped( styleDefinitions(project, details) )
             }
             body{
-                mkp.yieldUnescaped(scriptDefinitions(project))
+                mkp.yieldUnescaped(scriptDefinitions(project, details))
 
                 div(class: 'heading'){
                     h1("Unit test report")
@@ -149,7 +152,7 @@ class convertR2html implements Plugin<Project> {
 
     void apply(Project project){
         project.task('reportAcceptanceTests', dependsOn: 'prepareAcceptanceHtmlReports') << {
-            new File("build/reports/site").mkdirs()
+            new File(project.projectDir.canonicalPath + "/build/reports/site").mkdirs()
 
             stopCloudsOn(project)
 
@@ -171,31 +174,42 @@ class convertR2html implements Plugin<Project> {
             }
 
             def testResults = [:]
-            /*will end up being something like
-            [
-            test1:[tests:5, failures:2, errors:1, skipped:2],
-            test2:[tests:7, failures:0, errors:0, skipped:0]
-            ]
-            */
+
+            def getTestDetails = {
+                //'it' is something like ........ or ......12.....
+                [tests:5, failures:2, errors:1, skipped:2]
+            }
+
+/* first list looks like
+ Basic tests : .......
+ Functional tests : ....12.
+ Integration tests : .......
+ Smoke tests : .......
+ this will translate into
+ [
+ 'Basic tests':[tests:7, failures:0, errors:0, skipped:0],
+ 'Functional tests':[tests:7, failures:2, errors:0, skipped:0], etc.
+ ]
+*/
+            def processTest = {line, into->
+                def summaryPattern = ~/(\w[^:]+)\s*:\s*(.*)/
+                def exclusions = ["Warning messages"] as Set
+                Matcher m = (line =~ summaryPattern)
+                if ( m.matches() ){
+                    if ( !exclusions.contains(m[0][1]) ){
+                        into.put( m[0][1].trim(), getTestDetails(m[0][2]) )
+                    }
+                }
+            }
 
             def processTestResults = {file, into ->
                 logger.warn "Processing test results from " + file.getCanonicalPath()
                 def lines = file as String[]
-                /*  we care here about two kind of lines
-                Basic tests : ........
-                or
-                Basic Tests : ......1....
-                and then we look for two lines like:
-                1. Failure(@test-colour.r#17): We have colours if we want to -------------------
-                c1 isn't true
-                */
-                def summaryPattern = ~/(\w[^:]+)\s*:\s*(.*)/
                 def detailPattern = ~/(.)\.\s*(.+)\(@.+\.r#\d*\):\s*(.+)/
                 def exclusions = ["Warning messages"] as Set
                 def tempBuffer = []
                 def buffer = []
                 lines.eachWithIndex{line, i->
-                    logger.warn line
                     if ( 0 == line.trim().length() ){
                         if ( tempBuffer.size() > 0 ){
                             buffer << tempBuffer.clone()
@@ -204,7 +218,6 @@ class convertR2html implements Plugin<Project> {
                     }
                     else{
                         tempBuffer << line.trim()
-                        logger.warn "adding to temp: " + tempBuffer.toString()
                     }
 //                    Matcher m1 = (line =~ summaryPattern)
 //                    Matcher m2 = (line =~ detailPattern)
@@ -216,23 +229,35 @@ class convertR2html implements Plugin<Project> {
 //                    if ( m2.matches() )println "#" + line
                 }
                 if ( tempBuffer.size() > 0 ) buffer << tempBuffer
-/*
-                --
-                Basic tests : .......
-                Functional tests : ....12.
-                Integration tests : .......
-                Smoke tests : .......
-                --
-                1. Failure(@test-functional.r#14): equality holds ------------------------------
-                5 not equal to 6
-                Mean relative difference: 0.1666667
-                --
-                2. Failure(@test-functional.r#15): equality holds ------------------------------
-                10 is not identical to 11. Differences:
-                Mean relative difference: 0.09090909
-*/
-                //populate 'into' structure
-
+                buffer.eachWithIndex{list, index->
+                    switch ( index ){
+                        case 0:
+                            /* first list looks like
+                            Basic tests : .......
+                            Functional tests : ....12.
+                            Integration tests : .......
+                            Smoke tests : .......
+                            this will translate into
+                            [
+                            'Basic tests':[tests:7, failures:0, errors:0, skipped:0],
+                            'Functional tests':[tests:7, failures:2, errors:0, skipped:0], etc.
+                            ]
+                             */
+                            list.each{processTest(it, into)}
+                            break;
+                        default:
+                            /*
+                            1. Failure(@test-functional.r#14): equality holds ------------------------------
+                            5 not equal to 6
+                            Mean relative difference: 0.1666667
+                            --
+                            2. Failure(@test-functional.r#15): equality holds ------------------------------
+                            10 is not identical to 11. Differences:
+                            Mean relative difference: 0.09090909
+                             */
+                            break;
+                    }
+                }
             }
 
             pickResults(folders).each{tuple->
@@ -243,13 +268,20 @@ class convertR2html implements Plugin<Project> {
                 )
             }
 
-            def reportLocation = new File("build/seeme.html").getCanonicalPath()
-            html4test(project, reportLocation)
-
             def links = ""
             def details = ""
             def q = { "\"" + it + "\""}
-            [tryIt:[tests:5, failures:2, errors:1, skipped:2, resultsHtml: reportLocation]].each{k,v->
+            def space2_ = { it.replace(" ", "_") }
+
+            testResults.each{k,v->
+                def testDetails = [:]
+                def reportLocation =
+                    new File(project.projectDir.canonicalPath + "/build/${space2_(k)}.html").getCanonicalPath()
+                html4test(project, reportLocation, testDetails)
+                v.put('resultsHtml', reportLocation)
+            }
+
+            testResults.each{k,v->
                 def href = q(v['resultsHtml'])
                 def title= q(k)
                 links += "<a href=${href} title=${title}>$k</a>\n"
