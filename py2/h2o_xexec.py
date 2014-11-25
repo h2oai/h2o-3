@@ -1,12 +1,57 @@
 
 import h2o_exec as h2e
 import re
-# from h2o_xexec import xFcn, xSeq, xC, xCbind, xColon, xAssign, xAssignE, xNum, xExec, xFrame, xVector
+# from h2o_xexec import xFcn, xSeq, xC, xCbind, xColon, xAssign, xAssignE, xItem, xExec, xFrame, xVector
 
 # maybe don't need these
 # from h2o_xexec import xUnary, xBinary
-
 from sets import Set
+
+#********************************************************************************
+def xItem(item):
+    print "xItem:", item
+    # xItem can't be used for lhs
+    # if list or tuple, exception
+    if item is None:
+        raise Exception("h2o_xexec xItem is None %s" % item)
+    elif isinstance(item, (list, tuple, dict)):
+        raise Exception("h2o_xexec xItem doesn't take lists, tuples (or dicts) %s" % item)
+
+    # if string and has comma, -> exception
+    # space can arise from prior expansion
+    itemStr = str(item)
+    if re.search(r"[,]", itemStr):
+        raise Exception("h2o_xexec xItem has comma. Bad. %s" % item)
+    elif len(itemStr)==0:
+        raise Exception("h2o_xexec xItem is len 0 %s" % item)
+
+    # elif string & starts with #, strip and check it's a number. Done if so. Else Exception
+    start = itemStr[0]
+    if start=="!":
+        raise Exception("h2o_xexec xItem starts with !. Only for lhs (xAssign*). Bad. %s" % item)
+    elif start=="#":
+        if itemStr=="#":
+            raise Exception("h2o_xexec xItem is just #. Bad. %s" % item)
+        # can be a number, or the start of a string with a number at the beginning
+        return item
+    # elif string & starts with $, Done. Else if next char is a-zA-Z, done. Else Exception
+    elif start=="$":
+        if itemStr=="$":
+            raise Exception("h2o_xexec xItem is just $. Bad. %s" % item)
+        # can be a ref , or the start of a string with a ref at the beginning
+        return item
+    # elif number, add #
+    else:
+        try: 
+            junk = float(item)
+            # number!
+            return "#%s" % item # good number!
+        except: # not number
+            # if it's just [a-zA-Z0-9], tack on the $ for probable initial key reference
+            if re.match(r"[a-zA-Z0-9]+$", item):
+                return "$%s" % item
+            else:
+                return item
 
 xFcnXlate = {
 '>':  'g',
@@ -121,20 +166,6 @@ xFcnOp3Set = Set ([
 
 
 #********************************************************************************
-def xNum(item):
-    if isinstance(item, (list, tuple)):
-        raise Exception("h2o_exec xNum doesn't take lists or tuples %s" % item)
-    elif isinstance(item, basestring):
-        if re.match("#", item):
-            return item # already okay
-    # do a try/except to decide if it's a item that needs to be a item-string representation
-    try: 
-        junk = float(item)
-        return "#%s" % item
-    except:
-        return item
-
-#********************************************************************************
 # operands is a list of items or an item. Each item can be number, string, list or tuple
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
@@ -145,13 +176,13 @@ def unpackOperands(operands, joinSep=',', parent="none"):
             # can we handle any operand being a list here too? might be compact
             # just one level of extra unpacking
             if not isinstance(v, (list,tuple)):
-                operandList.append(xNum(v))
+                operandList.append(xItem(v))
             else:
                 for v2 in v:
                     # collapse it into the one new list
-                    operandList.append(xNum(v2))
+                    operandList.append(xItem(v2))
     else:
-        operandList.append(xNum(operands))
+        operandList.append(xItem(operands))
     
     if len(operandList)!=0:
         operandString = joinSep.join(map(str, operandList))
@@ -176,12 +207,12 @@ def xKey(key):
 
 #********************************************************************************
 def xUnary(unary='_', rhs='xTemp'):
-    rhs = xNum(rhs)
+    rhs = xItem(rhs)
     return "%s %s" % (unary, rhs)
 
 def xBinary(binary='+', operand1='xTemp', operand2='xTemp'):
-    operand1 = xNum(operand1)
-    operand2 = xNum(operand2)
+    operand1 = xItem(operand1)
+    operand2 = xItem(operand2)
     return "%s %s %s" % (binary, operand1, operand2)
 
 def legalFunction(function):
@@ -238,8 +269,8 @@ def xColon(a='#0', b='#0'):
     if b is None:
         b = '"null"'
     # if it's not a string, turn the assumed number into a number string
-    a = xNum(a)
-    b = xNum(b)
+    a = xItem(a)
+    b = xItem(b)
     return '(: %s %s)' % (a, b) 
 
 # row/col can be numbers or strings or not specified
@@ -251,8 +282,8 @@ def xFrame(frame='xTemp', row=None, col=None):
     if col is None:
         col = '"null"'
     # if it's not a string, turn the assumed number into a number string
-    row = xNum(row)
-    col = xNum(col)
+    row = xItem(row)
+    col = xItem(col)
     # we always add $ to a here?. Suppose could detect whether it's already there
     return '([ $%s %s %s)' % (frame, row, col)
 
@@ -263,15 +294,15 @@ def xVector(frame='xTemp', row=None):
         raise Exception("h2o_exec xFrame adds '$': frame ref shouldn't start with '$' %s" % frame)
     if row is None:
         row = '"null"'
-    row = xNum(row)
+    row = xItem(row)
     # we always add $ to a here?. Suppose could detect whether it's already there
     return '([ $%s %s)' % (frame, row)
 
 # args should be individual strings, not lists
 def xAssign(lhs='xResult', rhs='xTemp'):
     print "h2o_exec xAssign: %s" % rhs
-    rhs = xNum(rhs)
-    print "h2o_exec xAssign after xNum: %s" % rhs
+    rhs = xItem(rhs)
+    print "h2o_exec xAssign after xItem: %s" % rhs
     # leading $ is illegal on lhs
     if re.match('\$', lhs):
         raise Exception("h2o_exec xAssign: lhs can't start with '$' %s" % frame)

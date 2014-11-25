@@ -872,7 +872,7 @@ setMethod("mean", "H2OParsedData", function(x, trim = 0, na.rm = FALSE, ...) {
   ast.mean
 })
 
-#'
+#
 #" Mean of a column, backed by AST.
 #" Expression is evaluated <=> this operation is top-level.
 #' @rdname mean.h2o
@@ -888,7 +888,7 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   ast.mean
 })
 
-#'
+#
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.
 h2o.mode <-
