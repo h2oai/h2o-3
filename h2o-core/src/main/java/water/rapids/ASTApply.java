@@ -36,6 +36,7 @@ public class ASTApply extends ASTOp {
     return res;
   }
   @Override void apply(Env env) {
+    ArrayList<Frame> _trash = new ArrayList<>();
     String err="Result of function produced more than a single column!";
     // Peek everything from the stack
     final ASTOp op = ASTOp.get(_fun);
@@ -83,7 +84,7 @@ public class ASTApply extends ASTOp {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
           Frame v = env.pop0Ary();
           vecs_result[i] = v.anyVec().makeCopy();
-          env.cleanup(v);
+//          _trash.add(v);  // not cleaned up
         }
       }
 
