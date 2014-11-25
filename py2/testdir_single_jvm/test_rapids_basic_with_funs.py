@@ -281,21 +281,28 @@ class Basic(unittest.TestCase):
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []
-        for execExpr in initList:
-            funs = '[(def anon {x}  (%s);;;)]' % execExpr
+        for execExpr1 in initList:
+            funs = '[(def anon {x}  (%s);;;)]' % execExpr1
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=4)
             execExpr2 = '(apply $r1 #2 $anon)'
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=4)
 
             # see if the execExpr had a lhs assign. If so, it better be in the storeview
-            r = re.search('![a-z][A-Z][0-9]+', execExpr)
+            r = re.search('![a-zA-Z0-9]+', execExpr1)
             if r:
                 lhs = r.group(0)[1:]
                 print "Found key lhs assign", lhs
-                storeview = h2o_cmd.runStoreView()
-                print "\nstoreview:", dump_json(storeview)
-                if not k in storeView['keys']:
-                    raise Exception("Expected to find %s in %s", (k, storeView['keys']))
+
+                # Frames gets too many rollup stats problems. Don't use for now
+                time.sleep(1)
+                if 1==0: 
+                    inspect = h2o_cmd.runInspect(key=lhs)
+                    missingList, labelList, numRows, numCols = infoFromInspect(inspect)
+
+                    storeview = h2o_cmd.runStoreView()
+                    print "\nstoreview:", dump_json(storeview)
+                    if not k in storeView['keys']:
+                        raise Exception("Expected to find %s in %s", (k, storeView['keys']))
             else: 
                 print "No key lhs assign"
 
