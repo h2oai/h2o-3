@@ -12,22 +12,22 @@ import water.util.Log;
 public final class Quantiles extends Iced {
 
   // IN
-  public Frame source_key;
-  public Vec column;
-  public double quantile;
-  public int max_qbins;
-  public int multiple_pass;
-  public int interpolation_type;
-  public int max_ncols;
+  public Frame _source_key;
+  public Vec _column;
+  public double _quantile = 0.5;
+  public int _max_qbins = 1000;
+  public int _multiple_pass = 1;
+  public int _interpolation_type = 7;
+  public int _max_ncols = 1000;
 
   // OUT
-  public String column_name;
-  public double quantile_requested;
-  public int interpolation_type_used;
-  public boolean interpolated;
-  public int iterations;
-  public double result;
-  public double result_single;
+  public String _column_name;
+  public double _quantile_requested;
+  public int _interpolation_type_used;
+  public boolean   _interpolated = false; // FIX! do I need this?
+  public int _iterations;
+  public double _result;
+  public double _result_single;
 
 
   public static final int MAX_ENUM_SIZE = water.parser.Enum.MAX_ENUM_SIZE;
@@ -55,7 +55,6 @@ public final class Quantiles extends Iced {
   public double    _newValStart;
   public double    _newValEnd;
   public double[]  _pctile;
-  public boolean   _interpolated = false; // FIX! do I need this?
   public boolean   _done = false; // FIX! do I need this?
 
   // OUTPUTS
@@ -188,22 +187,22 @@ public final class Quantiles extends Iced {
     this.setVecFields(vec, 1000, vec.min(), vec.max());
 
     // IN
-    source_key = key;
-    column = vec;
-    quantile = q;
-    max_qbins = max_q;
-    multiple_pass = multi_pass;
-    interpolation_type = interpo_type;
-    max_ncols = max_nc;
+    _source_key = key;
+    _column = vec;
+    _quantile = q;
+    _max_qbins = max_q;
+    _multiple_pass = multi_pass;
+    _interpolation_type = interpo_type;
+    _max_ncols = max_nc;
 
     // OUT
-    column_name = col_name;
-    quantile_requested = requested_quantile;
-    interpolation_type_used = interpo_type_used;
-    interpolated = interpoed;
-    iterations = iters;
-    result = res;
-    result_single = res_single;
+    _column_name = col_name;
+    _quantile_requested = requested_quantile;
+    _interpolation_type_used = interpo_type_used;
+    _interpolated = interpoed;
+    _iterations = iters;
+    _result = res;
+    _result_single = res_single;
     return this;
   }
 
@@ -360,7 +359,7 @@ public final class Quantiles extends Iced {
     // qtiles is an array just in case we support iterating on quantiles_to_do
     // but that would only work for approx, since we won't redo bins here.
     boolean done = false;
-    boolean interpolated = false;
+    boolean is_interpolated = false;
     qtiles[0] =  Double.NaN;
 
     if( hcnt2.length < 2 ) return false;
@@ -486,7 +485,7 @@ public final class Quantiles extends Iced {
           guess = hcnt2_min[k] + (targetCntFract * dDiff);
         }
         done = true;
-        interpolated = true;
+        is_interpolated = true;
         Log.debug("Q_ Guess B "+guess+" with type "+interpolation_type+" targetCntFract: "+targetCntFract);
       }
       // no interpolation needed
@@ -560,7 +559,7 @@ public final class Quantiles extends Iced {
         guess = (hcnt2_max[k] + nextVal) / 2.0;
       }
 
-      interpolated = true;
+      is_interpolated = true;
       done = true; //  has to be one above us when needed. (or we're at end)
       Log.debug("Q_ Guess D "+guess+" with type "+interpolation_type+
               " targetCntFull: "+targetCntFull+" targetCntFract: "+targetCntFract+
@@ -630,7 +629,7 @@ public final class Quantiles extends Iced {
     // hcnt2_max = null;
     _newValStart = newValStart;
     _newValEnd = newValEnd;
-    _interpolated = interpolated;
+    _interpolated = is_interpolated;
     return done;
   }
 
