@@ -58,6 +58,9 @@ A function has a body (which may be empty), and a body is a list of statements.
 [] for multiple functions (single too?)
 
 (def f {args} {body})
+# got npe when I didn't follow spacing rules
+# yup that's all, just the space between `anon` and `{x}` was needed, doesn't matter about spaces after the `{x}`
+
 Separator is ';;' final statement ends with ';;;'
 
 Statements that are possible:

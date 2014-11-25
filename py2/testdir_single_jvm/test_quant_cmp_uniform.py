@@ -140,7 +140,6 @@ class Basic(unittest.TestCase):
             # Quantile
             # the thresholds h2o used, should match what we expected
 
-
             # using + here seems to result in an odd tuple..doesn't look right to h2o param
             # so went with this. Could add '[' and ']' to the list first, before the join.
             probsStr  = "[%s]" % ",".join(map(str,probsList))
@@ -201,7 +200,6 @@ class Basic(unittest.TestCase):
 
             # prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
             # pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
-
             h2o_cmd.runStoreView()
 
             trial += 1
@@ -218,9 +216,7 @@ class Basic(unittest.TestCase):
                     # h2oQuantilesApprox=result, # from exec
                     h2oExecQuantiles=quantiles[CHECK_PCTILE_INDEX],
                     )
-
             h2o.nodes[0].remove_all_keys()
-
 
 if __name__ == '__main__':
     h2o.unit_main()
