@@ -33,7 +33,7 @@ public class CXDChunk extends CXIChunk {
     return Double.isNaN(getFValue(off));
   }
 
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
     nc.set_len(_len);
     nc.set_sparseLen(slen);

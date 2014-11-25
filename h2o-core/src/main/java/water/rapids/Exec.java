@@ -83,23 +83,30 @@ public class Exec extends Iced {
     return env;
   }
 
-  public static void new_func(String str) throws IllegalArgumentException {
+  public static void new_func(final String str) throws IllegalArgumentException {
     cluster_init();
-    HashSet<Key> locked = new HashSet<>();
-    Env env = new Env(locked);
 
-    // Some global constants
-    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
-    Exec ex = new Exec(str, env);
-    ex.parse_fun();
+    new MRTask() {
+      @Override public void setupLocal() {
+        HashSet<Key> locked = new HashSet<>();
+        Env env = new Env(locked);
+
+        // Some global constants
+        env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+        env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+        env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+        env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+        Exec ex = new Exec(str, env);
+        ex.parse_fun();
+      }
+    }.doAllNodes();
   }
 
   protected AST parse() {
     // Parse a token --> look for a function or a special char.
+    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String tok = parseID();
+    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     //lookup of the token
     AST ast = lookup(tok);
     return ast.parse_impl(this);
@@ -141,7 +148,7 @@ public class Exec extends Iced {
     return sb.toString();
   }
 
-  boolean hasNext() { return _x != _ast.length; }
+  boolean hasNext() { return _x < _ast.length; }
   boolean hasNextStmnt() {
     if (hasNext()) {
       if (_x+1 >= _ast.length) return false;
@@ -216,7 +223,6 @@ public class Exec extends Iced {
     new MRTask() {
       @Override public void setupLocal() {
         new ASTPlus(); // Touch a common class to force loading
-        tryComplete();
       }
     }.doAllNodes();
     _inited = true;

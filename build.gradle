@@ -4,11 +4,15 @@
 // files with the right settings.
 //
 // The top-level h2o-dev.jar file that gets produced is empty and not usable
-// for anything.  Use the jar file produced by the h2o-web subproject.
+// for anything.  Use the jar file produced by the h2o-assembly subproject.
 //
 apply from: 'gradle/java.gradle'
+
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
 apply from: 'gradle/release.gradle'
+
+// Print out time taken for each task so we find things that are slow.
+apply from: 'gradle/timing.gradle'
 
 // The build script settings to fetch plugins and put them on
 // classpath
@@ -22,6 +26,8 @@ buildscript {
         classpath 'eu.appsatori:gradle-fatjar-plugin:0.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
+        classpath 'de.undercouch:gradle-download-task:1.1'
+        classpath 'joda-time:joda-time:2.2'
     }
 }
 

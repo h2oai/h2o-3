@@ -2,6 +2,7 @@ import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
 import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+from h2o_test import dump_json
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -38,9 +39,11 @@ class Basic(unittest.TestCase):
 
     
     def test_b_algo_parameters(self):
-        for algo in ['kmeans', 'gbm', 'deeplearning', 'glm', 'word2vec', 'example']:
+        for algo in ['kmeans', 'gbm', 'deeplearning', 'glm', 'word2vec', 'example', 'quantile', 'grep']:
             paramResult = h2o.n0.model_builders(algo=algo)
             self.print_params(paramResult)
+            mmResult = h2o.n0.model_metrics(algo=algo)
+            print "mmResult", dump_json(mmResult)
 
 
 if __name__ == '__main__':

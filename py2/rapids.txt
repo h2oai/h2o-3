@@ -1,0 +1,275 @@
+
+Exec is an interpreter of abstract syntax trees.
+
+Trees have a Lisp-like structure with the following "reserved" special characters:
+
+( is required to have no space to the function definition
+
+works
+         '= !x1 (sum ([ $r1 "null" #0) $TRUE)'
+
+doesn't work
+        '= !x2 ( sum ([ $r1 "null" #0) $TRUE )'
+
+it means (function  ... ) is the right/only way to specify a function, right?
+space between ( and next thing is not allowed
+
+ '('  signals the parser to begin a function application, next token is an identifier or a (single char) flag
+ '#'  signals the parser to parse a double: attached_token
+ '"'  signals the parser to parse a String (double quote): attached_token
+ "'"  signals the parser to parse a String (single quote): attached_token
+ '$'  signals a variable lookup: attached_token
+ '!'  signals a variable set: attached_token
+ '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
+ 'f'  signals the parser to a parse a function: (f  name args body).
+ '='  signals the parser to assign the RHS to the LHS.
+ 'g'  signals &gt;
+ 'G'  signals &gt;=
+ 'l'  signals &lt;
+ 'L'  signals &lt;=
+ 'n'  signals ==
+ 'N'  signals !=
+ '_'  signals negation (!)
+ '{'  signals the parser to begin parsing a ';'-separated array of things (ASTSeries is the resulting AST)
+
+In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
+variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
+
+Everything else is a function call (prefix/infix/func) and has a leading char of '('.
+
+#************************************************
+all operators need to be separated by space?
+[ $r1 "null" #0
+
+
+I don't think we have any a[0] kind of thing in R..all data frames are two dimensional?
+
+(even single columns)?
+
+can you say a[5] for the fifth element of a column? what's that look like to you if so? 
+
+any ( is always paired with a )
+The ASTFunc Object
+
+An ASTFunc pulls the function ast produced by the front-end and creates a reference to this function.
+
+A function has a body (which may be empty), and a body is a list of statements.
+
+[] for multiple functions (single too?)
+
+(def f {args} {body})
+Separator is ';;' final statement ends with ';;;'
+
+Statements that are possible:
+
+if statements
+else statements
+for statements
+while statements
+switch statement
+declarative statements
+operative statements
+return statements
+
+The last statement of a function will return the result of that statement.
+
+Some Rules:
+-----------
+
+Every function defines a new Environment that inherits from the current one. Put another way, the calling scope
+provides the context for the function to be executed in. Environments can be captured with the `capture` call.
+
+No function shall modify state in any of its parent environments (which includes the DKV store). A function may only
+return values to a parent scope.
+
+    // All of the special chars (see Exec.java)
+    SYMBOLS.put("=", new ASTAssign());
+    SYMBOLS.put("'", new ASTString('\'', ""));
+    SYMBOLS.put("\"",new ASTString('\"', ""));
+    SYMBOLS.put("$", new ASTId('$', ""));
+    SYMBOLS.put("!", new ASTId('!', ""));
+    SYMBOLS.put("#", new ASTNum(0));
+    SYMBOLS.put("g", new ASTGT());
+    SYMBOLS.put("G", new ASTGE());
+    SYMBOLS.put("l", new ASTLT());
+    SYMBOLS.put("L", new ASTLE());
+    SYMBOLS.put("N", new ASTNE());
+    SYMBOLS.put("n", new ASTEQ());
+    SYMBOLS.put("[", new ASTSlice());
+    SYMBOLS.put("{", new ASTSeries(null, null));
+    SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
+    SYMBOLS.put("_", new ASTNot());
+    SYMBOLS.put("if", new ASTIf());
+    SYMBOLS.put("else", new ASTElse());
+    SYMBOLS.put("for", new ASTFor());
+    SYMBOLS.put("while", new ASTWhile());
+    SYMBOLS.put("return", new ASTReturn());
+
+    // Unary infix ops
+    putUniInfix(new ASTNot());
+    // Binary infix ops
+    putBinInfix(new ASTPlus());
+    putBinInfix(new ASTSub());
+    putBinInfix(new ASTMul());
+    putBinInfix(new ASTDiv());
+    putBinInfix(new ASTPow());
+    putBinInfix(new ASTPow2());
+    putBinInfix(new ASTMod());
+    putBinInfix(new ASTAND());
+    putBinInfix(new ASTOR());
+    putBinInfix(new ASTLT());
+    putBinInfix(new ASTLE());
+    putBinInfix(new ASTGT());
+    putBinInfix(new ASTGE());
+    putBinInfix(new ASTEQ());
+    putBinInfix(new ASTNE());
+    putBinInfix(new ASTLA());
+    putBinInfix(new ASTLO());
+
+    // Unary prefix ops
+    putPrefix(new ASTIsNA());
+    putPrefix(new ASTNrow());
+    putPrefix(new ASTNcol());
+    putPrefix(new ASTLength());
+    putPrefix(new ASTAbs ());
+    putPrefix(new ASTSgn ());
+    putPrefix(new ASTSqrt());
+    putPrefix(new ASTCeil());
+    putPrefix(new ASTFlr ());
+    putPrefix(new ASTLog ());
+    putPrefix(new ASTExp ());
+    putPrefix(new ASTScale());
+    putPrefix(new ASTFactor());
+    putPrefix(new ASTIsFactor());
+    putPrefix(new ASTAnyFactor());              // For Runit testing
+    putPrefix(new ASTCanBeCoercedToLogical());
+    putPrefix(new ASTAnyNA());
+    putPrefix(new ASTRound());
+    putPrefix(new ASTSignif());
+    putPrefix(new ASTTrun());
+
+
+   // Trigonometric functions
+    putPrefix(new ASTCos());
+    putPrefix(new ASTSin());
+    putPrefix(new ASTTan());
+    putPrefix(new ASTACos());
+    putPrefix(new ASTASin());
+    putPrefix(new ASTATan());
+    putPrefix(new ASTCosh());
+    putPrefix(new ASTSinh());
+    putPrefix(new ASTTanh());
+
+    // More generic reducers
+    putPrefix(new ASTMin ());
+    putPrefix(new ASTMax ());
+    putPrefix(new ASTSum ());
+    putPrefix(new ASTSdev());
+    putPrefix(new ASTVar());
+    putPrefix(new ASTMean());
+
+    // Misc
+    putPrefix(new ASTMatch());
+    putPrefix(new ASTRename());  //TODO
+    putPrefix(new ASTSeq   ());  //TODO
+    putPrefix(new ASTSeqLen());  //TODO
+    putPrefix(new ASTRepLen());  //TODO
+    putPrefix(new ASTQtile ());  //TODO
+    putPrefix(new ASTCbind ());
+    putPrefix(new ASTTable ());
+//    putPrefix(new ASTReduce());
+//    putPrefix(new ASTIfElse());
+    putPrefix(new ASTApply());
+    putPrefix(new ASTSApply());
+//    putPrefix(new ASTddply ());
+//    putPrefix(new ASTUnique());
+    putPrefix(new ASTXorSum ());
+    putPrefix(new ASTRunif ());
+    putPrefix(new ASTCut   ());
+    putPrefix(new ASTLs    ());
+
+
+yeah it's unclear if [ requires ([...)
+or if the number of arguments is implied without ()
+
+On 11/17/2014 10:04 PM, Spencer Aiello wrote:
+> In R, this translates to
+> r1[,1]
+> to get the 5th element:
+> r1[5,1] => ([ $r1 #4 #0)
+
+
+yes '[' always takes 3 args
+
+arg1 is the frame
+arg2 is the rows
+arg3 is the cols
+
+
+On 11/17/2014 10:06 PM, Spencer Aiello wrote:
+> '{' are used in cases like this:
+> r1[c(1,5,8,10,33),]  =>  ([ $r1 {#1;#5;#8;#10;#33} "null")
+
+okay, {} does a cbind, maybe only for constants? (can there be variables inside {} ?
+or can it be anything?
+
+
+hehehe, RPN -- never had to learn about that! ... `til now
+
+
+OK, I've tried to make my comments more:
+
+'(' is meant to signal that the next token is some sort of function. So the input is a token that will be looked up in the big list of Ops.
+
+'{' "things" are flagged inputs:
+
+A flag is a special char: ' " $ # are the main ones:
+
+$x means lookup x
+"x...   means parse the String with expected end quote "
+'x....   means parse the String with expected end quote '
+# means parse a number
+
+These are the "things"
+
+
+All functions will be named. -- I should make this a more explicit rule actually -- good point.
+
+Number of args are defined in parsing of a new function. The rules here are more complicated and I should really write them down so here goes:
+
+
+H2O learns about a new function as follows:
+
+An AST must be passed to H2O under the "funs" end point.
+
+Here's an example:
+
+f <- function(x,y,z) {
+  x <- z[,1]
+  y <- x * x * z[,3]
+  y - 1
+}
+
+
+ASTs in funs have the following form:
+
+(def name {args} {body})
+
+args are a ';'-separated array of tokens -- no special flags necessary here.
+
+
+{body} is more complicated:
+
+body is a list of statements in the function body.
+
+statements are separated with ';;'
+
+The last statement ends with ';;;'
+
+
+
+Currently disallowing nested function definition at the AST level -- the front end must correctly swap out defs with an invocation.
+
+
+
+

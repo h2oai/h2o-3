@@ -25,7 +25,7 @@ def runStoreView(node=None, **kwargs):
         print "model:", m
     print "# of models:", len(modelList)
     
-    return frameList + modelList
+    return {'keys': frameList + modelList}
 
 #************************************************************************
 def runExec(node=None, **kwargs):
@@ -85,13 +85,18 @@ def infoFromInspect(inspect):
     # look for nonzero num_missing_values count in each col
     missingList = []
     labelList = []
+    typeList = []
     for i, colDict in enumerate(columns): # columns is a list
         missing = colDict['missing']
         label = colDict['label']
+        stype = colDict['type']
         missingList.append(missing)
         labelList.append(label)
+        typeList.append(stype)
         if missing!=0:
             print "%s: col: %s %s, missing: %d" % (key_name, i, label, missing)
+
+    print "inspect typeList:", typeList
 
     # make missingList empty if all 0's
     if sum(missingList)==0:
@@ -135,7 +140,7 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         if not desiredResult or (column and column==label):
             desiredResult = summaryResult
         
-        verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
+        # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
 
         # this should be the same for all the cols? Or does the checksum change?
         frame = summaryResult['frames'][0]

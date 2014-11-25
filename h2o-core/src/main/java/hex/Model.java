@@ -82,8 +82,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     /** Read-UnLock both training and validation User frames. */
-    public void unlock_frames( Job job ) { 
-      train().unlock(job._key);
+    public void unlock_frames( Job job ) {
+      Frame tr = train();
+      if( tr != null ) tr.unlock(job._key);
       if( _valid != null && !_train.equals(_valid) )
         valid().unlock(job._key);
     }

@@ -2,14 +2,11 @@
 package water;
 
 import hex.ModelBuilder;
-import hex.api.DeepLearningBuilderHandler;
-import hex.api.ExampleBuilderHandler;
-import hex.api.GBMBuilderHandler;
-import hex.api.GLMBuilderHandler;
-import hex.api.KMeansBuilderHandler;
-import hex.api.Word2VecBuilderHandler;
+import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.grep.Grep;
+import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
 import hex.glm.GLM;
 import hex.kmeans.KMeans;
@@ -44,6 +41,8 @@ public class H2OApp {
     H2O.registerGET("/GBM",          hex.schemas.GBMHandler.class,          "train",        "/GBM","GBM","Model",                     "Train a GBM model on the specified Frame.");
     H2O.registerGET("/Word2Vec",     hex.schemas.Word2VecHandler.class,     "train",        "/Word2Vec","Word2Vec","Model",           "Train a Word2Vec model on the specified Frame.");
     H2O.registerGET("/Synonyms",     hex.schemas.SynonymsHandler.class,     "findSynonyms", "/Synonyms", "Synonyms","Synonyms",       "Return the synonyms.");
+    H2O.registerGET("/Grep",         hex.schemas.GrepHandler.class,         "train",        "/Grep","Grep","Model",                   "Run Grep on the specified Frame.");
+    H2O.registerGET("/Quantile",     hex.schemas.QuantileHandler.class,     "train",        "/Quantile","Quantile","Model",           "Train a Quantile model on the specified Frame.");
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
@@ -70,6 +69,14 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("example", Example.class);
     H2O.registerPOST("/2/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
     H2O.registerPOST("/2/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("quantile", Quantile.class);
+    H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("grep", Grep.class);
+    H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
+    H2O.registerPOST("/2/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();

@@ -56,7 +56,7 @@ public class CStrChunk extends Chunk {
     set_len((_valstart-_OFF)>>2);
     return this;
   }
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.set_len(_len);
     nc.set_sparseLen(sparseLen());
     nc._is = MemoryManager.malloc4(_len);

@@ -188,7 +188,7 @@ class H2O(object):
         else:
             paramsStr = ''
 
-        extraComment2 = repr(postData)+";" if cmd=='post' else ""
+        extraComment2 = " " + repr(postData)+";" if cmd=='post' else ""
         extraComment2 += extraComment if extraComment else ""
 
         if len(extraComment2) > 0:
@@ -207,6 +207,7 @@ class H2O(object):
                 # 
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
+                print "post r.headers: " + repr(r.headers)
             elif 'delete' == cmd:
                 r = requests.delete(url, timeout=timeout, params=params, **kwargs)
             elif 'get' == cmd:
@@ -243,7 +244,6 @@ class H2O(object):
         h2o_nodes.json_url_history.append(r.url)
         # if r.json():
         #     raise Exception("Maybe bad url? no r.json in do_json_request in %s:" % inspect.stack()[1][3])
-
         rjson = None
         if returnFast:
             return

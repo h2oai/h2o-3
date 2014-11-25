@@ -49,6 +49,10 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTApply) {
         _asts[0].treeWalk(e);  // push the frame we're `apply`ing over
         ((ASTApply) this).apply(e);
+
+      } else if (this instanceof ASTddply) {
+        _asts[0].treeWalk(e);
+        ((ASTddply)this).apply(e);
       } else {
         throw H2O.fail("Unknown AST: " + this.getClass());
         // TODO: do the udf op thing: capture env...
@@ -126,6 +130,14 @@ class ASTId extends AST {
   boolean isSet() { return _type == '!'; }
   boolean isLookup() { return _type == '$'; }
   boolean isValid() { return isSet() || isLookup(); }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.put2(_type);
+    ab.putStr(_id);
+    return ab;
+  }
+  @Override public ASTId read_impl(AutoBuffer ab) {
+    return new ASTId(ab.get2(), ab.getStr());
+  }
 }
 
 class ASTKey extends AST {
@@ -168,6 +180,13 @@ class ASTFrame extends AST {
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.putStr(_key);
+    return ab;
+  }
+  @Override public ASTFrame read_impl(AutoBuffer ab) {
+    return new ASTFrame(ab.getStr());
+  }
 }
 
 class ASTNum extends AST {
@@ -187,6 +206,13 @@ class ASTNum extends AST {
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
   double dbl() { return _d; }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.put8d(_d);
+    return ab;
+  }
+  @Override public ASTNum read_impl(AutoBuffer ab) {
+    return new ASTNum(ab.get8d());
+  }
 }
 
 /**
@@ -197,6 +223,7 @@ class ASTSpan extends AST {
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
+  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;}
   ASTSpan parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
@@ -226,6 +253,14 @@ class ASTSpan extends AST {
   boolean all_pos() { return !all_neg(); }
   boolean isNum() { return _min == _max; }
   long toNum() { return _min; }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.put8(_min);
+    ab.put8(_max);
+    return ab;
+  }
+  @Override public ASTSpan read_impl(AutoBuffer ab) {
+    return new ASTSpan(ab.get8(), ab.get8());
+  }
 }
 
 class ASTSeries extends AST {
@@ -233,6 +268,7 @@ class ASTSeries extends AST {
   final ASTSpan[] _spans;
   boolean _isCol;
   boolean _isRow;
+  int[] _order; // a sequence of 0s and 1s. 0 -> span; 1 -> index
 
   ASTSeries(long[] idxs, ASTSpan[] spans) {
     _idxs = idxs;
@@ -244,16 +280,25 @@ class ASTSeries extends AST {
     ArrayList<ASTSpan> s_spans = new ArrayList<>();
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String[] strs = E.parseString('}').split(";");
+    _order = new int[strs.length];
+    int o = 0;
     for (String s : strs) {
       if (s.charAt(0) == '(') {
+        _order[o++] = 0;
         s_spans.add((ASTSpan) (new Exec(s, null)).parse());
-      } else l_idxs.add(Long.valueOf(s));
+      } else {
+        _order[o++] = 1;
+        if (s.charAt(0) == '#') s = s.substring(1, s.length());
+        l_idxs.add(Long.valueOf(s));
+      }
     }
     long[] idxs = new long[l_idxs.size()];
     ASTSpan[] spans = new ASTSpan[s_spans.size()];
     for (int i = 0; i < idxs.length; ++i) idxs[i] = l_idxs.get(i);
     for (int i = 0; i < spans.length; ++i) spans[i] = s_spans.get(i);
-    return new ASTSeries(idxs, spans);
+    ASTSeries aa = new ASTSeries(idxs, spans);
+    aa._order = _order;
+    return aa;
   }
 
   boolean contains(long a) {
@@ -267,14 +312,12 @@ class ASTSeries extends AST {
   boolean isColSelector() { return _isCol; }
   boolean isRowSelector() { return _isRow; }
 
-  void setSlice(boolean row, boolean col) {
-    _isRow = row;
-    _isCol = col;
-  }
+  void setSlice(boolean row, boolean col) { _isRow = row; _isCol = col; }
 
   @Override
   void exec(Env e) {
     ValSeries v = new ValSeries(_idxs, _spans);
+    v._order = _order;
     v.setSlice(_isRow, _isCol);
     e.push(v);
   }
@@ -319,6 +362,31 @@ class ASTSeries extends AST {
       for (int i = 0; i < _idxs.length; ++i) res[cur++] = _idxs[i];
     }
     return res;
+  }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    ab.putA8(_idxs);
+    ab.put1(_spans.length);
+    for (int i = 0; i < _spans.length; ++i) {
+      ab = _spans[i].write_impl(ab);
+    }
+    ab.putZ(_isCol);
+    ab.putA4(_order);
+    return ab;
+  }
+  @Override public ASTSeries read_impl(AutoBuffer ab) {
+    long[] idxs = ab.getA8();
+    int nspans = ab.get1();
+    ASTSpan[] spans = new ASTSpan[nspans];
+    for (int i = 0; i < nspans; ++i) {
+      spans[i] = ab.get(ASTSpan.class);
+    }
+    boolean isCol = ab.getZ();
+    int[] order = ab.getA4();
+    ASTSeries series = new ASTSeries(idxs, spans);
+    series._order = order;
+    series._isCol = isCol;
+    series._isRow = !isCol;
+    return series;
   }
 }
 
@@ -963,7 +1031,7 @@ class ASTSlice extends AST {
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.popAry(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
+      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
       env.push(new ValFrame(fr2));
     }
   }
@@ -993,7 +1061,7 @@ class ASTSlice extends AST {
       if (a.isColSelector()) return a.toArray();
 
       // Check the case where we have c(1), e.g., a series of a single digit...
-      if (a.isNum()) return select(len, new ValNum(a.toNum()), env, isCol);
+      if (a.isNum() && !a.all_neg()) return select(len, new ValNum(a.toNum()), env, isCol);
 
       // Otherwise, we have rows selected: Construct a compatible "predicate" vec
       Frame ary = env.peekAry();

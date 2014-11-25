@@ -528,12 +528,12 @@ public abstract class Chunk extends Iced implements Cloneable {
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
-  abstract NewChunk inflate_impl(NewChunk nc);
+  public abstract NewChunk inflate_impl(NewChunk nc);
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
    *  optimized stencil calculations that want to "roll off the end" of a
    *  Chunk, but in a highly optimized way. */
-  Chunk nextChunk( ) { return _vec.nextChunk(this); }
+  public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }

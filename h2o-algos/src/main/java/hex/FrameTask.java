@@ -311,8 +311,15 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       int [] cats = MemoryManager.malloc4(n);
       int nnums = 0, ncats = 0;
       for(int i = 0; i < n; ++i)  
-        if(tvecs[i].isEnum()) cats[ncats++] = i;
-        else                  nums[nnums++] = i;
+        if (tvecs[i].isEnum() && (tvecs[i].domain() != null)) {
+          cats[ncats++] = i;
+        }
+        else {
+          if (tvecs[i].isEnum()) {
+            Log.debug("In DataInfo:  Confused isEnum column number " + i);
+          }
+          nums[nnums++] = i;
+        }
       _nums = nnums;
       _cats = ncats;
       // sort the cats in the decreasing order according to their size

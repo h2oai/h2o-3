@@ -138,7 +138,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTIfElse());
     putPrefix(new ASTApply());
     putPrefix(new ASTSApply());
-//    putPrefix(new ASTddply ());
+    putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum ());
     putPrefix(new ASTRunif ());
@@ -149,7 +149,7 @@ public abstract class ASTOp extends AST {
 
 //    putPrefix(new ASTfindInterval());
 //    putPrefix(new ASTPrint ());
-//    putPrefix(new ASTCat   ());
+    putPrefix(new ASTCat   ());
 //Time extractions, to and from msec since the Unix Epoch
 //    putPrefix(new ASTYear  ());
 //    putPrefix(new ASTMonth ());
@@ -432,7 +432,7 @@ class ASTSignif extends ASTUniPrefixOp {
 }
 
 class ASTNrow extends ASTUniPrefixOp {
-  ASTNrow() { super(VARS1); }
+  public ASTNrow() { super(VARS1); }
   @Override String opStr() { return "nrow"; }
   @Override ASTOp make() {return new ASTNrow();}
   @Override void apply(Env env) {
@@ -2413,7 +2413,96 @@ class ASTLs extends ASTOp {
   }
 }
 
+// Variable length; flatten all the component arys
+class ASTCat extends ASTUniPrefixOp {
+  // form of this is (c ASTSpan)
+  @Override String opStr() { return "c"; }
+  public ASTCat( ) { super(new String[]{"cat","dbls", "..."});}
+  @Override ASTOp make() {return new ASTCat();}
+  @Override ASTCat parse_impl(Exec E) {
+    ASTSeries a;
+    try {
+      if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+      a = (ASTSeries) E.parse();
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("Expected ASTSeries object. Badly formed AST.");
+    }
 
+    ASTCat res = (ASTCat) clone();
+    res._asts = new AST[]{a};
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    final ValSeries s = (ValSeries) env.pop();
+    int id_span =0;
+    long len = s._idxs.length;
+    if (s._spans != null) {
+      for (ASTSpan as : s._spans) len += (as._max - as._min + 1);
+    }
+    // now make an mapping of ValSeries -> Vec indices
+    ArrayList<Long> idxs = new ArrayList<>();
+    ArrayList<ASTSpan> spans = new ArrayList<>();
+    long cur_id=0;
+    for (int o : s._order) {
+      if (o == 0) { // span
+        assert s._spans != null;
+        long id_min = cur_id;
+        long id_max = cur_id + s._spans[id_span]._max - s._spans[id_span]._min;
+        cur_id+=(s._spans[id_span]._max-s._spans[id_span++]._min+1);
+        spans.add(new ASTSpan(id_min, id_max));
+      } else {      // idx
+        idxs.add(cur_id++);
+      }
+    }
+    long[] idxsl = new long[idxs.size()];
+    for (int i =0; i < idxsl.length; ++ i) idxsl[i] = idxs.get(i);
+    final ValSeries ids = new ValSeries(idxsl, spans.toArray(new ASTSpan[spans.size()]));
+    ids._order = s._order;
+
+    Frame fr = new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        Chunk c = cs[0];
+        for (int r = 0; r < c._len; ++r) {
+          long cur = c.start() + r;
+          c.set0(r, maprow(cur, ids, s));
+        }
+      }
+    }.doAll(Vec.makeZero(len))._fr;
+
+    env.push(new ValFrame(fr));
+  }
+
+  private long maprow(long cur, ValSeries ids, ValSeries s) {
+    // get the location of the id in ids. This maps to the value in s.
+    int span_idx = -1;
+    int idxs_idx = 0;
+    long at_value = -1;
+    for (int o : ids._order) {
+      if (o == 0) {  // span
+        if (ids._spans[++span_idx].contains(cur)) {
+          at_value = cur - ids._spans[span_idx]._min;
+          break;
+        }
+      } else {
+        boolean _br = false;
+        if (idxs_idx >= 0) {
+          for (int i = 0; i < ids._idxs.length; ++i) {
+            if (ids._idxs[i] == cur) {
+              at_value = i;
+              _br = true;
+              break;
+            }
+          }
+          if (_br) break; else --idxs_idx;
+        }
+      }
+    }
+    if (span_idx >= 0) {
+      return s._spans[span_idx]._min + at_value;
+    } else return s._idxs[(int)at_value];
+  }
+}
 
 // WIP
 
@@ -2521,63 +2610,6 @@ class ASTXorSum extends ASTReducerOp {
 //    }
 //    env.pop(argcnt-2);          // Pop most args
 //    env.pop_into_stk(-2);       // Pop off fcn, returning 1st arg
-//  }
-//}
-
-
-// Variable length; flatten all the component arys
-//class ASTCat extends ASTUniPrefixOp {
-//  protected static int _argcnt;
-//  @Override String opStr() { return "c"; }
-//  ASTCat( ) { super(new String[]{"cat","dbls", "..."});}
-//  @Override ASTOp make() {return new ASTCat();}
-//  @Override ASTCat parse_impl(Exec E) {
-//    ArrayList<AST> dblarys = new ArrayList<>();
-//    AST a;
-//    while (true) {
-//      a = E.skipWS().parse();
-//      if (a instanceof ASTId) {
-//        AST ast = E._env.lookup((ASTId)a);
-//        if (ast instanceof ASTFrame) {dblarys.add(a); continue; } else break;
-//      }
-//      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
-//        dblarys.add(a);
-//      else break;
-//    }
-//    ASTCat res = (ASTCat) clone();
-//    AST[] arys = new AST[_argcnt = dblarys.size()];
-//    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
-//    res._asts = arys;
-//    return res;
-//  }
-//
-//  @Override double[] map(Env env, double[] in, double[] out) {
-//    if (out == null || out.length < in.length) out = new double[in.length];
-//    System.arraycopy(in, 0, out, 0, in.length);
-//    return out;
-//  }
-//  @Override void apply(Env env) {
-//    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-//    AppendableVec av = new AppendableVec(key);
-//    NewChunk nc = new NewChunk(av,0);
-//    int argcnt = _argcnt;
-//    for( int i=0; i<argcnt; i++ ) {
-//      if (env.isAry()) {
-//
-//      } else {
-//        nc.addNum(env.popDbl());
-//      }
-//
-//      if (env.isAry(i-argcnt+1)) for (Vec vec : env.ary(i-argcnt+1).vecs()) {
-//        if (vec.nChunks() > 1) H2O.unimpl();
-//        for (int r = 0; r < vec.length(); r++) nc.addNum(vec.at(r));
-//      }
-//      else nc.addNum(env.dbl(i-argcnt+1));
-//    }
-//    nc.close(0,null);
-//    Vec v = av.close(null);
-//    env.pop(argcnt);
-//    env.push(new Frame(new String[]{"C1"}, new Vec[]{v}));
 //  }
 //}
 

@@ -81,7 +81,7 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
 
 #  print("AST: ")
 #  print(expr$ast)
-
+#  stop("a")
   # Have H2O evaluate the AST
   res <- .h2o.__remoteSend(client, .h2o.__RAPIDS, ast=expr$ast)
 

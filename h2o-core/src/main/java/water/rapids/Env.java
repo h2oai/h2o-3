@@ -35,15 +35,15 @@ public class Env extends Iced {
   final static int NULL  =99999;
   final static int LARY  =99;  // special value for arrays in _local_array
 
-  final ExecStack _stack;                      // The stack
+  transient final ExecStack _stack;                      // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
   transient final public StringBuilder _sb;    // Holder for print results
   transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
   transient final HashSet<Key> _global_frames; // Frame keys in the *global* scope
   transient final HashSet<Key> _local_frames;  // Frame keys in the *local* scope
   transient final HashSet<Key> _local_locked;  // Locked frames in the *local* scope
-  final SymbolTable _global;
-  final SymbolTable _local;
+  transient final SymbolTable _global;
+  transient final SymbolTable _local;
   final Env _parent;
   final private boolean _isGlobal;
 
@@ -199,6 +199,10 @@ public class Env extends Iced {
         for (Key kl : _local_frames) {
           if (DKV.get(kl) != null && Arrays.asList(((Frame)DKV.get(kl).get()).keys()).contains(v._key)) {
             return false;
+          }
+          // needed for cases where we need to re-use the local frame, keep it in a local_locked since not in DKV and above check will miss it...
+          if (_local_locked != null) {
+            if (_local_locked.contains(kl)) return false;
           }
         }
       }
@@ -792,6 +796,7 @@ class ValSeries extends Val {
   final ASTSpan[] _spans;
   boolean _isCol;
   boolean _isRow;
+  int[] _order;
 
   ValSeries(long[] idxs, ASTSpan[] spans) {
     _idxs = idxs;

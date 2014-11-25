@@ -54,6 +54,13 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
 
     @API(help="Should this field be rendered in the JSON representation?")
     boolean json;
+
+    @API(help="For Vec-type fields this is the set of other Vec-type fields which must contain mutually exclusive values; for example, for a SupervisedModel the response_column must be mutually exclusive with the weights_column")
+    String[] is_member_of_frames;
+
+    @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
+    String[] is_mutually_exclusive_with;
+
   } // FieldMetadataBase
 
   @Override

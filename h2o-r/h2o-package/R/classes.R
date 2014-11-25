@@ -278,9 +278,9 @@ setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="lis
 
 #' @rdname H2ODeepLearningModel-class
 setMethod("show", "H2ODeepLearningModel", function(object) {
-  print(object@data@h2o)
-  cat("Parsed Data Key:", object@data@key, "\n\n")
-  cat("Deep Learning Model Key:", object@key)
+#  print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
+#  cat("Deep Learning Model Key:", object@key)
 
 #  model = object@model
 #  cat("\n\nTraining classification error:", model$train_class_error)
@@ -614,11 +614,6 @@ setClass("ASTApply", representation(op="character"), contains="Node")
 setClass("ASTUnk", representation(key="character", isFormal="logical"), contains="Node",
          prototype(node_type = "ASTUnk"))
 
-#'
-#' The ASTFun class.
-#'
-#' This class represents a UDF.
-#setClass("ASTFun", representation(name="character", arguments="character", body="ASTBody"), contains="Node")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # AST Class Defintions: Part 2

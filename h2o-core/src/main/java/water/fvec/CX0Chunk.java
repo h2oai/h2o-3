@@ -12,7 +12,7 @@ public final class CX0Chunk extends CXIChunk {
   @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
   @Override protected final boolean isNA_impl( int i ) { return false; }
 
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();
     nc.set_len(_len);
     nc.set_sparseLen(slen);

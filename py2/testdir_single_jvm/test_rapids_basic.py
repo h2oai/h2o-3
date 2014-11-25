@@ -3,6 +3,40 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 initList = [
+        '(+ (* #2 #2) (* #5 #5))',
+        '(* #1 (+ (* #2 #2) (* #5 #5)))',
+
+        '(= !x (c {#1;#5;#8;#10;#33}))',
+        '(= !x (c {(: #0 #5) }))',
+        '(= !x (c {(: #5 #5) }))',
+
+        # why is num_rows = -4 here? Will blow up if we  use it?
+        '(= !x (c {(: #5 #0) }))',
+
+        '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
+        '(= !v2 (+ $v $v))',
+
+        # FIX! test with space after { and before }
+        '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);#45001085})',
+        '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
+
+        # remember need $v to reference
+        '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
+        '(= !v2 $v )',
+
+        '(= !v2 (n $v $v))',
+        '(= !v2 (N $v $v))',
+
+        '(= !v2 (- $v $v))',
+        '(= !v2 (+ $v $v))',
+
+        '(= !v2 (sum (+ $v $v) $TRUE)',
+        '(= !v2 (+ #1.0 (sum (+ $v $v) $TRUE))',
+
+        # different dimensions?
+        '(= !v3 (+ $v (sum (+ $v $v) $TRUE))',
+        '(= !v3 (cbind $v $v $v $v))',
+        # '(= !v3 (rbind $v $v $v $v))',
 
         # '(= !keys (ls))', # works
         # '(= !x #1)', # works
@@ -86,6 +120,8 @@ initList = [
         '= !x G #1 G #1 (G #1 #1)',
         '= !x g #1 g #1 (g #1 #1)',
 
+        '= !x (* (* #1 #1) (* #1 #1))',
+
         '= !x * #1 * #1 (* #1 #1)',
         '= !x - #1 - #1 (- #1 #1)',
         '= !x ^ #1 ^ #1 (^ #1 #1)',
@@ -112,22 +148,55 @@ initList = [
         '= !x _ % #1 % #1 (% #1 _ #1)',
 
 
-        # can't have space between ( and function
-        '= !x1 (sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2 (sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2a (sum ([ $r1 "null" #0) $TRUE )',
+        # can have space between ( and function
+        '= !x1 ( sum ([ $r1 "null" #0) $TRUE)',
+        '= !x2 ( sum ([ $r1 "null" #0) $TRUE)',
+        '= !x2a ( sum ([ $r1 "null" #0) $TRUE )',
 
-        # can't have space after (
-        '= !x3 (sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3a (sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3b (sum ([ $r1 "null" #0 ) $TRUE )',
-        '= !x4 (sum ([ $r1 " null " #0 ) $TRUE )',
+        # can have space after (
+        '= !x3 ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x3a ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )',
+        '= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )',
 
-        # can't have space after (
-        '(= !x3 (sum ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a (sum ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b (sum ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 (sum ([ $r1 " null " #0 ) $TRUE )))',
+        # can have space after (
+        '(= !x3 ( sum ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( sum ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )))',
+
+        '(= !x3 ( max ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( max ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( max ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( max ([ $r1 " null " #0 ) $TRUE )))',
+
+        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3a ( min ([ $r1 "null" #0) $TRUE ) )',
+        '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
+        '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
+
+
+        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+
+        '(= !x3 (+ (sum ([ $r1 "null" #0) $TRUE) (sum ([ $r1 "null" #0) $TRUE) )',
+        '(= !x3 (+ (xorsum ([ $r1 "null" #0) $TRUE) (xorsum ([ $r1 "null" #0) $TRUE) )',
+
+        # FIX! these should be like sum
+        # '(= !x3 (+ (max ([ $r1 "null" #0) $TRUE) (max ([ $r1 "null" #0) $TRUE) )',
+        # '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
+
+        # '{ #1 #1 }',
+        # '(= !x4 { #1 #1 })',
+
+        #  r1[c(1,5,8,10,33),]  
+        # commas are illegal (var name?)
+
+        # vectors can be strings or numbers only, not vars or keys
+        # h2o objects can't be in a vector
+
+
+        # c(1,2,3,4)
+
         # '= !x (sum $r1 )'
         # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
 
@@ -195,7 +264,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1)
+        h2o.init(1, base_port=54333)
 
     @classmethod
     def tearDownClass(cls):
@@ -207,8 +276,16 @@ class Basic(unittest.TestCase):
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
+        keys = []
         for execExpr in initList:
-            h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=4)
+            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=4)
+            # rows might be zero!
+            if execResult['num_rows'] or execResult['num_cols']:
+                keys.append(execExpr)
+
+        print "\nExpressions that created keys"
+        for k in keys:
+            print k
 
         # for execExpr in exprList:
         #     h2e.exec_expr(execExpr=execExpr, resultKey=None, timeoutSecs=10)

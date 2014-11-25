@@ -25,7 +25,7 @@ public class C8DChunk extends Chunk {
     return true;
   }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
     nc.alloc_doubles(_len);
     for( int i=0; i< _len; i++ )

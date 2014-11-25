@@ -2,8 +2,7 @@
 import os, sys, time, requests, zipfile, StringIO, re
 import h2o_args
 # from h2o_cmd import runInspect, infoFromSummary
-import h2o_cmd, h2o_util
-import h2o_browse as h2b
+import h2o_cmd, h2o_util, h2o_browse as h2b, h2o_sandbox
 
 from h2o_objects import H2O
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sandbox_name, log
@@ -102,6 +101,7 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     if 'funs' in kwargs: 
         assert isinstance(kwargs['funs'], basestring), "only string assumed? %s" % funs
 
+    # currently runExec only does one or the other
     params_dict = {
         'ast': None,
         'funs': None,
@@ -109,27 +109,30 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
     result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+    verboseprint("rapids result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?
-    if 'exception' in result and result['exception']:
+    if 'exception' in result and result['exception'] and not ignoreH2oError:
         exception = result['exception']
         raise Exception('rapids with kwargs:\n%s\ngot exception:\n"%s"\n' % (dump_json(kwargs), exception))
 
+    h2o_sandbox.check_sandbox_for_errors()
     return result
 
 #******************************************************************************************8
 def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
     params_dict = {
-        'source_key': None,
-        'column': None,
-        'quantile': None,
-        'max_qbins': None,
-        'interpolation_type': None,
-        'multiple_pass': None,
+        'destination_key': None,
+        'training_frame': None,
+        'validation_frame': None,
+        'ignored_columns': None,
+        'score_each_iteration': None,
+        'probs': None,
     }
     check_params_update_kwargs(params_dict, kwargs, 'quantiles', print_params)
     a = self.do_json_request('Quantiles.json', timeout=timeoutSecs, params=params_dict)
     verboseprint("\nquantiles result:", dump_json(a))
+    h2o_sandbox.check_sandbox_for_errors()
     return a
 
 #******************************************************************************************8
@@ -153,12 +156,18 @@ def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
         raise Exception("unexpected status for DownloadDataset: %s" % r.status_code)
 
     print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
+    h2o_sandbox.check_sandbox_for_errors()
+
+    # FIX! we're skipping all the checks in do_json_request. And no json return?
+    return 
+    
 
 #******************************************************************************************8
 # attach methods to H2O object
 # this happens before any H2O instances are created
 # this file is imported into h2o
 
+H2O.quantiles = quantiles
 H2O.get_cloud = get_cloud
 H2O.h2o_log_msg = h2o_log_msg
 H2O.jobs_admin = jobs_admin

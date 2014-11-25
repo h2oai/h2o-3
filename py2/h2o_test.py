@@ -5,6 +5,28 @@ import h2o_nodes
 import h2o_sandbox
 
 # print "h2o_test"
+class OutputObj(object):
+    def __iter__(self):
+        for attr, value in self.__dict__.iteritems():
+            yield attr, value
+
+    def __init__(self, output, name):
+        assert isinstance(output, dict)
+        for k,v in output.iteritems():
+            setattr(self, k, v) # achieves self.k = v
+
+        self.name = name
+
+        for k,v in self:
+            if k == 'parameters':
+                print "Not showing 'parameters'"
+            elif k == 'frame':
+                print "Not showing 'frame'"
+            elif k == 'model':
+                print "Not showing 'model'"
+            else:
+                print self.name, k, dump_json(v)
+
 
 # this is just for putting timestamp in front of all stdout
 class OutWrapper:
@@ -211,7 +233,7 @@ def log(cmd, comment=None):
         if cmd:
             f.write(urlparse.unquote(cmd))
             if comment:
-                f.write('    #')
+                f.write('    # ')
                 f.write(comment)
             f.write("\n")
         elif comment: # for comment-only

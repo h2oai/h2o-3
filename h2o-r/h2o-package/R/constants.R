@@ -127,6 +127,8 @@
                   "round" = "round",
                   "signif" = "signif",
                   "max" = "max",
+                  "nrow"="nrow",
+                  "ncol"="ncol",
                   "min" = "min",
                   "range" = "range",
                   "prod" = "prod",

@@ -1,5 +1,6 @@
 package hex.example;
 
+import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.schemas.ExampleV2;
 import hex.schemas.ModelBuilderSchema;
@@ -15,6 +16,12 @@ import java.util.Arrays;
  *  Example model builder... building a trivial ExampleModel
  */
 public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
+  @Override
+  public Model.ModelCategory[] can_build() {
+    return new Model.ModelCategory[]{
+            Model.ModelCategory.Unknown,
+    };
+  }
 
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }

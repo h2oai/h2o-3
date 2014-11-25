@@ -16,7 +16,7 @@ public class C1NChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
-  @Override NewChunk inflate_impl(NewChunk nc) {
+  @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.alloc_exponent(_len);
     nc.alloc_mantissa(_len);
     for( int i=0; i< _len; i++ )

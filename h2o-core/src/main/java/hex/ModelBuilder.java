@@ -20,6 +20,7 @@ import java.util.Map;
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
+
   /** All the parameters required to build the model. */
   public final P _parms;
 
@@ -94,7 +95,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public abstract ModelBuilderSchema schema();
 
-
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P ignore) {
     super(Key.make("Failed"),"ModelBuilder constructor needs to be overridden.");
@@ -139,6 +139,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   abstract public Job<M> trainModel();
+
+  /** List containing the categories of models that this builder can
+   *  build.  Each ModelBuilder must have one of these. */
+  abstract public Model.ModelCategory[] can_build();
 
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {

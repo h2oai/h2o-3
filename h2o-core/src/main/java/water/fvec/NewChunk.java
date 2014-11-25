@@ -1,14 +1,21 @@
 package water.fvec;
 
-import java.util.*;
-import water.*;
-import water.parser.*;
+import water.AutoBuffer;
+import water.Futures;
+import water.H2O;
+import water.MemoryManager;
+import water.parser.ParseTime;
+import water.parser.ValueString;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
-  final int _cidx;
+  public final int _cidx;
   // We can record the following (mixed) data types:
   // 1- doubles, in _ds including NaN for NA & 0; _ls==_xs==null
   // 2- scaled decimals from parsing, in _ls & _xs; _ds==null
@@ -85,6 +92,8 @@ public class NewChunk extends Chunk {
     Arrays.fill(_ds, Double.NaN);
     set_sparseLen(set_len(len));
   }
+
+  public void set_vec(Vec vec) { _vec = vec; }
 
   public NewChunk convertEnum2Str(ValueString[] emap) {
     NewChunk strChunk = new NewChunk(_vec, _cidx);
@@ -366,6 +375,17 @@ public class NewChunk extends Chunk {
     set_len(_len + nc._len);
     nc._ls = null;  nc._xs = null; nc._id = null; nc.set_sparseLen(nc.set_len(0));
     assert sparseLen() <= _len;
+  }
+
+  // PREpend all of 'nc' onto the current NewChunk.  Kill nc.
+  public void addr( NewChunk nc ) {
+    long  [] tmpl = _ls; _ls = nc._ls; nc._ls = tmpl;
+    int   [] tmpi = _xs; _xs = nc._xs; nc._xs = tmpi;
+    tmpi = _id; _id = nc._id; nc._id = tmpi;
+    double[] tmpd = _ds; _ds = nc._ds; nc._ds = tmpd;
+    int      tmp  = _sparseLen; _sparseLen=nc._sparseLen; nc._sparseLen=tmp;
+    tmp  = _len; _len = nc._len; nc._len = tmp;
+    add(nc);
   }
 
   // Fast-path append long data
@@ -1157,6 +1177,6 @@ public class NewChunk extends Chunk {
   }
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
-  @Override NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
+  @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._len="+ sparseLen(); }
 }

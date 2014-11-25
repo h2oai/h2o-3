@@ -145,6 +145,10 @@ task setPackageFiles << {
     src_info.write("https://github.com/0xdata/h2o")
 }
 
+task buildPackageDocumentation(type: Exec) {
+    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
+}
+
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"
     else commandLine 'R', "CMD", "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "--noclean", "h2o-package/man"
@@ -253,7 +257,8 @@ task cleaner << {
 clean.dependsOn cleanUp
 setProperties.dependsOn gitbranch, getRVersion, getRPlatform, pdflatex
 setPackageFiles.dependsOn setProperties
-genPDF.dependsOn setPackageFiles
+buildPackageDocumentation.dependsOn setPackageFiles
+genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
 cpH2OAppJar.dependsOn cpPDF
 buildPKG.dependsOn cpH2OAppJar

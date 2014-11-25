@@ -455,8 +455,9 @@ final public class H2O {
 
   // F/J threads that remember the priority of the last task they started
   // working on.
-  static class FJWThr extends ForkJoinWorkerThread {
-    int _priority;
+  // made public for ddply
+  public static class FJWThr extends ForkJoinWorkerThread {
+    public int _priority;
     FJWThr(ForkJoinPool pool) {
       super(pool);
       _priority = ((ForkJoinPool2)pool)._priority;

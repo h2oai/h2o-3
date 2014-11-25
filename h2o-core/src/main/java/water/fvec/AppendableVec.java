@@ -76,7 +76,7 @@ public class AppendableVec extends Vec {
       _chunkTypes = nv._chunkTypes;
     }
     for( int i=0; i<e1.length; i++ ){ // Copy non-zero elements over
-      assert _chunkTypes[i] == 0 || t1[i] == 0;
+      assert _chunkTypes[i] == 0 || t1[i] == 0 : " _chunkTypes[i] = " +_chunkTypes[i] + "; t1[i] = " + t1[i];
       if( e1[i] != 0 && _espc[i]==0 )
         _espc[i] = e1[i];
       _chunkTypes[i] |= t1[i];
