@@ -3,47 +3,71 @@
 //
 buildscript {
     repositories {
+        mavenCentral()
         jcenter()
     }
-
-    dependencies {
-        classpath "com.monochromeroad.gradle-plugins:gradle-aws-s3-sync:0.8"
+    dependencies { //Gradle seems to require these dependencies be listed in build.gradle AND here
+        classpath 'de.undercouch:gradle-download-task:1.1'
+        classpath 'joda-time:joda-time:2.2'
     }
 }
 
-import com.monochromeroad.gradle.plugin.aws.s3.S3Sync
+// Shows download progress, nice for large file downloads
+apply plugin: 'download-task'
+import de.undercouch.gradle.tasks.download.Download
 
-task syncBigdataLaptop(type: S3Sync) {
-    group = "Datasets"
-    description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
+// Amazon timestamps are only easily read by Joda
+import org.joda.time.format.ISODateTimeFormat
 
-    // keys from build-sync user - read-only access
-    accessKey "AKIAJGOMG7R742Z6XF3A"
-    secretKey "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"
-
-    configFile ".synchronizer.properties"
-
-    // follows the jets3t conventions for action names
-    action = 'DOWN'
-
-    from "h2o-public-test-data/bigdata/laptop/"
-    into "$rootDir/bigdata/laptop/"
+task syncBigdataLaptop << {
+  group = "Datasets"
+  description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
+  syncBigdata('laptop');
 }
 
-task syncBigdataServer(type: S3Sync) {
-    group = "Datasets"
-    description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
-
-    // keys from build-sync user - read-only access
-    accessKey "AKIAJGOMG7R742Z6XF3A"
-    secretKey "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"
-
-    configFile ".synchronizer.properties"
-
-    // follows the jets3t conventions for action names
-    action = 'DOWN'
-
-    from "h2o-public-test-data/bigdata/bigserver/"
-    into "$rootDir/bigdata/bigserver/"
+task syncBigdataServer << {
+  group = "Datasets"
+  description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a cluster."
+  syncBigdata('bigserver');
 }
 
+// sync is based on name, size, and the last modify date, currently md5 tags are ignored
+// note this drops the subdir name locally
+def syncBigdata(subdir) {
+  def bigdataDir = 'bigdata'
+  def localDestDir = (new File(".")).getCanonicalPath() + File.separator + bigdataDir
+  def remoteFiles = new XmlSlurper().parseText(new URL('https://h2o-public-test-data.s3.amazonaws.com').getText())
+  FileTree localFiles= fileTree(dir: bigdataDir) // local tree
+  def trimLength = (bigdataDir+File.separator+subdir).length()
+  def dateFormatter = (new ISODateTimeFormat()).dateTime()
+  def downloadList = new ArrayList<groovy.util.slurpersupport.NodeChild>()
+
+  remoteFiles.Contents.findAll().each { rfile ->
+    def match = false
+    def rname = localDestDir + rfile.Key.text().substring(trimLength)
+    def rsize = rfile.Size.text().toLong()
+    def rdate = (dateFormatter.parseDateTime(rfile.LastModified.text())).getMillis()
+    localFiles.findAll().each { lfile ->
+      def lname = lfile.path
+      def lsize = lfile.size()
+      def ldate = (new Date(lfile.lastModified())).getTime()
+      if (lname == rname && lsize == rsize && ldate == rdate)
+        match = true
+    }
+    if (match == false) {
+      downloadList.add(rfile)
+    }
+  }
+
+  downloadList.each {
+    def fpath = 'https://h2o-public-test-data.s3.amazonaws.com/'+it.Key
+    download {
+      src fpath
+      dest localDestDir
+      quiet false
+    }
+    // set downloaded files last modified stamp to match server
+    File newFile = file(localDestDir + it.Key.text().substring(trimLength))
+    newFile.setLastModified(dateFormatter.parseDateTime(it.LastModified.text()).getMillis())
+  }
+}
