@@ -32,7 +32,7 @@ public class IcedBitSet extends Iced {
     if( nbits   < 0 ) throw new NegativeArraySizeException("nbits < 0: " + nbits  );
     if( byteoff < 0 ) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
     if( bitoff  < 0 ) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff );
-    assert byteoff+((nbits-1) >> 3)+1 <= v.length;
+    assert v==null || byteoff+((nbits-1) >> 3)+1 <= v.length;
     _val = v;  _nbits = nbits;  _bitoff = bitoff;  _byteoff = byteoff;
     if(  bitoff != 0 ) throw H2O.unimpl(); // TODO
     if( byteoff != 0 ) throw H2O.unimpl(); // TODO

@@ -12,17 +12,15 @@ public abstract class TreeVisitor<T extends Exception> {
   protected void pre ( int col, float fcmp, IcedBitSet gcmp, int equal ) throws T { }
   protected void mid ( int col, float fcmp, int equal ) throws T { }
   protected void post( int col, float fcmp, int equal ) throws T { }
-  protected void leaf( float pred )                         throws T { }
+  protected void leaf( float pred )                     throws T { }
   long  result( ) { return 0; } // Override to return simple results
 
-  protected final SharedTreeModel _tm;
   protected final CompressedTree _ct;
   private final AutoBuffer _ts;
   private final IcedBitSet _gcmp; // Large-count categorical bit-set splits
   protected int _depth; // actual depth
   protected int _nodes; // number of visited nodes
-  public TreeVisitor( SharedTreeModel tm, CompressedTree ct ) {
-    _tm = tm;
+  public TreeVisitor( CompressedTree ct ) {
     _ts = new AutoBuffer((_ct=ct)._bits);
     _gcmp = new IcedBitSet(0);
   }
@@ -48,7 +46,8 @@ public abstract class TreeVisitor<T extends Exception> {
     else {
       int off = (equal == 3) ? _ts.get2() : 0;
       int sz  = (equal == 3) ? _ts.get2() : 4;
-       _gcmp.fill(_ct._bits,_ts.position(),sz<<3,off);
+      _gcmp.fill(_ct._bits,_ts.position(),sz<<3,off);
+      //skip = sz;
       throw H2O.unimpl();
     }
 

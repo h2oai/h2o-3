@@ -2,6 +2,7 @@ package water.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import water.H2O;
 
 /** Tight/tiny StringBuilder wrapper.
  *  Short short names on purpose; so they don't obscure the printing.
@@ -45,6 +46,9 @@ public final class SB {
   }
   /* Append Java string - escape all " and \ */
   public SB pj( String s ) { _sb.append(escapeJava(s)); return this; }
+  public SB p( IcedBitSet ibs ) {
+    throw H2O.unimpl();
+  }
   // Increase indentation
   public SB ii( int i) { _indent += i; return this; }
   // Decrease indentation

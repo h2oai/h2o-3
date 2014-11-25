@@ -103,7 +103,7 @@ public class Score extends MRTask<Score> {
       if( _nclass > 1 ) {    // Classification
         // Compute error
         yact = (int) ys.at80(row);  // OPS: Pick an actual prediction adapted to model values <0, nclass-1)
-        if( sum == 0 ) {            // This tree does not predict this row *at all* ! In prediction we will make random decision, but here compute error based on number of classes
+        if( sum == 0 || yact >= _nclass ) { // This tree does not predict this row *at all* ! In prediction we will make random decision, but here compute error based on number of classes
           err = 1.0f-1.0f/_nclass;  // Then take ycls=0, uniform predictive power
         } else {
           assert 0 <= yact && yact < _nclass : "weird ycls="+yact+", y="+ys.at0(row);

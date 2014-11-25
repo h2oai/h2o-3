@@ -90,6 +90,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         _mse_test = Arrays.copyOf(_mse_test ,_ntrees+1);
       fs.blockForPending();
     }
+
+    public String toStringTree( int tnum, int knum ) {
+      return _treeKeys[tnum][knum].<CompressedTree>get().toString(this);
+    }
+
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
