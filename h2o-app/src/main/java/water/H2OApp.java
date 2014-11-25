@@ -72,9 +72,11 @@ public class H2OApp {
 
     ModelBuilder.registerModelBuilder("quantile", Quantile.class);
     H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
+    H2O.registerPOST("/2/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
 
     ModelBuilder.registerModelBuilder("grep", Grep.class);
     H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
+    H2O.registerPOST("/2/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRequest();
