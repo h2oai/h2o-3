@@ -125,6 +125,8 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         def __iter__(self):
             for attr, value in self.__dict__.iteritems():
                 yield attr, value
+    # use his instead
+    from h2o_test import OutputObj
 
     inspect = runInspect(key=key)
     # change missingList definition: None if all empty, otherwise align to cols. 0 if 0?
@@ -163,7 +165,8 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         lastChecksum = checksum
 
         # only one column
-        co = Column(columns[0])
+        # co = Column(columns[0])
+        co = OutputObj(columns[0], 'summary_%s' % label)
         # how are enums binned. Stride of 1? (what about domain values)
         coList = [co.base, len(co.bins), len(co.data),
             co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,

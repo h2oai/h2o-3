@@ -402,7 +402,7 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     # why always check that the algo is in here?
     model_builders = self.model_builders(timeoutSecs=timeoutSecs)
     assert model_builders is not None, "/ModelBuilders REST call failed"
-    assert algo in model_builders['model_builders']
+    assert algo in model_builders['model_builders'], "%s %s" % (algo, [k for k in model_builders['model_builders']])
     builder = model_builders['model_builders'][algo]
     
     # TODO: test this assert, I don't think this is working. . .
