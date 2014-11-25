@@ -3,7 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_glm, h2o_util
 import h2o_print as h2p, h2o_gbm
 
-from h2o_xexec import xFcn, xSeq, xColon, xC, xCbind, xAssign, xAssignE, xNum, xExec, xFrame, xVector
+from h2o_xexec import xFcn, xSeq, xColon, xC, xCbind, xAssign, xAssignE, xItem, xExec, xFrame, xVector
 
 # FIX! This has some abbreviated stuff from h2o...look back there for completeness, eventually
 DO_QUANTILE = False
@@ -159,7 +159,7 @@ class Basic(unittest.TestCase):
                         # src[ src$age<17 && src$zip=95120 && ... , ]
                         # cutExprList.append('p$C'+str(i+1)+'=='+c)
                         # all column indexing in h2o-dev is with number
-                        e = xFcn('==', xNum(c), xFrame('p', col=i))
+                        e = xFcn('==', xItem(c), xFrame('p', col=i))
                         cutExprList.append(e)
 
                 cutExpr = None
@@ -213,10 +213,10 @@ class Basic(unittest.TestCase):
                 # build up the columns
                 xAssignE('b', xC(xSeq(1,2,3)))
                 # could also append 1 col at a time, by assigning to the next col number?
-                xAssignE('a', xCbind(['$b' for i in range(colCount)]))
+                xAssignE('a', xCbind(['b' for i in range(colCount)]))
                 
                 for eKey in eKeys:
-                    xAssignE(eKey, '$a')
+                    xAssignE(eKey, 'a')
                     ## print h2o.dump_json(e)
 
             xList = []
@@ -235,7 +235,7 @@ class Basic(unittest.TestCase):
 
                 if 1==1:
                     start = time.time()
-                    xAssignE(fKey, random.choice(rowExprList), justPrint=False)
+                    xAssignE(fKey, random.choice(rowExprList))
                     elapsed = time.time() - start
                     execTime = elapsed
                     print "exec 2 took", elapsed, "seconds."

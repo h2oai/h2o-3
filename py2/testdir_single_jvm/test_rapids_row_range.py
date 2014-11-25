@@ -64,7 +64,7 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xAssignE, xNum, xExec, xC
+            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xAssignE, xItem, xExec, xC
 
             REPEAT = 1
             data_key = hex_key
