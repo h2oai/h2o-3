@@ -36,7 +36,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_rapids_basic(self):
+    def test_rapids_funs_basic(self):
         bucket = 'smalldata'
         csvPathname = 'iris/iris_wheader.csv'
         hexKey = 'r1'

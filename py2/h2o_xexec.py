@@ -132,7 +132,6 @@ xFcnOp1Set = Set ([
 'max',
 'sum',
 'sdev',
-'var',
 'mean',
 'match',
 'rename',
@@ -146,6 +145,7 @@ xFcnOp2Set = Set ([
 ])
 
 xFcnOp3Set = Set ([
+'var',
 'table',
 'reduce',
 'ddply',

@@ -274,5 +274,30 @@ The last statement ends with ';;;'
 Currently disallowing nested function definition at the AST level -- the front end must correctly swap out defs with an invocation.
 
 
+#***********************************************************************
+var is variance
+it's a function in R:
+
+var(x, y = NULL, na.rm = FALSE, use)
+
+will look like this:
+
+(var $rf "null" $FALSE "everything")
+
+`use` just says what to do with NAs:
+
+from the R help:
+
+ use: an optional character string giving a method for computing
+          covariances in the presence of missing values.  This must be
+          (an abbreviation of) one of the strings ‘"everything"’,
+          ‘"all.obs"’, ‘"complete.obs"’, ‘"na.or.complete"’, or
+          ‘"pairwise.complete.obs"’.
+
+We support "everything" (default), "complete.obs", and "all.obs"
+
+
+
+
 
 
