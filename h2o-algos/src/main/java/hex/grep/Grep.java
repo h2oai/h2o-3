@@ -46,7 +46,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if( _parms._regex == null ) {
-      error("regex", "regex is missing");
+      error("_regex", "regex is missing");
     } else {
       try { Pattern.compile(_parms._regex); }
       catch( PatternSyntaxException pse ) { error("regex", pse.getMessage()); }
@@ -54,9 +54,9 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     if( _parms._train == null ) return;
     Vec[] vecs = _parms.train().vecs();
     if( vecs.length != 1 )
-      error("train","Frame must contain exactly 1 Vec (of raw text)");
+      error("_train","Frame must contain exactly 1 Vec (of raw text)");
     if( !(vecs[0] instanceof ByteVec) )
-      error("train","Frame must contain exactly 1 Vec (of raw text)");
+      error("_train","Frame must contain exactly 1 Vec (of raw text)");
   }
 
   // ----------------------

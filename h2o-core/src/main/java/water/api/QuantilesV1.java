@@ -9,11 +9,11 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
   // IN
   @API(help="An existing H2O Frame key.")                                                      public Frame source_key;
   @API(help="Column to calculate quantile for")                                                public String column;      // was a VecSelect in H2O1
-  @API(help = "Quantile desired (0.0-1.0). Median is 0.5. 0 and 1 are min/max")                public double quantile = 0.5;
-  @API(help = "Number of bins used (1-1000000). 1000 recommended")                             public int max_qbins = 1000;
-  @API(help = "1: Exact result (iterate max 16). 0: One pass approx. 2: Provide both results") public int multiple_pass  = 1;
-  @API(help = "Interpolation between rows. Type 2 (mean) or 7 (linear).")                      public int interpolation_type = 7;
-  @API(help = "Maximum number of columns to show quantile")                                    public int max_ncols = 1000;
+  @API(help = "Quantile desired (0.0-1.0). Median is 0.5. 0 and 1 are min/max")                public double quantile;
+  @API(help = "Number of bins used (1-1000000). 1000 recommended")                             public int max_qbins;
+  @API(help = "1: Exact result (iterate max 16). 0: One pass approx. 2: Provide both results") public int multiple_pass;
+  @API(help = "Interpolation between rows. Type 2 (mean) or 7 (linear).")                      public int interpolation_type;
+  @API(help = "Maximum number of columns to show quantile")                                    public int max_ncols;
 
   // this isn't used yet. column_name is
   // class colsFilter1 extends MultiVecSelect { public colsFilter1() { super("source_key");} }
@@ -29,6 +29,7 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
   @API(help = "Result.", direction=API.Direction.OUTPUT)                                                                       public double result;
   @API(help = "Single pass Result.", direction=API.Direction.OUTPUT)                                                           double result_single;
 
+  // TODO: MOVE TO Quantile.init()!
   protected void sanityCheck() throws IllegalArgumentException {
     if (column.equals("") || column == null) throw new IllegalArgumentException("Column is missing.");
     Vec _column = source_key.vecs()[source_key.find(column)];
@@ -50,20 +51,20 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
 
   @Override public QuantilesV1 fillFromImpl(Quantiles q) {
     sanityCheck();
-    source_key = q.source_key;
-    column = q.source_key.names()[q.source_key.find(q.column)];
-    quantile = q.quantile;
-    max_qbins = q.max_qbins;
-    multiple_pass = q.multiple_pass;
-    interpolation_type = q.interpolation_type;
-    max_ncols = q.max_ncols;
-    column_name = q.column_name;
-    quantile_requested = q.quantile_requested;
-    interpolation_type_used = q.interpolation_type_used;
-    interpolated = q.interpolated;
-    iterations = q.iterations;
-    result = q.result;
-    result_single = q.result_single;
+    source_key = q._source_key;
+    column = q._source_key.names()[q._source_key.find(q._column)];
+    quantile = q._quantile;
+    max_qbins = q._max_qbins;
+    multiple_pass = q._multiple_pass;
+    interpolation_type = q._interpolation_type;
+    max_ncols = q._max_ncols;
+    column_name = q._column_name;
+    quantile_requested = q._quantile_requested;
+    interpolation_type_used = q._interpolation_type_used;
+    interpolated = q._interpolated;
+    iterations = q._iterations;
+    result = q._result;
+    result_single = q._result_single;
     return this;
   }
 }

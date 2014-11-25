@@ -303,7 +303,8 @@ a_node = h2o.H2O(ip, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
+algo_additional_default_params = { 'grep' : { 'regex' : '.*' }} # additional params to add to the default params
 clean_up_after = False
 
 h2o.H2O.verbose = False
@@ -515,16 +516,19 @@ assert len(set(server_algos) - set(algos)) == 0, "Our set of algos doesn't match
 for algo, model_builder in model_builders.iteritems():
     parameters_list = model_builder['parameters']
     test_parameters = { value['name'] : value['default_value'] for value in parameters_list } # collect default parameters
+    if algo in algo_additional_default_params:
+        test_parameters.update(algo_additional_default_params[algo])
 
     parameters_validation = a_node.validate_model_parameters(algo=algo, training_frame=None, parameters=test_parameters, timeoutSecs=240) # synchronous
     assert 'validation_error_count' in parameters_validation, "Failed to find validation_error_count in good-parameters parameters validation result."
     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-    if 1 != parameters_validation['validation_error_count']:
+    
+    expected_count = 1
+    if expected_count != parameters_validation['validation_error_count']:
         print "validation errors: "
         pp.pprint(parameters_validation)
-    assert 1 == parameters_validation['validation_error_count'], "1 != validation_error_count in good-parameters parameters validation result."
+    assert expected_count == parameters_validation['validation_error_count'], str(expected_count) + " != validation_error_count in good-parameters parameters validation result."
     assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "First validation message is about missing training frame."
-
 
 
 #######################################
