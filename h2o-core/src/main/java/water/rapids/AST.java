@@ -415,7 +415,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      if (env.isAry()) cleanup.add(env.popAry()); else env.pop();  // Pop all intermediate results; needed results will be looked up.
+      if (env.isAry()) cleanup.add(env.pop0Ary()); else env.pop();  // Pop all intermediate results; needed results will be looked up.
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
@@ -523,7 +523,7 @@ class ASTFor extends ASTStatement {
 }
 
 class ASTWhile extends ASTStatement {
-  protected AST _pred;
+//  protected AST _pred;
 
   // (while pred body)
   @Override

@@ -1846,7 +1846,7 @@ class ASTVar extends ASTUniPrefixOp {
         for (int c = 0; c < y.numCols(); c++)
           for (int r = 0; r < fr.numCols(); r++) {
             covars[c][r] = tsks[c][r].getResult()._ss / (fr.numRows() - 1);
-            env.remove(frs[c][r], true); //cleanup
+            env.cleanup(frs[c][r]); // cleanup
             frs[c][r] = null;
           }
 

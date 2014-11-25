@@ -201,7 +201,7 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
     h2p.blue_print(label, "from h2o multipass:", h2oQuantilesExact)
     h2p.blue_print(label, "from h2o singlepass:", h2oQuantilesApprox)
     if h2oExecQuantiles:
-        h2p.blue_print(label, "from h2o exec:", h2oExecQuantiles)
+        h2p.blue_print(label, "from h2o quantile:", h2oExecQuantiles)
 
     # they should be identical. keep a tight absolute tolerance
     # Note the comparisons have different tolerances, some are relative, some are absolute

@@ -257,8 +257,9 @@ task cleaner << {
 clean.dependsOn cleanUp
 setProperties.dependsOn gitbranch, getRVersion, getRPlatform, pdflatex
 setPackageFiles.dependsOn setProperties
-buildPackageDocumentation.dependsOn setPackageFiles
-genPDF.dependsOn buildPackageDocumentation
+//buildPackageDocumentation.dependsOn setPackageFiles
+//genPDF.dependsOn buildPackageDocumentation
+genPDF.dependsOn setPackageFiles
 cpPDF.dependsOn genPDF
 cpH2OAppJar.dependsOn cpPDF
 buildPKG.dependsOn cpH2OAppJar

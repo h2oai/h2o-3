@@ -112,7 +112,7 @@ def unsignedLongLongToDouble(Q):
 # takes fp or list of fp and returns same with just two digits of precision
 # using print rounding
 def twoDecimals(l):
-    if isinstance(l, list):
+    if isinstance(l, (list, tuple)):
         return ["%.2f" % v for v in l]
     elif isinstance(l, basestring):
         return "%s" % l

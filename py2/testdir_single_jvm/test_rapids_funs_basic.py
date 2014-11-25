@@ -6,10 +6,11 @@ funsList = [
     '(def anon {x}  (- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;  (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
     '(def anon {x} (- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;  (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
     '(def anon {x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;  (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
-    '(def anon{x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;  (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
-    '(def anon{x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));; (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
-    '(def anon{x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;(abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x))) ;;;)',
-    '(def anon{x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;(abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x))) ;;; )',
+# need space after function name
+    '(def anon {x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;  (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
+    '(def anon {x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));; (abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x)));;;)',
+    '(def anon {x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;(abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x))) ;;;)',
+    '(def anon {x}(- (abs (- (* $x $x) (* (* $x #5) $x))) (/ #55 $x));;(abs (- (* (* $x $x) $x) (* (/ #999 (var ([ $x (: #0 #19) "null") "null" $FALSE "null")) $x))) ;;; )',
 ]
 # https://github.com/0xdata/h2o-dev/blob/master/h2o-r/tests/testdir_munging/exec/runit_apply.R
 # Specifically this line is interesting since it has >1 stmnt:
@@ -35,7 +36,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_rapids_basic(self):
+    def test_rapids_funs_basic(self):
         bucket = 'smalldata'
         csvPathname = 'iris/iris_wheader.csv'
         hexKey = 'r1'
@@ -50,7 +51,7 @@ class Basic(unittest.TestCase):
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=4)
                 # rows might be zero!
                 if execResult['num_rows'] or execResult['num_cols']:
-                    keys.append(execExpr)
+                    keys.append(execExpr2)
 
         print "\nExpressions that created keys"
         for k in keys:

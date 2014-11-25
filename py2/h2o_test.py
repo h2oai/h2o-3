@@ -20,12 +20,18 @@ class OutputObj(object):
         for k,v in self:
             if k == 'parameters':
                 print "Not showing 'parameters'"
+            elif k == 'data':
+                print "Not showing 'data'"
             elif k == 'frame':
                 print "Not showing 'frame'"
             elif k == 'model':
                 print "Not showing 'model'"
             else:
-                print self.name, k, dump_json(v)
+                #  if it's a list > 20, just print it normal
+                if isinstance(v, list) and len(v) > 20:
+                    print self.name, k, v
+                else:
+                    print self.name, k, dump_json(v)
 
 
 # this is just for putting timestamp in front of all stdout
