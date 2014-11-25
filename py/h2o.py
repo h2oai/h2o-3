@@ -335,7 +335,7 @@ class H2O(object):
         params_dict = {
             'job_key': job_key
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
         result = self.__do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
         return result
 
@@ -347,7 +347,7 @@ class H2O(object):
     def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
         params_dict = {
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'poll_job', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'poll_job', H2O.verbose)
 
         start_time = time.time()
         while True:
@@ -396,7 +396,7 @@ class H2O(object):
         parse_setup_params = {
             'srcs': "[" + key + "]"
         }
-        # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
+        # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
@@ -423,8 +423,8 @@ class H2O(object):
             'singleQuotes': setup_result['singleQuotes'],
             'columnNames': ascii_column_names,
         }
-        print "parse_params: ", parse_params
-        h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=True)
+        H2O.verboseprint("parse_params: " + repr(parse_params))
+        h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
         parse_result = self.__do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
@@ -459,7 +459,7 @@ class H2O(object):
             'offset': 0,
             'len': 100     # TODO: len and offset are not working yet
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
         if key:
             result = self.__do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
@@ -477,7 +477,7 @@ class H2O(object):
             'offset': 0,
             'len': 100
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
         return result
@@ -492,7 +492,7 @@ class H2O(object):
             'offset': 0,
             'len': 100
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
         return result
@@ -507,7 +507,7 @@ class H2O(object):
             'offset': 0,
             'len': 100
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         
         result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
         return result
@@ -517,7 +517,7 @@ class H2O(object):
     Delete a frame on the h2o cluster, given its key.
     '''
     def delete_frame(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
-        assert key is not None, '"key" parameter is null'
+        assert key is not None, 'FAIL: "key" parameter is null'
 
         result = self.__do_json_request('/3/Frames.json/' + key, cmd='delete', timeout=timeoutSecs)
 
@@ -550,7 +550,7 @@ class H2O(object):
     def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
         params_dict = {
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
 
         if algo:
             result = self.__do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
@@ -563,20 +563,20 @@ class H2O(object):
     Check a dictionary of model builder parameters on the h2o cluster using the given algorithm and model parameters.
     '''
     def validate_model_parameters(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
-        assert algo is not None, '"algo" parameter is null'
+        assert algo is not None, 'FAIL: "algo" parameter is null'
         # Allow this now: assert training_frame is not None, '"training_frame" parameter is null'
-        assert parameters is not None, '"parameters" parameter is null'
+        assert parameters is not None, 'FAIL: "parameters" parameter is null'
 
         model_builders = self.model_builders(timeoutSecs=timeoutSecs)
-        assert model_builders is not None, "/ModelBuilders REST call failed"
-        assert algo in model_builders['model_builders']
+        assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
+        assert algo in model_builders['model_builders'], "FAIL: algo " + algo + " not found in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
         
         # TODO: test this assert, I don't think this is working. . .
         if training_frame is not None:
             frames = self.frames(key=training_frame)
-            assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-            assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+            assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
+            assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
             parameters['training_frame'] = training_frame
 
         # TODO: add parameter existence checks
@@ -592,19 +592,19 @@ class H2O(object):
     Frame and model parameters.
     '''
     def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
-        assert algo is not None, '"algo" parameter is null'
-        assert training_frame is not None, '"training_frame" parameter is null'
-        assert parameters is not None, '"parameters" parameter is null'
+        assert algo is not None, 'FAIL: "algo" parameter is null'
+        assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
+        assert parameters is not None, 'FAIL: "parameters" parameter is null'
 
         model_builders = self.model_builders(timeoutSecs=timeoutSecs)
-        assert model_builders is not None, "/ModelBuilders REST call failed"
-        assert algo in model_builders['model_builders']
+        assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
+        assert algo in model_builders['model_builders'], "FAIL: failed to find algo " + algo + " in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
         
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=training_frame)
-        assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
-        assert frames['frames'][0]['key']['name'] == training_frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
+        assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
+        assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)
         parameters['training_frame'] = training_frame
 
         if destination_key is not None:
@@ -629,17 +629,17 @@ class H2O(object):
     Score a model on the h2o cluster on the given Frame and return only the model metrics. 
     '''
     def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
-        assert model is not None, '"model" parameter is null'
-        assert frame is not None, '"frame" parameter is null'
+        assert model is not None, 'FAIL: "model" parameter is null'
+        assert frame is not None, 'FAIL: "frame" parameter is null'
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
-        assert models is not None, "/Models REST call failed"
-        assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models is not None, "FAIL: /Models REST call failed"
+        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
-        assert frames is not None, "/Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
+        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
         result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
 
@@ -649,17 +649,17 @@ class H2O(object):
 
 
     def predict(self, model, frame, timeoutSecs=60, **kwargs):
-        assert model is not None, '"model" parameter is null'
-        assert frame is not None, '"frame" parameter is null'
+        assert model is not None, 'FAIL: "model" parameter is null'
+        assert frame is not None, 'FAIL: "frame" parameter is null'
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
-        assert models is not None, "/Models REST call failed"
-        assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models is not None, "FAIL: /Models REST call failed"
+        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
-        assert frames is not None, "/Frames/{0} REST call failed".format(frame)
-        assert frames['frames'][0]['key']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
+        assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
+        assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
         result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
         return result
@@ -687,7 +687,7 @@ class H2O(object):
         params_dict = {
             'find_compatible_frames': False
         }
-        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', True)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', H2O.verbose)
 
         if key:
             result = self.__do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
@@ -700,7 +700,7 @@ class H2O(object):
     Delete a model on the h2o cluster, given its key.
     '''
     def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
-        assert key is not None, '"key" parameter is null'
+        assert key is not None, 'FAIL: "key" parameter is null'
 
         result = self.__do_json_request('/3/Models.json/' + key, cmd='delete', timeout=timeoutSecs)
 
