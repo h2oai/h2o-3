@@ -95,7 +95,11 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCeil());
     putPrefix(new ASTFlr ());
     putPrefix(new ASTLog ());
+    putPrefix(new ASTLog10 ());
+    putPrefix(new ASTLog2 ());
+    putPrefix(new ASTLog1p ());
     putPrefix(new ASTExp ());
+    putPrefix(new ASTExpm1 ());
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
@@ -297,7 +301,11 @@ class ASTTrun extends ASTUniPrefixOp { @Override String opStr(){ return "trunc";
 class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceiling"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
 class ASTFlr  extends ASTUniPrefixOp { @Override String opStr(){ return "floor";} @Override ASTOp make() {return new ASTFlr ();} @Override double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniPrefixOp { @Override String opStr(){ return "log";  } @Override ASTOp make() {return new ASTLog ();} @Override double op(double d) { return Math.log(d);}}
+class ASTLog10  extends ASTUniPrefixOp { @Override String opStr(){ return "log10";  } @Override ASTOp make() {return new ASTLog10 ();} @Override double op(double d) { return Math.log10(d);}}
+class ASTLog2  extends ASTUniPrefixOp { @Override String opStr(){ return "log2";  } @Override ASTOp make() {return new ASTLog2 ();} @Override double op(double d) { return Math.log(d)/Math.log(2);}}
+class ASTLog1p  extends ASTUniPrefixOp { @Override String opStr(){ return "log1p";  } @Override ASTOp make() {return new ASTLog1p ();} @Override double op(double d) { return Math.log1p(d);}}
 class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  } @Override ASTOp make() {return new ASTExp ();} @Override double op(double d) { return Math.exp(d);}}
+class ASTExpm1  extends ASTUniPrefixOp { @Override String opStr(){ return "expm1";  } @Override ASTOp make() {return new ASTExpm1 ();} @Override double op(double d) { return Math.expm1(d);}}
 
 class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";} @Override ASTOp make() { return new ASTIsNA();} @Override double op(double d) { return Double.isNaN(d)?1:0;}
   @Override void apply(Env env) {
