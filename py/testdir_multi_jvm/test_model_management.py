@@ -279,6 +279,9 @@ class DatasetSpec(dict):
 
 
     def import_and_validate_dataset(self, a_node):
+        global verbose, verboser, verbosest
+
+        if verbose: print "About to import and validate: " + self['path']
         import_result = a_node.import_files(path=self['path'])
         if h2o.H2O.verbose:
             print "import_result: "
@@ -294,6 +297,8 @@ class DatasetSpec(dict):
         assert self['expected_rows'] == parse_result['frames'][0]['rows'], 'FAIL: Imported frame number of rows is wrong; expected: ' + str(self['expected_rows']) + ', got: ' + str(parse_result['frames'][0]['rows'])
 
         self['dataset'] = parse_result['frames'][0]  # save the imported dataset object
+
+        if verbose: print "Imported and validated key: " + self['dataset']['key']['name']
         return self['dataset']
 
 
