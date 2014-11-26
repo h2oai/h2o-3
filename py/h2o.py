@@ -397,7 +397,7 @@ class H2O(object):
             'srcs': "[" + key + "]"
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
-        setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=parse_setup_params)
+        setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
@@ -426,7 +426,7 @@ class H2O(object):
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
-        parse_result = self.__do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, params=parse_params, **kwargs)
+        parse_result = self.__do_json_request(jsonRequest="Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
         job_key = parse_result['job']['name']

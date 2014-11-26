@@ -71,8 +71,8 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
         
     version    = gc['version']
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
-    if not version.startswith('0'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
+# local builds have (unknown)    if not version.startswith('0'):
+# local builds have (unknown)        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
 
     # we'll just exception out, if we don't get a json response with the stuff that makes up what we think is "legal"
     consensus  = gc['consensus']
