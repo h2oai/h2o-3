@@ -355,3 +355,65 @@ each row may produce 1 or more columns of data
 last stmnt can be with or without LHS shouldn't matter
 
 prior statements can have LHS as well. Those LHS should even be able to be referenced in later statements inside the same fcn
+
+
+#************************************
+# cut
+#************************************
+
+library(h2o)
+h <- h2o.init()
+hex <- as.h2o(h, iris)
+a <- hex[,1]
+
+cut(a, breaks = c(min(a), mean(a), max(a)), labels = c("a", "b"))
+
+
+(cut $a {4.3;5.84333333333333;7.9} {"a";"b"} $FALSE $TRUE #3))
+
+
+arg1: single column vector
+arg2: the cuts to make in the vector
+arg3: labels for the cuts (always 1 fewer than length of cuts)
+arg4: include lowest? (default FALSE)
+arg5: right? (default TRUE)
+arg6: dig.lab (default 3)
+
+
+More info on the args here (see ?cut):
+
+       x: a numeric vector which is to be converted to a factor by
+          cutting.
+
+  breaks: either a numeric vector of two or more unique cut points or a
+          single number (greater than or equal to 2) giving the number
+          of intervals into which ‘x’ is to be cut.
+
+  labels: labels for the levels of the resulting category.  By default,
+          labels are constructed using ‘"(a,b]"’ interval notation.  If
+          ‘labels = FALSE’, simple integer codes are returned instead
+          of a factor.
+
+include.lowest: logical, indicating if an ‘x[i]’ equal to the lowest
+          (or highest, for ‘right = FALSE’) ‘breaks’ value should be
+          included.
+
+   right: logical, indicating if the intervals should be closed on the
+          right (and open on the left) or vice versa.
+
+ dig.lab: integer which is used when labels are not given.  It
+          determines the number of digits used in formatting the break
+
+#**********************
+# objects in h2o-dev
+#**********************
+
+Well not entirely:
+
+Acceptable args are:
+
+numbers: #127882
+strings: "asdf", 'asdf'
+Frames: $v2, $iris.hex
+
+anything else gets called a vector, but that's not the right name...
