@@ -73,6 +73,11 @@ public class ASTFunc extends ASTFuncDef {
     Frame f;
     Env captured = e.capture();
     for (int i = 0; i < _args.length; ++i) {
+      if (_args[i] instanceof ASTId) {
+        ASTId a = (ASTId)_args[i];
+        if (!a.isLookup()) throw new IllegalArgumentException("Function arguments must be lookups.");
+        _args[i] = e.lookup(a);
+      }
       if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
       else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
       else if (_args[i] instanceof ASTFrame) {
