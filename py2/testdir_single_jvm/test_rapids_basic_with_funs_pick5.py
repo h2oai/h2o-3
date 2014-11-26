@@ -307,7 +307,6 @@ class Basic(unittest.TestCase):
                 print "Found key lhs assign", lhs
 
                 # Frames gets too many rollup stats problems. Don't use for now
-                time.sleep(1)
                 if 1==0: 
                     inspect = h2o_cmd.runInspect(key=lhs)
                     missingList, labelList, numRows, numCols = infoFromInspect(inspect)

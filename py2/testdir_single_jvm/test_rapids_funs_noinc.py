@@ -17,7 +17,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_rapids_basic_with_funs_inc(self):
+    def test_rapids_basic_with_funs_noinc(self):
         bucket = 'smalldata'
         csvPathname = 'iris/iris_wheader.csv'
         hexKey = 'r1'
@@ -27,9 +27,9 @@ class Basic(unittest.TestCase):
         for i in range(100):
             if i==0:
                 # should never see v as a key from the function?
-                execExpr1 = '(= !v1 (c {#0;#0}))'
+                execExpr1 = '(= !v1 (c {#0}))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr1, resultKey='v1', timeoutSecs=5)
-                execExpr2 = '(= !v2 (cbind $v1 $v1 ))'
+                execExpr2 = '(= !v2 (cbind $v1 ))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey='v2', timeoutSecs=5)
             else:
                 # adding to v shouldn't hurt, but not required cause function output will update it
@@ -41,7 +41,7 @@ class Basic(unittest.TestCase):
                 execResult, result = h2e.exec_expr(h2o.nodes[0], funs, resultKey=None, timeoutSecs=5, doFuns=True)
                 # execExpr2 = '(= !v2 (anon ([ $v2 "null" #0)))'
                 # execExpr2 = '(= !v2 (anon $v2))'
-                execExpr2 = '(= !v2 (anon $v2))'
+                execExpr2 = '(= !v2 (+ $v2 #1))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey='v2', timeoutSecs=15)
 
 
