@@ -6,6 +6,7 @@ import water.Iced;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -167,16 +168,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert _parms != null;      // Parms must already be set in
     if( _parms._train == null ) { error("_train","Missing training frame"); return; }
     Frame tr = _parms.train();
-    Frame va = _parms.valid();
-    assert Arrays.equals(tr._names,va._names); // Cutout at a higher level
-
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
-    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
-      _valid.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
@@ -185,7 +181,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<_train.vecs().length; i++ ) {
       if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
         cstr += _train._names[i]+", "; // Log dropped cols
-        _train.remove(i); _valid.remove(i);
+        _train.remove(i);
         i--; // Re-run at same iteration after dropping a col
       }
     }
@@ -198,7 +194,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
         if( ratio > 0.2 ) {
           nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
-          _train.remove(i); _valid.remove(i);
+          _train.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
@@ -209,6 +205,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to the generate model");
+
+    // Build the validation set to be compatible with the training set.
+    // Toss out extra columns, complain about missing ones, remap enums
+    Frame va = _parms.valid();  // User-given validation set
+    Frame va2 = new Frame();    // Set we're handing to the model builder
+    Vec tvecs[] = _train.vecs();
+    int good = 0;
+    for( int i=0; i<tvecs.length; i++ ) {
+      String name = _train._names[i];
+      Vec vec = va.vec(name);   // Search in the given validation set
+      // If the training set is missing in the validation set, complain and
+      // fill in with NAs.
+      if( vec == null ) {
+        warn("_valid","Validation set is missing training column "+_train._names[i]);
+        if( expensive ) {
+          vec = va.anyVec().makeCon(Double.NaN);
+          vec.setDomain(tvecs[i].domain());
+        } else va2 = null;      // Do not try to build a broken validation frame
+      } else good++;
+      if( va2 != null ) va2.add(name,vec);
+    }
+    if( good == 0 )
+      error("_valid","Validation set has no columns in common with the training set");
+    _valid = va2==null ? new Frame(_train) : va2;
+    assert Arrays.equals(_train._names,_valid._names);
   }
 
   /** A list of field validation issues. */

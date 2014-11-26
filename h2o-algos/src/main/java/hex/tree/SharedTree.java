@@ -104,7 +104,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Frame t2 = train();
         for( int i=0; i<t2.numRows(); i++ ) {
           for( int j=0; j<t2.numCols(); j++ )
-            sbt.p(t2.vecs()[j].at8(i)).p(' ');
+            sbt.p(t2.vecs()[j].at(i)).p(' ');
           sbt.nl();
         }
         System.out.println(sbt.toString());
@@ -113,7 +113,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Frame t3 = valid();
         for( int i=0; i<t3.numRows(); i++ ) {
           for( int j=0; j<t3.numCols(); j++ )
-            sbt.p(t3.vecs()[j].at8(i)).p(' ');
+            sbt.p(t3.vecs()[j].at(i)).p(' ');
           sbt.nl();
         }
         System.out.println(sbt.toString());
