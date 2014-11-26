@@ -49,7 +49,11 @@ NULL
 #' is not found at port 54321.
 #' @slot ip Object of class \code{character} representing the IP address of the H2O server.
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
-setClass("H2OClient", representation(ip="character", port="numeric"), prototype(ip="127.0.0.1", port=54321))
+#' @aliases H2OClient
+H2OClient <- setClass("H2OClient",
+                      representation(ip="character", port="numeric"),
+                      prototype(ip="127.0.0.1", port=54321)
+                      )
 
 #' @rdname H2OClient-class
 setMethod("show", "H2OClient", function(object) {
@@ -70,6 +74,7 @@ setMethod("show", "H2OClient", function(object) {
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
 #' @slot h2o An \code{H2OClient} object containing the IP address and port number of the H2O server.
 #' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
+#' @aliases H2ORawData
 setClass("H2ORawData", representation(h2o="H2OClient", key="character"))
 
 #' @rdname H2ORawData-class
@@ -137,6 +142,7 @@ setClass("H2OW2V", representation(h2o="H2OClient", key="character", train.data="
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @slot raw_json Object of class \code{list} containing the raw JSON response
+#' @aliases H2OModel
 setClass("H2OModel", representation(h2o="H2OClient", key="character", model="list", raw_json="list"), contains="VIRTUAL")
 
 # No show method for this type of object.
@@ -163,6 +169,7 @@ setClass("H2OModel", representation(h2o="H2OClient", key="character", model="lis
 #'    \item{Confusion}{Confusion matrix at best cutoff.}
 #' }
 #' @slot roc A data frame with two columns: TPR = true positive rate and FPR = false positive rate, calculated at the listed cutoffs.
+#' @aliases H2OPerfModel
 setClass("H2OPerfModel", representation(cutoffs="numeric", measure="numeric", perf="character", model="list", roc="data.frame"))
 
 #' @rdname H2OPerfModel-class
@@ -185,6 +192,7 @@ setMethod("show", "H2OPerfModel", function(object) {
 #' This class represents a generalized linear model.
 #'
 #' @slot xval List of objects of class \code{H2OGLMModel}, representing the n-fold cross-validation models.
+#' @aliases H2OGLMModel
 setClass("H2OGLMModel", representation(xval="list"), contains="H2OModel")
 
 #' @rdname H2OGLMModel-class
@@ -231,6 +239,7 @@ setMethod("show", "H2OGLMModel", function(object) {
 #' @slot models Object of class \code{list} containing \code{H2OGLMModel} objects representing the models returned from the lambda search.
 #' @slot best_model Object of class \code{numeric} indicating the index of the model with the optimal lambda value in the above list.
 #' @slot lambdas Object of class \code{numeric} indicating the optimal lambda value from the lambda search.
+#' @aliases H2OGLMModelList
 setClass("H2OGLMModelList", representation(models="list", best_model="numeric", lambdas="numeric"))
 
 #' @rdname H2OGLMModelList-class
@@ -274,6 +283,7 @@ setMethod("show", "H2OGLMModelList", function(object) {
 #' This class represents a deep learning model.
 #' @slot valid Object of class \code{H2OParsedData}, representing the validation data set.
 #' @slot xval List of objects of class \code{H2ODeepLearningModel}, representing the n-fold cross-validation models.
+#' @aliases H2ODeepLearningModel
 setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2ODeepLearningModel-class
@@ -319,6 +329,7 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
 #'
 #' @slot valid Object of class \code{H2OParsedData}, which is the data used for validating the model.
 #' @slot xval List of objects of class \code{H2ODRFModel}, representing the n-fold cross-validation models.
+#' @aliases H2ODRFModel
 setClass("H2ODRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2ODRFModel-class
@@ -359,6 +370,7 @@ setMethod("show", "H2ODRFModel", function(object) {
 #' This class represents a gradient boosted machines model.
 #' @slot valid Object of class \code{\linkS4class{H2OParsedData}}, which is the dataset used to validate the model.
 #' @slot xval List of objects of class \code{H2OGBMModel}, representing the n-fold cross-validation models.
+#' @aliases H2OGBMModel
 setClass("H2OGBMModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2OGBMModel-class
@@ -396,6 +408,7 @@ setMethod("show", "H2OGBMModel", function(object) {
 #' This class represents a speedrf model. Another random forest model variant.
 #' @slot valid Object of class \code{H2OParsedData}, which is the data used for validating the model.
 #' @slot list List of objects of class \code{H2OSpeeDRFModel}, representing the n-fold cross-validation models.
+#' @aliases H2OSpeeDRFModel
 setClass("H2OSpeeDRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2OSpeeDRFModel-class
@@ -444,6 +457,7 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 #' The H2ONBModel class.
 #'
 #' This class represents a naive bayes model.
+#' @aliases H2ONBModel
 setClass("H2ONBModel", contains="H2OModel")
 
 #' @rdname H2ONBModel-class
@@ -462,6 +476,7 @@ setMethod("show", "H2ONBModel", function(object) {
 #' The H2OPCAModel class.
 #'
 #' This class represents the results from a pricnipal components analysis.
+#' @aliases H2OPCAModel
 setClass("H2OPCAModel", contains="H2OModel")
 
 #' @rdname H2OPCAModel-class
@@ -479,6 +494,7 @@ setMethod("show", "H2OPCAModel", function(object) {
 #' The H2OKMeansModel class.
 #'
 #' This class represents the results of a KMeans model.
+#' @aliases H2OKMeansModel
 setClass("H2OKMeansModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
 
 #' @rdname H2OKMeansModel-class
@@ -506,6 +522,7 @@ setMethod("show", "H2OKMeansModel", function(object) {
 #' @slot data Object of class \code{H2OParsedData}, which is the input data used to build the model.
 #' @slot model Object of class \code{list} containing \code{H2OModel} objects representing the models returned by the grid search algorithm.
 #' @slot sumtable Object of class \code{list} containing summary statistics of all the models returned by the grid search algorithm.
+#' @aliases H2OGrid
 setClass("H2OGrid", representation(key="character",   data="H2OParsedData", model="list", sumtable="list", "VIRTUAL"))
 
 #' @rdname H2OGrid-class
@@ -522,36 +539,42 @@ setMethod("show", "H2OGrid", function(object) {
 #' The H2OGLMGrid class.
 #'
 #' The grid search for a generalized linear model.
+#' @aliases H2OGLMGrid
 setClass("H2OGLMGrid", contains="H2OGrid")
 
 #'
 #' The H2OGBMGrid class.
 #'
 #' The grid search for a gradient boosted machines model.
+#' @aliases H2OGBMGrid
 setClass("H2OGBMGrid", contains="H2OGrid")
 
 #'
 #' The H2OKMeansGrid class.
 #'
 #' The grid search for a KMeans model.
+#' @aliases H2OKMeansGrid
 setClass("H2OKMeansGrid", contains="H2OGrid")
 
 #'
 #' The H2ODRFGrid class.
 #'
 #' The grid search for a distributed random forest model.
+#' @aliases H2ODRFGrid
 setClass("H2ODRFGrid", contains="H2OGrid")
 
 #'
 #' The H2ODeepLearningGrid class.
 #'
 #' The grid search for a deep learning model.
+#' @aliases H2ODeepLearningGrid
 setClass("H2ODeepLearningGrid", contains="H2OGrid")
 
 #'
 #' The H2OSpeeDRFGrid class.
 #'
 #' The grid search object for a speedrf model.
+#' @aliases H2OSpeeDRFGrid
 setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 
 #-----------------------------------------------------------------------------------------------------------------------
