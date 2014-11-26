@@ -151,6 +151,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  ModelBuilder. */
     public Job.JobState _state;
 
+    /** The start time in mS since the epoch for model training, again this
+     *  comes from the Job which needs to split from ModelBuilder.  */
+    public long _training_start_time = 0L;
+
+    /** The duration in mS for model training, again this comes from the Job
+     *  which needs to split from ModelBuilder.  */
+    public long _training_duration_in_ms = 0L;
+
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec
@@ -199,24 +207,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public O _output; // TODO: move things around so that this can be protected
 
   /**
-   * Model-specific state class.  Each model sub-class contains an instance of one of
-   * these containing its internal state: all the data that's required to, for example,
-   * reload the state of the model to continue training.
-   * TODO: use this!
-  public abstract static class State<M extends Model<M,S>, S extends State<M,S>> extends Iced {
-  }
-  // TODO: make this an instance of a *parameterized* State class. . .
-  State _state;
-  public State getState() { return _state; }
-   */
-
-  /** The start time in mS since the epoch for model training. */
-  public long training_start_time = 0L;
-
-  /** The duration in mS for model training. */
-  public long training_duration_in_ms = 0L;
-
-  /**
    * Externally visible default schema
    * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
    * This puts a reverse edge into the dependency graph.
@@ -228,50 +218,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
     _output = output;  assert output != null;
-  }
-
-  public void start_training(long training_start_time) {
-    Log.info("setting training_start_time to: " + training_start_time + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ")");
-
-    final long t = training_start_time;
-    new TAtomic<Model>() {
-      @Override public Model atomic(Model m) {
-          if (m != null) {
-            m.training_start_time = t;
-          } return m;
-      }
-    }.invoke(_key);
-    this.training_start_time = training_start_time;
-  }
-  public void start_training(Model previous) {
-    training_start_time = System.currentTimeMillis();
-    Log.info("setting training_start_time to: " + training_start_time + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ") [checkpoint case]");
-    if (null != previous)
-      training_duration_in_ms += previous.training_duration_in_ms;
-
-    final long t = training_start_time;
-    final long d = training_duration_in_ms;
-    new TAtomic<Model>() {
-      @Override public Model atomic(Model m) {
-          if (m != null) {
-            m.training_start_time = t;
-            m.training_duration_in_ms = d;
-          } return m;
-      }
-    }.invoke(_key);
-  }
-  public void stop_training() {
-    training_duration_in_ms += (System.currentTimeMillis() - training_start_time);
-    Log.info("setting training_duration_in_ms to: " + training_duration_in_ms + " for Model: " + this._key.toString() + " (" + this.getClass().getSimpleName() + "@" + System.identityHashCode(this) + ")");
-
-    final long d = training_duration_in_ms;
-    new TAtomic<Model>() {
-      @Override public Model atomic(Model m) {
-          if (m != null) {
-            m.training_duration_in_ms = d;
-          } return m;
-      }
-    }.invoke(_key);
   }
 
   /** Bulk score for given <code>fr</code> frame.
