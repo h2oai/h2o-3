@@ -19,16 +19,20 @@ import de.undercouch.gradle.tasks.download.Download
 // Amazon timestamps are only easily read by Joda
 import org.joda.time.format.ISODateTimeFormat
 
-task syncBigdataLaptop << {
+task syncBigdataLaptop {
   group = "Datasets"
   description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
-  syncBigdata('laptop');
+  doLast {
+      syncBigdata('laptop');
+  }
 }
 
-task syncBigdataServer << {
+task syncBigdataServer {
   group = "Datasets"
   description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a cluster."
-  syncBigdata('bigserver');
+  doLast {
+      syncBigdata('bigserver');
+  }
 }
 
 // sync is based on name, size, and the last modify date, currently md5 tags are ignored
