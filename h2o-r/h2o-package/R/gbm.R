@@ -93,8 +93,8 @@ h2o.gbm <- function(x, y, data, key="",
   parms = .addLongParm(parms, k = "max_after_balance_size", v = max_after_balance_size )
   #parms = .addBooleanParm(parms, k = "group_split", v = group_split )
 
-  model_params <- .h2o.__remoteSend(data@h2o, method = "POST", '2/GBM.json', .params = parms)
-  res <- .h2o.__remoteSend(data@h2o, method = "POST", h2o.__MODEL_BUILDERS('gbm'), .params = parms)
+  model_params <- .h2o.__remoteSend(data@h2o, '2/GBM.json', .params = parms)
+  res <- .h2o.__remoteSend(data@h2o, method = "POST", .h2o.__MODEL_BUILDERS('gbm'), .params = parms)
 
   #parms$h2o <- data@h2o
   parms$h2o <- data@h2o
@@ -104,5 +104,5 @@ h2o.gbm <- function(x, y, data, key="",
   .h2o.__waitOnJob(data@h2o, job_key)
   res_model <- list()
   res_model$params <- model_params
-  new("H2OGBMModel", h2o = data@h2o, key = dest_key, data = data, model = res_model, valid = new("H2OParsedData", h2o=data@h2o, key="NA"), xval = list())
+  new("H2OGBMModel", h2o = data@h2o, key = dest_key, model = res_model, valid = new("H2OParsedData", h2o=data@h2o, key="NA"), xval = list())
 }

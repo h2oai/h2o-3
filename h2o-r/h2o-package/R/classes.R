@@ -280,7 +280,7 @@ setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="lis
 setMethod("show", "H2ODeepLearningModel", function(object) {
 #  print(object@data@h2o)
 #  cat("Parsed Data Key:", object@data@key, "\n\n")
-#  cat("Deep Learning Model Key:", object@key)
+  cat("Deep Learning Model Key:", object@key)
 
 #  model = object@model
 #  cat("\n\nTraining classification error:", model$train_class_error)
@@ -363,31 +363,31 @@ setClass("H2OGBMModel", representation(valid="H2OParsedData", xval="list"), cont
 
 #' @rdname H2OGBMModel-class
 setMethod("show", "H2OGBMModel", function(object) {
-  print(object@data@h2o)
-  cat("Parsed Data Key:", object@data@key, "\n\n")
+# print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("GBM Model Key:", object@key, "\n")
 
-  model = object@model
-  if(model$params$distribution %in% c("multinomial", "bernoulli")) {
-    cat("\nConfusion matrix:\n")
-    if(is.na(object@valid@key))
-      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
-    else
-      cat("Reported on", object@valid@key, "\n")
-    print(model$confusion)
+#  model = object@model
+#  if(model$params$distribution %in% c("multinomial", "bernoulli")) {
+#    cat("\nConfusion matrix:\n")
+#    if(is.na(object@valid@key))
+#      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+#    else
+#      cat("Reported on", object@valid@key, "\n")
+#    print(model$confusion)
+#
+#    if(!is.null(model$auc) && !is.null(model$gini))
+#      cat("\nAUC:", model$auc, "\nGini:", model$gini, "\n")
+#  }
 
-    if(!is.null(model$auc) && !is.null(model$gini))
-      cat("\nAUC:", model$auc, "\nGini:", model$gini, "\n")
-  }
-
-  if(!is.null(model$varimp)) {
-    cat("\nVariable importance:\n"); print(model$varimp)
-  }
-  cat("\nMean-squared Error by tree:\n"); print(model$err)
-  if(length(object@xval) > 0) {
-    cat("\nCross-Validation Models:\n")
-    print(sapply(object@xval, function(x) x@key))
-  }
+#  if(!is.null(model$varimp)) {
+#    cat("\nVariable importance:\n"); print(model$varimp)
+#  }
+#  cat("\nMean-squared Error by tree:\n"); print(model$err)
+#  if(length(object@xval) > 0) {
+#    cat("\nCross-Validation Models:\n")
+#    print(sapply(object@xval, function(x) x@key))
+#  }
 })
 
 #'
