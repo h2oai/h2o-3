@@ -223,6 +223,7 @@ def legalFunction(function):
     if function in xFcnOpBinSet: return 2
     else: return 0
 
+
 # function is a string. operands is a list of items
 def xFcn(function='sum', *operands):
     # no checking for correct number of params
@@ -348,3 +349,35 @@ def xExec(execExpr, timeoutSecs=30, justPrint=False):
 def xAssignE(lhs='xResult', rhs='xTemp', timeoutSecs=30, justPrint=False):
     execExpr = xAssign(lhs, rhs)
     return xExec(execExpr, timeoutSecs, justPrint)
+
+# args should be individual strings, not lists
+# FIX! take any number of params
+def xDef(function='sums', params='x', exprs='(sum ([ $r1 "null" #0) $TRUE )' ):
+    # might have to add $ things on params
+    # how do you assign to function output?
+
+    # params and exprs can be lists or string
+    # expand lists/tupcles
+    print "h2o_exec xDef params: %s" % params
+    paramStr, paramList = unpackOperands(params, joinSep=' ', parent='xDef_params')
+    if len(paramStr)==0:
+        raise Exception("h2o_exec xDef, no exprs: %s" % exprs)
+
+    print "h2o_exec xDef exprs: %s" % exprs
+    exprStr, exprList = unpackOperands(exprs, joinSep=';;', parent='xDef_exprs')
+    if len(exprStr)==0:
+        raise Exception("h2o_exec xDef, no exprs: %s" % exprs)
+
+    # legal function name (I overconstrain compared to what Rapids allows)
+    if not re.match(r"[a-zA-Z0-9]+$", function):
+        raise Exception("h2o_exec xDef, bad name for function %s: %s" % function)
+
+    # could check that it's a legal key name
+    # FIX! what about checking rhs references have $ for keys.
+    return "(def %s {%s} %s;;;)" % (function, paramStr, exprStr)
+
+# xAssign, with a xExec wrapper
+def xDefE(function='sums', params='x', exprs='(sum ([ $r1 "null" #0) $TRUE )', 
+        timeoutSecs=10 ):
+    execExpr = xAssign(lhs, rhs)
+    return xExec(execExpr, timeoutSecs)

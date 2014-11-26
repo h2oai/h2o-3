@@ -186,11 +186,7 @@ def parse(self, key, hex_key=None,
     print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
-    if 1==1:
-        parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
-    else:
-        # this was an experiment
-        parse_result = self.do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, cmd='post', postData=parse_params)
+    parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['name']

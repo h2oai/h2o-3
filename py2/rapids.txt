@@ -21,7 +21,10 @@ space between ( and next thing is not allowed
  '$'  signals a variable lookup: attached_token
  '!'  signals a variable set: attached_token
  '['  signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
- 'f'  signals the parser to a parse a function: (f  name args body).
+
+# NO!
+#  'f'  signals the parser to a parse a function: (f  name args body).
+
  '='  signals the parser to assign the RHS to the LHS.
  'g'  signals &gt;
  'G'  signals &gt;=
@@ -217,11 +220,6 @@ okay, {} does a cbind, maybe only for constants? (can there be variables inside 
 or can it be anything?
 
 
-hehehe, RPN -- never had to learn about that! ... `til now
-
-
-OK, I've tried to make my comments more:
-
 '(' is meant to signal that the next token is some sort of function. So the input is a token that will be looked up in the big list of Ops.
 
 '{' "things" are flagged inputs:
@@ -256,12 +254,12 @@ f <- function(x,y,z) {
 
 ASTs in funs have the following form:
 
-(def name {args} {body})
+(def name {args} body)
 
 args are a ';'-separated array of tokens -- no special flags necessary here.
 
 
-{body} is more complicated:
+body is more complicated:
 
 body is a list of statements in the function body.
 
@@ -326,3 +324,34 @@ or is the syntax something else
 
 you used to have {} in the function body in an old email, I think
 that's what was new to me in your example. the function body syntax.
+
+
+only the last statement becomes global,
+
+example:
+
+function(x) {
+
+z <- x[,1]
+y <- z[1,1]
+
+}
+
+technically neither "z" nor "y" should be global, but the value z[1,1] is returned to the outer scope. Looks like I'm allowing key creation within functions to leak to the global space, which is not the intention. I will fix that
+
+
+The rules are:
+
+Doing an apply over columns: (apply ... #2 ...)
+
+each column has the function applied to it. the result from each column must not produce more than 1 column
+
+Doing an apply over rows: (apply ... #1 ...)
+
+each row may produce 1 or more columns of data
+
+
+
+last stmnt can be with or without LHS shouldn't matter
+
+prior statements can have LHS as well. Those LHS should even be able to be referenced in later statements inside the same fcn
