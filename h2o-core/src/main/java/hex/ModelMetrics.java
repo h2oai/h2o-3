@@ -25,7 +25,8 @@ public final class ModelMetrics extends Keyed {
   public long scoring_time = -1L;
 
   public AUCData auc = null;
-  public ConfusionMatrix cm = null;
+  public ConfusionMatrix2 cm = null;
+  public HitRatio hr = null;
 
   public ModelMetrics(Model model, Frame frame) {
     super(buildKey(model, frame));
@@ -36,19 +37,20 @@ public final class ModelMetrics extends Keyed {
     this.frame_checksum = frame.checksum();
   }
 
-  public ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
+  private ModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, ConfusionMatrix2 cm, AUC auc, HitRatio hr) {
     this(model, frame);
     this.duration_in_ms = duration_in_ms;
     this.scoring_time = scoring_time;
-    this.auc = auc;
+    this.auc = auc==null ? null : auc.data();
     this.cm = cm;
+    this.hr = hr;
   }
 
   /**
    * Factory method for creating a ModelMetrics and storing it in the DKV for later.
    */
-  public static ModelMetrics createModelMetrics(Model model, Frame frame, long duration_in_ms, long scoring_time, AUCData auc, ConfusionMatrix cm) {
-    ModelMetrics mm = new ModelMetrics(model, frame, duration_in_ms, scoring_time, auc, cm);
+  public static ModelMetrics create(Model model, Frame frame, long duration_in_ms, long scoring_time, ConfusionMatrix2 cm, AUC auc, HitRatio hr) {
+    ModelMetrics mm = new ModelMetrics(model, frame, duration_in_ms, scoring_time, cm, auc, hr);
     DKV.put(mm.buildKey(), mm);
     return mm;
   }

@@ -192,9 +192,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               ModelCategory.Regression);
     }
 
-    protected void addModelMetrics(ModelMetrics mm) {
+    protected ModelMetrics addModelMetrics(ModelMetrics mm) {
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
       _model_metrics[_model_metrics.length - 1] = mm._key;
+      return mm;                // Flow coding
     }
 
     public long checksum() {
@@ -205,6 +206,34 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   } // Output
 
   public O _output; // TODO: move things around so that this can be protected
+
+
+  @SuppressWarnings("fallthrough")
+  protected ModelMetrics computeModelMetrics(Frame test, String response, Frame predictions) {
+    Vec actuals = response != null ? test.vec(response) : null; // No response for Unsupervised learners
+    long start_time = System.currentTimeMillis();
+    double err = Double.NaN;
+    ConfusionMatrix2 cm2 = null;    
+    AUC auc = null;
+    HitRatio hr = null;
+    switch( _output.getModelCategory() ) {
+    case Binomial:
+      assert actuals.max()==1;
+      auc = new AUC(actuals,predictions);
+      hr = new HitRatio(actuals,predictions);
+    case Multinomial:           // Confusion matrix and MSE
+      assert actuals != null && actuals.isInt() && actuals.min()==0 && actuals.max()+1==_output.nclasses();
+      cm2 = new ConfusionMatrix2(actuals,predictions,20/*Print size limitation*/);
+    case Regression:            // Just MSE
+      assert (_output.nclasses()==1 && predictions.numCols()==1) || _output.nclasses()==predictions.numCols()+1;
+      err = Double.NaN;         // TODO: compute MSE all models
+      break;
+    default:
+      throw H2O.unimpl();
+    }
+    ModelMetrics mm = ModelMetrics.create(this, test, System.currentTimeMillis() - start_time, start_time, cm2, auc, hr);
+    return _output.addModelMetrics(mm);
+  }
 
   /**
    * Externally visible default schema
@@ -220,270 +249,91 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  assert output != null;
   }
 
-  /** Bulk score for given <code>fr</code> frame.
-   * The frame is always adapted to this model.
-   *
-   * @param fr frame to be scored
-   * @return frame holding predicted values
-   *
-   * @see #score(Frame, boolean)
-   */
-  public Frame score(Frame fr) {
-    return score(fr, true);
-  }
-  /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st Vec is the
-   *  predicted class, the remaining Vecs are the probability distributions.
-   *  For Regression (single-class) models, the 1st and only Vec is the
-   *  prediction value.
-   *
-   *  The flat <code>adapt</code>
-   * @param fr frame which should be scored
-   * @param adapt a flag enforcing an adaptation of <code>fr</code> to this model. If flag
-   *        is <code>false</code> scoring code expect that <code>fr</code> is already adapted.
-   * @return a new frame containing a predicted values. For classification it contains a column with
-   *         prediction and distribution for all response classes. For regression it contains only
-   *         one column with predicted values.
-   */
-  public final Frame score(Frame fr, boolean adapt) {
-    long start_time = System.currentTimeMillis();
-    Frame fr_hacked = new Frame(fr);
-    if (isSupervised()) {
-      int ridx = fr.find(_output.responseName());
-      if (ridx != -1) { // drop the response for scoring!
-        fr_hacked.remove(ridx);
-      }
-    }
-    // Adapt the Frame layout - returns adapted frame and frame containing only
-    // newly created vectors
-    Frame[] adaptFrms = adapt ? adapt(fr_hacked,false) : null;
-    // Adapted frame containing all columns - mix of original vectors from fr
-    // and newly created vectors serving as adaptors
-    Frame adaptFrm = adapt ? adaptFrms[0] : fr_hacked;
-    // Contains only newly created vectors. The frame eases deletion of these vectors.
-    Frame onlyAdaptFrm = adapt ? adaptFrms[1] : null;
-    // Invoke scoring
-    Frame output = scoreImpl(adaptFrm);
-    // Be nice to DKV and delete vectors which i created :-)
-    if (adapt) onlyAdaptFrm.delete();
-    computeModelMetrics(start_time, fr, output);
-    return output;
-  }
 
-  /** Score an already adapted frame.
+  /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
+   *  intention here is that ModelBuilders can assume the test set has the same
+   *  count of columns, and within each factor column the same set of
+   *  same-numbered levels.  Extra levels in features are converted to NAs.
+   *  Extra levels in the response (SupervisedModelBuilder only) will be
+   *  renumbered past those in the Train set but will still be present in the
+   *  Test set.  
    *
-   * @param adaptFrm
-   * @return A Frame containing the prediction column, and class distribution
+   *  This routine is used before model building (with no Model made yet), and
+   *  also used to prepare a large dataset for scoring (with a Model).
+   * 
+   *  Adaption does the following things:
+   *  - Remove any "extra" Vecs appearing only in the test and not the train
+   *  - Insert any "missing" Vecs appearing only in the train and not the test
+   *    with all NAs ({@see missingColumnsType}).  This will issue a warning,
+   *    and if the "expensive" flag is false won't actually make the column
+   *    replacement column but instead will bail-out on the whole adaption (but
+   *    will continue looking for more warnings).
+   *  - If all columns are missing, issue an error.
+   *  - Renumber matching cat levels to match the Train levels; this might make
+   *    "holes" in the Test set cat levels, if some are not in the Test set.
+   *  - For Categorical Features, extra Test levels are converted to NAs
+   *  - For a Categorical Response, extra Test levels are renumbered past the
+   *    end of the Train set
+   *  - For all mis-matched levels, issue a warning.
+   *
+   *  Inputs are in {@code _parms.train()} and {@code _parms.valid()}.
+   *  Result is in {@code _valid}, with errors and warnings in the {@code _messages}.
+   *
+   *  @param names Training column names
+   *  @param domains Training column levels
+   *  @param test Testing Frame
+   *  @param expensive Try hard to adapt; this might involve the creation of
+   *  whole Vecs and thus get expensive.  If {@code false}, then only adapt if
+   *  no warnings and errors; otherwise just the messages are produced.
+   *  @return Array of warnings; zero length (not null) for no warnings.
+   *  Throws {@code IllegalArgumentException} if no columns are in common, or
+   *  if any factor column has no levels in common.
    */
-  private Frame scoreImpl(Frame adaptFrm) {
-    if (isSupervised()) {
-      int ridx = adaptFrm.find(_output.responseName());
-      assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
-      assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
-      assert adaptFrm.vecs().length == _output.nfeatures() : "Scoring data set contains wrong number of columns: " + adaptFrm.vecs().length + " instead of " + _output.nfeatures();
-    }
-
-    // Create a new vector for response
-    // If the model produces a classification/enum, copy the domain into the
-    // result vector.
-    int nc = _output.nclasses();
-    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
-    if(nc > 1)
-      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
-    String [] names = new String[newVecs.length];
-    names[0] = "predict";
-    for(int i = 1; i < names.length; ++i)
-      names[i] = _output.classNames()[i-1];
-    final int num_features = _output.nfeatures();
-    new MRTask() {
-      @Override public void map( Chunk chks[] ) {
-        double tmp [] = new double[num_features];
-        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
-        int len = chks[0]._len;
-        for( int row=0; row<len; row++ ) {
-          float p[] = score0(chks,row,tmp,preds);
-          for( int c=0; c<preds.length; c++ )
-            chks[num_features+c].set0(row,p[c]);
+  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain( _output._names, _output._domains, test, missingColumnsType(), expensive); }
+  public static String[] adaptTestForTrain( String[] names, String[][] domains, Frame test, double missing, boolean expensive ) {
+    // Build the validation set to be compatible with the training set.
+    // Toss out extra columns, complain about missing ones, remap enums
+    ArrayList<String> msgs = new ArrayList<>();
+    Vec vvecs[] = new Vec[names.length];
+    int good = 0;               // Any matching column names, at all?
+    for( int i=0; i<names.length; i++ ) {
+      Vec vec = test.vec(names[i]); // Search in the given validation set
+      // If the training set is missing in the validation set, complain and
+      // fill in with NAs.
+      if( vec == null ) {
+        msgs.add("Validation set is missing training column "+names[i]);
+        if( expensive ) {
+          vec = test.anyVec().makeCon(missing);
+          vec.setDomain(domains[i]);
         }
+      } else {
+        good++;
+        throw H2O.unimpl();      // Need to check enums next
       }
-    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
-
-    // Return just the output columns
-    return new Frame(names, newVecs);
-  }
-
-  /** Single row scoring, on a compatible Frame.  */
-  public final float[] score( Frame fr, boolean exact, int row ) {
-    double tmp[] = new double[fr.numCols()];
-    for( int i=0; i<tmp.length; i++ )
-      tmp[i] = fr.vecs()[i].at(row);
-    return score(fr.names(),fr.domains(),exact,tmp);
-  }
-
-  /** Single row scoring, on a compatible set of data.  Fairly expensive to adapt. */
-  public final float[] score( String names[], String domains[][], boolean exact, double row[] ) {
-    return score(adapt(names,domains,exact),row,new float[_output.nclasses()]);
-  }
-
-  /** Single row scoring, on a compatible set of data, given an adaption vector */
-  public final float[] score( int map[][][], double row[], float[] preds ) {
-    /*FIXME final int[][] colMap = map[map.length-1]; // Response column mapping is the last array
-    assert colMap.length == _output._names.length-1 : " "+Arrays.toString(colMap)+" "+Arrays.toString(_output._names);
-    double tmp[] = new double[colMap.length]; // The adapted data
-    for( int i=0; i<colMap.length; i++ ) {
-      // Column mapping, or NaN for missing columns
-      double d = colMap[i]==-1 ? Double.NaN : row[colMap[i]];
-      if( map[i] != null ) {    // Enum mapping
-        int e = (int)d;
-        if( e < 0 || e >= map[i].length ) d = Double.NaN; // User data is out of adapt range
-        else {
-          e = map[i][e];
-          d = e==-1 ? Double.NaN : (double)e;
-        }
-      }
-      tmp[i] = d;
+      vvecs[i] = vec;
     }
-    return score0(tmp,preds);   // The results. */
-    return null;
+    if( good == 0 )
+      throw new IllegalArgumentException("Validation set has no columns in common with the training set");
+    if( good == names.length )  // Only update if got something for all columns
+      test.restructure(names,vvecs);
+    return msgs.toArray(new String[msgs.size()]);
   }
 
-  /** Build an adaption array.  The length is equal to the Model's vector length.
-   *  Each inner 2D-array is a
-   *  compressed domain map from data domains to model domains - or null for non-enum
-   *  columns, or null for identity mappings.  The extra final int[] is the
-   *  column mapping itself, mapping from model columns to data columns. or -1
-   *  if missing.
-   *  If 'exact' is true, will throw if there are:
-   *    any columns in the model but not in the input set;
-   *    any enums in the data that the model does not understand
-   *    any enums returned by the model that the data does not have a mapping for.
-   *  If 'exact' is false, these situations will use or return NA's instead.
-   */
-  protected int[][][] adapt( String names[], String domains[][], boolean exact) {
-    int maplen = names.length;
-    int map[][][] = new int[maplen][][];
-    // Make sure all are compatible
-    for( int c=0; c<names.length;++c) {
-            // Now do domain mapping
-      String ms[] = _output._domains[c];  // Model enum
-      String ds[] =  domains[c];  // Data  enum
-      if( ms == ds ) { // Domains trivially equal?
-      } else if( ms == null ) {
-        throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) numeric, was passed a categorical");
-      } else if( ds == null ) {
-        if( exact )
-          throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) categorical, was passed a numeric");
-        throw H2O.unimpl();     // Attempt an asEnum?
-      } else if( !Arrays.deepEquals(ms, ds) ) {
-        map[c] = getDomainMapping(_output._names[c], ms, ds, exact);
-      } // null mapping is equal to identity mapping
-    }
-    return map;
-  }
-
-  protected ModelMetrics computeModelMetrics(long start_time, Frame frame, Frame predictions) {
-    // Always calculate error, regardless of whether this is being called by the REST API or the Java API.
-    // TODO: SupervisedModel.calcError can't handle multinomial classification yet.  Should be able to create CMs.
-    ModelMetrics mm=null;
-    if (_output.getModelCategory() == Model.ModelCategory.Binomial /* || _output.getModelCategory() == Model.ModelCategory.Multinomial */) {
-      SupervisedModel sm = (SupervisedModel)this;
-      AUC auc = new AUC();
-      ConfusionMatrix cm = new ConfusionMatrix();
-      HitRatio hr = new HitRatio();
-      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-              true, 20, cm, auc, hr);
-      mm =  ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, auc.aucdata, cm);
-    } else if (_output.getModelCategory() == Model.ModelCategory.Regression) {
-      SupervisedModel sm = (SupervisedModel) this;
-      sm.calcError(frame, frame.vec(_output.responseName()), predictions, predictions, "Prediction error:",
-              true, 20, null, null, null);
-      mm = ModelMetrics.createModelMetrics(this, frame, System.currentTimeMillis() - start_time, start_time, null, null);
-    }
-    if( mm != null ) _output.addModelMetrics(mm);
-    return mm;
-  }
-
-  /**
-   * Type of missing columns during adaptation between train/test datasets
-   * Overload this method for models that have sparse data handling.
-   * Otherwise, NaN is used.
-   * @return real-valued number (can be NaN)
-   */
+  /** Type of missing columns during adaptation between train/test datasets
+   *  Overload this method for models that have sparse data handling.
+   *  Otherwise, NaN is used.
+   *  @return real-valued number (can be NaN)  */
   protected double missingColumnsType() { return Double.NaN; }
 
-  /** Build an adapted Frame from the given Frame. Useful for efficient bulk
-   *  scoring of a new dataset to an existing model.  Same adaption as above,
-   *  but expressed as a Frame instead of as an int[][]. The returned Frame
-   *  does not have a response column.
-   *  It returns a <b>two element array</b> containing an adapted frame and a
-   *  frame which contains only vectors which where adapted (the purpose of the
-   *  second frame is to delete all adapted vectors with deletion of the
-   *  frame). */
-  public Frame[] adapt( final Frame fr, boolean exact) {
-    return adapt(fr, exact, true);
-  }
 
-  public Frame[] adapt( final Frame fr, boolean exact, boolean haveResponse) {
-    Frame vfr = new Frame(fr); // To avoid modification of original frame fr
-    int n = _output._names.length;
-    if (haveResponse && isSupervised()) {
-      int ridx = vfr.find(_output._names[n - 1]);
-      if (ridx != -1 && ridx != vfr._names.length - 1) { // Unify frame - put response to the end
-        String name = vfr._names[ridx];
-        vfr.add(name, vfr.remove(ridx));
-      }
-      n = ridx == -1 ? _output._names.length - 1 : _output._names.length;
-    }
-    String [] names = isSupervised() ? Arrays.copyOf(_output._names, n) : _output._names.clone();
-    Frame  [] subVfr;
-    // replace missing columns with NaNs (or 0s for DeepLearning with sparse data)
-    subVfr = vfr.subframe(names, missingColumnsType());
-    vfr = subVfr[0]; // extract only subframe but keep the rest for delete later
-    Vec[] frvecs = vfr.vecs();
-    boolean[] toEnum = new boolean[frvecs.length];
-    if(!exact) for(int i = 0; i < n;++i)
-      if(_output._domains[i] != null && !frvecs[i].isEnum()) {// if model expects domain but input frame does not have domain => switch vector to enum
-        frvecs[i] = frvecs[i].toEnum();
-        toEnum[i] = true;
-      }
-    int[][][] map = adapt(names,vfr.domains(),exact);
-    assert map.length == names.length; // Be sure that adapt call above do not skip any column
-    ArrayList<Vec> avecs = new ArrayList<>(); // adapted vectors
-    ArrayList<String> anames = new ArrayList<>(); // names for adapted vector
-
-    for( int c=0; c<map.length; c++ ) // Iterate over columns
-      if(map[c] != null) { // Column needs adaptation
-        Vec adaptedVec;
-        if (toEnum[c]) { // Vector was flipped to column already, compose transformation
-          adaptedVec = TransfVec.compose( (TransfVec) frvecs[c], map[c], vfr.domains()[c], false);
-        } else adaptedVec = frvecs[c].makeTransf(map[c], vfr.domains()[c]);
-        avecs.add(frvecs[c] = adaptedVec);
-        anames.add(names[c]); // Collect right names
-      } else if (toEnum[c]) { // Vector was transformed to enum domain, but does not need adaptation we need to record it
-        avecs.add(frvecs[c]);
-        anames.add(names[c]);
-      }
-    // Fill trash bin by vectors which need to be deleted later by the caller.
-    Frame vecTrash = new Frame(anames.toArray(new String[anames.size()]), avecs.toArray(new Vec[avecs.size()]));
-    if (subVfr[1]!=null) vecTrash.add(subVfr[1]);
-    return new Frame[] { new Frame(names,frvecs), vecTrash };
-  }
-
-  /** Returns a mapping between values of model domains (<code>modelDom</code>) and given column domain.
-   *  @see #getDomainMapping(String, String[], String[], boolean) */
-  public static int[][] getDomainMapping(String[] modelDom, String[] colDom, boolean exact) {
-    return getDomainMapping(null, modelDom, colDom, exact);
-  }
-
-  /**
-   * Returns a mapping for given column according to given <code>modelDom</code>.
-   * In this case, <code>modelDom</code> is
+  /** Returns a mapping for given column according to given {@code modelDom}.
+   *  The ....
    *
-   * @param colName name of column which is mapped, can be null.
    * @param modelDom
-   * @param logNonExactMapping
-   * @return A mapping for given column according to given <code>modelDom</code>.
+   * @return ...
    */
   public static int[][] getDomainMapping(String colName, String[] modelDom, String[] colDom, boolean logNonExactMapping) {
+    throw H2O.unimpl();
     int emap[] = new int[modelDom.length];
     boolean bmap[] = new boolean[modelDom.length];
     HashMap<String,Integer> md = new HashMap<>((int) ((colDom.length/0.75f)+1));
@@ -516,6 +366,214 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     water.fvec.TransfVec.sortWith(res[0], res[1]);
     return res;
   }
+
+  /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st Vec is the
+   *  predicted class, the remaining Vecs are the probability distributions.
+   *  For Regression (single-class) models, the 1st and only Vec is the
+   *  prediction value.
+   *
+   *  The flat <code>adapt</code>
+   * @param fr frame which should be scored
+   * @param adapt a flag enforcing an adaptation of <code>fr</code> to this model. If flag
+   *        is <code>false</code> scoring code expect that <code>fr</code> is already adapted.
+   * @return a new frame containing a predicted values. For classification it contains a column with
+   *         prediction and distribution for all response classes. For regression it contains only
+   *         one column with predicted values.
+   */
+  public final Frame score(Frame fr, boolean adapt) {
+    throw H2O.unimpl();
+//    long start_time = System.currentTimeMillis();
+//    Frame fr_hacked = new Frame(fr);
+//    if (isSupervised()) {
+//      int ridx = fr.find(_output.responseName());
+//      if (ridx != -1) { // drop the response for scoring!
+//        fr_hacked.remove(ridx);
+//      }
+//    }
+//    // Adapt the Frame layout - returns adapted frame and frame containing only
+//    // newly created vectors
+//    Frame[] adaptFrms = adapt ? adapt(fr_hacked,false) : null;
+//    // Adapted frame containing all columns - mix of original vectors from fr
+//    // and newly created vectors serving as adaptors
+//    Frame adaptFrm = adapt ? adaptFrms[0] : fr_hacked;
+//    // Contains only newly created vectors. The frame eases deletion of these vectors.
+//    Frame onlyAdaptFrm = adapt ? adaptFrms[1] : null;
+//    // Invoke scoring
+//    Frame output = scoreImpl(adaptFrm);
+//    // Be nice to DKV and delete vectors which i created :-)
+//    if (adapt) onlyAdaptFrm.delete();
+//    computeModelMetrics(start_time, fr, output);
+//    return output;
+  }
+//
+//  /** Score an already adapted frame.
+//   *
+//   * @param adaptFrm
+//   * @return A Frame containing the prediction column, and class distribution
+//   */
+//  private Frame scoreImpl(Frame adaptFrm) {
+//    if (isSupervised()) {
+//      int ridx = adaptFrm.find(_output.responseName());
+//      assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
+//      assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
+//      assert adaptFrm.vecs().length == _output.nfeatures() : "Scoring data set contains wrong number of columns: " + adaptFrm.vecs().length + " instead of " + _output.nfeatures();
+//    }
+//
+//    // Create a new vector for response
+//    // If the model produces a classification/enum, copy the domain into the
+//    // result vector.
+//    int nc = _output.nclasses();
+//    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
+//    if(nc > 1)
+//      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
+//    String [] names = new String[newVecs.length];
+//    names[0] = "predict";
+//    for(int i = 1; i < names.length; ++i)
+//      names[i] = _output.classNames()[i-1];
+//    final int num_features = _output.nfeatures();
+//    new MRTask() {
+//      @Override public void map( Chunk chks[] ) {
+//        double tmp [] = new double[num_features];
+//        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
+//        int len = chks[0]._len;
+//        for( int row=0; row<len; row++ ) {
+//          float p[] = score0(chks,row,tmp,preds);
+//          for( int c=0; c<preds.length; c++ )
+//            chks[num_features+c].set0(row,p[c]);
+//        }
+//      }
+//    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
+//
+//    // Return just the output columns
+//    return new Frame(names, newVecs);
+//  }
+//
+//  /** Single row scoring, on a compatible Frame.  */
+//  public final float[] score( Frame fr, boolean exact, int row ) {
+//    double tmp[] = new double[fr.numCols()];
+//    for( int i=0; i<tmp.length; i++ )
+//      tmp[i] = fr.vecs()[i].at(row);
+//    return score(fr.names(),fr.domains(),exact,tmp);
+//  }
+//
+//  /** Single row scoring, on a compatible set of data.  Fairly expensive to adapt. */
+//  public final float[] score( String names[], String domains[][], boolean exact, double row[] ) {
+//    return score(adapt(names,domains,exact),row,new float[_output.nclasses()]);
+//  }
+//
+//  /** Single row scoring, on a compatible set of data, given an adaption vector */
+//  public final float[] score( int map[][][], double row[], float[] preds ) {
+//    /*FIXME final int[][] colMap = map[map.length-1]; // Response column mapping is the last array
+//    assert colMap.length == _output._names.length-1 : " "+Arrays.toString(colMap)+" "+Arrays.toString(_output._names);
+//    double tmp[] = new double[colMap.length]; // The adapted data
+//    for( int i=0; i<colMap.length; i++ ) {
+//      // Column mapping, or NaN for missing columns
+//      double d = colMap[i]==-1 ? Double.NaN : row[colMap[i]];
+//      if( map[i] != null ) {    // Enum mapping
+//        int e = (int)d;
+//        if( e < 0 || e >= map[i].length ) d = Double.NaN; // User data is out of adapt range
+//        else {
+//          e = map[i][e];
+//          d = e==-1 ? Double.NaN : (double)e;
+//        }
+//      }
+//      tmp[i] = d;
+//    }
+//    return score0(tmp,preds);   // The results. */
+//    return null;
+//  }
+//
+//  /** Build an adaption array.  The length is equal to the Model's vector length.
+//   *  Each inner 2D-array is a
+//   *  compressed domain map from data domains to model domains - or null for non-enum
+//   *  columns, or null for identity mappings.  The extra final int[] is the
+//   *  column mapping itself, mapping from model columns to data columns. or -1
+//   *  if missing.
+//   *  If 'exact' is true, will throw if there are:
+//   *    any columns in the model but not in the input set;
+//   *    any enums in the data that the model does not understand
+//   *    any enums returned by the model that the data does not have a mapping for.
+//   *  If 'exact' is false, these situations will use or return NA's instead.
+//   */
+//  protected int[][][] adapt( String names[], String domains[][], boolean exact) {
+//    int maplen = names.length;
+//    int map[][][] = new int[maplen][][];
+//    // Make sure all are compatible
+//    for( int c=0; c<names.length;++c) {
+//            // Now do domain mapping
+//      String ms[] = _output._domains[c];  // Model enum
+//      String ds[] =  domains[c];  // Data  enum
+//      if( ms == ds ) { // Domains trivially equal?
+//      } else if( ms == null ) {
+//        throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) numeric, was passed a categorical");
+//      } else if( ds == null ) {
+//        if( exact )
+//          throw new IllegalArgumentException("Incompatible column: '" + _output._names[c] + "', expected (trained on) categorical, was passed a numeric");
+//        throw H2O.unimpl();     // Attempt an asEnum?
+//      } else if( !Arrays.deepEquals(ms, ds) ) {
+//        map[c] = getDomainMapping(_output._names[c], ms, ds, exact);
+//      } // null mapping is equal to identity mapping
+//    }
+//    return map;
+//  }
+//  /** Build an adapted Frame from the given Frame. Useful for efficient bulk
+//   *  scoring of a new dataset to an existing model.  Same adaption as above,
+//   *  but expressed as a Frame instead of as an int[][]. The returned Frame
+//   *  does not have a response column.
+//   *  It returns a <b>two element array</b> containing an adapted frame and a
+//   *  frame which contains only vectors which where adapted (the purpose of the
+//   *  second frame is to delete all adapted vectors with deletion of the
+//   *  frame). */
+//  public Frame[] adapt( final Frame fr, boolean exact) {
+//    return adapt(fr, exact, true);
+//  }
+//
+//  public Frame[] adapt( final Frame fr, boolean exact, boolean haveResponse) {
+//    Frame vfr = new Frame(fr); // To avoid modification of original frame fr
+//    int n = _output._names.length;
+//    if (haveResponse && isSupervised()) {
+//      int ridx = vfr.find(_output._names[n - 1]);
+//      if (ridx != -1 && ridx != vfr._names.length - 1) { // Unify frame - put response to the end
+//        String name = vfr._names[ridx];
+//        vfr.add(name, vfr.remove(ridx));
+//      }
+//      n = ridx == -1 ? _output._names.length - 1 : _output._names.length;
+//    }
+//    String [] names = isSupervised() ? Arrays.copyOf(_output._names, n) : _output._names.clone();
+//    Frame  [] subVfr;
+//    // replace missing columns with NaNs (or 0s for DeepLearning with sparse data)
+//    subVfr = vfr.subframe(names, missingColumnsType());
+//    vfr = subVfr[0]; // extract only subframe but keep the rest for delete later
+//    Vec[] frvecs = vfr.vecs();
+//    boolean[] toEnum = new boolean[frvecs.length];
+//    if(!exact) for(int i = 0; i < n;++i)
+//      if(_output._domains[i] != null && !frvecs[i].isEnum()) {// if model expects domain but input frame does not have domain => switch vector to enum
+//        frvecs[i] = frvecs[i].toEnum();
+//        toEnum[i] = true;
+//      }
+//    int[][][] map = adapt(names,vfr.domains(),exact);
+//    assert map.length == names.length; // Be sure that adapt call above do not skip any column
+//    ArrayList<Vec> avecs = new ArrayList<>(); // adapted vectors
+//    ArrayList<String> anames = new ArrayList<>(); // names for adapted vector
+//
+//    for( int c=0; c<map.length; c++ ) // Iterate over columns
+//      if(map[c] != null) { // Column needs adaptation
+//        Vec adaptedVec;
+//        if (toEnum[c]) { // Vector was flipped to column already, compose transformation
+//          adaptedVec = TransfVec.compose( (TransfVec) frvecs[c], map[c], vfr.domains()[c], false);
+//        } else adaptedVec = frvecs[c].makeTransf(map[c], vfr.domains()[c]);
+//        avecs.add(frvecs[c] = adaptedVec);
+//        anames.add(names[c]); // Collect right names
+//      } else if (toEnum[c]) { // Vector was transformed to enum domain, but does not need adaptation we need to record it
+//        avecs.add(frvecs[c]);
+//        anames.add(names[c]);
+//      }
+//    // Fill trash bin by vectors which need to be deleted later by the caller.
+//    Frame vecTrash = new Frame(anames.toArray(new String[anames.size()]), avecs.toArray(new Vec[avecs.size()]));
+//    if (subVfr[1]!=null) vecTrash.add(subVfr[1]);
+//    return new Frame[] { new Frame(names,frvecs), vecTrash };
+//  }
+//
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

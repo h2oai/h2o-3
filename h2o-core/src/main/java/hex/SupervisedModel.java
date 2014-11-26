@@ -96,88 +96,88 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
 
   @Override public boolean isSupervised() { return true; }
 
-  /**
-   * compute the model error for a given test data set
-   * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.
-   * For binary classification, this is the classification error based on assigning labels using the optimal threshold for maximizing the F1 score.
-   * For regression, this is the mean squared error (MSE).
-   * @param ftest Frame containing test data
-   * @param vactual The response column Vec
-   * @param fpreds Frame containing ADAPTED (domain labels from train+test data) predicted data (classification: label + per-class probabilities, regression: target)
-   * @param hitratio_fpreds Frame containing predicted data (domain labels from test data) (classification: label + per-class probabilities, regression: target)
-   * @param label Name for the scored data set to be printed
-   * @param printMe Whether to print the scoring results to Log.info
-   * @param max_conf_mat_size Largest size of Confusion Matrix (#classes) for it to be printed to Log.info
-   * @param cm Confusion Matrix object to populate for multi-class classification (also used for regression)
-   * @param auc AUC object to populate for binary classification
-   * @param hr HitRatio object to populate for classification
-   * @return model error, see description above
-   */
-  public double calcError(final Frame ftest, final Vec vactual,
-                          final Frame fpreds, final Frame hitratio_fpreds,
-                          final String label, final boolean printMe,
-                          final int max_conf_mat_size,
-                          final ConfusionMatrix cm,
-                          final AUC auc,
-                          final HitRatio hr)
-  {
-    StringBuilder sb = new StringBuilder();
-    double error = Double.POSITIVE_INFINITY;
-    // populate AUC
-    if (auc != null) {
-      assert(_output.isClassifier());
-      assert(_output.nclasses() == 2);
-      auc.actual = ftest;
-      auc.vactual = vactual;
-      auc.predict = fpreds;
-      auc.vpredict = fpreds.vecs()[2]; //binary classifier (label, prob0, prob1 (THIS ONE), adaptedlabel)
-      auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
-      auc.execImpl();
-      // auc.toASCII(sb);
-      error = auc.data().err(); //using optimal threshold for F1
-    }
-    // populate CM
-    if (cm != null) {
-      cm.actual = ftest;
-      cm.vactual = vactual;
-      cm.predict = fpreds;
-      cm.vpredict = fpreds.vecs()[0]; // prediction (either label or regression target)
-      cm.execImpl();
-      if (_output.isClassifier()) {
-        if (auc != null) {
-          //override the CM with the one computed by AUC (using optimal threshold)
-          //Note: must still call invoke above to set the domains etc.
-          cm.cm = new long[3][3]; // 1 extra layer for NaNs (not populated here, since AUC skips them)
-          cm.cm[0][0] = auc.data().cm()[0][0];
-          cm.cm[1][0] = auc.data().cm()[1][0];
-          cm.cm[0][1] = auc.data().cm()[0][1];
-          cm.cm[1][1] = auc.data().cm()[1][1];
-          assert(new ConfusionMatrix2(cm.cm).err() == auc.data().err()); //check consistency with AUC-computed error
-        } else {
-          error = new ConfusionMatrix2(cm.cm).err(); //only set error if AUC didn't already set the error
-        }
-        if (cm.cm.length <= max_conf_mat_size) cm.toASCII(sb);
-      } else {
-        assert(auc == null);
-        error = cm.mse;
-        cm.toASCII(sb);
-      }
-    }
-    // populate HitRatio
-    if (hr != null) {
-      assert(_output.isClassifier());
-      hr.actual = ftest;
-      hr.vactual = vactual;
-      hr.predict = hitratio_fpreds;
-      hr.execImpl();
-      hr.toASCII(sb);
-    }
-    if (printMe && sb.length() > 0) {
-      Log.info("Scoring on " + label + " data:");
-      for (String s : sb.toString().split("\n")) Log.info(s);
-    }
-    return error;
-  }
+//  /**
+//   * compute the model error for a given test data set
+//   * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.
+//   * For binary classification, this is the classification error based on assigning labels using the optimal threshold for maximizing the F1 score.
+//   * For regression, this is the mean squared error (MSE).
+//   * @param ftest Frame containing test data
+//   * @param vactual The response column Vec
+//   * @param fpreds Frame containing ADAPTED (domain labels from train+test data) predicted data (classification: label + per-class probabilities, regression: target)
+//   * @param hitratio_fpreds Frame containing predicted data (domain labels from test data) (classification: label + per-class probabilities, regression: target)
+//   * @param label Name for the scored data set to be printed
+//   * @param printMe Whether to print the scoring results to Log.info
+//   * @param max_conf_mat_size Largest size of Confusion Matrix (#classes) for it to be printed to Log.info
+//   * @param cm Confusion Matrix object to populate for multi-class classification (also used for regression)
+//   * @param auc AUC object to populate for binary classification
+//   * @param hr HitRatio object to populate for classification
+//   * @return model error, see description above
+//   */
+//  public double calcError(final Frame ftest, final Vec vactual,
+//                          final Frame fpreds, final Frame hitratio_fpreds,
+//                          final String label, final boolean printMe,
+//                          final int max_conf_mat_size,
+//                          final ConfusionMatrix cm,
+//                          final AUC auc,
+//                          final HitRatio hr)
+//  {
+//    StringBuilder sb = new StringBuilder();
+//    double error = Double.POSITIVE_INFINITY;
+//    // populate AUC
+//    if (auc != null) {
+//      assert(_output.isClassifier());
+//      assert(_output.nclasses() == 2);
+//      auc.actual = ftest;
+//      auc.vactual = vactual;
+//      auc.predict = fpreds;
+//      auc.vpredict = fpreds.vecs()[2]; //binary classifier (label, prob0, prob1 (THIS ONE), adaptedlabel)
+//      auc.threshold_criterion = AUC.ThresholdCriterion.maximum_F1;
+//      auc.execImpl();
+//      // auc.toASCII(sb);
+//      error = auc.data().err(); //using optimal threshold for F1
+//    }
+//    // populate CM
+//    if (cm != null) {
+//      cm.actual = ftest;
+//      cm.vactual = vactual;
+//      cm.predict = fpreds;
+//      cm.vpredict = fpreds.vecs()[0]; // prediction (either label or regression target)
+//      cm.execImpl();
+//      if (_output.isClassifier()) {
+//        if (auc != null) {
+//          //override the CM with the one computed by AUC (using optimal threshold)
+//          //Note: must still call invoke above to set the domains etc.
+//          cm.cm = new long[3][3]; // 1 extra layer for NaNs (not populated here, since AUC skips them)
+//          cm.cm[0][0] = auc.data().cm()[0][0];
+//          cm.cm[1][0] = auc.data().cm()[1][0];
+//          cm.cm[0][1] = auc.data().cm()[0][1];
+//          cm.cm[1][1] = auc.data().cm()[1][1];
+//          assert(new ConfusionMatrix2(cm.cm).err() == auc.data().err()); //check consistency with AUC-computed error
+//        } else {
+//          error = new ConfusionMatrix2(cm.cm).err(); //only set error if AUC didn't already set the error
+//        }
+//        if (cm.cm.length <= max_conf_mat_size) cm.toASCII(sb);
+//      } else {
+//        assert(auc == null);
+//        error = cm.mse;
+//        cm.toASCII(sb);
+//      }
+//    }
+//    // populate HitRatio
+//    if (hr != null) {
+//      assert(_output.isClassifier());
+//      hr.actual = ftest;
+//      hr.vactual = vactual;
+//      hr.predict = hitratio_fpreds;
+//      hr.execImpl();
+//      hr.toASCII(sb);
+//    }
+//    if (printMe && sb.length() > 0) {
+//      Log.info("Scoring on " + label + " data:");
+//      for (String s : sb.toString().split("\n")) Log.info(s);
+//    }
+//    return error;
+//  }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

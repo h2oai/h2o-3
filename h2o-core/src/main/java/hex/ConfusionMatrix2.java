@@ -3,6 +3,8 @@ package hex;
 import java.util.Arrays;
 import water.util.ArrayUtils;
 import water.Iced;
+import water.fvec.Vec;
+import water.fvec.Frame;
 
 public class ConfusionMatrix2 extends Iced {
   public long[][] _arr; // [actual][predicted]
@@ -13,28 +15,13 @@ public class ConfusionMatrix2 extends Iced {
     MAXC, SUMC, TOTAL;
 
     public double computeErr(ConfusionMatrix2 cm) {
-      double[] cerr = cm.classErr();
-      double res = 0;
       switch( this ) {
-        case MAXC:
-          res = cerr[0];
-          for( double d : cerr )
-            if( d > res )
-              res = d;
-          break;
-        case SUMC:
-          for( double d : cerr )
-            res += d;
-          break;
-        case TOTAL:
-          res = cm.err();
-          break;
-        default:
-          throw new RuntimeException("unexpected err metric " + this);
+      case MAXC : return ArrayUtils.maxValue(cm.classErr());
+      case SUMC : return ArrayUtils.sum(cm.classErr());
+      case TOTAL: return cm.err();
+      default   : throw water.H2O.unimpl();
       }
-      return res;
     }
-
   }
 
   public ConfusionMatrix2(int n) {
@@ -56,6 +43,15 @@ public class ConfusionMatrix2 extends Iced {
     _classErr = classErr();
     _predErr = err();
   }
+
+  /** Build the CM data from the actuals and predictions, using the default
+   *  threshold.  Print to Log.info if the number of classes is below
+   *  the print_threshold.
+   */
+  public ConfusionMatrix2(Vec actuals, Frame predictions, int print_threshold) {
+    throw water.H2O.unimpl();
+  }
+
 
   public void add(int i, int j) {
     _arr[i][j]++;

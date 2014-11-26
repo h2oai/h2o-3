@@ -23,54 +23,42 @@ public class HitRatio extends Iced {
   private String [] actual_domain; // domain of the actual response
   private float[] hit_ratios; // Hit ratios for k=1...K
 
-  public HitRatio() {}
-
-
-//  @Override
-  private void init() throws IllegalArgumentException {
-    // Input handling
-    if( actual==null || predict==null )
-      throw new IllegalArgumentException("Missing actual or predict!");
-    if( vactual==null )
-      throw new IllegalArgumentException("Missing vactual!");
-    if (vactual.length() != predict.anyVec().length())
-      throw new IllegalArgumentException("Both arguments must have the same length!");
-    if (!vactual.isInt())
-      throw new IllegalArgumentException("Actual column must be integer class labels!");
+  public HitRatio(Vec actuals, Frame predictions) {
+    throw water.H2O.unimpl();
   }
 
-//  @Override
-  public void execImpl() {
-    init();
-    Vec va = null;
-    try {
-      va = vactual.toEnum(); // always returns TransfVec
-      actual_domain = va.domain();
-      if (max_k > predict.numCols()-1) {
-        Log.warn("Reducing Hitratio Top-K value to maximum value allowed: " + String.format("%,d", predict.numCols() - 1));
-        max_k = predict.numCols() - 1;
-      }
-      final Frame actual_predict = new Frame(predict.names().clone(), predict.vecs().clone());
-      actual_predict.replace(0, va); // place actual labels in first column
-      hit_ratios = new HitRatioTask(max_k, seed).doAll(actual_predict).hit_ratios();
-    } finally {       // Delete adaptation vectors
-      if (va!=null) DKV.remove(va._key);
-    }
-  }
 
-  //@Override private boolean toHTML( StringBuilder sb ) {
-  //  if (hit_ratios==null) return false;
-  //  sb.append("<div>");
-  //  DocGen.HTML.section(sb, "Hit Ratio for Multi-Class Classification");
-  //  DocGen.HTML.paragraph(sb, "(Frequency of actual class label to be among the top-K predicted class labels)");
-  //
-  //  DocGen.HTML.arrayHead(sb);
-  //  sb.append("<th>K</th>");
-  //  sb.append("<th>Hit Ratio</th>");
-  //  for (int k = 1; k<=max_k; ++k) sb.append("<tr><td>" + k + "</td><td>" + String.format("%.3f", hit_ratios[k-1]*100.) + "%</td></tr>");
-  //  DocGen.HTML.arrayTail(sb);
-  //  return true;
-  //}
+////  @Override
+//  private void init() throws IllegalArgumentException {
+//    // Input handling
+//    if( actual==null || predict==null )
+//      throw new IllegalArgumentException("Missing actual or predict!");
+//    if( vactual==null )
+//      throw new IllegalArgumentException("Missing vactual!");
+//    if (vactual.length() != predict.anyVec().length())
+//      throw new IllegalArgumentException("Both arguments must have the same length!");
+//    if (!vactual.isInt())
+//      throw new IllegalArgumentException("Actual column must be integer class labels!");
+//  }
+//
+////  @Override
+//  public void execImpl() {
+//    init();
+//    Vec va = null;
+//    try {
+//      va = vactual.toEnum(); // always returns TransfVec
+//      actual_domain = va.domain();
+//      if (max_k > predict.numCols()-1) {
+//        Log.warn("Reducing Hitratio Top-K value to maximum value allowed: " + String.format("%,d", predict.numCols() - 1));
+//        max_k = predict.numCols() - 1;
+//      }
+//      final Frame actual_predict = new Frame(predict.names().clone(), predict.vecs().clone());
+//      actual_predict.replace(0, va); // place actual labels in first column
+//      hit_ratios = new HitRatioTask(max_k, seed).doAll(actual_predict).hit_ratios();
+//    } finally {       // Delete adaptation vectors
+//      if (va!=null) DKV.remove(va._key);
+//    }
+//  }
 
   public void toASCII( StringBuilder sb ) {
     if (hit_ratios==null) return;
