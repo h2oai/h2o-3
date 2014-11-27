@@ -1,6 +1,7 @@
 package hex.glm;
 
-import hex.glm.Gram.Cholesky;
+import hex.gram.Gram;
+import hex.gram.Gram.Cholesky;
 import java.util.Arrays;
 import jsr166y.CountedCompleter;
 import water.H2O;

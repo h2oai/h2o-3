@@ -5,9 +5,8 @@ import hex.FrameTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-
+import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
-
 import hex.glm.GLMValidation.GLMXValidation;
 import water.H2O.H2OCountedCompleter;
 import water.*;
