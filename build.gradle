@@ -176,3 +176,9 @@ task (miniBuild, dependsOn: [':h2o-assembly:build']) {
     group = 'Quick'
     description = "Build only Java projects"
 }
+
+task (miniTest, dependsOn: [':h2o-core:test', ':h2o-algos:test']) {
+    group = 'Quick'
+    description = "Build only Java projects"
+}
+
