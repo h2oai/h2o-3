@@ -1,4 +1,4 @@
-package hex.glm;
+package hex.gram;
 
 
 import hex.FrameTask;
@@ -11,7 +11,6 @@ import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 public final class Gram extends Iced<Gram> {
   final boolean _hasIntercept;

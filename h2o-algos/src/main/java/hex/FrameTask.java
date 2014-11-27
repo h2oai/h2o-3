@@ -302,7 +302,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       _useAllFactorLevels = useAllFactorLevels;
       _catLvls = null;
       final Vec[] tvecs = train.vecs();
-      final Vec[] vvecs = valid.vecs();
+      final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
       // Count categorical-vs-numerical
       final int n = tvecs.length-_responses;
@@ -333,7 +333,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
       String[] names = new String[train.numCols()];
       Vec[] tvecs2 = new Vec[train.numCols()];
-      Vec[] vvecs2 = new Vec[train.numCols()];
+      Vec[] vvecs2 = (valid == null) ? null : new Vec[train.numCols()];
 
       // Compute the cardinality of each cat
       _catOffsets = MemoryManager.malloc4(ncats+1);
@@ -341,7 +341,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       int len = _catOffsets[0] = 0;
       for(int i = 0; i < ncats; ++i) {
         names[i]  =   train._names[cats[i]];
-        vvecs2         [i] = vvecs[cats[i]];
+        if (valid != null) vvecs2         [i] = vvecs[cats[i]];
         Vec v = (tvecs2[i] = tvecs[cats[i]]);
         _catMissing[i] = v.naCnt() > 0 ? 1 : 0; //needed for test time
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (v.naCnt()>0?1:0)); //missing values turn into a new factor level
@@ -370,7 +370,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
       for(int i = 0; i < nnums; ++i){
         names[ncats+i]  =   train._names[nums[i]];
-        vvecs2         [ncats+i] = vvecs[nums[i]];
+        if (valid != null) vvecs2         [ncats+i] = vvecs[nums[i]];
         Vec v = (tvecs2[ncats+i] = tvecs[nums[i]]);
         switch(predictor_transform){
           case STANDARDIZE:
@@ -418,7 +418,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         for(int i = 0; i < _responses; ++i){
           names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
-          vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
+          if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
           Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
           switch(response_transform){
             case STANDARDIZE:
@@ -444,7 +444,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
 
       train.restructure(names,tvecs2);
-      valid.restructure(names,vvecs2);
+      if (valid != null) valid.restructure(names,vvecs2);
       _adaptedFrame = train;
     }
 
