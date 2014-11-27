@@ -1120,26 +1120,26 @@ setMethod("as.factor", "H2OFrame",      function(x) .h2o.unop("as.factor", x))
 # Model Plot/Summary Operations: PCA model summary and screeplot
 #-----------------------------------------------------------------------------------------------------------------------
 
-#summary.H2OPCAModel <- function(object, ...) {
-#  # TODO: Save propVar and cumVar from the Java output instead of computing here
-#  myVar = object@model$sdev^2
-#  myProp = myVar/sum(myVar)
-#  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
-#  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
-#  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
-#
-#  cat("Importance of components:\n")
-#  print(result)
-#}
-#
-#screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
-#  if(type == "barplot")
-#    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else if(type == "lines")
-#    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else
-#    stop("type must be either 'barplot' or 'lines'")
-#}
+summary.H2OPCAModel <- function(object, ...) {
+  # TODO: Save propVar and cumVar from the Java output instead of computing here
+  myVar = object@model$sdev^2
+  myProp = myVar/sum(myVar)
+  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
+  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
+  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
+
+  cat("Importance of components:\n")
+  print(result)
+}
+
+screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
+  if(type == "barplot")
+    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else if(type == "lines")
+    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else
+    stop("type must be either 'barplot' or 'lines'")
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
