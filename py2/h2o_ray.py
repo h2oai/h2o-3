@@ -138,7 +138,7 @@ def parse(self, key, hex_key=None,
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     params_setup = {'srcs': srcs}
-    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", timeout=timeoutSecs, params=params_setup)
+    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
@@ -186,11 +186,7 @@ def parse(self, key, hex_key=None,
     print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
-    if 1==1:
-        parse_result = self.do_json_request( jsonRequest="Parse.json", params=parse_params, timeout=timeoutSecs)
-    else:
-        # this was an experiment
-        parse_result = self.do_json_request(jsonRequest="Parse.json", timeout=timeoutSecs, cmd='post', postData=parse_params)
+    parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['name']

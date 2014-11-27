@@ -95,7 +95,11 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCeil());
     putPrefix(new ASTFlr ());
     putPrefix(new ASTLog ());
+    putPrefix(new ASTLog10 ());
+    putPrefix(new ASTLog2 ());
+    putPrefix(new ASTLog1p ());
     putPrefix(new ASTExp ());
+    putPrefix(new ASTExpm1 ());
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
@@ -291,13 +295,17 @@ class ASTCosh extends ASTUniPrefixOp { @Override String opStr(){ return "cosh"; 
 class ASTSinh extends ASTUniPrefixOp { @Override String opStr(){ return "sinh"; } @Override ASTOp make() {return new ASTSinh ();} @Override double op(double d) { return Math.sinh(d);}}
 class ASTTanh extends ASTUniPrefixOp { @Override String opStr(){ return "tanh"; } @Override ASTOp make() {return new ASTTanh ();} @Override double op(double d) { return Math.tanh(d);}}
 class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  } @Override ASTOp make() {return new ASTAbs ();} @Override double op(double d) { return Math.abs(d);}}
-class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sgn" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
+class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sign" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
 class ASTTrun extends ASTUniPrefixOp { @Override String opStr(){ return "trunc"; } @Override ASTOp make() {return new ASTTrun();} @Override double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
 class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceiling"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
 class ASTFlr  extends ASTUniPrefixOp { @Override String opStr(){ return "floor";} @Override ASTOp make() {return new ASTFlr ();} @Override double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniPrefixOp { @Override String opStr(){ return "log";  } @Override ASTOp make() {return new ASTLog ();} @Override double op(double d) { return Math.log(d);}}
+class ASTLog10  extends ASTUniPrefixOp { @Override String opStr(){ return "log10";  } @Override ASTOp make() {return new ASTLog10 ();} @Override double op(double d) { return Math.log10(d);}}
+class ASTLog2  extends ASTUniPrefixOp { @Override String opStr(){ return "log2";  } @Override ASTOp make() {return new ASTLog2 ();} @Override double op(double d) { return Math.log(d)/Math.log(2);}}
+class ASTLog1p  extends ASTUniPrefixOp { @Override String opStr(){ return "log1p";  } @Override ASTOp make() {return new ASTLog1p ();} @Override double op(double d) { return Math.log1p(d);}}
 class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  } @Override ASTOp make() {return new ASTExp ();} @Override double op(double d) { return Math.exp(d);}}
+class ASTExpm1  extends ASTUniPrefixOp { @Override String opStr(){ return "expm1";  } @Override ASTOp make() {return new ASTExpm1 ();} @Override double op(double d) { return Math.expm1(d);}}
 
 class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";} @Override ASTOp make() { return new ASTIsNA();} @Override double op(double d) { return Double.isNaN(d)?1:0;}
   @Override void apply(Env env) {

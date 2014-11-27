@@ -105,10 +105,12 @@ class Basic(unittest.TestCase):
                 resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', '#100')))
                 resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(1, 100)))
                 # this should fail rapids because of reverse msb/lsb
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#100', '#1')))
+                # illegal, detected
+                # resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#100', '#1')))
                 resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-2', '#-1')))
                 resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(-2, -1)))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-1', '#-2')))
+                # illegal, detected
+                # resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-1', '#-2')))
                 # take advantage of number to string conversion
                 resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', rowCount-10)))
                 resultExec, result = xAssignE(result_key, xFrame(data_key, col=xColon('#1', colCount-1, )))

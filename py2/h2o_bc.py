@@ -517,8 +517,8 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # if "(unknown)" starts appearing in version..go to h2o1 h2o_bc.py/h2o_fc.py/h2o_methods.py and copy allowing.
     expectedVersion = cloudVersion[0]
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
-    if not expectedVersion.startswith('0'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % expectedVersion)
+# local builds have (unknown)    if not expectedVersion.startswith('0'):
+# local builds have (unknown)        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % expectedVersion)
 
     for i, v in enumerate(cloudVersion):
         if v != expectedVersion:

@@ -695,10 +695,10 @@ public class Env extends Iced {
     if (res == null && search_global) res = _global.valueOf(name);
 
     // Still didn't find it? Start looking up the parent scopes.
-    if (res == null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
+    if (res == null && _parent!=null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
+//    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
     return res;
   }
 

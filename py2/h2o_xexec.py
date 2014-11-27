@@ -1,7 +1,7 @@
 
 import h2o_exec as h2e
 import re
-# from h2o_xexec import xFcn, xSeq, xC, xCbind, xColon, xAssign, xAssignE, xItem, xExec, xFrame, xVector
+# from h2o_xexec import xFcn, xSeq, xC, xCbind, xColon, xAssign, xAssignE, xItem, xExec, xFrame, xVector, xCut
 
 # maybe don't need these
 # from h2o_xexec import xUnary, xBinary
@@ -13,7 +13,7 @@ def xItem(item):
     # xItem can't be used for lhs
     # if list or tuple, exception
     if item is None:
-        raise Exception("h2o_xexec xItem is None %s" % item)
+        raise Exception("h2o_xexec xItem is 'None': %s" % item)
     elif isinstance(item, (list, tuple, dict)):
         raise Exception("h2o_xexec xItem doesn't take lists, tuples (or dicts) %s" % item)
 
@@ -137,7 +137,6 @@ xFcnOp1Set = Set ([
 'rename',
 'unique',
 'xorsum',
-'cut',
 'ls',
 ])
 
@@ -145,9 +144,7 @@ xFcnOp2Set = Set ([
 ])
 
 xFcnOp3Set = Set ([
-'var',
-'table',
-'reduce',
+'cut',
 'ddply',
 'round',
 'signif',
@@ -161,9 +158,10 @@ xFcnOp3Set = Set ([
 'seq',
 'seq_len',
 'rep_len',
+'reduce',
+'table',
+'var',
 ])
-        
-
 
 #********************************************************************************
 # operands is a list of items or an item. Each item can be number, string, list or tuple
@@ -223,6 +221,7 @@ def legalFunction(function):
     if function in xFcnOpBinSet: return 2
     else: return 0
 
+
 # function is a string. operands is a list of items
 def xFcn(function='sum', *operands):
     # no checking for correct number of params
@@ -251,15 +250,6 @@ def xSeq(*operands):
     operandString, operandList = unpackOperands(operands, joinSep=";", parent='xSeq')
     return "{%s}" % operandString
 
-# operands is a list of items
-# 'c' can only have one operand? And it has to be a string or number
-# have this because it's so common as a function
-def xC(operand):
-    return xFcn("c", operand)
-
-# FIX! key references need $ prefix
-def xCbind(*operands):
-    return xFcn("cbind", *operands)
 
 # a/b can be number or string
 def xColon(a='#0', b='#0'):
@@ -348,3 +338,102 @@ def xExec(execExpr, timeoutSecs=30, justPrint=False):
 def xAssignE(lhs='xResult', rhs='xTemp', timeoutSecs=30, justPrint=False):
     execExpr = xAssign(lhs, rhs)
     return xExec(execExpr, timeoutSecs, justPrint)
+
+# args should be individual strings, not lists
+# FIX! take any number of params
+def xDef(function='sums', params='x', exprs='(sum ([ $r1 "null" #0) $TRUE )' ):
+    # might have to add $ things on params
+    # how do you assign to function output?
+
+    # params and exprs can be lists or string
+    # expand lists/tupcles
+    print "h2o_exec xDef params: %s" % params
+    paramStr, paramList = unpackOperands(params, joinSep=' ', parent='xDef_params')
+    if len(paramStr)==0:
+        raise Exception("h2o_exec xDef, no exprs: %s" % exprs)
+
+    print "h2o_exec xDef exprs: %s" % exprs
+    exprStr, exprList = unpackOperands(exprs, joinSep=';;', parent='xDef_exprs')
+    if len(exprStr)==0:
+        raise Exception("h2o_exec xDef, no exprs: %s" % exprs)
+
+    # legal function name (I overconstrain compared to what Rapids allows)
+    if not re.match(r"[a-zA-Z0-9]+$", function):
+        raise Exception("h2o_exec xDef, bad name for function %s: %s" % function)
+
+    # could check that it's a legal key name
+    # FIX! what about checking rhs references have $ for keys.
+    return "(def %s {%s} %s;;;)" % (function, paramStr, exprStr)
+
+# xAssign, with a xExec wrapper
+def xDefE(function='sums', params='x', exprs='(sum ([ $r1 "null" #0) $TRUE )', 
+        timeoutSecs=10 ):
+    execExpr = xAssign(lhs, rhs)
+    return xExec(execExpr, timeoutSecs)
+
+# operands is a list of items
+# 'c' can only have one operand? And it has to be a string or number
+# have this because it's so common as a function
+def xC(operand):
+    return xFcn("c", operand)
+
+# FIX! key references need $ prefix
+def xCbind(*operands):
+    return xFcn("cbind", *operands)
+
+def xTranslateTextValue(text="F"):
+    # translate any common text abbreviations to the required long form
+    # T and F can be translated? we shouldn't get key names when this is used?
+    translate = {
+        'T': '$TRUE',
+        'F': '$FALSE',
+        'TRUE': '$TRUE',
+        'FALSE': '$FALSE',
+        'True': '$TRUE',
+        'False': '$FALSE',
+        'true': '$TRUE',
+        'false': '$FALSE',
+        'NULL': '"NULL"',
+        'null': '"NULL"',
+    }
+
+    if text is None:
+        text = '"NULL"'
+    elif text in translate:
+        text = translate[text]
+    else:
+        pass
+
+    return text
+        
+
+def xCut(vector=None, breaks='#2', labels='$FALSE', include_lowest='$FALSE', right='$FALSE', dig_lab='#0'):
+    vector = xItem(vector)
+    breaks = xItem(breaks) # can be a xSeq or a number?
+    labels = xTranslateTextValue(labels) # string? "(a,b]" or FALSE
+    include_lowest = xTranslateTextValue(include_lowest) # boolean
+    right = xTranslateTextValue(right) # boolean
+    dig_lab = xItem(dig_lab) # integer
+    return xFcn("cut", vector, breaks, labels, include_lowest, right, dig_lab)
+
+# cut(a, breaks = c(min(a), mean(a), max(a)), labels = c("a", "b"))
+# (cut $a {4.3;5.84333333333333;7.9} {"a";"b"} $FALSE $TRUE #3))
+
+# arg1: single column vector
+# arg2: the cuts to make in the vector
+# arg3: labels for the cuts (always 1 fewer than length of cuts)
+# arg4: include lowest? (default FALSE)
+# arg5: right? (default TRUE)
+# arg6: dig.lab (default 3)
+
+#        x: a numeric vector which is to be converted to a factor by cutting.
+#   breaks: either a numeric vector of two or more unique cut points or a single number 
+#           (greater than or equal to 2) giving the number of intervals into which 'x' is to be cut.
+#   labels: labels for the levels of the resulting category.  By default, labels are constructed 
+#           using '"(a,b]"' interval notation.  If 'labels = FALSE', simple integer codes are returned 
+#           instead of a factor.
+# include.lowest: logical, indicating if an 'x[i]' equal to the lowest (or highest, for 'right = FALSE') 
+#           'breaks' value should be included.
+#    right: logical, indicating if the intervals should be closed on the right (and open on the left) or vice versa.
+#  dig.lab: integer which is used when labels are not given.  It determines the number of digits 
+#           used in formatting the break

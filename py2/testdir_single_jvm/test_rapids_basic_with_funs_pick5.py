@@ -277,14 +277,24 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_rapids_basic_with_funs(self):
+    def test_rapids_basic_with_funs_pick5(self):
         bucket = 'smalldata'
         csvPathname = 'iris/iris_wheader.csv'
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []
-        for execExpr1 in initList:
+        while initList:
+            if len(initList) >= 5:
+                pick5 = [initList.pop(0) for i in range(5)]
+            else:
+                pick5 = initList
+                global initList
+                initList = []
+            pick6 = ['(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})'] + pick5
+            execExpr1 = ";;".join(pick6)
+            # always do a v assign first, as they may reference $v
+
             funs = '[(def anon {x}  (%s);;;)]' % execExpr1
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=5)
             execExpr2 = '(apply $r1 #2 $anon)'

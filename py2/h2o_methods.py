@@ -35,8 +35,8 @@ def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     # verboseprint(a)
 
     version    = a['version']
-    if not version.startswith('0'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
+# local builds have (unknown)    if not version.startswith('0'):
+# local builds have (unknown)        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
 
     consensus = a['consensus']
     locked = a['locked']

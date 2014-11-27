@@ -146,9 +146,9 @@ task setPackageFiles << {
     src_info.write("https://github.com/0xdata/h2o")
 }
 
-task buildPackageDocumentation(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
-}
+//task buildPackageDocumentation(type: Exec) {
+//    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
+//}
 
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"

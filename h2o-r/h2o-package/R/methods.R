@@ -120,7 +120,7 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, 
 #'
 #' Make an HTTP request to the H2O backend.
 #'
-#' Useful for sending a REST command to H2O that is not currently supported.
+#' Useful for sending a REST command to H2O that is not currently supported by R.
 #'
 #' @param client An \code{H2OClient} object containing the IP address and port number of the H2O server.
 #' @param page An endpoint not supplied by the h2o package. See constants.R.
@@ -489,13 +489,6 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
 #-----------------------------------------------------------------------------------------------------------------------
-## changed from UseMethod to setMethod
-# nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
-# ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
-# colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
-# names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
-# length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
-# dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
 #' The Number of Rows/Columns of an H2O Dataset
 #'
@@ -634,7 +627,6 @@ NULL
 setMethod("nrow", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  ID <- .eval.assign(x, ID, parent.frame(), environment())
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
@@ -699,6 +691,7 @@ setMethod("dim", "H2OFrame", function(x) {
 #'
 #' @rdname head.h2o
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
+  m.call <- match.call(call = sys.call(sys.parent(1L)))
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -708,13 +701,10 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
     name <- .getFrameName(x@children[[1]])
     if (!is.null(name)) ID <- name
   }
-  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
+  ID  <- if (is.null(ID)) as.list(m.call)$x else ID
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
-  ID <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
+  ID <- as.character(ID)
   assign(ID, x, parent.frame())
   head(get(ID, parent.frame()))
 })
@@ -722,6 +712,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 #'
 #'  @rdname head.h2o
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
+  m.call <- match.call(call = sys.call(sys.parent(1L)))
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -731,11 +722,11 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     name <- .getFrameName(x@children[[1]])
     if (!is.null(name)) ID <- name
   }
-  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
+  ID  <- if (is.null(ID)) as.list(m.call)$x else ID
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, parent.frame())
+  ID <- as.character(ID)
+  assign(ID, x, parent.frame(2))
   tail(get(ID, parent.frame()))
 })
 
@@ -883,7 +874,7 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
+#  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
   ast.mean
 })

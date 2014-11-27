@@ -222,8 +222,12 @@ class ASTSpan extends AST {
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
-  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
-  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;}
+  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
+    if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+  }
+  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
+    if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
+  }
   ASTSpan parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
