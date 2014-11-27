@@ -692,6 +692,7 @@ setMethod("dim", "H2OFrame", function(x) {
 #' @rdname head.h2o
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -702,17 +703,18 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
     if (!is.null(name)) ID <- name
   }
   ID  <- if (is.null(ID)) as.list(m.call)$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- as.character(ID)
-  assign(ID, x, parent.frame())
-  head(get(ID, parent.frame()))
+  assign(ID, x, parent.frame(2))
+  head(get(ID, parent.frame(2)))
 })
 
 #'
 #'  @rdname head.h2o
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -723,11 +725,11 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     if (!is.null(name)) ID <- name
   }
   ID  <- if (is.null(ID)) as.list(m.call)$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- as.character(ID)
   assign(ID, x, parent.frame(2))
-  tail(get(ID, parent.frame()))
+  tail(get(ID, parent.frame(2)))
 })
 
 #setMethod("levels", "H2OParsedData", function(x) {
