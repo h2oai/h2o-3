@@ -2,6 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 from h2o_test import verboseprint, dump_json
+from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
@@ -66,7 +67,6 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xexec2 import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
             # Xbase.debugOnly = True
 
             REPEAT = 1
@@ -101,7 +101,6 @@ class Basic(unittest.TestCase):
 
                 # can't have sequence of sequences?
                 # make sure key is created with c()
-                # xAssignE is xExec(xAssign(..)..)
                 f = Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) ))
                 result = Assign('s1', f).do()
 

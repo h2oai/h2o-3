@@ -1,8 +1,9 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_exec as h2e, h2o_import as h2i
+import h2o, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
 import h2o_print as h2p
 from h2o_test import dump_json, verboseprint
+import re
 
 DO_ROLLUP = True
 exprList = [
@@ -243,8 +244,8 @@ class Basic(unittest.TestCase):
 
         keys = []
         for execExpr in exprList:
-            r = re.match ('(= ![a-zA-Z0-9_]+ ', execExpr
-            resultKey = r.group(0)[4:][:-1]
+            r = re.match ('\(= \!([a-zA-Z0-9_]+) ', execExpr)
+            resultKey = r.group(1)
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=resultKey, timeoutSecs=4)
             if DO_ROLLUP:
                 h2o_cmd.runInspect(key=resultKey)
@@ -253,7 +254,6 @@ class Basic(unittest.TestCase):
                 keys.append(execExpr)
             else:
                 h2p.yellow_print("\nNo key created?\n", dump_json(execResult))
-
 
         print "\nExpressions that created keys. Shouldn't all of these expressions create keys"
 

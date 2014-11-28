@@ -38,7 +38,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
     # "funs": null, 
     # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))", 
 
-    if 'cols' in resultExec and resultExec['cols']: # not null
+    if resultExec['num_cols']!=0 or resultExec['num_rows']!=0:
         if 'funstr' in resultExec and resultExec['funstr']: # not null
             raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
         else:
@@ -46,13 +46,17 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             # if test said to look at a resultKey, it's should be in h2o k/v store
             # inspect a result key?
             # Should we get the key name from the exec return?
-            if resultKey is not None:
+            if 1==0 and resultKey is None:
+                resultKey = resultExec['key']['name']
                 kwargs = {'ast': resultKey} 
                 resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
                 print "exec key result:", dump_json(resultExec)
 
+
             # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
-            result = resultExec['cols'][0]['min']
+            inspect = h2o_cmd.runInspect(key=resultKey)
+            print "inspect key of result:", dump_json(inspect)
+            result = inspect['frames'][0]['columns'][0]['mins'][0]
         
     else: 
         if 'funstr' in resultExec and resultExec['funstr']: # not null

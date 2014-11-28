@@ -24,7 +24,7 @@ class Basic(unittest.TestCase):
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []
-        for i in range(100):
+        for i in range(2):
             if i==0:
                 # should never see v as a key from the function?
                 execExpr1 = '(= !v1 (c {#0;#0}))'
@@ -41,9 +41,10 @@ class Basic(unittest.TestCase):
                 execResult, result = h2e.exec_expr(h2o.nodes[0], funs, resultKey=None, timeoutSecs=5, doFuns=True)
                 # execExpr2 = '(= !v2 (anon ([ $v2 "null" #0)))'
                 # execExpr2 = '(= !v2 (anon $v2))'
-                execExpr2 = '(= !v2 (anon $v2))'
-                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey='v2', timeoutSecs=15)
+                execExpr2 = '(= !v1 (anon $v1))'
+                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey=None, timeoutSecs=5)
 
+            print "result:", result
 
             # see if the execExpr had a lhs assign. If so, it better be in the storeview
             r = re.search('![a-zA-Z0-9]+', execExpr2)

@@ -2,8 +2,7 @@ import unittest, random, sys, time, re, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_glm, h2o_util
 import h2o_print as h2p, h2o_gbm
-
-from h2o_xexec2 import Fcn, Seq, Colon, Col, Cbind, Assign, Item, Frame
+from h2o_xexec import Fcn, Seq, Colon, Col, Cbind, Assign, Item, Frame
 
 # FIX! This has some abbreviated stuff from h2o...look back there for completeness, eventually
 DO_QUANTILE = False
