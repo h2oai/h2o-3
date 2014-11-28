@@ -692,6 +692,7 @@ setMethod("dim", "H2OFrame", function(x) {
 #' @rdname head.h2o
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -702,17 +703,18 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
     if (!is.null(name)) ID <- name
   }
   ID  <- if (is.null(ID)) as.list(m.call)$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- as.character(ID)
-  assign(ID, x, parent.frame())
-  head(get(ID, parent.frame()))
+  assign(ID, x, parent.frame(2))
+  head(get(ID, parent.frame(2)))
 })
 
 #'
 #'  @rdname head.h2o
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -723,11 +725,11 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     if (!is.null(name)) ID <- name
   }
   ID  <- if (is.null(ID)) as.list(m.call)$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- as.character(ID)
   assign(ID, x, parent.frame(2))
-  tail(get(ID, parent.frame()))
+  tail(get(ID, parent.frame(2)))
 })
 
 #setMethod("levels", "H2OParsedData", function(x) {
@@ -1118,26 +1120,26 @@ setMethod("as.factor", "H2OFrame",      function(x) .h2o.unop("as.factor", x))
 # Model Plot/Summary Operations: PCA model summary and screeplot
 #-----------------------------------------------------------------------------------------------------------------------
 
-#summary.H2OPCAModel <- function(object, ...) {
-#  # TODO: Save propVar and cumVar from the Java output instead of computing here
-#  myVar = object@model$sdev^2
-#  myProp = myVar/sum(myVar)
-#  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
-#  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
-#  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
-#
-#  cat("Importance of components:\n")
-#  print(result)
-#}
-#
-#screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
-#  if(type == "barplot")
-#    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else if(type == "lines")
-#    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else
-#    stop("type must be either 'barplot' or 'lines'")
-#}
+summary.H2OPCAModel <- function(object, ...) {
+  # TODO: Save propVar and cumVar from the Java output instead of computing here
+  myVar = object@model$sdev^2
+  myProp = myVar/sum(myVar)
+  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
+  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
+  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
+
+  cat("Importance of components:\n")
+  print(result)
+}
+
+screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
+  if(type == "barplot")
+    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else if(type == "lines")
+    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else
+    stop("type must be either 'barplot' or 'lines'")
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
