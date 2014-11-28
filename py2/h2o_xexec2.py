@@ -32,7 +32,6 @@ class Xbase(object):
 
     # not everything will "do" correctly
     def do(self, timeoutSecs=30):
-        print "hello"
         # keep these around so we can look at the h2o results?
         self.resultExec = None
         self.result = None
@@ -82,7 +81,7 @@ class Item(Xbase):
 
     def __str__(self):
         item = self.item
-        print "Item:", item
+        # print "Item:", item
         # xItem can't be used for lhs
         # if list or tuple, exception
         if isinstance(item, (list, tuple, dict)):
@@ -395,15 +394,14 @@ class Assign(Xbase):
         super(Assign, self).__init__()
 
         self.lhs = lhs
-        self.rhs = rhs
+        self.rhs = Item(rhs)
         # verify the whole thing can be a rapids string at init time
-        s = str(lhs)
         if re.match('\$', lhs):
             raise Exception("h2o_exec Assign: lhs shouldn't start with '$' %s" % lhs)
         if not re.match('[a-zA-Z0-9_]', lhs):
             raise Exception("h2o_exec Assign: Don't like the chars in your lhs %s" % lhs)
-        print "Assign lhs: %s" % lhs
-        print "Assign rhs: %s" % rhs
+        print "Assign lhs: %s" % self.lhs
+        print "Assign rhs: %s" % self.rhs
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
