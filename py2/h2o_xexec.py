@@ -6,7 +6,6 @@ import re
 
 # maybe don't need these
 # from h2o_xexec import xUnary, xBinary
-from sets import Set
 
 #********************************************************************************
 class Xbase(object):
@@ -19,9 +18,10 @@ class Xbase(object):
         return s
 
     def __init__(self, thing='nothingFromXbase'):
-        self.resultExec = None
+        self.execResult = None
         self.result = None
         self.execExpr = None
+        self.funs = False
         self.thing = thing
 
     def __str__(self):
@@ -33,15 +33,17 @@ class Xbase(object):
     # not everything will "do" correctly
     def do(self, timeoutSecs=30):
         # keep these around so we can look at the h2o results?
-        self.resultExec = None
+        self.execResult = None
         self.result = None
         self.execExpr = str(self)
         if self.debugOnly:
             print "execExpr:", self.execExpr
-            self.resultExec =  {'debugOnly': True}
+            self.execResult =  {'debugOnly': True}
             self.result = 555
         else:
-            self.resultExec, self.result = h2e.exec_expr(execExpr=self.execExpr, timeoutSecs=timeoutSecs)
+            # functions can be multiple in Rapids, need []
+            execExpr = "[%s]" % self.execExpr if self.funs else self.execExpr
+            self.execResult, self.result = h2e.exec_expr(execExpr=execExpr, doFuns=self.funs, timeoutSecs=timeoutSecs)
 
         # don't return the full json...can look that up if necessary
         return self.result
@@ -138,7 +140,11 @@ xFcnXlate = {
 '!':  '_',
 }
 
-xFcnOpBinSet = Set ([
+xFcnUser = set()
+
+xFcnOpBinSet = set([
+'&&',
+'||',
 'not',
 'plus',
 '+',
@@ -174,10 +180,10 @@ xFcnOpBinSet = Set ([
 'N',
 ])
 
-xFcnOp1Set = Set ([
+xFcnOp1Set = set([
 'c',
 '_',
-'is.na',
+'# is.na',
 'is.factor',
 'any.factor',
 'any.na',
@@ -200,25 +206,24 @@ xFcnOp1Set = Set ([
 'acos',
 'asin',
 'atan',
-'cosh',
+# 'cosh',
 'sinh',
 'tanh',
 'min',
 'max',
 'sum',
-'sdev',
+'sd',
 'mean',
 'match',
-'rename',
 'unique',
 'xorsum',
 'ls',
 ])
+# 'rename',
 
-xFcnOp2Set = Set ([
-])
+xFcnOp2Set = set()
 
-xFcnOp3Set = Set ([
+xFcnOp3Set = set([
 'cut',
 'ddply',
 'round',
@@ -243,7 +248,13 @@ xFcnOp3Set = Set ([
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
 # Note this can't unpack a dict
-def unpackOperands(operands):
+def unpackOperands(operands, item=True):
+    def uu(v):
+        if item:
+            operandList.append(Item(v))
+        else:
+            operandList.append(v)
+
     if operands is None:
         raise Exception("unpackOperands no operands: %s" % operands)
     operandList = []
@@ -251,14 +262,14 @@ def unpackOperands(operands):
         for v in operands:
             # can we handle any operand being a list here too? might be compact
             # just one level of extra unpacking
-            if not isinstance(v, (list,tuple)):
-                operandList.append(Item(v))
-            else:
-                for v2 in v:
-                    # collapse it into the one new list
-                    operandList.append(Item(v2))
-    else:
-        operandList.append(Item(operands))
+            if not isinstance(v, (list,tuple)): 
+                uu(v)
+            # collapse it into the one new list
+            else: 
+                for v2 in v: 
+                    uu(v2)
+    else: 
+        uu(operands)
 
     return operandList
 
@@ -282,17 +293,20 @@ class Key(Xbase):
             return "$%s" % key
 
 #********************************************************************************
+
 def legalFunction(function):
     # return required operands
     if function in xFcnOp1Set: return 1
     if function in xFcnOp2Set: return 2
     if function in xFcnOp3Set: return 3
     if function in xFcnOpBinSet: return 2
+    if function in xFcnUser: return 3
     else: return 0
 
 # function is a string. operands is a list of items
 class Fcn(Xbase):
     def __init__(self, function='sum', *operands):
+        super(Fcn, self).__init__()
         operandList = unpackOperands(operands)
         if operandList is None:
             raise Exception("Seq operandList is None %s" % operandList)
@@ -300,16 +314,18 @@ class Fcn(Xbase):
         self.operandList = operandList
 
         # no checking for correct number of params
-        print "xFcn %s has %s operands" % (function, len(operands))
+        print "Fcn %s has %s operands" % (function, len(operands))
         # see if we should translate the function name
         if function in xFcnXlate:
             function = xFcnXlate[function] 
+
         required = legalFunction(function)
         if required==0:
             raise Exception("Fcn legalFunction not found: %s" % function)
 
+        # FIX!
         # only check 1 and 2. not sure of the 3 group. cbind is conditional..need to do that special
-        if len(operandList)!=required and required<3 and function!='cbind':
+        if False and len(operandList)!=required and required<3 and function!='cbind':
             raise Exception("Fcn wrong # of operands: %s %s" % (required, len(operandList)))
 
         self.operandList = operandList
@@ -317,6 +333,8 @@ class Fcn(Xbase):
 
     def __str__(self):
         return "(%s %s)" % (self.function, " ".join(map(str, self.operandList)))
+
+    ast = __str__
 
 
 # operands is a list of items
@@ -353,6 +371,7 @@ class Colon(Xbase):
 
 class Frame(Xbase):
     def __init__(self, frame='xTemp', row=None, col=None):
+        super(Frame, self).__init__()
         if re.match('\$', frame):
             raise Exception("Frame adds '$': frame ref shouldn't start with '$' %s" % frame)
         self.frame = frame
@@ -373,33 +392,39 @@ class Frame(Xbase):
 class Expr(Xbase):
     # can be an Item, Function, Col, Frame
     def __init__(self, expr):
-        # base init for resultExec etc results. Should only need for Assign, Expr, Def ?
+        # base init for execResult etc results. Should only need for Assign, Expr, Def, Frame?
         super(Assign, self).__init__()
 
         self.expr = Item(expr)
+        self.funs = False
         # verify the whole thing can be a rapids string at init time
         print "Expr: %s" % expr
 
     def __str__(self):
         return str(self.expr)
 
+    __repr__ = __str__
+    ast = __str__
+
 #       if hasattr(self.ps.cmdline, '__call__'):
 #                pcmdline = self.ps.cmdline()
 
-    __repr__ = __str__
 
 class Assign(Xbase):
     def __init__(self, lhs='xTemp', rhs='xTemp'):
-        # base init for resultExec etc results. Should only need for Assign, Expr, Def ?
+        # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         super(Assign, self).__init__()
 
         self.lhs = lhs
         self.rhs = Item(rhs)
+        self.funs = False
         # verify the whole thing can be a rapids string at init time
         if re.match('\$', lhs):
-            raise Exception("h2o_exec Assign: lhs shouldn't start with '$' %s" % lhs)
+            raise Exception("Assign: lhs shouldn't start with '$' %s" % lhs)
+        if re.match('c$', lhs):
+            raise Exception("Assign: lhs can't be 'c'" % lhs)
         if not re.match('[a-zA-Z0-9_]', lhs):
-            raise Exception("h2o_exec Assign: Don't like the chars in your lhs %s" % lhs)
+            raise Exception("Assign: Don't like the chars in your lhs %s" % lhs)
         print "Assign lhs: %s" % self.lhs
         print "Assign rhs: %s" % self.rhs
 
@@ -409,33 +434,46 @@ class Assign(Xbase):
     def __str__(self):
         return "(= !%s %s)" % (self.lhs, self.rhs)
 
+    ast = __str__
+
 
 # args should be individual strings, not lists
 # FIX! take any number of params
 class Def(Xbase):
-    def __init__(self, function='sums', params='x', exprs='(sum ([ $r1 "null" #0) $TRUE )' ):
+    def __init__(self, function, params, *exprs):
+        super(Def, self).__init__()
         # might have to add $ things on params
         # how do you assign to function output?
 
         # params and exprs can be lists or string
         # expand lists/tupcles
-        print "Def params: %s" % params
-        paramList = unpackOperands(params)
+        paramList = unpackOperands(params, item=False)
         if len(paramList)==0:
             raise Exception("Def, no exprs: %s" % exprs)
+        print "Def params: %s" % paramList
 
-        print "Def exprs: %s" % exprs
+        # check that all the parms are legal strings (variable names
+        for p in paramList:
+            if not re.match(r"[a-zA-Z0-9]+$", str(p)):
+                raise Exception("Def, bad name for parameter: %s" % p)
+        
         exprList = unpackOperands(exprs)
         if len(exprList)==0:
             raise Exception("Def, no exprs: %s" % exprs)
+        print "Def exprs: %s" % exprList
 
         # legal function name (I overconstrain compared to what Rapids allows)
         if not re.match(r"[a-zA-Z0-9]+$", function):
-            raise Exception("Def, bad name for function %s: %s" % function)
+            raise Exception("Def, bad name for function: %s" % function)
 
+        self.funs = True
         self.function = function
         self.paramList = paramList
         self.exprList = exprList
+
+        # add to the list of legal user functions
+        xFcnUser.add(function)
+        print "xFcnUser", xFcnUser
 
     def __str__(self):
         # could check that it's a legal key name
@@ -445,6 +483,7 @@ class Def(Xbase):
         return "(def %s {%s} %s;;;)" % (self.function, paramStr, exprStr)
 
     __repr__ = __str__
+    ast = __str__
 
 # operands is a list of items
 # 'c' can only have one operand? And it has to be a string or number

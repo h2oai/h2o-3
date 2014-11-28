@@ -81,7 +81,7 @@ class Basic(unittest.TestCase):
                 # first try as object, then method
                 a = Assign('s2', Fcn('c', Seq(range(5)) ))
                 result = a.do()
-                print dump_json(a.resultExec)
+                print dump_json(a.execResult)
                 print dump_json(a.result)
 
                 # just combine
@@ -120,11 +120,11 @@ class Basic(unittest.TestCase):
                 result = Assign(result_key, Frame(data_key, row=Colon(1, 100))).do()
                 # this should fail rapids because of reverse msb/lsb
                 # illegal, detected
-                # resultExec, result = Assign(result_key, Frame(data_key, row=Colon('#100', '#1')))
+                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#100', '#1')))
                 result = Assign(result_key, Frame(data_key, row=Colon('#-2', '#-1'))).do()
                 result = Assign(result_key, Frame(data_key, row=Colon(-2, -1))).do()
                 # illegal, detected
-                # resultExec, result = Assign(result_key, Frame(data_key, row=Colon('#-1', '#-2')))
+                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
                 result = Assign(result_key, Frame(data_key, row=Colon('#1', rowCount-10))).do()
                 result = Assign(result_key, Frame(data_key, col=Colon('#1', colCount-1, ))).do()

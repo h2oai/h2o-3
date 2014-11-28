@@ -47,8 +47,8 @@ class Basic(unittest.TestCase):
             xList = []
             eList = []
             fList = []
-            # for trial2 in range(0, 14):
-            for trial2 in range(0, 10):
+            for trial2 in range(0, 14):
+            # for trial2 in range(0, 10):
             # fails. Post size?
             # for trial2 in range(0, 16):
                 col = 2 ** trial2
