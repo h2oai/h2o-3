@@ -334,37 +334,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public static int[][] getDomainMapping(String colName, String[] modelDom, String[] colDom, boolean logNonExactMapping) {
     throw H2O.unimpl();
-    int emap[] = new int[modelDom.length];
-    boolean bmap[] = new boolean[modelDom.length];
-    HashMap<String,Integer> md = new HashMap<>((int) ((colDom.length/0.75f)+1));
-    for( int i = 0; i < colDom.length; i++) md.put(colDom[i], i);
-    for( int i = 0; i < modelDom.length; i++) {
-      Integer I = md.get(modelDom[i]);
-      if (I == null && logNonExactMapping)
-        Log.warn("Domain mapping: target domain contains the factor '"+modelDom[i]+"' which DOES NOT appear in input domain " + (colName!=null?"(column: " + colName+")":""));
-      if (I!=null) {
-        emap[i] = I;
-        bmap[i] = true;
-      }
-    }
-    if (logNonExactMapping) { // Inform about additional values in column domain which do not appear in model domain
-      for (int i=0; i<colDom.length; i++) {
-        boolean found = false;
-        for (int anEmap : emap)
-          if (anEmap == i) {
-            found = true;
-            break;
-          }
-        if (!found)
-          Log.warn("Domain mapping: target domain DOES NOT contain the factor '"+colDom[i]+"' which appears in input domain "+ (colName!=null?"(column: " + colName+")":""));
-      }
-    }
-
-    // produce packed values
-    int[][] res = water.fvec.TransfVec.pack(emap, bmap);
-    // Sort values in numeric order to support binary search in TransfVec
-    water.fvec.TransfVec.sortWith(res[0], res[1]);
-    return res;
+    //int emap[] = new int[modelDom.length];
+    //boolean bmap[] = new boolean[modelDom.length];
+    //HashMap<String,Integer> md = new HashMap<>((int) ((colDom.length/0.75f)+1));
+    //for( int i = 0; i < colDom.length; i++) md.put(colDom[i], i);
+    //for( int i = 0; i < modelDom.length; i++) {
+    //  Integer I = md.get(modelDom[i]);
+    //  if (I == null && logNonExactMapping)
+    //    Log.warn("Domain mapping: target domain contains the factor '"+modelDom[i]+"' which DOES NOT appear in input domain " + (colName!=null?"(column: " + colName+")":""));
+    //  if (I!=null) {
+    //    emap[i] = I;
+    //    bmap[i] = true;
+    //  }
+    //}
+    //if (logNonExactMapping) { // Inform about additional values in column domain which do not appear in model domain
+    //  for (int i=0; i<colDom.length; i++) {
+    //    boolean found = false;
+    //    for (int anEmap : emap)
+    //      if (anEmap == i) {
+    //        found = true;
+    //        break;
+    //      }
+    //    if (!found)
+    //      Log.warn("Domain mapping: target domain DOES NOT contain the factor '"+colDom[i]+"' which appears in input domain "+ (colName!=null?"(column: " + colName+")":""));
+    //  }
+    //}
+    //
+    //// produce packed values
+    //int[][] res = water.fvec.TransfVec.pack(emap, bmap);
+    //// Sort values in numeric order to support binary search in TransfVec
+    //water.fvec.TransfVec.sortWith(res[0], res[1]);
+    //return res;
   }
 
   /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st Vec is the
