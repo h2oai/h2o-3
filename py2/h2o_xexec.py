@@ -8,14 +8,42 @@ import re
 from sets import Set
 
 #********************************************************************************
+def xTranslateTextValue(text="F"):
+    # translate any common text abbreviations to the required long form
+    # T and F can be translated? we shouldn't get key names when this is used?
+    translate = {
+        'T': '$TRUE',
+        'F': '$FALSE',
+        'TRUE': '$TRUE',
+        'FALSE': '$FALSE',
+        'True': '$TRUE',
+        'False': '$FALSE',
+        'true': '$TRUE',
+        'false': '$FALSE',
+        '"NULL"': '"null"',
+        'NULL': '"null"',
+        'null': '"null"',
+    }
+
+    if text is None:
+        text = '"NULL"'
+    elif text in translate:
+        text = translate[text]
+    else:
+        pass
+
+    return text
+
+#********************************************************************************
 def xItem(item):
     print "xItem:", item
     # xItem can't be used for lhs
     # if list or tuple, exception
-    if item is None:
-        raise Exception("h2o_xexec xItem is 'None': %s" % item)
-    elif isinstance(item, (list, tuple, dict)):
+    if isinstance(item, (list, tuple, dict)):
         raise Exception("h2o_xexec xItem doesn't take lists, tuples (or dicts) %s" % item)
+
+    if isinstance(item, basestring):
+        item = xTranslateTextValue(item)
 
     # if string and has comma, -> exception
     # space can arise from prior expansion
@@ -380,32 +408,6 @@ def xC(operand):
 # FIX! key references need $ prefix
 def xCbind(*operands):
     return xFcn("cbind", *operands)
-
-def xTranslateTextValue(text="F"):
-    # translate any common text abbreviations to the required long form
-    # T and F can be translated? we shouldn't get key names when this is used?
-    translate = {
-        'T': '$TRUE',
-        'F': '$FALSE',
-        'TRUE': '$TRUE',
-        'FALSE': '$FALSE',
-        'True': '$TRUE',
-        'False': '$FALSE',
-        'true': '$TRUE',
-        'false': '$FALSE',
-        'NULL': '"NULL"',
-        'null': '"NULL"',
-    }
-
-    if text is None:
-        text = '"NULL"'
-    elif text in translate:
-        text = translate[text]
-    else:
-        pass
-
-    return text
-        
 
 def xCut(vector=None, breaks='#2', labels='$FALSE', include_lowest='$FALSE', right='$FALSE', dig_lab='#0'):
     vector = xItem(vector)
