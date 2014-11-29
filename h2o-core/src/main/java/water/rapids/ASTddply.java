@@ -251,7 +251,7 @@ public class ASTddply extends ASTOp {
 
     // Build a Map mapping Groups to a NewChunk of row #'s
     @Override public void map( Chunk chks[] ) {
-      _groups = new NonBlockingHashMap<>(1<<18);
+      _groups = new NonBlockingHashMap<>();
       Group g = new Group(_cols.length);
       NewChunk nc = makeNC();
       Chunk C = chks[(int)_cols[0]];
