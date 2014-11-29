@@ -93,7 +93,7 @@ public class ASTFunc extends ASTFuncDef {
         _table._local_frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
-      else throw H2O.unimpl("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
+      else throw new IllegalArgumentException("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
