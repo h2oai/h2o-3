@@ -21,9 +21,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_exec2_runif(self):
-        print "h2o syntax is not full R. Doesn't take min/max interval params. assumed 0/1 interval"
-        print " just one param, it must be a column or row vector. Result is same length"
-        print " R allows a scalar to be param"
+        print "in h2o-dev, params are column, min, max, seed"
         bucket = 'home-0xdiag-datasets'
         csvPathname = 'standard/covtype.data'
         hexKey = 'r.hex'
@@ -31,23 +29,18 @@ class Basic(unittest.TestCase):
         # work up to the failing case incrementally
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
-            # 'r0.hex = r.hex[,1]',
-            str(Assign('r0.hex', Frame('r.hex',col=0)) ),
-            # 's0.hex = runif(r.hex[,1],-1)',
-            str(Assign('s0.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
-            # 's1.hex = runif(r.hex[,1],-1)',
-            str(Assign('s1.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
-            # 's2.hex = runif(r.hex[,1],-1)',
-            str(Assign('s2.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
-            # error. this causes exception
-            # 's3.hex = runif(nrow(r.hex), -1)',
+            Assign('r0.hex', Frame('r.hex',col=0)),
+            Assign('s0.hex', Fcn("runif", Frame('r.hex',col=0), 0, 5, -1)),
+            Assign('s1.hex', Fcn("runif", Frame('r.hex',col=1), 0, 5, -1)),
+            Assign('s2.hex', Fcn("runif", Frame('r.hex',col=54), 0, 5, -1)),
         ]
 
         results = []
         for execExpr in execExprList:
             start = time.time()
-            (execResult, result) = h2e.exec_expr(execExpr=execExpr, timeoutSecs=30) # unneeded but interesting 
+            result = execExpr.do(timeoutSecs=30)
             results.append(result)
+            execResult = execExpr.execResult
             print "exec end on ", "operators" , 'took', time.time() - start, 'seconds'
             print "exec result:", result
             print "exec result (full):", h2o.dump_json(execResult)
