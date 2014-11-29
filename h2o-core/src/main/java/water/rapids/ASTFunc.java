@@ -185,6 +185,7 @@ class ASTFuncDef extends ASTOp {
     // parse the function args: these are just arg names -> will do _local.put(name, Env.NULL, null) (local ST put)
     Env.SymbolTable table = E._env.newTable(); // grab a new SymbolTable
     String[] args = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+    for (int i = 0; i < args.length;++i) args[i] = args[i].replaceAll("\\s+","");
     _arg_names = args;
     if (args == null) table.put(null, Env.NULL, null);
     else for (String arg : args) table.put(arg, Env.NULL, null);
