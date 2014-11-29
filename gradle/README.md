@@ -1,12 +1,24 @@
 # H2O Gradle Build
 
 ## Artifacts
-Each project can provide artifact.
-The Java-based projects provides jar files.
+H2O artifacts are published in [Maven Central](http://search.maven.org).
+The artifacts are available via [this query](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o).
 
-## FatJar
+  * `h2o-core` - core functionaly of H2O platform including K/V store, M/R framework, networking
+  * `h2o-algos` - basic set of algorithms (GLM, GBM, DeepLeaning,...)
+  * `h2o-app` - H2O standalone application launcher
+  * `h2o-web` - H2O web UI called _Steam_
+  * `h2o-scala` - Scala API
+  
+### Versioning of Artifacts
+All published artifacts share the same version enforced by
+parent project. See file `gradle.properties` which contains version definition.
 
-## Publishing
+## Artifacts Building
+
+## Artifacts Assembling
+
+## Artifacts Publishing
 For publishing gradle nexus pluging is used (see
 https://github.com/bmuschko/gradle-nexus-plugin).
 
@@ -37,8 +49,6 @@ To publish artifacts into remote Sonatype repository type:
 ```
 gradle uploadArchives
 ```
-
-## Versioning
 
 ### Sonatype release repository
 Sonatype release repository requires signed artifacts.
