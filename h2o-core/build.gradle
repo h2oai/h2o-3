@@ -1,7 +1,7 @@
+//
+// H2O Core Module
+//
 description = "H2O Core"
-
-apply from: '../gradle/java.gradle'
-apply from: '../gradle/cp.gradle'
 
 dependencies {
   // Required for h2o-core

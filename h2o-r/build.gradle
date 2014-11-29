@@ -7,8 +7,7 @@ import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_rh2o'
 description = "H2O R Package"
-apply plugin: 'java'
-apply plugin: 'groovy'
+
 apply plugin: 'water.gradle.plugins.convertR2html'
 apply plugin: 'water.gradle.plugins.manageLocalClouds'
 apply plugin: 'water.gradle.plugins.testThatRunner'

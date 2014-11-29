@@ -123,6 +123,26 @@ subprojects {
     }
 
     apply from: "$rootDir/gradle/makeSupport.gradle"
+
+    //
+    // Early configuration of projects simplifies build resolution
+    //
+
+    // Configure Java projects
+    if (project in javaProjects) {
+       apply from: "$rootDir/gradle/java.gradle"
+       apply from: "$rootDir/gradle/cp.gradle"
+    }
+
+    // Configure Scala projects
+    if (project in scalaProjects) {
+        apply from: "$rootDir/gradle/scala.gradle"
+        apply from: "$rootDir/gradle/cp.gradle"
+    }
+
+    if (project in rProjects) {
+        apply from: "$rootDir/gradle/r.gradle"
+    }
 }
 
 task wrapper(type: Wrapper) {

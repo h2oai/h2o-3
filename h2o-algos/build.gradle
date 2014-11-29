@@ -1,6 +1,6 @@
-apply from: '../gradle/java.gradle'
-apply from: '../gradle/cp.gradle'
-
+//
+// H2O Algos Module
+//
 description = "H2O Algorithms"
 
 dependencies {
