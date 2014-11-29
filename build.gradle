@@ -202,3 +202,7 @@ task (miniTest, dependsOn: [':h2o-core:test', ':h2o-algos:test']) {
     description = "Build only Java projects"
 }
 
+//
+// Import project development profiles
+//
+apply from: "gradle/profiles.gradle"
