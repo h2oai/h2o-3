@@ -27,7 +27,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _nobs = nobs;
     _dinfo = dinfo;
   }
-  @Override public boolean isSupervised(){return true;}
 
   public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
     final double _lambda;

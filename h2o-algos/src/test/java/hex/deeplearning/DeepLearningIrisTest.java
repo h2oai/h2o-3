@@ -298,39 +298,40 @@ public class DeepLearningIrisTest extends TestUtil {
                                  */
                                 final double trainErr = ref._nn.Accuracy(ref._trainData);
                                 final double testErr = ref._nn.Accuracy(ref._testData);
-                                trainPredict = mymodel.score(_train, false);
-                                final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
-                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
-                                testPredict = mymodel.score(_test, false);
-                                final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
-                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
-                                Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
-                                Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
-                                compareVal(trainErr, myTrainErr, abseps, releps);
-                                compareVal(testErr, myTestErr, abseps, releps);
-                                Log.info("Scoring: PASS");
-
-                                // get the actual best error on training data
-                                float best_err = Float.MAX_VALUE;
-                                for (Errors err : mymodel.scoring_history()) {
-                                  best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
-                                }
-                                Log.info("Actual best error : " + best_err * 100 + "%.");
-
-                                // this is enabled by default
-                                if (p._override_with_best_model) {
-                                  Frame bestPredict = null;
-                                  try {
-                                    bestPredict = mymodel.score(_train, false);
-                                    final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
-                                            true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
-                                    Log.info("Best_model's error : " + bestErr * 100 + "%.");
-                                    compareVal(bestErr, best_err, abseps, releps);
-                                  } finally {
-                                    if (bestPredict != null) bestPredict.delete();
-                                  }
-                                }
-                                Log.info("Parameters combination " + num_runs + ": PASS");
+                                trainPredict = mymodel.score(_train);
+                                throw water.H2O.unimpl();
+                                //final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
+                                //        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                //testPredict = mymodel.score(_test, false);
+                                //final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
+                                //        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                //Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
+                                //Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
+                                //compareVal(trainErr, myTrainErr, abseps, releps);
+                                //compareVal(testErr, myTestErr, abseps, releps);
+                                //Log.info("Scoring: PASS");
+                                //
+                                //// get the actual best error on training data
+                                //float best_err = Float.MAX_VALUE;
+                                //for (Errors err : mymodel.scoring_history()) {
+                                //  best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
+                                //}
+                                //Log.info("Actual best error : " + best_err * 100 + "%.");
+                                //
+                                //// this is enabled by default
+                                //if (p._override_with_best_model) {
+                                //  Frame bestPredict = null;
+                                //  try {
+                                //    bestPredict = mymodel.score(_train, false);
+                                //    final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
+                                //            true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                //    Log.info("Best_model's error : " + bestErr * 100 + "%.");
+                                //    compareVal(bestErr, best_err, abseps, releps);
+                                //  } finally {
+                                //    if (bestPredict != null) bestPredict.delete();
+                                //  }
+                                //}
+                                //Log.info("Parameters combination " + num_runs + ": PASS");
 
                               } finally {
                                 // cleanup

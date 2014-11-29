@@ -1,10 +1,12 @@
 package hex;
 
 import java.util.Arrays;
-import water.util.ArrayUtils;
 import water.Iced;
-import water.fvec.Vec;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 public class ConfusionMatrix2 extends Iced {
   public long[][] _arr; // [actual][predicted]
@@ -45,11 +47,27 @@ public class ConfusionMatrix2 extends Iced {
   }
 
   /** Build the CM data from the actuals and predictions, using the default
-   *  threshold.  Print to Log.info if the number of classes is below
-   *  the print_threshold.
-   */
-  public ConfusionMatrix2(Vec actuals, Frame predictions, int print_threshold) {
-    throw water.H2O.unimpl();
+   *  threshold.  Print to Log.info if the number of classes is below the
+   *  print_threshold.  Actuals might have extra levels not trained on (hence
+   *  never predicted).  Actuals with NAs are not scored, and their predictions
+   *  ignored. */
+  public ConfusionMatrix2(Vec actuals, Frame predictions) {
+    this(new CM(actuals.domain().length).doAll(actuals,predictions.vecs()[0])._arr);
+  }
+  private static class CM extends MRTask<CM> {
+    final int _len;
+    long _arr[/*actuals*/][/*predicted*/];
+    CM( int len ) { _len = len; }
+    @Override public void map( Chunk ca, Chunk cp ) {
+      // After adapting frames, the Actuals have all the levels in the
+      // prediction results, plus any extras the model was never trained on.
+      // i.e., Actual levels are at least as big as the predicted levels.
+      _arr = new long[_len][_len];
+      for( int i=0; i < ca._len; i++ )
+        if( !ca.isNA0(i) ) 
+          _arr[(int)ca.at80(i)][(int)cp.at80(i)]++;
+    }
+    @Override public void reduce( CM cm ) { ArrayUtils.add(_arr,cm._arr); }
   }
 
 
@@ -74,24 +92,18 @@ public class ConfusionMatrix2 extends Iced {
     _predErr = err();
   }
   public final long classErrCount(int c) {
-    long s = 0;
-    for( long x : _arr[c] )
-      s += x;
+    long s = ArrayUtils.sum(_arr[c]);
     return s - _arr[c][c];
   }
   public final double classErr(int c) {
-    long s = 0;
-    for( long x : _arr[c] )
-      s += x;
-    if( s == 0 )
-      return 0.0;    // Either 0 or NaN, but 0 is nicer
+    long s = ArrayUtils.sum(_arr[c]);
+    if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
     return (double) (s - _arr[c][c]) / s;
   }
   public long totalRows() {
     long n = 0;
     for (long[] a_arr : _arr)
-      for (int p = 0; p < a_arr.length; ++p)
-        n += a_arr[p];
+      n += ArrayUtils.sum(a_arr);
     return n;
   }
 

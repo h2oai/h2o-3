@@ -10,6 +10,7 @@ import static water.fvec.Vec.makeSeq;
 
 /** This test tests stability of Vec API. */
 public class VecTest extends TestUtil {
+  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   /** Test toEnum call to return correct domain. */
   @Test public void testToEnum() {

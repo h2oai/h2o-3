@@ -921,7 +921,7 @@ class ASTAssign extends AST {
         Frame rhs_ary;
         // convert constant into a whole vec
         if (e.isNum()) rhs_ary = new Frame(lhs_ary.anyVec().makeCon(e.popDbl()));
-        else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeSimpleTransf(new long[]{0L}, new String[]{e.popStr()}));
+        else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeZero(new String[]{e.popStr()}));
         else if (e.isAry()) rhs_ary = e.pop0Ary();
         else throw new IllegalArgumentException("Bad RHS on the stack: " + e.peekType() + " : " + e.toString());
 

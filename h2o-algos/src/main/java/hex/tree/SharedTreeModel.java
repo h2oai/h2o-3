@@ -1,7 +1,7 @@
 package hex.tree;
 
 import java.util.Arrays;
-import hex.AUC;
+import hex.AUCData;
 import hex.ConfusionMatrix2;
 import hex.SupervisedModel;
 import hex.VarImp;
@@ -57,7 +57,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public ConfusionMatrix2 _cm;
 
     /** AUC for binomial models, or null otherwise */
-    public AUC _auc;
+    public AUCData _aucdata;
 
     /** Variable Importance, if asked for */
     public VarImp _varimp;

@@ -205,9 +205,9 @@ public class GBMTest extends TestUtil {
         if( job != null ) job.remove();
       }
 
-      double auc = gbm._output._auc.data().AUC();
+      double auc = gbm._output._aucdata.AUC();
       Assert.assertTrue(0.80 <= auc && auc < 0.83); // Sanely good model
-      ConfusionMatrix2 cmf1 = gbm._output._auc.data().CM();
+      ConfusionMatrix2 cmf1 = gbm._output._aucdata.CM();
       Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
 
     } finally {

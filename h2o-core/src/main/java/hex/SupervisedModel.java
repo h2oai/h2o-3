@@ -94,8 +94,6 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
   }
 
 
-  @Override public boolean isSupervised() { return true; }
-
 //  /**
 //   * compute the model error for a given test data set
 //   * For multi-class classification, this is the classification error based on assigning labels for the highest predicted per-class probability.

@@ -272,9 +272,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Frame tra_fr = _train;
         Frame val_fr = _valid;
 
-        ValidationAdapter validAdapter = new ValidationAdapter(val_fr, isClassifier());
-        validAdapter.prepareValidationWithModel(model);
-
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = model.model_info().data_info()._adaptedFrame;
@@ -297,22 +294,12 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (!_parms._quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
         if (val_fr != null) {
           model.validation_rows = val_fr.numRows();
-          Frame adaptedValid = validAdapter.getValidation();
-          if (validAdapter.getValidAdaptor().needsAdaptation2CM()) {
-
-            int rIndex = 0;
-            for( int i = 0; i < tra_fr.names().length; i++ ) {
-              if (tra_fr._names[i].equals(_parms._response_column)) rIndex = i;
-            }
-            final String responseName = tra_fr._names != null && rIndex >= 0 ? tra_fr._names[rIndex] : "response_vec";
-            adaptedValid.add(validAdapter.getValidAdaptor().adaptedValidationResponse(responseName), validAdapter.getValidAdaptor().getAdaptedValidationResponse2CM());
-          }
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
           if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
-            validScoreFrame = sampleFrameStratified(adaptedValid, adaptedValid.lastVec(), null,
-                    mp._score_validation_samples > 0 ? mp._score_validation_samples : adaptedValid.numRows(), mp._seed +1, false /* no oversampling */, false);
+            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(), null,
+                    mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
-            validScoreFrame = sampleFrame(adaptedValid, mp._score_validation_samples, mp._seed +1);
+            validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
           }
           if (mp._force_load_balance) validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/);
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
@@ -329,7 +316,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
 
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
-        if (_parms._autoencoder) model.doScoring(train, trainScoreFrame, validScoreFrame, self(), validAdapter.getValidAdaptor()); //get the null model reconstruction error
+        if (_parms._autoencoder) model.doScoring(train, trainScoreFrame, validScoreFrame, self()); //get the null model reconstruction error
         // put the initial version of the model into DKV
         model.update(self());
         Log.info("Starting to train the Deep Learning model.");
@@ -343,7 +330,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           update(model.actual_train_samples_per_iteration); //update progress
           if (!mp._quiet_mode) Log.info("Progress: " + PrettyPrint.formatPct(progress()));
         }
-        while (model.doScoring(train, trainScoreFrame, validScoreFrame, self(), validAdapter.getValidAdaptor()));
+        while (model.doScoring(train, trainScoreFrame, validScoreFrame, self()));
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
@@ -356,7 +343,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(train, trainScoreFrame, validScoreFrame, self(), validAdapter.getValidAdaptor());
+            model.doScoring(train, trainScoreFrame, validScoreFrame, self());
             assert(best_model.error() == model.error());
           }
         }

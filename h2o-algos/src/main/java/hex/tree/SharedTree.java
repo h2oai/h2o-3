@@ -99,25 +99,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
 
-        // Can see here clearly the train & test sets are not aligned on enums
-        SB sbt = new SB();
-        Frame t2 = train();
-        for( int i=0; i<t2.numRows(); i++ ) {
-          for( int j=0; j<t2.numCols(); j++ )
-            sbt.p(t2.vecs()[j].at(i)).p(' ');
-          sbt.nl();
-        }
-        System.out.println(sbt.toString());
-
-        sbt = new SB();
-        Frame t3 = valid();
-        for( int i=0; i<t3.numRows(); i++ ) {
-          for( int j=0; j<t3.numCols(); j++ )
-            sbt.p(t3.vecs()[j].at(i)).p(' ');
-          sbt.nl();
-        }
-        System.out.println(sbt.toString());
-
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
           _model = DKV.get(_dest).get();
@@ -387,7 +368,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       SharedTreeModel.SharedTreeOutput out = _model._output;
       out._r2 = sc.r2();
       out._cm = sc.cm();
-      out._auc = sc.auc();
+      out._aucdata = sc.auc();
       out._mse_train[out._ntrees] = _parms._valid==null ? sc.mse() : Double.NaN;
       out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : sc.mse();
       _timeLastScoreEnd = System.currentTimeMillis();

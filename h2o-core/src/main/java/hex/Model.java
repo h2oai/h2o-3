@@ -4,7 +4,6 @@ import water.*;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.TransfVec;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -12,7 +11,6 @@ import water.util.Log;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * A Model models reality (hopefully).
@@ -22,7 +20,6 @@ import java.util.HashMap;
  * be adapted.
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
-  Model( Key selfkey ) { super(selfkey); }
 
   /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
   public static enum ModelCategory {
@@ -32,10 +29,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Regression,
     Clustering
   }
-
-  /** Needs to be set correctly otherwise eg scoring does not work.
-   *  @return true if there was a response column used during training. */
-  public boolean isSupervised() { return false; }
 
   /** Model-specific parameter class.  Each model sub-class contains an
    *  instance of one of these containing its builder parameters, with
@@ -92,6 +85,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Override in subclasses to change the default; e.g. true in GLM
     protected boolean defaultDropNA20Cols() { return false; }
     
+    /** Type of missing columns during adaptation between train/test datasets
+     *  Overload this method for models that have sparse data handling - a zero
+     *  will preserve the sparseness.  Otherwise, NaN is used.
+     *  @return real-valued number (can be NaN)  */
+    protected double missingColumnsType() { return Double.NaN; }
+
     public long checksum() {
       long field_checksum = 1L;
 
@@ -209,9 +208,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
 
   @SuppressWarnings("fallthrough")
-  protected ModelMetrics computeModelMetrics(Frame test, String response, Frame predictions) {
-    Vec actuals = response != null ? test.vec(response) : null; // No response for Unsupervised learners
-    long start_time = System.currentTimeMillis();
+  protected ModelMetrics computeModelMetrics(long start_time, Frame origTest, Frame predictions) {
+    Vec actuals = this instanceof SupervisedModel ? origTest.vec(_output.responseName()) : null; // No response for Unsupervised learners
     double err = Double.NaN;
     ConfusionMatrix2 cm2 = null;    
     AUC auc = null;
@@ -222,16 +220,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       auc = new AUC(actuals,predictions);
       hr = new HitRatio(actuals,predictions);
     case Multinomial:           // Confusion matrix and MSE
-      assert actuals != null && actuals.isInt() && actuals.min()==0 && actuals.max()+1==_output.nclasses();
-      cm2 = new ConfusionMatrix2(actuals,predictions,20/*Print size limitation*/);
+      assert actuals != null && actuals.isInt() && actuals.min()==0 && actuals.max()+1>=_output.nclasses();
+      cm2 = new ConfusionMatrix2(actuals,predictions);
+      if( cm2._arr.length < 20/*Print size limitation*/ )
+        Log.info(water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),cm2._arr,actuals.domain(),false));
     case Regression:            // Just MSE
-      assert (_output.nclasses()==1 && predictions.numCols()==1) || _output.nclasses()==predictions.numCols()+1;
+      assert (_output.nclasses()==1 && predictions.numCols()==1) || _output.nclasses()==predictions.numCols()-1;
       err = Double.NaN;         // TODO: compute MSE all models
       break;
     default:
       throw H2O.unimpl();
     }
-    ModelMetrics mm = ModelMetrics.create(this, test, System.currentTimeMillis() - start_time, start_time, cm2, auc, hr);
+    ModelMetrics mm = ModelMetrics.create(this, origTest, System.currentTimeMillis() - start_time, start_time, cm2, auc, hr);
     return _output.addModelMetrics(mm);
   }
 
@@ -253,13 +253,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
    *  intention here is that ModelBuilders can assume the test set has the same
    *  count of columns, and within each factor column the same set of
-   *  same-numbered levels.  Extra levels in features are converted to NAs.
-   *  Extra levels in the response (SupervisedModelBuilder only) will be
-   *  renumbered past those in the Train set but will still be present in the
-   *  Test set.  
+   *  same-numbered levels.  Extra levels are renumbered past those in the
+   *  Train set but will still be present in the Test set, thus requiring
+   *  range-checking.
    *
-   *  This routine is used before model building (with no Model made yet), and
-   *  also used to prepare a large dataset for scoring (with a Model).
+   *  This routine is used before model building (with no Model made yet) to
+   *  check for compatible datasets, and also used to prepare a large dataset
+   *  for scoring (with a Model).
    * 
    *  Adaption does the following things:
    *  - Remove any "extra" Vecs appearing only in the test and not the train
@@ -271,26 +271,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  - If all columns are missing, issue an error.
    *  - Renumber matching cat levels to match the Train levels; this might make
    *    "holes" in the Test set cat levels, if some are not in the Test set.
-   *  - For Categorical Features, extra Test levels are converted to NAs
-   *  - For a Categorical Response, extra Test levels are renumbered past the
-   *    end of the Train set
+   *  - Extra Test levels are renumbered past the end of the Train set
    *  - For all mis-matched levels, issue a warning.
    *
-   *  Inputs are in {@code _parms.train()} and {@code _parms.valid()}.
-   *  Result is in {@code _valid}, with errors and warnings in the {@code _messages}.
+   *  The {@code test} frame is updated in-place to be compatible, by altering
+   *  the names and Vecs; make a defensive copy if you do not want it modified.
+   *  There is a fast-path cutout if the test set is already compatible.
    *
-   *  @param names Training column names
-   *  @param domains Training column levels
-   *  @param test Testing Frame
+   *  @param test Testing Frame, updated in-place
    *  @param expensive Try hard to adapt; this might involve the creation of
    *  whole Vecs and thus get expensive.  If {@code false}, then only adapt if
    *  no warnings and errors; otherwise just the messages are produced.
+   *  Created Vecs have to be deleted by the caller (e.g. Scope.enter/exit).
    *  @return Array of warnings; zero length (not null) for no warnings.
    *  Throws {@code IllegalArgumentException} if no columns are in common, or
    *  if any factor column has no levels in common.
    */
-  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain( _output._names, _output._domains, test, missingColumnsType(), expensive); }
-  public static String[] adaptTestForTrain( String[] names, String[][] domains, Frame test, double missing, boolean expensive ) {
+  public String[] adaptTestForTrain( Frame test, boolean expensive ) { return adaptTestForTrain( _output._names, _output._domains, test, _parms.missingColumnsType(), expensive); }
+  /**
+   *  @param names Training column names
+   *  @param domains Training column levels
+   *  @param missing Substitute for missing columns; usually NaN
+   * */
+  public static String[] adaptTestForTrain( String[] names, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+    // Fast path cutout: already compatible
+    String[][] tdomains = test.domains();
+    if( names == test._names && domains == tdomains )
+      return new String[0];
+    // Fast path cutout: already compatible but needs work to test
+    if( Arrays.equals(names,test._names) && Arrays.deepEquals(domains,tdomains) )
+      return new String[0];
+
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     ArrayList<String> msgs = new ArrayList<>();
@@ -306,9 +317,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
         }
-      } else {
+      } 
+      if( vec != null ) {
         good++;
-        throw H2O.unimpl();      // Need to check enums next
+        if( domains[i] != null ) { // Result needs to be an enum
+          vec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+          String[] ds = vec.domain();
+          assert ds!=null && ds.length >= domains[i].length;
+          if( ds.length > domains[i].length )
+            msgs.add("Validation column "+names[i]+" has levels not trained on: "+Arrays.toString(Arrays.copyOfRange(ds,domains[i].length,ds.length)));
+        } else if( vec.isEnum() ) {
+          throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
+        } else {
+          // Assumed compatible; not checking e.g. Strings vs UUID
+        }
       }
       vvecs[i] = vec;
     }
@@ -319,135 +341,71 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return msgs.toArray(new String[msgs.size()]);
   }
 
-  /** Type of missing columns during adaptation between train/test datasets
-   *  Overload this method for models that have sparse data handling.
-   *  Otherwise, NaN is used.
-   *  @return real-valued number (can be NaN)  */
-  protected double missingColumnsType() { return Double.NaN; }
-
-
-  /** Returns a mapping for given column according to given {@code modelDom}.
-   *  The ....
+  /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st
+   *  Vec is the predicted class, the remaining Vecs are the probability
+   *  distributions.  For Regression (single-class) models, the 1st and only
+   *  Vec is the prediction value.
    *
-   * @param modelDom
-   * @return ...
-   */
-  public static int[][] getDomainMapping(String colName, String[] modelDom, String[] colDom, boolean logNonExactMapping) {
-    throw H2O.unimpl();
-    //int emap[] = new int[modelDom.length];
-    //boolean bmap[] = new boolean[modelDom.length];
-    //HashMap<String,Integer> md = new HashMap<>((int) ((colDom.length/0.75f)+1));
-    //for( int i = 0; i < colDom.length; i++) md.put(colDom[i], i);
-    //for( int i = 0; i < modelDom.length; i++) {
-    //  Integer I = md.get(modelDom[i]);
-    //  if (I == null && logNonExactMapping)
-    //    Log.warn("Domain mapping: target domain contains the factor '"+modelDom[i]+"' which DOES NOT appear in input domain " + (colName!=null?"(column: " + colName+")":""));
-    //  if (I!=null) {
-    //    emap[i] = I;
-    //    bmap[i] = true;
-    //  }
-    //}
-    //if (logNonExactMapping) { // Inform about additional values in column domain which do not appear in model domain
-    //  for (int i=0; i<colDom.length; i++) {
-    //    boolean found = false;
-    //    for (int anEmap : emap)
-    //      if (anEmap == i) {
-    //        found = true;
-    //        break;
-    //      }
-    //    if (!found)
-    //      Log.warn("Domain mapping: target domain DOES NOT contain the factor '"+colDom[i]+"' which appears in input domain "+ (colName!=null?"(column: " + colName+")":""));
-    //  }
-    //}
-    //
-    //// produce packed values
-    //int[][] res = water.fvec.TransfVec.pack(emap, bmap);
-    //// Sort values in numeric order to support binary search in TransfVec
-    //water.fvec.TransfVec.sortWith(res[0], res[1]);
-    //return res;
-  }
-
-  /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st Vec is the
-   *  predicted class, the remaining Vecs are the probability distributions.
-   *  For Regression (single-class) models, the 1st and only Vec is the
-   *  prediction value.
-   *
-   *  The flat <code>adapt</code>
    * @param fr frame which should be scored
-   * @param adapt a flag enforcing an adaptation of <code>fr</code> to this model. If flag
-   *        is <code>false</code> scoring code expect that <code>fr</code> is already adapted.
-   * @return a new frame containing a predicted values. For classification it contains a column with
-   *         prediction and distribution for all response classes. For regression it contains only
-   *         one column with predicted values.
+   * @return A new frame containing a predicted values. For classification it
+   *         contains a column with prediction and distribution for all
+   *         response classes. For regression it contains only one column with
+   *         predicted values.
    */
-  public final Frame score(Frame fr, boolean adapt) {
-    throw H2O.unimpl();
-//    long start_time = System.currentTimeMillis();
-//    Frame fr_hacked = new Frame(fr);
-//    if (isSupervised()) {
-//      int ridx = fr.find(_output.responseName());
-//      if (ridx != -1) { // drop the response for scoring!
-//        fr_hacked.remove(ridx);
-//      }
-//    }
-//    // Adapt the Frame layout - returns adapted frame and frame containing only
-//    // newly created vectors
-//    Frame[] adaptFrms = adapt ? adapt(fr_hacked,false) : null;
-//    // Adapted frame containing all columns - mix of original vectors from fr
-//    // and newly created vectors serving as adaptors
-//    Frame adaptFrm = adapt ? adaptFrms[0] : fr_hacked;
-//    // Contains only newly created vectors. The frame eases deletion of these vectors.
-//    Frame onlyAdaptFrm = adapt ? adaptFrms[1] : null;
-//    // Invoke scoring
-//    Frame output = scoreImpl(adaptFrm);
-//    // Be nice to DKV and delete vectors which i created :-)
-//    if (adapt) onlyAdaptFrm.delete();
-//    computeModelMetrics(start_time, fr, output);
-//    return output;
+  public final Frame score(Frame fr) throws IllegalArgumentException {
+    Frame output = null;
+    Key mmkey = null;
+    try {
+      Scope.enter();
+      long start_time = System.currentTimeMillis();
+      Frame adaptFr = new Frame(fr);
+      adaptTestForTrain(adaptFr,true);
+      // Invoke scoring
+      output = scoreImpl(adaptFr);
+      mmkey = computeModelMetrics(start_time, /*results stored under the original not-adapted frame*/fr, output)._key; // calc CM, AUC
+      return output;
+    } finally {
+      Scope.exit(output == null ? null : output._key, mmkey);
+    }
   }
-//
-//  /** Score an already adapted frame.
-//   *
-//   * @param adaptFrm
-//   * @return A Frame containing the prediction column, and class distribution
-//   */
-//  private Frame scoreImpl(Frame adaptFrm) {
-//    if (isSupervised()) {
-//      int ridx = adaptFrm.find(_output.responseName());
-//      assert ridx == -1 : "Adapted frame should not contain response in scoring method!";
-//      assert _output.nfeatures() == adaptFrm.numCols() : "Number of model features " + _output.nfeatures() + " != number of test set columns: " + adaptFrm.numCols();
-//      assert adaptFrm.vecs().length == _output.nfeatures() : "Scoring data set contains wrong number of columns: " + adaptFrm.vecs().length + " instead of " + _output.nfeatures();
-//    }
-//
-//    // Create a new vector for response
-//    // If the model produces a classification/enum, copy the domain into the
-//    // result vector.
-//    int nc = _output.nclasses();
-//    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
-//    if(nc > 1)
-//      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
-//    String [] names = new String[newVecs.length];
-//    names[0] = "predict";
-//    for(int i = 1; i < names.length; ++i)
-//      names[i] = _output.classNames()[i-1];
-//    final int num_features = _output.nfeatures();
-//    new MRTask() {
-//      @Override public void map( Chunk chks[] ) {
-//        double tmp [] = new double[num_features];
-//        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
-//        int len = chks[0]._len;
-//        for( int row=0; row<len; row++ ) {
-//          float p[] = score0(chks,row,tmp,preds);
-//          for( int c=0; c<preds.length; c++ )
-//            chks[num_features+c].set0(row,p[c]);
-//        }
-//      }
-//    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
-//
-//    // Return just the output columns
-//    return new Frame(names, newVecs);
-//  }
-//
+
+  /** Score an already adapted frame.
+   *
+   * @param adaptFrm
+   * @return A Frame containing the prediction column, and class distribution
+   */
+  protected Frame scoreImpl(Frame adaptFrm) {
+    assert Arrays.equals(_output._names,adaptFrm._names);
+
+    // Create a new vector for response
+    // If the model produces a classification/enum, copy the domain into the
+    // result vector.
+    int nc = _output.nclasses();
+    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
+    if(nc > 1)
+      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
+    String [] names = new String[newVecs.length];
+    names[0] = "predict";
+    for(int i = 1; i < names.length; ++i)
+      names[i] = _output.classNames()[i-1];
+    final int num_features = _output.nfeatures();
+    new MRTask() {
+      @Override public void map( Chunk chks[] ) {
+        double tmp [] = new double[num_features];
+        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
+        int len = chks[0]._len;
+        for( int row=0; row<len; row++ ) {
+          float p[] = score0(chks,row,tmp,preds);
+          for( int c=0; c<preds.length; c++ )
+            chks[num_features+c].set0(row,p[c]);
+        }
+      }
+    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
+
+    // Return just the output columns
+    return new Frame(names, newVecs);
+  }
+
 //  /** Single row scoring, on a compatible Frame.  */
 //  public final float[] score( Frame fr, boolean exact, int row ) {
 //    double tmp[] = new double[fr.numCols()];

@@ -10,12 +10,19 @@
 (global-set-key [(f1)]          'javadoc-lookup)  ; F1 to lookup
 (global-set-key [(shift f1)]    'javadoc-help)    ; Shift-F1 to bring up menu
 
+;; CEDET 
+;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/"))
+;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/common"))
+;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/eieio"))
+(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/ede"))
+;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/speedbar"))
+(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/semantic"))
+;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/srecode"))
+(load-file (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/common/cedet.el"))
+
 ;; JDEE.  For me: mostly the debugger
 (add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/jdee-2.4.1/lisp"))
 (load "jde")
-
-;; CEDET 
-(load-file (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/common/cedet.el"))
 
 ;;(global-ede-mode t) ;; Turn on EDE
 

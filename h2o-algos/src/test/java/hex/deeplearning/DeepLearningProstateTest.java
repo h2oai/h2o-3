@@ -220,103 +220,103 @@ public class DeepLearningProstateTest extends TestUtil {
                                       try {
                                         pred = model2.score(valid);
                                         StringBuilder sb = new StringBuilder();
-
-                                        AUC auc = new AUC();
-                                        double error=0;
-                                        // binary
-                                        if (model2._output.nclasses() == 2) {
-                                          auc.actual = valid;
-                                          assert (resp == 1);
-                                          auc.vactual = valid.vecs()[resp];
-                                          auc.predict = pred;
-                                          auc.vpredict = pred.vecs()[2];
-                                          auc.execImpl();
-                                          // auc.toASCII(sb);
-                                          AUCData aucd = auc.data();
-                                          aucd.threshold();
-                                          threshold = aucd.threshold();
-                                          error = aucd.err();
-                                          Log.info(sb);
-
-                                          // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
-
-                                          // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                          Assert.assertEquals(model2.calcError(auc.actual, auc.vactual, pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
-                                        }
-
-                                        // Compute CM
-                                        double CMerrorOrig;
-                                        {
-                                          sb = new StringBuilder();
-                                          ConfusionMatrix CM = new ConfusionMatrix();
-                                          CM.actual = valid;
-                                          CM.vactual = valid.vecs()[resp];
-                                          CM.predict = pred;
-                                          CM.vpredict = pred.vecs()[0];
-                                          CM.execImpl();
-                                          sb.append("\n");
-                                          sb.append("Threshold: " + "default\n");
-                                          CM.toASCII(sb);
-                                          Log.info(sb);
-                                          CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
-                                        }
-
-                                        // confirm that orig CM was made with threshold 0.5
-                                        // put pred2 into UKV, and allow access
-                                        pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
-                                        pred2.delete_and_lock(null);
-                                        pred2.unlock(null);
-
-                                        if (model2._output.nclasses() == 2) {
-                                          // make labels with 0.5 threshold for binary classifier
-                                          // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
-                                          String ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+0.5+"))";
-                                          Env ev = Exec.exec(ast);
-                                          try {
-                                            pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                          } finally {
-                                            if (ev!=null) ev.remove_and_unlock();
-                                          }
-
-                                          hex.ConfusionMatrix CM = new hex.ConfusionMatrix();
-                                          CM.actual = valid;
-                                          CM.vactual = valid.vecs()[1];
-                                          CM.predict = pred2;
-                                          CM.vpredict = pred2.vecs()[0];
-                                          CM.execImpl();
-                                          sb = new StringBuilder();
-                                          sb.append("\n");
-                                          sb.append("Threshold: " + 0.5 + "\n");
-                                          CM.toASCII(sb);
-                                          Log.info(sb);
-                                          double threshErr = new ConfusionMatrix2(CM.cm).err();
-                                          Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
-
-                                          // make labels with AUC-given threshold for best F1
-                                          // similar ast to the above
-                                          ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+threshold+"))";
-                                          ev = Exec.exec(ast);
-                                          try {
-                                            pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                          } finally {
-                                            if (ev != null) ev.remove_and_unlock();
-                                          }
-
-                                          CM = new hex.ConfusionMatrix();
-                                          CM.actual = valid;
-                                          CM.vactual = valid.vecs()[1];
-                                          CM.predict = pred2;
-                                          CM.vpredict = pred2.vecs()[0];
-                                          CM.execImpl();
-                                          sb = new StringBuilder();
-                                          sb.append("\n");
-                                          sb.append("Threshold: ").append(threshold).append("\n");
-                                          CM.toASCII(sb);
-                                          Log.info(sb);
-                                          double threshErr2 = new ConfusionMatrix2(CM.cm).err();
-                                          Assert.assertEquals(threshErr2, error, 1e-15);
-                                        }
+                                        throw H2O.unimpl();
+                                        //AUC auc = new AUC();
+                                        //double error=0;
+                                        //// binary
+                                        //if (model2._output.nclasses() == 2) {
+                                        //  auc.actual = valid;
+                                        //  assert (resp == 1);
+                                        //  auc.vactual = valid.vecs()[resp];
+                                        //  auc.predict = pred;
+                                        //  auc.vpredict = pred.vecs()[2];
+                                        //  auc.execImpl();
+                                        //  // auc.toASCII(sb);
+                                        //  AUCData aucd = auc.data();
+                                        //  aucd.threshold();
+                                        //  threshold = aucd.threshold();
+                                        //  error = aucd.err();
+                                        //  Log.info(sb);
+                                        //
+                                        //  // check that auc.cm() is the right CM
+                                        //  Assert.assertEquals(new ConfusionMatrix2(auc.data().cm()).err(), error, 1e-15);
+                                        //
+                                        //  // check that calcError() is consistent as well (for CM=null, AUC!=null)
+                                        //  Assert.assertEquals(model2.calcError(auc.actual, auc.vactual, pred, pred, "training", false, 0, null, auc, null), error, 1e-15);
+                                        //}
+                                        //
+                                        //// Compute CM
+                                        //double CMerrorOrig;
+                                        //{
+                                        //  sb = new StringBuilder();
+                                        //  ConfusionMatrix CM = new ConfusionMatrix();
+                                        //  CM.actual = valid;
+                                        //  CM.vactual = valid.vecs()[resp];
+                                        //  CM.predict = pred;
+                                        //  CM.vpredict = pred.vecs()[0];
+                                        //  CM.execImpl();
+                                        //  sb.append("\n");
+                                        //  sb.append("Threshold: " + "default\n");
+                                        //  CM.toASCII(sb);
+                                        //  Log.info(sb);
+                                        //  CMerrorOrig = new ConfusionMatrix2(CM.cm).err();
+                                        //}
+                                        //
+                                        //// confirm that orig CM was made with threshold 0.5
+                                        //// put pred2 into UKV, and allow access
+                                        //pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
+                                        //pred2.delete_and_lock(null);
+                                        //pred2.unlock(null);
+                                        //
+                                        //if (model2._output.nclasses() == 2) {
+                                        //  // make labels with 0.5 threshold for binary classifier
+                                        //  // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
+                                        //  String ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+0.5+"))";
+                                        //  Env ev = Exec.exec(ast);
+                                        //  try {
+                                        //    pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                        //  } finally {
+                                        //    if (ev!=null) ev.remove_and_unlock();
+                                        //  }
+                                        //
+                                        //  hex.ConfusionMatrix CM = new hex.ConfusionMatrix();
+                                        //  CM.actual = valid;
+                                        //  CM.vactual = valid.vecs()[1];
+                                        //  CM.predict = pred2;
+                                        //  CM.vpredict = pred2.vecs()[0];
+                                        //  CM.execImpl();
+                                        //  sb = new StringBuilder();
+                                        //  sb.append("\n");
+                                        //  sb.append("Threshold: " + 0.5 + "\n");
+                                        //  CM.toASCII(sb);
+                                        //  Log.info(sb);
+                                        //  double threshErr = new ConfusionMatrix2(CM.cm).err();
+                                        //  Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
+                                        //
+                                        //  // make labels with AUC-given threshold for best F1
+                                        //  // similar ast to the above
+                                        //  ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+threshold+"))";
+                                        //  ev = Exec.exec(ast);
+                                        //  try {
+                                        //    pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                        //  } finally {
+                                        //    if (ev != null) ev.remove_and_unlock();
+                                        //  }
+                                        //
+                                        //  CM = new hex.ConfusionMatrix();
+                                        //  CM.actual = valid;
+                                        //  CM.vactual = valid.vecs()[1];
+                                        //  CM.predict = pred2;
+                                        //  CM.vpredict = pred2.vecs()[0];
+                                        //  CM.execImpl();
+                                        //  sb = new StringBuilder();
+                                        //  sb.append("\n");
+                                        //  sb.append("Threshold: ").append(threshold).append("\n");
+                                        //  CM.toASCII(sb);
+                                        //  Log.info(sb);
+                                        //  double threshErr2 = new ConfusionMatrix2(CM.cm).err();
+                                        //  Assert.assertEquals(threshErr2, error, 1e-15);
+                                        //}
                                       } finally {
                                         if (pred != null) pred.delete();
                                         if (pred2 != null) pred2.delete();

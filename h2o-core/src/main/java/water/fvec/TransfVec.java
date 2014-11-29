@@ -1,11 +1,12 @@
 package water.fvec;
 
 import water.AutoBuffer;
-import water.DKV;
 import water.Key;
+import water.DKV;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.HashMap;
 
 /** A vector transforming values of given vector according to given domain
  *  mapping - currently only used to transform Enum columns but in theory would
@@ -13,41 +14,97 @@ import java.util.Comparator;
  *  dataset to the domain-mapping expected by a model (which will match the
  *  dataset it was trained on).
  *
+ *  <p>The Vector's domain is the union of the Test and Train domains.
+ *
  *  <p>The mapping is defined by int[] array, size is input Test.domain.length.
  *  Contents refer to values in the Train.domain.  Extra values in the Test
  *  domain are sorted after the Train.domain - so mapped values have to be
  *  range-checked (note that returning some flag for NA, say -1, would also
  *  need to be checked for).
- *
- *  <p>The Vector's domain is the union of the Test and Train domains.
  */
 public class TransfVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new
    *  value in the union domain.  */
-  private final int[] _values;
+  int[] _map;
 
-  public TransfVec(Key masterVecKey, Key key, long[] espc, String[] domain, int[] values) {
-    super(masterVecKey, key, espc, domain);
-    _values = values;
+  /** Main constructor: convert from one enum to another */
+  TransfVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
+    super(key, espc, masterVecKey);
+    computeMap(masterVec().domain(),toDomain);
+    DKV.put(this);
+  }
+
+  /** Constructor just to generate the map and domain; used in tests */
+  TransfVec( String[] from, String[] to ) {
+    super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
+    computeMap(from,to);
+    DKV.put(this);
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new TransfChunk(masterVec().chunkForChunkIdx(cidx), this);
   }
 
-  static abstract class TransfChunk extends Chunk {
-    protected static final long MISSING_VALUE = -1L;
-    final Chunk _c;
-    final int[] _values;
-
-    protected TransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; }
-
-    @Override protected double atd_impl(int idx) { double d = 0; return _c.isNA0(idx) ? Double.NaN : ( (d=at8_impl(idx)) == MISSING_VALUE ? Double.NaN : d ) ;  }
-    @Override protected boolean isNA_impl(int idx) {
-      if (_c.isNA_impl(idx)) return true;
-      return at8_impl(idx) == MISSING_VALUE; // this case covers situation when there is no mapping
+  /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
+   *  the 'from' domain not in the 'to' domain are mapped past the end of the
+   *  'from' values.  Strings in the 'to' domain not in the 'from' domain
+   *  simply do not appear in the mapping.  The returned map is always the same
+   *  length as the 'from' domain.  It's contents have values from both
+   *  domains; the resulting domain is as big as the largest value in the map,
+   *  and only has strings from the 'from' domain (which probably overlap
+   *  somewhat with the 'to' domain).
+   *
+   *  <p> Example: from={"Blue","Red","Green"}, to={"Green","Yellow","Blue"}.<br>
+   *  "Yellow" does not appear in the 'from' domain; "Red" does not appeaar in the 'to' domain.<br>
+   *  Returned map is {2,3,0}.<br>
+   *  Map length matches the 'from' domain length.<br>
+   *  Largest value is 3, so the domain is size 4.<br>
+   *  Domain is: {"Green","Blue","Yellow","Red"}<br>
+   *  Extra values in the 'from' domain appear, in-order in the 'from' domain, at the end.
+   *  @return mapping
+   */
+  void computeMap( String[] from, String[] to ) {
+    if( from==null || from==to || Arrays.equals(from,to) ) {
+      _map = ArrayUtils.seq(0,to.length);
+      setDomain(to);
+      return;
     }
+    HashMap<String,Integer> h = new HashMap<>();
+    for( int i=0; i<to.length; i++ ) h.put(to[i],i);
+    _map = new int[from.length];
+    String[] ss = to;
+    int extra = to.length;
+    for( int j=0; j<from.length; j++ ) {
+      Integer x = h.get(from[j]);
+      if( x!=null ) _map[j] = x;
+      else {
+        _map[j] = extra++;
+        ss = Arrays.copyOf(ss,extra);
+        ss[extra-1] = from[j];
+      }
+    }
+    setDomain(ss);
+  }
 
+
+  static class TransfChunk extends Chunk {
+    final Chunk _c;             // Test-set map
+    final transient int[] _map;
+
+    TransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _map = vec._map; }
+
+    // Returns the mapped value.  {@code _map} covers all the values in the
+    // master Chunk, so no AIOOBE.  Missing values in the master Chunk return
+    // the usual NaN.
+    @Override protected double atd_impl(int idx) { return _c.isNA_impl(idx) ? Double.NaN : at8_impl(idx); }
+
+    // Returns the mapped value.  {@code _map} covers all the values in the
+    // master Chunk, so no AIOOBE.  Missing values in the master Chunk throw
+    // the normal missing-value exception when loading from the master.
+    @Override protected long at8_impl(int idx) { return _map[(int)_c.at8_impl(idx)]; }
+
+    // Returns true if the masterVec is missing, false otherwise
+    @Override protected boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }
     @Override boolean set_impl(int idx, long l)   { return false; }
     @Override boolean set_impl(int idx, double d) { return false; }
     @Override boolean set_impl(int idx, float f)  { return false; }
@@ -59,124 +116,7 @@ public class TransfVec extends WrappedVec {
         else nc.addNum(at80(i),0);
       return nc;
     }
-    @Override public AutoBuffer write_impl(AutoBuffer bb) { throw new UnsupportedOperationException(); }
-    @Override public Chunk read_impl(AutoBuffer bb)       { throw new UnsupportedOperationException(); }
-
-
-    public FlatTransfChunk(Chunk c, TransfVec vec) {
-      super(c,vec);
-      assert vec._indexes == null : "TransfChunk requires NULL indexing array.";
-      _values = vec._values;
-    }
-
-    @Override protected long at8_impl(int idx) { return get(_c.at8_impl(idx)); }
-
-    private long get(long val) {
-      int indx = -1;
-      return (indx = Arrays.binarySearch(_values, (int)val)) < 0 ? MISSING_VALUE : indx ;
-    }
+    @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
+    @Override public Chunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
   }
-
-//  /** Compose this vector with given transformation. Always return a new vector */
-//  public Vec compose(int[][] transfMap, String[] domain) { return compose(this, transfMap, domain, true);  }
-//
-//  /**
-//   * Compose given origVector with given transformation. Always returns a new vector.
-//   * Original vector is kept if keepOrig is true.
-//   * @param origVec
-//   * @param transfMap
-//   * @param keepOrig
-//   * @return a new instance of {@link TransfVec} composing transformation of origVector and tranfsMap
-//   */
-//  public static Vec compose(TransfVec origVec, int[][] transfMap, String[] domain, boolean keepOrig) {
-//    // Do a mapping from INT -> ENUM -> this vector ENUM
-//    int[][] domMap = compose(new int[][] {origVec._values, origVec._indexes }, transfMap);
-//    Vec result = origVec.masterVec().makeTransf(domMap[0], domMap[1], domain);
-//    if (!keepOrig) DKV.remove(origVec._key);
-//    return result;
-//  }
-//
-//  static int[][] compose(int[][] first, int[][] second) {
-//    int[] firstDom = first[0];
-//    int[] firstRan = first[1];  // flat transformation
-//    int[] secondDom = second[0];
-//    int[] secondRan = second[1];
-//
-//    boolean[] filter = new boolean[firstDom.length]; int fcnt = 0;
-//    int[] resDom = firstDom.clone();
-//    int[] resRan = firstRan!=null ? firstRan.clone() : new int[firstDom.length];
-//    for (int i=0; i<resDom.length; i++) {
-//      int v = firstRan!=null ? firstRan[i] : i; // resulting value
-//      int vi = Arrays.binarySearch(secondDom, v);
-//      // Do not be too strict in composition assert vi >=0 : "Trying to compose two incompatible transformation: first=" + Arrays.deepToString(first) + ", second=" + Arrays.deepToString(second);
-//      if (vi<0) {
-//        filter[i] = true;
-//        fcnt++;
-//      } else
-//        resRan[i] = secondRan!=null ? secondRan[vi] : vi;
-//    }
-//    return new int[][] { filter(resDom,filter,fcnt), filter(resRan,filter,fcnt) };
-//  }
-//  private static int[] filter(int[] values, boolean[] filter, int fcnt) {
-//    assert filter.length == values.length : "Values should have same length as filter!";
-//    assert filter.length - fcnt >= 0 : "Cannot filter more values then legth of filter vector!";
-//    if (fcnt==0) return values;
-//    int[] result = new int[filter.length - fcnt];
-//    int c = 0;
-//    for (int i=0; i<values.length; i++) {
-//      if (!filter[i]) result[c++] = values[i];
-//    }
-//    return result;
-//  }
-//
-//  public static int[][] pack(int[] values, boolean[] usemap) {
-//    assert values.length == usemap.length : "Cannot pack the map according given use map!";
-//    int cnt = 0;
-//    for (boolean anUsemap : usemap) cnt += anUsemap ? 1 : 0;
-//    int[] pvals = new int[cnt]; // only used values
-//    int[] pindx = new int[cnt]; // indexes of used values
-//    int index = 0;
-//    for (int i=0; i<usemap.length; i++) {
-//      if (usemap[i]) {
-//        pvals[index] = values[i];
-//        pindx[index] = i;
-//        index++;
-//      }
-//    }
-//    return new int[][] { pvals, pindx };
-//  }
-//
-//  /** Sort two arrays - the second one is sorted according the first one. */
-//  public static void sortWith(final int[] ary, int[] ary2) {
-//    Integer[] sortOrder = new Integer[ary.length];
-//    for(int i=0; i<sortOrder.length; i++) sortOrder[i] = i;
-//    Arrays.sort(sortOrder, new Comparator<Integer>() {
-//      @Override public int compare(Integer o1, Integer o2) { return ary[o1]-ary[o2]; }
-//    });
-//    sortAccording2(ary,  sortOrder);
-//    sortAccording2(ary2, sortOrder);
-//  }
-//
-//  /** Sort given array according given sort order. Sort is implemented in-place. */
-//  public static void sortAccording2(int[] ary, Integer[] sortOrder) {
-//    Integer[] so = sortOrder.clone(); // we are modifying sortOrder to preserve exchanges
-//    for(int i=0; i<ary.length; i++) {
-//      int tmp = ary[i];
-//      int idx = so[i];
-//      ary[i] = ary[idx];
-//      ary[idx] = tmp;
-//      for (int j=i; j<so.length; j++) if (so[j]==i) { so[j] = idx; break; }
-//    }
-//  }
-//  /** Sort given array according given sort order. Sort is implemented in-place. */
-//  private static void sortAccording2(boolean[] ary, Integer[] sortOrder) {
-//    Integer[] so = sortOrder.clone(); // we are modifying sortOrder to preserve exchanges
-//    for(int i=0; i<ary.length; i++) {
-//      boolean tmp = ary[i];
-//      int idx = so[i];
-//      ary[i] = ary[idx];
-//      ary[idx] = tmp;
-//      for (int j=i; j<so.length; j++) if (so[j]==i) { so[j] = idx; break; }
-//    }
-//  }
 }

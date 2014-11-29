@@ -36,8 +36,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     assert(Arrays.equals(_key._kb, selfKey._kb));
   }
 
-  @Override public boolean isSupervised() {return false;}
-
   // Default publicly visible Schema is V2
   @Override public ModelSchema schema() { return new Word2VecModelV2(); }
 

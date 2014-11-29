@@ -195,6 +195,8 @@ public class Vec extends Keyed {
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
 
+  static final String[] TYPES = new String[]{"BAD","UUID","String","Numeric","Categorical","Time0","Time1","Time2"};
+  public final String typeStr() { return TYPES[_type]; }
   /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Enum column.  */
@@ -320,9 +322,7 @@ public class Vec extends Keyed {
         DKV.put(v.chunkKey(c.cidx()),c2,_fs);
       }
     }.doAll(this);
-    Futures fs= new Futures();
-    DKV.put(v._key,v, fs);
-    fs.blockForPending();
+    DKV.put(v._key,v);
     return v;
   }
 
@@ -920,59 +920,21 @@ public class Vec extends Keyed {
    *  Transformation is done by a {@link TransfVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new Enum Vec  */
-  public Vec toEnum() {
-    if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
+  public TransfVec toEnum() {
+    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     long[] domain= new CollectDomain().doAll(this).domain();
     if( domain.length > Enum.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Enum.MAX_ENUM_SIZE);
-    return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
+    return adaptTo(ArrayUtils.toString(domain));
   }
 
-  /** Create a vector transforming values according given domain map.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @see Vec#makeTransf(int[], int[], String[])  */
-  public Vec makeTransf(final int[][] map, String[] finalDomain) { return makeTransf(map[0], map[1], finalDomain); }
-
-  /** Creates a new transformation from given values to given indexes of given domain.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @param values values being mapped from
-   *  @param indexes values being mapped to
-   *  @param domain domain of new vector
-   *  @return always return a new vector which maps given values into a new domain
-   */
-  public Vec makeTransf(final int[] values, final int[] indexes, final String[] domain) {
-    if( _espc == null ) throw H2O.unimpl();
-    Vec v0 = new TransfVec(values, indexes, domain, this._key, group().addVec(),_espc);
-    DKV.put(v0._key,v0);
-    return v0;
-  }
-
-  /** Makes a new transformation vector with identity mapping.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @return a new transformation vector
-   *  @see Vec#makeTransf(int[], int[], String[])
-   */
-  private Vec makeIdentityTransf() {
-    assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
-    return makeTransf(ArrayUtils.seq(0, _domain.length), null, _domain);
-  }
-
-  /** Makes a new transformation vector from given values to values 0..domain size
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @param values values which are mapped from
-   *  @param domain target domain which is mapped to
-   *  @return a new transformation vector providing mapping between given values and target domain.
-   *  @see Vec#makeTransf(int[], int[], String[])
-   */
-  public Vec makeSimpleTransf(long[] values, String[] domain) {
-    int is[] = new int[values.length];
-    for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
-    return makeTransf(is, null, domain);
+  /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted
+   *  TransfVec has 'this' as it's masterVec, but returns results in the 'to'
+   *  domain (or just past it, if 'this' has elements not appearing in the 'to'
+   *  domain). */
+  public TransfVec adaptTo( String[] domain ) {
+    return new TransfVec(group().addVec(),_espc,domain,this._key);
   }
 
   /** This Vec does not have dependent hidden Vec it uses.

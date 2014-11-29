@@ -3,6 +3,8 @@ package hex.tree;
 import java.util.Arrays;
 
 import hex.AUC;
+import hex.AUCData;
+import hex.ModelMetrics;
 import hex.ConfusionMatrix2;
 import water.DKV;
 import water.MRTask;
@@ -26,6 +28,9 @@ public class Score extends MRTask<Score> {
   long    _snrows;              // Count of voted-on rows
   long    _cm[/*actual*/][/*predicted*/]; // Confusion matrix
   long    _cms[/*threshold*/][/*actual*/][/*predicted*/]; // Compute CM per threshold for binary classifiers
+  // If scored on an validation set, we use the normal model metrics scoring
+  // instead of short-cutting internal tree calcs.
+  ModelMetrics _mm;
 
   public double mse() { return _sum/_snrows; }
 
@@ -37,14 +42,18 @@ public class Score extends MRTask<Score> {
   }
 
   // Confusion Matrix for classification, or null otherwise
-  public ConfusionMatrix2 cm() { return _cm == null ? null : new ConfusionMatrix2(_cm); }
+  public ConfusionMatrix2 cm() { 
+    if( _mm!=null ) return _mm.cm;
+    return _cm == null ? null : new ConfusionMatrix2(_cm); 
+  }
 
-  public AUC auc() { 
+  public AUCData auc() { 
     if( _nclass != 2 ) return null; // Only for binomial models
+    if( _mm!=null ) return _mm.auc;
     final int n = _cms.length;
     ConfusionMatrix2[] res = new ConfusionMatrix2[n];
     for( int i = 0; i < n; i++ ) res[i] = new ConfusionMatrix2(_cms[i]);
-    return new AUC(res, ModelUtils.DEFAULT_THRESHOLDS, _bldr.vresponse().domain());
+    return new AUC(res, ModelUtils.DEFAULT_THRESHOLDS, _bldr.vresponse().domain()).data();
   }
 
 
@@ -72,11 +81,10 @@ public class Score extends MRTask<Score> {
     if( _bldr._parms._valid == null ) return doAll(_bldr.train(), build_tree_one_node);
 
     // If given a validation dataset, score it "the hard way" (apply the model)
-    // getting the class distribution.
-    Frame res = _bldr._model.score(_bldr.valid(), false);
-    // Now compute CM & AUC on the pre-scored data
-    doAll(new Frame(_bldr.valid()).add(res));
-    res.delete();    // Delete temp keys
+    // getting the predicted class distribution; fetch results from the
+    // ModelMetrics.
+    _bldr._model.score(_bldr.valid()).delete();
+    _mm = ModelMetrics.getFromDKV(_bldr._model,_bldr.valid());
     return this;
   }
 
@@ -150,8 +158,8 @@ public class Score extends MRTask<Score> {
     long err=_snrows;
     Log.info("r2 is "+r2()+", with "+ntrees+"x"+_nclass+" trees (average of "+((float)lcnt/_nclass)+" nodes)");
     if( _nclass > 1 ) {
-      for( int c=0; c<_nclass; c++ ) err -= _cm[c][c];
-      Log.info("Total of "+err+" errors on "+_snrows+" rows, CM= "+Arrays.deepToString(_cm));
+      ConfusionMatrix2 cm = cm();
+      Log.info("Total of "+cm.errCount()+" errors on "+cm.totalRows()+" rows");
     } else
       Log.info("Reported on "+_snrows+" rows.");
     return this;
