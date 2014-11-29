@@ -4,7 +4,7 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
-from h2o_xexec import Def, Fcn, Assign
+from h2o_xexec import Def, Fcn, Assign, Frame
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
@@ -66,12 +66,12 @@ class Basic(unittest.TestCase):
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []
-        for trial in range(5):
+        for trial in range(3):
             for execObj in funsList:
                 result = execObj.do()
 
-                a = Assign('junk', Fcn('anon', 'r1'))
-                result = a.do(timeoutSecs=15)
+                a = Assign('junk', Fcn('anon', Frame('r1',col=0)))
+                result = a.do(timeoutSecs=60)
 
                 # rows might be zero!
                 if a.execResult['num_rows'] or a.execResult['num_cols']:

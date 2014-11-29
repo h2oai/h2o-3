@@ -35,9 +35,9 @@ class Basic(unittest.TestCase):
             str(Assign('r0.hex', Frame('r.hex',col=0)) ),
             # 's0.hex = runif(r.hex[,1],-1)',
             str(Assign('s0.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
-            's1.hex = runif(r.hex[,1],-1)',
+            # 's1.hex = runif(r.hex[,1],-1)',
             str(Assign('s1.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
-            's2.hex = runif(r.hex[,1],-1)',
+            # 's2.hex = runif(r.hex[,1],-1)',
             str(Assign('s2.hex', Fcn("runif", Frame('r.hex',col=0), -1)) ),
             # error. this causes exception
             # 's3.hex = runif(nrow(r.hex), -1)',

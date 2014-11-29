@@ -37,7 +37,7 @@ class Basic(unittest.TestCase):
                 # execExpr1 = '(+ $v #1)'
                 # add to itself?
                 execExpr1 = '(+ $v $v)'
-                funs = '[(def anon { v } %s;;;)]' % execExpr1
+                funs = '[(def anon {v} %s;;;)]' % execExpr1
                 execResult, result = h2e.exec_expr(h2o.nodes[0], funs, resultKey=None, timeoutSecs=5, doFuns=True)
                 # execExpr2 = '(= !v2 (anon ([ $v2 "null" #0)))'
                 # execExpr2 = '(= !v2 (anon $v2))'
