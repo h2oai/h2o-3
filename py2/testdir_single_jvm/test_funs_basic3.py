@@ -7,11 +7,35 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 from h2o_xexec import Def, Fcn, Assign
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
+
+# 'c' allowed
 funsList = [
     Def('anon', 'x', 
-        Fcn('var', 'x', None, False, None),
-        Fcn('var', 'x', None, False, None),
-        Fcn('var', 'x', None, False, None),
+        Assign('a', Fcn('var', 'x', None, False, None)),
+        Assign('b', Fcn('var', 'x', None, False, None)),
+        Assign('d', Fcn('var', 'x', None, False, None)),
+        Assign('e', Fcn('var', 'x', None, False, None)),
+        Assign('f', Fcn('var', 'x', None, False, None)),
+        Assign('g', Fcn('var', 'x', None, False, None)),
+        Assign('d', Fcn('var', 'x', None, False, None)),
+        Assign('i', Fcn('var', 'x', None, False, None)),
+        Assign('j', Fcn('var', 'x', None, False, None)),
+        Assign('k', Fcn('var', 'x', None, False, None)),
+        Assign('l', Fcn('var', 'x', None, False, None)),
+        Assign('m', Fcn('var', 'x', None, False, None)),
+        Assign('n', Fcn('var', 'x', None, False, None)),
+        Assign('o', Fcn('var', 'x', None, False, None)),
+        Assign('p', Fcn('var', 'x', None, False, None)),
+        Assign('q', Fcn('var', 'x', None, False, None)),
+        Assign('r', Fcn('var', 'x', None, False, None)),
+        Assign('s', Fcn('var', 'x', None, False, None)),
+        Assign('t', Fcn('var', 'x', None, False, None)),
+        Assign('u', Fcn('var', 'x', None, False, None)),
+        Assign('v', Fcn('var', 'x', None, False, None)),
+        Assign('w', Fcn('var', 'x', None, False, None)),
+        Assign('x', Fcn('var', 'x', None, False, None)),
+        Assign('y', Fcn('var', 'x', None, False, None)),
+        Assign('z', Fcn('var', 'x', None, False, None)),
         Fcn('var', 'x', None, False, None),
     ),
 ]
