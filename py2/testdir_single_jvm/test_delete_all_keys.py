@@ -25,7 +25,7 @@ class Basic(unittest.TestCase):
             ]
         # csvFilenameList = random.sample(csvFilenameAll,1)
         csvFilenameList = csvFilenameAll
-        for trial in range(3):
+        for trial in range(2):
             for csvFilename in csvFilenameList:
                 csvPathname = importFolderPath + "/" + csvFilename
                 start = time.time()

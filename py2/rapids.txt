@@ -417,3 +417,26 @@ strings: "asdf", 'asdf'
 Frames: $v2, $iris.hex
 
 anything else gets called a vector, but that's not the right name...
+
+#*****************************************8888
+
+okay, so it looks like:
+
+(if (expr)...)
+and
+(else ..)
+
+are syntax like functions
+expr is the same syntax as any expression (although it shoudn't have a lhs? it could be a function that returns a logical value)
+
+any  (else ..)  relates to the previous (if ..) within the same level
+
+
+if another (if ...) happens at the same level before an (else ..) to a prior (if ..) that prior (if ..) loses it's ability to have an (else ...)
+
+
+(else ..) acts as if it has an if clause that's the logical opposite of the (if ..) it's paired with
+
+You can't have two sequential (else..) at the same level..need an intermidiate (if ...)
+
+(return expr) ends the function and returns the expr value

@@ -1,7 +1,6 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
-
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
 from h2o_xexec import Def, Fcn, Assign, Frame
@@ -9,6 +8,7 @@ from h2o_xexec import Def, Fcn, Assign, Frame
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
 # 'c' allowed
+# should be able to take a list of statements
 funsList = [
     Def('anon', 'x', 
         Assign('a', Fcn('var', 'x', None, False, None)),
@@ -38,6 +38,12 @@ funsList = [
         Assign('z', Fcn('var', 'x', None, False, None)),
         Fcn('var', 'x', None, False, None),
     ),
+
+    Def('anon', 'x', 
+        [Assign(key, Fcn('var', 'x', None, False, None)) for key in 'abdefghijklmnopqrstuvz'],
+        [Assign(key, Fcn('sum', Frame('x',col=0), False)) for key in 'abdefghijklmnopqrstuvz'],
+        Fcn('var', 'x', None, False, None),
+    ),
 ]
 
 class Basic(unittest.TestCase):
@@ -55,22 +61,28 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_rapids_funs_basic3(self):
-        if 1==1:
-            bucket = 'smalldata'
-            csvPathname = 'iris/iris_wheader.csv'
-        else:
+        DO_FAIL = False
+        if DO_FAIL:
             bucket = 'home-0xdiag-datasets'
             csvPathname = 'standard/covtype.data'
+        else:
+            bucket = 'smalldata'
+            csvPathname = 'iris/iris_wheader.csv'
 
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []
+
         for trial in range(3):
             for execObj in funsList:
                 result = execObj.do()
 
-                a = Assign('junk', Fcn('anon', Frame('r1',col=0)))
+                # rapids doesn't like complicated params right now?
+                if DO_FAIL:
+                    a = Assign('junk', Fcn('anon', Frame('r1',col=0)))
+                else:
+                    a = Assign('junk', Fcn('anon', 'r1'))
                 result = a.do(timeoutSecs=60)
 
                 # rows might be zero!

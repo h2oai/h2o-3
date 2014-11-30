@@ -80,6 +80,7 @@ def translateValue(item="F"):
 class Item(Xbase):
     def __init__(self, item):
         self.item = item
+        # self.funs is not resolved until a string resolution?
 
     def __str__(self):
         item = self.item
@@ -192,7 +193,7 @@ xFcnOp1Set = set([
 'ncol',
 'length',
 'abs',
-'sgn',
+'sign',
 'sqrt',
 'ceil',
 'flr',
@@ -248,29 +249,45 @@ xFcnOp3Set = set([
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
 # Note this can't unpack a dict
-def unpackOperands(operands, item=True):
-    def uu(v):
+def unpackOperands(operands, parent=None, item=True):
+    openIf = False
+    def addItem(opr):
+        if isinstance(opr, Else) and not openIf:
+            raise Exception("%s unpackOperands, Else without open If, %s", (parent, opr))
+        if isinstance(opr, If):
+            global openIf
+            openIf = True
         if item:
-            operandList.append(Item(v))
+            operandList.append(Item(opr))
         else:
-            operandList.append(v)
+            operandList.append(opr)
 
     if operands is None:
-        raise Exception("unpackOperands no operands: %s" % operands)
+        raise Exception("%s unpackOperands no operands: %s" % (parent, operands))
     operandList = []
     if isinstance(operands, (list, tuple)):
-        for v in operands:
+        for opr in operands:
             # can we handle any operand being a list here too? might be compact
             # just one level of extra unpacking
-            if not isinstance(v, (list,tuple)): 
-                uu(v)
-            # collapse it into the one new list
+            if not isinstance(opr, (list,tuple)): 
+                addItem(opr)
             else: 
-                for v2 in v: 
-                    uu(v2)
+                # collapse it into the one new list
+                for opr2 in opr: 
+                    # if isinstance(operands, (list, tuple)):
+                    #    raise Exception("%s unpackOperands, can't have lists within lists, %s", (parent, opr2))
+                    # this can be a list?? Seq seems to like a list. maybe just a list of number or string
+                    addItem(opr2)
     else: 
-        uu(operands)
+        addItem(operands)
 
+    if operandList is None or len(operandList)==0:
+        raise Exception("%s unpackOperands operandList is None or empty: %s" % (parent, operandList))
+
+    if parent:
+        print "%s: %s" % (parent, map(str,operandList))
+
+    # always returns a list, even if one thing
     return operandList
 
 #********************************************************************************
@@ -307,11 +324,7 @@ def legalFunction(function):
 class Fcn(Xbase):
     def __init__(self, function='sum', *operands):
         super(Fcn, self).__init__()
-        operandList = unpackOperands(operands)
-        if operandList is None:
-            raise Exception("Seq operandList is None %s" % operandList)
-        print "Fcn operands: %s" % operandList
-        self.operandList = operandList
+        operandList = unpackOperands(operands, parent="Fcn operands")
 
         # no checking for correct number of params
         print "Fcn %s has %s operands" % (function, len(operands))
@@ -340,10 +353,7 @@ class Fcn(Xbase):
 # operands is a list of items
 class Seq(Xbase):
     def __init__(self, *operands):
-        operandList = unpackOperands(operands)
-        if operandList is None:
-            raise Exception("Seq operandList is None %s" % operandList)
-        print "Seq operands: %s" % map(str,operandList)
+        operandList = unpackOperands(operands, parent="Seq operands")
         self.operandList = operandList
 
     def __str__(self):
@@ -388,20 +398,31 @@ class Frame(Xbase):
         # we always add $ to a here?. Suppose could detect whether it's already there
         return '([ $%s %s %s)' % (self.frame, self.row, self.col)
 
-# args should be individual strings, not lists
+# higher level things might skip using Expr and do this stuff themselves
 class Expr(Xbase):
-    # can be an Item, Function, Col, Frame
-    def __init__(self, expr):
-        # base init for execResult etc results. Should only need for Assign, Expr, Def, Frame?
-        super(Assign, self).__init__()
-
-        self.expr = Item(expr)
+    def __init__(self, *exprs):
+        super(Expr, self).__init__()
+        # this converts them to Items
+        exprList = unpackOperands(exprs, parent="Expr exprs")
+        self.exprList = exprList
         self.funs = False
-        # verify the whole thing can be a rapids string at init time
-        print "Expr: %s" % expr
 
     def __str__(self):
-        return str(self.expr)
+        exprString = " ".join(map(str, self.exprList))
+        return "%s" % exprString
+
+    __repr__ = __str__
+    ast = __str__
+
+class Return(Xbase):
+    # return only has one expression?
+    def __init__(self, expr):
+        super(Return, self).__init__()
+        self.expr = Item(expr)
+        self.funs = False
+
+    def __str__(self):
+        return "%s" % self.expr
 
     __repr__ = __str__
     ast = __str__
@@ -409,30 +430,35 @@ class Expr(Xbase):
 #       if hasattr(self.ps.cmdline, '__call__'):
 #                pcmdline = self.ps.cmdline()
 
-
 class Assign(Xbase):
-    def __init__(self, lhs='xTemp', rhs='xTemp'):
+    # let rhs be more than one now, to allow for (if..) (else..)
+    def __init__(self, lhs='xTemp', *rhs):
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         super(Assign, self).__init__()
 
         self.lhs = lhs
-        self.rhs = Item(rhs)
+        rhsList = unpackOperands(rhs, parent="Assign rhs")
+        self.rhsList = rhsList
         self.funs = False
         # verify the whole thing can be a rapids string at init time
+
         if re.match('\$', lhs):
             raise Exception("Assign: lhs shouldn't start with '$' %s" % lhs)
         if re.match('c$', lhs):
-            raise Exception("Assign: lhs can't be 'c'" % lhs)
+            raise Exception("Assign: lhs can't be 'c' %s" % lhs)
         if not re.match('[a-zA-Z0-9_]', lhs):
             raise Exception("Assign: Don't like the chars in your lhs %s" % lhs)
+
         print "Assign lhs: %s" % self.lhs
-        print "Assign rhs: %s" % self.rhs
+        print "Assign rhs: %s" % self.rhsList
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
     # FIX! what about checking rhs references have $ for keys.
     def __str__(self):
-        return "(= !%s %s)" % (self.lhs, self.rhs)
+        # should only have >1 for (if ..) (else ..) ???
+        rhsStr = " ".join(map(str, self.rhsList))
+        return "(= !%s %s)" % (self.lhs, rhsStr)
 
     ast = __str__
 
@@ -447,20 +473,14 @@ class Def(Xbase):
 
         # params and exprs can be lists or string
         # expand lists/tupcles
-        paramList = unpackOperands(params, item=False)
-        if len(paramList)==0:
-            raise Exception("Def, no exprs: %s" % exprs)
-        print "Def params: %s" % paramList
+        paramList = unpackOperands(params, parent="Def params", item=False)
 
         # check that all the parms are legal strings (variable names
         for p in paramList:
             if not re.match(r"[a-zA-Z0-9]+$", str(p)):
                 raise Exception("Def, bad name for parameter: %s" % p)
         
-        exprList = unpackOperands(exprs)
-        if len(exprList)==0:
-            raise Exception("Def, no exprs: %s" % exprs)
-        print "Def exprs: %s" % exprList
+        exprList = unpackOperands(exprs, parent="Def exprs")
 
         # legal function name (I overconstrain compared to what Rapids allows)
         if not re.match(r"[a-zA-Z0-9]+$", function):
@@ -485,7 +505,73 @@ class Def(Xbase):
     __repr__ = __str__
     ast = __str__
 
-# operands is a list of items
+class If(Xbase):
+    def __init__(self, clause, *exprs):
+        super(If, self).__init__()
+        # clause can't be a list
+        # exprs can be lists or string
+        # expand lists/tuples
+        if isinstance(clause, (list, tuple)):
+            raise Exception("If, clause shouldn't be list/tuple: %s" % exprs)
+        if clause is None:
+            raise Exception("If, clause shouldn't be None: %s" % clause)
+
+        # else pairing to if is checked inside here
+        # but what about pairing to this else? done at higher level
+        exprList = unpackOperands(exprs, parent="If exprs")
+        self.clause = Item(clause)
+        self.exprList = exprList
+
+    def __str__(self):
+        exprStr = ";;".join(map(str, self.exprList))
+        if len(self.exprList)>1:
+            exprStr += ";;;"
+        return "(if (%s) %s)" % (self.clause, exprStr)
+
+    __repr__ = __str__
+    ast = __str__
+
+# in a series of expressions...Else can only follow If
+class Else(Xbase):
+    def __init__(self, *exprs):
+        super(Else, self).__init__()
+        exprList = unpackOperands(exprs, parent="Else exprs")
+        self.exprList = exprList
+
+    def __str__(self):
+        exprStr = ";;".join(map(str, self.exprList))
+        if len(self.exprList)>1:
+            exprStr += ";;;"
+        return "(else %s)" % exprStr
+
+    __repr__ = __str__
+    ast = __str__
+
+# can only text Expr or a Expr List for ifExpr/ElseExpr
+class IfElse(Xbase):
+    def __init__(self, clause, ifExpr, elseExpr):
+        super(IfElse, self).__init__()
+
+        ifExprList = unpackOperands(ifExpr, parent="IfElse ifExprs")
+        elseExprList = unpackOperands(elseExpr, parent="IfElse elseExprs")
+        self.clause = Item(clause)
+        self.ifExprList = ifExprList
+        self.elseExprList = elseExprList
+
+    def __str__(self):
+        ifExprStr = ";;".join(map(str, self.ifExprList))
+        if len(self.ifExprList)>1:
+            ifExprStr += ";;;"
+        
+        elseExprStr = ";;".join(map(str, self.elseExprList))
+        if len(self.elseExprList)>1:
+            elseExprStr += ";;;"
+
+        return "(if (%s) %s) (else %s)" % (self.clause, ifExprStr, elseExprStr)
+
+    __repr__ = __str__
+    ast = __str__
+
 # 'c' can only have one operand? And it has to be a string or number
 # have this because it's so common as a function
 class Col(Fcn):
