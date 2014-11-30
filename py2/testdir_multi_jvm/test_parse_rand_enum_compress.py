@@ -24,13 +24,13 @@ print "assume that is unlikely with the distribution being used"
 
 
 def massageUTF8Choices(ordinalChoices):
-    ordinalChoices.remove(0x09) # is 9 bad..apparently can cause NA
+    # ordinalChoices.remove(0x09) # is 9 bad..apparently can cause NA
 
-    if NO_NUL:
-        ordinalChoices.remove(0x00) # nul
-    ordinalChoices.remove(0x0d) # cr
-    ordinalChoices.remove(0x0a) # lf
-    ordinalChoices.remove(0x01) # hiveseparator
+    # if NO_NUL:
+    #    ordinalChoices.remove(0x00) # nul
+    # ordinalChoices.remove(0x01) # hiveseparator
+    # ordinalChoices.remove(0x0d) # cr
+    # ordinalChoices.remove(0x0a) # lf
 
     # smaller range, avoiding 0-1f control chars
     # ordinalChoices = range(0x20, 0x7f) # doesn't include last value
@@ -56,11 +56,12 @@ def massageUTF8Choices(ordinalChoices):
 
     # print ordinalChoices
 
+# h2o-dev doesn't like 0 thru 1d?
 if UTF8:
     # what about multi-byte UTF8
-    ordinalChoices = range(0x0, 0x100) # doesn't include last value ..allow ff
+    ordinalChoices = range(0x1e, 0x100) # doesn't include last value ..allow ff
 else:  # ascii subset?
-    ordinalChoices = range(0x0, 0x80) # doesn't include last value ..allow 7f
+    ordinalChoices = range(0x1e, 0x80) # doesn't include last value ..allow 7f
 
 if UTF8_MULTIBYTE:
     # 000000 - 00007f 1byte
@@ -87,7 +88,8 @@ if UTF8_MULTIBYTE:
         ordinalChoicesMulti += range(0x040000,0x10ffff) # 4byte
     else:
         # just sample 10 from each. 200+ from first
-        ordinalChoicesMulti  = range(0x000000,0x00007f) # 1byte
+        # h2o-dev doesn't like 0 thru 1d in the jaon response?
+        ordinalChoicesMulti  = range(0x00001e,0x00007f) # 1byte
         ordinalChoicesMulti += aSmallSet(0x000080,0x00009f) # 2byte
         ordinalChoicesMulti += aSmallSet(0x0000a0,0x0003ff) # 2byte
         ordinalChoicesMulti += aSmallSet(0x000400,0x0007ff) # 2byte

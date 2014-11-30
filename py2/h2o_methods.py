@@ -108,7 +108,11 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     }
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-    result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+    if 1==1:
+        result = self.do_json_request('Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
+    else:
+        result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+
     verboseprint("rapids result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?

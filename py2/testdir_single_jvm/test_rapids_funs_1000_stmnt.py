@@ -10,6 +10,8 @@ print "Trying a different way, listing Rapids objects, rather than .ast() string
 # 'c' allowed
 # should be able to take a list of statements
 keyString = 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
+keyString += 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
+keyString += 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
 funsList = [
     Def('anon', 'x', 
         [Assign(key, Fcn('var', 'x', None, False, None)) for key in keyString],
@@ -68,6 +70,7 @@ class Basic(unittest.TestCase):
 
         for trial in range(3):
             for execObj in funsList:
+                print "ast length:", len(execObj.ast())
                 result = execObj.do()
 
                 # rapids doesn't like complicated params right now?

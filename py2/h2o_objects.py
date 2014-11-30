@@ -5,6 +5,7 @@ import h2o_nodes
 from h2o_test import \
     tmp_dir, tmp_file, flatfile_pathname, spawn_cmd, find_file, verboseprint, \
     dump_json, log, check_sandbox_for_errors
+import json
 
 # print "h2o_objects"
 
@@ -207,7 +208,6 @@ class H2O(object):
                 # 
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
-                print "post r.headers: " + repr(r.headers)
             elif 'delete' == cmd:
                 r = requests.delete(url, timeout=timeout, params=params, **kwargs)
             elif 'get' == cmd:
@@ -241,6 +241,8 @@ class H2O(object):
 
         # this is used to open a browser on results, or to redo the operation in the browser
         # we don't' have that may urls flying around, so let's keep them all
+
+        # FIX! this doesn't work now with all the extra post data required?
         h2o_nodes.json_url_history.append(r.url)
         # if r.json():
         #     raise Exception("Maybe bad url? no r.json in do_json_request in %s:" % inspect.stack()[1][3])
@@ -248,13 +250,18 @@ class H2O(object):
         if returnFast:
             return
         try:
+            # h2o-dev sometimes is returning ISO-8859-2, Latin-2?
+            ## print "apparent_coding", r.apparent_encoding
+            r.encoding = 'utf-8'
             rjson = r.json()
         except:
-            h2p.red_print("r.text:", dump_json(r.text))
-            if not isinstance(r, (list, dict)):
-                raise Exception("h2o json responses should always be lists or dicts, see previous for text")
-
-            raise Exception("Could not decode any json from the request.")
+            h2p.red_print("r.text:", r.text.encode('utf8'))
+            try:
+                # try to decode the r.text?
+                if not isinstance(json.loads(r.text), (list, dict)):
+                    raise Exception("h2o json responses should always be lists or dicts, see previous for text")
+            except:
+                raise Exception("Could not decode any json from the request %s." % r.text)
 
         # TODO: we should really only look in the response object.  This check
         # prevents us from having a field called "error" (e.g., for a scoring result).

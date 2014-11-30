@@ -184,7 +184,7 @@ xFcnOpBinSet = set([
 xFcnOp1Set = set([
 'c',
 '_',
-'# is.na',
+'is.na',
 'is.factor',
 'any.factor',
 'any.na',
@@ -195,8 +195,8 @@ xFcnOp1Set = set([
 'abs',
 'sign',
 'sqrt',
-'ceil',
-'flr',
+'ceiling',
+'floor',
 'log',
 'exp',
 'scale',
@@ -473,6 +473,10 @@ class Def(Xbase):
 
         # params and exprs can be lists or string
         # expand lists/tupcles
+
+        # add to the list of legal user functions
+        xFcnUser.add(function)
+
         paramList = unpackOperands(params, parent="Def params", item=False)
 
         # check that all the parms are legal strings (variable names
@@ -491,8 +495,6 @@ class Def(Xbase):
         self.paramList = paramList
         self.exprList = exprList
 
-        # add to the list of legal user functions
-        xFcnUser.add(function)
         print "xFcnUser", xFcnUser
 
     def __str__(self):

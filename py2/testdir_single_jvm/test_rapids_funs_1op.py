@@ -94,8 +94,8 @@ class Basic(unittest.TestCase):
                     # a = Assign(result_key, Fcn('ncol', Frame(data_key2, col=0)))
 
                     # what's wrong with mean?
-                    if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan',\
-                        'is.factor', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
+                    if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan', 'sign', 'log', 'exp', 'sqrt', 'abs', 'floor', 'ceiling', 'trunc',\
+                        'is.factor', 'is.na', 'any.na', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
                         a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0)))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
@@ -125,6 +125,14 @@ class Basic(unittest.TestCase):
                         good.append(fun)
                     elif fun in ['var']:
                         a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), False, False, False))
+                        result = a.do(timeoutSecs=14)
+                        good.append(fun)
+                    elif fun in ['match']:
+                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), Frame(data_key2, col=0), 1, None))
+                        result = a.do(timeoutSecs=14)
+                        good.append(fun)
+                    elif fun in ['unique']:
+                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), False, 10, 1))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     else:
