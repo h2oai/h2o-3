@@ -206,10 +206,10 @@ function(stmnt) {
 
       # Grab defaults and exchange them with any passed in args
       op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
-      # m <- paste(op, ".H2OFrame", sep ="")    # get the H2OFrame method
-      # l <- formals(m)[-1]                     # get the arg list for the method  TODO: will have to use getMethod(m, signature=) in future
-      # stop(is.character(op))
-      l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
+      l <- NULL
+      if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
+      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
+      if (is.null(l)) stop("Could not find args for the op: " %p0% as.character(op))
       l <- lapply(l, function(i)
       if (length(i=="") != 0) {
         if(i == "") NULL else i
@@ -253,6 +253,8 @@ function(stmnt) {
   if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
     return(new("ASTEmpty", key = as.character(stmnt_list[[1]])))
   }
+
+  if (length(stmnt) == 1) return(.process.stmnt(stmnt[[1]]))
   stop(paste( "Don't know what to do with statement: ", stmnt))
 }
 
@@ -365,7 +367,7 @@ function(b, is.single = FALSE) {
   stmnts <- .extract.statements(b)
   if (is.single) { stmnts <- list(.statement.to.ast.switchboard(stmnts))
   # return a list of ast_stmnts
-  } else stmnts <- lapply(stmnts, .statement.to.ast.switchboard)
+  } else { stmnts <- lapply(stmnts, .statement.to.ast.switchboard) }
   new("ASTBody", statements = stmnts)
 }
 
@@ -449,6 +451,7 @@ function(s) {
     res %p% '$' %p0% s@key
   } else {
     print(s)
+    print(class(s))
     stop("unimplemented")
   }
 }
