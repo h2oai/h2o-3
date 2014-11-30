@@ -1,0 +1,84 @@
+import unittest, random, sys, time
+sys.path.extend(['.','..','../..','py'])
+import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
+# '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
+
+from h2o_xexec import Def, Fcn, Assign, Frame, If, Else, IfElse, Return
+
+print "Trying a different way, listing Rapids objects, rather than .ast() strings"
+
+# 'c' allowed
+# should be able to take a list of statements
+objList = [
+    Assign('e', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9)))),
+    Assign('f', If(1, 2), Else(IfElse(4, 5, IfElse(7, 8, 9)))),
+    Assign('g', If(0, 2), Else(IfElse(0, 5, IfElse(0, 8, 9)))),
+
+    Def('ms', 'x',
+        [Assign('j', If(0, 2), Else(IfElse(0, 5, IfElse(0, 8, 9))))],
+        [Assign('k', If(0, 12), Else(IfElse(0, 15, IfElse(0, 18, 19))))] ),
+    Assign('e', Fcn('ms', 2)),
+
+    Def('ms', 'x',
+        [Assign('j', If(1, Return(2)), Else(IfElse(0, 5, IfElse(0, 8, 9))))],
+        [Assign('k', If(0, 12), Else(IfElse(0, 15, IfElse(0, 18, 19))))] ),
+    Assign('e', Fcn('ms', 2)),
+]
+
+resultList = [
+    None,
+    None,
+    None,
+
+    None,
+    19,
+
+    None,
+    2,
+]
+
+class Basic(unittest.TestCase):
+    def tearDown(self):
+        h2o.check_sandbox_for_errors()
+
+    @classmethod
+    def setUpClass(cls):
+        global SEED
+        SEED = h2o.setup_random_seed()
+        h2o.init(1, base_port=54333)
+
+    @classmethod
+    def tearDownClass(cls):
+        h2o.tear_down_cloud()
+
+    def test_rapids_ifelse_nested(self):
+        bucket = 'smalldata'
+        csvPathname = 'iris/iris_wheader.csv'
+
+        hexKey = 'r1'
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
+
+        keys = []
+        for trial in range(2):
+            for execObj, expected in zip(objList, resultList):
+                result = execObj.do()
+                # do some scalar result checking
+                if expected is not None:
+                    assert result==expected, "%s %s" (result,expected)
+
+                # rows might be zero!
+                if execObj.execResult['num_rows'] or execObj.execResult['num_cols']:
+                    keys.append(execObj.execExpr)
+
+        print "\nExpressions that created keys"
+        for k in keys:
+            print k
+
+        # for execExpr in exprList:
+        #     h2e.exec_expr(execExpr=execExpr, resultKey=None, timeoutSecs=10)
+
+        h2o.check_sandbox_for_errors()
+
+
+if __name__ == '__main__':
+    h2o.unit_main()
