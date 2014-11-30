@@ -28,7 +28,7 @@ public class TransfVec extends WrappedVec {
   int[] _map;
 
   /** Main constructor: convert from one enum to another */
-  TransfVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
+  public TransfVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
     super(key, espc, masterVecKey);
     computeMap(masterVec().domain(),toDomain);
     DKV.put(this);

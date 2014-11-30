@@ -374,7 +374,7 @@ public class Frame extends Lockable {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
-    for( Vec v : vecs() ) v.remove(fs);
+    for( Vec v : vecs() ) if( v != null ) v.remove(fs);
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];

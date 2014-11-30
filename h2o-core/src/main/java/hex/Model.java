@@ -2,9 +2,7 @@ package hex;
 
 import water.*;
 import water.api.ModelSchema;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -318,18 +316,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec.setDomain(domains[i]);
         }
       } 
-      if( vec != null ) {
-        good++;
+      if( vec != null ) {       // I have a column with a matching name
         if( domains[i] != null ) { // Result needs to be an enum
-          vec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
-          String[] ds = vec.domain();
+          TransfVec tvec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+          String[] ds = tvec.domain();
           assert ds!=null && ds.length >= domains[i].length;
           if( ds.length > domains[i].length )
             msgs.add("Validation column "+names[i]+" has levels not trained on: "+Arrays.toString(Arrays.copyOfRange(ds,domains[i].length,ds.length)));
+          if( expensive ) { vec = tvec; good++; } // Keep it
+          else { tvec.remove(); vec = null; } // No leaking if not-expensive
         } else if( vec.isEnum() ) {
           throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
-          // Assumed compatible; not checking e.g. Strings vs UUID
+          good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
       }
       vvecs[i] = vec;
@@ -341,10 +340,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return msgs.toArray(new String[msgs.size()]);
   }
 
-  /** Bulk score the frame <code>fr</code>, producing a Frame result; the 1st
+  /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
    *  distributions.  For Regression (single-class) models, the 1st and only
-   *  Vec is the prediction value.
+   *  Vec is the prediction value.  The result is in the DKV; caller is
+   *  responsible for deleting.
    *
    * @param fr frame which should be scored
    * @return A new frame containing a predicted values. For classification it
@@ -353,57 +353,54 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *         predicted values.
    */
   public final Frame score(Frame fr) throws IllegalArgumentException {
-    Frame output = null;
-    Key mmkey = null;
-    try {
-      Scope.enter();
-      long start_time = System.currentTimeMillis();
-      Frame adaptFr = new Frame(fr);
-      adaptTestForTrain(adaptFr,true);
-      // Invoke scoring
-      output = scoreImpl(adaptFr);
-      mmkey = computeModelMetrics(start_time, /*results stored under the original not-adapted frame*/fr, output)._key; // calc CM, AUC
-      return output;
-    } finally {
-      Scope.exit(output == null ? null : output._key, mmkey);
-    }
+    long start_time = System.currentTimeMillis();
+    Frame adaptFr = new Frame(fr);
+    adaptTestForTrain(adaptFr,true);   // Adapt
+    Frame output = scoreImpl(adaptFr); // Score
+    computeModelMetrics(start_time, /*results stored under the original not-adapted frame*/fr, output); // calc CM, AUC
+    // Remove temp keys.  TODO: Really should use Scope but Scope does not
+    // currently allow nested-key-keepers.
+    Vec[] vecs = adaptFr.vecs();
+    for( int i=0; i<vecs.length; i++ )
+      if( vecs[i] == fr.vecs()[i] )
+        vecs[i] = null;
+    adaptFr.delete();
+    return output;
   }
 
-  /** Score an already adapted frame.
+  /** Score an already adapted frame.  Returns a new Frame with new
+   *  result vectors, all in the DKV.  Caller responsible for deleting.
    *
    * @param adaptFrm
    * @return A Frame containing the prediction column, and class distribution
    */
   protected Frame scoreImpl(Frame adaptFrm) {
-    assert Arrays.equals(_output._names,adaptFrm._names);
-
-    // Create a new vector for response
-    // If the model produces a classification/enum, copy the domain into the
-    // result vector.
-    int nc = _output.nclasses();
-    Vec [] newVecs = new Vec[]{adaptFrm.anyVec().makeZero(_output.classNames())};
-    if(nc > 1)
-      newVecs = ArrayUtils.join(newVecs,adaptFrm.anyVec().makeZeros(nc));
-    String [] names = new String[newVecs.length];
+    assert Arrays.equals(_output._names,adaptFrm._names); // Already adapted
+    // Build up the names & domains.
+    final int nc = _output.nclasses();
+    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
+    String[] names = new String[ncols];
+    String[][] domains = new String[ncols][];
     names[0] = "predict";
+    domains[0] = nc==1 ? null : _output.classNames();
     for(int i = 1; i < names.length; ++i)
       names[i] = _output.classNames()[i-1];
     final int num_features = _output.nfeatures();
-    new MRTask() {
-      @Override public void map( Chunk chks[] ) {
+    // Score the dataset, building the class distribution & predictions
+    Frame res = new MRTask() {
+        @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
         double tmp [] = new double[num_features];
-        float preds[] = new float [_output.nclasses()==1?1:_output.nclasses()+1];
+        float preds[] = new float [ncols];
         int len = chks[0]._len;
         for( int row=0; row<len; row++ ) {
           float p[] = score0(chks,row,tmp,preds);
           for( int c=0; c<preds.length; c++ )
-            chks[num_features+c].set0(row,p[c]);
+            cpreds[c].addNum(p[c]);
         }
       }
-    }.doAll(ArrayUtils.join(adaptFrm.vecs(),newVecs));
-
-    // Return just the output columns
-    return new Frame(names, newVecs);
+    }.doAll(ncols,adaptFrm).outputFrame(Key.make(),names,domains);
+    DKV.put(res);
+    return res;
   }
 
 //  /** Single row scoring, on a compatible Frame.  */
@@ -558,8 +555,5 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return fs;
   }
 
-  @Override public long checksum() {
-    return _parms.checksum() *
-            _output.checksum();
-  }
+  @Override public long checksum() { return _parms.checksum() * _output.checksum(); }
 }

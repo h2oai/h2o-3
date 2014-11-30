@@ -940,7 +940,7 @@ public class Vec extends Keyed {
   /** This Vec does not have dependent hidden Vec it uses.
    *  @see TransfVec
    *  @return dependent hidden vector or <code>null</code>  */
-  Vec masterVec() { return null; }
+  public Vec masterVec() { return null; }
 
   /** Collect numeric domain of given vector
    *  A map-reduce task to collect up the unique values of an integer vector

@@ -7,6 +7,7 @@ import water.*;
 import water.util.SB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -19,7 +20,7 @@ public class GBMTest extends TestUtil {
 
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
-  @Test @Ignore public void testGBMRegression() {
+  @Test  public void testGBMRegression() {
     GBMModel gbm = null;
     Frame fr = null, fr2 = null;
     try {
@@ -77,7 +78,7 @@ public class GBMTest extends TestUtil {
     @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
   }
 
-  @Test @Ignore public void testBasicGBM() {
+  @Test  public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
@@ -111,7 +112,7 @@ public class GBMTest extends TestUtil {
 //             new PrepData() { int prep(Frame fr) { return fr.numCols()-1; } });
   }
 
-  @Test @Ignore public void testBasicGBMFamily() {
+  @Test  public void testBasicGBMFamily() {
     Scope.enter();
     // Classification with Bernoulli family
     basicGBM("./smalldata/logreg/prostate.csv",
@@ -179,10 +180,10 @@ public class GBMTest extends TestUtil {
   }
 
   // Test-on-Train.  Slow test, needed to build a good model.
-  @Test @Ignore public void testGBMTrainTest() {
+  @Test  public void testGBMTrainTest() {
     GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv" )._key;
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
@@ -211,19 +212,18 @@ public class GBMTest extends TestUtil {
       Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
 
     } finally {
-      if( gbm != null ) {
-        gbm._parms._train.remove();
-        gbm._parms._valid.remove();
-        gbm.delete();
-      }
+      parms._train.remove();
+      parms._valid.remove();
+      if( gbm != null ) gbm.delete();
     }
   }
 
   // Adapt a trained model to a test dataset with different enums
   @Test  public void testModelAdapt() {
+    GBM job = null;
     GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       Frame v,t;
       parms._train = (t=parse_test_file("smalldata/junit/mixcat_train.csv"))._key;
       parms._valid = (v=parse_test_file("smalldata/junit/mixcat_test.csv" ))._key;
@@ -234,51 +234,27 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._loss = Family.AUTO;
 
-      GBM job = null;
-      try {
-        job = new GBM(parms);
-        gbm = job.trainModel().get();
-      } finally {
-        if( job != null ) job.remove();
-      }
-      for( int i=0; i<gbm._output.nclasses(); i++ )
-        System.out.println("Class "+gbm._output._domains[gbm._output._domains.length-1][i]+" ----\n"+gbm._output.toStringTree(0,i));
-
-      // Dump out train set
-      SB sbt = new SB();
-      for( int i=0; i<t.numRows(); i++ ) {
-        for( int j=0; j<t.numCols(); j++ )
-          sbt.p(t.vecs()[j].at8(i)).p(' ');
-        sbt.nl();
-      }
-      System.out.println(sbt.toString());
+      job = new GBM(parms);
+      gbm = job.trainModel().get();
 
       Frame res = gbm.score(v);
 
-      // Dump out test set & scoring info
-      SB sbv = new SB();
-      for( int i=0; i<v.numRows(); i++ ) {
-        for( int j=0; j<v.numCols(); j++ )
-          sbv.p(v.vecs()[j].at8(i)).p(' ');
-        sbv.p(" --> ");
-        for( int j=0; j<res.numCols(); j++ )
-          sbv.p(res.vecs()[j].at(i)).p(' ');
-        sbv.nl();
-      }
-      System.out.println(sbv.toString());
+      int[] ps = new int[(int)v.numRows()];
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)res.vecs()[0].at8(i);
+      Assert.assertArrayEquals("",ps,new int[]{0,0,1,1,0,1,2,0,1});
+
       res.remove();
 
     } finally {
-      if( gbm != null ) {
-        gbm._parms._train.remove();
-        gbm._parms._valid.remove();
-        gbm.delete();
-      }
+      parms._train.remove();
+      parms._valid.remove();
+      if( gbm != null ) gbm.delete();
+      if( job != null ) job.remove();
     }
   }
 
   // A test of locking the input dataset during model building.
-  @Test @Ignore public void testModelLock() {
+  @Test  public void testModelLock() {
     GBM gbm=null;
     Frame fr=null;
     try {
@@ -315,14 +291,14 @@ public class GBMTest extends TestUtil {
   }
 
   //  MSE generated by GBM with/without validation dataset should be same
-  @Test @Ignore public void testModelMSEEqualityOnProstate() {
+  @Test  public void testModelMSEEqualityOnProstate() {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.AUTO)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_test;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
 
-  @Test @Ignore public void testModelMSEEqualityOnTitanic() {
+  @Test  public void testModelMSEEqualityOnTitanic() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.AUTO)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_test;

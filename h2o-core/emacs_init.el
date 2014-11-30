@@ -57,15 +57,6 @@
 ;; Finally drag in all of JDEE
 (require 'jde)
 
-;; BASH
-(setq binary-process-input t)
-(setq w32-quote-process-args ?\")
-(setq shell-file-name "bash") ;; or sh if you rename your bash executable to sh.
-(setenv "SHELL" shell-file-name)
-(setq explicit-shell-file-name shell-file-name)
-(setq explicit-sh-args '("-login" "-i"))
-(setenv '"PS1" '"[\w] ")
-
 ;; eshell clear
 (defun eshell/clear ()
   "04Dec2001 - sailor, to clear the eshell buffer."

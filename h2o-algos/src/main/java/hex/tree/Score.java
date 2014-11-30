@@ -26,6 +26,9 @@ public class Score extends MRTask<Score> {
   final int     _cmlen;         // Union of train/test response categoricals
   double  _sum;                 // Sum-squared-error
   long    _snrows;              // Count of voted-on rows
+  // Confusion matrix(es) and scoring is a little odd for Out-Of-Bag scoring,
+  // which is why this code has a private copy of CM computations.
+
   long    _cm[/*actual*/][/*predicted*/]; // Confusion matrix
   long    _cms[/*threshold*/][/*actual*/][/*predicted*/]; // Compute CM per threshold for binary classifiers
   // If scored on an validation set, we use the normal model metrics scoring
@@ -99,15 +102,19 @@ public class Score extends MRTask<Score> {
       if( ys.isNA0(row) ) continue; // Ignore missing response vars only if it was actual NA
       float sum;
       if( _validation ) {     // Passed in a class distribution from scoring
+        assert !_oob;
         for( int i=0; i<_nclass; i++ )
           fs[i+1] = (float)_bldr.chk_tree(chks,i+1).at0(row); // Get the class distros
         if (_nclass > 1 ) sum = 1.0f;  // Sum of a distribution is 1.0 for classification
         else              sum = fs[1]; // Sum is the same as prediction for regression.
       } else {               // Passed in the model-specific columns
         sum = _bldr.score2(chks,fs,row); // Use the training data directly (per-row predictions already made)
+        if( _oob && _bldr.outOfBagRow(chks, row)) {
+          throw H2O.unimpl();   // pre-tree skipping?
+          //continue; // score only on out-of-bag rows
+        }
       }
       float err;  int yact=0; // actual response from dataset
-      if (_oob && _bldr.outOfBagRow(chks, row)) continue; // score only on out-of-bag rows
       if( _nclass > 1 ) {    // Classification
         // Compute error
         yact = (int) ys.at80(row);  // OPS: Pick an actual prediction adapted to model values <0, nclass-1)
