@@ -21,5 +21,5 @@ if(is(model, "H2OKMeansModel")) {
 		expect_equal(5, length(model@model$clusters))
 	})
 } else {
-	test_that("Input permutation x: ", fail(message=toString(model)))
+	test_that("Input permutation foo: ", fail(message=toString(model)))
 }
