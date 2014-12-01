@@ -670,7 +670,7 @@ setMethod("names", "H2OFrame", function(x) {
 #' @rdname length.h2o
 setMethod("length", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(ID))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
