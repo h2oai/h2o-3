@@ -5,6 +5,7 @@ import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.ModelUtils;
 
 /** Container to hold the metric for a model as scored on a specific frame. 
  *  
@@ -72,7 +73,7 @@ public final class ModelMetrics extends Keyed {
     public MetricBuilder( String[] domain ) { this(domain,new float[]{0.5f}); }
     public MetricBuilder( String[] domain, float[] thresholds ) { 
       _domain = domain;
-      int nclasses = _nclasses = domain.length;
+      int nclasses = _nclasses = (domain==null ? 1 : domain.length);
       // Thresholds are only for binomial classes
       assert (nclasses==2 && thresholds.length>0) || (nclasses!=2 && thresholds.length==1);
       _thresholds = thresholds;
@@ -80,35 +81,36 @@ public final class ModelMetrics extends Keyed {
       _work = new float[nclasses+1];
     }
 
-    // Passed a float[] sized nclasses+1; ds[0] must be a class prediction
-    // (ignored for regression).  ds[1...nclasses-1] must be a class
-    // distribution (and ds[1] has the regression prediction)
+    // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
+    // distribution; (for regression, ds[0] has the prediction and ds[1] is ignored)
     public float[] perRow( float ds[], float yact ) {
+      if( Float.isNaN(yact) ) return ds; // No errors if actual is missing
       final int nclass = ds.length-1;
+      final int iact = (int)yact;
       // Compute error 
       float err;
       if( nclass>1 ) {          // Classification
-        float sum = 0;          // Check for *no prediction at all*
+        float sum = 0;          // Check for sane class distribution
         for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
         assert Math.abs(sum-1.0f) < 1e-6;
-        err = 1.0f-ds[(int)yact+1];  // Error: distance from predicting ycls as 1.0
+        err = 1.0f-ds[iact+1];  // Error: distance from predicting ycls as 1.0
       } else {                  // Regression
-        err = yact - ds[1];
+        err = yact - ds[0];     // Error: distance from the actual
       }
       _sumsqe += err*err;       // Squared error
       assert !Double.isNaN(_sumsqe);
       // Pick highest prob for our prediction.
       if( nclass == 1 ) {       // Regression?
         _cms[0][0][0]++;        // Regression: count of rows only
-      } else if( nclass == 2 ) { // Binomial classification -> compute AUC, draw ROC
-        throw H2O.unimpl();
-        //float snd = _validation ? fs[2] : (!Float.isInfinite(sum) ? fs[2] / sum : Float.isInfinite(fs[2]) ? 1 : 0); // for validation dataset sum is always 1
-        //for(int i = 0; i < ModelUtils.DEFAULT_THRESHOLDS.length; i++) {
-        //  int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold
-        //  _cms[i][yact][p]++; // Increase matrix
-        //}
+      } else if( nclass == 2) { // Binomial classification -> compute AUC, draw ROC
+        float snd = ds[2];      // Probability of a TRUE
+        // TODO: Optimize this: just keep deltas from one CM to the next
+        for(int i = 0; i < ModelUtils.DEFAULT_THRESHOLDS.length; i++) {
+          int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold
+          _cms[i][iact][p]++;   // Increase matrix
+        }
       } else {                  // Plain Olde Confusion Matrix
-        _cms[0][(int)yact][(int)ds[0]]++; // actual v. predicted
+        _cms[0][iact][(int)ds[0]]++; // actual v. predicted
       }
       return ds;                // Flow coding
     }
@@ -124,7 +126,6 @@ public final class ModelMetrics extends Keyed {
         for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix2(_cms[i]);
         aucdata = new AUC(cms,_thresholds,_domain).data();
         cm = aucdata.CM();
-        throw H2O.unimpl();
       } else {
         aucdata = null;
         cm = new ConfusionMatrix2(_cms[0]);

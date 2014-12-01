@@ -64,14 +64,38 @@ public class TransfVec extends WrappedVec {
    *  @return mapping
    */
   void computeMap( String[] from, String[] to ) {
-    if( from==null || from==to || Arrays.equals(from,to) ) {
+    // Identity? Build the cheapo non-map
+    if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
       setDomain(to);
       return;
     }
+
+    // The source Vec does not have a domain, hence is an integer column.
+    // The to[] mapping has the set of unique numbers, we need to map
+    // from those numbers to the index to the numbers.
+    if( from==null ) {
+      int max = Integer.valueOf(to[to.length-1])+1;
+      _map = new int[max];
+      for( int i=0; i<to.length; i++ )
+        _map[Integer.valueOf(to[i])] = i;
+      setDomain(to);
+      return;
+    }
+
+    // The desired result Vec does not have a domain, hence is a numeric
+    // column.  For classification of numbers, we did an original toEnum
+    // wrapping the numeric values up as Strings for the classes.  Unwind that,
+    // converting numeric strings back to their original numbers.
+    _map = new int[from.length];
+    if( to == null ) {
+      for( int i=0; i<from.length; i++ )
+        _map[i] = Integer.valueOf(from[i]);
+      return;
+    }
+    // Full string-to-string mapping
     HashMap<String,Integer> h = new HashMap<>();
     for( int i=0; i<to.length; i++ ) h.put(to[i],i);
-    _map = new int[from.length];
     String[] ss = to;
     int extra = to.length;
     for( int j=0; j<from.length; j++ ) {

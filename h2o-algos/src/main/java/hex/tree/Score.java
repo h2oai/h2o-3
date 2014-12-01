@@ -32,7 +32,7 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = new ModelMetrics.MetricBuilder(domain,domain.length==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f} );
+    _mb = new ModelMetrics.MetricBuilder(domain,nclass==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f} );
     final float[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
@@ -44,11 +44,9 @@ public class Score extends MRTask<Score> {
       // Ignore out-of-bag rows
       if( _oob && chks[oobColIdx].at80(row)!=0 ) continue;
       if( _bldr._parms._valid!=null ) {  // Must score "the hard way"
-        assert !_oob;
         _bldr._model.score0(chks,row,tmp,cdists);
       } else {               // Passed in the model-specific columns
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
-        throw water.H2O.unimpl();
       }
       _mb.perRow(cdists,(float)ys.at0(row));
     }

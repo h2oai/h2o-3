@@ -18,7 +18,7 @@ public class GBMTest extends TestUtil {
 
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
-  @Test @Ignore public void testGBMRegression() {
+  @Test public void testGBMRegression() {
     GBMModel gbm = null;
     Frame fr = null, fr2 = null;
     try {
@@ -76,29 +76,29 @@ public class GBMTest extends TestUtil {
     @Override public void reduce( CompErr ce ) { _sum += ce._sum; }
   }
 
-  @Test @Ignore public void testBasicGBM() {
+  @Test public void testBasicGBM() {
     // Regression tests
-    basicGBM("./smalldata/junit/cars.csv",
-             new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
-
-    // Classification tests
-    basicGBM("./smalldata/junit/test_tree.csv",
-             new PrepData() { int prep(Frame fr) { return 1; }
-             });
-    basicGBM("./smalldata/junit/test_tree_minmax.csv",
-             new PrepData() { int prep(Frame fr) { return fr.find("response"); }
-             });
-    basicGBM("./smalldata/logreg/prostate.csv",
-             new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
-             });
+    //basicGBM("./smalldata/junit/cars.csv",
+    //         new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
+    //
+    //// Classification tests
+    //basicGBM("./smalldata/junit/test_tree.csv",
+    //         new PrepData() { int prep(Frame fr) { return 1; }
+    //         });
+    //basicGBM("./smalldata/junit/test_tree_minmax.csv",
+    //         new PrepData() { int prep(Frame fr) { return fr.find("response"); }
+    //         });
+    //basicGBM("./smalldata/logreg/prostate.csv",
+    //         new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+    //         });
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
              });
-    basicGBM("./smalldata/airlines/allyears2k_headers.zip",
-             new PrepData() { int prep(Frame fr) {
-               for( String s : ignored_aircols ) fr.remove(s).remove();
-               return fr.find("IsArrDelayed"); }
-             });
+    //basicGBM("./smalldata/airlines/allyears2k_headers.zip",
+    //         new PrepData() { int prep(Frame fr) {
+    //           for( String s : ignored_aircols ) fr.remove(s).remove();
+    //           return fr.find("IsArrDelayed"); }
+    //         });
 //    // Bigger Tests
 //    basicGBM("../datasets/98LRN.CSV",
 //             new PrepData() { int prep(Frame fr ) {

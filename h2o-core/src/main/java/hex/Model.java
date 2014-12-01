@@ -347,7 +347,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.  
     if( _output.isClassifier() ) {
-      String sdomain[] = sresp.domain(); // Scored/test domain
+      String sdomain[] = sresp.domain(); // Scored/test domain; can be null
       if( mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
         output.replace(0,new TransfVec(sresp.group().addVec(),sresp.get_espc(),sdomain,mresp._key));
     }
@@ -396,7 +396,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
       double[] tmp = new double[chks.length];
-      _mb = new ModelMetrics.MetricBuilder(_domain,_domain.length==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f});
+      _mb = new ModelMetrics.MetricBuilder(_domain,_output.nclasses()==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f});
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for( int row=0; row<len; row++ ) {
