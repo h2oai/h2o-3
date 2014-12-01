@@ -1114,7 +1114,7 @@ class ASTSlice extends AST {
     }
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
-    Frame ary = env.peekAry();  // Peek-frame
+    Frame ary = env.pop0Ary();  // get it off the stack!!!!
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.
