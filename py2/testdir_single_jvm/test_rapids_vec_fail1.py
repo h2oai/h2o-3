@@ -31,7 +31,7 @@ class Basic(unittest.TestCase):
         # stop if > 1G (fails memory cleaner assetion
         maxx = 29
         # for trial in range(maxx):
-        for trial in range(int(1e6),int(200e6),int(1e6)):
+        for trial in range(int(1e6),int(100e6),int(10e6)):
             
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
@@ -47,7 +47,7 @@ class Basic(unittest.TestCase):
             # execExpr = '(= !v (+ (+ $v $v) (+ $v $v))'
             execExpr = '(= !v (+ $v $v))'
             start = time.time()
-            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
+            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=30)
             elapsed2 = time.time() - start
 
             if execResult['num_rows']:
