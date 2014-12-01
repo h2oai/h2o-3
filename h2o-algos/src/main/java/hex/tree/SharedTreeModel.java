@@ -44,20 +44,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    /** r2 metric on validation set: 1-(MSE(model) / MSE(mean)) */
-    public double _r2;
-
     /** Train and test errors per-tree (scored).  Zero index is the no-tree
      *  error, guessing only the class distribution.  Not all trees are
      *  scored, NaN represents trees not scored. */
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_test [/*_ntrees+1*/];
-
-    /** Confusion Matrix for classification models, or null otherwise */
-    public ConfusionMatrix2 _cm;
-
-    /** AUC for binomial models, or null otherwise */
-    public AUCData _aucdata;
 
     /** Variable Importance, if asked for */
     public VarImp _varimp;

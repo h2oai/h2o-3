@@ -181,7 +181,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override protected float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=_output._names.length; // Last chunk is for the response
     for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
       tmp[i] = chks[i].at0(row_in_chunk);
@@ -189,18 +189,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
     if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
-      assert(scored.length == _output.nclasses()+1); //1 label + nclasses probs
-      double probsum=0;
-      for( int c=1; c<scored.length; c++ ) {
-        final double original_fraction = _output._priorClassDist[c-1];
-        assert(original_fraction > 0);
-        final double oversampled_fraction = _output._modelClassDist[c-1];
-        assert(oversampled_fraction > 0);
-        assert(!Double.isNaN(scored[c]));
-        scored[c] *= original_fraction / oversampled_fraction;
-        probsum += scored[c];
-      }
-      for (int i=1;i<scored.length;++i) scored[i] /= probsum;
+      ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
       scored[0] = ModelUtils.getPrediction(scored, tmp);
     }

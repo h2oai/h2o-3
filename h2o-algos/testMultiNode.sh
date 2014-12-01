@@ -24,7 +24,11 @@ trap cleanup SIGTERM SIGINT
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../lib/*"
+#JVM="nice java -ea -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../lib/*"
+# Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
+# Also, sometimes see test files in the main-class directory, so put the test
+# classpath before the main classpath.
+JVM="nice java -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-core/build/classes/test${SEP}../h2o-core/build/classes/main${SEP}../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

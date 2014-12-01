@@ -1566,12 +1566,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   /** Make either a prediction or a reconstruction.
-   * @param frame Test dataset
+   * @param orig Test dataset
+   * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame scoreImpl(Frame frame) {
+  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr) {
     if (!get_params()._autoencoder) {
-      return super.score(frame);
+      return super.scoreImpl(orig,adaptedFr);
     } else {
       // Reconstruction
 
@@ -1580,7 +1581,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       assert(model_info().data_info()._responses == 0);
       String[] coefnames = model_info().data_info().coefNames();
       assert(len == coefnames.length);
-      Frame adaptFrm = new Frame(frame);
+      Frame adaptFrm = new Frame(adaptedFr);
       for( int c=0; c<len; c++ )
         adaptFrm.add(prefix+coefnames[c],adaptFrm.anyVec().makeZero());
       new MRTask() {

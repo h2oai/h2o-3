@@ -2,6 +2,7 @@ package hex.tree;
 
 import java.util.Arrays;
 
+import hex.ModelMetrics;
 import jsr166y.CountedCompleter;
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
@@ -289,16 +290,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // --------------------------------------------------------------------------
   // Convenience accessor for a complex chunk layout.
   // Wish I could name the array elements nicer...
-  protected Chunk chk_resp( Chunk chks[]        ) { return chks[_ncols]; }
-  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[_ncols+1+c]; }
+  protected int idx_resp(     ) { return _ncols; }
+  protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass; }
+  protected int idx_tree(int c) { return _ncols+1+c; }
+
+  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp( )]; }
+  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
   protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
-  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
+  protected Chunk chk_oobt(Chunk chks[]) { return chks[idx_oobt()]; }
 
+  protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[idx_resp( )]; }
+  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
   protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
-  protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
-  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[_ncols+1+c]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
@@ -309,9 +314,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Builder-specific decision node
   abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
 
-  /** Which rows are in-bag vs out-of-bag for sampling */
-  abstract protected boolean outOfBagRow(Chunk[] chks, int row);
-
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
@@ -321,14 +323,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
-  float score2(Chunk chks[], float fs[/*nclass*/], int row ) {
+  void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
     float sum = score1(chks, fs, row);
-    if( isClassifier() && _model._output._priorClassDist!=null && _model._output._modelClassDist!=null && !Float.isInfinite(sum)  && sum>0f) {
-      ArrayUtils.div(fs, sum);
+    if( isClassifier() && !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
+    if( _model._output._priorClassDist!=null && _model._output._modelClassDist!=null )
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
-      sum = 1.0f;
-    }
-    return sum;
   }
 
   // --------------------------------------------------------------------------
@@ -363,14 +362,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model.update(_key);  updated = true;
 
       _timeLastScoreStart = now;
-      Score sc = new Score(this,oob).doIt(build_tree_one_node).report(_model._output._ntrees,null);
+      Score sc = new Score(this,oob).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
+      ModelMetrics mm = sc.makeModelMetrics(_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
-      out._r2 = sc.r2();
-      out._cm = sc.cm();
-      out._aucdata = sc.auc();
-      out._mse_train[out._ntrees] = _parms._valid==null ? sc.mse() : Double.NaN;
-      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : sc.mse();
+      out._mse_train[out._ntrees] = _parms._valid==null ? mm._mse : Double.NaN;
+      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : mm._mse;
+
+      Log.info("============================================================== ");
+      Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
+      hex.ConfusionMatrix2 cm = mm._cm;
+      Log.info(cm.toASCII(vresponse().domain()));
+      Log.info( (_nclass > 1 ? "Total of "+cm.errCount()+" errors" : "Reported")+ " on "+cm.totalRows()+" rows");
       _timeLastScoreEnd = System.currentTimeMillis();
     }
 

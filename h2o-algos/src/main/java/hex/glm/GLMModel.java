@@ -59,7 +59,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   @Override
-  protected float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
+  public float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // skip level 0 of all factors

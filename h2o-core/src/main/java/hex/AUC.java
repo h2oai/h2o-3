@@ -39,12 +39,6 @@ public class AUC extends Iced {
 
   /** Constructor for algos that make their own CMs
    *  @param cms ConfusionMatrices
-   *  @param thresh Thresholds  */
-  public AUC(ConfusionMatrix2[] cms, float[] thresh) {
-    this(cms, thresh, null);
-  }
-  /** Constructor for algos that make their own CMs
-   *  @param cms ConfusionMatrices
    *  @param thresh Thresholds
    *  @param domain Domain  */
   public AUC(ConfusionMatrix2[] cms, float[] thresh, String[] domain) {

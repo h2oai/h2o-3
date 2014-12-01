@@ -229,4 +229,8 @@ public class ConfusionMatrix2 extends Iced {
       sb.append(Arrays.toString(r) + "\n");
     return sb.toString();
   }
+
+  public String toASCII(String[] domain) {
+    return water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),_arr,domain,false).toString();
+  }
 }
