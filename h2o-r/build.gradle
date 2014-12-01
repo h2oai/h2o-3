@@ -278,6 +278,7 @@ task prepareAcceptanceHtmlReports ( dependsOn: testThatRunner ) << {
     project.ext.testGroup = "acceptance"
     project.ext.R_test_folders = ["${projectDir}/src/test/R"]
     project.ext.Regex_test_marker = ~/test.+\.Rout/
+
 }
 
 

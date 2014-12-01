@@ -72,6 +72,8 @@ class manageLocalClouds implements Plugin<Project> {
                 uri.path = "/"
                 response.success = { resp, reader->
                     cloudIsUp = true
+                    project.logger.warn " ****************** Cloud is up and running. ***********************"
+                    project.logger.warn resp.toString()
                     assert resp.status == 200
                 }
                 response.'404' = {resp ->
