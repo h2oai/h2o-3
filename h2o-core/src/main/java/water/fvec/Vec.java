@@ -287,7 +287,7 @@ public class Vec extends Keyed {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len) {
-    int nchunks = len < CHUNK_SZ ? 1 : (int)(len / (1 << LOG_CHK));
+    int nchunks = (int)Math.max(1,len >> LOG_CHK);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
       espc[i] = ((long)i)<<LOG_CHK;
