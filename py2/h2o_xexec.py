@@ -37,7 +37,7 @@ class Xbase(object):
         self.result = None
         self.execExpr = str(self)
         if self.debugOnly:
-            print "execExpr:", self.execExpr
+            print "ast:", self.execExpr
             self.execResult =  {'debugOnly': True}
             self.result = 555
         else:
@@ -47,6 +47,9 @@ class Xbase(object):
 
         # don't return the full json...can look that up if necessary
         return self.result
+
+    # if we use the name of the vlass like a function call, or an instance...use .do()
+    # __call__ = do
 
 #********************************************************************************
 def translateValue(item="F"):
@@ -98,6 +101,8 @@ class Item(Xbase):
         if re.search(r"[,]", itemStr):
             raise Exception("item has comma. Bad. %s" % item)
         elif len(itemStr)==0:
+            # Colon can return length 0 thing?..no longer
+            # return itemStr
             raise Exception("item is len 0 %s" % item)
 
         # if string & starts with #, strip and check it's a number. Done if so. Else Exception
@@ -249,21 +254,22 @@ xFcnOp3Set = set([
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
 # Note this can't unpack a dict
-def unpackOperands(operands, parent=None, item=True):
-    openIf = False
+def unpackOperands(operands, parent=None, item=True, lastOpr=None):
+    lastOpr = None
+
     def addItem(opr):
-        if isinstance(opr, Else) and not openIf:
+        global lastOpr
+        if isinstance(opr, Else) and not (lastOpr and (isinstance(lastOpr, If))):
             raise Exception("%s unpackOperands, Else without open If, %s", (parent, opr))
-        if isinstance(opr, If):
-            global openIf
-            openIf = True
         if item:
             operandList.append(Item(opr))
         else:
             operandList.append(opr)
+        lastOpr = opr
 
     if operands is None:
         raise Exception("%s unpackOperands no operands: %s" % (parent, operands))
+
     operandList = []
     if isinstance(operands, (list, tuple)):
         for opr in operands:
@@ -290,24 +296,181 @@ def unpackOperands(operands, parent=None, item=True):
     # always returns a list, even if one thing
     return operandList
 
-#********************************************************************************
-# key is a string
-class Key(Xbase):
-    def __init__(self, key):
-        self.key = key
+#*******************************************************************************
+# maybe do some reading here
+# http://python-3-patterns-idioms-test.readthedocs.org/en/latest/Factory.html
+# row/col can be numbers or strings or not specified
+class Frame(Xbase):
+    def __init__(self, frame='xTemp', row=None, col=None, dim=2):
+        super(Frame, self).__init__()
+        if re.match('\$', frame):
+            raise Exception("Frame adds '$': frame ref shouldn't start with '$' %s" % frame)
+        if isinstance(frame, (list, tuple)):
+            raise Exception("frame doesn't take lists or tuples %s" % frame)
+        if not isinstance(frame, basestring):
+            raise Exception("frame wants to be a string %s" % frame)
+
+        self.frame = frame
+        # if it's not a string, turn the assumed number into a number string
+        self.row = Item(row)
+        self.col = Item(col)
+        self.dim = dim # dimensions
+
+        # how to decide whether to send 2d or 1d references to h2o
+        # is there no such thing as a row vector, only a column vector (or data frame)
+
+        # row and col can be Seq, Colon, Item (could return a Cbind?)
+        # or should it pass the python construct to h2o?
+        # it could put the list into a h2o key, and then do a[b] in hto?
+        # row extracts problematic?
+
+        # None translates to "null"
+        # not key yet
 
     def __str__(self):
-        key = self.key
-        if isinstance(key, (list, tuple)):
-            raise Exception("Key doesn't take lists or tuples %s" % key)
-        if not isinstance(key, basestring):
-            raise Exception("Key wants to be a string %s" % key)
+        frame = self.frame
+        row = self.row
+        col = self.col
+        if row in [None, '"null"']  and col in [None, '"null"']:
+            return '$%s' % frame
+        
+        if row is None:
+            row = '"null"'
+        if col is None:
+            col = '"null"'
 
         # does it already start with '$' ?
-        if re.match('\$', key):
-            return key
+        # we always add $ to a here?. Suppose could detect whether it's already there
+        # does it already start with '$' ?
+        if not re.match('\$', frame):
+            frame = '$%s' % self.frame
+
+        # is a 1 dimensional frame all rows (1 col?)
+        if self.dim==1:
+            return '([ %s %s %s)' % (frame, row, '#0')
         else:
-            return "$%s" % key
+            return '([ %s %s %s)' % (frame, row, col)
+
+    __repr__ = __str__
+
+#********************************************************************************
+xKeyList = []
+
+# key is a string
+class Key(Frame):
+    def __str__(self):
+        frame = self.frame
+        if not re.match('\$', frame):
+            frame = '$%s' % self.frame
+        return '%s' % frame
+
+    __repr__ = __str__
+
+    def __init__(self, key=None, dim=2):
+        # HACK!
+        Xbase.debugOnly = True
+        if key is None:
+            # no h2o name? give it one that's unique for the instance
+            key = "anon_" + hex(id(self))
+            print "Key creating h2o key name for the instance, none provided: %s" % key
+        # Frame init?
+        super(Key, self).__init__(key, None, None, dim)
+        # add to list of created h2o keys (for deletion later?)
+        xKeyList.append(key)
+
+    # try a trick for getting an assign overload (<<=
+    def __ilshift__(self, b):
+        print "hello Key __ilshift__"
+        Assign(self.frame, b).do()
+        return self
+
+    # for debug/wip of slicing
+    def __getitem__(self, items):
+
+        def slicer(item):
+            print 'Key item %-15s  %s' % (type(item), item)
+
+            if type(item) is int:
+                print "Key item int", item
+                return Item(item)
+
+            elif isinstance( item, slice):
+                # print "Key item start", str(item.start)
+                # print "Key item stop", str(item.stop)
+                # print "Key item step", str(item.step)
+                # assume step is always None..
+                assert item.step == None, "Key assuming step should be None %s" % item.step
+                return Colon(item.start, item.stop)
+                
+            else:
+                raise TypeError("Key.__getitem__ item(%s) must be int/slice") % item
+
+        if isinstance(items, (list,tuple)):
+            itemsList = list(items)
+            # if there's a list, it better be just one or two dimensions
+            # if length 0, ignore
+            # one is row, two is row/col
+            if len(itemsList)==0:
+                print "Key ignoring length 0 items list/tuple) %s" % itemsList
+
+            elif len(itemsList)==1:
+                return(Frame(
+                    frame=self.frame,
+                    row=slicer(itemsList[0])
+                ))
+
+            elif len(itemsList)==2:
+                return(Frame(
+                    frame=self.frame,
+                    row=slicer(itemsList[0]),
+                    col=slicer(itemsList[1])
+                ))
+
+            else: 
+                raise Exception("Key itemsList is >2 %s" % itemsList)
+        else:
+            return(Frame(
+                frame=self.frame,
+                row=slicer(items),
+                dim=1, # one dimensional if using the single style?
+            ))
+
+        # FIX! should return an instance of the key with the updated row/col values
+        return self
+
+    # __call__ = __str__
+            
+
+# http://www.siafoo.net/article/57
+# These methods are called when bracket notation is used.
+# Python will behave differently depending on the type of value inside of the brackets:
+# x[key], where key is a single value
+#     Calls x.__*item__(key)
+# x[start:end] where x.__*slice__ exists
+#     Calls x.__*slice__(cooked_start, cooked_end) where start and end are 'cooked' as described below in 'Old-Style Slices'
+# x[start:end] where x.__*slice__ does not exist, or x[extended_slice], where extended slice is any slice more complex than start:end
+#     Calls x.__*item__ with slice object, Ellipsis, or list of these.
+# 
+# In general, if key is of an inappropriate type, TypeError should be raised. If it is outside the sequence of keys in instance, IndexError should be raised. If instance is a mapping object and key cannot be found, KeyError should be raised. (What if neither of these is true? I dont know.)
+# 
+# __getitem__(self, key)
+# x.__getitem__(key) <==> x[key]
+# Should return item(s) referenced by key.
+# Not called if __setslice__ exists and simple start:end slicing is used.
+# If not present, items cannot be evaluated using bracket notation, and an AttributeError is raised.
+# 
+# __setitem__(self, key, value)
+# x.__setitem__(key, value) <==> x[key] = value
+# Should set or replace item(s) referenced by key. value can be a single value or a sequence.
+# Not called if __setslice__ exists and simple start:end slicing is used. Usage not dependent on presence of __getitem__.
+# If not present, items cannot be assigned using bracket notation, and an AttributeError is raised.
+# 
+# __delitem__(self, key)
+# x.__delitem__(key) <==> del x[key]
+# Should delete item(s) represented by key. Not dependent on presence of __getitem__.
+# Not called if __delslice__ exists and simple start:end slicing is used. Usage not dependent on presence of __getitem__.
+# If not present, items cannot be deleted using bracket notation, and an AttributeError is raised.
+
 
 #********************************************************************************
 
@@ -365,38 +528,17 @@ class Seq(Xbase):
 # a/b can be number or string
 class Colon(Xbase):
     def __init__(self, a='#0', b='#0'):
-        # we always add $ to a here?
-        if a is None:
-            a = '"null"'
-        if b is None:
-            b = '"null"'
         # if it's not a string, turn the assumed number into a number string
         self.a = Item(a)
         self.b = Item(b)
 
     def __str__(self):
-        return '(: %s %s)' % (self.a, self.b) 
+        # no colon if both None
+        if str(self.a) in  ['"null"', None] and str(self.b) in ['"null"', None]:
+            return '"null"'
+        else:
+            return '(: %s %s)' % (self.a, self.b) 
 
-# row/col can be numbers or strings or not specified
-
-class Frame(Xbase):
-    def __init__(self, frame='xTemp', row=None, col=None):
-        super(Frame, self).__init__()
-        if re.match('\$', frame):
-            raise Exception("Frame adds '$': frame ref shouldn't start with '$' %s" % frame)
-        self.frame = frame
-
-        if row is None:
-            row = '"null"'
-        if col is None:
-            col = '"null"'
-        # if it's not a string, turn the assumed number into a number string
-        self.row = Item(row)
-        self.col = Item(col)
-
-    def __str__(self):
-        # we always add $ to a here?. Suppose could detect whether it's already there
-        return '([ $%s %s %s)' % (self.frame, self.row, self.col)
 
 # higher level things might skip using Expr and do this stuff themselves
 class Expr(Xbase):

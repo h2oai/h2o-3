@@ -47,7 +47,7 @@ class Basic(unittest.TestCase):
             xList = []
             eList = []
             fList = []
-            for trial2 in range(0, 14):
+            for trial2 in range(0, 16):
             # for trial2 in range(0, 10):
             # fails. Post size?
             # for trial2 in range(0, 16):
@@ -60,7 +60,7 @@ class Basic(unittest.TestCase):
                 # FIX! check the colnames. 2 cols get C1 and C10? odd 
                 # try:
                 start = time.time()
-                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
+                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=40)
                 elapsed2 = time.time() - start
 
                 if execResult['num_rows']:
