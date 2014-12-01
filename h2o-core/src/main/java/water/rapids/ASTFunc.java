@@ -78,6 +78,10 @@ public class ASTFunc extends ASTFuncDef {
         if (!a.isLookup()) throw new IllegalArgumentException("Function arguments must be lookups.");
         _args[i] = e.lookup(a);
       }
+      if (!(_args[i] instanceof ASTNum) && !(_args[i] instanceof ASTString) && !(_args[i] instanceof ASTFrame) && !(_args[i] instanceof ASTNull)) {
+        _args[i].treeWalk(e);
+        _args[i] = e.pop2AST();
+      }
       if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
       else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
       else if (_args[i] instanceof ASTFrame) {

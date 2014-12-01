@@ -130,6 +130,7 @@ public class Env extends Iced {
   public boolean isStr() { return peekType() == STR; }
   public boolean isId () { return peekType() == ID;  }
   public boolean isFun() { return peekType() == FUN; }
+  public boolean isNul() { return peekType() == NULL;}
   public boolean isSpan(){ return peekType() == SPAN;}
   public boolean isSeries(){ return peekType() == SERIES;}
 
@@ -142,7 +143,13 @@ public class Env extends Iced {
   public double peekDbl() {return ((ValNum)peek())._d;   }
   public Frame pop0Ary() { return ((ValFrame)pop0())._fr;  }
   public void push0Ary(Frame fr) { push0(new ValFrame(fr)); }
-  //TODO: func
+  public AST pop2AST() {
+    if (isAry()) return new ASTFrame(pop0Ary());
+    if (isNum()) return new ASTNum(popDbl());
+    if (isStr()) return new ASTString('\"', popStr());
+    if (isNul()) {pop(); return new ASTNull(); }
+    throw new IllegalArgumentException("Invalid use of pop2AST. Got bad type: "+peekType());
+  }
 
   /**
    *  Reference Counting API
