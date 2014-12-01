@@ -45,20 +45,8 @@ public class AUC extends Iced {
     aucdata = new AUCData().compute(cms, thresh, domain, threshold_criterion);
   }
 
-//  private void init() throws IllegalArgumentException {
-//    // Input handling
-//    if( vactual==null || vpredict==null )
-//      throw new IllegalArgumentException("Missing vactual or vpredict!");
-//    if (vactual.length() != vpredict.length())
-//      throw new IllegalArgumentException("Both arguments must have the same length ("+vactual.length()+"!="+vpredict.length()+")!");
-//    if (!vactual.isInt())
-//      throw new IllegalArgumentException("Actual column must be integer class labels!");
-//    if (vactual.cardinality() != -1 && vactual.cardinality() != 2)
-//      throw new IllegalArgumentException("Actual column must contain binary class labels, but found cardinality " + vactual.cardinality() + "!");
-//    if (vpredict.isEnum())
-//      throw new IllegalArgumentException("vpredict cannot be class labels, expect probabilities.");
-//  }
-//
+  // CNC - cool code here for merging unifed user & default thresholds - only
+  // useful if the AUC comes from a GUI request with non-default thresholds.
 //  public void execImpl() {
 //    init();
 //    Vec va = null, vp;
