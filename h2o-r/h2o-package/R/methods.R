@@ -393,17 +393,19 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 
 
 #
-#h2o.runif <- function(x, min = 0, max = 1, seed = -1) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+h2o.runif <- function(x, seed = -1) {
+  if(missing(x)) stop("Must specify data set")
+  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+  if(!is.numeric(seed)) stop("seed must be an integer >= 0")
+  .h2o.varop("h2o.runif", x, seed)
+}
+
+
+# runif <- function(n, min=0, max=1, seed=-1) {
 #  if(!is.numeric(min)) stop("min must be a single number")
 #  if(!is.numeric(max)) stop("max must be a single number")
 #  if(length(min) > 1 || length(max) > 1) stop("Unimplemented")
 #  if(min > max) stop("min must be a number less than or equal to max")
-#  if(!is.numeric(seed)) stop("seed must be an integer >= 0")
-#
-#  .h2o.varop("runif", x, min, max, seed)
-#}
 
 #'
 #' Is any column of the H2OParsedData object a enum column

@@ -2,8 +2,9 @@ package water.rapids;
 
 //import hex.Quantiles;
 
+import org.apache.commons.math3.special.Gamma;
+import org.apache.commons.math3.util.FastMath;
 import water.*;
-import water.Quantiles;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
@@ -12,9 +13,6 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
-
-import org.apache.commons.math3.special.*;
-import org.apache.commons.math3.util.*;
 
 //import hex.la.Matrix;
 //import org.joda.time.DateTime;
@@ -1159,6 +1157,104 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //  @Override void apply(Env env, int argcnt, ASTApply apply) { throw H2O.unimpl(); }
 //}
 
+//class ASTRbind extends ASTUniPrefixOp {
+//  protected static int argcnt;
+//  @Override String opStr() { return "rbind"; }
+//  ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
+//  @Override ASTOp make() { return new ASTRbind(); }
+//  ASTRbind parse_impl(Exec E) {
+//    ArrayList<AST> dblarys = new ArrayList<>();
+//    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+//    AST ary = E.parse();
+//    dblarys.add(ary);
+//    AST a;
+//    while (E.skipWS().hasNext()) {
+//      a = E.parse();
+//      if (a instanceof ASTId) {
+//        AST ast = E._env.lookup((ASTId)a);
+//        if (ast instanceof ASTFrame) {dblarys.add(a); continue; }
+//      }
+//      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
+//        dblarys.add(a);
+//
+//    }
+//    ASTRbind res = (ASTRbind) clone();
+//    AST[] arys = new AST[argcnt=dblarys.size()];
+//    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+//    res._asts = arys;
+//    return res;
+//  }
+//
+//  private String get_type(byte t) {
+//    switch(t) {
+//      case Vec.T_ENUM: return "factor";
+//      case Vec.T_NUM:  return "numeric";
+//      case Vec.T_STR:  return "String";
+//      case Vec.T_TIME: return "time";
+//      case Vec.T_UUID: return "UUID";
+//      default: return "bad";
+//    }
+//  }
+//
+//  @Override void apply(Env env) {
+//    // quick check to make sure rbind is feasible
+//    Frame f1 = null;
+//    int nchunks=0;
+//    ArrayList<long[]> espcs_al = new ArrayList<>(); // the new espc for each frame
+//    ArrayList<String[]> doms= new ArrayList<>(); // union'd domains
+//    ArrayList<Byte> types = new ArrayList<>();   // types for each col
+//    for (int i = 0; i < argcnt; ++i) {
+//      Frame t = env.peekAryAt(-i);
+//      if (f1 == null) {
+//        f1 = t;
+//        espcs_al.add(f1.anyVec().get_espc());
+//        for (int c = 0; c < f1.numCols(); ++c) {
+//          doms.add(f1.vec(c).domain());
+//          types.add(f1.vec(c).get_type());
+//        }
+//      } else {
+//        long t_espc[] = t.anyVec().get_espc();
+//        nchunks += t.anyVec().nChunks();
+//        espcs_al.add(ArrayUtils.add(t_espc, t_espc[t_espc.length-1]+1));
+//      }
+//
+//      // check columns match
+//      if (t.numCols() != f1.numCols())
+//        throw new IllegalArgumentException("Column mismatch! Expected " + f1.numCols() + " but frame has " + t.numCols());
+//
+//      // check column types
+//      String err = "Column type mismatch! Expected type factor but frame has type number.";
+//      for (int c = 0; c < f1.numCols(); ++c) {
+//        if (f1.vec(c).get_type() != t.vec(c).get_type())
+//          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
+//        doms.set(c, ArrayUtils.domainUnion(doms.get(c), t.vec(c).domain()));
+//      }
+//    }
+//
+//    final Vec[] vecs = new Vec[f1.numCols()];
+//    final long[][] espcs = espcs_al.toArray(new long[espcs_al.size()][]);
+//    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f1.numCols());
+//    for (int i = 0; i < vecs.length; ++i)
+//      vecs[i] = new Vec(keys[i], espcs[i], doms.get(i), types.get(i));
+//
+//    // loop over frames & combine
+//    for (int i = 0; i < argcnt; ++i) {
+//      new MRTask() {
+//        @Override
+//        public void map(Chunk[] cs) {
+//          for (int i = 0; i < cs.length; ++i) {
+//
+//            Key ckey = Vec.chunkKey(vecs[i]._key, );
+//
+//            Chunk c = cs[i];
+//            c.vec().chunkKey(c.cidx());
+//          }
+//        }
+//      }.doAll(env.pop0Ary());
+//    }
+//  }
+//}
+
 // Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {
   protected static int argcnt;
@@ -1170,7 +1266,7 @@ class ASTCbind extends ASTUniPrefixOp {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     dblarys.add(ary);
-    AST a = null;
+    AST a;
     while (E.skipWS().hasNext()) {
       a = E.parse();
       if (a instanceof ASTId) {
@@ -1699,26 +1795,12 @@ class ASTRunif extends ASTUniPrefixOp {
   protected static double _min;
   protected static double _max;
   protected static long   _seed;
-  @Override String opStr() { return "runif"; }
-  public ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
+  @Override String opStr() { return "h2o.runif"; }
+  public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
   @Override ASTRunif parse_impl(Exec E) {
     // peel off the ary
     AST ary = E.parse();
-    // parse the min
-    try {
-      _min = E.nextDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `min` expected to be a number.");
-    }
-    // parse the max
-    try {
-      _max = E.nextDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `max` expected to be a number.");
-    }
     // parse the seed
     try {
       _seed = (long) E.nextDbl();

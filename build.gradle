@@ -49,7 +49,8 @@ ext {
       project(':h2o-core'),
       project(':h2o-algos'),
       project(':h2o-web'),
-      project(':h2o-app')
+      project(':h2o-app'),
+      project(':h2o-test-integ')
     ]
 
     scalaProjects = [
@@ -189,17 +190,6 @@ task buildH2oDevDist(type: Exec) {
     def projectVersion = bv.getProjectVersion()
     environment['PROJECT_VERSION'] = projectVersion
     commandLine './make-dist.sh'
-}
-
-// Introduces mini build task which builds only Java project
-task (miniBuild, dependsOn: [':h2o-assembly:build']) {
-    group = 'Quick'
-    description = "Build only Java projects"
-}
-
-task (miniTest, dependsOn: [':h2o-core:test', ':h2o-algos:test', ':h2o-test-integ:test']) {
-    group = 'Quick'
-    description = "Pre-push test for Java projects"
 }
 
 //
