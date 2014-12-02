@@ -3,7 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
-from h2o_xexec import Def, Fcn, Assign, Frame, If, Else, IfElse, Return
+from h2o_xexec import Def, Fcn, Assign, Frame, If, IfElse, Return
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
@@ -11,14 +11,12 @@ print "Trying a different way, listing Rapids objects, rather than .ast() string
 # should be able to take a list of statements
 objList = [
     If(1,2),
-    Else(3),
     Return(3),
     Return('r1'),
     IfElse(1, 2, 3),
     Assign('a', If(1, 2)),
-    Assign('b', If(1, 2), Else(3)),
     Assign('d', IfElse(1, 2, 3)),
-    Assign('e', If(1,2), Else('r1')),
+    Assign('e', If(1, 2)), 
     Assign('f', IfElse(1, 'r1', 3)),
     Assign('h', IfElse('1', 2, Return('r1'))),
     Assign('i', IfElse('1', Return('r1'), 3)),

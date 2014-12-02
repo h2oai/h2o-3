@@ -146,6 +146,8 @@ xFcnXlate = {
 '!':  '_',
 }
 
+# FIX! should we use weakref Dicts, to avoid inhibiting garbage collection by having it
+# in a list here?
 xFcnUser = set()
 
 xFcnOpBinSet = set([
@@ -259,8 +261,6 @@ def unpackOperands(operands, parent=None, item=True, lastOpr=None):
 
     def addItem(opr):
         global lastOpr
-        if isinstance(opr, Else) and not (lastOpr and (isinstance(lastOpr, If))):
-            raise Exception("%s unpackOperands, Else without open If, %s", (parent, opr))
         if item:
             operandList.append(Item(opr))
         else:
@@ -300,6 +300,8 @@ def unpackOperands(operands, parent=None, item=True, lastOpr=None):
 # maybe do some reading here
 # http://python-3-patterns-idioms-test.readthedocs.org/en/latest/Factory.html
 # row/col can be numbers or strings or not specified
+
+# FIX! get rid of this? or ?? is Key sufficient? why Frame (no slicing?)
 class Frame(Xbase):
     def __init__(self, frame='xTemp', row=None, col=None, dim=2):
         super(Frame, self).__init__()
@@ -326,6 +328,23 @@ class Frame(Xbase):
 
         # None translates to "null"
         # not key yet
+
+    # try a trick for getting an assign overload (<<= with .do() too
+    # don't want the .do() if you're in a function though?
+    def __ilshift__(self, b):
+        print "Frame ilshift"
+        # I suppose lhs needs to be able to take [] stuff also (for set)
+        # Only gets the default timeoutSecs?
+        Assign(self, b).do()
+        return self
+
+    # maybe both sides will use __getitem__
+    def __le__(self, b):
+        print "Frame le"
+        # I suppose lhs needs to be able to take [] stuff also (for set)
+        # Only gets the default timeoutSecs?
+        Assign(self, b).do()
+        return self
 
     def __str__(self):
         frame = self.frame
@@ -404,28 +423,9 @@ class Key(Frame):
         # add to list of created h2o keys (for deletion later?)
         xKeyList.append(key)
 
-    # try a trick for getting an assign overload (<<= with .do() too
-    # don't want the .do() if you're in a function though?
-    def __ilshift__(self, b):
-        print "Key ilshift"
-        # I suppose lhs needs to be able to take [] stuff also (for set)
-        Assign(self, b).do()
-        return self
-
-    # **= is used inside functions? for just creating the function object
-    # it's a delayed h2o assign?
-    # h2o might eval to a scalar and not create a key? I suppose all Key statements
-    # should create the key on h2o first, so it's known to exist (and h2o will write it)
-    # what about scalars or keys within functions? Should a function keep a keylist
-    # so it knows what to delete? Or does it delete everything except the returned key.
-    def __ipow__(self, b):
-        print "Key ipow"
-        # I suppose lhs needs to be able to take [] stuff also (for set)
-        return Assign(self, b)
-
     # for debug/wip of slicing
-    def __getitem__(self, items):
-
+    # this is used on lhs and rhs? we never use a[0] = ... Just a[0] <== ...
+    def _set_and_get(self, items):
         def indexer(item):
             print 'Key item %-15s  %s' % (type(item), item)
 
@@ -445,7 +445,8 @@ class Key(Frame):
             # well, use Seq to handle a list (hopefully not too big? check if > 1024)
             elif isinstance(item, (list, tuple)):
                 if len(item) > 1024:
-                    raise Exception("Key is trying to index a h2o frame with a really long list (>1024) Probably don't want that? %s" % item)
+                    raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" + 
+                        "Probably don't want that? %s" % item)
                 return Seq(item) # Seq can take a list or tuple
 
             elif isinstance(item, basestring):
@@ -463,7 +464,7 @@ class Key(Frame):
                 return Colon(item.start, item.stop)
                 
             else:
-                raise TypeError("Key.__getitem__ item(%s) must be int/Seq/Colon/list/tuple/slice") % item
+                raise Exception("Key._set_and_get item(%s) must be int/Seq/Colon/list/tuple/slice" % item)
 
         if isinstance(items, (list, tuple)):
             itemsList = list(items)
@@ -474,6 +475,7 @@ class Key(Frame):
                 print "Key ignoring length 0 items list/tuple) %s" % itemsList
 
             elif len(itemsList)==1:
+                # we return another python object, which inherits the h2o key name
                 return(Frame(
                     frame=self.frame,
                     row=indexer(itemsList[0])
@@ -497,6 +499,15 @@ class Key(Frame):
 
         # FIX! should return an instance of the key with the updated row/col values
         return self
+
+    def __getitem__(self, items):
+        return self._set_and_get(items)
+
+    # this is unnecessary and breaks things
+    # def __setitem__(self, items, lhs):
+        # print "__setitem__", self, items, lhs
+        # print "__setitem__", type(self), type(items), type(lhs)
+        # return self._set_and_get(lhs)
 
     # __call__ = __str__
             
@@ -531,7 +542,7 @@ class Fcn(Xbase):
         if required==0:
             raise Exception("Fcn legalFunction not found: %s" % function)
 
-        # FIX!
+        # FIX! currently not checking any.
         # only check 1 and 2. not sure of the 3 group. cbind is conditional..need to do that special
         if False and len(operandList)!=required and required<3 and function!='cbind':
             raise Exception("Fcn wrong # of operands: %s %s" % (required, len(operandList)))
@@ -544,23 +555,8 @@ class Fcn(Xbase):
 
     ast = __str__
 
-
-
-# higher level things might skip using Expr and do this stuff themselves
-class Expr(Xbase):
-    def __init__(self, *exprs):
-        super(Expr, self).__init__()
-        # this converts them to Items
-        exprList = unpackOperands(exprs, parent="Expr exprs")
-        self.exprList = exprList
-        self.funs = False
-
-    def __str__(self):
-        exprString = " ".join(map(str, self.exprList))
-        return "%s" % exprString
-
     __repr__ = __str__
-    ast = __str__
+
 
 class Return(Xbase):
     # return only has one expression?
@@ -580,23 +576,29 @@ class Return(Xbase):
 
 class Assign(Key):
     # let rhs be more than one now, to allow for (if..) (else..)
-    def __init__(self, lhs='xTemp', *rhs):
+    # obj for disabling the .do and just returning thr object
+    # rhs can be more than one for (if ..) (else ..) 
+    # maybe get rid of separate Else object and just have If and IfElse
+    # then just one rhs, and can have obj param
+    # but init can't selectively return the object vs the result of the .do()
+    def __init__(self, lhs='xTemp', rhs=None, timeoutSecs=30):
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         super(Assign, self).__init__()
 
-        if not isinstance(lhs, (basestring, Key)):
-            raise Exception("Assign: lhs not string or Key %s" % lhs)
-
         # to date, have been passing strings
-        if isinstance(lhs, (Assign, Key)):
+        # all the __getitem__ stuff in Key should modify a Key? 
+        # same with Assign here, since we inherit from Key?
+        if isinstance(lhs, (Key, Frame)):
             # FIX! what if the lhs frame has row/col? need to included it?
             frame = lhs.frame
-        else:
+        elif isinstance(lhs, basestring):
             frame = lhs
+        else:
+            raise Exception("Assign: lhs not string/Key/Assign/Frame %s" % lhs)
 
         self.frame = frame
-        rhsList = unpackOperands(rhs, parent="Assign rhs")
-        self.rhsList = rhsList
+        self.rhs = rhs
+        self.lhs = lhs
         self.funs = False
 
         # verify the whole thing can be a rapids string at init time
@@ -607,20 +609,25 @@ class Assign(Key):
         if not re.match('[a-zA-Z0-9_]', frame):
             raise Exception("Assign: Don't like the chars in your lhs %s" % frame)
 
-        print "Assign lhs: %s" % self.frame
-        print "Assign rhs: %s" % self.rhsList
+        print "Assign lhs: %s" % self.lhs
+        print "Assign rhs: %s" % self.rhs
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
     # FIX! what about checking rhs references have $ for keys.
     def __str__(self):
-        # should only have >1 for (if ..) (else ..) ???
-        rhsStr = " ".join(map(str, self.rhsList))
         # if there is row/col for lhs, have to resolve here?
-        return "(= !%s %s)" % (self.frame, rhsStr)
+        return "(= !%s %s)" % (self.lhs, self.rhs)
 
     ast = __str__
 
+
+# can only do one expression/statement per ast.
+# might be used to cause Fcn's to execute (with side effects?)
+class Expr(Assign):
+    def __init__(self, expr, obj=False, timeoutSecs=30):
+        # just be like Assign with no lhs?
+        super(Expr, self).__init__(lhs=None, rhs=expr, obj=obj, timeoutSecs=timeoutSecs)
 
 # args should be individual strings, not lists
 # FIX! take any number of params
@@ -688,22 +695,6 @@ class If(Xbase):
         if len(self.exprList)>1:
             exprStr += ";;;"
         return "(if (%s) %s)" % (self.clause, exprStr)
-
-    __repr__ = __str__
-    ast = __str__
-
-# in a series of expressions...Else can only follow If
-class Else(Xbase):
-    def __init__(self, *exprs):
-        super(Else, self).__init__()
-        exprList = unpackOperands(exprs, parent="Else exprs")
-        self.exprList = exprList
-
-    def __str__(self):
-        exprStr = ";;".join(map(str, self.exprList))
-        if len(self.exprList)>1:
-            exprStr += ";;;"
-        return "(else %s)" % exprStr
 
     __repr__ = __str__
     ast = __str__

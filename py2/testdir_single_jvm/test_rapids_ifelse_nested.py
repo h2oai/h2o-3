@@ -3,7 +3,8 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
-from h2o_xexec import Def, Fcn, Assign, Frame, If, Else, IfElse, Return
+from h2o_xexec import Def, Fcn, Assign, Frame, If, IfElse, Return
+from h2o_test import dump_json, verboseprint
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
@@ -11,17 +12,19 @@ print "Trying a different way, listing Rapids objects, rather than .ast() string
 # should be able to take a list of statements
 objList = [
     Assign('e', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9)))),
-    Assign('f', If(1, 2), Else(IfElse(4, 5, IfElse(7, 8, 9)))),
-    Assign('g', If(0, 2), Else(IfElse(0, 5, IfElse(0, 8, 9)))),
+    Assign('f', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9)))),
+    Assign('g', IfElse(0, 2, IfElse(0, 5, IfElse(0, 8, 9)))),
 
-    Def('ms', 'x',
-        [Assign('j', If(0, 2), Else(IfElse(0, 5, IfElse(0, 8, 9))))],
-        [Assign('k', If(0, 12), Else(IfElse(0, 15, IfElse(0, 18, 19))))] ),
+    Def('ms', 'x', [
+        IfElse(0, 2, IfElse(0, 5, IfElse(0, 8, 9))),
+        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19))))] ),
     Assign('e', Fcn('ms', 2)),
 
-    Def('ms', 'x',
-        [Assign('j', If(1, Return(2)), Else(IfElse(0, 5, IfElse(0, 8, 9))))],
-        [Assign('k', If(0, 12), Else(IfElse(0, 15, IfElse(0, 18, 19))))] ),
+    Def('ms', 'x', [
+        If(0, Return(3)),
+        IfElse(0, 5, IfElse(0, 8, 9)),
+        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19)))),
+        If(1, Return(2)), ] ),
     Assign('e', Fcn('ms', 2)),
 ]
 
@@ -64,9 +67,13 @@ class Basic(unittest.TestCase):
                 result = execObj.do()
                 # do some scalar result checking
                 if expected is not None:
-                    assert result==expected, "%s %s" (result,expected)
+                    # result is a string now??
+                    print "result:", result
+                    print "expected:", expected
+                    assert float(result)==expected, "%s %s" (result,expected)
 
                 # rows might be zero!
+                print "execObj:", dump_json(execObj.execResult)
                 if execObj.execResult['num_rows'] or execObj.execResult['num_cols']:
                     keys.append(execObj.execExpr)
 
