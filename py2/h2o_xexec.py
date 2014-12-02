@@ -353,6 +353,34 @@ class Frame(Xbase):
 
     __repr__ = __str__
 
+
+#********************************************************************************
+# operands is a list of items
+class Seq(Xbase):
+    def __init__(self, *operands):
+        operandList = unpackOperands(operands, parent="Seq operands")
+        self.operandList = operandList
+
+    def __str__(self):
+        oprString = ";".join(map(str, self.operandList))
+        return "{%s}" % oprString
+
+    __repr__ = __str__
+
+#********************************************************************************
+# a/b can be number or string
+class Colon(Xbase):
+    def __init__(self, a='#0', b='#0'):
+        # if it's not a string, turn the assumed number into a number string
+        self.a = Item(a)
+        self.b = Item(b)
+
+    def __str__(self):
+        # no colon if both None
+        if str(self.a) in  ['"null"', None] and str(self.b) in ['"null"', None]:
+            return '"null"'
+        else:
+            return '(: %s %s)' % (self.a, self.b) 
 #********************************************************************************
 xKeyList = []
 
@@ -367,8 +395,6 @@ class Key(Frame):
     __repr__ = __str__
 
     def __init__(self, key=None, dim=2):
-        # HACK!
-        Xbase.debugOnly = True
         if key is None:
             # no h2o name? give it one that's unique for the instance
             key = "anon_" + hex(id(self))
@@ -378,34 +404,68 @@ class Key(Frame):
         # add to list of created h2o keys (for deletion later?)
         xKeyList.append(key)
 
-    # try a trick for getting an assign overload (<<=
+    # try a trick for getting an assign overload (<<= with .do() too
+    # don't want the .do() if you're in a function though?
     def __ilshift__(self, b):
-        print "hello Key __ilshift__"
-        Assign(self.frame, b).do()
+        print "Key ilshift"
+        # I suppose lhs needs to be able to take [] stuff also (for set)
+        Assign(self, b).do()
         return self
+
+    # **= is used inside functions? for just creating the function object
+    # it's a delayed h2o assign?
+    # h2o might eval to a scalar and not create a key? I suppose all Key statements
+    # should create the key on h2o first, so it's known to exist (and h2o will write it)
+    # what about scalars or keys within functions? Should a function keep a keylist
+    # so it knows what to delete? Or does it delete everything except the returned key.
+    def __ipow__(self, b):
+        print "Key ipow"
+        # I suppose lhs needs to be able to take [] stuff also (for set)
+        return Assign(self, b)
 
     # for debug/wip of slicing
     def __getitem__(self, items):
 
-        def slicer(item):
+        def indexer(item):
             print 'Key item %-15s  %s' % (type(item), item)
 
             if type(item) is int:
                 print "Key item int", item
                 return Item(item)
 
+            elif isinstance(item, Seq):
+                print "Key item Seq", Seq
+                return item
+
+            elif isinstance(item, Colon):
+                print "Key item Colon", Colon
+                return item
+
+            # what if the indexer is a list/tuple, string, or Key?
+            # well, use Seq to handle a list (hopefully not too big? check if > 1024)
+            elif isinstance(item, (list, tuple)):
+                if len(item) > 1024:
+                    raise Exception("Key is trying to index a h2o frame with a really long list (>1024) Probably don't want that? %s" % item)
+                return Seq(item) # Seq can take a list or tuple
+
+            elif isinstance(item, basestring):
+                raise Exception("Key is trying to index a h2o frame with a string? %s" % item)
+
+            elif isinstance(item, dict):
+                raise Exception("Key is trying to index a h2o frame with a dict? %s" % item)
+
             elif isinstance( item, slice):
                 # print "Key item start", str(item.start)
                 # print "Key item stop", str(item.stop)
                 # print "Key item step", str(item.step)
                 # assume step is always None..
-                assert item.step == None, "Key assuming step should be None %s" % item.step
+                assert item.step==None, "Key assuming step should be None %s" % item.step
                 return Colon(item.start, item.stop)
                 
             else:
-                raise TypeError("Key.__getitem__ item(%s) must be int/slice") % item
+                raise TypeError("Key.__getitem__ item(%s) must be int/Seq/Colon/list/tuple/slice") % item
 
-        if isinstance(items, (list,tuple)):
+        if isinstance(items, (list, tuple)):
             itemsList = list(items)
             # if there's a list, it better be just one or two dimensions
             # if length 0, ignore
@@ -416,14 +476,14 @@ class Key(Frame):
             elif len(itemsList)==1:
                 return(Frame(
                     frame=self.frame,
-                    row=slicer(itemsList[0])
+                    row=indexer(itemsList[0])
                 ))
 
             elif len(itemsList)==2:
                 return(Frame(
                     frame=self.frame,
-                    row=slicer(itemsList[0]),
-                    col=slicer(itemsList[1])
+                    row=indexer(itemsList[0]),
+                    col=indexer(itemsList[1])
                 ))
 
             else: 
@@ -431,7 +491,7 @@ class Key(Frame):
         else:
             return(Frame(
                 frame=self.frame,
-                row=slicer(items),
+                row=indexer(items),
                 dim=1, # one dimensional if using the single style?
             ))
 
@@ -441,36 +501,8 @@ class Key(Frame):
     # __call__ = __str__
             
 
+# slicing/indexing magic methods
 # http://www.siafoo.net/article/57
-# These methods are called when bracket notation is used.
-# Python will behave differently depending on the type of value inside of the brackets:
-# x[key], where key is a single value
-#     Calls x.__*item__(key)
-# x[start:end] where x.__*slice__ exists
-#     Calls x.__*slice__(cooked_start, cooked_end) where start and end are 'cooked' as described below in 'Old-Style Slices'
-# x[start:end] where x.__*slice__ does not exist, or x[extended_slice], where extended slice is any slice more complex than start:end
-#     Calls x.__*item__ with slice object, Ellipsis, or list of these.
-# 
-# In general, if key is of an inappropriate type, TypeError should be raised. If it is outside the sequence of keys in instance, IndexError should be raised. If instance is a mapping object and key cannot be found, KeyError should be raised. (What if neither of these is true? I dont know.)
-# 
-# __getitem__(self, key)
-# x.__getitem__(key) <==> x[key]
-# Should return item(s) referenced by key.
-# Not called if __setslice__ exists and simple start:end slicing is used.
-# If not present, items cannot be evaluated using bracket notation, and an AttributeError is raised.
-# 
-# __setitem__(self, key, value)
-# x.__setitem__(key, value) <==> x[key] = value
-# Should set or replace item(s) referenced by key. value can be a single value or a sequence.
-# Not called if __setslice__ exists and simple start:end slicing is used. Usage not dependent on presence of __getitem__.
-# If not present, items cannot be assigned using bracket notation, and an AttributeError is raised.
-# 
-# __delitem__(self, key)
-# x.__delitem__(key) <==> del x[key]
-# Should delete item(s) represented by key. Not dependent on presence of __getitem__.
-# Not called if __delslice__ exists and simple start:end slicing is used. Usage not dependent on presence of __getitem__.
-# If not present, items cannot be deleted using bracket notation, and an AttributeError is raised.
-
 
 #********************************************************************************
 
@@ -513,32 +545,6 @@ class Fcn(Xbase):
     ast = __str__
 
 
-# operands is a list of items
-class Seq(Xbase):
-    def __init__(self, *operands):
-        operandList = unpackOperands(operands, parent="Seq operands")
-        self.operandList = operandList
-
-    def __str__(self):
-        oprString = ";".join(map(str, self.operandList))
-        return "{%s}" % oprString
-
-    __repr__ = __str__
-
-# a/b can be number or string
-class Colon(Xbase):
-    def __init__(self, a='#0', b='#0'):
-        # if it's not a string, turn the assumed number into a number string
-        self.a = Item(a)
-        self.b = Item(b)
-
-    def __str__(self):
-        # no colon if both None
-        if str(self.a) in  ['"null"', None] and str(self.b) in ['"null"', None]:
-            return '"null"'
-        else:
-            return '(: %s %s)' % (self.a, self.b) 
-
 
 # higher level things might skip using Expr and do this stuff themselves
 class Expr(Xbase):
@@ -572,26 +578,36 @@ class Return(Xbase):
 #       if hasattr(self.ps.cmdline, '__call__'):
 #                pcmdline = self.ps.cmdline()
 
-class Assign(Xbase):
+class Assign(Key):
     # let rhs be more than one now, to allow for (if..) (else..)
     def __init__(self, lhs='xTemp', *rhs):
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         super(Assign, self).__init__()
 
-        self.lhs = lhs
+        if not isinstance(lhs, (basestring, Key)):
+            raise Exception("Assign: lhs not string or Key %s" % lhs)
+
+        # to date, have been passing strings
+        if isinstance(lhs, (Assign, Key)):
+            # FIX! what if the lhs frame has row/col? need to included it?
+            frame = lhs.frame
+        else:
+            frame = lhs
+
+        self.frame = frame
         rhsList = unpackOperands(rhs, parent="Assign rhs")
         self.rhsList = rhsList
         self.funs = False
+
         # verify the whole thing can be a rapids string at init time
+        if re.match('\$', frame):
+            raise Exception("Assign: lhs shouldn't start with '$' %s" % frame)
+        if re.match('c$', frame):
+            raise Exception("Assign: lhs can't be 'c' %s" % frame)
+        if not re.match('[a-zA-Z0-9_]', frame):
+            raise Exception("Assign: Don't like the chars in your lhs %s" % frame)
 
-        if re.match('\$', lhs):
-            raise Exception("Assign: lhs shouldn't start with '$' %s" % lhs)
-        if re.match('c$', lhs):
-            raise Exception("Assign: lhs can't be 'c' %s" % lhs)
-        if not re.match('[a-zA-Z0-9_]', lhs):
-            raise Exception("Assign: Don't like the chars in your lhs %s" % lhs)
-
-        print "Assign lhs: %s" % self.lhs
+        print "Assign lhs: %s" % self.frame
         print "Assign rhs: %s" % self.rhsList
 
     # leading $ is illegal on lhs
@@ -600,7 +616,8 @@ class Assign(Xbase):
     def __str__(self):
         # should only have >1 for (if ..) (else ..) ???
         rhsStr = " ".join(map(str, self.rhsList))
-        return "(= !%s %s)" % (self.lhs, rhsStr)
+        # if there is row/col for lhs, have to resolve here?
+        return "(= !%s %s)" % (self.frame, rhsStr)
 
     ast = __str__
 
