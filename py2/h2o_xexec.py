@@ -503,11 +503,12 @@ class Key(Frame):
     def __getitem__(self, items):
         return self._set_and_get(items)
 
-    # this is unnecessary and breaks things
-    # def __setitem__(self, items, lhs):
-        # print "__setitem__", self, items, lhs
-        # print "__setitem__", type(self), type(items), type(lhs)
-        # return self._set_and_get(lhs)
+    # need this in, to be a no-op! otherwise "object does not support item assigment
+    def __setitem__(self, items, rhs):
+        pass
+        # print "__setitem__", self, items, rhs
+        # print "__setitem__", type(self), type(items), type(rhs)
+        # return self._set_and_get(rhs)
 
     # __call__ = __str__
             
