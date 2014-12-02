@@ -14,7 +14,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.DocGen.HTML;
 
 /** Iced / Freezable NonBlockingHashMap.  Delegates to a NonBlockingHashMap for
- *  all its operations.  Inspired by water.parser.Enum.
+ *  all its operations.  Inspired by water.parser.Categorical.
  */
 public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Cloneable, Serializable {
 
@@ -39,7 +39,7 @@ public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Clon
   public boolean equals(Object o)                       { return _map.equals(o); }
   public int hashCode()                                 { return _map.hashCode(); }
 
-  // This comment is stolen from water.parser.Enum:
+  // This comment is stolen from water.parser.Categorical:
   //
   // Since this is a *concurrent* hashtable, writing it whilst its being
   // updated is tricky.  If the table is NOT being updated, then all is written

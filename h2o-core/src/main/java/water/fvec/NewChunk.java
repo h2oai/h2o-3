@@ -21,14 +21,14 @@ public class NewChunk extends Chunk {
   // 2- scaled decimals from parsing, in _ls & _xs; _ds==null
   // 3- zero: requires _ls==0 && _xs==0
   // 4- NA: either _ls==0 && _xs==Integer.MIN_VALUE, OR _ds=NaN
-  // 5- Enum: _xs==(Integer.MIN_VALUE+1) && _ds==null
+  // 5- Categorical: _xs==(Integer.MIN_VALUE+1) && _ds==null
   // 6- Str: _ss holds appended string bytes (with trailing 0), _is[] holds offsets into _ss[]
   // Chunk._len is the count of elements appended
   // Sparse: if _sparseLen != _len, then _ls/_ds are compressed to non-zero's only,
   // and _xs is the row number.  Still _len is count of elements including
   // zeros, and _sparseLen is count of non-zeros.
   public transient long   _ls[];   // Mantissa
-  public transient int    _xs[];   // Exponent, or if _ls==0, NA or Enum or Rows
+  public transient int    _xs[];   // Exponent, or if _ls==0, NA or Categorical or Rows
   public transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
   public transient double _ds[];   // Doubles, for inflating via doubles
   public transient byte   _ss[];   // Bytes of appended strings, including trailing 0
@@ -56,8 +56,8 @@ public class NewChunk extends Chunk {
 
   private int _naCnt=-1;                // Count of NA's   appended
   protected int naCnt() { return _naCnt; }               // Count of NA's   appended
-  private int _enumCnt;                  // Count of Enum's appended
-  protected int enumCnt() { return _enumCnt; }                 // Count of Enum's appended
+  private int _enumCnt;                  // Count of Categorical's appended
+  protected int enumCnt() { return _enumCnt; }                 // Count of Categorical's appended
   private int _strCnt;                  // Count of string's appended
   protected int strCnt() { return _strCnt; }                 // Count of strings's appended
   private int _nzCnt;                   // Count of non-zero's appended
@@ -102,7 +102,7 @@ public class NewChunk extends Chunk {
       if( _id != null && _id.length > 0 && (j < _id.length && _id[j] == i ) ) // Sparse storage
         // adjust for enum ids using 1-based indexing
         strChunk.addStr(emap[(int) _ls[j++] - 1]);
-      else if (_xs[i] != Integer.MIN_VALUE) // Enum value isn't NA
+      else if (_xs[i] != Integer.MIN_VALUE) // Categorical value isn't NA
         strChunk.addStr(emap[(int) _ls[i] - 1]);
       else
         strChunk.addNA();
@@ -196,7 +196,7 @@ public class NewChunk extends Chunk {
     if(_strCnt > 0)
       return AppendableVec.STRING;
     if(_enumCnt > 0 && _enumCnt + _naCnt == _len)
-      return AppendableVec.ENUM; // All are Strings+NAs ==> Enum Chunk
+      return AppendableVec.ENUM; // All are Strings+NAs ==> Categorical Chunk
     // UUIDs?
     if( _uuidCnt > 0 ) return AppendableVec.UUID;
     // Larger of time & numbers

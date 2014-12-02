@@ -1,12 +1,14 @@
 package water.parser;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.DocGen.HTML;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Class for tracking enum columns.
  *  
@@ -17,26 +19,26 @@ import water.util.DocGen.HTML;
  *  After pass1, the keys are sorted and indexed alphabetically.
  *  In the second pass, map is used only for lookup and never updated.
  *  
- *  Enum objects are shared among threads on the local nodes!
+ *  Categorical objects are shared among threads on the local nodes!
  *
  * @author tomasnykodym
  *
  */
-public final class Enum extends Iced {
+public final class Categorical extends Iced {
   public static final int MAX_ENUM_SIZE = 65000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<ValueString, Integer> _map;
   boolean maxEnumExceeded = false;
 
-  Enum() { _map = new NonBlockingHashMap<>(); }
+  Categorical() { _map = new NonBlockingHashMap<>(); }
 
-  private Enum(int id, NonBlockingHashMap<ValueString,Integer>map) {
+  private Categorical(int id, NonBlockingHashMap<ValueString, Integer> map) {
     _id = new AtomicInteger(id);
     _map = map;
   }
-  Enum deepCopy() {
-    return new Enum(_id.get(), _map==null ? null : (NonBlockingHashMap<ValueString,Integer>)_map.clone());
+  Categorical deepCopy() {
+    return new Categorical(_id.get(), _map==null ? null : (NonBlockingHashMap<ValueString,Integer>)_map.clone());
   }
   /** Add key to this map (treated as hash set in this case). */
   int addKey(ValueString str) {
@@ -59,7 +61,7 @@ public final class Enum extends Iced {
 
   int getTokenId( ValueString str ) { return _map.get(str); }
   
-  void merge(Enum other){
+  void merge(Categorical other){
     if( this == other ) return;
     if( isMapFull() ) return;
     if( !other.isMapFull() ) {   // do the merge
@@ -100,7 +102,7 @@ public final class Enum extends Iced {
     return ab.put2((char)65535); // End of map marker
   }
   
-  @Override public Enum read_impl( AutoBuffer ab ) {
+  @Override public Categorical read_impl( AutoBuffer ab ) {
     assert _map == null || _map.size()==0;
     _map = null;
     if( ab.get1() == 1 ) return this; // Killed?
@@ -112,6 +114,6 @@ public final class Enum extends Iced {
     return this;
   }
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
-  @Override public Enum readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public Categorical readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
   @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.unimpl(); }
 }

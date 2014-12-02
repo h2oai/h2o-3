@@ -2,6 +2,7 @@ package water.api;
 
 import water.*;
 
+
 public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
 
   // Input fields

@@ -367,13 +367,13 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(vecs[6].isString());
 
       //checks column counts - expects MAX_ENUM == 65000
-      //Enum registration is racy so actual enum limit can exceed MAX by a few values
+      //Categorical registration is racy so actual enum limit can exceed MAX by a few values
       Assert.assertTrue(65003 <= vecs[0].nzCnt()); //Col A lacks starting values
       Assert.assertTrue(65002 <= vecs[1].nzCnt()); //Col B has random missing values & dble quotes
       Assert.assertTrue(65005 <= vecs[2].nzCnt()); //Col C has all values & single quotes
-      Assert.assertTrue(65002 <= vecs[3].nzCnt()); //Col D missing vals just prior to Enum limit
-      Assert.assertTrue(65003 <= vecs[4].nzCnt()); //Col E missing vals just after Enum limit hit
-      //Assert.assertTrue(65000 <= vecs[5].domain().length); //Col F cardinality just at Enum limit
+      Assert.assertTrue(65002 <= vecs[3].nzCnt()); //Col D missing vals just prior to Categorical limit
+      Assert.assertTrue(65003 <= vecs[4].nzCnt()); //Col E missing vals just after Categorical limit hit
+      //Assert.assertTrue(65000 <= vecs[5].domain().length); //Col F cardinality just at Categorical limit
       Assert.assertTrue(65003 <= vecs[6].nzCnt()); //Col G missing final values
 
       //spot check value parsing

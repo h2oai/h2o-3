@@ -52,7 +52,7 @@ public final class ParseDataset2 extends Job<Frame> {
   }
 
   public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
-    return forkParseDataset(okey,keys, globalSetup,delete_on_done); 
+    return forkParseDataset(okey,keys, globalSetup,delete_on_done);
   }
 
   private static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
@@ -157,7 +157,7 @@ public final class ParseDataset2 extends Job<Frame> {
     ecols =  Arrays.copyOf(ecols, n);
     if( ecols.length > 0 ) {
       EnumFetchTask eft = new EnumFetchTask(mfpt._eKey, ecols).doAllNodes();
-      Enum[] enums = eft._gEnums;
+      Categorical[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];
       EnumMapping [] emaps = new EnumMapping[H2O.CLOUD.size()];
       int k = 0;
@@ -167,7 +167,7 @@ public final class ParseDataset2 extends Job<Frame> {
         if(eft._lEnums[nodeId] == null)continue;
         int[][] emap = new int[ecols.length][];
         for (int i = 0; i < ecols.length; ++i) {
-          final Enum e = eft._lEnums[nodeId][ecols[i]];
+          final Categorical e = eft._lEnums[nodeId][ecols[i]];
           if(e == null) continue;
           emap[i] = MemoryManager.malloc4(e.maxId() + 1);
           Arrays.fill(emap[i], -1);
@@ -210,7 +210,7 @@ public final class ParseDataset2 extends Job<Frame> {
   }
 
   // --------------------------------------------------------------------------
-  /** Task to update enum values to match the global numbering scheme.
+  /** Task to update enum (categorical) values to match the global numbering scheme.
    *  Performs update in place so that values originally numbered using
    *  node-local unordered numbering will be numbered using global numbering.
    *  @author tomasnykodym
@@ -250,11 +250,11 @@ public final class ParseDataset2 extends Job<Frame> {
   private static class EnumFetchTask extends MRTask<EnumFetchTask> {
     private final Key _k;
     private final int[] _ecols;
-    private Enum[] _gEnums;      // global enums per column
-    public Enum[][] _lEnums;    // local enums per node per column
+    private Categorical[] _gEnums;      // global enums per column
+    public Categorical[][] _lEnums;    // local enums per node per column
     private EnumFetchTask(Key k, int[] ecols){_k = k;_ecols = ecols;}
     @Override public void setupLocal() {
-      _lEnums = new Enum[H2O.CLOUD.size()][];
+      _lEnums = new Categorical[H2O.CLOUD.size()][];
       if( !MultiFileParseTask._enums.containsKey(_k) ) return;
       _lEnums[H2O.SELF.index()] = _gEnums = MultiFileParseTask._enums.get(_k);
       // Null out any empty Enum structs; no need to ship these around.
@@ -352,8 +352,8 @@ public final class ParseDataset2 extends Job<Frame> {
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
     // Enum lists for each concurrent parse.
-    private static NonBlockingHashMap<Key, Enum[]> _enums = new NonBlockingHashMap<>();
-    // The Key used to sort out *this* parse's Enum[]
+    private static NonBlockingHashMap<Key, Categorical[]> _enums = new NonBlockingHashMap<>();
+    // The Key used to sort out *this* parse's Categorical[]
     private final Key _eKey = Key.make();
     // Eagerly delete Big Data
     private final boolean _delete_on_done;
@@ -370,7 +370,7 @@ public final class ParseDataset2 extends Job<Frame> {
     String[] _errors;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
-      _vg = vg; _setup = setup; 
+      _vg = vg; _setup = setup;
       _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
@@ -388,19 +388,19 @@ public final class ParseDataset2 extends Job<Frame> {
       Arrays.fill(_chunk2Enum, -1);
     }
 
-    // Fetch out the node-local Enum[] using _eKey and _enums hashtable
-    private static Enum[] enums(Key eKey, int ncols) {
-      Enum[] enums = _enums.get(eKey);
+    // Fetch out the node-local Categorical[] using _eKey and _enums hashtable
+    private static Categorical[] enums(Key eKey, int ncols) {
+      Categorical[] enums = _enums.get(eKey);
       if( enums != null ) return enums;
-      enums = new Enum[ncols];
-      for( int i = 0; i < enums.length; ++i ) enums[i] = new Enum();
+      enums = new Categorical[ncols];
+      for( int i = 0; i < enums.length; ++i ) enums[i] = new Categorical();
       _enums.putIfAbsent(eKey, enums);
       return _enums.get(eKey); // Re-get incase lost insertion race
     }
 
     // Flag all chunk enums as being on local (self)
     private void chunksAreLocal( Vec vec, int chunkStartIdx, Key key ) {
-      for(int i = 0; i < vec.nChunks(); ++i)  
+      for(int i = 0; i < vec.nChunks(); ++i)
         _chunk2Enum[chunkStartIdx + i] = H2O.SELF.index();
       // For Big Data, must delete data as eagerly as possible.
       Iced ice = DKV.get(key).get();
@@ -450,7 +450,7 @@ public final class ParseDataset2 extends Job<Frame> {
           ZipInputStream zis = new ZipInputStream(bvs);
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
-          if( ze != null && !ze.isDirectory() ) 
+          if( ze != null && !ze.isDirectory() )
             _dout = streamParse(zis,localSetup, _vecIdStart, chunkStartIdx, bvs);
           else zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
@@ -533,7 +533,7 @@ public final class ParseDataset2 extends Job<Frame> {
         _visited = new NonBlockingSetInt();
       }
       @Override public void map( Chunk in ) {
-        Enum [] enums = enums(_eKey,_setup._ncols);
+        Categorical [] enums = enums(_eKey,_setup._ncols);
         // Break out the input & output vectors before the parse loop
         FVecDataIn din = new FVecDataIn(in);
         FVecDataOut dout;
@@ -611,7 +611,7 @@ public final class ParseDataset2 extends Job<Frame> {
   static class FVecDataOut extends Iced implements Parser.StreamDataOut {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
-    protected final Enum [] _enums;
+    protected final Categorical [] _enums;
     protected transient byte [] _ctypes;
     long _nLines;
     int _nCols;
@@ -628,7 +628,7 @@ public final class ParseDataset2 extends Job<Frame> {
     static final byte ICOL = 4; // UUID    col typ
     static final byte SCOL = 5; // String  col typ
 
-    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Enum[] enums, byte[] ctypes){
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes){
       _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
@@ -768,7 +768,7 @@ public final class ParseDataset2 extends Job<Frame> {
 
     private void enumCol2StrCol(int colIdx) {
       //build local value2key map for enums
-      Enum enums = _enums[colIdx].deepCopy();
+      Categorical enums = _enums[colIdx].deepCopy();
       ValueString emap[] = new ValueString[enums.maxId()+1];
       ValueString keys[] = enums._map.keySet().toArray(new ValueString[enums.size()]);
       for (ValueString str:keys)
@@ -804,13 +804,13 @@ public final class ParseDataset2 extends Job<Frame> {
   // --------------------------------------------------------
   private static class SVMLightFVecDataOut extends FVecDataOut {
     protected final VectorGroup _vg;
-    private SVMLightFVecDataOut(VectorGroup vg, int cidx, Enum [] enums){
+    private SVMLightFVecDataOut(VectorGroup vg, int cidx, Categorical [] enums){
       super(vg,cidx,0,vg.reserveKeys(10000000),enums, null);
       _nvs = new NewChunk[0];
       _vg = vg;
       _col = 0;
     }
-    
+
     private void addColumns(int ncols){
       if(ncols > _nCols){
         _nvs   = Arrays.copyOf(_nvs   , ncols);

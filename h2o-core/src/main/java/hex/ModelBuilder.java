@@ -25,13 +25,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
-   *  response column to an Enum, etc.  */
+   *  response column to an Categorical, etc.  */
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
-   *  response column to an Enum, etc.  Is null if no validation key is set.  */
+   *  response column to a Categorical, etc.  Is null if no validation key is set.  */
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
