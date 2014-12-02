@@ -341,8 +341,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // currently allow nested-key-keepers.
     Vec[] vecs = adaptFr.vecs();
     for( int i=0; i<vecs.length; i++ )
-      if( vecs[i] == fr.vecs()[i] )
-        vecs[i] = null;
+      if( fr.find(vecs[i]) != -1 ) // Exists in the original frame?
+        vecs[i] = null;            // Do not delete it
     adaptFr.delete();
     return output;
   }
