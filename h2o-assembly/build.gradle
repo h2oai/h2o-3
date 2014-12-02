@@ -34,5 +34,5 @@ task copyJar(type: Copy) {
 // Execute always copyJar
 fatJar.finalizedBy copyJar
 // Run fatJar as par of build
-build.dependsOn fatJar
+jar.finalizedBy fatJar
 

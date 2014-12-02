@@ -49,7 +49,8 @@ ext {
       project(':h2o-core'),
       project(':h2o-algos'),
       project(':h2o-web'),
-      project(':h2o-app')
+      project(':h2o-app'),
+      project(':h2o-test-integ')
     ]
 
     scalaProjects = [

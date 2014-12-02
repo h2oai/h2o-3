@@ -1,5 +1,3 @@
-apply plugin: 'java'
-
 description = "H2O Integration Testing"
 
 dependencies {
