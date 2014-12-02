@@ -38,9 +38,11 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
    */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    //Boolean useableCol = false;
-    //for (Vec v: _parms.train().vecs()) if (v.isString()) useableCol = true;
-    //if (!useableCol) error("_train", "Training input frame lacks any string columns for Word2Vec to analyze.");
+    if (_parms._train != null) { //Can be called without an existing frame, but when present check for a string col
+      Boolean useableCol = false;
+      for (Vec v : _parms.train().vecs()) if (v.isString()) useableCol = true;
+      if (!useableCol) error("_train", "Training input frame lacks any string columns for Word2Vec to analyze.");
+    }
     if (_parms._vecSize > Word2VecParameters.MAX_VEC_SIZE) error("_vecSize", "Requested vector size of "+_parms._vecSize+" in Word2Vec, exceeds limit of "+Word2VecParameters.MAX_VEC_SIZE+".");
     if (_parms._vecSize < 1) error("_vecSize", "Requested vector size of " + _parms._vecSize + " in Word2Vec, is not allowed.");
     if (_parms._windowSize < 1) error("_windowSize", "Negative window size not allowed for Word2Vec.  Expected value > 0, received " + _parms._windowSize);
