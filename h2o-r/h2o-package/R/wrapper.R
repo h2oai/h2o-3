@@ -100,7 +100,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #'
 #' @section WARNING: All data, models, and other values stored on the server will be lost! Only call this function if you and all other clients connected to the H2O server are finished and have saved your work.
 #' @param client An \linkS4class{H2OClient} client containing the IP address and port of the server running H2O.
-#' @param promptn A \code{logical} value indicating whether to prompt the user before shutting down the H2O server.
+#' @param prompt A \code{logical} value indicating whether to prompt the user before shutting down the H2O server.
 #' @note Users must call h2o.shutdown explicitly in order to shut down the local H2O instance started by R. If R is closed before H2O, then an attempt will be made to automatically shut down H2O. This only applies to local instances started with h2o.init, not remote H2O servers.
 #' @seealso \code{\link{h2o.init}}
 #' @examples
