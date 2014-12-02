@@ -987,9 +987,7 @@ class ASTSlice extends AST {
   ASTSlice() {}
 
   ASTSlice parse_impl(Exec E) {
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST hex = E.parse();
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST rows = E.skipWS().parse();
     if (rows instanceof ASTString) rows = new ASTNull();
     if (rows instanceof ASTSpan) ((ASTSpan) rows).setSlice(true, false);

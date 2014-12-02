@@ -457,7 +457,7 @@ public class Env extends Iced {
     @Override public Val peekAt(int i) {
 
       // Another check just in case assertions aren't on.
-      if (i < 0) {
+      if (i <= 0) {
         i = _head + i;
         if (i < 0) throw new IllegalArgumentException("Trying to peekAt a negative position in the stack: "+i);
       }

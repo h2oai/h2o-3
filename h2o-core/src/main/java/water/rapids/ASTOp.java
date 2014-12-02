@@ -7,6 +7,7 @@ import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.math.BigDecimal;
@@ -113,15 +114,15 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTTrun());
 
     // Trigonometric functions
-    putPrefix(new ASTCos());
-    putPrefix(new ASTSin());
-    putPrefix(new ASTTan());
-    putPrefix(new ASTACos());
-    putPrefix(new ASTASin());
-    putPrefix(new ASTATan());
-    putPrefix(new ASTCosh());
-    putPrefix(new ASTSinh());
-    putPrefix(new ASTTanh());
+    putPrefix(new ASTCos  ());
+    putPrefix(new ASTSin  ());
+    putPrefix(new ASTTan  ());
+    putPrefix(new ASTACos ());
+    putPrefix(new ASTASin ());
+    putPrefix(new ASTATan ());
+    putPrefix(new ASTCosh ());
+    putPrefix(new ASTSinh ());
+    putPrefix(new ASTTanh ());
     putPrefix(new ASTACosh());
     putPrefix(new ASTASinh());
     putPrefix(new ASTATanh());
@@ -131,25 +132,26 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMax ());
     putPrefix(new ASTSum ());
     putPrefix(new ASTSdev());
-    putPrefix(new ASTVar());
+    putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
 
     // Misc
-    putPrefix(new ASTMatch());
+    putPrefix(new ASTMatch ());
     putPrefix(new ASTRename());  //TODO
     putPrefix(new ASTSeq   ());  //TODO
     putPrefix(new ASTSeqLen());  //TODO
     putPrefix(new ASTRepLen());  //TODO
     putPrefix(new ASTQtile ());  //TODO
     putPrefix(new ASTCbind ());
+    putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
 //    putPrefix(new ASTIfElse());
-    putPrefix(new ASTApply());
+    putPrefix(new ASTApply ());
     putPrefix(new ASTSApply());
     putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
-    putPrefix(new ASTXorSum ());
+    putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
@@ -167,7 +169,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTMinute());
 //    putPrefix(new ASTSecond());
 //    putPrefix(new ASTMillis());
-//
+
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //    putPrefix(new ASTIsTRUE());
@@ -1157,103 +1159,132 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //  @Override void apply(Env env, int argcnt, ASTApply apply) { throw H2O.unimpl(); }
 //}
 
-//class ASTRbind extends ASTUniPrefixOp {
-//  protected static int argcnt;
-//  @Override String opStr() { return "rbind"; }
-//  ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
-//  @Override ASTOp make() { return new ASTRbind(); }
-//  ASTRbind parse_impl(Exec E) {
-//    ArrayList<AST> dblarys = new ArrayList<>();
-//    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-//    AST ary = E.parse();
-//    dblarys.add(ary);
-//    AST a;
-//    while (E.skipWS().hasNext()) {
-//      a = E.parse();
-//      if (a instanceof ASTId) {
-//        AST ast = E._env.lookup((ASTId)a);
-//        if (ast instanceof ASTFrame) {dblarys.add(a); continue; }
-//      }
-//      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
-//        dblarys.add(a);
-//
-//    }
-//    ASTRbind res = (ASTRbind) clone();
-//    AST[] arys = new AST[argcnt=dblarys.size()];
-//    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
-//    res._asts = arys;
-//    return res;
-//  }
-//
-//  private String get_type(byte t) {
-//    switch(t) {
-//      case Vec.T_ENUM: return "factor";
-//      case Vec.T_NUM:  return "numeric";
-//      case Vec.T_STR:  return "String";
-//      case Vec.T_TIME: return "time";
-//      case Vec.T_UUID: return "UUID";
-//      default: return "bad";
-//    }
-//  }
-//
-//  @Override void apply(Env env) {
-//    // quick check to make sure rbind is feasible
-//    Frame f1 = null;
-//    int nchunks=0;
-//    ArrayList<long[]> espcs_al = new ArrayList<>(); // the new espc for each frame
-//    ArrayList<String[]> doms= new ArrayList<>(); // union'd domains
-//    ArrayList<Byte> types = new ArrayList<>();   // types for each col
-//    for (int i = 0; i < argcnt; ++i) {
-//      Frame t = env.peekAryAt(-i);
-//      if (f1 == null) {
-//        f1 = t;
-//        espcs_al.add(f1.anyVec().get_espc());
-//        for (int c = 0; c < f1.numCols(); ++c) {
-//          doms.add(f1.vec(c).domain());
-//          types.add(f1.vec(c).get_type());
-//        }
-//      } else {
-//        long t_espc[] = t.anyVec().get_espc();
-//        nchunks += t.anyVec().nChunks();
-//        espcs_al.add(ArrayUtils.add(t_espc, t_espc[t_espc.length-1]+1));
-//      }
-//
-//      // check columns match
-//      if (t.numCols() != f1.numCols())
-//        throw new IllegalArgumentException("Column mismatch! Expected " + f1.numCols() + " but frame has " + t.numCols());
-//
-//      // check column types
-//      String err = "Column type mismatch! Expected type factor but frame has type number.";
-//      for (int c = 0; c < f1.numCols(); ++c) {
-//        if (f1.vec(c).get_type() != t.vec(c).get_type())
-//          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
-//        doms.set(c, ArrayUtils.domainUnion(doms.get(c), t.vec(c).domain()));
-//      }
-//    }
-//
-//    final Vec[] vecs = new Vec[f1.numCols()];
-//    final long[][] espcs = espcs_al.toArray(new long[espcs_al.size()][]);
-//    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f1.numCols());
-//    for (int i = 0; i < vecs.length; ++i)
-//      vecs[i] = new Vec(keys[i], espcs[i], doms.get(i), types.get(i));
-//
-//    // loop over frames & combine
-//    for (int i = 0; i < argcnt; ++i) {
-//      new MRTask() {
-//        @Override
-//        public void map(Chunk[] cs) {
-//          for (int i = 0; i < cs.length; ++i) {
-//
-//            Key ckey = Vec.chunkKey(vecs[i]._key, );
-//
-//            Chunk c = cs[i];
-//            c.vec().chunkKey(c.cidx());
-//          }
-//        }
-//      }.doAll(env.pop0Ary());
-//    }
-//  }
-//}
+class ASTRbind extends ASTUniPrefixOp {
+  protected static int argcnt;
+  @Override String opStr() { return "rbind"; }
+  ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
+  @Override ASTOp make() { return new ASTRbind(); }
+  ASTRbind parse_impl(Exec E) {
+    ArrayList<AST> dblarys = new ArrayList<>();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    AST ary = E.parse();
+    dblarys.add(ary);
+    AST a;
+    boolean broke = false;
+    while (E.skipWS().hasNext()) {
+      a = E.parse();
+      if (a instanceof ASTId) {
+        AST ast = E._env.lookup((ASTId)a);
+        if (ast instanceof ASTFrame) { dblarys.add(a); }
+        else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
+      }
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
+        dblarys.add(a);
+      }
+      else { broke = true; break; }
+    }
+    if (broke) E.rewind();
+    ASTRbind res = (ASTRbind) clone();
+    AST[] arys = new AST[argcnt=dblarys.size()];
+    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    res._asts = arys;
+    return res;
+  }
+
+  private String get_type(byte t) {
+    switch(t) {
+      case Vec.T_ENUM: return "factor";
+      case Vec.T_NUM:  return "numeric";
+      case Vec.T_STR:  return "String";
+      case Vec.T_TIME: return "time";
+      case Vec.T_UUID: return "UUID";
+      default: return "bad";
+    }
+  }
+
+  @Override void apply(Env env) {
+    // quick check to make sure rbind is feasible
+    if (argcnt == 1) { return; } // leave stack as is
+
+    Frame f1 = null;
+    ArrayList<long[]> espcs_al = new ArrayList<>();   // the new espc for each frame
+    ArrayList<String[]> doms= new ArrayList<>();      // union'd domains
+    ArrayList<Byte> types = new ArrayList<>();        // types for each col
+    ArrayList<long[]> new_starts = new ArrayList<>(); // list of the new starts
+
+    // do error checking and compute new offsets in tandem
+    for (int i = 0; i < argcnt; ++i) {
+      Frame t = env.peekAryAt(-i);
+      if (f1 == null) {
+        f1 = t;
+        espcs_al.add(f1.vec(f1.numCols()-1).get_espc().clone());
+        for (int c = 0; c < f1.numCols(); ++c) {
+          doms.add(f1.vec(c).domain());
+          types.add(f1.vec(c).get_type());
+        }
+        continue; // no need to go further on first frame, subsequent frames must be compatible.
+      } else {
+        long offset = espcs_al.get(i-1)[espcs_al.get(i-1).length-1]; // last long in previous espc
+        long t_espc[] = Arrays.copyOfRange(t.anyVec().get_espc(), 1, t.anyVec().get_espc().length);
+        espcs_al.add(ArrayUtils.add(t_espc, offset));
+        new_starts.add(new long[]{offset+1});
+      }
+
+      // check columns match
+      if (t.numCols() != f1.numCols())
+        throw new IllegalArgumentException("Column mismatch! Expected " + f1.numCols() + " but frame has " + t.numCols());
+
+      // check column types
+      for (int c = 0; c < f1.numCols(); ++c) {
+        if (f1.vec(c).get_type() != t.vec(c).get_type())
+          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
+        // try to union domains of vecs -- TODO: what happens if union > 65K ?
+        try {
+          doms.set(c, doms.get(c) == null ? null : ArrayUtils.domainUnion(doms.get(c), t.vec(c).domain()));
+        } catch (NullPointerException e) {
+          throw new IllegalArgumentException("The factor levels for vec "+(c+1)+" in frame "+(i+1)+" was null");
+        }
+      }
+    }
+
+    // have all of the new espcs computed, set up the new set of Vecs
+    final Vec[] vecs = new Vec[f1.numCols()];
+    final long[][] espcs = new long[espcs_al.size()][];
+    // flatten the espcs_al into a single long[]
+    long espc_completa[] = new long[0];
+    for (int i=0;i<espcs.length;++i)
+      espc_completa = ArrayUtils.join(espc_completa, espcs[i] = espcs_al.get(i));
+    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f1.numCols());
+    for (int i = 0; i < vecs.length; ++i)
+      vecs[i] = new Vec(keys[i], espc_completa, doms.get(i), types.get(i));
+
+    // loop over frames & combine
+    final Futures fs = new Futures();
+    for (int i = 0; i < argcnt; ++i) {
+      final long espc[] = i == 0 ? espcs[i] : ArrayUtils.join(new_starts.get(i - 1), espcs[i]);
+      new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          int cidx = cs[0].cidx();
+          Log.info("CIDX: " + cidx);
+          for (int c = 0; c < cs.length; ++c) {
+            Key ckey = Vec.chunkKey(vecs[c]._key, vecs[c].elem2ChunkIdx(espc[cidx]));
+            Log.info(vecs[c].elem2ChunkIdx((espc[cidx])));
+            Chunk cc = (Chunk)cs[c].clone();
+            cc.setVec(vecs[c]);
+            cc.setBytes(cc.getBytes().clone());
+            cc.setStart(-1);
+            cc.flushChk2();
+            DKV.put(ckey, cc);
+          }
+        }
+      }.doAll(env.pop0Ary());
+    }
+    for (Vec v : vecs) { DKV.put(v, fs); v.postWrite(fs); }
+    fs.blockForPending();
+    Frame res = new Frame(f1.names(), vecs);
+    env.push(new ValFrame(res));
+  }
+}
 
 // Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {

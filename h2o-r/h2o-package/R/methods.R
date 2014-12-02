@@ -1349,6 +1349,13 @@ cbind.H2OFrame <- function(..., deparse.level = 1) {
 #  new('H2OParsedData', h2o=h2o, key=res$dest_key)
 }
 
+rbind.H2OFrame <- function(..., deparse.level = 1) {
+  if (deparse.level != 1) stop("Unimplemented")
+  ast <- .h2o.varop("rbind", ...)
+  ast
+}
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
