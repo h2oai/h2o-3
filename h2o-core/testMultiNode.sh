@@ -16,7 +16,14 @@ esac
 function cleanup () {
   kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} 1> /dev/null 2>&1
   wait 1> /dev/null 2>&1
-  exit `cat $OUTDIR/status.0`
+  RC=`cat $OUTDIR/status.0`
+  if [ $RC -ne 0 ]; then
+    cat $OUTDIR/out.0
+    echo h2o-core junit tests FAILED
+  else
+    echo h2o-core junit tests PASSED
+  fi
+  exit $RC
 }
 trap cleanup SIGTERM SIGINT
 
@@ -46,8 +53,8 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.2 
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
-# Launch last driver JVM.  All output redir'd at the OS level to sandbox files,
-# and tee'd to stdout so we can watch.
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) | tee $OUTDIR/out.0 
+# Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
+echo Running h2o-core junit tests...
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 cleanup
