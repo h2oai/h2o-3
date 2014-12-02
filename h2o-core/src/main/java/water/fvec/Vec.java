@@ -230,7 +230,7 @@ public class Vec extends Keyed {
   /** Main default constructor; the caller understands Chunk layout (via the
    *  {@code espc} array), plus enum/factor the {@code domain} (or null for
    *  non-enums), and the Vec type. */
-  Vec( Key key, long espc[], String[] domain, byte type ) {
+  public Vec( Key key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
@@ -277,6 +277,8 @@ public class Vec extends Keyed {
   boolean writable() { return true; }
   /** Get the _espc long[]. */
   public long[] get_espc() { return _espc; }
+  /** Get the column type. */
+  public byte get_type() { return _type; }
   
   // ======= Create zero/constant Vecs ======
 
@@ -617,7 +619,7 @@ public class Vec extends Keyed {
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs. */
-  int elem2ChunkIdx( long i ) {
+  public int elem2ChunkIdx( long i ) {
     if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
     int lo=0, hi = nChunks();
     while( lo < hi-1 ) {

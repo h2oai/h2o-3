@@ -142,6 +142,11 @@ public abstract class Chunk extends Iced implements Cloneable {
   /** Owning Vec */
   public Vec vec() { return _vec; }
 
+  /** Set the owning Vec */
+  public void setVec(Vec vec) { _vec = vec; }
+
+  /** Set the start */
+  public void setStart(long start) { _start = start; }
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
   byte[] _mem;
   /** Short-cut to the embedded big-data memory.  Generally not useful for
@@ -149,9 +154,14 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  pointer to this array defeats the user-mode spill-to-disk. */
   public byte[] getBytes() { return _mem; }
 
+  public void setBytes(byte[] mem) { _mem = mem; }
+
   /** Used by a ParseExceptionTest to break the Chunk invariants and trigger an
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
+
+  /** Used by rbind to flush the chk2 */
+  public final void flushChk2() { _chk2 = null; setWrite(); }
 
   /** Load a {@code long} value using absolute row numbers.  Floating point
    *  values are silently rounded to a long.  Throws if the value is missing.

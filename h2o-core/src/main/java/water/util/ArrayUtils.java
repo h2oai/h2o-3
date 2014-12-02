@@ -127,6 +127,10 @@ public class ArrayUtils {
     for(long n: nums) sum+=n;
     return sum/nums.length;
   }
+  public static long[] add(long[] nums, long a) {
+    for (int i=0;i<nums.length;i++) nums[i] += a;
+    return nums;
+  }
   public static float[] div(float[] nums, int n) {
     for (int i=0; i<nums.length; i++) nums[i] /= n;
     return nums;
@@ -449,6 +453,11 @@ public class ArrayUtils {
     return Arrays.copyOf(r, i);
   }
 
+  public static long[] join(long[] a, long[] b) {
+    long[] res = Arrays.copyOf(a, a.length+b.length);
+    System.arraycopy(b, 0, res, a.length, b.length);
+    return res;
+  }
   public static float [] join(float[] a, float[] b) {
     float[] res = Arrays.copyOf(a, a.length+b.length);
     System.arraycopy(b, 0, res, a.length, b.length);
