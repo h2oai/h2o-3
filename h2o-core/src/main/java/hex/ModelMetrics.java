@@ -3,7 +3,6 @@ package hex;
 import water.*;
 import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ModelUtils;
 

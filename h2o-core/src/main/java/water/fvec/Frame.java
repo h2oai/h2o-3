@@ -272,9 +272,9 @@ public class Frame extends Lockable {
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
   @Override public long checksum() {
-    Vec [] vecs = vecs();
+    Vec[] vecs = vecs();
     long _checksum = 0;
-    for(int i = 0; i < _names.length; ++i) {
+    for( int i = 0; i < _names.length; ++i ) {
       long vec_checksum = vecs[i].checksum();
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);

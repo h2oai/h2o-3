@@ -1,9 +1,5 @@
 package hex.deeplearning;
 
-import hex.AUC;
-import hex.AUCData;
-import hex.ConfusionMatrix;
-import hex.ConfusionMatrix2;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;

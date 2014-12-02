@@ -1,13 +1,10 @@
 package hex.tree;
 
-import java.util.Arrays;
-
 import hex.ModelMetrics;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ModelUtils;
-import water.util.Log;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
@@ -43,11 +40,11 @@ public class Score extends MRTask<Score> {
       if( ys.isNA0(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
       if( _oob && chks[oobColIdx].at80(row)!=0 ) continue;
-      if( _bldr._parms._valid!=null ) {  // Must score "the hard way"
+      if( _bldr._parms._valid!=null )   // Must score "the hard way"
         _bldr._model.score0(chks,row,tmp,cdists);
-      } else {               // Passed in the model-specific columns
+      else                      // Passed in the model-specific columns
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
-      }
+      if( nclass > 1 ) cdists[0] = ModelUtils.getPrediction(cdists,row); // Fill in prediction
       _mb.perRow(cdists,(float)ys.at0(row));
     }
   }
@@ -55,5 +52,5 @@ public class Score extends MRTask<Score> {
   @Override public void reduce( Score t ) { _mb.reduce(t._mb); }
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
-  ModelMetrics makeModelMetrics(Frame fr, String resp) { return _mb.makeModelMetrics(_bldr._model,fr, fr.vec(resp).sigma()); }
+  ModelMetrics makeModelMetrics(SharedTreeModel model, Frame fr, String resp) { return _mb.makeModelMetrics(model,fr, fr.vec(resp).sigma()); }
 }

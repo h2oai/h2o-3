@@ -5,9 +5,7 @@ import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
-import water.util.SB;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -91,24 +89,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected double missingColumnsType() { return Double.NaN; }
 
     public long checksum() {
-      long field_checksum = 1L;
-
-      Field field = null; // keep around in case of exception
-      try {
-        for (Field f : this.getClass().getFields()) {
-          field = f;
-          Object v = field.get(this);
-          if (null != v) {
-            int c = v.hashCode();
-            field_checksum *= (c == 0 ? 17 : c);
-          }
-        }
-      }
-      catch (IllegalAccessException e) {
-        throw H2O.fail("Caught IllegalAccessException accessing field: " + field.toString() + " while creating checksum for: " + this.toString());
-      }
-
-      return (field_checksum == 0 ? 13 : field_checksum) *
+      return 
+        (_dropNA20Cols?17:1) *
         train().checksum() *
         (_valid == null ? 17 : valid().checksum()) *
         (null == _ignored_columns ? 23: Arrays.hashCode(_ignored_columns));
@@ -191,7 +173,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               ModelCategory.Regression);
     }
 
-    protected ModelMetrics addModelMetrics(ModelMetrics mm) {
+    // Needs to be Atomic update, not just synchronized
+    protected synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
+      for( int i=0; i<_model_metrics.length; i++ ) // Dup removal
+        if( _model_metrics[i]==mm._key ) return mm;
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
       _model_metrics[_model_metrics.length - 1] = mm._key;
       return mm;                // Flow coding
@@ -199,7 +184,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public long checksum() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
-              (null == _domains ? 17 : Arrays.hashCode(_domains)) *
+              (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
     }
   } // Output

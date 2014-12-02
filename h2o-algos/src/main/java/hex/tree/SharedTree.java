@@ -185,7 +185,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( _model != null ) _model.unlock(_key);
         _parms.unlock_frames(SharedTree.this);
         done();                 // Job done!
-        Scope.exit(_model==null ? null : _model._key);
+        if( _model==null ) Scope.exit();
+        else {
+          Key[] mms = _model._output._model_metrics;
+          Scope.exit(_model._key,mms.length==0 ? null : mms[mms.length-1]);
+        }
       }
       tryComplete();
     }
@@ -363,7 +367,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
-      ModelMetrics mm = sc.makeModelMetrics(_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
+      ModelMetrics mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
       out._mse_train[out._ntrees] = _parms._valid==null ? mm._mse : Double.NaN;
