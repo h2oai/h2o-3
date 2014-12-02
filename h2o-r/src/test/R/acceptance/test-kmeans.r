@@ -1,12 +1,13 @@
 context("Kmeans")
-
+#source('../../h2o-runit.R')
 library(h2o)
 
 print(Sys.getenv("H2O_IP"))
 print(Sys.getenv("H2O_PORT"))
 
-conn <- h2o.init(ip=Sys.getenv("H2O_IP"), port=as.integer(Sys.getenv("H2O_PORT"), startH2O=FALSE))
-hex <- as.h2o(conn, iris)
+#conn <- h2o.init(ip=Sys.getenv("H2O_IP"), port=as.integer(Sys.getenv("H2O_PORT"), startH2O=FALSE))
+conn <- h2o.init( startH2O=FALSE )
+hex <- as.h2o( conn, iris )
 
 #model <- tryCatch({
 #	h2o.kmeans(data=hex, centers=5)
