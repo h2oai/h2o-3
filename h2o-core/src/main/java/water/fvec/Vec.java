@@ -195,8 +195,6 @@ public class Vec extends Keyed {
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
 
-  static final String[] TYPES = new String[]{"BAD","UUID","String","Numeric","Categorical","Time0","Time1","Time2"};
-  public final String typeStr() { return TYPES[_type]; }
   /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Enum column.  */
@@ -214,10 +212,10 @@ public class Vec extends Keyed {
    *  not vice-versa.
    *  @return true if this is a time column.  */
   public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
-  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
+//  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
   /** Time formatting string.
    *  @return Time formatting string */
-  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
+//  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
 
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
@@ -341,20 +339,6 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public static Vec makeVec(int [] vals, String [] domain,  Key vecKey){
-    long [] espc = new long[2];
-    espc[1] = vals.length;
-    Vec v = new Vec(vecKey,espc);
-    v._domain = domain;
-    NewChunk nc = new NewChunk(v,0);
-    Futures fs = new Futures();
-    for(int i:vals)
-      nc.addNum(i,0);
-    nc.close(fs);
-    DKV.put(v._key,v,fs);
-    fs.blockForPending();
-    return v;
-  }
   public static Vec makeVec(double [] vals, Key vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
@@ -363,19 +347,6 @@ public class Vec extends Keyed {
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
-    nc.close(fs);
-    DKV.put(v._key,v,fs);
-    fs.blockForPending();
-    return v;
-  }
-  public static Vec makeVec(long [] ms, int [] es, Key vecKey){
-    long [] espc = new long[2];
-    espc[1] = ms.length;
-    Vec v = new Vec(vecKey,espc);
-    NewChunk nc = new NewChunk(v,0);
-    Futures fs = new Futures();
-    for(int i = 0; i < ms.length; ++i)
-      nc.addNum(ms[i],es[i]);
     nc.close(fs);
     DKV.put(v._key,v,fs);
     fs.blockForPending();
@@ -405,12 +376,6 @@ public class Vec extends Keyed {
   }
 
   
-  /** Make a collection of new vectors with the same size and data layout as
-   *  the current one, and initialized to zero.
-   *  @return A collection of new vectors with the same size and data layout as
-   *  the current one, and initialized to zero.  */
-  public Vec[] makeZeros(int n) { return makeCons(n,0L,null,null); }
-
   // Make a bunch of compatible zero Vectors
   Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
@@ -564,10 +529,6 @@ public class Vec extends Keyed {
    *
    */
   public void startRollupStats(Futures fs, boolean doHisto) { RollupStats.start(this,fs,doHisto); }
-
-  private long _last_write_timestamp = System.currentTimeMillis();
-  private long _checksum_timestamp = -1;
-  private long _checksum = 0;
 
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
@@ -940,7 +901,7 @@ public class Vec extends Keyed {
   /** This Vec does not have dependent hidden Vec it uses.
    *  @see TransfVec
    *  @return dependent hidden vector or <code>null</code>  */
-  public Vec masterVec() { return null; }
+//  public Vec masterVec() { return null; }
 
   /** Collect numeric domain of given vector
    *  A map-reduce task to collect up the unique values of an integer vector

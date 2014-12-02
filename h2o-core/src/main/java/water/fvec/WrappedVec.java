@@ -15,9 +15,7 @@ abstract class WrappedVec extends Vec {
     _masterVecKey = masterVecKey;
   }
 
-  @Override public Vec masterVec() {
-    return _masterVec!=null ? _masterVec : (_masterVec = _masterVecKey.get());
-  }
+  public Vec masterVec() { return _masterVec!=null ? _masterVec : (_masterVec = _masterVecKey.get()); }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
   abstract public Chunk chunkForChunkIdx(int cidx);
 }
