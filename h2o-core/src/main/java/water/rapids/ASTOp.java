@@ -6,6 +6,7 @@ import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -1161,7 +1162,7 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 class ASTRbind extends ASTUniPrefixOp {
   protected static int argcnt;
   @Override String opStr() { return "rbind"; }
-  ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
+  public ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
   @Override ASTOp make() { return new ASTRbind(); }
   ASTRbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
@@ -1183,10 +1184,9 @@ class ASTRbind extends ASTUniPrefixOp {
       else { broke = true; break; }
     }
     if (broke) E.rewind();
+    Collections.reverse(dblarys);
     ASTRbind res = (ASTRbind) clone();
-    AST[] arys = new AST[argcnt=dblarys.size()];
-    for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
-    res._asts = arys;
+    res._asts = dblarys.toArray(new AST[argcnt=dblarys.size()]);
     return res;
   }
 
@@ -1210,6 +1210,7 @@ class ASTRbind extends ASTUniPrefixOp {
     ArrayList<String[]> doms= new ArrayList<>();      // union'd domains
     ArrayList<Byte> types = new ArrayList<>();        // types for each col
     ArrayList<long[]> new_starts = new ArrayList<>(); // list of the new starts
+    final int[/*frame*/][/*column*/][/*ints*/] new_doms = new int[argcnt][][];    // domain mappings (extending domains)
 
     // do error checking and compute new offsets in tandem
     for (int i = 0; i < argcnt; ++i) {
@@ -1239,14 +1240,28 @@ class ASTRbind extends ASTUniPrefixOp {
           throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
         // try to union domains of vecs -- TODO: what happens if union > 65K ?
         try {
-          doms.set(c, doms.get(c) == null ? null : ArrayUtils.domainUnion(doms.get(c), t.vec(c).domain()));
+          doms.set(c, doms.get(c) == null ? null : ArrayUtils.union(doms.get(c), t.vec(c).domain(), true));
         } catch (NullPointerException e) {
           throw new IllegalArgumentException("The factor levels for vec "+(c+1)+" in frame "+(i+1)+" was null");
         }
       }
     }
 
-    // have all of the new espcs computed, set up the new set of Vecs
+    // go 'round and create mappings for all of the extended domains
+    for (int i=0; i < argcnt; ++i) {
+      Frame t = env.peekAryAt(-i);
+      new_doms[i] = new int[t.numCols()][];
+      for (int c=0;c<t.numCols();++c)
+        if (t.vec(c).isEnum()) {
+          if (t.vec(c).domain() == null) continue;
+          new_doms[i][c] = new int[t.vec(c).domain().length];
+          for (int d=0;d<new_doms[i][c].length;++d)
+            new_doms[i][c][d] = Arrays.asList(doms.get(c)).indexOf(t.vec(c).domain()[d]);
+        }
+    }
+
+    // have all of the new espcs computed, set up new Vecs
+    assert f1 != null;
     final Vec[] vecs = new Vec[f1.numCols()];
     final long[][] espcs = new long[espcs_al.size()][];
     // flatten the espcs_al into a single long[]
@@ -1261,17 +1276,40 @@ class ASTRbind extends ASTUniPrefixOp {
     final Futures fs = new Futures();
     for (int i = 0; i < argcnt; ++i) {
       final long espc[] = i == 0 ? espcs[i] : ArrayUtils.join(new_starts.get(i - 1), espcs[i]);
+      final int dom[][] = new_doms[i];
       new MRTask() {
         @Override public void map(Chunk[] cs) {
           int cidx = cs[0].cidx();
           for (int c = 0; c < cs.length; ++c) {
+            NewChunk nc = new NewChunk(vecs[c], vecs[c].elem2ChunkIdx(espc[cidx]));
             Key ckey = Vec.chunkKey(vecs[c]._key, vecs[c].elem2ChunkIdx(espc[cidx]));
-            Chunk cc = (Chunk)cs[c].clone();
-            cc.setVec(vecs[c]);
-            cc.setBytes(cc.getBytes().clone());
-            cc.setStart(-1);
-            cc.flushChk2();
-            DKV.put(ckey, cc);
+            if (cs[c].vec().isEnum() && dom[c] != null) {
+              // loop over rows and update ints for new domain mapping according to vecs[c].domain()
+              for (int r=0;r < cs[c]._len;++r) {
+                if (cs[c].isNA0(r)) nc.addNA();
+                else nc.addEnum(dom[c][(int) cs[c].at0(r)]);
+              }
+            } else if (cs[c].vec().isInt()) {
+              for (int r=0;r<cs[c]._len;++r) {
+                if (cs[c].isNA0(r)) nc.addNA();
+                else nc.addNum(cs[c].at80(r));
+              }
+            } else if (cs[c].vec().isString()) {
+              for (int r=0;r<cs[c]._len;++r) {
+                if (cs[c].isNA0(r)) nc.addNA();
+                else nc.addStr(cs[c].atStr0(new ValueString(), r));
+              }
+            } else if (cs[c].vec().isUUID()) {
+              for (int r=0;r<cs[c]._len;++r) nc.addUUID(cs[c], r);
+            } else {
+              for (int r=0;r<cs[c]._len;++r) {
+                if (cs[c].isNA0(r)) nc.addNA();
+                else nc.addNum(cs[c].at0(r));
+              }
+            }
+            Futures f = nc.close(vecs[c].elem2ChunkIdx(espc[cidx]), new Futures());
+            f.blockForPending();
+            DKV.put(ckey, nc.chk2(), new Futures(), true);
           }
         }
       }.doAll(env.pop0Ary());
@@ -1283,11 +1321,10 @@ class ASTRbind extends ASTUniPrefixOp {
   }
 }
 
-// Check that this properly cleans up all frames.
 class ASTCbind extends ASTUniPrefixOp {
   protected static int argcnt;
   @Override String opStr() { return "cbind"; }
-  ASTCbind( ) { super(new String[]{"cbind","ary", "..."}); }
+  public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
@@ -1311,7 +1348,6 @@ class ASTCbind extends ASTUniPrefixOp {
     return res;
   }
   @Override void apply(Env env) {
-    //argcnt = env.sp();
     // Validate the input frames
     Vec vmax = null;
     for(int i = 0; i < argcnt; i++) {
