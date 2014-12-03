@@ -1,10 +1,9 @@
-
 package hex.glm;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import hex.*;
+import hex.AUCData;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
@@ -23,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   //------------------- simple tests on synthetic data------------------------------------
   @Test
@@ -283,12 +282,11 @@ public class GLMTest  extends TestUtil {
    */
   @Test public void testProstate() throws InterruptedException, ExecutionException {
     GLM job = null;
-    Key parsed = Key.make("prostate_parsed");
-    Key modelKey = Key.make("prostate_model");
     GLMModel model = null;
-    Frame fr = parse_test_file(parsed, "smalldata/glm_test/prostate_cat_replaced.csv");
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     Frame score = null;
     try{
+      Scope.enter();
       // R results
 //      Coefficients:
 //        (Intercept)           ID          AGE       RACER2       RACER3        DPROS        DCAPS          PSA          VOL      GLEASON
@@ -297,13 +295,12 @@ public class GLMTest  extends TestUtil {
       double [] vals = new double [] {-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "CAPSULE";
-      // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"ID"};
-      params._train = parsed;
+      params._train = fr._key;
       params._lambda = new double[]{0};
-      job = new GLM(modelKey,"glm test simple poisson",params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+      model = job.trainModel().get();
+
       HashMap<String, Double> coefs = model.coefficients();
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
@@ -312,43 +309,38 @@ public class GLMTest  extends TestUtil {
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(396.3, val.aic(),1e-1);
       score = model.score(fr);
-      throw H2O.unimpl();
-      //AUC auc = new AUC();
-      //auc.predict = score;
-      //auc.actual = fr;
-      //auc.vactual = fr.vec("CAPSULE");
-      //auc.vpredict = score.vec("1");
-      //auc.execImpl();
-      //AUCData adata = auc.data();
-      //  assertEquals(val.auc(),adata.AUC(),1e-2);
-      //GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
-      //assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
-      //assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
+
+      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
+
+      AUCData adata = mm._aucdata;
+      assertEquals(val.auc(),adata.AUC(),1e-2);
+      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
+      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
+      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
     } finally {
       fr.delete();
       if(model != null)model.delete();
       if(score != null)score.delete();
       if( job != null ) job.remove();
+      Scope.exit();
     }
   }
 
   @Test public void testSynthetic() throws Exception {
     GLM job = null;
-    Key parsed = Key.make("glm_parsed");
-    Key modelKey = Key.make("glm_model");
     GLMModel model = null;
-    Frame fr = parse_test_file(parsed, "smalldata/glm_test/glm_test2.csv");
+    Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
     Frame score = null;
     try {
+      Scope.enter();
       GLMParameters params = new GLMParameters(Family.binomial);
       params._response_column = "response";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"ID"};
-      params._train = parsed;
+      params._train = fr._key;
       params._lambda = new double[]{0};
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      job = new GLM(Key.make("glm_model"), "glm test simple poisson", params);
+      model = job.trainModel().get();
       assertEquals(model.validation().auc(),1,1e-4);
       double [] beta = model.beta();
       for(double d:beta)
@@ -356,20 +348,17 @@ public class GLMTest  extends TestUtil {
       GLMValidation val = model.validation();
       assertEquals(1,val.auc,1e-2);
       score = model.score(fr);
-      throw H2O.unimpl();
-      //AUC auc = new AUC();
-      //auc.predict = score;
-      //auc.actual = fr;
-      //auc.vactual = fr.vec("response");
-      //auc.vpredict = score.vec("1");
-      //auc.execImpl();
-      //AUCData adata = auc.data();
-      //assertEquals(val.auc(),adata.AUC(),1e-2);
+
+      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
+
+      AUCData adata = mm._aucdata;
+      assertEquals(val.auc(),adata.AUC(),1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();
       if(score != null)score.delete();
       if( job != null ) job.remove();
+      Scope.exit();
     }
   }
 

@@ -148,6 +148,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       this._alpha = alpha;
       _tweedie_link_power = Double.NaN;
       _tweedie_variance_power = Double.NaN;
+      if( f==Family.binomial ) _convert_to_enum = true;
 
       // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
       if(l == Link.family_default)

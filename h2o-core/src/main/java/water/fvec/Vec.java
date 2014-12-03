@@ -181,7 +181,7 @@ public class Vec extends Keyed {
   /** Set the Enum/factor/categorical names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  public final void setDomain(String[] domain) { _domain = domain; }
+  public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_ENUM; }
   /** Returns cardinality for enum domain or -1 for other types. */
   public final int cardinality() { return isEnum() ? _domain.length : -1; }
 

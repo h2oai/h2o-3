@@ -29,9 +29,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
     Frame train = null;
     Frame test = null;
     Frame data = null;
-    Log.info("");
-    Log.info("STARTING.");
-    Log.info("Using seed " + seed);
 
     Map<Integer,Float> repeatErrs = new TreeMap<>();
 
@@ -54,6 +51,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
+          p._convert_to_enum = true;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
@@ -107,13 +105,13 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       try {
         if (repro) {
           // check reproducibility
-          for (Float error : repeatErrs.values()) {
+          for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
-          }
           // exposes bug: no work gets done on remote if frame has only 1 chunk and is homed remotely.
-//          for (Frame f : preds) {
-//            assertTrue(TestUtil.isBitIdentical(f, preds[0]));
-//          }
+          for (Frame f : preds) {
+            assertTrue(TestUtil.isBitIdentical(f, preds[0]));
+            throw water.H2O.unimpl(); // Check and remove bug-report comment
+          }
           repro_error = repeatErrs.get(0);
         } else {
           // check standard deviation of non-reproducible mode
@@ -129,9 +127,9 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
           stddev /= N;
           stddev = Math.sqrt(stddev);
-          Log.info("standard deviation: " + stddev);
+          //Log.info("standard deviation: " + stddev);
           assertTrue(stddev < 0.1 / Math.sqrt(N));
-          Log.info("difference to reproducible mode: " + Math.abs(mean - repro_error) / stddev + " standard deviations");
+          //Log.info("difference to reproducible mode: " + Math.abs(mean - repro_error) / stddev + " standard deviations");
         }
       } finally {
         for (Frame f : preds) if (f != null) f.delete();

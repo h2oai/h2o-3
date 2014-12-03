@@ -83,7 +83,8 @@ public final class ModelMetrics extends Keyed {
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution; (for regression, ds[0] has the prediction and ds[1] is ignored)
     public float[] perRow( float ds[], float yact ) {
-      if( Float.isNaN(yact) ) return ds; // No errors if actual is missing
+      if( Float.isNaN(yact) ) return ds; // No errors if   actual   is missing
+      if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
       final int nclass = ds.length-1;
       final int iact = (int)yact;
       // Compute error 

@@ -6,7 +6,6 @@ import hex.SupervisedModelBuilder;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
-import water.api.ValidationAdapter;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.init.Linpack;
@@ -274,7 +273,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
-        train = model.model_info().data_info()._adaptedFrame;
+        train = tra_fr;
         if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/);
         if (model._output.isClassifier() && mp._balance_classes) {
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
