@@ -1318,37 +1318,36 @@ NULL
 #' @rdname cbind.h2o
 cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod("cbind") else base::cbind(..., deparse.level)
 
-# Note: right now, all things must be H2OParsedData
 #' @rdname cbind.h2o
 cbind.H2OFrame <- function(..., deparse.level = 1) {
   if(deparse.level != 1) stop("Unimplemented")
   ast <- .h2o.varop("cbind", ...)
   ast
-
-#
-#  l <- list(...)
-#  # l_dep <- sapply(substitute(placeholderFunction(...))[-1], deparse)
-#  if(length(l) == 0) stop('cbind requires an H2O parsed dataset')
-#
-#  klass <- 'H2OParsedData'
-#  h2o <- l[[1]]@h2o
-#  nrows <- nrow(l[[1]])
-#  m <- Map(function(elem){ inherits(elem, klass) & elem@h2o@ip == h2o@ip & elem@h2o@port == h2o@port & nrows == nrow(elem) }, l)
-#  compatible <- Reduce(function(l,r) l & r, x=m, init=T)
-#  if(!compatible){ stop(paste('cbind: all elements must be of type', klass, 'and in the same H2O instance'))}
-#
-#  # If cbind(x,x), dupe colnames will automatically be renamed by H2O
-#  # TODO: cbind(df[,1], df[,2]) should retain colnames of original data frame (not temp keys from slice)
-#  if(is.null(names(l)))
-#    tmp <- Map(function(x) x@key, l)
-#  else
-#    tmp <- mapply(function(x,n) { ifelse(is.null(n) || is.na(n) || nchar(n) == 0, x@key, paste(n, x@key, sep = "=")) }, l, names(l))
-#
-#  exec_cmd <- sprintf("cbind(%s)", paste(as.vector(tmp), collapse = ","))
-#  res <- .h2o.__exec2(h2o, exec_cmd)
-#  new('H2OParsedData', h2o=h2o, key=res$dest_key)
 }
 
+#' Combine H2O Datasets by Rows
+#'
+#' Takes a sequence of H2O data sets and combines them by rows
+#'
+#' @name rbind.h2o
+#' @param \dots A sequence of \linkS4class{H2OParsedData} arguments. All datasets must exist on the same H2O instance
+#'        (IP and port) and contain the same number of rows.
+#' @param deparse.level Integer controlling the construction of column names. ##Currently unimplemented.##
+#' @return An \linkS4class{H2OParsedData} object containing the combined \dots arguments column-wise.
+#' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.importFile(localH2O, path = prosPath)
+#' prostate.cbind <- rbind(prostate.hex, prostate.hex)
+#' head(prostate.cbind)
+NULL
+
+#' @rdname rbind.h2o
+cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod("cbind") else base::cbind(..., deparse.level)
+
+#' @rdname rbind.h2o
 rbind.H2OFrame <- function(..., deparse.level = 1) {
   if (deparse.level != 1) stop("Unimplemented")
   ast <- .h2o.varop("rbind", ...)
