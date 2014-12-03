@@ -1,4 +1,0 @@
-# REST/JSON API
-
-TODO
-
