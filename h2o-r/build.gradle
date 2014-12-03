@@ -159,22 +159,12 @@ task setPackageFiles << {
 }
 
 task getRManualGenerationRPackages(type: Exec) {
-    //If roxygen2 is not present, ask to download and install them
+    //If roxygen2 is not present, ask to install it
     if(!R_ROXYGEN2) {
         def user_response
-        user_response = System.console().readLine('> It doesn\'t appear they you have R package roxygen2, which is needed to generate the R documentation. Can we try to download and install roxygen2? If this fails, then download roxygen2 from http://cran.r-project.org. (Y/N): ')
+        user_response = System.console().readLine('> It doesn\'t appear they you have R package roxygen2, which is needed to generate the R documentation. Can we try to install roxygen2? (Y/N): ')
         if (user_response == "Y") {
-            if (SYS_OS == "windows") {
-                def roxygen2Path = T + '/roxygen2_4.0.2.zip'
-                def f = new File(roxygen2Path)
-                new URL('http://cran.r-project.org/bin/windows/contrib/3.1/roxygen2_4.0.2.zip').withInputStream{ i -> f.withOutputStream{ it << i }}
-            }
-            else {
-                def roxygen2Path = T + '/roxygen2_4.0.2.tar.gz'
-                def f = new File(roxygen2Path)
-                new URL('http://cran.r-project.org/src/contrib/roxygen2_4.0.2.tar.gz').withInputStream{ i -> f.withOutputStream{ it << i }}
-            }
-            commandLine getOsSpecificCommandLine(["R", "--vanilla", "-q", "-e", "install.packages(\"${roxygen2Path}\", repos=NULL, type=\"source\")"])
+            commandLine getOsSpecificCommandLine(["R", "--vanilla", "-q", "-e", "install.packages(\"roxygen2\", repos=\"http://cran.r-project.org\")"])
         }
     }
 }
