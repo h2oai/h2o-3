@@ -24,15 +24,16 @@ def default_hosts_file():
 
 #************************************************************
 # node_count is number of H2O instances per host if hosts is specified.
-# hack: this returns true for the --usecloud/-uc cases, to force it thru build_cloud/build_cloud_with_json/find_cloud
-# also for the -ccj cases
+# hack: this returns true for the --usecloud/-uc cases, to force it thru
+# build_cloud/build_cloud_with_json/find_cloud. also for the -ccj cases
 def decide_if_localhost():
     if h2o_args.usecloud:
         print "* Will ask h2o node about cloud using -uc argument:", h2o_args.usecloud
         return True
 
     if h2o_args.clone_cloud_json:
-        print "* Using description of already built cloud, in JSON you passed as -ccj argument:", h2o_args.clone_cloud_json
+        print "* Using description of already built cloud",\
+            "in JSON you passed as -ccj argument:", h2o_args.clone_cloud_json
         return True
 
     if h2o_args.config_json:
@@ -42,7 +43,8 @@ def decide_if_localhost():
     # look for local hosts file
     hostsFile = default_hosts_file()
     if os.path.exists(hostsFile):
-        print "* Will build cloud using config JSON file that matches your username, discovered in this directory: {0}.".format(hostsFile)
+        print "* Will build cloud using config JSON file that matches your username",\
+            "discovered in this directory: {0}.".format(hostsFile)
         return False
 
     if 'hosts' in os.getcwd():
@@ -66,8 +68,8 @@ def get_base_port(base_port):
         # of the number of nodes
         verboseprint("H2O_PORT_OFFSET", a)
         if a<8 or a>500:
-            raise Exception("H2O_PORT_OFFSET % os env variable should be either not set, \
-                or between 8 and 500" % a)
+            raise Exception("H2O_PORT_OFFSET % os env variable should be either not set " +
+                "or between 8 and 500" % a)
 
     b = None
     if os.environ.has_key("H2O_PORT"):
@@ -75,8 +77,8 @@ def get_base_port(base_port):
         b = int(os.environ["H2O_PORT"])
         verboseprint("H2O_PORT", a)
         if b<54321 or b>54999:
-            raise Exception("H2O_PORT %s os env variable should be either not set, \
-                or between 54321 and 54999." % b)
+            raise Exception("H2O_PORT %s os env variable should be either not set",
+                "or between 54321 and 54999." % b)
 
     if h2o_args.port_from_cmd_line:
         base_port = h2o_args.port_from_cmd_line
@@ -91,7 +93,6 @@ def get_base_port(base_port):
 
         if a:
             base_port += a
-
     return base_port
 
 # I suppose we could shuffle the flatfile order!
@@ -204,7 +205,9 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
     shutil.copy(h2o_nodes_json, LOG_DIR + "/" + os.path.basename(h2o_nodes_json))
 
     print ""
-    h2p.red_print("Ingested from json:", nodeList[0].java_heap_GB, "GB java heap(s) with", len(nodeList), "total nodes")
+    h2p.red_print("Ingested from json:",
+        nodeList[0].java_heap_GB, "GB java heap(s) with",
+        len(nodeList), "total nodes")
     print ""
 
     # save it to a global copy, in case it's needed for tearDown
@@ -216,12 +219,12 @@ def build_cloud_with_json(h2o_nodes_json='h2o-nodes.json'):
 stdout_wrapped = False
 def build_cloud(node_count=1, base_port=None, hosts=None,
     timeoutSecs=30, retryDelaySecs=1, cleanup=True, rand_shuffle=True,
-    conservative=False, create_json=False, clone_cloud=None, 
+    conservative=False, create_json=False, clone_cloud=None,
     init_sandbox=True, usecloud=False, usecloud_size=None, **kwargs):
 
     # expectedSize is only used if usecloud
 
-    # usecloud can be passed thru build_cloud param, or command line 
+    # usecloud can be passed thru build_cloud param, or command line
     # not in config json though so no build_cloud_with_hosts path.
 
     # redirect to build_cloud_with_json if a command line arg
@@ -265,14 +268,14 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         if h2o_args.usecloud_size:
             # only used for expected size
             useCloudExpectedSize = h2o_args.usecloud_size
-        else: 
+        else:
             useCloudExpectedSize = usecloud_size
 
         if (h2o_args.usecloud or usecloud):
             nodesJsonObject = h2o_fc.find_cloud(ip_port=ip_port,
                 expectedSize=useCloudExpectedSize, nodesJsonPathname=nodesJsonPathname, **kwargs)
                 # potentially passed in kwargs
-                # hdfs_version='cdh4', hdfs_config=None, hdfs_name_node='172.16.1.176', 
+                # hdfs_version='cdh4', hdfs_config=None, hdfs_name_node='172.16.1.176',
         else:
             if h2o_args.clone_cloud_json:
                 nodesJsonPathname = h2o_args.clone_cloud_json
@@ -375,7 +378,8 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         verify_cloud_size(nodeList, expectedCloudName=nodeList[0].cloud_name, expectedLocked=0)
 
         # FIX! should probably check that lock=0. It will go to one later.
-        # but if it's an existing cloud, it may already be locked. That will be in build_cloud_with_json, though
+        # but if it's an existing cloud, it may already be locked.
+        # That will be in build_cloud_with_json, though
 
         # best to check for any errors due to cloud building right away?
         check_sandbox_for_errors(python_test_name=h2o_args.python_test_name)
@@ -455,7 +459,7 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
 
     # FIX! don't send shutdown if we're using an existing cloud
     # also, copy the "delete keys at teardown from testdir_release
-    # Assume there's a last "test" that's run to shutdown the cloud 
+    # Assume there's a last "test" that's run to shutdown the cloud
 
     # don't tear down with -ccj either
     # FIX! what about usecloud or cloud_cloud_json params from build_cloud time?
@@ -517,13 +521,17 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # if "(unknown)" starts appearing in version..go to h2o1 h2o_bc.py/h2o_fc.py/h2o_methods.py and copy allowing.
     expectedVersion = cloudVersion[0]
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
-# local builds have (unknown)    if not expectedVersion.startswith('0'):
-# local builds have (unknown)        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % expectedVersion)
+    # local builds have (unknown) in h2o if you build.sh (instead of make)
+    # gradle builds should always be right with version?
+    if not expectedVersion.startswith('0'):
+        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % 
+            expectedVersion)
 
     for i, v in enumerate(cloudVersion):
         if v != expectedVersion:
             versionStr = (",".join(map(str, cloudVersion)))
-            raise Exception("node %s. Inconsistent cloud version. nodeList report version: %s" % (i, versionStr))
+            raise Exception("node %s. Inconsistent cloud version. nodeList report version: %s" % 
+                (i, versionStr))
 
     if not ignoreHealth:
         for c in cloudStatus:
@@ -554,7 +562,7 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     sizeStr = (",".join(map(str, cloudSizes)))
     for s in cloudSizes:
         if s != expectedSize:
-            raise Exception("Inconsistent cloud size. nodeList report size: %s consensus: %s instead of %d." % \
+            raise Exception("Inconsistent cloud size. nodeList report size: %s consensus: %s instead of %d." %
                (sizeStr, consensusStr, expectedSize))
 
     # check that all cloud_names are right
@@ -646,7 +654,6 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExt
          timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs)
 
 #*************************************************************************************
-
 def init(*args, **kwargs):
     localhost = decide_if_localhost()
     if localhost:
@@ -654,5 +661,3 @@ def init(*args, **kwargs):
     else:
         nodes = h2o_hosts.build_cloud_with_hosts(*args, **kwargs)
     return nodes
-
-

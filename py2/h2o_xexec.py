@@ -7,10 +7,13 @@ import re
 # maybe don't need these
 # from h2o_xexec import xUnary, xBinary
 
+
 #********************************************************************************
 class Xbase(object):
+    debug = False
     # can set this in a test to disable the actual exec, just print
-    debugOnly = False
+    lastExecResult = {}
+    lastResult = None
     def json(self): # returns a json string. prints it too.
         import json
         s = vars(self)
@@ -28,27 +31,38 @@ class Xbase(object):
         return str(self.thing)
 
     __repr__ = __str__
-    # __call__ = __init__
 
-    # not everything will "do" correctly
+    # not everything will "do" at h2o correctly? Should just be Assign/Expr/Def. maybe Key/Frame
     def do(self, timeoutSecs=30):
+        if not isinstance(self, (Assign, Expr, Def, Key, FrameInit, Frame, Item)): 
+            raise Exception ("Maybe you're trying to send a wrong instance to h2o? %s %s" % (type(self), self))
+
         # keep these around so we can look at the h2o results?
         self.execResult = None
+        # also use a class variable for these, so if we have an unnamed instance, 
+        # we can still look at the results from the last operation to h2o, for testing
+        # as long as everyone shares this base class.
         self.result = None
         self.execExpr = str(self)
-        if self.debugOnly:
-            print "ast:", self.execExpr
-            self.execResult =  {'debugOnly': True}
-            self.result = 555
+        if self.debug: # class variable
+            print ".do() debug ast:", self.execExpr
+            self.execResult =  {'debug': True}
+            self.result = None
         else:
             # functions can be multiple in Rapids, need []
             execExpr = "[%s]" % self.execExpr if self.funs else self.execExpr
             self.execResult, self.result = h2e.exec_expr(execExpr=execExpr, doFuns=self.funs, timeoutSecs=timeoutSecs)
 
+        # execResult should always be a dict?
+        lastExecResult = self.execResult.copy()
+        # this is a scalar or string that's a key name or ??
+        # FIX! assume it's copied, for now
+        lastResult = self.result
+
         # don't return the full json...can look that up if necessary
         return self.result
-
-    # if we use the name of the vlass like a function call, or an instance...use .do()
+    
+    # __call__ = __init__
     # __call__ = do
 
 #********************************************************************************
@@ -256,17 +270,13 @@ xFcnOp3Set = set([
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
 # Note this can't unpack a dict
-def unpackOperands(operands, parent=None, item=True, lastOpr=None):
-    lastOpr = None
-
+def unpackOperands(operands, parent=None, toItem=True):
     def addItem(opr):
-        global lastOpr
-        if item:
+        if toItem:
             operandList.append(Item(opr))
         else:
+            # just keep whatever type it is (params should be string?, maybe list)
             operandList.append(opr)
-        lastOpr = opr
-
     if operands is None:
         raise Exception("%s unpackOperands no operands: %s" % (parent, operands))
 
@@ -295,6 +305,19 @@ def unpackOperands(operands, parent=None, item=True, lastOpr=None):
 
     # always returns a list, even if one thing
     return operandList
+#********************************************************************************
+# check whether a frame string (h2o name) is legal)
+def legalKey(frame, parent):
+    frameStr = str(frame)
+    if re.match('\$', frameStr):
+        raise Exception("%s: frame shouldn't start with '$' %s" % (parent, frameStr))
+    if re.match('c$', frameStr):
+        raise Exception("%s: frame can't be 'c' %s" % (parent, frameStr))
+    if not re.match('[a-zA-Z0-9_]', frameStr):
+        raise Exception("%s: Don't like the chars in your frame %s" % (parent, frameStr))
+    print "%s frame: %s" % (parent, frameStr)
+    return True
+
 
 #*******************************************************************************
 # maybe do some reading here
@@ -302,6 +325,9 @@ def unpackOperands(operands, parent=None, item=True, lastOpr=None):
 # row/col can be numbers or strings or not specified
 
 # FIX! get rid of this? or ?? is Key sufficient? why Frame (no slicing?)
+# FIX! Frame doesn't create a key on h2o..only h2o does
+# Frame is used after a Key was created. it'a lower level way to use a frame, then Key
+# Key can do indexing/slicing. Frame is fixed at row/col
 class Frame(Xbase):
     def __init__(self, frame='xTemp', row=None, col=None, dim=2):
         super(Frame, self).__init__()
@@ -311,6 +337,8 @@ class Frame(Xbase):
             raise Exception("frame doesn't take lists or tuples %s" % frame)
         if not isinstance(frame, basestring):
             raise Exception("frame wants to be a string %s" % frame)
+
+        legalKey(frame, "Frame")
 
         self.frame = frame
         # if it's not a string, turn the assumed number into a number string
@@ -370,6 +398,14 @@ class Frame(Xbase):
         else:
             return '([ %s %s %s)' % (frame, row, col)
 
+    def __getitem__(self, items):
+        raise Exception("If something is trying to index a Frame, you may have tried to cascade like [0][0]..\n" + 
+            "H2O doesn't directly support index cascading. For clarity, try indexing a Key, one [] per Key")
+
+    def __setitem__(self, items, rhs):
+        raise Exception("If something is trying to index a Frame, you may have tried to cascade like [0][0]..\n" + 
+            "H2O doesn't directly support index cascading. For clarity, try indexing a Key, one [] per Key")
+
     __repr__ = __str__
 
 
@@ -379,6 +415,7 @@ class Seq(Xbase):
     def __init__(self, *operands):
         operandList = unpackOperands(operands, parent="Seq operands")
         self.operandList = operandList
+        # FIX! should we do more type checking on operands?
 
     def __str__(self):
         oprString = ";".join(map(str, self.operandList))
@@ -393,6 +430,7 @@ class Colon(Xbase):
         # if it's not a string, turn the assumed number into a number string
         self.a = Item(a)
         self.b = Item(b)
+        # FIX! should we do more type checking on operands?
 
     def __str__(self):
         # no colon if both None
@@ -405,13 +443,6 @@ xKeyList = []
 
 # key is a string
 class Key(Frame):
-    def __str__(self):
-        frame = self.frame
-        if not re.match('\$', frame):
-            frame = '$%s' % self.frame
-        return '%s' % frame
-
-    __repr__ = __str__
 
     def __init__(self, key=None, dim=2):
         if key is None:
@@ -421,7 +452,26 @@ class Key(Frame):
         # Frame init?
         super(Key, self).__init__(key, None, None, dim)
         # add to list of created h2o keys (for deletion later?)
+        # FIX! should make this a weak dictionary reference? don't want to affect python GC?
         xKeyList.append(key)
+
+        # make it appear in h2o as a real key..so when we op on it, we don't get scalars from rapids!
+        # FIX! is there a better way to think of this
+        # should assign be  method on key? but Assign figures out lhs/rhs views. so those are new instances?
+        # just want to point to the same h2o key name
+        # ..can't do Assign, it inherits from Key
+        # it will get checked again in Frame if we index..redundant
+        # Frame checks, since we init with Frame, we shouldn't have to check here
+        # legalKey(self.frame, "Key")
+        FrameInit(self.frame).do()
+
+    def __str__(self):
+        frame = self.frame
+        if not re.match('\$', frame):
+            frame = '$%s' % self.frame
+        return '%s' % frame
+
+    __repr__ = __str__
 
     # for debug/wip of slicing
     # this is used on lhs and rhs? we never use a[0] = ... Just a[0] <== ...
@@ -555,7 +605,6 @@ class Fcn(Xbase):
         return "(%s %s)" % (self.function, " ".join(map(str, self.operandList)))
 
     ast = __str__
-
     __repr__ = __str__
 
 
@@ -572,8 +621,21 @@ class Return(Xbase):
     __repr__ = __str__
     ast = __str__
 
-#       if hasattr(self.ps.cmdline, '__call__'):
-#                pcmdline = self.ps.cmdline()
+# like Assign with constant rhs, but doesn't inherit from Key or Frame
+# no indexing is allowed on key..it's just the whole key that get's initted, not some of it
+# FrameInit() should only be used by Key() with a .do() ...so it executes
+class FrameInit(Xbase):
+    def __init__(self, frame):
+        super(FrameInit, self).__init__()
+        # guaranteed to be string
+        assert isinstance(frame, basestring)
+        self.frame = frame
+
+    def __str__(self):
+        # FIX! init to null doesn't work for h2o? or 0
+        return "(= !%s %s)" % (self.frame, '(c {#0})' )
+
+    ast = __str__
 
 class Assign(Key):
     # let rhs be more than one now, to allow for (if..) (else..)
@@ -598,17 +660,11 @@ class Assign(Key):
             raise Exception("Assign: lhs not string/Key/Assign/Frame %s" % lhs)
 
         self.frame = frame
-        self.rhs = rhs
         self.lhs = lhs
+        self.rhs = Item(rhs)
         self.funs = False
 
-        # verify the whole thing can be a rapids string at init time
-        if re.match('\$', frame):
-            raise Exception("Assign: lhs shouldn't start with '$' %s" % frame)
-        if re.match('c$', frame):
-            raise Exception("Assign: lhs can't be 'c' %s" % frame)
-        if not re.match('[a-zA-Z0-9_]', frame):
-            raise Exception("Assign: Don't like the chars in your lhs %s" % frame)
+        legalKey(frame, "Assign")
 
         print "Assign lhs: %s" % self.lhs
         print "Assign rhs: %s" % self.rhs
@@ -618,7 +674,14 @@ class Assign(Key):
     # FIX! what about checking rhs references have $ for keys.
     def __str__(self):
         # if there is row/col for lhs, have to resolve here?
-        return "(= !%s %s)" % (self.lhs, self.rhs)
+        # hack: change the rhs reference '$' to the lhs '!'
+        # to be diligent, only replace the first character
+        # can't assign to immutable string indices
+        # this is all side-effect of having the lhs get indexing like the rhs, so treated equally
+        # lhsAssign = self.lhs[0].replace('$','!') + self.lhs[1:]
+        # no...self.lhs is type Frame
+        # update: use self.frame instead of self.lhs
+        return "(= !%s %s)" % (self.frame, self.rhs)
 
     ast = __str__
 
@@ -644,7 +707,7 @@ class Def(Xbase):
         # add to the list of legal user functions
         xFcnUser.add(function)
 
-        paramList = unpackOperands(params, parent="Def params", item=False)
+        paramList = unpackOperands(params, parent="Def params", toItem=False)
 
         # check that all the parms are legal strings (variable names
         for p in paramList:
@@ -768,3 +831,8 @@ class Cut(Fcn):
 #    right: logical, indicating if the intervals should be closed on the right (and open on the left) or vice versa.
 #  dig.lab: integer which is used when labels are not given.  It determines the number of digits 
 #           used in formatting the break
+
+# if you run this as the main, do debug only mode..so no h2o needed
+if __name__ == '__main__':
+    Xbase.debug = True
+
