@@ -685,6 +685,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
+  @Override public boolean isSupervised() { return !model_info.get_params()._autoencoder; }
+
   public int compareTo(DeepLearningModel o) {
     if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
     if (o._output.nclasses() != _output.nclasses()) throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
