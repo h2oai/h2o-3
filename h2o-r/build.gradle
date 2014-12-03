@@ -1,4 +1,5 @@
 import org.apache.tools.ant.taskdefs.condition.Os
+import java.io.Console
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
@@ -49,6 +50,7 @@ ext {
     PDF_LATEX          = ""                     /* task pdflatex          */
     R_PLATFORM         = ""                     /* task getRPlatform      */
     R_VERSION          = ""                     /* task getRVersion       */
+    R_ROXYGEN2         = ""                     /* task checkForroxygen2  */
     T                  = getProjectDir().toString()
     SYS_OS             = getOS()
     REPO_PATH_WIN      = ["bin", "windows", "contrib", "3.1"].join(File.separator)
@@ -99,6 +101,14 @@ task getRVersion(type: Exec) {
     }
 }
 
+task checkForroxygen2(type: Exec){
+    commandLine getOsSpecificCommandLine(["R", "--vanilla", "-q", "-e", "\"roxygen2\" %in% names(installed.packages()[,1])"])
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+        return standardOutput.toString().replace(' ','').split("\\\n")[1].contains("TRUE")
+    }
+}
+
 task pdflatex(type: Exec) {
     ignoreExitValue = true
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'where', 'pdflatex'
@@ -119,11 +129,13 @@ task setProperties << {
     project.ext.R_VERSION    = getRVersion.output()
     project.ext.H2O_R_LINUX_FILE = "h2o_${PROJECT_VERSION}_R_${R_PLATFORM}.tar.gz"
     project.ext.H2O_R_PKG_FILE = getRPKGType(SYS_OS)
+    project.ext.R_ROXYGEN2 = checkForroxygen2.output()
     println "Git Branch: " + BUILD_BRANCH
     println "R Platform: " + R_PLATFORM
     println "PDF LATEX: " + PDF_LATEX
     println "H2O_R_PKG_FILE: " + H2O_R_PKG_FILE
     println "R Version: " + R_VERSION
+    println "roxygen2 present: " + R_ROXYGEN2
 }
 
 task setPackageFiles << {
@@ -145,9 +157,30 @@ task setPackageFiles << {
     src_info.write("https://github.com/0xdata/h2o")
 }
 
-//task buildPackageDocumentation(type: Exec) {
-//    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
-//}
+task getRManualGenerationRPackages(type: Exec) {
+    //If roxygen2 is not present, ask to download and install them
+    if(!R_ROXYGEN2) {
+        def user_response
+        user_response = System.console().readLine('> It doesn\'t appear they you have R package roxygen2, which is needed to generate the R documentation. Can we try to download and install roxygen2? If this fails, then download roxygen2 from http://cran.r-project.org. (Y/N): ')
+        if (user_response == "Y") {
+            if (SYS_OS == "windows") {
+                def roxygen2Path = T + '/roxygen2_4.0.2.zip'
+                def f = new File(roxygen2Path)
+                new URL('http://cran.r-project.org/bin/windows/contrib/3.1/roxygen2_4.0.2.zip').withInputStream{ i -> f.withOutputStream{ it << i }}
+            }
+            else {
+                def roxygen2Path = T + '/roxygen2_4.0.2.tar.gz'
+                def f = new File(roxygen2Path)
+                new URL('http://cran.r-project.org/src/contrib/roxygen2_4.0.2.tar.gz').withInputStream{ i -> f.withOutputStream{ it << i }}
+            }
+            commandLine getOsSpecificCommandLine(["R", "--vanilla", "-q", "-e", "install.packages(\"${roxygen2Path}\", repos=NULL, type=\"source\")"])
+        }
+    }
+}
+
+task buildRManuals(type: Exec) {
+    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
+}
 
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"
@@ -255,10 +288,11 @@ task cleaner << {
 }
 
 clean.dependsOn cleanUp
-setProperties.dependsOn gitbranch, getRVersion, getRPlatform, pdflatex
+setProperties.dependsOn gitbranch, getRVersion, getRPlatform, pdflatex, checkForroxygen2
 setPackageFiles.dependsOn setProperties
-//buildPackageDocumentation.dependsOn setPackageFiles
-//genPDF.dependsOn buildPackageDocumentation
+getRManualGenerationRPackages.dependsOn setPackageFiles
+buildRManuals.dependsOn getRManualGenerationRPackages
+genPDF.dependsOn buildRManuals
 genPDF.dependsOn setPackageFiles
 cpPDF.dependsOn genPDF
 cpH2OAppJar.dependsOn cpPDF
