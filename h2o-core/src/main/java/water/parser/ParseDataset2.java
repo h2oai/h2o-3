@@ -814,7 +814,7 @@ public final class ParseDataset2 extends Job<Frame> {
         _vecs  = Arrays.copyOf(_vecs  , ncols);
         _ctypes= Arrays.copyOf(_ctypes, ncols);
         for(int i = _nCols; i < ncols; ++i){
-          _vecs[i] = new AppendableVec(_vg.vecKey(i+1));
+          _vecs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i + 1));
           _nvs[i] = new NewChunk(_vecs[i], _cidx);
           for(int j = 0; j < _nLines; ++j)
             _nvs[i].addNum(0, 0);
