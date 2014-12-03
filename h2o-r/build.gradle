@@ -140,9 +140,10 @@ task setPackageFiles << {
     DESCRIPTION.write(txt)
     txt = h2oRd_TEMP.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
+    h2oRd.parentFile.mkdirs()
     h2oRd.write(txt)
     build_branch.write(BUILD_BRANCH)
-    src_info.write("https://github.com/0xdata/h2o")
+    src_info.write("https://github.com/h2oai/h2o")
 }
 
 //task buildPackageDocumentation(type: Exec) {

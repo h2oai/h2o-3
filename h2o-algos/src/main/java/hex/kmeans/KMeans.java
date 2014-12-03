@@ -57,8 +57,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
    *  categorical columns. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._K < 2 || _parms._K > 9999999 ) error("_K", "K must be between 2 and 10 million");
-    if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("_max_iters", "must be between 1 and a million");
+    if( _parms._K < 2 || _parms._K > 9999999 ) error("_K", "K must be between 2 and 10e6");
+    if( _parms._max_iters < 1 || _parms._max_iters > 999999) error("_max_iters", " max_iters must be between 1 and 1e6");
     if( _train == null ) return; // Nothing more to check
     if( _train.numRows() < _parms._K ) error("_K","Cannot make " + _parms._K + " clusters out of " + _train.numRows() + " rows.");
 

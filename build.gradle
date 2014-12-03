@@ -178,7 +178,7 @@ subprojects {
 // Include support for S3 syncing
 apply from: "gradle/s3sync.gradle"
 
-// This task is used by the Jenkins on test.0xdata.com.
+// This task is used by the Jenkins on test.h2o.ai.
 //
 // It creates a directory called 'target', copies everything to be released 
 // there, and everything in that directory gets uploaded to S3.

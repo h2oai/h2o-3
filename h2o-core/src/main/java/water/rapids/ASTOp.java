@@ -7,7 +7,6 @@ import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.math.BigDecimal;
@@ -1265,10 +1264,8 @@ class ASTRbind extends ASTUniPrefixOp {
       new MRTask() {
         @Override public void map(Chunk[] cs) {
           int cidx = cs[0].cidx();
-          Log.info("CIDX: " + cidx);
           for (int c = 0; c < cs.length; ++c) {
             Key ckey = Vec.chunkKey(vecs[c]._key, vecs[c].elem2ChunkIdx(espc[cidx]));
-            Log.info(vecs[c].elem2ChunkIdx((espc[cidx])));
             Chunk cc = (Chunk)cs[c].clone();
             cc.setVec(vecs[c]);
             cc.setBytes(cc.getBytes().clone());
