@@ -17,7 +17,9 @@ Depends: R (>= 2.13.0),
          statmod,
          tools,
          methods,
-         utils
+         utils,
+         devtools,
+         roxygen2
 Collate:
          'wrapper.R'
          'constants.R'
