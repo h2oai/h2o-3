@@ -35,7 +35,7 @@ public class C4SChunk extends Chunk {
     UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)res);
     return true;
   }
-  @Override boolean set_impl(int i, double d) { throw H2O.unimpl(); }
+  @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)_NA); return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
