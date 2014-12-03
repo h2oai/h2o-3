@@ -234,3 +234,77 @@ checkargs <- function(message, ...) {
 .toupperFirst <- function(str) {
   paste(toupper(substring(str, 1, 1)), substring(str, 2), sep = "")
 }
+
+.parms <- function(client, algo, m) {
+  P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))
+  p_val <- list()     # list for all of the algo arguments
+  p_type <- list()    # list for all of the algo argument types (e.g., enum, char, int, etc.)
+  p_fact <- list()    # list for all of the possible values (i.e., factors)
+
+  #---------- Generate Defaults ----------#
+  for( i in P$model_builders[[algo]]$parameters) {
+    tryCatch(p_type[[i$name]] <- .type.map[[i$type]], error = function(e) stop("Cannot find type" %p% i$type))
+
+    # generate default values, may require coercion
+    if( p_type[[i$name]] == "logical" ) p_val[[i$name]] <- as.logical(i$default_value)          #logical coercion
+    else if ( p_type[[i$name]] == "numeric" ) p_val[[i$name]] <- as.numeric(i$default_value)    #numeric coercion
+    else p_val[[i$name]] <- i$default_value                                                     #no coercion (char)
+
+    p_fact[[i$name]] <- i$values
+    if( !(p_val[[i$name]] %i% p_type[[i$name]]) && !is.null(p_val[[i$name]]) )
+      stop( i$name %p% "must be of type" %p% p_type[[i$name]] )
+  }
+
+  error <- "" #create error
+  #---------- Union of m and p ----------#
+  for( parm in names(m)){
+    p_val[[parm]] <- m[[parm]]
+
+    #error logging incorrect data types
+    if( !(m[[parm]] %i% p_type[[parm]]) )
+      error %p0% (parm %p% ("must of type" %p% (p_type[[parm]] %p0% (", but got" %p% (class(m[[parm]]) %p0% ".\n")))))
+
+    #error logging incorrect factors/enums types
+    if( length(p_fact[[parm]]) != 0  )
+      if( !(m[[parm]] %in% p_fact[[parm]]) ){
+        error %p0% (parm %p% "must be in")
+        for(fact in p_fact[[parm]]) error %p% (fact %p0% ",")
+        error %p% (" but got" %p% m[[parm]])
+      }
+  }
+  if( error != "" ) stop(error)
+
+  #---------- Verify Params ----------#
+  rj <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo) %p0% "/parameters" , .params = p_val)
+
+  if(length(rj$validation_messages) != 0)
+    for(i in rj$validation_messages) error %p% (i$message %p0% ".\n")
+
+  if( error != "" ) stop(error)
+
+  #---------- Return Params ----------#
+  #browser  #uncomment to view values/types
+  p_val
+}
+
+.run <- function(client, algo, m) {
+  p_val <- .parms(client, algo, m)
+
+  res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
+
+  job_key <- res$key$name
+  dest_key <- res$jobs[[1]]$dest$name
+  .h2o.__waitOnJob(client, job_key)
+  # Grab model output and flatten one level
+  res_model <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODELS %p0% dest_key)
+
+  res_model <- unlist(res_model, recursive = F)
+  res_model <- res_model$models
+
+  .newModel(algo, res_model, client)
+}
+
+
+.newModel <- function(algo, json, client) {
+  do.call(.algo.map[[algo]], list(json, client))
+}

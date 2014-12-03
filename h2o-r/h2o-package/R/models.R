@@ -327,3 +327,13 @@ function(model) {
   result$iter <- res$iterations
   return(result)
 }
+
+.kmeans.builder <- function(json, client) {
+  new("H2OKMeansModel", h2o = client, key = json$key, model = json$output,
+      valid = new("H2OParsedData", h2o = client, key="NA"))
+}
+
+.gbm.builder <- function(json, client) {
+  new("H2OGBMModel", h2o = client, key = json$key, model = json$output,
+      valid = new("H2OParsedData", h2o=client, key="NA"), xval = list())
+}
