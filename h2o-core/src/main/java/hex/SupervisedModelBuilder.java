@@ -14,7 +14,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.get(_vresponse_key).<Vec>get()) : _vresponse; }
 
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
-  public final boolean isClassifier() { return _nclass > 1; }
+  public final boolean isClassifier() { return _parms._convert_to_enum || _nclass > 1; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
