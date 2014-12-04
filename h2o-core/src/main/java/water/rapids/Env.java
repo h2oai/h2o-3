@@ -198,7 +198,7 @@ public class Env extends Iced {
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       for (Key kg : _global_frames) {
-        if ( Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
+        if ( DKV.get(kg) !=null && Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
           return false;
         }
       }
@@ -303,6 +303,15 @@ public class Env extends Iced {
       f.delete();
     }
     fs.blockForPending();
+  }
+
+  public void unlock() {
+    while(!_stack.isEmpty()) {
+      if (_stack.peekType() == ARY) {
+        Frame fr = ((ValFrame)_stack.pop())._fr;
+        if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
+      } else _stack.pop();
+    }
   }
 
   void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }

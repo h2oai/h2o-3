@@ -7,7 +7,9 @@ import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.math.BigDecimal;
@@ -147,7 +149,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
-//    putPrefix(new ASTIfElse());
+    putPrefix(new ASTIfElse());
     putPrefix(new ASTApply ());
     putPrefix(new ASTSApply());
     putPrefix(new ASTddply ());
@@ -2340,89 +2342,139 @@ class ASTTable extends ASTUniPrefixOp {
   }
 }
 
-// Selective return.  If the selector is a double, just eval both args and
-// return the selected one.  If the selector is an array, then it must be
-// compatible with argument arrays (if any), and the selection is done
-// element-by-element.
-//class ASTIfElse extends ASTOp {
-//  static final String VARS[] = new String[]{"ifelse","tst","true","false"};
-//  static Type[] newsig() {
-//    Type t1 = Type.unbound(), t2 = Type.unbound(), t3=Type.unbound();
-//    return new Type[]{Type.anyary(new Type[]{t1,t2,t3}),t1,t2,t3};
-//  }
-//  ASTIfElse( ) { super(VARS, newsig(),OPF_INFIX,OPP_PREFIX,OPA_RIGHT); }
-//  @Override ASTOp make() {return new ASTIfElse();}
-//  @Override String opStr() { return "ifelse"; }
-//  // Parse an infix trinary ?: operator
+// Conditional merge of two Frames/Vecs
+// Result is always the height as "tst"
+// That means we support R semantics here and do the replication of true/false as needed.
+// We also do the same thing R does with factor levels -> replace with their int value...
+// What we do NOT support is the case when true.numCols() != false.numCols()
+// The pseudo-code is: [t <- true; t[!tst] < false[!tst]; t]
+
+// Cases to consider: (2^2 possible input types f: Frame, v: Vec (1D frame), the tst may only be a single column bit vec.
 //
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    // All or none are functions
-//    assert ( env.isFcn(-1) &&  env.isFcn(-2) &&  _t.ret().isFcn())
-//            ||   (!env.isFcn(-1) && !env.isFcn(-2) && !_t.ret().isFcn());
-//    // If the result is an array, then one of the other of the two must be an
-//    // array.  , and this is a broadcast op.
-//    assert !_t.isAry() || env.isAry(-1) || env.isAry(-2);
+//       tst | true | false
+//       ----|------|------
+//     1.  v     f      f
+//     2.  v     f      v
+//     3.  v     v      f
+//     4.  v     v      v
 //
-//    // Single selection?  Then just pick slots
-//    if( !env.isAry(-3) ) {
-//      if( env.dbl(-3)==0 ) env.pop_into_stk(-4);
-//      else {  env.pop();   env.pop_into_stk(-3); }
-//      return;
-//    }
-//
-//    Frame  frtst=null, frtru= null, frfal= null;
-//    double  dtst=  0 ,  dtru=   0 ,  dfal=   0 ;
-//    if( env.isAry() ) frfal= env.popAry(); else dfal = env.popDbl(); String kf = env.key();
-//    if( env.isAry() ) frtru= env.popAry(); else dtru = env.popDbl(); String kt = env.key();
-//    if( env.isAry() ) frtst= env.popAry(); else dtst = env.popDbl(); String kq = env.key();
-//
-//    // Multi-selection
-//    // Build a doAll frame
-//    Frame fr  = new Frame(frtst); // Do-All frame
-//    final int  ncols = frtst.numCols(); // Result column count
-//    final long nrows = frtst.numRows(); // Result row count
-//    String names[]=null;
-//    if( frtru !=null ) {          // True is a Frame?
-//      if( frtru.numCols() != ncols ||  frtru.numRows() != nrows )
-//        throw new IllegalArgumentException("Arrays must be same size: "+frtst+" vs "+frtru);
-//      fr.add(frtru,true);
-//      names = frtru._names;
-//    }
-//    if( frfal !=null ) {          // False is a Frame?
-//      if( frfal.numCols() != ncols ||  frfal.numRows() != nrows )
-//        throw new IllegalArgumentException("Arrays must be same size: "+frtst+" vs "+frfal);
-//      fr.add(frfal,true);
-//      names = frfal._names;
-//    }
-//    if( names==null && frtst!=null ) names = frtst._names;
-//    final boolean t = frtru != null;
-//    final boolean f = frfal != null;
-//    final double fdtru = dtru;
-//    final double fdfal = dfal;
-//
-//    // Run a selection picking true/false across the frame
-//    Frame fr2 = new MRTask2() {
-//      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-//        for( int i=0; i<nchks.length; i++ ) {
-//          NewChunk n =nchks[i];
-//          int off=i;
-//          Chunk ctst=     chks[off];
-//          Chunk ctru= t ? chks[off+=ncols] : null;
-//          Chunk cfal= f ? chks[off+=ncols] : null;
-//          int rlen = ctst._len;
-//          for( int r=0; r<rlen; r++ )
-//            if( ctst.isNA0(r) ) n.addNA();
-//            else n.addNum(ctst.at0(r)!=0 ? (t ? ctru.at0(r) : fdtru) : (f ? cfal.at0(r) : fdfal));
-//        }
-//      }
-//    }.doAll(ncols,fr).outputFrame(names,fr.domains());
-//    env.subRef(frtst,kq);
-//    if( frtru != null ) env.subRef(frtru,kt);
-//    if( frfal != null ) env.subRef(frfal,kf);
-//    env.pop();
-//    env.push(fr2);
-//  }
-//}
+//  Additionally, how to cut/expand frames/vecs of true and false to match tst.
+
+class ASTIfElse extends ASTUniPrefixOp {
+  static final String VARS[] = new String[]{"ifelse","tst","true","false"};
+
+  ASTIfElse( ) { super(VARS); }
+  @Override ASTOp make() {return new ASTIfElse();}
+  @Override String opStr() { return "ifelse"; }
+  @Override ASTIfElse parse_impl(Exec E) {
+    AST tst = E.parse();
+    AST yes = E.skipWS().parse(); // could be num
+    AST no  = E.skipWS().parse(); // could be num
+    ASTIfElse res = (ASTIfElse)clone();
+    res._asts = new AST[]{no,yes,tst};
+    return res;
+  }
+
+  // return frame compatible to tgt
+  private Frame adaptToTst(Frame src, Frame tgt) {
+    Key k = src._key == null ? Key.make() : src._key;
+    // need to pute src in DKV if not in there
+    if (src._key == null || DKV.get(src._key) == null)
+      DKV.put(k, new Frame(k,src.names(),src.vecs()));
+
+    // extend src
+    StringBuilder sb=null;
+    if (src.numRows() < tgt.numRows()) {
+      // rbind the needed rows
+      int nrbins = 1 + (int)((tgt.numRows() - src.numRows()) / src.numRows());
+      long remainder = tgt.numRows() % src.numRows();
+      sb = new StringBuilder("(rbind ");
+      for (int i = 0; i < nrbins; ++i) sb.append("$").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
+      sb.append(remainder > 0 ? "([ $"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
+      Log.info("extending frame:" + sb.toString());
+
+    // reduce src
+    } else if (src.numRows() > tgt.numRows()) {
+      long rmax = tgt.numRows() - 1;
+      sb = new StringBuilder("([ $"+k+" (: #0 #"+rmax+"))");
+    }
+
+    if (sb != null) {
+      Env env=null;
+      Frame res;
+      try {
+        env = Exec.exec(sb.toString());
+        res = env.pop0Ary();
+        res.unlock_all();
+      } catch (Exception e) {
+        throw H2O.fail();
+      } finally {
+        if (env!=null)env.unlock();
+      }
+      Frame ret = tgt.makeCompatible(res);
+      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
+      return ret;
+    }
+    src = DKV.remove(k).get();
+    Frame ret = tgt.makeCompatible(src);
+    if (src != ret) src.delete();
+    return ret;
+  }
+
+  private Frame adaptToTst(double d, Frame tgt) {
+    Frame v = new Frame(Vec.makeCon(d, tgt.numRows()));
+    Frame ret = tgt.makeCompatible(v);
+    if (ret != v) v.delete();
+    return ret;
+  }
+
+  @Override void apply(Env env) {
+    Frame tst = env.pop0Ary();
+    if (tst.numCols() != 1)
+      throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
+    Frame yes=null; double dyes=0;
+    Frame no=null; double dno=0;
+    if (env.isAry()) yes = env.pop0Ary(); else dyes = env.popDbl();
+    if (env.isAry()) no  = env.pop0Ary(); else dno  = env.popDbl();
+
+    if (yes != null && no != null) {
+      if (yes.numCols() != no.numCols())
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + no.numCols() + ".");
+    } else if (yes != null) {
+      if (yes.numCols() != 1)
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + 1 + ".");
+    } else if (no != null) {
+      if (no.numCols() != 1)
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + 1 + "; `no` has " + no.numCols() + ".");
+    }
+
+    Frame a_yes = yes == null ? adaptToTst(dyes, tst) : adaptToTst(yes,tst);
+    Frame a_no  = no == null ? adaptToTst(dno, tst) : adaptToTst(no, tst);
+    Frame frtst = (new Frame(tst)).add(a_yes).add(a_no);
+    final int ycols = a_yes.numCols();
+
+    // Run a selection picking true/false across the frame
+    Frame fr2 = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+        int rows = chks[0]._len;
+        int cols = chks.length;
+        Chunk pred = chks[0];
+        for (int r=0;r < rows;++r) {
+          for (int c = (pred.at0(r) != 0 ? 1 : ycols + 1), col = 0; c < (pred.at0(r) != 0 ?ycols+1:cols); ++c) {
+            if (chks[c].vec().isUUID())
+              nchks[col++].addUUID(chks[c], r);
+            else if (chks[c].vec().isString())
+              nchks[col++].addStr(chks[c].atStr0(new ValueString(), r));
+            else
+              nchks[col++].addNum(chks[c].at0(r));
+          }
+        }
+      }
+    }.doAll(yes==null?1:yes.numCols(),frtst).outputFrame(yes==null?(new String[]{"C1"}):yes.names(),null/*same as R: no domains*/);
+    env.cleanup(yes, no, a_yes, a_no, tst, frtst);
+    env.push(new ValFrame(fr2));
+  }
+}
 
 class ASTCut extends ASTUniPrefixOp {
   String[] _labels = null;

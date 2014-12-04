@@ -485,8 +485,9 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op <- new("ASTApply", op='=')
   ast <- new("ASTNode", root=op, children=list(lhs, rhs))
-  .force.eval(.retrieveH2O(parent.frame()), ast, ID = x@key, rID = 'x')
-  x
+#  browse()
+#  .force.eval(.retrieveH2O(parent.frame()), ast, ID = x@key, rID = 'x')
+  ast
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
@@ -1279,22 +1280,10 @@ screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type 
 #  as.logical(.h2o.__unop2("canBeCoercedToLogical", vec))
 #}
 #
-#setMethod("ifelse", "H2OParsedData", function(test, yes, no) {
-#  # if(!(is.numeric(yes) || class(yes) == "H2OParsedData") || !(is.numeric(no) || class(no) == "H2OParsedData"))
-#  if(!(is.numeric(yes) || inherits(yes, "H2OParsedData")) || !(is.numeric(no) || inherits(no, "H2OParsedData")))
-#    stop("Unimplemented")
-#  if(!test@logic && !.canBeCoercedToLogical(test)) stop(test@key, " is not a H2O logical data type")
-#  # yes = ifelse(class(yes) == "H2OParsedData", yes@key, yes)
-#  # no = ifelse(class(no) == "H2OParsedData", no@key, no)
-#  yes = ifelse(inherits(yes, "H2OParsedData"), yes@key, yes)
-#  no = ifelse(inherits(no, "H2OParsedData"), no@key, no)
-#  expr = paste("ifelse(", test@key, ",", yes, ",", no, ")", sep="")
-#  res = .h2o.__exec2(test@h2o, expr)
-#  if(res$num_rows == 0 && res$num_cols == 0)   # TODO: If logical operator, need to indicate
-#    res$scalar
-#  else
-#    new("H2OParsedData", h2o=test@h2o, key=res$dest_key, logic=FALSE)
-#})
+setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no) {
+  ast <- .h2o.varop("ifelse", test, yes, no)
+  ast
+})
 
 #' Combine H2O Datasets by Columns
 #'

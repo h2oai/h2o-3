@@ -54,7 +54,7 @@ abstract public class AST extends Iced {
         _asts[0].treeWalk(e);
         ((ASTddply)this).apply(e);
       } else {
-        throw H2O.fail("Unknown AST: " + this.getClass());
+        throw H2O.fail("Unknown AST in tree walk: " + this.getClass());
         // TODO: do the udf op thing: capture env...
       }
 
