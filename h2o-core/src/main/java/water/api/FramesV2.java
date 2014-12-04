@@ -2,6 +2,7 @@ package water.api;
 
 
 import water.H2O;
+import water.Iced;
 import water.Key;
 import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
@@ -30,7 +31,7 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
    * Schema for the simple Frame summary representation used (only) in /2/Frames and
    * /2/Models.
    */
-  static final class FrameSummaryV2 extends Schema<Frame, FrameSummaryV2> {
+  static final class FrameSummaryV2 extends Schema<Iced, FrameSummaryV2> {
     @API(help="String representation of the Frame's key.")
     String key;
 
@@ -49,6 +50,7 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
     @API(help="Is this a frame that contains unparsed raw data?")
     boolean is_raw_frame;
 
+    FrameSummaryV2() { }
     FrameSummaryV2(Frame frame) {
       this.key = frame._key.toString();
 
@@ -61,9 +63,9 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
       this.is_raw_frame = false; // TODO
     }
 
-    @Override public Frame createImpl() { throw H2O.fail("createImpl should never be called on FrameSummaryV2"); }
-    @Override public Frame fillImpl(Frame ignoreme) { throw H2O.fail("fillImpl should never be called on FrameSummaryV2"); }
-    @Override public FrameSummaryV2 fillFromImpl(Frame f) { throw H2O.fail("fillFromImpl should never be called on FrameSummaryV2"); }
+    @Override public Iced createImpl() { throw H2O.fail("createImpl should never be called on FrameSummaryV2"); }
+    @Override public Frame fillImpl(Iced ignoreme) { throw H2O.fail("fillImpl should never be called on FrameSummaryV2"); }
+    @Override public FrameSummaryV2 fillFromImpl(Iced f) { throw H2O.fail("fillFromImpl should never be called on FrameSummaryV2"); }
   }
 
 

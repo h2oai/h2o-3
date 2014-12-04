@@ -10,8 +10,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Class for tracking enum columns.
- *  
+/** Class for tracking categorical (enum) columns.
+ *
  *  Basically a wrapper around non blocking hash map.
  *  In the first pass, we just collect set of unique strings per column
  *  (if there are less than MAX_ENUM_SIZE unique elements).
@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public final class Categorical extends Iced {
+  transient int DEBUG_WEAVER = 1;
+
   public static final int MAX_ENUM_SIZE = 65000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
@@ -113,7 +115,9 @@ public final class Categorical extends Iced {
       _map.put(new ValueString(ab.getA1(len)),ab.get4());
     return this;
   }
-  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    throw H2O.unimpl();
+  }
   @Override public Categorical readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
   @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.unimpl(); }
 }

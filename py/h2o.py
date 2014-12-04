@@ -429,7 +429,8 @@ class H2O(object):
         parse_result = self.__do_json_request(jsonRequest="Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
-        job_key = parse_result['job']['name']
+        # print("Parse result:", repr(parse_result))
+        job_key = parse_result['job']['key']['name']
 
         # TODO: dislike having different shapes for noPoll and poll
         if noPoll:
@@ -613,7 +614,7 @@ class H2O(object):
 
         if asynchronous:
             return result
-        elif 'validation_error_count' in result:
+        elif 'validation_error_count' in result and result['validation_error_count'] > 0:
             # parameters validation failure
             # TODO: add schema_type and schema_version into all the schemas to make this clean to check
             return result

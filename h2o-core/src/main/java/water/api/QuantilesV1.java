@@ -41,6 +41,7 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
     }
   }
 
+  // TODO: refactor
   @Override public Quantiles fillImpl(Quantiles q) {
     sanityCheck();
     q.setAllFields(source_key.vecs()[source_key.find(column)], source_key, quantile, max_qbins, multiple_pass,
@@ -49,6 +50,7 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
     return q;
   }
 
+  // TODO: refactor:
   @Override public QuantilesV1 fillFromImpl(Quantiles q) {
     sanityCheck();
     source_key = q._source_key;

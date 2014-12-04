@@ -2,15 +2,12 @@ package water.api;
 
 import water.AutoBuffer;
 import water.H2O;
-import water.Iced;
 import water.NanoHTTPD;
-import water.api.DownloadDataHandler.DownloadData;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
 import water.util.Log;
 import water.util.RString;
-import water.util.ReflectionUtils;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -80,9 +77,11 @@ public class RequestServer extends NanoHTTPD {
   // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
   static {
     // Data
+
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
-    addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
+    addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
+
     addToNavbar(register("/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame.  DEPRECATED: Use POST because of its higher data limit."),"/Parse"      , "Parse",         "Data");
     addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an aribtrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
@@ -209,6 +208,7 @@ public class RequestServer extends NanoHTTPD {
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
+
   }
 
   @Deprecated
@@ -247,7 +247,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   /**
-   * Register an HTTP request handler for a given URL pattern, with parameters extracted from the URI.
+   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
@@ -264,49 +264,50 @@ public class RequestServer extends NanoHTTPD {
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary) {
     assert uri_pattern.startsWith("/");
-      Class iced_class = null;
-      // Most of the handlers are parameterized on the Iced and Schema classes,
-      // but Inspect isn't, because it can accept any Iced and return any Schema.
-      iced_class = ReflectionUtils.findActualClassParameter(handler_class, 0);
-      if (null == iced_class)
-        throw H2O.fail("Failed to find an implementation class for handler class: " + handler_class + " for method: " + handler_method);
 
-      // Search handler_class and all its superclasses for the method.  Unfortunately, getMethod does not return a
-      // match a method which takes a superclass of the class that we specify in the parameters list, so we need
-      // to walk up all the parent classes of iced_class until we hit Iced.  :-(
-      Method meth = null;
-      Method doc_meth = null;
-      Class clz = iced_class;
-      do {
-        try {
-          meth = handler_class.getMethod(handler_method, new Class[]{int.class, clz});
-          if (null != doc_method)
-            doc_meth = handler_class.getMethod(doc_method, new Class[]{int.class, StringBuffer.class});
-        }
-        catch (NoSuchMethodException e) {
-          // ignore: keep looking for methods that accept superclasses of clz
-        }
-        clz = clz.getSuperclass();
-      } while (meth == null && clz != Iced.class);
+    // Search handler_class and all its superclasses for the method.
+    Method meth = null;
+    Method doc_meth = null;
 
-      if (null == meth)
-        throw H2O.fail("Failed to find handler method: " + handler_method + " for handler class: " + handler_class);
-      if (null != doc_method && null == doc_meth)
-        throw H2O.fail("Failed to find doc method: " + doc_method + " for handler class: " + handler_class);
+    // TODO: move to ReflectionUtils:
+    try {
+      for (Method m : handler_class.getMethods()) {
+        if (! m.getName().equals(handler_method)) continue;
+
+        Class[] params = m.getParameterTypes();
+        if (null == params || params.length != 2) continue;
+        if (params[0] != Integer.TYPE) continue;
+        if (! Schema.class.isAssignableFrom(params[1])) continue;
+
+        meth = m;
+        break;
+      }
+
+      if (null != doc_method)
+        doc_meth = handler_class.getMethod(doc_method, new Class[]{int.class, StringBuffer.class});
+    }
+    catch (NoSuchMethodException e) {
+      // ignore: H2O.fail below
+    }
+
+    if (null == meth)
+      throw H2O.fail("Failed to find handler method: " + handler_method + " for handler class: " + handler_class);
+    if (null != doc_method && null == doc_meth)
+      throw H2O.fail("Failed to find doc method: " + doc_method + " for handler class: " + handler_class);
 
 
     if (uri_pattern.matches("^/v?\\d+/.*")) {
-        // register specifies a version
-      } else {
-        // register all versions
-        uri_pattern = "^(/v?\\d+)?" + uri_pattern;
-      }
-      assert lookup(handler_method,uri_pattern)==null; // Not shadowed
-      Pattern pattern = Pattern.compile(uri_pattern);
-      Route route = new Route(http_method, pattern, summary, handler_class, meth, doc_meth, path_params);
-      _routes.put(pattern, route);
-      return route;
+      // register specifies a version
+    } else {
+      // register all versions
+      uri_pattern = "^(/v?\\d+)?" + uri_pattern;
     }
+    assert lookup(handler_method, uri_pattern)==null; // Not shadowed
+    Pattern pattern = Pattern.compile(uri_pattern);
+    Route route = new Route(http_method, pattern, summary, handler_class, meth, doc_meth, path_params);
+    _routes.put(pattern, route);
+    return route;
+  }
 
 
   // Lookup the method/url in the register list, and return a matching Method
@@ -505,12 +506,12 @@ public class RequestServer extends NanoHTTPD {
       return new Response(http_code, MIME_HTML, html.toString());
     }
     default:
-      throw H2O.fail();
+      throw H2O.fail("Unknown type to wrap(): " + type);
     }
   }
 
   private Response wrap2(String http_code, Schema s) {
-    DownloadData dd = (DownloadData) s.createAndFillImpl();
+    DownloadDataV1 dd = (DownloadDataV1)s;
     Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
     res.addHeader("Content-Disposition", "filename=" + dd.filename);
     return res;
@@ -646,8 +647,8 @@ public class RequestServer extends NanoHTTPD {
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance(); // TODO: we don't need to create new instances; handler is stateless
         if( version < h.min_ver() || h.max_ver() < version ) continue;
-        String url = h.schema(version).acceptsFrame(fr);
-        if( url != null ) al.add(url);
+        // TODO: fixme! String url = Schema.schema(version, schema).acceptsFrame(fr);
+        // TODO: fixme! if( url != null ) al.add(url);
       }
       catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }

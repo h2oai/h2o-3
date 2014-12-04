@@ -210,7 +210,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Model( Key selfKey, P parms, O output) {
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
-    _output = output;  assert output != null;
+    _output = output;  // Output won't be set if we're assert output != null;
   }
 
 

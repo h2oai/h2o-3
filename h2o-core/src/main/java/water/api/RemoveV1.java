@@ -1,10 +1,10 @@
 package water.api;
 
+import water.Iced;
 import water.Key;
 import water.util.DocGen;
-import water.api.RemoveHandler.Remove;
 
-public class RemoveV1 extends Schema<Remove,RemoveV1> {
+public class RemoveV1 extends Schema<Iced, RemoveV1> {
   //Input
   @API(help="Key to be removed.")
   Key key;

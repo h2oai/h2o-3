@@ -1,9 +1,9 @@
 package water.api;
 
-import water.api.ImportFilesHandler.ImportFiles;
+import water.Iced;
 import water.util.DocGen.HTML;
 
-class ImportFilesV2 extends Schema<ImportFiles,ImportFilesV2> {
+class ImportFilesV2 extends Schema<Iced,ImportFilesV2> {
 
   // Input fields
   @API(help="path", required=true)

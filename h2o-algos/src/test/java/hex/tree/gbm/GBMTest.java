@@ -32,7 +32,7 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 1;
       parms._min_rows = 1;
       parms._nbins = 20;
-      // Drop Col 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
+      // Drop ColV2 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
       String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
       xcols[0] = fr._names[0];
       System.arraycopy(fr._names,3,xcols,1,fr.numCols()-3);

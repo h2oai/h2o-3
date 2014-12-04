@@ -66,9 +66,8 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
       this.model = (ModelSchema)Schema.schema(this.schema_version, m.getClass());
 
     // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
-    Frame f = modelMetrics.frame();
-    if( f != null )
-      this.frame = (FrameV2)Schema.schema(this.schema_version, f.getClass());
+    if (null != modelMetrics.frame())
+      this.frame = new FrameV2().fillFromImpl(modelMetrics.frame());
 
     // TODO: remove this hack:
     new AUCV3();

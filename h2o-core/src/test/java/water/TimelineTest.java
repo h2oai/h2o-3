@@ -1,15 +1,14 @@
 package water;
 
-import static junit.framework.TestCase.assertEquals;
-import org.junit.*;
-
 import jsr166y.CountedCompleter;
+import org.junit.Test;
 import water.api.TimelineHandler;
-import water.api.TimelineHandler.Timeline;
 import water.api.TimelineV2;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import static junit.framework.TestCase.assertEquals;
 
 public class TimelineTest extends TestUtil{
   public TimelineTest() { super(5); }
@@ -64,7 +63,7 @@ public class TimelineTest extends TestUtil{
     };
     H2O.submitTask(test).join();
     TimelineHandler handler = new TimelineHandler();
-    TimelineV2 t = handler.fetch(2, new Timeline());
+    TimelineV2 t = handler.fetch(2, new TimelineV2());
     Set<String> msgs = new HashSet<>();
     for( TimelineV2.Event e : t.events) {
       if(e.bytes().contains("TestTask") && e instanceof TimelineV2.NetworkEvent) {

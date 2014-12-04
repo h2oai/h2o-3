@@ -48,9 +48,8 @@ final class Route extends Iced {
 
     // parameters and output tables
     try {
-      Handler h = _handler_class.newInstance();
-      Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
-
+      Class<? extends Schema> clz = Handler.getHandlerMethodSchema(_handler_method);
+      Schema s = Schema.newInstance(clz);
       builder.append(s.markdown(null));
 
       // TODO: render examples and other stuff, if it's passed in
@@ -88,5 +87,18 @@ final class Route extends Iced {
     result = 31 * result + _doc_method.hashCode();
     result = 31 * result + Arrays.hashCode(_path_params);
     return (int)result;
+  }
+
+  @Override
+  public String toString() {
+    return "Route{" +
+            "_http_method='" + _http_method + '\'' +
+            ", _url_pattern=" + _url_pattern +
+            ", _summary='" + _summary + '\'' +
+            ", _handler_class=" + _handler_class +
+            ", _handler_method=" + _handler_method +
+            ", _doc_method=" + _doc_method +
+            ", _path_params=" + Arrays.toString(_path_params) +
+            '}';
   }
 } // Route

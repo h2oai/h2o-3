@@ -54,10 +54,10 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   public Key destination_key;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
-  public Frame training_frame;
+  public FrameV2 training_frame;
 
   @API(help="Validation frame", direction=API.Direction.INOUT)
-  public Frame validation_frame;
+  public FrameV2 validation_frame;
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
@@ -78,13 +78,13 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     if (null != impl._train) {
       Value v = DKV.get(impl._train);
       if (null == v) throw new IllegalArgumentException("Failed to find training_frame: " + impl._train);
-      training_frame = v.get();
+      training_frame = new FrameV2().fillFromImpl((Frame)v.get());
     }
 
     if (null != impl._valid) {
       Value v = DKV.get(impl._valid);
       if (null == v) throw new IllegalArgumentException("Failed to find validation_frame: " + impl._valid);
-      validation_frame = v.get();
+      validation_frame = new FrameV2().fillFromImpl((Frame)v.get());
     }
 
     return (S)this;
@@ -93,8 +93,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : this.training_frame._key);
-    impl._valid = (null == this.validation_frame ? null : this.validation_frame._key);
+    impl._train = (null == this.training_frame ? null : this.training_frame.key);
+    impl._valid = (null == this.validation_frame ? null : this.validation_frame.key);
 
     return impl;
   }

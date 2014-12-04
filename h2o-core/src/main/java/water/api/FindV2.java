@@ -1,15 +1,14 @@
 package water.api;
 
+import water.Iced;
 import water.Key;
-import water.api.FindHandler.FindPojo;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
-class FindV2 extends Schema<FindPojo,FindV2> {
+class FindV2 extends Schema<Iced,FindV2> {
 
   // Input fields
   @API(help="Frame to search",required=true)
-  Key key;
+  Frame key;
 
   @API(help="Column, or null for all")
   String column;
@@ -26,23 +25,6 @@ class FindV2 extends Schema<FindPojo,FindV2> {
 
   @API(help="next row with matching value, or -1", direction=API.Direction.OUTPUT)
   long next;
-
-  //==========================
-  // Custom adapters go here
-
-  // Version&Schema-specific filling into the impl
-  @Override public FindPojo fillImpl(FindPojo f) {
-    super.fillImpl(f);
-
-    // Peel out an optional column; restrict to this column
-    if( column != null ) {
-      Vec vec = f._fr.vec(column);
-      if( vec==null ) throw new IllegalArgumentException("Column "+column+" not found in frame "+key);
-      f._fr = new Frame(new String[]{column}, new Vec[]{vec});
-    }
-
-    return f;
-  }
 
   //==========================
   // Helper so InspectV2 can link to FindV2

@@ -120,7 +120,7 @@ public class PojoUtils {
               //
               Integer[] copy = (Integer[]) orig_field.get(origin);
               dest_field.set(dest, copy);
-            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(orig_field.getType().getComponentType())) {
+            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && (Schema.getImplClass((Class<?extends Schema>)dest_field.getType().getComponentType())).isAssignableFrom(orig_field.getType().getComponentType())) {
               //
               // Assigning an array of impl fields to an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
               //
@@ -128,7 +128,7 @@ public class PojoUtils {
               Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
-                translation[i] = ((Schema)dest_field.getType().newInstance()).fillFromImpl(impl);
+                translation[i] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {

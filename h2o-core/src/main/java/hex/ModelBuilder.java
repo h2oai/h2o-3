@@ -155,9 +155,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  the front-end whenever the GUI is clicked, and needs to be fast whenever
    *  {@code expensive} is false; it will be called once again at the start of
    *  model building {@see #trainModel()} with expensive set to true.
-   *
+   *<p>
    *  The incoming training frame (and validation frame) will have ignored
    *  columns dropped out, plus whatever work the parent init did.
+   *<p>
+   *  NOTE: The front end initially calls this through the parameters validation
+   *  endpoint with no training_frame, so each subclass's {@code init()} method
+   *  has to work correctly with the training_frame missing.
    */
   public void init(boolean expensive) {
     // Log parameters

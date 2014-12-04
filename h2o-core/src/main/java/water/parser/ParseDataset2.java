@@ -102,6 +102,7 @@ public final class ParseDataset2 extends Job<Frame> {
     job.start(fjt, sum);
     return job;
   }
+
   // Setup a private background parse job
   private ParseDataset2(Key dest) {
     super(dest,"Parse");
@@ -609,6 +610,9 @@ public final class ParseDataset2 extends Job<Frame> {
    * @author tomasnykodym
    */
   static class FVecDataOut extends Iced implements Parser.StreamDataOut {
+
+    transient int DEBUG_WEAVER = 1;
+
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Categorical [] _enums;
@@ -877,7 +881,7 @@ public final class ParseDataset2 extends Job<Frame> {
       int namelen = 0;
       for (String s : fr.names()) namelen = Math.max(namelen, s.length());
       String format = " %"+namelen+"s %11s %12s %12s %11s %8s %6s";
-      Log.info(String.format(format, "Col", "type", "min", "max", "NAs", "constant", "numLevels"));
+      Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "numLevels"));
       // get all rollups started in parallell, otherwise this takes ages!
 
       for( int i = 0; i < vecArr.length; i++ ) {

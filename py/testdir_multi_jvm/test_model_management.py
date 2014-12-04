@@ -4,6 +4,7 @@ sys.path.extend(['.','..','py'])
 import h2o, h2o_util
 import os
 import argparse
+import time
 
 #################
 # Config is below
@@ -64,16 +65,26 @@ def validate_builder(algo, builder):
 def validate_model_builder_result(result, original_params, model_name):
     ''' 
     Validate that a model build result has no parameter validation errors, 
-    and that it has a Job with a Key.
+    and that it has a Job with a Key.  Note that model build will return a
+    Job if successful, and a ModelBuilder with errors if it's not.
     '''
-    if 'validation_error_count' in result:
+
+    if 'validation_error_count' in result and result['validation_error_count'] > 0:
+        # error case
         print 'Parameters validation error for model: ', model_name
         print 'Input parameters: '
         pp.pprint(original_params)
         print 'Returned result: '
         pp.pprint(result)
-    assert 'jobs' in result, "FAIL: Failed to find jobs key for model: " + model_name
-    assert 'key' in result, "FAIL: Failed to find (jobs) key for model: " + model_name
+        assert result['validation_error_count'] == 0, "FAIL: Non-zero validation_error_count for model: " + model_name
+
+    assert 'jobs' in result, "FAIL: Failed to find jobs key for model: " + model_name + ": " + pp.pprint(result)
+    jobs = result['jobs']
+    assert type(jobs) is list, "FAIL: Jobs element for model is not a list: " + model_name + ": " + pp.pprint(result)
+    assert len(jobs) == 1, "FAIL: Jobs list for model is not 1 long: " + model_name + ": " + pp.pprint(result)
+    job = jobs[0]
+    assert type(job) is dict, "FAIL: Job element for model is not a dict: " + model_name + ": " + pp.pprint(result)
+    assert 'key' in job, "FAIL: Failed to find key in job for model: " + model_name + ": " + pp.pprint(result)
 
 
 def validate_validation_messages(result, expected_error_fields):
@@ -241,6 +252,9 @@ class ModelSpec(dict):
         result = a_node.build_model(algo=self['algo'], destination_key=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
 
+        # TODO: remove!
+        # time.sleep(10)
+
         model = validate_model_exists(self['dest_key'], a_node.models()['models'])
         validate_actual_parameters(self['params'], model['parameters'], self['frame_key'], None)
 
@@ -253,6 +267,7 @@ class ModelSpec(dict):
         return model
 
 
+### TODO: we should be able to have multiple DatasetSpecs that come from a single parse, for efficiency
 class DatasetSpec(dict):
     '''
     Dictionary which specifies the properties of a Frame (Dataset) for a specific use 
@@ -290,7 +305,7 @@ class DatasetSpec(dict):
             pp.pprint(a_node.frames(key=import_result['keys'][0], len=5))
 
         frames = a_node.frames(key=import_result['keys'][0], len=5)['frames']
-        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText"
+        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText: " + repr(frames[0])
         parse_result = a_node.parse(key=import_result['keys'][0], dest_key=self['dest_key']) # TODO: handle multiple files
         key = parse_result['frames'][0]['key']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
@@ -494,16 +509,13 @@ models_to_build = [
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
     ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], {'hidden': '[10, 20, 10]' }),
-    # This DL job is SLOOOOWW.... at 1 epoch its still 33sec of train time
-    # which is half of the total runtime for this entire file.  Ponder
-    # switching to a smaller dataset.
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], {'hidden': '[50, 50]', 'epochs': '1.0' } ),
+    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'hidden': '[20, 20]' } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'hidden': '[10, 10]' } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { } ),
 
     ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { } ),
     ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { } ),
-    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { } ),
+    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5 } ),
     ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { } ),
 ]
 

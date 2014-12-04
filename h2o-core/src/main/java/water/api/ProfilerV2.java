@@ -1,11 +1,8 @@
 package water.api;
-import water.api.ProfilerHandler.Profiler;
-import water.util.DocGen;
-import water.util.JProfile;
 
-import java.util.Arrays;
+import water.Iced;
 
-public class ProfilerV2 extends ProfilerBase<Profiler, ProfilerV2> {
+public class ProfilerV2 extends ProfilerBase<Iced, ProfilerV2> {
   // Inputs and Outputs are in ProfilerBase
 
 }

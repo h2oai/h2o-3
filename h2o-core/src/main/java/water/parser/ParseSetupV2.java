@@ -11,7 +11,7 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   // Input fields
   @API(help="Source keys",required=true, direction=API.Direction.INPUT)
-  public Key[] srcs;
+  public Key[] srcs;  // TODO: should be Frame[]
 
   @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",direction=API.Direction.INOUT)
   public int checkHeader;
@@ -37,6 +37,16 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   @API(help="Sample Data", direction=API.Direction.OUTPUT)
   public String[][] data;
+
+  @API(help="The initial parse is sane", direction=API.Direction.OUTPUT)
+  boolean isValid;
+
+  @API(help="Number of broken/invalid lines found", direction=API.Direction.OUTPUT)
+  long invalidLines;
+
+  @API(help="Number of header lines found", direction=API.Direction.OUTPUT)
+  long headerlines;
+
 
   //==========================
   // Helper so ImportV1 can link to ParseSetupV2

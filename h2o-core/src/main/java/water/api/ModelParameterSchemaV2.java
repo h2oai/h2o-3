@@ -2,11 +2,9 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
-import water.Keyed;
-import water.util.Log;
+import water.api.SchemaMetadata.FieldMetadata;
 import water.util.PojoUtils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 
 // TODO: move into hex.schemas!
@@ -54,61 +52,6 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public ModelParameterSchemaV2() {
   }
 
-  /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-  private static String consType(Class clz) {
-    boolean is_enum = Enum.class.isAssignableFrom(clz);
-    boolean is_array = clz.isArray();
-
-    if (is_enum)
-      return "enum";
-
-    if (is_array)
-      return consType(clz.getComponentType()) + "[]";
-
-    if (hex.Model.class.isAssignableFrom(clz))
-      return "Model";
-
-    if (water.fvec.Frame.class.isAssignableFrom(clz))
-      return "Frame";
-
-    if (water.fvec.Vec.class.isAssignableFrom(clz))
-      return "Vec";
-
-    if (water.Key.class.isAssignableFrom(clz))
-      return "Key";
-
-    if (String.class.isAssignableFrom(clz))
-      return "string"; // lower-case, to be less Java-centric
-
-    if (clz.equals(Boolean.TYPE) || clz.equals(Integer.TYPE) || clz.equals(Long.TYPE) || clz.equals(Float.TYPE) || clz.equals(Double.TYPE))
-      return clz.toString();
-
-    Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString());
-    return clz.toString();
-  }
-
-  private static String consValue(Object o) {
-    if (null == o)
-      return null;
-
-    if (water.Keyed.class.isAssignableFrom(o.getClass())) {
-      Keyed k = (Keyed)o;
-      return k._key.toString();
-    }
-
-    if (! o.getClass().isArray())
-      return o.toString();
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    for (int i = 0; i < Array.getLength(o); i++) {
-      if (i > 0) sb.append(", ");
-      sb.append(consValue(Array.get(o, i)));
-    }
-    sb.append("]");
-    return sb.toString();
-  }
-
   /** TODO: refactor using SchemaMetadata. */
   public ModelParameterSchemaV2(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
     f.setAccessible(true);
@@ -118,13 +61,13 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       Object o;
 
       o = f.get(default_schema);
-      this.default_value = consValue(o);
+      this.default_value = FieldMetadata.consValue(o);
 
       o = f.get(schema);
-      this.actual_value = consValue(o);
+      this.actual_value = FieldMetadata.consValue(o);
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-      this.type = consType(f.getType());
+      this.type = FieldMetadata.consType(schema, f.getType());
 
       API annotation = f.getAnnotation(API.class);
 

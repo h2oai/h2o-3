@@ -1,11 +1,11 @@
 package hex.schemas;
 
+import water.Iced;
 import water.Key;
 import water.api.API;
 import water.api.Schema;
-import hex.schemas.SynonymsHandler.Synonyms;
 
-public class SynonymV1 extends Schema<Synonyms, SynonymV1> {
+public class SynonymV1 extends Schema<Iced, SynonymV1> {
 
   // Input fields
   @API(help="A word2vec model key.") public Key key;

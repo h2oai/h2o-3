@@ -4,34 +4,34 @@ import water.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-/** Schema for a single Job */
+/** Schema for a single Job. */
 public class JobV2 extends Schema<Job, JobV2> {
 
   // Input fields
   @API(help="Job Key",required=true)
-  Key key;
+  public Key key;
 
   @API(help="Job description")
-  String description;
+  public String description;
 
   // Output fields
   @API(help="job status", direction=API.Direction.OUTPUT)
-  String status;
+  public String status;
 
-  @API(help="progress", direction=API.Direction.OUTPUT)
-  float progress;               // A number from 0 to 1
+  @API(help="progress, from 0 to 1", direction=API.Direction.OUTPUT)
+  public float progress;               // A number from 0 to 1
 
   @API(help="runtime", direction=API.Direction.OUTPUT)
-  long msec;
+  public long msec;
 
   @API(help="destination key", direction=API.Direction.OUTPUT)
-  Key dest;
+  public Key dest;
 
   @API(help="exception", direction=API.Direction.OUTPUT)
-  String exception;
+  public String exception;
 
-  JobV2() {}
-  JobV2(Key key, String description, String status, float progress, long msec, Key dest, String exception) {
+  public JobV2() {}
+  public JobV2(Key key, String description, String status, float progress, long msec, Key dest, String exception) {
     this.key = key;
     this.description = description;
     this.status = status;
@@ -55,6 +55,7 @@ public class JobV2 extends Schema<Job, JobV2> {
     // Fetch the latest Job status from the K/V store
     // Do this in the handler:
     // Job job = DKV.get(j._key).get();
+    key = job._key;
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;

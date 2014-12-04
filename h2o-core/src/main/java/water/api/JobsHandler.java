@@ -1,47 +1,42 @@
 package water.api;
 
 import water.*;
-import water.api.JobsHandler.Jobs;
+import water.util.PojoUtils;
 
-class JobsHandler extends Handler<Jobs,JobsV2> {
+class JobsHandler extends Handler {
   // Supported at V1 same as always
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  /** Impl class for a collection of jobs; only used in the API.  */
+  /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
   protected static final class Jobs extends Iced {
-    public Jobs() { }
-    public Jobs(Key key, Job[] jobs) { this.key = key; this.jobs = jobs; }
+    public Key _key;
+    public Job[] _jobs;
 
-    // Inputs
-    @API(help="Job key")
-    public Key key;
-
-    // Output
-    public Job[] jobs;
+    public Jobs() {}
+    public Jobs(Job j) { _jobs = new Job[1]; _jobs[0] = j; }
   }
 
-  public static final Schema jobToSchemaHelper(int version, Job job) {
-    // TODO: we really should have a single instance of each handler. . .
-    return new JobsHandler().schema(version).fillFromImpl(new Jobs(job._key, new Job[] { job } ));
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public Schema list(int version, JobsV2 s) {
+    Jobs j = new Jobs();
+    j._jobs = Job.jobs();
+    PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.CONSISTENT);
+    return s;
   }
 
-  @Override public void compute2() { throw H2O.fail(); }                       // TODO: what to do about Key here?
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list(int version, Jobs jobs) { return schema(version).fillFromImpl(new Jobs(null, Job.jobs())); } // All work in schema
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema fetch(int version, Jobs jobs) {
-    Key key = jobs.key;
+  public Schema fetch(int version, JobsV2 s) {
+    Key key = s.key.key;
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");
     Iced ice = val.get();
     if( !(ice instanceof Job) ) throw new IllegalArgumentException("Must be a Job not a "+ice.getClass());
-    jobs.jobs = new Job[1];
-    jobs.jobs[0] = (Job) ice;
-    return schema(version).fillFromImpl(jobs);
-  }
 
-  @Override protected JobsV2 schema(int version) { return new JobsV2(); }
+    Jobs jobs = new Jobs();
+    jobs._jobs = new Job[1];
+    jobs._jobs[0] = (Job) ice;
+    s.jobs = new JobV2[0]; // Give PojoUtils.copyProperties the destination type.
+    return s.fillFromImpl(jobs);
+  }
 }

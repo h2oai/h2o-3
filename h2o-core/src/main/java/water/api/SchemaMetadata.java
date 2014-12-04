@@ -200,7 +200,7 @@ public final class SchemaMetadata extends Iced {
     }
 
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-    private static String consType(Schema schema, Class clz) {
+    public static String consType(Schema schema, Class clz) {
       boolean is_enum = Enum.class.isAssignableFrom(clz);
       boolean is_array = clz.isArray();
 
@@ -225,7 +225,11 @@ public final class SchemaMetadata extends Iced {
 
       // H2O-specific types:
       // TODO: NOTE, this is a mix of Schema types and Iced types; that's not right. . .
+      // Should ONLY have schema types.
       // Also, this mapping could/should be moved to Schema.
+      if (water.Key.class.isAssignableFrom(clz))
+        return "Key";
+
       if (Schema.class.isAssignableFrom(clz)) {
         return Schema.getImplClass((Class<Schema>)clz).getSimpleName();  // same as Schema.schema_type
       }
@@ -239,7 +243,7 @@ public final class SchemaMetadata extends Iced {
       return clz.toString();
     }
 
-    private static String consValue(Object o) {
+    public static String consValue(Object o) {
       if (null == o)
         return null;
 

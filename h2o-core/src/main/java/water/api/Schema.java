@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
@@ -26,13 +25,17 @@ import java.util.regex.Pattern;
  * without knowing any details about the specific algo).
  * <p>
  * Most schemas have a 1-to-1 mapping to an Iced implementation object.
- * Both may have children, or (more often) not.  Occasionally, e.g. in
- * the case of schemas used only to handle HTTP request parameters, there
- * will not be a backing impl object.
+ * Both the Schema and the Iced object may have children, or (more often) not.
+ * Occasionally, e.g. in the case of schemas used only to handle HTTP request
+ * parameters, there will not be a backing impl object and the Schema will be
+ * parameterized by Iced.
  * <p>
  * Schemas have a State section (broken into Input, Output and InOut fields)
- * and an Adapter section which fills the State to and from the Iced impl objects
- * and from HTTP request parameters.
+ * and an Adapter section.  The adapter methods fill the State to and from the
+ * Iced impl objects and from HTTP request parameters.  In the simple case, where
+ * the backing object corresponds 1:1 with the Schema and no adapting need be
+ * done, the methods here in the Schema class will do all the work based on
+ * reflection.
  * <p>
  * Methods here allow us to convert from Schema to Iced (impl) and back in a
  * flexible way.  The default behaviour is to map like-named fields back and
@@ -40,10 +43,13 @@ import java.util.regex.Pattern;
  * Model will be automagically converted back and forth to a Key).
  * Subclasses can override methods such as fillImpl or fillFromImpl to
  * provide special handling when adapting from schema to impl object and back.
+ * Usually they will want to call super to get the default behavior, and then
+ * modify the results a bit (e.g., to map differently-named fields, or to
+ * compute field values).
  * <p>
- * Schema Fields must have a single API annotation describing in their direction
- * of operation (all fields will be output by default), and any other properties
- * such as "required".  Transient and static fields are ignored.
+ * Schema Fields must have a single API annotation describing their direction
+ * of operation and any other properties such as "required".  Fields are
+ * API.Direction.OUTPUT by default.  Transient and static fields are ignored.
  * @see water.api.API for information on the field annotations
  * <p>
  * Some use cases:
@@ -80,7 +86,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
   public int schema_version;
-  final int getSchemaVersion() { return schema_version; }
+  public final int getSchemaVersion() { return schema_version; }
 
   /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
   @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
@@ -118,7 +124,15 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
       schemas.put(this.schema_name, this.getClass());
       schema_to_iced.put(this.schema_name, _impl_class);
-      iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
+
+      if (_impl_class != Iced.class) {
+        Pair versioned = new Pair(_impl_class.getSimpleName(), this.schema_version);
+        // Check for conflicts
+        if (null != iced_to_schema.get(versioned)) {
+          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + schema_version + " of Iced class: " + _impl_class);
+        }
+        iced_to_schema.put(versioned, this.getClass());
+      }
     }
   }
 
@@ -150,7 +164,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       } catch (Exception e) {
         Log.err("Failed to instantiate schema class: " + clz);
       }
-      Log.info("Instantiated: " + clz.getSimpleName());
+      Log.debug("Instantiated: " + clz.getSimpleName());
     }
   }
 
@@ -369,17 +383,30 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
 
-    if( Frame.class.isAssignableFrom(fclz) )
+    // TODO: these can be refactored into a single case using the facilities in Schema:
+    if( FrameV2.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
-        if (! v.isFrame()) throw new IllegalArgumentException("Frame argument points to a non-frame object.");
-        return v.get();
+        if (! v.isFrame()) throw new IllegalArgumentException("Frame argument points to a non-Frame object: " + v.get().getClass());
+        return new FrameV2((Frame) v.get()); // TODO: version!
       }
 
-    if( Model.class.isAssignableFrom(fclz) )
+    if( JobV2.class.isAssignableFrom(fclz) )
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      else if (!required && (s == null || s.length() == 0)) return null;
+      else {
+        Value v = DKV.get(s);
+        if (null == v) return null; // not required
+        if (! v.isJob()) throw new IllegalArgumentException("Job argument points to a non-Job object: " + v.get().getClass());
+        return new JobV2().fillFromImpl((Job) v.get()); // TODO: version!
+      }
+
+    if( ModelSchema.class.isAssignableFrom(fclz) )
+      throw H2O.fail("Can't yet take ModelSchema as input.");
+      /*
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
@@ -388,6 +415,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         if (! v.isModel()) throw new IllegalArgumentException("Model argument points to a non-model object.");
         return v.get();
       }
+      */
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
   }
@@ -464,7 +492,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     return schema(version, impl_class.getSimpleName());
   }
 
-  private static Schema newInstance(Class<? extends Schema> clz) {
+  public static Schema newInstance(Class<? extends Schema> clz) {
     Schema s = null;
     try {
       s = clz.newInstance();

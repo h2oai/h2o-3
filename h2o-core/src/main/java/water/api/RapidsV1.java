@@ -2,9 +2,7 @@ package water.api;
 
 import water.*;
 
-
-public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
-
+public class RapidsV1 extends Schema<Iced, RapidsV1> {
   // Input fields
   @API(help="An Abstract Syntax Tree."            , direction=API.Direction.INPUT) String ast;
   @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String[] funs;
@@ -25,35 +23,4 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
 
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 
-  @Override public RapidsHandler.Rapids createImpl() {
-    RapidsHandler.Rapids c = new RapidsHandler.Rapids();
-    if ((ast == null || ast.equals("")) && funs == null) {
-      if (astKey == null) return null;
-      c._astKey = astKey;
-      return c;
-    }
-    c._astKey = astKey;
-    c._ast = ast;
-    c._funs = funs;
-    return c;
-  }
-
-  @Override public RapidsV1 fillFromImpl(RapidsHandler.Rapids rapids) {
-    if (rapids == null) return this;
-    astKey    = rapids._astKey;
-    raft_ast  = rapids._raft_ast;
-    raft_key  = rapids._raft_key;
-    ast       = rapids._ast;
-    funs      = rapids._funs;
-    key       = rapids._key;
-    num_rows  = rapids._num_rows;
-    num_cols  = rapids._num_cols;
-    scalar    = rapids._scalar;
-    funstr    = rapids._funstr;
-    result    = rapids._result;
-    col_names = rapids._col_names;
-    string    = rapids._string;
-    exception = rapids._error;
-    return this;
-  }
 }

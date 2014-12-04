@@ -3,13 +3,14 @@ package water.util;
 import water.H2O;
 import water.Iced;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
 public class ReflectionUtils {
   /**
-   * Reflection helper which returns the actual class for a type parmater, even if itself is parameterized.
+   * Reflection helper which returns the actual class for a type parameter, even if itself is parameterized.
    */
   public static Class<? extends Iced> findActualClassParameter(Class clz, int parm) {
     Class<? extends Iced> iced_class = null;
@@ -32,5 +33,17 @@ public class ReflectionUtils {
       iced_class = Iced.class; // If the handler isn't parameterized on the Iced class then this has to be Iced.
     }
     return iced_class;
+  }
+
+  /**
+   * Reflection helper which returns the actual class for a method's parameter.
+   */
+  public static Class findMethodParameterClass(Method method, int parm) {
+    Class[] clzes = method.getParameterTypes();
+
+    if (clzes.length <= parm)
+      throw H2O.fail("Asked for the class of parameter number: " + parm + " of method: " + method + ", which only has: " + clzes.length + " parameters.");
+
+    return clzes[parm];
   }
 }

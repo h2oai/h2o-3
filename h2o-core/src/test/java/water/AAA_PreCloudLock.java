@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.util.Properties;
-import water.*;
+
 import water.api.*;
 
 public class AAA_PreCloudLock extends TestUtil {
@@ -15,7 +15,7 @@ public class AAA_PreCloudLock extends TestUtil {
   private static void stall() {
     stall_till_cloudsize(2);
     // Start Nano server; block for starting
-    Runnable run = H2O.finalizeRequest();
+    Runnable run = H2O.finalizeRegistration();
     if( run != null ) 
       synchronized(run) {
         while( water.api.RequestServer.SERVER==null ) 

@@ -1,8 +1,8 @@
 package water.api;
 
-import water.api.TypeaheadHandler.Typeahead;
+import water.Iced;
 
-class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
+class TypeaheadV2 extends Schema<Iced,TypeaheadV2> {
 
   // Input fields
   @API(help="training_frame", required=true)
@@ -14,14 +14,4 @@ class TypeaheadV2 extends Schema<Typeahead,TypeaheadV2> {
   // Output fields
   @API(help="matches", direction=API.Direction.OUTPUT)
   String matches[];
-
-  //==========================
-  // Custom adapters go here
-
-  // Version&Schema-specific filling into the handler
-  @Override public Typeahead fillImpl(Typeahead t) {
-    limit = limit <=0 ? 1000 : limit;
-    super.fillImpl(t);
-    return t;
-  }
 }

@@ -1,4 +1,6 @@
 package water.api;
 
-public final class DocsV1 extends DocsBase<DocsHandler.DocsPojo, DocsV1> {
+import water.Iced;
+
+public final class DocsV1 extends DocsBase<Iced, DocsV1> {
 }
