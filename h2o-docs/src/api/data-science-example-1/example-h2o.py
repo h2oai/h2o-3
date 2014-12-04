@@ -3,10 +3,11 @@
 from h2o import H2OFrame
 import h2o as h2o
 
-df = H2OFrame.from_csv("allyears_tiny.csv", index_col = False)
-print(df.head())
+localH2O <- h2o.init()
+air = H2OFrame.from_csv(localH2O, "allyears_tiny.csv", index_col = False)
+print(air.head())
 
-air['RandNum'] = df.random.uniform()
+air['RandNum'] = air.random.uniform()
 print(air.head())
 
 air_train = air.ix[air['RandNum'] <= 0.8]
