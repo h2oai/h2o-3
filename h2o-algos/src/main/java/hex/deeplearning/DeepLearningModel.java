@@ -1399,6 +1399,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (m.length() > 0) Log.info(m);
           final Frame trainPredict = score(ftrain);
           trainPredict.delete();
+          hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
+          err.trainAUC = mm1._aucdata;
+          err.train_confusion_matrix = mm1._cm;
+          err.train_hitratio = mm1._hr;
+          err.train_mse = mm1._mse;
+          hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
+          err.validAUC = mm1._aucdata;
+          err.valid_confusion_matrix = mm1._cm;
+          err.valid_hitratio = mm1._hr;
+          err.valid_mse = mm1._mse;
 
           if (get_params()._variable_importances) {
             if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
@@ -1570,7 +1580,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
       preds[0] = ModelUtils.getPrediction(preds, data);
     } else {
-      assert (preds.length == 1 && out.length == 1);
       if (model_info().data_info()._normRespMul != null)
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
