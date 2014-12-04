@@ -61,20 +61,24 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     // multiple makeZero calls to create empty vecs and than call RebalanceTask
     // on each one of them.  RebalanceTask will fetch the appropriate training_frame
     // chunks and fetch the data from them.
-    int rpc = (int)(_in.numRows() / _nchunks);
-    int rem = (int)(_in.numRows() % _nchunks);
-    long[] espc = new long[_nchunks+1];
-    Arrays.fill(espc,rpc);
-    for( int i = 0; i < rem; ++i ) ++espc[i];
-    long sum = 0;
-    for( int i = 0; i < espc.length; ++i ) {
-      long s = espc[i];
-      espc[i] = sum;
-      sum += s;
+    long[] espc;
+    if (_espc != null) espc = _espc;
+    else {
+      int rpc = (int) (_in.numRows() / _nchunks);
+      int rem = (int) (_in.numRows() % _nchunks);
+      espc = new long[_nchunks + 1];
+      Arrays.fill(espc, rpc);
+      for (int i = 0; i < rem; ++i) ++espc[i];
+      long sum = 0;
+      for (int i = 0; i < espc.length; ++i) {
+        long s = espc[i];
+        espc[i] = sum;
+        sum += s;
+      }
+      assert espc[espc.length - 1] == _in.numRows() : "unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length - 1];
     }
-    assert espc[espc.length-1] == _in.numRows():"unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length-1];
     final Vec[] srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(Vec.newKey(),espc).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
+    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),espc).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
     new RebalanceTask(this,srcVecs).asyncExec(_out);
   }
