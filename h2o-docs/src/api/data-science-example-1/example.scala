@@ -3,7 +3,7 @@
 //
 
 // Shortcut for local files
-val air = new DataFrame(H2OFiles.get("allyears2k_headers.csv.gz"))
+val air = new DataFrame(H2OFiles.get("allyears_tiny.csv"))
 // Generic form to any datasource in form ''<schema>://location' :
 // URI dataSourceURI = new java.net.URI("hdfs://mr-0xd6")
 //
