@@ -651,7 +651,7 @@ public class NewChunk extends Chunk {
   // Study this NewVector and determine an appropriate compression scheme.
   // Return the data so compressed.
 
-  Chunk compress() {
+  public Chunk compress() {
     Chunk res = compress2();
     // force everything to null after compress to free up the memory
     _id = null;

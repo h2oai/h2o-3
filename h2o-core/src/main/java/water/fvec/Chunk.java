@@ -110,7 +110,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 
 public abstract class Chunk extends Iced implements Cloneable {
   /** Global starting row for this local Chunk; a read-only field. */
-  long _start = -1;
+  transient long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
 
@@ -128,17 +128,17 @@ public abstract class Chunk extends Iced implements Cloneable {
    *    ...chunk.at0(row)...
    *  </pre>
    **/
-  public int _len;
+  public transient int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
   int set_len(int len) { return _len = len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
-  private Chunk _chk2;
+  private transient Chunk _chk2;
   /** Exposed for internal testing only.  Not a publically visible API. */
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  Vec _vec;
+  transient Vec _vec;
   /** Owning Vec */
   public Vec vec() { return _vec; }
 
