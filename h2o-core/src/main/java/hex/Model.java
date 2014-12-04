@@ -55,6 +55,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
 
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols(); }
 
@@ -326,7 +331,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Vec mresp = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = mresp.domain(); // Domain of predictions (union of test and train)
     ConfusionMatrix2 cm = ModelMetrics.getFromDKV(this,fr)._cm;
-    if( cm._arr.length < 20/*Print size limitation*/ )
+    if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
       water.util.Log.info(water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),cm._arr,mdomain,false));
 
     // Output is in the model's domain, but needs to be mapped to the scored
@@ -380,7 +385,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     BigScore( String[] domain, int ncols ) { _domain = domain; _ncols = ncols; }
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
-      double[] tmp = new double[chks.length];
+      double[] tmp = new double[_output.nfeatures()];
       _mb = new ModelMetrics.MetricBuilder(_domain,_output.nclasses()==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f});
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;

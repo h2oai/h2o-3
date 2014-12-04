@@ -4,6 +4,7 @@ import water.*;
 import water.api.ModelMetricsBase;
 import water.api.ModelMetricsV3;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.ModelUtils;
 
 /** Container to hold the metric for a model as scored on a specific frame. 
@@ -115,7 +116,8 @@ public final class ModelMetrics extends Keyed {
       return ds;                // Flow coding
     }
     public void reduce( MetricBuilder mb ) {
-      throw H2O.unimpl();
+      ArrayUtils.add(_cms,mb._cms);
+      _sumsqe += mb._sumsqe;
     }
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) { 

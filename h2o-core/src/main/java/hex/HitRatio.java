@@ -17,13 +17,13 @@ public class HitRatio extends Iced {
   public Frame actual;
   public Vec vactual; // Column of the actual results (will display vertically)
   public Frame predict;
-  private int max_k = 10; // Max. number of labels (K) to use for hit ratio computation
-  public void set_max_k(int k) { max_k = k; }
+  private int _max_k = 10; // Max. number of labels (K) to use for hit ratio computation
   private long seed = new Random().nextLong(); // Random number seed for breaking ties between equal probabilities
   private String [] actual_domain; // domain of the actual response
   private float[] hit_ratios; // Hit ratios for k=1...K
 
-  public HitRatio(Vec actuals, Frame predictions) {
+  public HitRatio(Vec actuals, Frame predictions, int max_k) {
+    _max_k = max_k;
     throw water.H2O.unimpl();
   }
 
@@ -48,13 +48,13 @@ public class HitRatio extends Iced {
 //    try {
 //      va = vactual.toEnum(); // always returns TransfVec
 //      actual_domain = va.domain();
-//      if (max_k > predict.numCols()-1) {
+//      if (_max_k > predict.numCols()-1) {
 //        Log.warn("Reducing Hitratio Top-K value to maximum value allowed: " + String.format("%,d", predict.numCols() - 1));
-//        max_k = predict.numCols() - 1;
+//        _max_k = predict.numCols() - 1;
 //      }
 //      final Frame actual_predict = new Frame(predict.names().clone(), predict.vecs().clone());
 //      actual_predict.replace(0, va); // place actual labels in first column
-//      hit_ratios = new HitRatioTask(max_k, seed).doAll(actual_predict).hit_ratios();
+//      hit_ratios = new HitRatioTask(_max_k, seed).doAll(actual_predict).hit_ratios();
 //    } finally {       // Delete adaptation vectors
 //      if (va!=null) DKV.remove(va._key);
 //    }
@@ -63,7 +63,7 @@ public class HitRatio extends Iced {
   public void toASCII( StringBuilder sb ) {
     if (hit_ratios==null) return;
     sb.append("K   Hit-ratio\n");
-    for (int k = 1; k<=max_k; ++k) sb.append(k + "   " + String.format("%.3f", hit_ratios[k-1]*100.) + "%\n");
+    for (int k = 1; k<=_max_k; ++k) sb.append(k + "   " + String.format("%.3f", hit_ratios[k-1]*100.) + "%\n");
   }
 
   /**

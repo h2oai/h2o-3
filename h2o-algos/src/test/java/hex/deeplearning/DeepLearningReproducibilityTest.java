@@ -1,19 +1,14 @@
 package hex.deeplearning;
 
+import java.util.*;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.util.Log;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +31,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
     StringBuilder sb = new StringBuilder();
     float repro_error = 0;
     for (boolean repro : new boolean[]{true, false}) {
+      Scope.enter();
       Frame[] preds = new Frame[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
@@ -110,7 +106,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // exposes bug: no work gets done on remote if frame has only 1 chunk and is homed remotely.
           for (Frame f : preds) {
             assertTrue(TestUtil.isBitIdentical(f, preds[0]));
-            throw water.H2O.unimpl(); // Check and remove bug-report comment
           }
           repro_error = repeatErrs.get(0);
         } else {
@@ -134,6 +129,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       } finally {
         for (Frame f : preds) if (f != null) f.delete();
       }
+      Scope.exit();
     }
   }
 }

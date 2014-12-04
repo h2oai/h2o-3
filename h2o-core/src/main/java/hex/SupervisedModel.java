@@ -38,6 +38,10 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  than 1.0) */
     public float _max_after_balance_size = Float.POSITIVE_INFINITY;
 
+    /** The maximum number (top K) of predictions to use for hit ratio
+     *  computation (for multi-class only, 0 to disable) */
+    public int _max_hit_ratio_k = 10;
+
     @Override public long checksum() {
       return super.checksum()^_response_column.hashCode()^(_convert_to_enum ?1:0)^(_balance_classes?1:0);
     }

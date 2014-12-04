@@ -208,8 +208,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     Frame va = _parms.valid();  // User-given validation set
-    _valid = new Frame(va);     // Pre-adapted
-    try { 
+    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+    try {
       String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
       if( expensive ) for( String s : msgs ) Log.info(s);
     } catch( IllegalArgumentException iae ) {

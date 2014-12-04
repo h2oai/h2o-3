@@ -330,18 +330,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
     public boolean _quiet_mode = false;
 
-    /**
-     * For classification models, the maximum size (in terms of classes) of the
-     * confusion matrix for it to be printed. This option is meant to avoid printing
-     * extremely large confusion matrices.
-     */
-    public int _max_confusion_matrix_size = 20;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    public int _max_hit_ratio_k = 10;
-
   /*Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via
@@ -1410,58 +1398,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           final String m = model_info().toString();
           if (m.length() > 0) Log.info(m);
           final Frame trainPredict = score(ftrain);
-          err.classification = _output.isClassifier();
-          err.num_folds = get_params()._n_folds;
-          err.train_confusion_matrix = new ConfusionMatrix2(ftrain.lastVec(),trainPredict);
-          final int hit_k = Math.min(_output.nclasses(), get_params()._max_hit_ratio_k);
-          //if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
-          //  err.train_hitratio = new HitRatio(null,null);
-          //  err.train_hitratio.set_max_k(hit_k);
-          //}
-          //AUC trainAUC = null;
-          //if (err.classification && _output.nclasses() == 2) trainAUC = new AUC(null,null);
-          //final double trainErr = calcError(ftrain, ftrain.lastVec(), trainPredict, trainPredict, "training",
-          //        printme, get_params()._max_confusion_matrix_size, err.train_confusion_matrix, trainAUC, err.train_hitratio);
-          //if (_output.isClassifier()) err.train_err = trainErr;
-          //if (trainAUC != null) err.trainAUC = trainAUC.data();
-          //else err.train_mse = trainErr;
-          //
-          //trainPredict.delete();
-          //
-          //if (err.validation) {
-          //  assert ftest != null;
-          //  err.score_validation_samples = ftest.numRows();
-          //  err.valid_confusion_matrix = new ConfusionMatrix2();
-          //  if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
-          //    err.valid_hitratio = new HitRatio(null,null);
-          //    err.valid_hitratio.set_max_k(hit_k);
-          //  }
-          //
-          //  final Frame validPredict = score(ftest);
-          //  final Frame hitratio_validPredict = new Frame(validPredict);
-          //  Vec orig_label = validPredict.vecs()[0];
-          //  AUC validAUC = null;
-          //  if (err.classification && _output.nclasses() == 2) validAUC = new AUC(null,null);
-          //  final double validErr = calcError(ftest, ftest.lastVec(), validPredict, hitratio_validPredict, "validation",
-          //          printme, get_params()._max_confusion_matrix_size, err.valid_confusion_matrix, validAUC, err.valid_hitratio);
-          //  if (_output.isClassifier()) err.valid_err = validErr;
-          //  if (trainAUC != null) err.validAUC = validAUC.data();
-          //  else err.valid_mse = validErr;
-          //  validPredict.delete();
-          //}
-          //
-          //if (get_params()._variable_importances) {
-          //  if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-          //  final float[] vi = model_info().computeVariableImportances();
-          //  err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
-          //}
-          //
-          //// only keep confusion matrices for the last step if there are fewer than specified number of output classes
-          //if( err.train_confusion_matrix._arr.length - 1 >= get_params()._max_confusion_matrix_size) {
-          //  err.train_confusion_matrix = null;
-          //  err.valid_confusion_matrix = null;
-          //}
-          throw H2O.unimpl();
+          trainPredict.delete();
+
+          if (get_params()._variable_importances) {
+            if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
+            final float[] vi = model_info().computeVariableImportances();
+            err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
+          }
         }
 
         _timeLastScoreEnd = System.currentTimeMillis();
