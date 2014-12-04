@@ -17,6 +17,7 @@ public class C0DChunk extends Chunk {
     UnsafeUtils.set8d(_mem, 0, con);
     UnsafeUtils.set4(_mem,8,len);
   }
+  @Override public boolean hasFloat() { return true; }
   @Override protected final long at8_impl( int i ) {
     if( Double.isNaN(_con) ) throw new IllegalArgumentException("at8 but value is missing");
     return (long)_con;          // Possible silent truncation

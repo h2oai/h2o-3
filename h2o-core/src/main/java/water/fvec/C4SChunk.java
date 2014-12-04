@@ -12,6 +12,7 @@ public class C4SChunk extends Chunk {
   private double _scale;
   public double scale() { return _scale; }
   private long _bias;
+  @Override public boolean hasFloat(){ return _scale != (long)_scale; }
   C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length - _OFF) >> 2);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem,0,scale);
