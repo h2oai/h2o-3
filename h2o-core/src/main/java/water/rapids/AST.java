@@ -288,8 +288,21 @@ class ASTSeries extends AST {
     int o = 0;
     for (String s : strs) {
       if (s.charAt(0) == '(') {
-        _order[o++] = 0;
-        s_spans.add((ASTSpan) (new Exec(s, null)).parse());
+        _order[o] = 0;
+        // get a non ASTSpan as next elt
+        try {
+          s_spans.add((ASTSpan) (new Exec(s, null)).parse());
+        } catch (ClassCastException e) {
+          try {
+            ASTOp anum = (ASTOp) (new Exec(s, null)).parse();
+            long n = (long)anum.treeWalk(E._env).popDbl();
+            _order[o] = 1;
+            l_idxs.add(n);
+          } catch (ClassCastException e2) {
+            throw new IllegalArgumentException("AST in sequence did not evaluate to a range or number.\n Only (: min max), #, and ASTs that evaluate to # are valid.");
+          }
+        }
+        o++;
       } else {
         _order[o++] = 1;
         if (s.charAt(0) == '#') s = s.substring(1, s.length());
