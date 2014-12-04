@@ -333,7 +333,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
-          DeepLearningModel best_model = DKV.get(model.actual_best_model_key).get();
+          DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             Log.info("Setting the model to be the best model so far (based on scoring history).");
             DeepLearningModel.DeepLearningModelInfo mi = best_model.model_info().deep_clone();

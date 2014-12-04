@@ -458,9 +458,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       boolean classification = dl.isClassifier();
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
-      for (int i=0;i<_hidden.length;++i)
-        if (_hidden[i]==0)
-          dl.error("_hidden", "Hidden layer size must be >0.");
+      for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
 
       if (_valid == null)
         dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
@@ -474,11 +472,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_balance_classes", "balance_classes is used only with classification.");
       }
 
-      if (classification && _balance_classes) {
-
-      } else {
+      if( !classification || !_balance_classes )
         dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-      }
 
       if (classification && !_balance_classes || !classification)
         dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
@@ -769,8 +764,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         return new ConfMat(lasterror.train_err, lasterror.trainAUC != null ? lasterror.trainAUC.F1() : 0);
       }
     }
-    // cm.cm has NaN padding, reduce it to N-1 size
-    return new ConfusionMatrix2(cm._arr, cm._arr.length-1);
+    return cm;
   }
 
 //  @Override
@@ -1381,6 +1375,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         err.training_samples = model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
+        err.classification = _output.isClassifier();
 
         if (get_params()._autoencoder) {
           if (printme) Log.info("Scoring the auto-encoder.");

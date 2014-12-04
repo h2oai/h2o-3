@@ -72,7 +72,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.get(p._destination_key).get();
+          mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
           repeatErrs.put(repeat, mymodel.error());
 
