@@ -25,7 +25,7 @@ abstract class FileVec extends ByteVec {
   // Convert a row# to a chunk#.  For constant-sized chunks this is a little
   // shift-and-add math.  For variable-sized chunks this is a binary search,
   // with a sane API (JDK has an insane API).
-  @Override public int elem2ChunkIdx( long i ) {
+  @Override int elem2ChunkIdx( long i ) {
     assert 0 <= i && i <= _len : " "+i+" < "+_len;
     int cidx = (int)(i>>LOG_CHK);
     int nc = nChunks();
