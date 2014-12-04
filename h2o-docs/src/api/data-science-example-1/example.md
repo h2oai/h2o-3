@@ -6,11 +6,11 @@
 
 ## Scripts
 
-* [Native R](file:example-native.R)
-* [Native Python](file:example-native.py)
-* [H2O R](file:example-h2o.R)
-* [H2O Python](file:example-h2o.py)
-* [Java](file:example.java)
-* [Scala](file:example.scala)
+* [Native R](example-native.R)
+* [Native Python](example-native.py)
+* [H2O R](example-h2o.R)
+* [H2O Python](example-h2o.py)
+* [Java](example.java)
+* [Scala](example.scala)
 * [Flow UI](example-flow.md)
-* [Flow JSON](file:example-flow.json)
+* [Flow JSON](example-flow.json)
