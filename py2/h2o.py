@@ -15,6 +15,7 @@ def cloud_name():
 
 def init(*args, **kwargs):
     global nodes, n0
+    unit_main()
     nodes = h2o_bc.init(*args, **kwargs)
     # use to save typing?
     n0 = nodes[0]
