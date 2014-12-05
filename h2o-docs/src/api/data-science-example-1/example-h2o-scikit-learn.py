@@ -16,7 +16,7 @@ X_air_train, X_air_valid, X_air_test, y_air_train, y_air_valid, y_air_test = \
 my_gbm = H2OModel.GBM(distribution = "multinomial", n_trees = 10,
                       interaction_depth = 3, shrinkage = 0.01,
                       importance = True)
-air_gbm = my_gbm.fit_valid(X_air_train, y_air_train, X_air_valid, y_air_valid)
+air_gbm = my_gbm.fit(x=X_air_train, y=y_air_train, x_valid=X_air_valid, y_valid=y_air_valid)
 air_gbm.print()
 
 pred = air_gbm.predict(X_air_test)
