@@ -157,12 +157,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   /** Register the given schema class. */
   public static void register(Class<? extends Schema> clz) {
     if (extractVersion(clz.getSimpleName()) > -1) {
+      Schema s = null;
       try {
-        clz.newInstance();
+        s = clz.newInstance();
       } catch (Exception e) {
         Log.err("Failed to instantiate schema class: " + clz);
       }
-      Log.debug("Instantiated: " + clz.getSimpleName());
+      if (null != s) {
+        Log.debug("Instantiated: " + clz.getSimpleName());
+
+        // Validate the fields:
+        SchemaMetadata ignoreme = new SchemaMetadata(s);
+      }
     }
   }
 

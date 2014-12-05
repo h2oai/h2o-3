@@ -145,7 +145,7 @@ public class Weaver {
     icer_cc.setModifiers(javassist.Modifier.PUBLIC);
 
     // Overall debug printing?
-    if (true) {
+    if (false) {
       System.out.println("Iced class " + icer_cc.getName() + " is number: " + id);
     }
 
