@@ -326,7 +326,9 @@ a_node = h2o.H2O(host, port)
 #########
 # Config:
 algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
-algo_additional_default_params = { 'grep' : { 'regex' : '.*' }} # additional params to add to the default params
+algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
+                                   'kmeans' : { 'K' : 2 }
+                                 } # additional params to add to the default params
 clean_up_after = False
 
 h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
