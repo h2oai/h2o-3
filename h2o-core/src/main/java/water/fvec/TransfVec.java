@@ -55,7 +55,7 @@ public class TransfVec extends WrappedVec {
    *  somewhat with the 'to' domain).
    *
    *  <p> Example: from={"Blue","Red","Green"}, to={"Green","Yellow","Blue"}.<br>
-   *  "Yellow" does not appear in the 'from' domain; "Red" does not appeaar in the 'to' domain.<br>
+   *  "Yellow" does not appear in the 'from' domain; "Red" does not appear in the 'to' domain.<br>
    *  Returned map is {2,3,0}.<br>
    *  Map length matches the 'from' domain length.<br>
    *  Largest value is 3, so the domain is size 4.<br>

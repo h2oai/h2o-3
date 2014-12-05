@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GBMTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
 
