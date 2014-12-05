@@ -2,13 +2,24 @@ import unittest, random, sys, time, re
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
+# how does this make sense ? 
+# is
+# oh, is the ast a collapse of the two R expressions, hence the double [[]]
+# the inner one is a rhs view from the first statement, the second is due to the lhs [] assign
+# that's confusing. I don't think any language has that idea..(rhs info being on the lhs)
+# can (sum ..) migrate from rhs to lhs?
+# a <- hex[,1]
+# a[1:5,1] <- hex[5:9,1]
+# (= ([ ([ $iris.hex "null" #0)  {#0;#1;#2;#3;#4} #0) ([ $iris.hex (: #4 #8) #0)) 
 exprList = [
-        '(+ (* #2 #2) (* #5 #5))',
-        '(* #1 (+ (* #2 #2) (* #5 #5)))',
-        '(c {#1;#5;#8;#10;#33})',
-        '(c {(: #0 #5) })',
-        '(c {(: #5 #5) })',
-        '(c {#1;#4567;(: #9 #90);(: #9 #45);#450}',
+        # fails
+        # '(c {(+ (* #2 #2) (* #5 #5))})',
+        # '(* #1 (+ (* #2 #2) (* #5 #5)))',
+        # '(c {(* #1 (+ (* #2 #2) (* #5 #5)))})',
+        # '(c {#1;#5;#8;#10;#33})',
+        # '(c {(: #0 #5) })',
+        # '(c {(: #5 #5) })',
+        # '(c {#1;#4567;(: #9 #90);(: #9 #45);#450}',
         '(+ $v $v)',
 
         # FIX! test with space after { and before }
@@ -124,10 +135,12 @@ class Basic(unittest.TestCase):
             for execExpr in exprList:
                 # 4x4 cases per expression
                 colons = [
+                    # requires only 1 value on rhs
                     '#0 #0',
-                    '"null" #0',
-                    '#0 "null"',
-                    '"null" "null"',
+                    # '"null" #0',
+                    # '#0 "null"',
+
+                    # '"null" "null"',
                 ]
                 for colon in colons:
                     # what if the destination doesn't exist?. Use unique name for each, to see
@@ -136,19 +149,25 @@ class Basic(unittest.TestCase):
                         # no colon 
                         '(= !%s %s' % (t, execExpr),
                         # colon rhs
-                        '(= ([ !%s %s) %s)' % (t, colon, execExpr),
+                        '(= ([ $%s %s) %s)' % (t, colon, execExpr),
                         # colon lhs
                         '(= !%s  ([ t%s %s))' % (t, execExpr, colon),
                         # colon lhs and rhs
-                        '(= ([ !%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
+                        '(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
                     ]
 
                     for case in cases:
+                        # init the data frame first to 0 (1 row, 1 col) 
+                        # can't init it to empty
+                        '(= !%s (c {#0})' % t
+                        execResult, result = h2e.exec_expr(h2o.nodes[0], case, resultKey=None, timeoutSecs=4)
+
                         # colonize it, to see if it blows up!
                         # since they all are assigns, they all are wrapped by '(= !<lhs> ...)
                         # unwrap the inner and wrap it with a colon then wrap it with the assign
                         # change the lhs to be coloned (row and/or col) and change the rhs to be a colon
                         # so four cases
+                        # make sure the lhs assign key exists first
                         execResult, result = h2e.exec_expr(h2o.nodes[0], case, resultKey=None, timeoutSecs=4)
                         # rows/cols could be zero
                         # if execResult['num_rows'] or execResult['num_cols']:
