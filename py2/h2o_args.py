@@ -1,5 +1,5 @@
 
-import getpass, inspect, sys, argparse, unittest
+import getpass, inspect, sys, argparse, unittest, os
 from h2o_get_ip import get_ip_address
 
 # print "h2o_args"
@@ -158,7 +158,20 @@ def parse_our_args():
 
     debug_rest = args.debug_rest
     long_test_case = args.long_test_case
+
+    # Take usecloud from the command line and from the environment.
+    # Environment USECLOUD=1 is equivalent to USECLOUD=localhost:54321
     usecloud = args.usecloud
+    if usecloud is None:
+        usecloud = os.getenv('USECLOUD')
+    if usecloud is None:
+        usecloud = os.getenv('USE_CLOUD')
+    if usecloud is not None:
+        if usecloud == "1":
+            usecloud = "localhost:54321"
+        if usecloud == "true":
+            usecloud = "localhost:54321"
+
     usecloud_size = args.usecloud_size
 
     # Set sys.argv to the unittest args (leav sys.argv[0] as is)
@@ -168,8 +181,33 @@ def parse_our_args():
     sys.argv[1:] = ['-v', "--failfast"] + args.unittest_args
     # sys.argv[1:] = args.unittest_args
 
+
+#
+# unit_main can be called in two different ways.
+# One way is from the main program in the command-line.
+# The second way is from the test class setUpClass() method (this how IDEA/PyCharm calls the test).
+#
+# We want to make sure that in the IDE case that unit_main() is only executed once.
+#
+g_unit_main_already_called = False
+
 def unit_main():
-    # print "unit_main"
+    global g_unit_main_already_called
+    if g_unit_main_already_called:
+        return
+    g_unit_main_already_called = True
+
+    unittest_already_called = False
+    if True:
+        import traceback
+        frames = traceback.extract_stack()
+        if "pydevd.py" in frames[0][0]:
+            unittest_already_called = True
+        for frame in frames:
+            print(frame[0])
+            if "utrunner.py" in frame[0]:
+                unittest_already_called = True
+
     parse_our_args()
     global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
     # if I remember correctly there was an issue with using sys.argv[0]
@@ -185,4 +223,5 @@ def unit_main():
     # if test was run with nosetests, it wouldn't execute unit_main() so we won't see this
     # so this is correct, for stuff run with 'python ..."
     print "\nunit_main. Test: %s    command line: %s" % (python_test_name, python_cmd_line)
-    unittest.main()
+    if not unittest_already_called:
+        unittest.main()

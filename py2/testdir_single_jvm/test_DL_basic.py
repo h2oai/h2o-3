@@ -11,8 +11,8 @@ class Basic(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         global SEED
+        h2o.unit_main()
         SEED = h2o.setup_random_seed()
-
         h2o.init(1)
 
     @classmethod
