@@ -1,4 +1,71 @@
 
+# thinking about lhs
+([ $a "null" "null" ])
+
+on lhs means write to the whole frame
+
+
+!a
+
+on lhs means write to the whole frame too
+
+so !a is shorthand for the top line.
+
+I should be able to replace all my !a assigns with the top lhs.
+
+Oh: but the top case requires a to exist
+the bottom doesn't
+
+
+# on figuring out when ! is needed:
+On 12/04/2014 01:48 AM, Kevin wrote:
+>
+> (= ([ (+ #5 ([ $iris.hex "null" #0))  {#0;#1;#2;#3;#4} #0) ([ $iris.hex (: #4 #8) #0))
+the mind boggling thing is there is no ! in your lhs above
+
+if ! is not needed above then it's odd that it's ever needed
+
+I guess it's only needed if there is no indexing? 
+
+ya that's the case,
+
+! only needed if I'm setting into some named thing
+
+= !asdjfhalsjdf (...)
+
+if Rapids sees:
+
+(=  (...) (...) )
+
+then the first (...) is either:
+
+case 1: !sadfhaas
+
+OR
+
+case 2: ([ (...))
+
+
+(...) == http://www.nasuni.com/writable/images/Blog_Images/turtles-1-1-1.jpg
+----------------
+
+On 12/04/2014 01:48 AM, Kevin wrote:
+> (= ([ (+ #5 ([ $iris.hex "null" #0))  {#0;#1;#2;#3;#4} #0) ([ $iris.hex (: #4 #8) #0))
+the mind boggling thing is there is no ! in your lhs above
+
+if ! is not needed above then it's odd that it's ever needed
+----------------
+
+I guess it's only needed if there is no indexing?
+using [0] to write to a col or row in a frame on lhs
+can only be used if the key exists. col or row may not exist, if next N+1th row/col
+
+
+----------------
+
+using [0] to write to a col or row in a frame on lhs
+can only be used if the key exists. col or row may not exist, if next N+1th row/col
+----------------
 Exec is an interpreter of abstract syntax trees.
 
 Trees have a Lisp-like structure with the following "reserved" special characters:

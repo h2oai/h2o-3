@@ -112,30 +112,42 @@ class Basic(unittest.TestCase):
                 assert numRows==313
                 assert numCols==1
             
+                print "z1" 
                 result = Assign(result_key, Frame(data_key, row=Seq(range(1, 5))) ).do()
+                print "z2" 
                 result = Assign('s1', Frame(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) ).do()
 
+                print "z3" 
                 result = Assign(result_key, Frame(data_key, row='#1')).do
+                print "z4" 
                 result = Assign(result_key, Frame(data_key, row=Colon('#1', '#100'))).do()
+                print "z5" 
                 result = Assign(result_key, Frame(data_key, row=Colon(1, 100))).do()
                 # this should fail rapids because of reverse msb/lsb
                 # illegal, detected
                 # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#100', '#1')))
+                print "z6" 
                 result = Assign(result_key, Frame(data_key, row=Colon('#-2', '#-1'))).do()
+                print "z7" 
                 result = Assign(result_key, Frame(data_key, row=Colon(-2, -1))).do()
                 # illegal, detected
                 # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
+                print "z8" 
                 result = Assign(result_key, Frame(data_key, row=Colon('#1', rowCount-10))).do()
+                print "z9" 
                 result = Assign(result_key, Frame(data_key, col=Colon('#1', colCount-1, ))).do()
 
                 # no assign
+                print "z10" 
                 result = Frame(data_key, row=Colon('#1', rowCount-10)).do()
-                result = Frame(data_key, col=Colon('#1', colCount-1,)).do()
+                print "z11" 
+                # result = Frame(data_key, col=Colon('#1', colCount-1,)).do()
 
 
                 # do some function translation
-                result = Fcn('==', 1, Frame(data_key, col=Colon('#1', colCount-1,))).do()
+                print "z12" 
+                # result = Fcn('==', 1, Frame(data_key, col=Colon('#1', colCount-1,))).do()
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \
