@@ -24,11 +24,12 @@ val airS = air ++ ('S, Vec.runif(air)) // Append vector at the end of frame to b
 // 
 //            Frame  Oper ColSelect (and output spec)   FUNC
 //              |     |     |                             |
-val airTrain = air filter ('S)                 { (s:Double) => s <= 0.8} 
-val airValid = air filter ('S)                 { (s:Double) => s > 0.8 && s <= 0.9}
-val airTest  = air filter ('S)                 { (s:Double) => s > 0.9 }
+val airTrain = airS filter ('S)                 { (s:Double) => s <= 0.8} 
+val airValid = airS filter ('S)                 { (s:Double) => s > 0.8 && s <= 0.9}
+val airTest  = airS filter ('S)                 { (s:Double) => s > 0.9 }
 
 // Create Parameters for run
+
 val gbmParams = new GBMParameters()
 // Column selector
 gbmParams._train = airTrain('Origin, 'Dest, 'Distance, 'UniqueCarrier, 'Month, 'DayofMonth, 'DayOfWeek)
@@ -38,14 +39,17 @@ gbmParams._distribution = Distributions.MULTINOMIAL // enum
 gbmParams._interaction_depth = 3
 gbmParams._shrinkage = 0.01
 gbmParams._importance = true
-
+gbmParams._cv = new CVParams(nfold=3, seed=42)
 // Create builder
 val gbm = new GBM(gbmParams)
 // Invoke builder and get a model
-val gbmModel = gbm.trainModel.get
+val gbmModel = gbm.fit
 
 // 
 // Make a prediction
 //  - use API call and select the right column with prediction
-val pred = gbmModel.score()('predict)
+//val rawAirData = sc.textFile(SparkFiles.get("allyears_tiny.csv"), /* # partitions */ 3)
+// Produce RDD[Flight], Flight is POJO
+//val airRDD /*:RDD[Flight] */ = rawAirData....
+val pred = gbmModel.score(airRDD)
 

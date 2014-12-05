@@ -6,13 +6,17 @@ val air /*:RDD[Flight] */ = rawAirData
                     .map(row => AirParser(row))
                     .filter(!_.isWrongRow()) // <- optional step
 
-// Note: this is not correct, since MLLib algos expects RDD[LabeledPoint]
+// Note: this is not correct, since MLLib algos expects 
+// ---> RDD[LabeledPoint], RDD[Vector], SchemaRDD <: RDD[Row]
+//
 
-val ( airTrain, airValid, airTest) = air.randomSplit(Array(0.8,0.1,0.1))
+val ( airTrain, airValid, airTest) = air.randomSplit(Array(0.8,0.1,0.1),
+  seed=42)
 
 val treeStrategy = new Strategy(
                     algo = Classification, 
                     impurity = Variance, 
+                    ntree = 10,
                     maxDepth = 3,
                     numClassesForClassification = 2, 
                     categoricalFeaturesInfo = Map.empty,

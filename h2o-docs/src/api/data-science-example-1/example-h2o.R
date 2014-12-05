@@ -13,7 +13,7 @@ myY = "IsDepDelayed"
 air.gbm = h2o.gbm(x = myX, y = myY, data = air.train, validation = air.valid,
                   distribution = "multinomial",
                   n.trees = 10, interaction.depth = 3, shrinkage = 0.01,
-                  importance = T)
+                  importance = T, cv=list(nfold=4, seed=42))
 print(air.gbm@model)
 
 pred = h2o.predict(air.gbm, air.test)
