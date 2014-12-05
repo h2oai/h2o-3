@@ -15,6 +15,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
 
+  @Override public boolean isSupervised() { return true; }
+
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
    *  cached convenience fields.  */

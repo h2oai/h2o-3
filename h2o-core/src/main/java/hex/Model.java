@@ -27,6 +27,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Clustering
   }
 
+  public boolean isSupervised() { return false; }
+
   /** Model-specific parameter class.  Each model sub-class contains an
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
@@ -178,7 +180,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               ModelCategory.Regression);
     }
 
-    // Needs to be Atomic update, not just synchronized
+    // TODO: Needs to be Atomic update, not just synchronized
     protected synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
       for( int i=0; i<_model_metrics.length; i++ ) // Dup removal
         if( _model_metrics[i]==mm._key ) return mm;

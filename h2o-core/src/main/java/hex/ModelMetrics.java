@@ -17,6 +17,7 @@ import water.util.ModelUtils;
 public final class ModelMetrics extends Keyed {
   final Key _modelKey;
   final Key _frameKey;
+  final Model.ModelCategory _model_category;
   final long _model_checksum;
   final long _frame_checksum;
   transient Model _model;
@@ -36,6 +37,7 @@ public final class ModelMetrics extends Keyed {
     super(buildKey(model, frame));
     _modelKey = model._key;
     _frameKey = frame._key;
+    _model_category = model._output.getModelCategory();
     _model = model;
     _frame = frame;
     _model_checksum = model.checksum();
