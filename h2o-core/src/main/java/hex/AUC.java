@@ -33,74 +33,54 @@ public class AUC extends Iced {
   AUCData aucdata;
   public AUCData data() { return aucdata; }
 
-  public AUC() {}
-
-  /**
-   * Constructor for algos that make their own CMs
-   * @param cms ConfusionMatrices
-   * @param thresh Thresholds
-   */
-  public AUC(ConfusionMatrix2[] cms, float[] thresh) {
-    this(cms, thresh, null);
+  public AUC(Vec actuals, Frame predictions) {
+    throw water.H2O.unimpl();
   }
-  /**
-   * Constructor for algos that make their own CMs
-   * @param cms ConfusionMatrices
-   * @param thresh Thresholds
-   * @param domain Domain
-   */
+
+  /** Constructor for algos that make their own CMs
+   *  @param cms ConfusionMatrices
+   *  @param thresh Thresholds
+   *  @param domain Domain  */
   public AUC(ConfusionMatrix2[] cms, float[] thresh, String[] domain) {
     aucdata = new AUCData().compute(cms, thresh, domain, threshold_criterion);
   }
 
-  private void init() throws IllegalArgumentException {
-    // Input handling
-    if( vactual==null || vpredict==null )
-      throw new IllegalArgumentException("Missing vactual or vpredict!");
-    if (vactual.length() != vpredict.length())
-      throw new IllegalArgumentException("Both arguments must have the same length ("+vactual.length()+"!="+vpredict.length()+")!");
-    if (!vactual.isInt())
-      throw new IllegalArgumentException("Actual column must be integer class labels!");
-    if (vactual.cardinality() != -1 && vactual.cardinality() != 2)
-      throw new IllegalArgumentException("Actual column must contain binary class labels, but found cardinality " + vactual.cardinality() + "!");
-    if (vpredict.isEnum())
-      throw new IllegalArgumentException("vpredict cannot be class labels, expect probabilities.");
-  }
-
-  public void execImpl() {
-    init();
-    Vec va = null, vp;
-    try {
-      va = vactual.toEnum(); // always returns TransfVec
-      vp = vpredict;
-      // The vectors are from different groups => align them, but properly delete it after computation
-      if (!va.group().equals(vp.group())) {
-        vp = va.align(vp);
-      }
-      // compute thresholds, if not user-given
-      if (thresholds != null) {
-        sort(thresholds);
-        if (ArrayUtils.minValue(thresholds) < 0) throw new IllegalArgumentException("Minimum threshold cannot be negative.");
-        if (ArrayUtils.maxValue(thresholds) > 1) throw new IllegalArgumentException("Maximum threshold cannot be greater than 1.");
-      } else {
-        HashSet hs = new HashSet();
-        final int bins = (int)Math.min(vpredict.length(), 200l);
-        final long stride = Math.max(vpredict.length() / bins, 1);
-        for( int i=0; i<bins; ++i) hs.add(new Float(vpredict.at(i*stride))); //data-driven thresholds TODO: use percentiles (from Summary2?)
-        for (int i=0;i<51;++i) hs.add(new Float(i/50.)); //always add 0.02-spaced thresholds from 0 to 1
-
-        // created sorted vector of unique thresholds
-        thresholds = new float[hs.size()];
-        int i=0;
-        for (Object h : hs) {thresholds[i++] = (Float)h; }
-        sort(thresholds);
-      }
-      // compute CMs
-      aucdata = new AUCData().compute(new AUCTask(thresholds,va.mean()).doAll(va,vp).getCMs(), thresholds, va.domain(), threshold_criterion);
-    } finally {       // Delete adaptation vectors
-      if (va!=null) va.remove();
-    }
-  }
+  // CNC - cool code here for merging unifed user & default thresholds - only
+  // useful if the AUC comes from a GUI request with non-default thresholds.
+//  public void execImpl() {
+//    init();
+//    Vec va = null, vp;
+//    try {
+//      va = vactual.toEnum(); // always returns TransfVec
+//      vp = vpredict;
+//      // The vectors are from different groups => align them, but properly delete it after computation
+//      if (!va.group().equals(vp.group())) {
+//        vp = va.align(vp);
+//      }
+//      // compute thresholds, if not user-given
+//      if (thresholds != null) {
+//        sort(thresholds);
+//        if (ArrayUtils.minValue(thresholds) < 0) throw new IllegalArgumentException("Minimum threshold cannot be negative.");
+//        if (ArrayUtils.maxValue(thresholds) > 1) throw new IllegalArgumentException("Maximum threshold cannot be greater than 1.");
+//      } else {
+//        HashSet hs = new HashSet();
+//        final int bins = (int)Math.min(vpredict.length(), 200l);
+//        final long stride = Math.max(vpredict.length() / bins, 1);
+//        for( int i=0; i<bins; ++i) hs.add(new Float(vpredict.at(i*stride))); //data-driven thresholds TODO: use percentiles (from Summary2?)
+//        for (int i=0;i<51;++i) hs.add(new Float(i/50.)); //always add 0.02-spaced thresholds from 0 to 1
+//
+//        // created sorted vector of unique thresholds
+//        thresholds = new float[hs.size()];
+//        int i=0;
+//        for (Object h : hs) {thresholds[i++] = (Float)h; }
+//        sort(thresholds);
+//      }
+//      // compute CMs
+//      aucdata = new AUCData().compute(new AUCTask(thresholds,va.mean()).doAll(va,vp).getCMs(), thresholds, va.domain(), threshold_criterion);
+//    } finally {       // Delete adaptation vectors
+//      if (va!=null) va.remove();
+//    }
+//  }
 
   /* return true if a is better than b with respect to criterion criter */
   static boolean isBetter(ConfusionMatrix2 a, ConfusionMatrix2 b, ThresholdCriterion criter) {
@@ -187,9 +167,6 @@ public class AUC extends Iced {
       }
       nullDev += other.nullDev;
       resDev  += other.resDev;
-    }
-
-    @Override public void postGlobal(){
     }
   }
 }

@@ -124,8 +124,8 @@ public class PrettyPrint {
     return ss;
   }
 
-  public static void printConfusionMatrix(StringBuilder sb, long[][] cm, String[] domain, boolean html) {
-    if (cm == null || domain == null) return;
+  public static StringBuilder printConfusionMatrix(StringBuilder sb, long[][] cm, String[] domain, boolean html) {
+    if (cm == null || domain == null) return sb;
     for (int i=0; i<cm.length; ++i) assert(cm.length == cm[i].length);
 //    if (html) DocGen.HTML.arrayHead(sb);
     // Sum up predicted & actuals
@@ -226,5 +226,6 @@ public class PrettyPrint {
     } else {
       sb.append("   " + String.format("%.05f = %,d / %,d\n", (float)terr/nrows, terr, nrows));
     }
+    return sb;                  // For flow-coding
   }
 }

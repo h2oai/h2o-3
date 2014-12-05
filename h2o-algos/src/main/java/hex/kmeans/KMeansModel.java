@@ -38,11 +38,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
     public KMeansOutput( KMeans b ) { super(b); }
 
-    /** Override because base class implements ncols-1 for features with the
-     *  last column as a response variable; for KMeans all the columns are
-     *  features. */
-    @Override public int nfeatures() { return _names.length; }
-
     @Override public ModelCategory getModelCategory() {
       return Model.ModelCategory.Clustering;
     }
@@ -50,10 +45,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
   public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
 
-  @Override
-  public boolean isSupervised() {return false;}
-
-  // Default publically visible Schema is V2
+  // Default publicly visible Schema is V2
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {

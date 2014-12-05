@@ -181,7 +181,7 @@ public class Vec extends Keyed {
   /** Set the Enum/factor/categorical names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  public final void setDomain(String[] domain) { _domain = domain; }
+  public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_ENUM; }
   /** Returns cardinality for enum domain or -1 for other types. */
   public final int cardinality() { return isEnum() ? _domain.length : -1; }
 
@@ -212,10 +212,10 @@ public class Vec extends Keyed {
    *  not vice-versa.
    *  @return true if this is a time column.  */
   public final boolean isTime   (){ return _type>=T_TIME && _type<T_TIMELAST; }
-  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
+//  final byte timeMode(){ assert isTime(); return (byte)(_type-T_TIME); }
   /** Time formatting string.
    *  @return Time formatting string */
-  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
+//  public final String timeParse(){ return ParseTime.TIME_PARSE[timeMode()]; }
 
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
@@ -322,9 +322,7 @@ public class Vec extends Keyed {
         DKV.put(v.chunkKey(c.cidx()),c2,_fs);
       }
     }.doAll(this);
-    Futures fs= new Futures();
-    DKV.put(v._key,v, fs);
-    fs.blockForPending();
+    DKV.put(v._key,v);
     return v;
   }
 
@@ -343,20 +341,6 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public static Vec makeVec(int [] vals, String [] domain,  Key vecKey){
-    long [] espc = new long[2];
-    espc[1] = vals.length;
-    Vec v = new Vec(vecKey,espc);
-    v._domain = domain;
-    NewChunk nc = new NewChunk(v,0);
-    Futures fs = new Futures();
-    for(int i:vals)
-      nc.addNum(i,0);
-    nc.close(fs);
-    DKV.put(v._key,v,fs);
-    fs.blockForPending();
-    return v;
-  }
   public static Vec makeVec(double [] vals, Key vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
@@ -365,19 +349,6 @@ public class Vec extends Keyed {
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
-    nc.close(fs);
-    DKV.put(v._key,v,fs);
-    fs.blockForPending();
-    return v;
-  }
-  public static Vec makeVec(long [] ms, int [] es, Key vecKey){
-    long [] espc = new long[2];
-    espc[1] = ms.length;
-    Vec v = new Vec(vecKey,espc);
-    NewChunk nc = new NewChunk(v,0);
-    Futures fs = new Futures();
-    for(int i = 0; i < ms.length; ++i)
-      nc.addNum(ms[i],es[i]);
     nc.close(fs);
     DKV.put(v._key,v,fs);
     fs.blockForPending();
@@ -407,12 +378,6 @@ public class Vec extends Keyed {
   }
 
   
-  /** Make a collection of new vectors with the same size and data layout as
-   *  the current one, and initialized to zero.
-   *  @return A collection of new vectors with the same size and data layout as
-   *  the current one, and initialized to zero.  */
-  public Vec[] makeZeros(int n) { return makeCons(n,0L,null,null); }
-
   // Make a bunch of compatible zero Vectors
   Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
@@ -566,10 +531,6 @@ public class Vec extends Keyed {
    *
    */
   public void startRollupStats(Futures fs, boolean doHisto) { RollupStats.start(this,fs,doHisto); }
-
-  private long _last_write_timestamp = System.currentTimeMillis();
-  private long _checksum_timestamp = -1;
-  private long _checksum = 0;
 
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
@@ -922,65 +883,30 @@ public class Vec extends Keyed {
    *  Transformation is done by a {@link TransfVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new Enum Vec  */
-  public Vec toEnum() {
-    if( isEnum() ) return makeIdentityTransf(); // Make an identity transformation of this vector
+  public TransfVec toEnum() {
+    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    // Right now, limited to small dense integers.
+    if( min() < 0 || max() > 1000000 ) 
+      throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
     long[] domain= new CollectDomain().doAll(this).domain();
     if( domain.length > Enum.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Enum.MAX_ENUM_SIZE);
-    return this.makeSimpleTransf(domain, ArrayUtils.toString(domain));
+    return adaptTo(ArrayUtils.toString(domain));
   }
 
-  /** Create a vector transforming values according given domain map.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @see Vec#makeTransf(int[], int[], String[])  */
-  public Vec makeTransf(final int[][] map, String[] finalDomain) { return makeTransf(map[0], map[1], finalDomain); }
-
-  /** Creates a new transformation from given values to given indexes of given domain.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @param values values being mapped from
-   *  @param indexes values being mapped to
-   *  @param domain domain of new vector
-   *  @return always return a new vector which maps given values into a new domain
-   */
-  public Vec makeTransf(final int[] values, final int[] indexes, final String[] domain) {
-    if( _espc == null ) throw H2O.unimpl();
-    Vec v0 = new TransfVec(values, indexes, domain, this._key, group().addVec(),_espc);
-    DKV.put(v0._key,v0);
-    return v0;
-  }
-
-  /** Makes a new transformation vector with identity mapping.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @return a new transformation vector
-   *  @see Vec#makeTransf(int[], int[], String[])
-   */
-  private Vec makeIdentityTransf() {
-    assert _domain != null : "Cannot make an identity transformation of non-enum vector!";
-    return makeTransf(ArrayUtils.seq(0, _domain.length), null, _domain);
-  }
-
-  /** Makes a new transformation vector from given values to values 0..domain size
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
-   *  between values - without copying the underlying data.
-   *  @param values values which are mapped from
-   *  @param domain target domain which is mapped to
-   *  @return a new transformation vector providing mapping between given values and target domain.
-   *  @see Vec#makeTransf(int[], int[], String[])
-   */
-  public Vec makeSimpleTransf(long[] values, String[] domain) {
-    int is[] = new int[values.length];
-    for( int i=0; i<values.length; i++ ) is[i] = (int)values[i];
-    return makeTransf(is, null, domain);
+  /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted
+   *  TransfVec has 'this' as it's masterVec, but returns results in the 'to'
+   *  domain (or just past it, if 'this' has elements not appearing in the 'to'
+   *  domain). */
+  public TransfVec adaptTo( String[] domain ) {
+    return new TransfVec(group().addVec(),_espc,domain,this._key);
   }
 
   /** This Vec does not have dependent hidden Vec it uses.
    *  @see TransfVec
    *  @return dependent hidden vector or <code>null</code>  */
-  Vec masterVec() { return null; }
+//  public Vec masterVec() { return null; }
 
   /** Collect numeric domain of given vector
    *  A map-reduce task to collect up the unique values of an integer vector

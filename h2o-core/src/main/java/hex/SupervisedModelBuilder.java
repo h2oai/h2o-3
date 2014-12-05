@@ -14,7 +14,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.get(_vresponse_key).<Vec>get()) : _vresponse; }
 
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
-  public final boolean isClassifier() { return _nclass > 1; }
+  public final boolean isClassifier() { return _parms._convert_to_enum || _nclass > 1; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
@@ -44,19 +44,19 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     if( ridx == -1 ) { // Actually, think should not get here either (cutout at higher layer)
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms.train() + ".");
     } else {
-      _response = _train.remove(ridx);
+      _response  = _train.remove(ridx);
       _vresponse = _valid.remove(ridx);
       if (_response.isBad())
         error("_response_column", "Response column is all NAs!");
       if (_response.isConst())
         error("_response_column", "Response column is constant!");
       if (_parms._convert_to_enum && expensive) { // Expensive; only do it on demand
-        _response = _response.toEnum();
+        _response  =  _response.toEnum();
         _vresponse = _vresponse.toEnum();
       }
       _train.add(_parms._response_column, _response);
       _valid.add(_parms._response_column, _vresponse);
-      _response_key = _response._key;
+      _response_key  =  _response._key;
       _vresponse_key = _vresponse._key;
 
       // #Classes: 1 for regression, domain-length for enum columns

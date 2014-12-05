@@ -1,0 +1,14 @@
+# Train: A->X, B->Y, (C|1)->Z
+# Test : A->X, B->Y,    1 ->Z 
+# Test : C missing, D is extra and implies nothing.  
+# Test : W is extra, and nothing implies it.
+Feature_1, Feature_2, Extra, Response
+   A,          0    ,    0 ,    X
+   A,          1    ,    1 ,    X
+   B,          0    ,    0 ,    Y
+   B,          1    ,    1 ,    Y
+   A,          1    ,    1 ,    Z
+   B,          1    ,    1 ,    Z
+   D,          1    ,    1 ,    Z
+   A,          0    ,    0 ,    W
+   B,          1    ,    1 ,    W

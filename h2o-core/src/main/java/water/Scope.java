@@ -31,12 +31,8 @@ public class Scope {
    *  @return Returns the list of kept keys. */
   static public Key[] exit(Key... keep) {
     List<Key> keylist = new ArrayList<>();
-    if (keep != null) {
-      for (Key k : Arrays.asList(keep)) {
-        if (k != null)
-          keylist.add(k);
-      }
-    }
+    if( keep != null )
+      for( Key k : keep ) if (k != null) keylist.add(k);
     Object[] arrkeep = keylist.toArray();
     Arrays.sort(arrkeep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;

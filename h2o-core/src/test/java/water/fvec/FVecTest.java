@@ -11,7 +11,7 @@ import water.util.ArrayUtils;
 
 
 public class FVecTest extends TestUtil {
-  public FVecTest() { super(3); }
+  public FVecTest() { super(5); }
 
   @BeforeClass
   public static void setup() {

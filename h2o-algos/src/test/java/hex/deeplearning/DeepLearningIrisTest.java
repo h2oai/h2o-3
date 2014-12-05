@@ -22,7 +22,7 @@ public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   // Default run is the short run
   @Test public void run() throws Exception { runFraction(0.05f); }
@@ -297,17 +297,17 @@ public class DeepLearningIrisTest extends TestUtil {
                                  * Compare (self-reported) scoring
                                  */
                                 final double trainErr = ref._nn.Accuracy(ref._trainData);
-                                final double testErr = ref._nn.Accuracy(ref._testData);
-                                trainPredict = mymodel.score(_train, false);
-                                final double myTrainErr = mymodel.calcError(_train, _train.lastVec(), trainPredict, trainPredict, "Final training error:",
-                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
-                                testPredict = mymodel.score(_test, false);
-                                final double myTestErr = mymodel.calcError(_test, _test.lastVec(), testPredict, testPredict, "Final testing error:",
-                                        true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                final double  testErr = ref._nn.Accuracy(ref. _testData);
+                                trainPredict = mymodel.score(_train);
+                                testPredict  = mymodel.score(_test );
+                                hex.ModelMetrics mmtrain = hex.ModelMetrics.getFromDKV(mymodel,_train);
+                                hex.ModelMetrics mmtest  = hex.ModelMetrics.getFromDKV(mymodel,_test );
+                                final double myTrainErr = mmtrain._cm.err();
+                                final double  myTestErr = mmtest ._cm.err();
                                 Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
-                                Log.info("REF  training error : " + trainErr * 100 + "%, test error: " + testErr * 100 + "%");
+                                Log.info("REF  training error : " +   trainErr * 100 + "%, test error: " +   testErr * 100 + "%");
                                 compareVal(trainErr, myTrainErr, abseps, releps);
-                                compareVal(testErr, myTestErr, abseps, releps);
+                                compareVal( testErr,  myTestErr, abseps, releps);
                                 Log.info("Scoring: PASS");
 
                                 // get the actual best error on training data
@@ -316,14 +316,14 @@ public class DeepLearningIrisTest extends TestUtil {
                                   best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
                                 }
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
-
+                                
                                 // this is enabled by default
                                 if (p._override_with_best_model) {
                                   Frame bestPredict = null;
                                   try {
-                                    bestPredict = mymodel.score(_train, false);
-                                    final double bestErr = mymodel.calcError(_train, _train.lastVec(), bestPredict, bestPredict, "Best error:",
-                                            true, p._max_confusion_matrix_size, new hex.ConfusionMatrix(), null, null);
+                                    bestPredict = mymodel.score(_train);
+                                    hex.ModelMetrics mmbest = hex.ModelMetrics.getFromDKV(mymodel,_train);
+                                    final double bestErr = mmbest._cm.err();
                                     Log.info("Best_model's error : " + bestErr * 100 + "%.");
                                     compareVal(bestErr, best_err, abseps, releps);
                                   } finally {

@@ -217,7 +217,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
       return this.fetch(version, parms);
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
-    parms.model.score(parms.frame, true); // throw away predictions
+    parms.model.score(parms.frame); // throw away predictions
     ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
 
     // TODO: for now only binary predictors write an MM object.
@@ -239,7 +239,7 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsList parms) {
     // No caching for predict()
-    Frame predictions = parms.model.score(parms.frame, true);
+    Frame predictions = parms.model.score(parms.frame);
     ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
 
     // TODO: for now only binary predictors write an MM object.

@@ -469,7 +469,7 @@ public class ASTddply extends ASTOp {
         Vec[] gvecs = new Vec[data.length];
         Key[] keys = rows.group().addVecs(data.length);
         for (int c = 0; c < data.length; c++) {
-          gvecs[c] = new SubsetVec(rows._key, data[c]._key, keys[c], rows.get_espc());
+          gvecs[c] = new SubsetVec(keys[c], rows.get_espc(), data[c]._key, rows._key);
           gvecs[c].setDomain(data[c].domain());
           DKV.put(gvecs[c]._key, gvecs[c]);
         }

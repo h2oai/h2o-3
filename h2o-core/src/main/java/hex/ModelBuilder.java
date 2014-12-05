@@ -167,16 +167,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert _parms != null;      // Parms must already be set in
     if( _parms._train == null ) { error("_train","Missing training frame"); return; }
     Frame tr = _parms.train();
-    Frame va = _parms.valid();
-    assert Arrays.equals(tr._names,va._names); // Cutout at a higher level
-
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
-    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
       _train.remove(_parms._ignored_columns);
-      _valid.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
@@ -185,7 +180,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<_train.vecs().length; i++ ) {
       if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
         cstr += _train._names[i]+", "; // Log dropped cols
-        _train.remove(i); _valid.remove(i);
+        _train.remove(i);
         i--; // Re-run at same iteration after dropping a col
       }
     }
@@ -198,7 +193,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
         if( ratio > 0.2 ) {
           nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
-          _train.remove(i); _valid.remove(i);
+          _train.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
@@ -209,6 +204,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to the generate model");
+
+    // Build the validation set to be compatible with the training set.
+    // Toss out extra columns, complain about missing ones, remap enums
+    Frame va = _parms.valid();  // User-given validation set
+    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+    try {
+      String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
+      if( expensive ) for( String s : msgs ) Log.info(s);
+    } catch( IllegalArgumentException iae ) {
+      error("_valid",iae.getMessage());
+    }
+    assert !expensive || Arrays.equals(_train._names,_valid._names);
   }
 
   /** A list of field validation issues. */

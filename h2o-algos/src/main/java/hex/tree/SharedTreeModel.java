@@ -1,7 +1,7 @@
 package hex.tree;
 
 import java.util.Arrays;
-import hex.AUC;
+import hex.AUCData;
 import hex.ConfusionMatrix2;
 import hex.SupervisedModel;
 import hex.VarImp;
@@ -28,6 +28,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
+    @Override public long checksum() {
+      return super.checksum()*_ntrees*_max_depth*_min_rows*_nbins^_seed;
+    }
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
@@ -44,20 +47,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    /** r2 metric on validation set: 1-(MSE(model) / MSE(mean)) */
-    public double _r2;
-
     /** Train and test errors per-tree (scored).  Zero index is the no-tree
      *  error, guessing only the class distribution.  Not all trees are
      *  scored, NaN represents trees not scored. */
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_test [/*_ntrees+1*/];
-
-    /** Confusion Matrix for classification models, or null otherwise */
-    public ConfusionMatrix2 _cm;
-
-    /** AUC for binomial models, or null otherwise */
-    public AUC _auc;
 
     /** Variable Importance, if asked for */
     public VarImp _varimp;
@@ -90,6 +84,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         _mse_test = Arrays.copyOf(_mse_test ,_ntrees+1);
       fs.blockForPending();
     }
+
+    public String toStringTree( int tnum, int knum ) {
+      return _treeKeys[tnum][knum].<CompressedTree>get().toString(this);
+    }
+
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }

@@ -80,7 +80,7 @@ public class GBMTest extends TestUtil {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
              new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }});
-
+    
     // Classification tests
     basicGBM("./smalldata/junit/test_tree.csv",
              new PrepData() { int prep(Frame fr) { return 1; }
@@ -133,6 +133,7 @@ public class GBMTest extends TestUtil {
     GBMModel gbm = null;
     Frame fr = null, fr2= null, vfr=null;
     try {
+      Scope.enter();
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
       DKV.put(fr);             // Update frame after hacking it
@@ -174,14 +175,15 @@ public class GBMTest extends TestUtil {
       if( fr2 != null ) fr2.remove();
       if( vfr != null ) vfr.remove();
       if( gbm != null ) gbm.delete();
+      Scope.exit();
     }
   }
 
   // Test-on-Train.  Slow test, needed to build a good model.
   @Test public void testGBMTrainTest() {
     GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     try {
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv" )._key;
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
@@ -204,57 +206,61 @@ public class GBMTest extends TestUtil {
         if( job != null ) job.remove();
       }
 
-      double auc = gbm._output._auc.data().AUC();
+      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(gbm,parms.valid());
+
+      double auc = mm._aucdata.AUC();
       Assert.assertTrue(0.80 <= auc && auc < 0.83); // Sanely good model
-      ConfusionMatrix2 cmf1 = gbm._output._auc.data().CM();
+      ConfusionMatrix2 cmf1 = mm._aucdata.CM();
       Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
 
     } finally {
-      if( gbm != null ) {
-        gbm._parms._train.remove();
-        gbm._parms._valid.remove();
-        gbm.delete();
-      }
+      parms._train.remove();
+      parms._valid.remove();
+      if( gbm != null ) gbm.delete();
     }
   }
 
-//  // Adapt a trained model to a test dataset with different enums
-//  @Test public void testModelAdapt() {
-//    File file1 = TestUtil.find_test_file("./smalldata/junit/KDDTrain.arff.gz");
-//    Key fkey1 = NFSFileVec.make(file1);
-//    Key dest1 = Key.make("KDDTrain.hex");
-//    File file2 = TestUtil.find_test_file("./smalldata/junit/KDDTest.arff.gz");
-//    Key fkey2 = NFSFileVec.make(file2);
-//    Key dest2 = Key.make("KDDTest.hex");
-//    GBM gbm = new GBM();
-//    GBM.GBMModel gbmmodel = null; // The Model
-//    try {
-//      gbm.source = ParseDataset2.parse(dest1,new Key[]{fkey1});
-//      gbm.response = gbm.source.vecs()[41]; // Response is col 41
-//      gbm.ntrees = 2;
-//      gbm.max_depth = 8;
-//      gbm.learn_rate = 0.2f;
-//      gbm.min_rows = 10;
-//      gbm.nbins = 50;
-//      gbm.invoke();
-//      gbmmodel = UKV.get(gbm.dest());
-//      testHTML(gbmmodel);
-//      Assert.assertTrue(gbmmodel.get_params().state == Job.JobState.DONE); //HEX-1817
-//
-//      // The test data set has a few more enums than the train
-//      Frame ftest = ParseDataset2.parse(dest2,new Key[]{fkey2});
-//      Frame preds = gbm.score(ftest);
-//      ftest.delete();
-//      preds.delete();
-//
-//    } finally {
-//      if( gbmmodel != null ) gbmmodel.delete(); // Remove the model
-//      gbm.source.delete();      // Remove original hex frame key
-//      UKV.remove(gbm.response._key);
-//      gbm.remove();             // Remove GBM Job
-//    }
-//  }
-//
+  // Adapt a trained model to a test dataset with different enums
+  @Test public void testModelAdapt() {
+    GBM job = null;
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    try {
+      Scope.enter();
+      Frame v;
+      parms._train = (  parse_test_file("smalldata/junit/mixcat_train.csv"))._key;
+      parms._valid = (v=parse_test_file("smalldata/junit/mixcat_test.csv" ))._key;
+      parms._response_column = "Response"; // Train on the outcome
+      parms._ntrees = 1; // Build a CART tree - 1 tree, full learn rate, down to 1 row
+      parms._learn_rate = 1.0f;
+      parms._min_rows = 1;
+      parms._loss = Family.AUTO;
+
+      job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      Frame res = gbm.score(v);
+
+      int[] ps = new int[(int)v.numRows()];
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)res.vecs()[0].at8(i);
+      // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
+      // Never predicts W, the extra class in the test set.
+      // Badly predicts Z because 1 tree does not pick up that feature#2 can also
+      // be used to predict Z, and instead relies on factor C which does not appear
+      // in the test set.
+      Assert.assertArrayEquals("",ps,new int[]{1,1,2,2,1,2,3,1,2});
+
+      res.remove();
+
+    } finally {
+      parms._train.remove();
+      parms._valid.remove();
+      if( gbm != null ) gbm.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
+
   // A test of locking the input dataset during model building.
   @Test public void testModelLock() {
     GBM gbm=null;
@@ -262,8 +268,9 @@ public class GBMTest extends TestUtil {
     try {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      parms._train = fr._key;
       fr.remove("Site").remove();        // Remove unique ID
+      DKV.put(fr);                       // Update after hacking
+      parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
       parms._ntrees = 10;
       parms._max_depth = 10;

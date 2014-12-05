@@ -5,7 +5,6 @@ import hex.FrameTask.DataInfo;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
 import water.api.ModelSchema;
-import water.api.ValidationAdapter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -331,18 +330,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
     public boolean _quiet_mode = false;
 
-    /**
-     * For classification models, the maximum size (in terms of classes) of the
-     * confusion matrix for it to be printed. This option is meant to avoid printing
-     * extremely large confusion matrices.
-     */
-    public int _max_confusion_matrix_size = 20;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    public int _max_hit_ratio_k = 10;
-
   /*Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via
@@ -471,9 +458,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       boolean classification = dl.isClassifier();
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
-      for (int i=0;i<_hidden.length;++i)
-        if (_hidden[i]==0)
-          dl.error("_hidden", "Hidden layer size must be >0.");
+      for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
 
       if (_valid == null)
         dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
@@ -487,11 +472,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_balance_classes", "balance_classes is used only with classification.");
       }
 
-      if (classification && _balance_classes) {
-
-      } else {
+      if( !classification || !_balance_classes )
         dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-      }
 
       if (classification && !_balance_classes || !classification)
         dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
@@ -712,8 +694,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     VarImp variable_importances;
 
     // classification
-    public ConfusionMatrix train_confusion_matrix;
-    public ConfusionMatrix valid_confusion_matrix;
+    public ConfusionMatrix2 train_confusion_matrix;
+    public ConfusionMatrix2 valid_confusion_matrix;
     public double train_err = 1;
     public double valid_err = 1;
     public AUCData trainAUC;
@@ -774,18 +756,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public ConfusionMatrix2 cm() {
     final Errors lasterror = last_scored();
     if (lasterror == null) return null;
-    ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
+    ConfusionMatrix2 cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
-    if (cm == null || cm.cm == null) {
+    if (cm == null ) {
       if (lasterror.validation || lasterror.num_folds > 0) {
         return new ConfMat(lasterror.valid_err, lasterror.validAUC != null ? lasterror.validAUC.F1() : 0);
       } else {
         return new ConfMat(lasterror.train_err, lasterror.trainAUC != null ? lasterror.trainAUC.F1() : 0);
       }
     }
-    // cm.cm has NaN padding, reduce it to N-1 size
-    return new ConfusionMatrix2(cm.cm, cm.cm.length-1);
+    return cm;
   }
 
 //  @Override
@@ -1347,7 +1328,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param job_key key of the owning job
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame train, Frame ftrain, Frame ftest, Key job_key, ValidationAdapter.Response2CMAdaptor vadaptor) {
+  boolean doScoring(Frame train, Frame ftrain, Frame ftest, Key job_key) {
     boolean keep_running = true;
     try {
       final long now = System.currentTimeMillis();
@@ -1388,7 +1369,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               (sinceLastScore > get_params()._score_interval *1000 //don't score too often
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
         final boolean printme = !get_params()._quiet_mode;
-        final boolean adaptCM = (_output.isClassifier() && vadaptor.needsAdaptation2CM());
         _timeLastScoreStart = now;
         if (get_params()._diagnostics) model_info().computeStats();
         Errors err = new Errors();
@@ -1397,6 +1377,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         err.training_samples = model_info().get_processed_total();
         err.validation = ftest != null;
         err.score_training_samples = ftrain.numRows();
+        err.classification = _output.isClassifier();
 
         if (get_params()._autoencoder) {
           if (printme) Log.info("Scoring the auto-encoder.");
@@ -1411,79 +1392,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         } else {
           if (printme) Log.info("Scoring the model.");
           // compute errors
-          err.classification = _output.isClassifier();
-          err.num_folds = get_params()._n_folds;
-          err.train_confusion_matrix = new ConfusionMatrix();
-          final int hit_k = Math.min(_output.nclasses(), get_params()._max_hit_ratio_k);
-          if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
-            err.train_hitratio = new HitRatio();
-            err.train_hitratio.set_max_k(hit_k);
-          }
           final String m = model_info().toString();
           if (m.length() > 0) Log.info(m);
-          final Frame trainPredict = score(ftrain, false);
-          AUC trainAUC = null;
-          if (err.classification && _output.nclasses() == 2) trainAUC = new AUC();
-          final double trainErr = calcError(ftrain, ftrain.lastVec(), trainPredict, trainPredict, "training",
-                  printme, get_params()._max_confusion_matrix_size, err.train_confusion_matrix, trainAUC, err.train_hitratio);
-          if (_output.isClassifier()) err.train_err = trainErr;
-          if (trainAUC != null) err.trainAUC = trainAUC.data();
-          else err.train_mse = trainErr;
-
+          final Frame trainPredict = score(ftrain);
           trainPredict.delete();
-
-          if (err.validation) {
-            assert ftest != null;
-            err.score_validation_samples = ftest.numRows();
-            err.valid_confusion_matrix = new ConfusionMatrix();
-            if (err.classification && _output.nclasses() > 2 && hit_k > 0) {
-              err.valid_hitratio = new HitRatio();
-              err.valid_hitratio.set_max_k(hit_k);
-            }
-            final String adaptRespName = vadaptor.adaptedValidationResponse(_output.responseName());
-            Vec adaptCMresp = null;
-            if (adaptCM) {
-              Vec[] v = ftest.vecs();
-              assert (ftest.find(adaptRespName) == v.length - 1); //make sure to have (adapted) response in the test set
-              adaptCMresp = ftest.remove(v.length - 1); //model would remove any extra columns anyway (need to keep it here for later)
-            }
-
-            final Frame validPredict = score(ftest, adaptCM);
-            final Frame hitratio_validPredict = new Frame(validPredict);
-            Vec orig_label = validPredict.vecs()[0];
-            // Adapt output response domain, in case validation domain is different from training domain
-            // Note: doesn't change predictions, just the *possible* label domain
-            if (adaptCM) {
-              assert (adaptCMresp != null);
-              assert (ftest.find(adaptRespName) == -1);
-              ftest.add(adaptRespName, adaptCMresp);
-              final Vec CMadapted = vadaptor.adaptModelResponse2CM(validPredict.vecs()[0]);
-              validPredict.replace(0, CMadapted); //replace label
-              validPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
-            }
-            AUC validAUC = null;
-            if (err.classification && _output.nclasses() == 2) validAUC = new AUC();
-            final double validErr = calcError(ftest, ftest.lastVec(), validPredict, hitratio_validPredict, "validation",
-                    printme, get_params()._max_confusion_matrix_size, err.valid_confusion_matrix, validAUC, err.valid_hitratio);
-            if (_output.isClassifier()) err.valid_err = validErr;
-            if (trainAUC != null) err.validAUC = validAUC.data();
-            else err.valid_mse = validErr;
-            validPredict.delete();
-            //also delete the replaced label
-            if (adaptCM) orig_label.remove(new Futures()).blockForPending();
-          }
+          hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
+          err.trainAUC = mm1._aucdata;
+          err.train_confusion_matrix = mm1._cm;
+          err.train_hitratio = mm1._hr;
+          err.train_mse = mm1._mse;
+          hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
+          err.validAUC = mm1._aucdata;
+          err.valid_confusion_matrix = mm1._cm;
+          err.valid_hitratio = mm1._hr;
+          err.valid_mse = mm1._mse;
 
           if (get_params()._variable_importances) {
             if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
             final float[] vi = model_info().computeVariableImportances();
             err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
-          }
-
-          // only keep confusion matrices for the last step if there are fewer than specified number of output classes
-          if (err.train_confusion_matrix.cm != null
-                  && err.train_confusion_matrix.cm.length - 1 >= get_params()._max_confusion_matrix_size) {
-            err.train_confusion_matrix = null;
-            err.valid_confusion_matrix = null;
           }
         }
 
@@ -1514,26 +1441,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             putMeAsBestModel(actual_best_model_key, train);
 
             // debugging check
-            if (false) {
-              DeepLearningModel bestModel = DKV.get(actual_best_model_key).get();
-              final Frame fr = ftest != null ? ftest : ftrain;
-              final Frame bestPredict = bestModel.score(fr, ftest != null ? adaptCM : false);
-              final Frame hitRatio_bestPredict = new Frame(bestPredict);
-              // Adapt output response domain, in case validation domain is different from training domain
-              // Note: doesn't change predictions, just the *possible* label domain
-              if (adaptCM) {
-                final Vec CMadapted = vadaptor.adaptModelResponse2CM(bestPredict.vecs()[0]);
-                bestPredict.replace(0, CMadapted); //replace label
-                bestPredict.add("to_be_deleted", CMadapted); //keep the Vec around to be deleted later (no leak)
-              }
-              final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-                      printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC() : null, null);
-              if (_output.isClassifier())
-                assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
-              else
-                assert (ftest != null ? Math.abs(err.valid_mse - err3) < 1e-5 : Math.abs(err.train_mse - err3) < 1e-5);
-              bestPredict.delete();
-            }
+            //if (false) {
+            //  DeepLearningModel bestModel = DKV.get(actual_best_model_key).get();
+            //  final Frame fr = ftest != null ? ftest : ftrain;
+            //  final Frame bestPredict = bestModel.score(fr);
+            //  final Frame hitRatio_bestPredict = new Frame(bestPredict);
+            //  final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
+            //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC(null,null) : null, null);
+            //  if (_output.isClassifier())
+            //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
+            //  else
+            //    assert (ftest != null ? Math.abs(err.valid_mse - err3) < 1e-5 : Math.abs(err.train_mse - err3) < 1e-5);
+            //  bestPredict.delete();
+            //}
           }
 //        else {
 //          // keep output JSON small
@@ -1595,31 +1515,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return sb.toString();
   }
 
-  /**
-   * This is an overridden version of Model.score(). Make either a prediction or a reconstruction.
-   * @param frame Test dataset
+  /** Make either a prediction or a reconstruction.
+   * @param orig Test dataset
+   * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override
-  public Frame score(Frame frame) {
+  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr) {
     if (!get_params()._autoencoder) {
-      return super.score(frame);
+      return super.scoreImpl(orig,adaptedFr);
     } else {
       // Reconstruction
-      // Adapt the Frame layout - returns adapted frame and frame containing only
-      // newly created vectors
-      Frame[] adaptFrms = adapt(frame,false,false/*no response*/);
-      // Adapted frame containing all columns - mix of original vectors from fr
-      // and newly created vectors serving as adaptors
-      Frame adaptFrm = adaptFrms[0];
-      // Contains only newly created vectors. The frame eases deletion of these vectors.
-      Frame onlyAdaptFrm = adaptFrms[1];
 
       final int len = model_info().data_info().fullN();
       String prefix = "reconstr_";
       assert(model_info().data_info()._responses == 0);
       String[] coefnames = model_info().data_info().coefNames();
       assert(len == coefnames.length);
+      Frame adaptFrm = new Frame(adaptedFr);
       for( int c=0; c<len; c++ )
         adaptFrm.add(prefix+coefnames[c],adaptFrm.anyVec().makeZero());
       new MRTask() {
@@ -1638,7 +1550,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       // Return the predicted columns
       int x=_output._names.length, y=adaptFrm.numCols();
       Frame f = adaptFrm.extractFrame(x, y); //this will call vec_impl() and we cannot call the delete() below just yet
-      onlyAdaptFrm.delete();
       return f;
     }
   }
@@ -1666,7 +1577,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
       preds[0] = ModelUtils.getPrediction(preds, data);
     } else {
-      assert (preds.length == 1 && out.length == 1);
       if (model_info().data_info()._normRespMul != null)
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
@@ -1683,14 +1593,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    */
   public Frame scoreAutoEncoder(Frame frame) {
     final int len = _output._names.length;
-    // Adapt the Frame layout - returns adapted frame and frame containing only
-    // newly created vectors
-    Frame[] adaptFrms = adapt(frame,false,false/*no response*/);
-    // Adapted frame containing all columns - mix of original vectors from fr
-    // and newly created vectors serving as adaptors
-    Frame adaptFrm = adaptFrms[0];
-    // Contains only newly created vectors. The frame eases deletion of these vectors.
-    Frame onlyAdaptFrm = adaptFrms[1];
+    Frame adaptFrm = new Frame(frame);
     adaptFrm.add("Reconstruction.MSE", adaptFrm.anyVec().makeZero());
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
@@ -1706,9 +1609,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     // Return just the output columns
     int x=_output._names.length, y=adaptFrm.numCols();
-    final Frame l2 = adaptFrm.extractFrame(x, y);
-    onlyAdaptFrm.delete();
-    return l2;
+    return adaptFrm.extractFrame(x, y);
   }
 
   // Make (potentially expanded) reconstruction

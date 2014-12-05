@@ -596,6 +596,7 @@ public class DTree extends Iced {
     final float _fs  []  = new float[100];
     final SB    _sbs []  = new SB   [100];
     final int   _nodesCnt[] = new int  [100];
+    final SharedTreeModel _tm;
     SB _sb;
     SB _csb;
     SB _grpsplit;
@@ -604,7 +605,8 @@ public class DTree extends Iced {
     int _grpcnt = 0;
 
     public TreeJCodeGen(SharedTreeModel tm, CompressedTree ct, SB sb) {
-      super(tm, ct);
+      super(ct);
+      _tm = tm;
       _sb = sb;
       _csb = new SB();
       _grpsplit = new SB();

@@ -1,19 +1,14 @@
 package hex.deeplearning;
 
+import java.util.*;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset2;
 import water.util.Log;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static org.junit.Assert.assertTrue;
@@ -29,9 +24,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
     Frame train = null;
     Frame test = null;
     Frame data = null;
-    Log.info("");
-    Log.info("STARTING.");
-    Log.info("Using seed " + seed);
 
     Map<Integer,Float> repeatErrs = new TreeMap<>();
 
@@ -39,6 +31,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
     StringBuilder sb = new StringBuilder();
     float repro_error = 0;
     for (boolean repro : new boolean[]{true, false}) {
+      Scope.enter();
       Frame[] preds = new Frame[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
@@ -54,6 +47,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
+          p._convert_to_enum = true;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
@@ -78,7 +72,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.get(p._destination_key).get();
+          mymodel = DKV.getGet(p._destination_key);
           preds[repeat] = mymodel.score(test);
           repeatErrs.put(repeat, mymodel.error());
 
@@ -107,13 +101,12 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       try {
         if (repro) {
           // check reproducibility
-          for (Float error : repeatErrs.values()) {
+          for (Float error : repeatErrs.values())
             assertTrue(error.equals(repeatErrs.get(0)));
-          }
           // exposes bug: no work gets done on remote if frame has only 1 chunk and is homed remotely.
-//          for (Frame f : preds) {
-//            assertTrue(TestUtil.isBitIdentical(f, preds[0]));
-//          }
+          for (Frame f : preds) {
+            assertTrue(TestUtil.isBitIdentical(f, preds[0]));
+          }
           repro_error = repeatErrs.get(0);
         } else {
           // check standard deviation of non-reproducible mode
@@ -129,13 +122,14 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           }
           stddev /= N;
           stddev = Math.sqrt(stddev);
-          Log.info("standard deviation: " + stddev);
+          //Log.info("standard deviation: " + stddev);
           assertTrue(stddev < 0.1 / Math.sqrt(N));
-          Log.info("difference to reproducible mode: " + Math.abs(mean - repro_error) / stddev + " standard deviations");
+          //Log.info("difference to reproducible mode: " + Math.abs(mean - repro_error) / stddev + " standard deviations");
         }
       } finally {
         for (Frame f : preds) if (f != null) f.delete();
       }
+      Scope.exit();
     }
   }
 }

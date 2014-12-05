@@ -71,23 +71,15 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
         Set<String> frame_cols = entry.getValue();
 
         if (frame_cols.containsAll(model_column_names)) {
-          /// See if adapt throws an exception or not.
+          // See if adapt throws an exception or not.
           try {
-            Frame[] outputs = model.adapt(frame, false); // TODO: this does too much work; write canAdapt()
-            Frame adapted = outputs[0];
-            Frame trash = outputs[1];
-            // adapted.delete();  // TODO: shouldn't we clean up adapted vecs?  But we can't delete() the frame as a whole. . .
-            trash.delete();
-
-            // A-Ok
-            compatible_frames.add(frame);
-          }
-          catch (Exception e) {
+            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+              compatible_frames.add(frame);
+          } catch( IllegalArgumentException e ) {
             // skip
           }
         }
       }
-
       return compatible_frames.toArray(new Frame[0]);
     }
   }

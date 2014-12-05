@@ -20,7 +20,7 @@ public class GrepTest extends TestUtil {
       String regex = "Iris-versicolor";
       File f = find_test_file("smalldata/iris/iris_wheader.csv");
       //String regex = "(?:(\\w)\\1){5}";
-      //File f = new File("bigdata/laptop/text8.txt");
+      //File f = new File("bigdata/text8.txt");
       NFSFileVec nfs = NFSFileVec.make(f);
       DKV.put(fr = new Frame(Key.make(), new String[]{"text"}, new Vec[]{nfs}));
 

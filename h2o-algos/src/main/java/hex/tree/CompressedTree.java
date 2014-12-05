@@ -3,6 +3,7 @@ package hex.tree;
 import java.util.Arrays;
 import water.*;
 import water.util.IcedBitSet;
+import water.util.SB;
 
 // --------------------------------------------------------------------------
 // Highly compressed tree encoding:
@@ -84,4 +85,22 @@ class CompressedTree extends Keyed {
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
 
   @Override public long checksum() { throw water.H2O.fail(); }
+
+  public String toString( SharedTreeModel.SharedTreeOutput tm ) {
+    final String[] names = tm._names;
+    final SB sb = new SB();
+    new TreeVisitor<RuntimeException>(this) {
+      int _d;
+      @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
+        sb.i().p(names[col]).p(' ');
+        if( equal==0 ) sb.p("< ").p(fcmp);
+        else if( equal==1 ) sb.p("!=").p(fcmp);
+        else sb.p("in ").p(gcmp);
+        sb.ii(1).nl();
+      }
+      @Override protected void post( int col, float fcmp, int equal ) { sb.di(1); }
+      @Override protected void leaf( float pred ) { sb.i().p("return ").p(pred).nl(); }
+    }.visit();
+    return sb.toString();
+  }
 }

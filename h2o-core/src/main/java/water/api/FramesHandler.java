@@ -77,18 +77,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         Set<String> model_cols = entry.getValue();
 
         if (model_cols.containsAll(frame_column_names)) {
-          /// See if adapt throws an exception or not.
+          // See if adapt throws an exception or not.
           try {
-            Frame[] outputs = model.adapt(frame, false); // TODO: this does too much work; write canAdapt()
-            Frame adapted = outputs[0];
-            Frame trash = outputs[1];
-            // adapted.delete();  // TODO: shouldn't we clean up adapted vecs?  But we can't delete() the model as a whole. . .
-            trash.delete();
-
-            // A-Ok
-            compatible_models.add(model);
-          }
-          catch (Exception e) {
+            if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
+              compatible_models.add(model);
+          } catch( IllegalArgumentException e ) {
             // skip
           }
         }

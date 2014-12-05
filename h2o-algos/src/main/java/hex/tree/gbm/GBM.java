@@ -438,9 +438,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override protected int size() { return 4; }
   }
 
-  // No rows out-of-bag, all rows are in-bag and used for training
-  @Override protected boolean outOfBagRow(Chunk[] chks, int row) { return false; }
-
   @Override protected VarImp doVarImpCalc(boolean scale) { throw H2O.unimpl(); }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

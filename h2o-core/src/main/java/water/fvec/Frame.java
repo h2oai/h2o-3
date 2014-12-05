@@ -272,9 +272,9 @@ public class Frame extends Lockable {
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
   @Override public long checksum() {
-    Vec [] vecs = vecs();
+    Vec[] vecs = vecs();
     long _checksum = 0;
-    for(int i = 0; i < _names.length; ++i) {
+    for( int i = 0; i < _names.length; ++i ) {
       long vec_checksum = vecs[i].checksum();
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);
@@ -374,7 +374,7 @@ public class Frame extends Lockable {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override public Futures remove_impl(Futures fs) {
-    for( Vec v : vecs() ) v.remove(fs);
+    for( Vec v : vecs() ) if( v != null ) v.remove(fs);
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];

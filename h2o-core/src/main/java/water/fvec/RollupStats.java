@@ -32,7 +32,7 @@ class RollupStats extends Iced {
 
   volatile transient ForkJoinTask _tsk;
 
-  long _naCnt;
+  volatile long _naCnt;
   // Computed in 1st pass
   double _mean, _sigma;
   long _checksum;
@@ -306,14 +306,14 @@ class RollupStats extends Iced {
         }
       },_rs,nbins).dfork(vec); // intentionally using dfork here to increase priority level
     }
-    final void computeRollups(final Key vecKey, final Key rollUpsKey, Value oldValue){
+    final void computeRollups(final Key rollUpsKey, Value oldValue){
       assert rollUpsKey.home();
       // Attempt to flip from no(or incomplete)-rollups to computing-rollups
       RollupStats newRs = RollupStats.makeComputing(_rsKey);
       final Value nnn = new Value(rollUpsKey,newRs);
       CountedCompleter cc = getCompleter(); // should be null or RPCCall
       if(cc != null) assert cc.getCompleter() == null;
-      // note: if cc == null then onExceptionalcompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
+      // note: if cc == null then onExceptionalCompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
       newRs._tsk = cc == null?this:cc; // need the task on the top of the tree, join() only works with tasks with no completers
       Futures fs = new Futures();
       Value v = DKV.DputIfMatch(rollUpsKey,nnn,oldValue,fs);
@@ -359,7 +359,7 @@ class RollupStats extends Iced {
       if(rs == null)
         rs = RollupStats.makeComputing(_rsKey);
       _rs = rs;
-      computeRollups(_vecKey, _rsKey, oldValue);
+      computeRollups(_rsKey, oldValue);
     }
     @Override
     protected void compute2() {

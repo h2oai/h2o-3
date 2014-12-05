@@ -18,17 +18,13 @@ public class KMeansRandomTest extends TestUtil {
     long seed = 0xDECAF;
     Random rng = new Random(seed);
     String[] datasets = new String[2];
-    int[][] responses = new int[datasets.length][];
     datasets[0] = "smalldata/logreg/prostate.csv";
-    responses[0] = new int[]{1, 2, 8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
     datasets[1] = "smalldata/junit/iris.csv";
-    responses[1] = new int[]{4}; //Iris-type (multi-class)
 
 
     int testcount = 0;
     int count = 0;
-    for (int i = 0; i < datasets.length; ++i) {
-      String dataset = datasets[i];
+    for( String dataset : datasets ) {
       Frame frame = parse_test_file(dataset);
 
       try {
