@@ -7,7 +7,7 @@ public class ProfilerHandler extends Handler {
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ProfilerBase fetch(int version, ProfilerV2 p) {
+  public ProfilerV2 fetch(int version, ProfilerV2 p) {
     JProfile profile = new JProfile(p.depth).execImpl(true);
     int i=0;
     p.stacktraces = new String[profile.nodes.length][];

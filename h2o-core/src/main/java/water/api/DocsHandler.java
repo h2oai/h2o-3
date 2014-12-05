@@ -1,5 +1,7 @@
 package water.api;
 
+import water.util.MarkdownBuilder;
+
 import java.util.Map;
 
 /*
@@ -13,19 +15,35 @@ public class DocsHandler extends Handler {
 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  /** Return a list of all REST API Routes. */
-  public DocsBase listRoutes(int version, DocsV1 docs) {
+  /** Return a list of all REST API Routes and a Markdown Table of Contents. */
+  public DocsV1 listRoutes(int version, DocsV1 docs) {
+    MarkdownBuilder builder = new MarkdownBuilder();
+    builder.comment("Preview with http://jbt.github.io/markdown-editor");
+    builder.heading1("REST API Routes Table of Contents");
+    builder.hline();
+
+    builder.tableHeader("HTTP method", "URI pattern", "Input schema", "Output schema", "Summary");
+
     docs.routes = new RouteBase[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
       docs.routes[i++] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+
+      builder.tableRow(
+              route._http_method,
+              route._url_pattern.toString().replace("(?<", "{").replace(">.*)", "}"),
+              Handler.getHandlerMethodInputSchema(route._handler_method).getSimpleName(),
+              Handler.getHandlerMethodOutputSchema(route._handler_method).getSimpleName(),
+              route._summary);
     }
+
+    docs.markdown = builder.toString();
     return docs;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return the metadata for a REST API Route, specified either by number or path. */
-  public DocsBase fetchRoute(int version, DocsV1 docs) {
+  public DocsV1 fetchRoute(int version, DocsV1 docs) {
     // DocsPojo docsPojo = docs.createAndFillImpl();
 
     Route route = null;
@@ -52,7 +70,7 @@ public class DocsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   @Deprecated
   /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
-  public DocsBase fetchSchemaMetadataByClass(int version, DocsV1 docs) {
+  public DocsV1 fetchSchemaMetadataByClass(int version, DocsV1 docs) {
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw IllegalArgumentException if the classname isn't found:
     SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
@@ -62,7 +80,12 @@ public class DocsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for a Schema by its simple Schema name (e.g., "DeepLearningParametersV2"). */
-  public DocsBase fetchSchemaMetadata(int version, DocsV1 docs) {
+  public DocsV1 fetchSchemaMetadata(int version, DocsV1 docs) {
+    if ("void".equals(docs.schemaname)) {
+      docs.schemas = new SchemaMetadataBase[0];
+      return docs;
+    }
+
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw IllegalArgumentException if the classname isn't found:
     SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.schema(docs.schemaname)));
@@ -72,7 +95,7 @@ public class DocsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for all the Schemas. */
-  public DocsBase listSchemas(int version, DocsV1 docs) {
+  public DocsV1 listSchemas(int version, DocsV1 docs) {
     Map<String, Class<? extends Schema>> ss = Schema.schemas();
     docs.schemas = new SchemaMetadataBase[ss.size()];
 

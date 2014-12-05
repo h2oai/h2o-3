@@ -9,5 +9,5 @@ public class JobsV2 extends Schema<Iced,JobsV2> {
 
   // Output fields
   @API(help="jobs", direction=API.Direction.OUTPUT)
-  JobV2[] jobs;
+  public JobV2[] jobs;
 }

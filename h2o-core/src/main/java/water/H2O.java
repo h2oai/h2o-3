@@ -773,6 +773,10 @@ final public class H2O {
   static private void registerAllSchemas() {
     Reflections reflections = null;
 
+    // Microhack to effect Schema.register(Schema.class), which is
+    // normally not allowed because it has no version:
+    new Schema();
+
     Set<Class<? extends Schema>> schemas = null;
 
     schemas = (new Reflections("water")).getSubTypesOf(Schema.class);

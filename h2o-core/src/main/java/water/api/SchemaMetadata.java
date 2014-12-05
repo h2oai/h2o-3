@@ -18,6 +18,10 @@ import java.util.Map;
  */
 public final class SchemaMetadata extends Iced {
 
+  public int version;
+  public String name ;
+  public String type;
+
   public List<FieldMetadata> fields;
   public String markdown;
 
@@ -272,6 +276,10 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
+    version = schema.getSchemaVersion();
+    name = schema.schema_name;
+    type = schema.schema_type;
+
     fields = new ArrayList<>();
     // Fields up to but not including Schema
     for (Field field : Weaver.getWovenFields(schema.getClass())) {

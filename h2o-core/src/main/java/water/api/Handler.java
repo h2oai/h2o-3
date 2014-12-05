@@ -25,8 +25,12 @@ public abstract class Handler extends H2OCountedCompleter {
   abstract protected int min_ver();         // TODO: should be static
   abstract protected int max_ver();         // TODO: should be static
 
-  public static Class<? extends Schema> getHandlerMethodSchema(Method method) {
+  public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
+  }
+
+  public static Class<? extends Schema> getHandlerMethodOutputSchema(Method method) {
+    return (Class<? extends Schema>)ReflectionUtils.findMethodOutputClass(method);
   }
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
@@ -35,7 +39,7 @@ public abstract class Handler extends H2OCountedCompleter {
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HttpErrorV1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
-    Class<? extends Schema> handler_schema_class = getHandlerMethodSchema(route._handler_method);
+    Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 
     if (null == schema)

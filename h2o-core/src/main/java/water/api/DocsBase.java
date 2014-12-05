@@ -19,10 +19,12 @@ public class DocsBase<I extends Iced, S extends DocsBase<I, S>> extends Schema<I
   public String schemaname;
 
   // Outputs
-  @API(help="List of endpoint routes.")
+  @API(help="List of endpoint routes", direction=API.Direction.OUTPUT)
   public RouteBase[] routes;
 
-  @API(help="List of schemas.")
+  @API(help="List of schemas", direction=API.Direction.OUTPUT)
   public SchemaMetadataBase[] schemas;
 
+  @API(help="Table of Contents Markdown", direction=API.Direction.OUTPUT)
+  public String markdown;
 }

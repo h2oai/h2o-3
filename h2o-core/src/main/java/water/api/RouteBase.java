@@ -19,6 +19,12 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
   public String handler_method;
 
   @API(help="", direction=API.Direction.OUTPUT)
+  public String input_schema;
+
+  @API(help="", direction=API.Direction.OUTPUT)
+  public String output_schema;
+
+  @API(help="", direction=API.Direction.OUTPUT)
   public String doc_method;
 
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
@@ -33,6 +39,8 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
     this.url_pattern = impl._url_pattern.pattern();
     this.handler_class = impl._handler_class.toString();
     this.handler_method = impl._handler_method.toString();
+    this.input_schema = Handler.getHandlerMethodInputSchema(impl._handler_method).getSimpleName();
+    this.output_schema = Handler.getHandlerMethodOutputSchema(impl._handler_method).getSimpleName();
     this.doc_method = (impl._doc_method == null ? "" : impl._doc_method.toString());
     return this;
   }

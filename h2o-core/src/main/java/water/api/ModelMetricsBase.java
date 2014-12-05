@@ -26,7 +26,7 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   public long frame_checksum;
 
   // Output fields
-  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", direction=API.Direction.OUTPUT)
+  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
   public Model.ModelCategory model_category ;
 
   @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)

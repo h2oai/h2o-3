@@ -48,9 +48,28 @@ final class Route extends Iced {
 
     // parameters and output tables
     try {
-      Class<? extends Schema> clz = Handler.getHandlerMethodSchema(_handler_method);
-      Schema s = Schema.newInstance(clz);
-      builder.append(s.markdown(null));
+      builder.heading1("Input schema: ");
+      {
+        Class<? extends Schema> clz = Handler.getHandlerMethodInputSchema(_handler_method);
+        Schema s = Schema.newInstance(clz);
+        builder.append(s.markdown(null, true, false));
+      }
+
+      builder.heading1("Output schema: ");
+      {
+        Class<? extends Schema> clz = Handler.getHandlerMethodOutputSchema(_handler_method);
+
+        if (null != clz) {
+          builder.paragraph("(void)");
+        } else {
+          Schema s = Schema.newInstance(clz);
+
+          if (null == s)
+            throw H2O.fail("Call to Schema.newInstance(clz) failed for class: " + clz);
+
+          builder.append(s.markdown(null, false, true));
+        }
+      }
 
       // TODO: render examples and other stuff, if it's passed in
     }
@@ -97,6 +116,8 @@ final class Route extends Iced {
             ", _summary='" + _summary + '\'' +
             ", _handler_class=" + _handler_class +
             ", _handler_method=" + _handler_method +
+            ", _input_schema=" + Handler.getHandlerMethodInputSchema(_handler_method) +
+            ", _output_schema=" + Handler.getHandlerMethodOutputSchema(_handler_method) +
             ", _doc_method=" + _doc_method +
             ", _path_params=" + Arrays.toString(_path_params) +
             '}';

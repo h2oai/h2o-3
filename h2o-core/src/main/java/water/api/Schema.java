@@ -81,7 +81,7 @@ import java.util.regex.Pattern;
  * }
  *
  */
-public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
+public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
   @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
@@ -153,10 +153,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     }
   }
 
-  // Ensure that all Schema classes get registered up front.
 
   /** Register the given schema class. */
-  // TODO: walk over the fields and register sub-schemas
   public static void register(Class<? extends Schema> clz) {
     if (extractVersion(clz.getSimpleName()) > -1) {
       try {
@@ -537,13 +535,24 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * Generate Markdown documentation for this Schema.
    */
   public StringBuffer markdown(StringBuffer appendToMe) {
-    return markdown(new SchemaMetadata(this), appendToMe);
+    return markdown(appendToMe, true, true);
+  }
+
+  /**
+   * Generate Markdown documentation for this Schema possibly including only the input or output fields.
+   */
+  public StringBuffer markdown(StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
+    return markdown(new SchemaMetadata(this), appendToMe, include_input_fields, include_output_fields);
+  }
+
+  public StringBuffer markdown(SchemaMetadata meta, StringBuffer appendToMe) {
+    return markdown(meta, appendToMe, true, true);
   }
 
   /**
    * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
    */
-  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe) {
+  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
     MarkdownBuilder builder = new MarkdownBuilder();
 
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
@@ -556,53 +565,58 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     // fields
     boolean first; // don't print the table at all if there are no rows
 
-    first = true;
-    builder.heading2("input fields");
     try {
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
-            first = false;
-          }
-          builder.tableRow(
-                  field_meta.name,
-                  String.valueOf(field_meta.required),
-                  field_meta.level.name(),
-                  field_meta.type,
-                  String.valueOf(field_meta.is_schema),
-                  field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
-                  field_meta.help,
-                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
-          );
-        }
-      }
-      if (first)
-        builder.paragraph("(none)");
+      if (include_input_fields) {
+        first = true;
+        builder.heading2("input fields");
 
-      first = true;
-      builder.heading2("output fields");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
-            first = false;
+        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+          if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
+              first = false;
+            }
+            builder.tableRow(
+                    field_meta.name,
+                    String.valueOf(field_meta.required),
+                    field_meta.level.name(),
+                    field_meta.type,
+                    String.valueOf(field_meta.is_schema),
+                    field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
+                    field_meta.help,
+                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
+            );
           }
-          builder.tableRow(field_meta.name,
-                  field_meta.type,
-                  String.valueOf(field_meta.is_schema),
-                  field_meta.is_schema ? field_meta.schema_name : "",
-                  field_meta.value,
-                  field_meta.help,
-                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
         }
+        if (first)
+          builder.paragraph("(none)");
       }
-      if (first)
-        builder.paragraph("(none)");
+
+      if (include_output_fields) {
+        first = true;
+        builder.heading2("output fields");
+        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+          if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
+              first = false;
+            }
+            builder.tableRow(field_meta.name,
+                    field_meta.type,
+                    String.valueOf(field_meta.is_schema),
+                    field_meta.is_schema ? field_meta.schema_name : "",
+                    field_meta.value,
+                    field_meta.help,
+                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
+          }
+        }
+        if (first)
+          builder.paragraph("(none)");
+      }
 
       // TODO: render examples and other stuff, if it's passed in
     }

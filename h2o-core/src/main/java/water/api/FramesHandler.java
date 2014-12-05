@@ -92,22 +92,24 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase list_or_fetch(int version, FramesV2 f) {
+  public FramesV2 list_or_fetch(int version, FramesV2 f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
     FramesV3 f3 = new FramesV3();
     f3.fillFromImpl(f.createAndFillImpl());
 
     if (null != f.key) {
-      return fetch(version, f3);
+      f3 = fetch(version, f3);
     } else {
-      return list(version, f3);
+      f3 = list(version, f3);
     }
+    FramesV2 f2 = new FramesV2().fillFromImpl(f3.createAndFillImpl());
+    return f2;
   }
 
   /** Return all the frames. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase list(int version, FramesV3 s) {
+  public FramesV3 list(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
     f.frames = Frames.fetchAll();
 
@@ -124,7 +126,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** NOTE: We really want to return a different schema here! */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase columns(int version, FramesV3 s) {
+  public FramesV3 columns(int version, FramesV3 s) {
     // TODO: return *only* the columns. . .  This may be a different schema.
     return fetch(version, s);
   }
@@ -152,7 +154,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase column(int version, FramesV3 s) { // TODO: should return a Vec schema
+  public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
     Frame frame = getFromDKV(s.key);
 
     // TODO: We really want to return a different schema here!
@@ -170,7 +172,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase columnSummary(int version, FramesV3 s) {
+  public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV(s.key);
     Vec vec = frame.vec(s.column);
     if (null == vec)
@@ -192,7 +194,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase fetch(int version, FramesV3 s) {
+  public FramesV3 fetch(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
 
     Frame frame = getFromDKV(s.key);
