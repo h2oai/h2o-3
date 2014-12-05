@@ -8,6 +8,8 @@ from h2o_test import dump_json, verboseprint, check_sandbox_for_errors
 #********************************************************************************
 def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False, doFuns=False):
     if not node:
+        if len(h2o_nodes.nodes)==0: 
+            raise Exception("You appeared to have not h2o.init() a h2o cloud? nodes is empty %", h2o_nodes.nodes)
         node = h2o_nodes.nodes[0]
 
     if doFuns:
@@ -38,7 +40,11 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
     # "funs": null, 
     # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))", 
 
-    if 'cols' in resultExec and resultExec['cols']: # not null
+    if (resultExec['num_cols']!=0 or resultExec['num_rows']!=0) and 'key' in resultExec and resultExec['key']:
+        if 'name' not in resultExec['key']:
+            raise Exception("'name' not in 'key'" % dump_json(resultExec))
+        resultKey = resultExec['key']['name']
+
         if 'funstr' in resultExec and resultExec['funstr']: # not null
             raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
         else:
@@ -46,13 +52,20 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             # if test said to look at a resultKey, it's should be in h2o k/v store
             # inspect a result key?
             # Should we get the key name from the exec return?
-            if resultKey is not None:
+            if 1==0 and resultKey is None:
                 kwargs = {'ast': resultKey} 
                 resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
                 print "exec key result:", dump_json(resultExec)
 
-            # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
-            result = resultExec['cols'][0]['min']
+            # FIX! don't look for it if it starts with "_"..spencer deletes?
+            if resultKey[0]=='_':
+                print "WARNING: key/name in result, but leading '_' means it's deleted, so can't view. %s" % resultKey
+                result = None
+            else:
+                # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
+                inspect = h2o_cmd.runInspect(key=resultKey)
+                # print "inspect key of result:", dump_json(inspect)
+                result = inspect['frames'][0]['columns'][0]['mins'][0]
         
     else: 
         if 'funstr' in resultExec and resultExec['funstr']: # not null

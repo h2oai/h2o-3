@@ -53,7 +53,7 @@ def followPath(d, path_elems):
             if path_elem.endswith("]"):
                 idx = int(path_elem[path_elem.find("[") + 1:path_elem.find("]")])
                 path_elem = path_elem[:path_elem.find("[")]
-            assert path_elem in d, "Failed to find key: " + path_elem + " in dict: " + repr(d)
+            assert path_elem in d, "FAIL: Failed to find key: " + path_elem + " in dict: " + repr(d)
 
             if -1 == idx:
                 d = d[path_elem]
@@ -67,22 +67,22 @@ def assertKeysExist(d, path, keys):
 
     d = followPath(d, path_elems)
     for key in keys:
-        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
+        assert key in d, "FAIL: Failed to find key: " + key + " in dict: " + repr(d)
 
 def assertKeysExistAndNonNull(d, path, keys):
     path_elems = path.split("/")
 
     d = followPath(d, path_elems)
     for key in keys:
-        assert key in d, "Failed to find key: " + key + " in dict: " + repr(d)
-        assert d[key] != None, "Value unexpectedly null: " + key + " in dict: " + repr(d)
+        assert key in d, "FAIL: Failed to find key: " + key + " in dict: " + repr(d)
+        assert d[key] != None, "FAIL: Value unexpectedly null: " + key + " in dict: " + repr(d)
 
 def assertKeysDontExist(d, path, keys):
     path_elems = path.split("/")
 
     d = followPath(d, path_elems)
     for key in keys:
-        assert key not in d, "Unexpectedly found key: " + key + " in dict: " + repr(d)
+        assert key not in d, "FAIL: Unexpectedly found key: " + key + " in dict: " + repr(d)
 
 
 ###############

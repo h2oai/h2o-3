@@ -35,13 +35,33 @@ buildscript {
 // Common configuration
 //
 ext {
-    // Published projects
+    //
+    // All published projects - their artifacts are going to Maven central
     publishedProjects = [
       project(':h2o-core'),
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
       project(':h2o-scala')
+    ]
+
+    javaProjects = [
+      project(':h2o-core'),
+      project(':h2o-algos'),
+      project(':h2o-web'),
+      project(':h2o-app'),
+      project(':h2o-test-integ')
+    ]
+
+    scalaProjects = [
+      project(':h2o-scala')
+    ]
+
+    rProjects = [
+      project(':h2o-r')
+    ]
+
+    pythonProjects = [
     ]
 
     // Supported Hadoop versions used at compile time
@@ -57,7 +77,9 @@ ext {
       /* HDP2.1.5 */ '2.4.0.2.1.5.0-695'
     ]
 
+    //
     // Versions of libraries shared cross all projects
+    //
     junitVersion  = '4.11'
     hadoopVersion = '2.5.0-cdh5.2.0'
     jets3tVersion = '0.7.1'
@@ -102,6 +124,26 @@ subprojects {
     }
 
     apply from: "$rootDir/gradle/makeSupport.gradle"
+
+    //
+    // Early configuration of projects simplifies build resolution
+    //
+
+    // Configure Java projects
+    if (project in javaProjects) {
+       apply from: "$rootDir/gradle/java.gradle"
+       apply from: "$rootDir/gradle/cp.gradle"
+    }
+
+    // Configure Scala projects
+    if (project in scalaProjects) {
+        apply from: "$rootDir/gradle/scala.gradle"
+        apply from: "$rootDir/gradle/cp.gradle"
+    }
+
+    if (project in rProjects) {
+        apply from: "$rootDir/gradle/r.gradle"
+    }
 }
 
 task wrapper(type: Wrapper) {
@@ -136,15 +178,21 @@ subprojects {
 // Include support for S3 syncing
 apply from: "gradle/s3sync.gradle"
 
-// This task is used by the Jenkins on test.0xdata.com.
+// This task is used by the Jenkins on test.h2o.ai.
 //
 // It creates a directory called 'target', copies everything to be released 
 // there, and everything in that directory gets uploaded to S3.
 //
 // See ~jenkins/bin/buildh2odev.sh.
 task buildH2oDevDist(type: Exec) {
+    group='Dist'
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
     def projectVersion = bv.getProjectVersion()
     environment['PROJECT_VERSION'] = projectVersion
     commandLine './make-dist.sh'
 }
+
+//
+// Import project development profiles
+//
+apply from: "gradle/profiles.gradle"

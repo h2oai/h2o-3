@@ -49,7 +49,8 @@ class Basic(unittest.TestCase):
             'learn_rate': 0.2,
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
-            'variable_importance': True,
+            # FIX..no variable importance for GBM yet?
+            'variable_importance': False,
             # 'seed': 
         }
 
@@ -71,11 +72,11 @@ class Basic(unittest.TestCase):
         mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         mm = OutputObj(mmResult, 'mm')
 
-        print "Skipping predict"
-        # prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
-        # pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
+        prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+        pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
-        h2o_cmd.runStoreView()
+        # too slow!
+        # h2o_cmd.runStoreView()
 
 if __name__ == '__main__':
     h2o.unit_main()

@@ -1,6 +1,8 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
+from h2o_test import verboseprint, dump_json
+from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
@@ -36,7 +38,8 @@ class Basic(unittest.TestCase):
     def test_rapids_row_range(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
         tryList = [
-            (1000000, 5, 'cA', 200),
+            # (1000000, 5, 'cA', 200),
+            (1000, 5, 'cA', 200),
             ]
 
         # h2b.browseTheCloud()
@@ -64,61 +67,87 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xexec import xFrame, xVector, xUnary, xBinary, xFcn, xSeq, xColon, xAssign, xAssignE, xItem, xExec, xC
+            # Xbase.debugOnly = True
 
             REPEAT = 1
             data_key = hex_key
             for i in range(REPEAT):
                 result_key = data_key + "_" + str(i)
+                result = Assign('s1', Seq(range(5)) ).do
 
-                resultExec, result = xExec( xAssign('seq1', xSeq(range(5)) ))
                 # take advantage of default params for row/col (None)
                 # need the 'c' function, to make sure the key is created
 
-                resultExec, result = xExec( xAssign('seq1', xFcn('c', xSeq(range(5)) )))
-                inspect = h2o_cmd.runInspect(key='seq1')
+                # first try as object, then method
+                a = Assign('s2', Fcn('c', Seq(range(5)) ))
+                result = a.do()
+                print dump_json(a.execResult)
+                print dump_json(a.result)
+
+                # just combine
+                result = Assign('s3', Col(Seq(range(5)) )).do()
+
+                inspect = h2o_cmd.runInspect(key='s3')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==5
                 assert numCols==1
 
-                resultExec, result = xExec( xAssign('seq2', xC(xSeq(range(5))) ))
-                inspect = h2o_cmd.runInspect(key='seq2')
+                result = Assign('s2', Col(Seq(range(5))) ).do()
+
+                inspect = h2o_cmd.runInspect(key='s2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==5
                 assert numCols==1
 
                 # can't have sequence of sequences?
                 # make sure key is created with c()
-                # xAssignE is xExec(xAssign(..)..)
-                resultExec, result = xAssignE('seq1', 
-                    xFcn('c', xSeq(xColon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) )) )
+                f = Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) ))
+                result = Assign('s1', f).do()
 
-                inspect = h2o_cmd.runInspect(key='seq1')
+                f = Col(Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) ))
+                result = Assign('s2', f).do()
+
+                inspect = h2o_cmd.runInspect(key='s2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==313
                 assert numCols==1
             
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xSeq(range(1, 5))) )
-                resultExec, result = xAssignE('seq1', xFrame(data_key, row=xSeq(xColon(99, 400), "#2", 1, range(1,5))) )
+                print "z1" 
+                result = Assign(result_key, Frame(data_key, row=Seq(range(1, 5))) ).do()
+                print "z2" 
+                result = Assign('s1', Frame(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) ).do()
 
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row='#1'))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', '#100')))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(1, 100)))
+                print "z3" 
+                result = Assign(result_key, Frame(data_key, row='#1')).do
+                print "z4" 
+                result = Assign(result_key, Frame(data_key, row=Colon('#1', '#100'))).do()
+                print "z5" 
+                result = Assign(result_key, Frame(data_key, row=Colon(1, 100))).do()
                 # this should fail rapids because of reverse msb/lsb
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#100', '#1')))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-2', '#-1')))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon(-2, -1)))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#-1', '#-2')))
+                # illegal, detected
+                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#100', '#1')))
+                print "z6" 
+                result = Assign(result_key, Frame(data_key, row=Colon('#-2', '#-1'))).do()
+                print "z7" 
+                result = Assign(result_key, Frame(data_key, row=Colon(-2, -1))).do()
+                # illegal, detected
+                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
-                resultExec, result = xAssignE(result_key, xFrame(data_key, row=xColon('#1', rowCount-10)))
-                resultExec, result = xAssignE(result_key, xFrame(data_key, col=xColon('#1', colCount-1, )))
+                print "z8" 
+                result = Assign(result_key, Frame(data_key, row=Colon('#1', rowCount-10))).do()
+                print "z9" 
+                result = Assign(result_key, Frame(data_key, col=Colon('#1', colCount-1, ))).do()
 
                 # no assign
-                resultExec, result = xExec(xFrame(data_key, row=xColon('#1', rowCount-10)))
-                resultExec, result = xExec(xFrame(data_key, col=xColon('#1', colCount-1,)))
+                print "z10" 
+                result = Frame(data_key, row=Colon('#1', rowCount-10)).do()
+                print "z11" 
+                # result = Frame(data_key, col=Colon('#1', colCount-1,)).do()
+
 
                 # do some function translation
-                resultExec, result = xExec(xFcn('==', 1, xFrame(data_key, col=xColon('#1', colCount-1,))) )
+                print "z12" 
+                # result = Fcn('==', 1, Frame(data_key, col=Colon('#1', colCount-1,))).do()
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \

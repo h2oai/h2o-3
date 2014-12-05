@@ -94,13 +94,13 @@ You may alternatively install these packages from within an R session:
 > install.packages("statmod")
 > install.packages("bitops")
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
 If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
 
 Download and update h2o-dev source codes:
 
-    git clone https://github.com/0xdata/h2o-dev
+    git clone https://github.com/h2oai/h2o-dev
 
 ##### Step 5. Run the top-level gradle build:
 
@@ -140,11 +140,11 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
     R CMD INSTALL statmod_x.x.xx.tgz
     R CMD INSTALL bitops_x.x-x.tgz
 
-##### Step 4. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
 OS X should have come with Git installed, so just download and update h2o-dev source codes:
 
-    git clone https://github.com/0xdata/h2o-dev
+    git clone https://github.com/h2oai/h2o-dev
 
 ##### Step 5. Run the top-level gradle build:
 
@@ -167,7 +167,7 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 3. Git Clone [h2o-dev](https://github.com/0xdata/h2o-dev.git)
+##### Step 3. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
 If you don't already have a Git client,
 
@@ -175,7 +175,7 @@ If you don't already have a Git client,
 
 Download and update h2o-dev source codes:
 
-    git clone https://github.com/0xdata/h2o-dev
+    git clone https://github.com/h2oai/h2o-dev
 
 ##### Step 4. Run the top-level gradle build:
 

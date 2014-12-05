@@ -54,7 +54,7 @@ abstract public class AST extends Iced {
         _asts[0].treeWalk(e);
         ((ASTddply)this).apply(e);
       } else {
-        throw H2O.fail("Unknown AST: " + this.getClass());
+        throw H2O.fail("Unknown AST in tree walk: " + this.getClass());
         // TODO: do the udf op thing: capture env...
       }
 
@@ -222,8 +222,12 @@ class ASTSpan extends AST {
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
-  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d; }
-  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;}
+  ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
+    if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+  }
+  ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
+    if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
+  }
   ASTSpan parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
@@ -284,8 +288,21 @@ class ASTSeries extends AST {
     int o = 0;
     for (String s : strs) {
       if (s.charAt(0) == '(') {
-        _order[o++] = 0;
-        s_spans.add((ASTSpan) (new Exec(s, null)).parse());
+        _order[o] = 0;
+        // get a non ASTSpan as next elt
+        try {
+          s_spans.add((ASTSpan) (new Exec(s, null)).parse());
+        } catch (ClassCastException e) {
+          try {
+            ASTOp anum = (ASTOp) (new Exec(s, null)).parse();
+            long n = (long)anum.treeWalk(E._env).popDbl();
+            _order[o] = 1;
+            l_idxs.add(n);
+          } catch (ClassCastException e2) {
+            throw new IllegalArgumentException("AST in sequence did not evaluate to a range or number.\n Only (: min max), #, and ASTs that evaluate to # are valid.");
+          }
+        }
+        o++;
       } else {
         _order[o++] = 1;
         if (s.charAt(0) == '#') s = s.substring(1, s.length());
@@ -983,9 +1000,7 @@ class ASTSlice extends AST {
   ASTSlice() {}
 
   ASTSlice parse_impl(Exec E) {
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST hex = E.parse();
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST rows = E.skipWS().parse();
     if (rows instanceof ASTString) rows = new ASTNull();
     if (rows instanceof ASTSpan) ((ASTSpan) rows).setSlice(true, false);
@@ -1110,7 +1125,7 @@ class ASTSlice extends AST {
     }
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
-    Frame ary = env.peekAry();  // Peek-frame
+    Frame ary = env.pop0Ary();  // get it off the stack!!!!
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.

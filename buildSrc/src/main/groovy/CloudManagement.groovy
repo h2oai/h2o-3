@@ -50,6 +50,10 @@ class manageLocalClouds implements Plugin<Project> {
     def waitOnClouds = {project, config ->
         project.ant.exec(executable: 'jps', dir: project.buildDir.canonicalPath, outputproperty: 'cmdOut')
         def pids = []
+        def getAddressFromURL = {url->
+            InetAddress.getByName(url.toURL().host).getHostAddress()
+        }
+
         project.ant.properties.cmdOut.split('\n').each{
             Matcher m = (it =~ jpsPidPattern)
             if ( m.matches() ){
@@ -57,6 +61,9 @@ class manageLocalClouds implements Plugin<Project> {
             }
         }
         project.ext.set('cloudsPid', pids.join(','))
+        project.ext.set('ip', getAddressFromURL("http://localhost"))
+        project.ext.set('port', "54321")
+
         def http = new HTTPBuilder('http://localhost:54321')
         def cloudIsUp = false
         def foundError = false
@@ -65,6 +72,8 @@ class manageLocalClouds implements Plugin<Project> {
                 uri.path = "/"
                 response.success = { resp, reader->
                     cloudIsUp = true
+                    project.logger.warn " ****************** Cloud is up and running. ***********************"
+                    project.logger.warn resp.toString()
                     assert resp.status == 200
                 }
                 response.'404' = {resp ->
@@ -75,7 +84,6 @@ class manageLocalClouds implements Plugin<Project> {
         }
         project.logger.info " *** Cloud at http://localhost:54321 is up and running ***"
         project.logger.warn "PID: " + project.ext.cloudsPid.toString()
-
     }
 
     void apply(Project project) {

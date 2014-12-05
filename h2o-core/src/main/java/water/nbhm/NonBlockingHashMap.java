@@ -680,7 +680,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // apparently spuriously fail - and we avoid apparent spurious failure
         // by not allowing Keys to ever change.
         K = key(kvs,idx);       // CAS failed, get updated value
-        assert K != null;       // If keys[idx] is null, CAS shoulda worked
+        if(K == null)continue;
       }
       // Key slot was not null, there exists a Key here
 

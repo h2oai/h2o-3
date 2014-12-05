@@ -16,6 +16,7 @@ public class C0LChunk extends Chunk {
     UnsafeUtils.set8(_mem, 0, con);
     UnsafeUtils.set4(_mem,8,len);
   }
+  @Override public boolean hasFloat() { return false; }
   @Override protected final long at8_impl( int i ) { return _con; }
   @Override protected final double atd_impl( int i ) {return _con; }
   @Override protected final boolean isNA_impl( int i ) { return false; }

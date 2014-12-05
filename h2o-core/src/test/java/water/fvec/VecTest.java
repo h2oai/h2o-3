@@ -1,16 +1,18 @@
 package water.fvec;
 
-import static org.junit.Assert.assertTrue;
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
+
+import static org.junit.Assert.assertTrue;
 import static water.fvec.Vec.makeCon;
 import static water.fvec.Vec.makeSeq;
 
 /** This test tests stability of Vec API. */
 public class VecTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   /** Test toEnum call to return correct domain. */
   @Test public void testToEnum() {
@@ -36,44 +38,45 @@ public class VecTest extends TestUtil {
 
     v = makeCon(0xCAFE,2*Vec.CHUNK_SZ);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v._espc.length == 2);
+    assertTrue(v._espc.length == 3);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ*2
+            v._espc[1] == Vec.CHUNK_SZ
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,3*Vec.CHUNK_SZ);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*Vec.CHUNK_SZ-1) == 0xCAFE);
-    assertTrue(v._espc.length == 3);
+    assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0              &&
             v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*3
+            v._espc[2] == Vec.CHUNK_SZ*2
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,3*Vec.CHUNK_SZ+1);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(3*Vec.CHUNK_SZ) == 0xCAFE);
-    assertTrue(v._espc.length == 3);
+    assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0              &&
             v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*3+1
+            v._espc[2] == Vec.CHUNK_SZ*2 &&
+            v._espc[3] == Vec.CHUNK_SZ*3+1
     );
     v.remove(new Futures()).blockForPending();
 
     v = makeCon(0xCAFE,4*Vec.CHUNK_SZ);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v.at(4*Vec.CHUNK_SZ-1) == 0xCAFE);
-    assertTrue(v._espc.length == 4);
+    assertTrue(v._espc.length == 5);
     assertTrue(
             v._espc[0] == 0              &&
             v._espc[1] == Vec.CHUNK_SZ   &&
             v._espc[2] == Vec.CHUNK_SZ*2 &&
-            v._espc[3] == Vec.CHUNK_SZ*4
+            v._espc[3] == Vec.CHUNK_SZ*3
     );
     v.remove(new Futures()).blockForPending();
   }
@@ -83,11 +86,11 @@ public class VecTest extends TestUtil {
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
     assertTrue(v.at(2*Vec.CHUNK_SZ) == 2*Vec.CHUNK_SZ+1);
-    assertTrue(v._espc.length == 3);
+    assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0 &&
             v._espc[1] == Vec.CHUNK_SZ &&
-            v._espc[2] == Vec.CHUNK_SZ * 3
+            v._espc[2] == Vec.CHUNK_SZ * 2
     );
     v.remove(new Futures()).blockForPending();
   }

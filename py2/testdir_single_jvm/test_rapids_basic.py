@@ -2,7 +2,30 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
+
+# ! is only needed if there is no indexing
 initList = [
+        # weird cases with lhs 
+        # can only index v if it already exists. is the lhs addition before or after the indexed assign
+        # if before, what does it add to. If after, does it add to the full key?
+        # must be before.
+        '(= ([ (+ #5 ([ $v "null" "null"))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        '(= ([ (+ #5 ([ $v "null" #0))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        # wrong row count?
+        # '(= ([ (+ #5 ([ $v #0 "null"))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        # fails with exception
+        # '(= ([ (+ #5 ([ $v #0 #0))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+
+        # weird cases with lhs
+        # dont need a rhs but should still modify?  
+        # does this add 5 to v and then nothing?
+
+        # why does this fail?
+        # '([ (+ #5 ([ $v "null" "null")) #0)',
+        # why does this fail?
+        # '([ (+ #6 ([ $v "null" #0)) #0)',
+        # '([ (+ #7 ([ $v #0)) #0))',
+
         '(+ (* #2 #2) (* #5 #5))',
         '(* #1 (+ (* #2 #2) (* #5 #5)))',
 
@@ -11,7 +34,7 @@ initList = [
         '(= !x (c {(: #5 #5) }))',
 
         # why is num_rows = -4 here? Will blow up if we  use it?
-        '(= !x (c {(: #5 #0) }))',
+        # '(= !x (c {(: #5 #0) }))',
 
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
         '(= !v2 (+ $v $v))',
@@ -40,10 +63,10 @@ initList = [
 
         # '(= !keys (ls))', # works
         # '(= !x #1)', # works
-        # '(= !x (sum ([ $r1 "null" #0) $TRUE))', # works
-        # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))', # bad r1
+        # '(= !x (sum ([ $v "null" #0) $TRUE))', # works
+        # '(= !x (sum ([ v "null" (: #0 #0)) $TRUE))', # bad v
 
-        # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
+        # '(= !x (xorsum ([ $v "null" #0) $TRUE))', # works
 
         # 'a',  # AAIOBE
         # 'x', # AAIOBE
@@ -149,46 +172,46 @@ initList = [
 
 
         # can have space between ( and function
-        '= !x1 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2a ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x1 ( sum ([ $v "null" #0) $TRUE)',
+        '= !x2 ( sum ([ $v "null" #0) $TRUE)',
+        '= !x2a ( sum ([ $v "null" #0) $TRUE )',
 
         # can have space after (
-        '= !x3 ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3a ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )',
-        '= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )',
+        '= !x3 ( sum ([ $v "null" #0) $TRUE )',
+        '= !x3a ( sum ([ $v "null" #0) $TRUE )',
+        '= !x3b ( sum ([ $v "null" #0 ) $TRUE )',
+        '= !x4 ( sum ([ $v " null " #0 ) $TRUE )',
 
         # can have space after (
-        '(= !x3 ( sum ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( sum ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( sum ([ $v "null" #0) $TRUE ))',
+        '(= !x3a ( sum ([ $v "null" #0) $TRUE ) )',
+        '(= !x3b ( sum ([ $v "null" #0 ) $TRUE )  )',
+        '((= !x4 ( sum ([ $v " null " #0 ) $TRUE )))',
 
-        '(= !x3 ( max ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( max ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( max ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( max ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( max ([ $v "null" #0) $TRUE ))',
+        '(= !x3a ( max ([ $v "null" #0) $TRUE ) )',
+        '(= !x3b ( max ([ $v "null" #0 ) $TRUE )  )',
+        '((= !x4 ( max ([ $v " null " #0 ) $TRUE )))',
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( min ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( min ([ $v "null" #0) $TRUE ))',
+        '(= !x3a ( min ([ $v "null" #0) $TRUE ) )',
+        '(= !x3b ( min ([ $v "null" #0 ) $TRUE )  )',
+        '((= !x4 ( min ([ $v " null " #0 ) $TRUE )))',
 
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3 ( min ([ $v "null" #0) $TRUE ))',
 
-        '(= !x3 (+ (sum ([ $r1 "null" #0) $TRUE) (sum ([ $r1 "null" #0) $TRUE) )',
-        '(= !x3 (+ (xorsum ([ $r1 "null" #0) $TRUE) (xorsum ([ $r1 "null" #0) $TRUE) )',
+        '(= !x3 (+ (sum ([ $v "null" #0) $TRUE) (sum ([ $v "null" #0) $TRUE) )',
+        '(= !x3 (+ (xorsum ([ $v "null" #0) $TRUE) (xorsum ([ $v "null" #0) $TRUE) )',
 
         # FIX! these should be like sum
-        # '(= !x3 (+ (max ([ $r1 "null" #0) $TRUE) (max ([ $r1 "null" #0) $TRUE) )',
-        # '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
+        # '(= !x3 (+ (max ([ $v "null" #0) $TRUE) (max ([ $v "null" #0) $TRUE) )',
+        # '(= !x3 (+ (min ([ $v "null" #0) $TRUE) (min ([ $v "null" #0) $TRUE) )',
 
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
 
-        #  r1[c(1,5,8,10,33),]  
+        #  v[c(1,5,8,10,33),]  
         # commas are illegal (var name?)
 
         # vectors can be strings or numbers only, not vars or keys
@@ -197,8 +220,8 @@ initList = [
 
         # c(1,2,3,4)
 
-        # '= !x (sum $r1 )'
-        # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
+        # '= !x (sum $v )'
+        # '(= !x (xorsum ([ $v "null" #0) $TRUE))', # works
 
         
         # 'cave=c(1.3,0,1,2,3,4,5)',
@@ -273,7 +296,7 @@ class Basic(unittest.TestCase):
     def test_rapids_basic(self):
         bucket = 'smalldata'
         csvPathname = 'iris/iris_wheader.csv'
-        hexKey = 'r1'
+        hexKey = 'v'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
         keys = []

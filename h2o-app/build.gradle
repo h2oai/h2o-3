@@ -1,5 +1,6 @@
-apply from: '../gradle/java.gradle'
-
+//
+// H2O App Module
+//
 description = "H2O Application Runner"
 
 dependencies {

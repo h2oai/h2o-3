@@ -2,19 +2,23 @@ package water.rapids;
 
 //import hex.Quantiles;
 
+import jsr166y.CountedCompleter;
+import org.apache.commons.math3.special.Gamma;
+import org.apache.commons.math3.util.FastMath;
 import water.*;
-import water.Quantiles;
 import water.fvec.*;
+import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 //import hex.la.Matrix;
-//import org.apache.commons.math3.util.*;
 //import org.joda.time.DateTime;
 //import org.joda.time.MutableDateTime;
 //import water.cascade.Env;
@@ -95,7 +99,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCeil());
     putPrefix(new ASTFlr ());
     putPrefix(new ASTLog ());
+    putPrefix(new ASTLog10 ());
+    putPrefix(new ASTLog2 ());
+    putPrefix(new ASTLog1p ());
     putPrefix(new ASTExp ());
+    putPrefix(new ASTExpm1 ());
+    putPrefix(new ASTGamma());
+    putPrefix(new ASTLGamma());
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
@@ -107,40 +117,44 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTTrun());
 
     // Trigonometric functions
-    putPrefix(new ASTCos());
-    putPrefix(new ASTSin());
-    putPrefix(new ASTTan());
-    putPrefix(new ASTACos());
-    putPrefix(new ASTASin());
-    putPrefix(new ASTATan());
-    putPrefix(new ASTCosh());
-    putPrefix(new ASTSinh());
-    putPrefix(new ASTTanh());
+    putPrefix(new ASTCos  ());
+    putPrefix(new ASTSin  ());
+    putPrefix(new ASTTan  ());
+    putPrefix(new ASTACos ());
+    putPrefix(new ASTASin ());
+    putPrefix(new ASTATan ());
+    putPrefix(new ASTCosh ());
+    putPrefix(new ASTSinh ());
+    putPrefix(new ASTTanh ());
+    putPrefix(new ASTACosh());
+    putPrefix(new ASTASinh());
+    putPrefix(new ASTATanh());
 
     // More generic reducers
     putPrefix(new ASTMin ());
     putPrefix(new ASTMax ());
     putPrefix(new ASTSum ());
     putPrefix(new ASTSdev());
-    putPrefix(new ASTVar());
+    putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
 
     // Misc
-    putPrefix(new ASTMatch());
+    putPrefix(new ASTMatch ());
     putPrefix(new ASTRename());  //TODO
     putPrefix(new ASTSeq   ());  //TODO
     putPrefix(new ASTSeqLen());  //TODO
     putPrefix(new ASTRepLen());  //TODO
     putPrefix(new ASTQtile ());  //TODO
     putPrefix(new ASTCbind ());
+    putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
 //    putPrefix(new ASTReduce());
-//    putPrefix(new ASTIfElse());
-    putPrefix(new ASTApply());
+    putPrefix(new ASTIfElse());
+    putPrefix(new ASTApply ());
     putPrefix(new ASTSApply());
     putPrefix(new ASTddply ());
 //    putPrefix(new ASTUnique());
-    putPrefix(new ASTXorSum ());
+    putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
@@ -158,7 +172,7 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTMinute());
 //    putPrefix(new ASTSecond());
 //    putPrefix(new ASTMillis());
-//
+
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
 //    putPrefix(new ASTIsTRUE());
@@ -290,14 +304,23 @@ class ASTATan extends ASTUniPrefixOp { @Override String opStr(){ return "atan"; 
 class ASTCosh extends ASTUniPrefixOp { @Override String opStr(){ return "cosh"; } @Override ASTOp make() {return new ASTCosh ();} @Override double op(double d) { return Math.cosh(d);}}
 class ASTSinh extends ASTUniPrefixOp { @Override String opStr(){ return "sinh"; } @Override ASTOp make() {return new ASTSinh ();} @Override double op(double d) { return Math.sinh(d);}}
 class ASTTanh extends ASTUniPrefixOp { @Override String opStr(){ return "tanh"; } @Override ASTOp make() {return new ASTTanh ();} @Override double op(double d) { return Math.tanh(d);}}
+class ASTACosh extends ASTUniPrefixOp { @Override String opStr(){ return "acosh"; } @Override ASTOp make() {return new ASTACosh ();} @Override double op(double d) { return FastMath.acosh(d);}}
+class ASTASinh extends ASTUniPrefixOp { @Override String opStr(){ return "asinh"; } @Override ASTOp make() {return new ASTASinh ();} @Override double op(double d) { return FastMath.asinh(d);}}
+class ASTATanh extends ASTUniPrefixOp { @Override String opStr(){ return "atanh"; } @Override ASTOp make() {return new ASTATanh ();} @Override double op(double d) { return FastMath.atanh(d);}}
 class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  } @Override ASTOp make() {return new ASTAbs ();} @Override double op(double d) { return Math.abs(d);}}
-class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sgn" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
+class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sign" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
 class ASTTrun extends ASTUniPrefixOp { @Override String opStr(){ return "trunc"; } @Override ASTOp make() {return new ASTTrun();} @Override double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
 class ASTCeil extends ASTUniPrefixOp { @Override String opStr(){ return "ceiling"; } @Override ASTOp make() {return new ASTCeil();} @Override double op(double d) { return Math.ceil(d);}}
 class ASTFlr  extends ASTUniPrefixOp { @Override String opStr(){ return "floor";} @Override ASTOp make() {return new ASTFlr ();} @Override double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniPrefixOp { @Override String opStr(){ return "log";  } @Override ASTOp make() {return new ASTLog ();} @Override double op(double d) { return Math.log(d);}}
+class ASTLog10  extends ASTUniPrefixOp { @Override String opStr(){ return "log10";  } @Override ASTOp make() {return new ASTLog10 ();} @Override double op(double d) { return Math.log10(d);}}
+class ASTLog2  extends ASTUniPrefixOp { @Override String opStr(){ return "log2";  } @Override ASTOp make() {return new ASTLog2 ();} @Override double op(double d) { return Math.log(d)/Math.log(2);}}
+class ASTLog1p  extends ASTUniPrefixOp { @Override String opStr(){ return "log1p";  } @Override ASTOp make() {return new ASTLog1p ();} @Override double op(double d) { return Math.log1p(d);}}
 class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  } @Override ASTOp make() {return new ASTExp ();} @Override double op(double d) { return Math.exp(d);}}
+class ASTExpm1  extends ASTUniPrefixOp { @Override String opStr(){ return "expm1";  } @Override ASTOp make() {return new ASTExpm1 ();} @Override double op(double d) { return Math.expm1(d);}}
+class ASTGamma  extends ASTUniPrefixOp { @Override String opStr(){ return "gamma";  } @Override ASTOp make() {return new ASTGamma ();} @Override double op(double d) {  return Gamma.gamma(d);}}
+class ASTLGamma extends ASTUniPrefixOp { @Override String opStr(){ return "lgamma"; } @Override ASTOp make() {return new ASTLGamma ();} @Override double op(double d) { return Gamma.logGamma(d);}}
 
 class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";} @Override ASTOp make() { return new ASTIsNA();} @Override double op(double d) { return Double.isNaN(d)?1:0;}
   @Override void apply(Env env) {
@@ -1139,18 +1162,217 @@ class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(
 //  @Override void apply(Env env, int argcnt, ASTApply apply) { throw H2O.unimpl(); }
 //}
 
-// Check that this properly cleans up all frames.
+class ASTRbind extends ASTUniPrefixOp {
+  protected static int argcnt;
+  @Override String opStr() { return "rbind"; }
+  public ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
+  @Override ASTOp make() { return new ASTRbind(); }
+  ASTRbind parse_impl(Exec E) {
+    ArrayList<AST> dblarys = new ArrayList<>();
+    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    AST ary = E.parse();
+    dblarys.add(ary);
+    AST a;
+    boolean broke = false;
+    while (E.skipWS().hasNext()) {
+      a = E.parse();
+      if (a instanceof ASTId) {
+        AST ast = E._env.lookup((ASTId)a);
+        if (ast instanceof ASTFrame) { dblarys.add(a); }
+        else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
+      }
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
+        dblarys.add(a);
+      }
+      else { broke = true; break; }
+    }
+    if (broke) E.rewind();
+    Collections.reverse(dblarys);
+    ASTRbind res = (ASTRbind) clone();
+    res._asts = dblarys.toArray(new AST[argcnt=dblarys.size()]);
+    return res;
+  }
+
+  private String get_type(byte t) {
+    switch(t) {
+      case Vec.T_ENUM: return "factor";
+      case Vec.T_NUM:  return "numeric";
+      case Vec.T_STR:  return "String";
+      case Vec.T_TIME: return "time";
+      case Vec.T_UUID: return "UUID";
+      default: return "bad";
+    }
+  }
+
+  private static class RbindMRTask extends MRTask<RbindMRTask> {
+    private final int[] _emap;
+    private final int _chunkOffset;
+    private final Vec _v;
+    RbindMRTask(H2O.H2OCountedCompleter hc, int[] emap, Vec v, int offset) { super(hc); _emap = emap; _v = v; _chunkOffset = offset;}
+
+    @Override public void map(Chunk cs) {
+      int idx = _chunkOffset+cs.cidx();
+      Key ckey = Vec.chunkKey(_v._key, idx);
+      if (_emap != null) {
+        assert !cs.hasFloat(): "Input chunk ("+cs.getClass()+") has float, but is expected to be enum";
+        NewChunk nc = new NewChunk(_v, idx);
+        // loop over rows and update ints for new domain mapping according to vecs[c].domain()
+        for (int r=0;r < cs._len;++r) {
+          if (cs.isNA0(r)) nc.addNA();
+          else nc.addNum(_emap[(int)cs.at80(r)], 0);
+        }
+        nc.close(_fs);
+      } else {
+        Chunk oc = (Chunk)cs.clone();
+        oc.setStart(-1);
+        oc.setVec(null);
+        oc.setBytes(cs.getBytes().clone()); // needless replication of the data, can do ref counting on byte[] _mem
+        DKV.put(ckey, oc, _fs, true);
+      }
+    }
+  }
+
+  private static class RbindTask extends H2O.H2OCountedCompleter<RbindTask> {
+    final transient Vec[] _vecs;
+    final Vec _v;
+    final long[] _espc;
+    String[] _dom;
+
+    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc) { super(cc); _vecs = vecs; _v = v; _espc = espc; }
+
+    private static Map<Integer, String> invert(Map<String, Integer> map) {
+      Map<Integer, String> inv = new HashMap<>();
+      for (Map.Entry<String, Integer> e : map.entrySet()) {
+        inv.put(e.getValue(), e.getKey());
+      }
+      return inv;
+    }
+
+    @Override protected void compute2() {
+      addToPendingCount(_vecs.length-1);
+      boolean isEnum = _vecs[0].domain() != null;
+      int[][] emaps  = new int[_vecs.length][];
+
+      if (isEnum) {
+        // loop to create BIG domain
+        HashMap<String, Integer> dmap = new HashMap<>(); // probably should allocate something that's big enough (i.e. 2*biggest_domain)
+        int c = 0;
+        for (int i = 0; i < _vecs.length; ++i) {
+          emaps[i] = new int[_vecs[i].domain().length];
+          for (int j = 0; j < emaps[i].length; ++j)
+            if (!dmap.containsKey(_vecs[i].domain()[j]))
+              dmap.put(_vecs[i].domain()[j], emaps[i][j]=c++);
+            else emaps[i][j] = dmap.get(_vecs[i].domain()[j]);
+        }
+        _dom = new String[dmap.size()];
+        HashMap<Integer, String> inv = (HashMap<Integer, String>) invert(dmap);
+        for (int s = 0; s < _dom.length; ++s) _dom[s] = inv.get(s);
+      }
+      int offset=0;
+      for (int i=0; i<_vecs.length; ++i) {
+        new RbindMRTask(this, emaps[i], _v, offset).asyncExec(_vecs[i]);
+        offset += _vecs[i].nChunks();
+      }
+    }
+
+    @Override public void onCompletion(CountedCompleter cc) {
+        _v.setDomain(_dom);
+        DKV.put(_v);
+    }
+  }
+
+  private static class ParallelRbinds extends H2O.H2OCountedCompleter{
+
+    private final Env _env;
+    private final int _argcnt;
+    private final AtomicInteger _ctr;
+    private int _maxP = 100;
+
+    private long[] _espc;
+    private Vec[] _vecs;
+    ParallelRbinds(Env e, int argcnt) { _env = e; _argcnt = argcnt; _ctr = new AtomicInteger(_maxP-1); }  //TODO pass maxP to constructor
+
+    @Override protected void compute2() {
+      addToPendingCount(_env.peekAry().numCols()-1);
+      int nchks=0;
+      for (int i =0; i < _argcnt; ++i)
+        nchks+=_env.peekAryAt(-i).anyVec().nChunks();
+
+      _espc = new long[nchks+1];
+      int coffset = _env.peekAry().anyVec().nChunks();
+      long[] first_espc = _env.peekAry().anyVec().get_espc();
+      System.arraycopy(first_espc, 0, _espc, 0, first_espc.length);
+      for (int i=1; i< _argcnt; ++i) {
+        long roffset = _espc[coffset];
+        long[] espc = _env.peekAryAt(-i).anyVec().get_espc();
+        int j = 1;
+        for (; j < espc.length; j++)
+          _espc[coffset + j] = roffset+ espc[j];
+        coffset += _env.peekAryAt(-i).anyVec().nChunks();
+      }
+
+      Key[] keys = _env.peekAry().anyVec().group().addVecs(_env.peekAry().numCols());
+      _vecs = new Vec[keys.length];
+      for (int i=0; i<_vecs.length; ++i)
+        _vecs[i] = new Vec( keys[i], _espc, null, _env.peekAry().vec(i).get_type());
+
+      for (int i=0; i < Math.min(_maxP, _vecs.length); ++i) forkVecTask(i);
+    }
+
+    private void forkVecTask(final int i) {
+      Vec[] vecs = new Vec[_argcnt];
+      for (int j= 0; j < _argcnt; ++j)
+        vecs[j] = _env.peekAryAt(-j).vec(i);
+      new RbindTask(new Callback(), vecs, _vecs[i], _espc).fork();
+    }
+
+    private class Callback extends H2O.H2OCallback {
+      public Callback(){super(ParallelRbinds.this);}
+      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
+        int i = _ctr.incrementAndGet();
+        if(i < _vecs.length)
+          forkVecTask(i);
+      }
+    }
+  }
+
+  @Override void apply(Env env) {
+    // quick check to make sure rbind is feasible
+    if (argcnt == 1) { return; } // leave stack as is
+
+    Frame f1 = env.peekAry();
+    // do error checking and compute new offsets in tandem
+    for (int i = 1; i < argcnt; ++i) {
+      Frame t = env.peekAryAt(-i);
+
+      // check columns match
+      if (t.numCols() != f1.numCols())
+        throw new IllegalArgumentException("Column mismatch! Expected " + f1.numCols() + " but frame has " + t.numCols());
+
+      // check column types
+      for (int c = 0; c < f1.numCols(); ++c) {
+        if (f1.vec(c).get_type() != t.vec(c).get_type())
+          throw new IllegalArgumentException("Column type mismatch! Expected type " + get_type(f1.vec(c).get_type()) + " but vec has type " + get_type(t.vec(c).get_type()));
+      }
+    }
+    ParallelRbinds t;
+    H2O.submitTask(t =new ParallelRbinds(env, argcnt)).join();
+    for (int i = 0; i < argcnt; ++i) env.cleanup(env.pop0Ary());
+    env.push(new ValFrame(new Frame(f1.names(), t._vecs)));
+  }
+}
+
 class ASTCbind extends ASTUniPrefixOp {
   protected static int argcnt;
   @Override String opStr() { return "cbind"; }
-  ASTCbind( ) { super(new String[]{"cbind","ary", "..."}); }
+  public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
   ASTCbind parse_impl(Exec E) {
     ArrayList<AST> dblarys = new ArrayList<>();
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST ary = E.parse();
     dblarys.add(ary);
-    AST a = null;
+    AST a;
     while (E.skipWS().hasNext()) {
       a = E.parse();
       if (a instanceof ASTId) {
@@ -1167,7 +1389,6 @@ class ASTCbind extends ASTUniPrefixOp {
     return res;
   }
   @Override void apply(Env env) {
-    //argcnt = env.sp();
     // Validate the input frames
     Vec vmax = null;
     for(int i = 0; i < argcnt; i++) {
@@ -1679,26 +1900,12 @@ class ASTRunif extends ASTUniPrefixOp {
   protected static double _min;
   protected static double _max;
   protected static long   _seed;
-  @Override String opStr() { return "runif"; }
-  public ASTRunif() { super(new String[]{"runif","dbls","seed"}); }
+  @Override String opStr() { return "h2o.runif"; }
+  public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
   @Override ASTRunif parse_impl(Exec E) {
     // peel off the ary
     AST ary = E.parse();
-    // parse the min
-    try {
-      _min = E.nextDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `min` expected to be a number.");
-    }
-    // parse the max
-    try {
-      _max = E.nextDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `max` expected to be a number.");
-    }
     // parse the seed
     try {
       _seed = (long) E.nextDbl();
@@ -2135,89 +2342,139 @@ class ASTTable extends ASTUniPrefixOp {
   }
 }
 
-// Selective return.  If the selector is a double, just eval both args and
-// return the selected one.  If the selector is an array, then it must be
-// compatible with argument arrays (if any), and the selection is done
-// element-by-element.
-//class ASTIfElse extends ASTOp {
-//  static final String VARS[] = new String[]{"ifelse","tst","true","false"};
-//  static Type[] newsig() {
-//    Type t1 = Type.unbound(), t2 = Type.unbound(), t3=Type.unbound();
-//    return new Type[]{Type.anyary(new Type[]{t1,t2,t3}),t1,t2,t3};
-//  }
-//  ASTIfElse( ) { super(VARS, newsig(),OPF_INFIX,OPP_PREFIX,OPA_RIGHT); }
-//  @Override ASTOp make() {return new ASTIfElse();}
-//  @Override String opStr() { return "ifelse"; }
-//  // Parse an infix trinary ?: operator
+// Conditional merge of two Frames/Vecs
+// Result is always the height as "tst"
+// That means we support R semantics here and do the replication of true/false as needed.
+// We also do the same thing R does with factor levels -> replace with their int value...
+// What we do NOT support is the case when true.numCols() != false.numCols()
+// The pseudo-code is: [t <- true; t[!tst] < false[!tst]; t]
+
+// Cases to consider: (2^2 possible input types f: Frame, v: Vec (1D frame), the tst may only be a single column bit vec.
 //
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    // All or none are functions
-//    assert ( env.isFcn(-1) &&  env.isFcn(-2) &&  _t.ret().isFcn())
-//            ||   (!env.isFcn(-1) && !env.isFcn(-2) && !_t.ret().isFcn());
-//    // If the result is an array, then one of the other of the two must be an
-//    // array.  , and this is a broadcast op.
-//    assert !_t.isAry() || env.isAry(-1) || env.isAry(-2);
+//       tst | true | false
+//       ----|------|------
+//     1.  v     f      f
+//     2.  v     f      v
+//     3.  v     v      f
+//     4.  v     v      v
 //
-//    // Single selection?  Then just pick slots
-//    if( !env.isAry(-3) ) {
-//      if( env.dbl(-3)==0 ) env.pop_into_stk(-4);
-//      else {  env.pop();   env.pop_into_stk(-3); }
-//      return;
-//    }
-//
-//    Frame  frtst=null, frtru= null, frfal= null;
-//    double  dtst=  0 ,  dtru=   0 ,  dfal=   0 ;
-//    if( env.isAry() ) frfal= env.popAry(); else dfal = env.popDbl(); String kf = env.key();
-//    if( env.isAry() ) frtru= env.popAry(); else dtru = env.popDbl(); String kt = env.key();
-//    if( env.isAry() ) frtst= env.popAry(); else dtst = env.popDbl(); String kq = env.key();
-//
-//    // Multi-selection
-//    // Build a doAll frame
-//    Frame fr  = new Frame(frtst); // Do-All frame
-//    final int  ncols = frtst.numCols(); // Result column count
-//    final long nrows = frtst.numRows(); // Result row count
-//    String names[]=null;
-//    if( frtru !=null ) {          // True is a Frame?
-//      if( frtru.numCols() != ncols ||  frtru.numRows() != nrows )
-//        throw new IllegalArgumentException("Arrays must be same size: "+frtst+" vs "+frtru);
-//      fr.add(frtru,true);
-//      names = frtru._names;
-//    }
-//    if( frfal !=null ) {          // False is a Frame?
-//      if( frfal.numCols() != ncols ||  frfal.numRows() != nrows )
-//        throw new IllegalArgumentException("Arrays must be same size: "+frtst+" vs "+frfal);
-//      fr.add(frfal,true);
-//      names = frfal._names;
-//    }
-//    if( names==null && frtst!=null ) names = frtst._names;
-//    final boolean t = frtru != null;
-//    final boolean f = frfal != null;
-//    final double fdtru = dtru;
-//    final double fdfal = dfal;
-//
-//    // Run a selection picking true/false across the frame
-//    Frame fr2 = new MRTask2() {
-//      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-//        for( int i=0; i<nchks.length; i++ ) {
-//          NewChunk n =nchks[i];
-//          int off=i;
-//          Chunk ctst=     chks[off];
-//          Chunk ctru= t ? chks[off+=ncols] : null;
-//          Chunk cfal= f ? chks[off+=ncols] : null;
-//          int rlen = ctst._len;
-//          for( int r=0; r<rlen; r++ )
-//            if( ctst.isNA0(r) ) n.addNA();
-//            else n.addNum(ctst.at0(r)!=0 ? (t ? ctru.at0(r) : fdtru) : (f ? cfal.at0(r) : fdfal));
-//        }
-//      }
-//    }.doAll(ncols,fr).outputFrame(names,fr.domains());
-//    env.subRef(frtst,kq);
-//    if( frtru != null ) env.subRef(frtru,kt);
-//    if( frfal != null ) env.subRef(frfal,kf);
-//    env.pop();
-//    env.push(fr2);
-//  }
-//}
+//  Additionally, how to cut/expand frames/vecs of true and false to match tst.
+
+class ASTIfElse extends ASTUniPrefixOp {
+  static final String VARS[] = new String[]{"ifelse","tst","true","false"};
+
+  ASTIfElse( ) { super(VARS); }
+  @Override ASTOp make() {return new ASTIfElse();}
+  @Override String opStr() { return "ifelse"; }
+  @Override ASTIfElse parse_impl(Exec E) {
+    AST tst = E.parse();
+    AST yes = E.skipWS().parse(); // could be num
+    AST no  = E.skipWS().parse(); // could be num
+    ASTIfElse res = (ASTIfElse)clone();
+    res._asts = new AST[]{no,yes,tst};
+    return res;
+  }
+
+  // return frame compatible to tgt
+  private Frame adaptToTst(Frame src, Frame tgt) {
+    Key k = src._key == null ? Key.make() : src._key;
+    // need to pute src in DKV if not in there
+    if (src._key == null || DKV.get(src._key) == null)
+      DKV.put(k, new Frame(k,src.names(),src.vecs()));
+
+    // extend src
+    StringBuilder sb=null;
+    if (src.numRows() < tgt.numRows()) {
+      // rbind the needed rows
+      int nrbins = 1 + (int)((tgt.numRows() - src.numRows()) / src.numRows());
+      long remainder = tgt.numRows() % src.numRows();
+      sb = new StringBuilder("(rbind ");
+      for (int i = 0; i < nrbins; ++i) sb.append("$").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
+      sb.append(remainder > 0 ? "([ $"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
+      Log.info("extending frame:" + sb.toString());
+
+    // reduce src
+    } else if (src.numRows() > tgt.numRows()) {
+      long rmax = tgt.numRows() - 1;
+      sb = new StringBuilder("([ $"+k+" (: #0 #"+rmax+"))");
+    }
+
+    if (sb != null) {
+      Env env=null;
+      Frame res;
+      try {
+        env = Exec.exec(sb.toString());
+        res = env.pop0Ary();
+        res.unlock_all();
+      } catch (Exception e) {
+        throw H2O.fail();
+      } finally {
+        if (env!=null)env.unlock();
+      }
+      Frame ret = tgt.makeCompatible(res);
+      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
+      return ret;
+    }
+    src = DKV.remove(k).get();
+    Frame ret = tgt.makeCompatible(src);
+    if (src != ret) src.delete();
+    return ret;
+  }
+
+  private Frame adaptToTst(double d, Frame tgt) {
+    Frame v = new Frame(Vec.makeCon(d, tgt.numRows()));
+    Frame ret = tgt.makeCompatible(v);
+    if (ret != v) v.delete();
+    return ret;
+  }
+
+  @Override void apply(Env env) {
+    Frame tst = env.pop0Ary();
+    if (tst.numCols() != 1)
+      throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
+    Frame yes=null; double dyes=0;
+    Frame no=null; double dno=0;
+    if (env.isAry()) yes = env.pop0Ary(); else dyes = env.popDbl();
+    if (env.isAry()) no  = env.pop0Ary(); else dno  = env.popDbl();
+
+    if (yes != null && no != null) {
+      if (yes.numCols() != no.numCols())
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + no.numCols() + ".");
+    } else if (yes != null) {
+      if (yes.numCols() != 1)
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + 1 + ".");
+    } else if (no != null) {
+      if (no.numCols() != 1)
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + 1 + "; `no` has " + no.numCols() + ".");
+    }
+
+    Frame a_yes = yes == null ? adaptToTst(dyes, tst) : adaptToTst(yes,tst);
+    Frame a_no  = no == null ? adaptToTst(dno, tst) : adaptToTst(no, tst);
+    Frame frtst = (new Frame(tst)).add(a_yes).add(a_no);
+    final int ycols = a_yes.numCols();
+
+    // Run a selection picking true/false across the frame
+    Frame fr2 = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+        int rows = chks[0]._len;
+        int cols = chks.length;
+        Chunk pred = chks[0];
+        for (int r=0;r < rows;++r) {
+          for (int c = (pred.at0(r) != 0 ? 1 : ycols + 1), col = 0; c < (pred.at0(r) != 0 ?ycols+1:cols); ++c) {
+            if (chks[c].vec().isUUID())
+              nchks[col++].addUUID(chks[c], r);
+            else if (chks[c].vec().isString())
+              nchks[col++].addStr(chks[c].atStr0(new ValueString(), r));
+            else
+              nchks[col++].addNum(chks[c].at0(r));
+          }
+        }
+      }
+    }.doAll(yes==null?1:yes.numCols(),frtst).outputFrame(yes==null?(new String[]{"C1"}):yes.names(),null/*same as R: no domains*/);
+    env.cleanup(yes, no, a_yes, a_no, tst, frtst);
+    env.push(new ValFrame(fr2));
+  }
+}
 
 class ASTCut extends ASTUniPrefixOp {
   String[] _labels = null;

@@ -87,6 +87,8 @@ def infoFromInspect(inspect):
     labelList = []
     typeList = []
     for i, colDict in enumerate(columns): # columns is a list
+        mins = colDict['mins']
+        maxs = colDict['maxs']
         missing = colDict['missing']
         label = colDict['label']
         stype = colDict['type']

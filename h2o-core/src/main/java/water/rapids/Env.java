@@ -130,6 +130,7 @@ public class Env extends Iced {
   public boolean isStr() { return peekType() == STR; }
   public boolean isId () { return peekType() == ID;  }
   public boolean isFun() { return peekType() == FUN; }
+  public boolean isNul() { return peekType() == NULL;}
   public boolean isSpan(){ return peekType() == SPAN;}
   public boolean isSeries(){ return peekType() == SERIES;}
 
@@ -142,7 +143,13 @@ public class Env extends Iced {
   public double peekDbl() {return ((ValNum)peek())._d;   }
   public Frame pop0Ary() { return ((ValFrame)pop0())._fr;  }
   public void push0Ary(Frame fr) { push0(new ValFrame(fr)); }
-  //TODO: func
+  public AST pop2AST() {
+    if (isAry()) return new ASTFrame(pop0Ary());
+    if (isNum()) return new ASTNum(popDbl());
+    if (isStr()) return new ASTString('\"', popStr());
+    if (isNul()) {pop(); return new ASTNull(); }
+    throw new IllegalArgumentException("Invalid use of pop2AST. Got bad type: "+peekType());
+  }
 
   /**
    *  Reference Counting API
@@ -191,7 +198,7 @@ public class Env extends Iced {
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       for (Key kg : _global_frames) {
-        if ( Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
+        if ( DKV.get(kg) !=null && Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
           return false;
         }
       }
@@ -296,6 +303,15 @@ public class Env extends Iced {
       f.delete();
     }
     fs.blockForPending();
+  }
+
+  public void unlock() {
+    while(!_stack.isEmpty()) {
+      if (_stack.peekType() == ARY) {
+        Frame fr = ((ValFrame)_stack.pop())._fr;
+        if (fr._lockers != null && lockerKeysNotNull(fr)) fr.unlock_all();
+      } else _stack.pop();
+    }
   }
 
   void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
@@ -450,7 +466,7 @@ public class Env extends Iced {
     @Override public Val peekAt(int i) {
 
       // Another check just in case assertions aren't on.
-      if (i < 0) {
+      if (i <= 0) {
         i = _head + i;
         if (i < 0) throw new IllegalArgumentException("Trying to peekAt a negative position in the stack: "+i);
       }
@@ -695,10 +711,10 @@ public class Env extends Iced {
     if (res == null && search_global) res = _global.valueOf(name);
 
     // Still didn't find it? Start looking up the parent scopes.
-    if (res == null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
+    if (res == null && _parent!=null) res = _parent.getValue(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
+//    if (res == null) throw H2O.fail("Failed lookup of variable: "+name);
     return res;
   }
 

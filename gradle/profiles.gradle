@@ -1,0 +1,121 @@
+//
+// Basic profiles for individual languages
+//
+// Each profiles provides 3 basic tasks:
+//  - build
+//  - test
+//  - clean
+//
+// Developers can use them as build shortcuts.
+// E.g., for Java build, a developer can call javaDevBuild
+// to build only Java projects
+//
+
+//
+// Default profile in case of configuration error
+//
+def failOverProfile = "Java"
+
+/**
+ * Define a development profile for given language.
+ *
+ * The profile defines 3 main tasks: build/clean/test.
+ *
+ * Each task is defined based on given list of subprojects.
+ *
+ * The method expects <code>${lang}Projects</code> to exist and
+ * contain list of projects for given language.
+ *
+ * @param project top-level project
+ * @param lang language (e.g., Java, Scala)
+ * @return nothing
+ */
+def confDevProfile(Project project, String lang) {
+    def prop = getLangGroupPropName(lang)
+    if (project.ext.has(prop)) {
+       def projects = project.ext.get(prop)
+       confDevProfile(project, lang, projects)
+    }
+}
+/**
+ * Define a development profile for given language based on given list of projects.
+ *
+ * @param project top-level project
+ * @param lang language defining development profile
+ * @param projects list of projects composing the development profile
+ */
+def confDevProfile(Project project, String lang, List<Project> projects) {
+    def groupName = " # Devel Profile (${lang})"
+    def bdesc = "Build all ${lang} projects"
+    def tdesc = "Test all ${lang} projects"
+    def cdesc = "Clean all ${lang} projects"
+
+    def l = lang.toLowerCase()
+
+    // Define build/clean/test tasks for project groups
+    project.task("${l}DevBuild") {
+        group = groupName
+        description = bdesc
+        dependsOn = projects.collect { p -> p.tasks.getByName("build") }
+    }
+
+    project.task("${l}DevClean") {
+        group = groupName
+        description = cdesc
+        dependsOn = projects.collect { p -> p.tasks.getByName("clean") }
+    }
+
+    project.task("${l}DevTest") {
+        group = groupName
+        description = tdesc
+        dependsOn = projects.collect { p -> p.tasks.getByName("test") }
+    }
+}
+
+// Configure default "quick" tasks to point to
+// selected development profile
+def defaultDevProfile(Project project, String lang) {
+    def groupName = " # Quick Development Shortcuts (active profile: ${lang})"
+    // Stop execution if there is no devel profile definition
+    if (! hasProfileFor(project, lang))
+        throw new GradleException("Unsupported profile: ${lang}")
+    def l = lang.toLowerCase()
+    def prefix = "mu"
+    project.task("${prefix}Build") {
+        group = groupName
+        description = "Build ${lang}-projects"
+        dependsOn = [ project.tasks.getByName("${l}DevBuild") ]
+    }
+    project.task("${prefix}Test") {
+        group = groupName
+        description = "Test ${lang}-projects"
+        dependsOn = [ "${l}DevTest" ]
+    }
+    project.task("${prefix}Clean") {
+        group = groupName
+        description = "Clean ${lang}-projects"
+        dependsOn = [ "${l}DevClean" ]
+    }
+}
+
+private def hasProfileFor(Project p, String lang) {
+    def prop = getLangGroupPropName(lang)
+    p.hasProperty(prop)
+}
+
+
+private def getLangGroupPropName(String lang) {
+    return "${lang.toLowerCase()}Projects"
+}
+
+//
+// Configure profiles for used languages
+//
+confDevProfile project, "Java"
+confDevProfile project, "Scala"
+//defineDevProfile(project, "Python")
+confDevProfile project, "R"
+
+// Configure default set of mini-tasks
+def profileName = project.hasProperty("profile") ? project.profile : failOverProfile
+defaultDevProfile project, profileName

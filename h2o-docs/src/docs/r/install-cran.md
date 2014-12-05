@@ -1,3 +1,0 @@
-# Installing from CRAN
-
-(TODO)

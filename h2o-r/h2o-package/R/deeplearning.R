@@ -57,7 +57,7 @@
 #' @param shuffle_training_data Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}
 #' @param sparse Sparse data handling (Experimental)
 #' @param col_major Use a column major weight matrix for input layer. Can speed up forward proagation, but might slow down backpropagation (Experimental)
-#' @seealso \code\link{predict.H2ODeepLearningModel} for prediction.
+#' @seealso \code{\link{predict.H2ODeepLearningModel}} for prediction.
 #' @examples
 #' library(h2o)
 #' localH2O = h2o.init()

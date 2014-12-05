@@ -167,8 +167,9 @@ public class Exec extends Iced {
     _x++; return this;
   }
 
-  char peek() { return (char)_ast[_x]; }
-  char peekPlus() { return (char)_ast[_x++]; }
+  char ppeek() { return (char)_ast[_x-1];}  // past peek
+  char peek() { return (char)_ast[_x]; }    // ppek ahead
+  char peekPlus() { return (char)_ast[_x++]; } // peek and move ahead
 
   Exec skipWS() {
     while (true) {
@@ -187,6 +188,18 @@ public class Exec extends Iced {
       if (_x >= _ast.length) break;
       if (peek() == ';' || peek() == ' ' || peek() == ')') {
         _x++;
+        continue;
+      }
+      break;
+    }
+    return this;
+  }
+
+  Exec rewind() {
+    while (true) {
+      if (_x <= 0) { _x = 0; break; }
+      if (!(ppeek() == ' ' || ppeek() == ')' || ppeek() == ';')) {
+        _x--;
         continue;
       }
       break;

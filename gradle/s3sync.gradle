@@ -19,32 +19,45 @@ import de.undercouch.gradle.tasks.download.Download
 // Amazon timestamps are only easily read by Joda
 import org.joda.time.format.ISODateTimeFormat
 
-task syncBigdataLaptop << {
-  group = "Datasets"
-  description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a laptop, but not require a cluster."
-  syncBigdata('laptop');
+import java.util.regex.Matcher
+
+task syncSmalldata {
+    group = "Datasets"
+    description = "Downloads small test data sets from s3 bucket to a local directory.  Data set are small test cases for basic testing."
+    doLast {
+        syncData('smalldata');
+    }
 }
 
-task syncBigdataServer << {
+task syncBigdataLaptop {
   group = "Datasets"
-  description = "Downloads large test data set from s3 bucket to a local directory.  Data set are big enough to stress a cluster."
-  syncBigdata('bigserver');
+  description = "Downloads large test data sets from s3 bucket to a local directory.  Data sets are big enough to stress a laptop, but not require a cluster."
+  doLast {
+      syncData('bigdata/laptop');
+  }
+}
+
+task syncBigdataServer {
+  group = "Datasets"
+  description = "Downloads large test data sets from s3 bucket to a local directory.  Data sets are big enough to stress a cluster."
+  doLast {
+      syncData('bigdata/bigserver');
+  }
 }
 
 // sync is based on name, size, and the last modify date, currently md5 tags are ignored
 // note this drops the subdir name locally
-def syncBigdata(subdir) {
-  def bigdataDir = 'bigdata'
-  def localDestDir = (new File(".")).getCanonicalPath() + File.separator + bigdataDir
+def syncData(subdir) {
+  def localDestDir = (new File(".")).getCanonicalPath() + File.separator + subdir.replaceAll("/", Matcher.quoteReplacement(File.separator)) + File.separator
   def remoteFiles = new XmlSlurper().parseText(new URL('https://h2o-public-test-data.s3.amazonaws.com').getText())
-  FileTree localFiles= fileTree(dir: bigdataDir) // local tree
-  def trimLength = (bigdataDir+File.separator+subdir).length()
+  FileTree localFiles= fileTree(dir: subdir) // local tree
+  def trimLength = (subdir+File.separator).length()
   def dateFormatter = (new ISODateTimeFormat()).dateTime()
   def downloadList = new ArrayList<groovy.util.slurpersupport.NodeChild>()
 
-  remoteFiles.Contents.findAll().each { rfile ->
+  remoteFiles.Contents.findAll{it.Key =~ subdir}.each { rfile ->
     def match = false
-    def rname = localDestDir + rfile.Key.text().substring(trimLength)
+    def rname = localDestDir + rfile.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
     def rsize = rfile.Size.text().toLong()
     def rdate = (dateFormatter.parseDateTime(rfile.LastModified.text())).getMillis()
     localFiles.findAll().each { lfile ->
@@ -61,13 +74,14 @@ def syncBigdata(subdir) {
 
   downloadList.each {
     def fpath = 'https://h2o-public-test-data.s3.amazonaws.com/'+it.Key
+    def localDestPath = localDestDir + it.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
     download {
       src fpath
-      dest localDestDir
+      dest localDestPath
       quiet false
     }
     // set downloaded files last modified stamp to match server
-    File newFile = file(localDestDir + it.Key.text().substring(trimLength))
+    File newFile = file(localDestPath)
     newFile.setLastModified(dateFormatter.parseDateTime(it.LastModified.text()).getMillis())
   }
 }

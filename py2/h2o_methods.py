@@ -35,8 +35,8 @@ def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     # verboseprint(a)
 
     version    = a['version']
-    if not version.startswith('0'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
+# local builds have (unknown)    if not version.startswith('0'):
+# local builds have (unknown)        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 0) %s" % version)
 
     consensus = a['consensus']
     locked = a['locked']
@@ -108,7 +108,11 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     }
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-    result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+    if 1==1:
+        result = self.do_json_request('Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
+    else:
+        result = self.do_json_request('Rapids.json', timeout=timeoutSecs, params=params_dict)
+
     verboseprint("rapids result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?

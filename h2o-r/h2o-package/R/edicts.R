@@ -9,76 +9,75 @@
 
 .addParm <- function(parms, k, v) {
   cmd <- sprintf("parms$%s = v", k)
-  eval(parse(text=cmd))
-  return(parms)
+  eval(parse(text = cmd))
+  parms
 }
 
 .addStringParm <- function(parms, k, v) {
-  if (! missing(v)) {
-    if (! is.character(v)) stop(sprintf("%s must be of type character"), k)
+  if (!missing(v)) {
+    if (!is.character(v))
+      stop(sprintf("%s must be of type character"), k)
     parms <- .addParm(parms, k, v)
   }
-  return(parms)
+  parms
 }
 
 .addBooleanParm <- function(parms, k, v) {
-  if (! missing(v)) {
-    if (! is.logical(v)) stop(sprintf("%s must be of type logical"), k)
+  if (!missing(v)) {
+    if (!is.logical(v))
+      stop(sprintf("%s must be of type logical"), k)
     parms <- .addParm(parms, k, as.numeric(v))
   }
-  return(parms)
+  parms
 }
 
 .addNumericParm <- function(parms, k, v) {
-  if (! missing(v)) {
-    if (! is.numeric(v)) stop(sprintf("%s must be of type numeric"), k)
+  if (!missing(v)) {
+    if (!is.numeric(v))
+      stop(sprintf("%s must be of type numeric"), k)
     parms <- .addParm(parms, k, v)
   }
-  return(parms)
+  parms
 }
 
 .addDoubleParm <- function(parms, k, v) {
-  parms = .addNumericParm(parms, k, v)
-  return(parms)
+  .addNumericParm(parms, k, v)
 }
 
 .addFloatParm <- function(parms, k, v) {
-  parms = .addNumericParm(parms, k, v)
-  return(parms)
+  .addNumericParm(parms, k, v)
 }
 
 .addLongParm <- function(parms, k, v) {
-  parms = .addNumericParm(parms, k, v)
-  return(parms)
+  .addNumericParm(parms, k, v)
 }
 
 .addIntParm <- function(parms, k, v) {
-  parms = .addNumericParm(parms, k, v)
-  return(parms)
+  .addNumericParm(parms, k, v)
 }
 
 .addNumericArrayParm <- function(parms, k, v) {
-  if (! missing(v)) {
-    # if (! is.numeric(v)) stop(sprintf("%s must be of type numeric"), k)
-    # arrAsString = paste(v, collapse=",")
-    if(!all(sapply(v, is.numeric))) stop(sprintf("%s must contain all numeric elements"), k)
-    # if(is.list(v) && length(v) == 1) v = v[[1]]
-    arrAsString = sapply(v, function(x) {
-        if(length(x) <= 1) return(x)
-        paste("(", paste(x, collapse=","), ")", sep = "")
+  if (!missing(v)) {
+    if(!all(sapply(v, is.numeric)))
+      stop(sprintf("%s must contain all numeric elements"), k)
+    arrAsString <- sapply(v, function(x) {
+        if(length(x) <= 1L)
+          x
+        else
+          paste0("(", paste(x, collapse = ","), ")")
       })
-    arrAsString = paste(arrAsString, collapse = ",")
-    parms = .addParm(parms, k, arrAsString)
+    arrAsString <- paste(arrAsString, collapse = ",")
+    parms <- .addParm(parms, k, arrAsString)
   }
-  return(parms)
+  parms
 }
 
 .addDoubleArrayParm <- function(parms, k, v) {
-  parms = .addNumericArrayParm(parms, k, v)
+  .addNumericArrayParm(parms, k, v)
 }
 
 .addIntArrayParm <- function(parms, k, v) {
-  parms = .addNumericArrayParm(parms, k, v)
+  .addNumericArrayParm(parms, k, v)
 }
 
 .putParm <- function(parms, t, k, v) {

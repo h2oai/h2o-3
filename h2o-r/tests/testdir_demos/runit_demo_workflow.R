@@ -6,8 +6,7 @@ demo_workflow <- function(conn) {
     iris.hex <- as.h2o(conn, iris, key = "iris.hex")
     
     Log.info('Build kmeans model on pedal length and width...')
-    my_cols <- setdiff(names(iris.hex), "Species")
-    iris_model <- h2o.kmeans(data = iris.hex, cols = my_cols, centers = 3)
+    iris_model <- h2o.kmeans(data = iris.hex, ignored_columns = "Species", centers = 3)
     print(iris_model)
     print(paste('Mean squared error : ', iris_model@model$mse))
     Log.info('Build kmeans model, cheating with species input...')

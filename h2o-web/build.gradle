@@ -1,6 +1,7 @@
+//
+// H2O Web Module
+//
 import org.apache.tools.ant.taskdefs.condition.Os
-
-apply plugin: 'java'
 
 description = "H2O web client"
 

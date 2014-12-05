@@ -73,6 +73,15 @@ public class ASTFunc extends ASTFuncDef {
     Frame f;
     Env captured = e.capture();
     for (int i = 0; i < _args.length; ++i) {
+      if (_args[i] instanceof ASTId) {
+        ASTId a = (ASTId)_args[i];
+        if (!a.isLookup()) throw new IllegalArgumentException("Function arguments must be lookups.");
+        _args[i] = e.lookup(a);
+      }
+      if (!(_args[i] instanceof ASTNum) && !(_args[i] instanceof ASTString) && !(_args[i] instanceof ASTFrame) && !(_args[i] instanceof ASTNull)) {
+        _args[i].treeWalk(e);
+        _args[i] = e.pop2AST();
+      }
       if (_args[i] instanceof ASTNum) _table.put(_arg_names[i], Env.NUM, _args[i].value());
       else if (_args[i] instanceof ASTString) _table.put(_arg_names[i], Env.STR, _args[i].value());
       else if (_args[i] instanceof ASTFrame) {
@@ -88,7 +97,7 @@ public class ASTFunc extends ASTFuncDef {
         _table._local_frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
-      else throw H2O.unimpl("Vector arguments are not supported.");
+      else throw new IllegalArgumentException("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
@@ -180,6 +189,7 @@ class ASTFuncDef extends ASTOp {
     // parse the function args: these are just arg names -> will do _local.put(name, Env.NULL, null) (local ST put)
     Env.SymbolTable table = E._env.newTable(); // grab a new SymbolTable
     String[] args = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
+    for (int i = 0; i < args.length;++i) args[i] = args[i].replaceAll("\\s+","");
     _arg_names = args;
     if (args == null) table.put(null, Env.NULL, null);
     else for (String arg : args) table.put(arg, Env.NULL, null);

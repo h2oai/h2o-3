@@ -7,10 +7,10 @@ import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_rh2o'
 description = "H2O R Package"
-apply plugin : 'java'
-apply plugin: 'groovy'
+
 apply plugin: 'water.gradle.plugins.convertR2html'
 apply plugin: 'water.gradle.plugins.manageLocalClouds'
+apply plugin: 'water.gradle.plugins.testThatRunner'
 
 dependencies {
     compile project(":h2o-assembly")
@@ -140,14 +140,15 @@ task setPackageFiles << {
     DESCRIPTION.write(txt)
     txt = h2oRd_TEMP.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
+    h2oRd.parentFile.mkdirs()
     h2oRd.write(txt)
     build_branch.write(BUILD_BRANCH)
-    src_info.write("https://github.com/0xdata/h2o")
+    src_info.write("https://github.com/h2oai/h2o")
 }
 
-task buildPackageDocumentation(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
-}
+//task buildPackageDocumentation(type: Exec) {
+//    commandLine getOsSpecificCommandLine(['R', "--vanilla", "-q", "-e", "library(devtools);document(\"h2o-package\");"])
+//}
 
 task genPDF(type: Exec) {
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"Package \'h2o\'\"", "--no-index", "--no-preview", "h2o-package\\man"
@@ -273,39 +274,12 @@ cleaner.dependsOn rbuild
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
 
-task testAcceptanceR(dependsOn: manageLocalClouds) {
-    def folders = ["${projectDir}/src/test/R"]
-    def testMarker = ~/test.+\.r/
 
-    def getTests = {
-        def what = new File(it).list([accept:{d, f-> f ==~ testMarker }] as FilenameFilter)
-        (what == null)?[]:what.toList()
-    }
-
-    def pickActions = {from->
-        def answer = []
-        from.each{
-            getTests(it).each{item->
-                logger.info "Found test ${item} in folder ${it}"
-                answer.add(new Tuple<String,String>(it, item))
-            }
-        }
-        answer
-    }
-
-    pickActions(folders).each{ tuple->
-        exec{
-            workingDir tuple.get(0)
-            commandLine 'R', 'CMD', 'BATCH', '--slave', tuple.get(1)
-            ignoreExitValue true
-        }
-    }
-}
-
-task prepareAcceptanceHtmlReports ( dependsOn: testAcceptanceR ) << {
+task prepareAcceptanceHtmlReports ( dependsOn: testThatRunner ) << {
     project.ext.testGroup = "acceptance"
     project.ext.R_test_folders = ["${projectDir}/src/test/R"]
     project.ext.Regex_test_marker = ~/test.+\.Rout/
+
 }
 
 

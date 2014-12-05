@@ -81,8 +81,10 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
-    addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
-    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data");
+    addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
+    addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
+    addToNavbar(register("/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
+    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame.  DEPRECATED: Use POST because of its higher data limit."),"/Parse"      , "Parse",         "Data");
     addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an aribtrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
 
     // Admin
@@ -199,7 +201,8 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
 
-    register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.  DEPRECATED: Use POST because of its higher data limit.");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");

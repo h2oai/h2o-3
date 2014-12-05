@@ -109,9 +109,9 @@ function(object) {
 #
 # Log a message.
 #
-# Log a message `m`.
+# Logs a message to the ongoing logging file.
 #
-# @param m
+# @param m A message to be logged
 # @param tmp
 # @param commandOrErr
 # @param isPost A boolean, defaults to TRUE.
@@ -120,7 +120,7 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, 
 #'
 #' Make an HTTP request to the H2O backend.
 #'
-#' Useful for sending a REST command to H2O that is not currently supported.
+#' Useful for sending a REST command to H2O that is not currently supported by R.
 #'
 #' @param client An \code{H2OClient} object containing the IP address and port number of the H2O server.
 #' @param page An endpoint not supplied by the h2o package. See constants.R.
@@ -249,15 +249,66 @@ h2o.getFrame <- function(h2o, key) {
 #  unlist(ignore)
 #}
 
+#' Cross Tabulation and Table Creation in H2O
+#'
+#' Uses the cross-classifying factors to build a table of counts at each combination of factor levels.
+#'
+#' @param x An \linkS4class{H2OParsedData} object with at most two integer or factor columns.
+#' @param y An \linkS4class{H2OParsedData} similar to x, or \code{NULL}.
+#' @return Returns a tabulated \linkS4class{H2OParsedData} object.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath, key = "prostate.hex")
+#' summary(prostate.hex)
+#'
+#' # Counts of the ages of all patients
+#' head(h2o.table(prostate.hex[,3]))
+#' h2o.table(prostate.hex[,3])
+#'
+#' # Two-way table of ages (rows) and race (cols) of all patients
+#' head(h2o.table(prostate.hex[,c(3,4)]))
+#' h2o.table(prostate.hex[,c(3,4)])
 h2o.table <- function(x, y = NULL) {
   if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
   if (!is.null(y) && !(y %i% "H2OFrame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
+  ast
 }
 
 
+#' Cut H2O Numeric Data to Factor
 #'
-#' cut a numeric column into factors
+#' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
+#' leftmost interval corresponds to the level one, the next is level two, etc.
+#'
+#' @name cut.h2o
+#' @param x An \linkS4class{H2OParsedData} object with numeric columns.
+#' @param breaks A numeric vector of two or more unique cut points.
+#' @param labels Labels for the levels of the resulting category. By default, labels are constructed sing "(a,b]"
+#'        interval notation.
+#' @param include.lowest \code{Logical}, indicationg if an 'x[i]' equal to the lowest (or highest, for \code{right =
+#'        FALSE} 'breaks' value should be included
+#' @param right /code{Logical}, indicating if the intervals should be closed on the right (opened on the left) or vice
+#'        versa.
+#' @param dig.lab Integer which is used when labels are not given, determines the number of digits used in formatting
+#'        the beak numbers.
+#' @return Returns an \linkS4class{H2OParsedData} object containing the factored data with intervals as levels.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+#' summary(iris.hex)
+#'
+#' # Cut sepal length column into intervals determined by min/max/quantiles
+#' sepal_len.cut = cut.H2OParsedData(iris.hex$sepal_len, c(4.2, 4.8, 5.8, 6, 8))
+#' head(sepal_len.cut)
+#' summary(sepal_len.cut)
+NULL
+
+#' @rdname cut.h2o
 cut.H2OParsedData<-
 function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
   if(missing(x)) stop("Must specify data set")
@@ -269,14 +320,13 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   ast.cut
 }
 
-#'
-#' cut a numeric column backed by an AST into factors
+#' @rdname cut.h2o
 cut.H2OFrame<-
 function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
   if(missing(x)) stop("Must specify data set")
   if(missing(breaks)) stop("`breaks` must be a numeric vector")
   ast.cut <- .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
-  print(ast.cut)
+  ast.cut
 
   #FIXME: Finish up here!
 #  ID  <- as.list(match.call())$x
@@ -343,17 +393,19 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 
 
 #
-#h2o.runif <- function(x, min = 0, max = 1, seed = -1) {
-#  if(missing(x)) stop("Must specify data set")
-#  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+h2o.runif <- function(x, seed = -1) {
+  if(missing(x)) stop("Must specify data set")
+  if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
+  if(!is.numeric(seed)) stop("seed must be an integer >= 0")
+  .h2o.varop("h2o.runif", x, seed)
+}
+
+
+# runif <- function(n, min=0, max=1, seed=-1) {
 #  if(!is.numeric(min)) stop("min must be a single number")
 #  if(!is.numeric(max)) stop("max must be a single number")
 #  if(length(min) > 1 || length(max) > 1) stop("Unimplemented")
 #  if(min > max) stop("min must be a number less than or equal to max")
-#  if(!is.numeric(seed)) stop("seed must be an integer >= 0")
-#
-#  .h2o.varop("runif", x, min, max, seed)
-#}
 
 #'
 #' Is any column of the H2OParsedData object a enum column
@@ -433,8 +485,9 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op <- new("ASTApply", op='=')
   ast <- new("ASTNode", root=op, children=list(lhs, rhs))
-  .force.eval(.retrieveH2O(parent.frame()), ast, ID = x@key, rID = 'x')
-  x
+#  browse()
+#  .force.eval(.retrieveH2O(parent.frame()), ast, ID = x@key, rID = 'x')
+  ast
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
@@ -489,13 +542,6 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
 #-----------------------------------------------------------------------------------------------------------------------
-## changed from UseMethod to setMethod
-# nrow     <- function(x) if (.isH2O(x)) UseMethod("nrow"    ) else base::nrow(x)
-# ncol     <- function(x) if (.isH2O(x)) UseMethod("ncol"    ) else base::ncol(x)
-# colnames <- function(x) if (.isH2O(x)) UseMethod("colnames") else base::colnames(x)
-# names    <- function(x) if (.isH2O(x)) UseMethod("names"   ) else base::names(x)
-# length   <- function(x) if (.isH2O(x)) UseMethod("length"  ) else base::length(x)
-# dim      <- function(x) if (.isH2O(x)) UseMethod("dim"     ) else base::dim(x)
 
 #' The Number of Rows/Columns of an H2O Dataset
 #'
@@ -509,8 +555,8 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
-#' nrow.H2OParsedData(iris.hex)
-#' ncol.H2OParsedData(iris.hex)
+#' nrow(iris.hex)
+#' ncol(iris.hex)
 NULL
 
 #' @rdname nrow.h2o
@@ -531,7 +577,7 @@ setMethod("ncol", "H2OParsedData", function(x) x@ncols)
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
 #' summary(iris.hex)
-#' colnames.H2OParsedData(iris.hex)
+#' colnames(iris.hex)
 #' @name colnames.h2o
 setMethod("colnames", "H2OParsedData", function(x) x@col_names)
 
@@ -550,7 +596,7 @@ setMethod("names", "H2OParsedData", function(x) colnames(x))
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
-#' length.H2OParsedData(iris.hex)
+#' length(iris.hex)
 #' @name length.h2o
 setMethod("length", "H2OParsedData", function(x) if (ncol(x) == 1) nrow(x) else ncol(x))
 
@@ -565,7 +611,7 @@ setMethod("length", "H2OParsedData", function(x) if (ncol(x) == 1) nrow(x) else 
 #' localH2O = h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(localH2O, path = irisPath)
-#' dim.H2OParsedData(iris.hex)
+#' dim(iris.hex)
 #' @name dim.h2o
 setMethod("dim", "H2OParsedData", function(x) c(x@nrows, x@ncols))
 
@@ -634,7 +680,6 @@ NULL
 setMethod("nrow", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-#  ID <- .eval.assign(x, ID, parent.frame(), environment())
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
@@ -678,7 +723,7 @@ setMethod("names", "H2OFrame", function(x) {
 #' @rdname length.h2o
 setMethod("length", "H2OFrame", function(x) {
   ID  <- as.list(match.call())$x
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  if(length(as.list(substitute(ID))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, parent.frame())
@@ -699,6 +744,8 @@ setMethod("dim", "H2OFrame", function(x) {
 #'
 #' @rdname head.h2o
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
+  m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -708,20 +755,19 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
     name <- .getFrameName(x@children[[1]])
     if (!is.null(name)) ID <- name
   }
-  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID  <- if (is.null(ID)) as.list(m.call)$x else ID
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
-  ID <- as.list(match.call())$x
-#  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  if (.isH2O(x)) { ID <- ifelse(ID == "Last.value", ID, x@key)}  else ID <- "Last.value"
-  assign(ID, x, parent.frame())
-  head(get(ID, parent.frame()))
+  ID <- as.character(ID)
+  assign(ID, x, parent.frame(2))
+  head(get(ID, parent.frame(2)))
 })
 
 #'
 #'  @rdname head.h2o
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
+  m.call <- match.call(call = sys.call(sys.parent(1L)))
+  id_candidate <- as.list(m.call)$x
   ID <- NULL
   dots <- list(...)
   if (!length(dots) == 0) {
@@ -731,12 +777,12 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     name <- .getFrameName(x@children[[1]])
     if (!is.null(name)) ID <- name
   }
-  ID  <- if (is.null(ID)) as.list(match.call())$x else ID
-  if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
+  ID  <- if (is.null(ID)) as.list(m.call)$x else ID
+  if(length(as.list(substitute(id_candidate))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, parent.frame())
-  tail(get(ID, parent.frame()))
+  ID <- as.character(ID)
+  assign(ID, x, parent.frame(2))
+  tail(get(ID, parent.frame(2)))
 })
 
 #setMethod("levels", "H2OParsedData", function(x) {
@@ -859,7 +905,7 @@ setMethod("is.factor", "H2OParsedData", function(x) { .h2o.unop("is.factor", x) 
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' mean.H2OParsedData(prostate.hex$AGE)
+#' mean(prostate.hex$AGE)
 #' @name mean.h2o
 setMethod("mean", "H2OParsedData", function(x, trim = 0, na.rm = FALSE, ...) {
   if(ncol(x) != 1) stop("Can only compute the mean of a single column")
@@ -883,7 +929,7 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   ast.mean <- .h2o.varop("mean", x, trim, na.rm, ...)
   ID  <- as.list(match.call())$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
+#  ID <- ifelse(ID == "Last.value", ID, ast.mean@key)
   .force.eval(.retrieveH2O(parent.frame()), ast.mean, ID = ID, rID = 'ast.mean')
   ast.mean
 })
@@ -891,14 +937,15 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.
-h2o.mode <-
-function(x) {
+# TODO: figure out funcionality/use for documentation
+# h2o.mode <-
+# function(x) {
 #  if(!(x %i% "H2OFrame") || nrow(x) > 1) stop('x needs to be a H2OFrame object')
-  tabularx = invisible(table(x))
-  maxCount = max(tabularx$Count)
-  modes = tabularx$row.names[tabularx$Count == maxCount]
-  return(unlist(as.list(as.matrix(modes))))
-}
+# tabularx = invisible(table(x))
+#  maxCount = max(tabularx$Count)
+#  modes = tabularx$row.names[tabularx$Count == maxCount]
+#  return(unlist(as.list(as.matrix(modes))))
+#}
 
 #'
 #' Variance of a column.
@@ -914,7 +961,7 @@ function(x) {
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' var.H2OParsedData(prostate.hex$AGE)
+#' var(prostate.hex$AGE)
 #' @name var.h2o
 setMethod("var", "H2OParsedData",
           function(x, y = NULL, na.rm = FALSE, use) {
@@ -927,7 +974,7 @@ setMethod("var", "H2OParsedData",
   ast.var
 })
 
-#'
+
 #" Variance of a column, backed by AST.
 #" Expression is evaluated <=> this operation is top-level.
 #' @rdname var.h2o
@@ -956,7 +1003,7 @@ setMethod("var", "H2OFrame",
 #' localH2O = h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex = h2o.importFile(localH2O, path = prosPath)
-#' sd.H2OParsedData(prostate.hex$AGE)
+#' sd(prostate.hex$AGE)
 #' @name sd.h2o
 setMethod("sd", "H2OParsedData", function(x, na.rm = FALSE) {
   if(ncol(x) != 1) stop("Can only compute sd of a single column.")
@@ -980,9 +1027,25 @@ setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
 })
 
 #'
-#' Scaling of an H2O Key
+#' Scaling and Centering of an H2O Key
 #'
-#' 
+#' Centers and/or scales the columns of an H2O dataset.
+#'
+#' @name scale.h2o
+#' @param x An \linkS4class{H2OParsedData} object.
+#' @param center either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @param scale either a \code{logical} value or numeric vector of length equal to the number of columns of x.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+#' summary(iris.hex)
+#'
+#' # Scale and center all the numeric columns in iris data set
+#' scale.H2OParsedData(iris.hex[, 1:4])
+
+#' @rdname scale.h2o
 scale.H2OParsedData<-
 function(x, center = TRUE, scale = TRUE) {
   ast.scale <- .h2o.varop("scale", x, center, scale)
@@ -991,6 +1054,7 @@ function(x, center = TRUE, scale = TRUE) {
   ast.scale
 }
 
+#' @rdname scale.h2o
 scale.H2OFrame<-
 function(x, center = TRUE, scale = TRUE) {
   ast.scale <- .h2o.varop("scale", x, center, scale)
@@ -1117,7 +1181,32 @@ as.data.frame.H2OParsedData <- function(x, ...) {
   return(df)
 }
 
+
+#' Converts H2O Data to an R Matrix
+#'
+#' Convert an \linkS4class{H2OParsedData} object to a matrix, which allows subsequent data frame operations within the R environment.
+#'
+#' @name as.matrix.h2o
+#' @param x An \linkS4class{H2OParsedData} object
+#' @param \dots Additional arguments to be passed to or from
+#' @return Returns a matrix in the R enviornment.
+#' @note This call establishes the data set in the R environment and subsequent operations on the matrix take place
+#'       within R, not H2O. When data are large, users may experience significant slowdown.
+#' @seealso \code{\link[base]{as.matrix}} for the base \code{R} implementation.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.matrix <- as.matrix(prostate.hex)
+#' summary(prostate.matrix)
+#' head(prostate.matrix)
+NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable with H2OParsedData/Frame
+
+
+#' @rdname as.matrix.h2o
 as.matrix.H2OParsedData <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
+#' @rdname as.matrix.h2o
 as.matrix.H2OFrame      <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 
 setMethod("as.factor", "H2OParsedData", function(x) .h2o.unop("as.factor", x))
@@ -1126,27 +1215,59 @@ setMethod("as.factor", "H2OFrame",      function(x) .h2o.unop("as.factor", x))
 #-----------------------------------------------------------------------------------------------------------------------
 # Model Plot/Summary Operations: PCA model summary and screeplot
 #-----------------------------------------------------------------------------------------------------------------------
+#' Summarizes an H2O PCA Model
+#'
+#' Summarizes the importance of each principal component returned by \code{\link{h2o.prcomp}}.
+#'
+#' @param object An \linkS4class{H2OPCAModel} object.
+#' @param \dots Additional argument affecting the summary produced. #TODO: (Currently unimplemented)
+#' @return Returns a matrix displaying the standard deviation, proportion of variance explained and cumulative
+#'         proportion of variance explained by each principal component.
+#' @seealso \code{\link[base]{summary}} for the generic {R} summary method.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' ausPath = system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' australia.pca = h2o.prcomp(data = australia.hex, standardize = TRUE)
+#' summary.H2OPCAModel(australia.pca)
+summary.H2OPCAModel <- function(object, ...) {
+  # TODO: Save propVar and cumVar from the Java output instead of computing here
+  myVar = object@model$sdev^2
+  myProp = myVar/sum(myVar)
+  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
+  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
+  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
 
-#summary.H2OPCAModel <- function(object, ...) {
-#  # TODO: Save propVar and cumVar from the Java output instead of computing here
-#  myVar = object@model$sdev^2
-#  myProp = myVar/sum(myVar)
-#  result = rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
-#  colnames(result) = paste("PC", seq(1, length(myVar)), sep="")
-#  rownames(result) = c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
-#
-#  cat("Importance of components:\n")
-#  print(result)
-#}
-#
-#screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
-#  if(type == "barplot")
-#    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else if(type == "lines")
-#    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-#  else
-#    stop("type must be either 'barplot' or 'lines'")
-#}
+  cat("Importance of components:\n")
+  print(result)
+}
+
+#' Screeplots in H2O
+#'
+#' Plots the variances against the number of the principal component generated by \code{\link{h2o.prcomp}}.
+#'
+#' @param x an \linkS4class{H2OPCAModel} object.
+#' @param npcs Number of components to be plotted.
+#' @param type Type of plot, must be either \code{barplot} or \code{lines}.
+#' @param main Title of the plot.
+#' @param \dots Additional parameters to be passed to the plotting function
+#' @seealso \code{\link[stats]{screeplot}} for the base \code{stats} method.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' ausPath = system.file("extdata", "australia.csv", package = "h2o")
+#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' australia.pca = h2o.prcomp(data = australia.hex, standardize = TRUE)
+#' screeplot(australia.pca)
+screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot", main = paste("h2o.prcomp(", x@data@key, ")", sep=""), ...) {
+  if(type == "barplot")
+    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else if(type == "lines")
+    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else
+    stop("type must be either 'barplot' or 'lines'")
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
@@ -1159,60 +1280,100 @@ setMethod("as.factor", "H2OFrame",      function(x) .h2o.unop("as.factor", x))
 #  as.logical(.h2o.__unop2("canBeCoercedToLogical", vec))
 #}
 #
-#setMethod("ifelse", "H2OParsedData", function(test, yes, no) {
-#  # if(!(is.numeric(yes) || class(yes) == "H2OParsedData") || !(is.numeric(no) || class(no) == "H2OParsedData"))
-#  if(!(is.numeric(yes) || inherits(yes, "H2OParsedData")) || !(is.numeric(no) || inherits(no, "H2OParsedData")))
-#    stop("Unimplemented")
-#  if(!test@logic && !.canBeCoercedToLogical(test)) stop(test@key, " is not a H2O logical data type")
-#  # yes = ifelse(class(yes) == "H2OParsedData", yes@key, yes)
-#  # no = ifelse(class(no) == "H2OParsedData", no@key, no)
-#  yes = ifelse(inherits(yes, "H2OParsedData"), yes@key, yes)
-#  no = ifelse(inherits(no, "H2OParsedData"), no@key, no)
-#  expr = paste("ifelse(", test@key, ",", yes, ",", no, ")", sep="")
-#  res = .h2o.__exec2(test@h2o, expr)
-#  if(res$num_rows == 0 && res$num_cols == 0)   # TODO: If logical operator, need to indicate
-#    res$scalar
-#  else
-#    new("H2OParsedData", h2o=test@h2o, key=res$dest_key, logic=FALSE)
-#})
+setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no) {
+  ast <- .h2o.varop("ifelse", test, yes, no)
+  ast
+})
 
+#' Combine H2O Datasets by Columns
+#'
+#' Takes a sequence of H2O data sets and combines them by column
+#'
+#' @name cbind.h2o
+#' @param \dots A sequence of \linkS4class{H2OParsedData} arguments. All datasets must exist on the same H2O instance
+#'        (IP and port) and contain the same number of rows.
+#' @param deparse.level Integer controlling the construction of column names. ##Currently unimplemented.##
+#' @return An \linkS4class{H2OParsedData} object containing the combined \dots arguments column-wise.
+#' @seealso \code{\link[base]{cbind}} for the base \code{R} method.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' prostate.cbind = cbind(prostate.hex, prostate.hex)
+#' head(prostate.cbind)
+NULL
+
+#' @rdname cbind.h2o
 cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod("cbind") else base::cbind(..., deparse.level)
 
-# Note: right now, all things must be H2OParsedData
+#' @rdname cbind.h2o
 cbind.H2OFrame <- function(..., deparse.level = 1) {
   if(deparse.level != 1) stop("Unimplemented")
   ast <- .h2o.varop("cbind", ...)
   ast
-
-#
-#  l <- list(...)
-#  # l_dep <- sapply(substitute(placeholderFunction(...))[-1], deparse)
-#  if(length(l) == 0) stop('cbind requires an H2O parsed dataset')
-#
-#  klass <- 'H2OParsedData'
-#  h2o <- l[[1]]@h2o
-#  nrows <- nrow(l[[1]])
-#  m <- Map(function(elem){ inherits(elem, klass) & elem@h2o@ip == h2o@ip & elem@h2o@port == h2o@port & nrows == nrow(elem) }, l)
-#  compatible <- Reduce(function(l,r) l & r, x=m, init=T)
-#  if(!compatible){ stop(paste('cbind: all elements must be of type', klass, 'and in the same H2O instance'))}
-#
-#  # If cbind(x,x), dupe colnames will automatically be renamed by H2O
-#  # TODO: cbind(df[,1], df[,2]) should retain colnames of original data frame (not temp keys from slice)
-#  if(is.null(names(l)))
-#    tmp <- Map(function(x) x@key, l)
-#  else
-#    tmp <- mapply(function(x,n) { ifelse(is.null(n) || is.na(n) || nchar(n) == 0, x@key, paste(n, x@key, sep = "=")) }, l, names(l))
-#
-#  exec_cmd <- sprintf("cbind(%s)", paste(as.vector(tmp), collapse = ","))
-#  res <- .h2o.__exec2(h2o, exec_cmd)
-#  new('H2OParsedData', h2o=h2o, key=res$dest_key)
 }
+
+#' Combine H2O Datasets by Rows
+#'
+#' Takes a sequence of H2O data sets and combines them by rows
+#'
+#' @name rbind.h2o
+#' @param \dots A sequence of \linkS4class{H2OParsedData} arguments. All datasets must exist on the same H2O instance
+#'        (IP and port) and contain the same number of rows.
+#' @param deparse.level Integer controlling the construction of column names. ##Currently unimplemented.##
+#' @return An \linkS4class{H2OParsedData} object containing the combined \dots arguments column-wise.
+#' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.importFile(localH2O, path = prosPath)
+#' prostate.cbind <- rbind(prostate.hex, prostate.hex)
+#' head(prostate.cbind)
+NULL
+
+#' @rdname rbind.h2o
+cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod("cbind") else base::cbind(..., deparse.level)
+
+#' @rdname rbind.h2o
+rbind.H2OFrame <- function(..., deparse.level = 1) {
+  if (deparse.level != 1) stop("Unimplemented")
+  ast <- .h2o.varop("rbind", ...)
+  ast
+}
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
 
 # TODO: Cleanup the cruft!
+#' Split H2O Dataset, Apply Function, and Return Results
+#'
+#' For each subset of an H2O data set, apply a user-specified function, then comine the results.
+#'
+#' @param .data An \linkS4class{H2OParsedData} object to be processed.
+#' @param .variables Variables to split \code{.data} by, either the indices or names of a set of columns.
+#' @param .fun Function to apply to each subset grouping.
+#' @param \dots Additional arguments passed on to \code{.fun}. #TODO: (Currently unimplemented)
+#' @param .progress Name of the progress bar to use. #TODO: (Currently unimplemented)
+#' @return Returns a \linkS4class{H2OParsedData} object containing the results from the split/apply operation, arranged
+#          row-by-row
+#' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#'
+#' # Import iris dataset to H2O
+#' irisPath = system.file("extdata", "iris_wheader.csv", package = "h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+#' # Add function taking mean of sepal_len column
+#' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+#' # Apply function to groups by class of flower
+#' # uses h2o's ddply, since iris.hex is an H2OParsedData object
+#' res = h2o.ddply(iris.hex, "class", fun)
+#' head(res)
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
   if( missing(.data) ) stop('must specify .data')
   if( !(class(.data) %in% c('H2OParsedData', 'H2OParsedDataVA')) ) stop('.data must be an h2o data object')
@@ -1224,21 +1385,22 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
   if( class(.variables) == 'character'){
-    vars <- .variables
-    idx <- match(vars, colnames(.data))
+    vars <- match(.variables, colnames(.data))
+    if ( is.na(vars) ) stop('No column named' %p% .variables %p% 'in' %p% substitute(.data) %p0% '.')
   } else if( class(.variables) == 'H2Oquoted' ){
-    vars <- as.character(.variables)
-    idx <- match(vars, colnames(.data))
+    vars <- match(.variables, colnames(.data))
   } else if( class(.variables) == 'quoted' ){ # plyr overwrote our . fn
-    vars <- names(.variables)
-    idx <- match(vars, colnames(.data))
+    vars <- match(.variables, colnames(.data))
   } else if( class(.variables) == 'integer' ){
     vars <- .variables
-    idx <- .variables
   } else if( class(.variables) == 'numeric' ){   # this will happen eg c(1,2,3)
-    vars <- .variables
-    idx <- as.integer(.variables)
+    vars <- as.integer(.variables)
   }
+
+  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
+  vars <- vars - 1
+  if( vars < 0 || vars > (ncol(.data)-1) ) stop('Column' %p% vars %p% 'out of range for frame columns' %p% (ncol(.data)) %p0% '.')
+
   FUN <- .fun
   .FUN <- NULL
   if (is.character(FUN)) .FUN <- get(FUN)
@@ -1254,12 +1416,12 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 
     idx <- which( sapply(l, function(x)  class(x) %in% c("H2OFrame")) )
     extra_arg_names <- as.list(match.call())
-    for (i in idx) {
+    for (i in vars) {
       key <- as.character(extra_arg_names[[i]])
       if (x %i% "H2OParsedData") next
-      x <- l[idx]
+      x <- l[vars]
       h2o.assign(x, key)
-      l[idx] <- x
+      l[vars] <- x
     }
   }
 

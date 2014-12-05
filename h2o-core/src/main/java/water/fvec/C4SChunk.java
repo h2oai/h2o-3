@@ -12,6 +12,7 @@ public class C4SChunk extends Chunk {
   private double _scale;
   public double scale() { return _scale; }
   private long _bias;
+  @Override public boolean hasFloat(){ return _scale != (long)_scale; }
   C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length - _OFF) >> 2);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem,0,scale);
@@ -35,7 +36,7 @@ public class C4SChunk extends Chunk {
     UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)res);
     return true;
   }
-  @Override boolean set_impl(int i, double d) { throw H2O.unimpl(); }
+  @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)_NA); return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {

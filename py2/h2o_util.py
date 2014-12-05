@@ -1,6 +1,6 @@
 import subprocess
 import gzip, shutil, random, time, re, copy
-import os, zipfile, simplejson as json, csv
+import os, zipfile, json, csv
 import sys, math
 import errno
 from h2o_test import verboseprint, dump_json
@@ -622,9 +622,9 @@ def might_h2o_think_number_or_whitespace(token):
 # Shows difference between two json like python objects. 
 # Shows properties, values from first object that are not in the second.
 # Examples:
-# import simplejson # or other json serializer
-# first = simplejson.loads('{"first_name": "Poligraph", "last_name": "Sharikov",}')
-# second = simplejson.loads('{"first_name": "Poligraphovich", "pet_name": "Sharik"}')
+# import json # or other json serializer
+# first = json.loads('{"first_name": "Poligraph", "last_name": "Sharikov",}')
+# second = json.loads('{"first_name": "Poligraphovich", "pet_name": "Sharik"}')
 # df = JsonDiff(first, second)
 # df.difference is ["path: last_name"]
 # JsonDiff(first, second, vice_versa=True) gives you difference from both objects in the one result.
@@ -699,7 +699,7 @@ class JsonDiff(object):
             self.difference.append(message)
 
 # per Alex Kotliarov
-# http://stackoverflow.com/questions/2343535/easiest-way-to-serialize-a-simple-class-object-with-simplejson
+# http://stackoverflow.com/questions/2343535/easiest-way-to-serialize-a-simple-class-object-with-json
 #This function will produce JSON-formatted string for
 #    an instance of a custom class,
 #    a dictionary that have instances of custom classes as leaves,

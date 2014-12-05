@@ -2,8 +2,7 @@ import unittest, random, sys, time, re, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_glm, h2o_util
 import h2o_print as h2p, h2o_gbm
-
-from h2o_xexec import xFcn, xSeq, xColon, xC, xCbind, xAssign, xAssignE, xItem, xExec, xFrame, xVector
+from h2o_xexec import Fcn, Seq, Colon, Col, Cbind, Assign, Item, Frame
 
 # FIX! This has some abbreviated stuff from h2o...look back there for completeness, eventually
 DO_QUANTILE = False
@@ -112,7 +111,7 @@ class Basic(unittest.TestCase):
         # h2o.sleep(3600)
         h2o.tear_down_cloud()
 
-    def test_exec_enums_rand_cut(self):
+    def test_exec2_enums_rand_cut(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
 
         n = ROWS
@@ -159,13 +158,13 @@ class Basic(unittest.TestCase):
                         # src[ src$age<17 && src$zip=95120 && ... , ]
                         # cutExprList.append('p$C'+str(i+1)+'=='+c)
                         # all column indexing in h2o-dev is with number
-                        e = xFcn('==', xItem(c), xFrame('p', col=i))
+                        e = Fcn('==', Item(c), Frame('p', col=i))
                         cutExprList.append(e)
 
                 cutExpr = None
                 for ce in cutExprList:
                     if cutExpr:
-                        cutExpr = xFcn('&', cutExpr, ce)
+                        cutExpr = Fcn('&', cutExpr, ce)
                     else: 
                         cutExpr = ce
 
@@ -177,7 +176,7 @@ class Basic(unittest.TestCase):
                 eKey = e[1]
 
                 # rowExpr = '%s[%s,];' % (hex_key, cutExpr)
-                rowExpr = xFrame(hex_key, row=cutExpr)
+                rowExpr = Frame(hex_key, row=cutExpr)
                 print "rowExpr:", rowExpr
                 rowExprList.append(rowExpr)
 
@@ -211,12 +210,12 @@ class Basic(unittest.TestCase):
             # is this needed?
             if 1==1:
                 # build up the columns
-                xAssignE('b', xC(xSeq(1,2,3)))
+                Assign('b', Col(Seq(1,2,3))).do()
                 # could also append 1 col at a time, by assigning to the next col number?
-                xAssignE('a', xCbind(['b' for i in range(colCount)]))
+                Assign('a', Cbind(['b' for i in range(colCount)])).do()
                 
                 for eKey in eKeys:
-                    xAssignE(eKey, 'a')
+                    Assign(eKey, 'a').do()
                     ## print h2o.dump_json(e)
 
             xList = []
@@ -235,7 +234,7 @@ class Basic(unittest.TestCase):
 
                 if 1==1:
                     start = time.time()
-                    xAssignE(fKey, random.choice(rowExprList))
+                    Assign(fKey, random.choice(rowExprList)).do()
                     elapsed = time.time() - start
                     execTime = elapsed
                     print "exec 2 took", elapsed, "seconds."

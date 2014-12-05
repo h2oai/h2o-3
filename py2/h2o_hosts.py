@@ -8,14 +8,7 @@ import h2o_bc # write_flatfile, get_base_port
 import h2o # build_cloud
 
 from h2o_test import verboseprint, clean_sandbox, find_file
-# build cloud in h2o updates the local h2o.nodes there
 
-# print "h2o_hosts"
-
-# UPDATE: all multi-machine testing will pass list of IP and base port addresses to H2O
-# means we won't realy on h2o self-discovery of cluster
-
-#************************************************************
 def find_config(base):
     f = base
     if not os.path.exists(f): f = 'testdir_hosts/' + base
@@ -68,7 +61,9 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
         'force_ip': False,
         'network': None,
         'use_flatfile': False,
-        'use_hdfs': True, # default to true, so when we flip import folder to hdfs+s3n import on ec2, the cloud is built correctly
+        # default to true, so when we flip import folder to hdfs+s3n import on ec2, 
+        # the cloud is built correctly
+        'use_hdfs': True, 
         'hdfs_name_node': None, 
         'hdfs_config': None,
         'hdfs_version': None,
@@ -150,7 +145,7 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
     global hosts
     hosts = []
     # Update: special case paramsToUse['ip'] = ["127.0.0.1"] and use the normal build_cloud
-    # this allows all the tests in testdir_host to be run with a special config that points to 127.0.0.1
+    # this allows all tests in testdir_host to be run with a special config that points to 127.0.0.1
     # hosts should be None for everyone if normal build_cloud is desired
     if paramsToUse['ip']== ["127.0.0.1"]:
         hosts = None
@@ -167,14 +162,16 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
                 username=paramsToUse['username'], password=paramsToUse['password'], key_filename=key_filename))
 
     # done with these, don't pass to build_cloud
-    paramsToUse.pop('ip') # this was the list of ip's from the config file, replaced by 'hosts' to build_cloud
+    # this was the list of ip's from the config file, replaced by 'hosts' to build_cloud
+    paramsToUse.pop('ip') 
 
     # we want to save username in the node info. don't pop
     # paramsToUse.pop('username')
     paramsToUse.pop('password')
     paramsToUse.pop('key_filename')
 
-    # flatfile is going into sandbox (LOG_DIR) now..so clean it first (will make sandbox dir if it doesn't exist already)    
+    # flatfile is going into sandbox (LOG_DIR) now..so clean it first 
+    # (will make sandbox dir if it doesn't exist already)    
     clean_sandbox()
 
     # handles hosts=None correctly

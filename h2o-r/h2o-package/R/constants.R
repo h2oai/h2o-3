@@ -164,6 +164,19 @@
                 "xorsum" = "xorsum",
                 "trunc" = "trunc")
 
+
+.type.map <- c("boolean" = "logical",
+               "enum" = "character",
+               "float" = "numeric",
+               "Frame" = "character",
+               "int" = "numeric",
+               "Key" = "character",
+               "long" = "numeric",
+               "string" = "character",
+               "string[]" = "character")
+
+.algo.map <- c("gbm" = ".gbm.builder",
+               "kmeans" = ".kmeans.builder")
 #'
 #' Inspect/Summary Endpoints
 #'
@@ -212,3 +225,4 @@
 .h2o.__W2V          <- "Word2Vec.json"
 .h2o.__SYNONYMS     <- "Synonyms.json"
 .h2o.__TRANSFORM    <- "Transform.json"
+
