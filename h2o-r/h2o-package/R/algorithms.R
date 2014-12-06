@@ -66,8 +66,8 @@ checkargs <- function(message, ...) {
 
   x_ignore <- setdiff(setdiff( cc, x ), y)
   if( length(x_ignore) == 0 ) x_ignore <- ''
-  if (is.character(x)) x <- .collapse(x)
-  if (is.character(x_ignore)) x_ignore <- .collapse(x_ignore)
+#  if (is.character(x)) x <- .collapse(x)
+#  if (is.character(x_ignore)) x_ignore <- .collapse(x_ignore)
   list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i)
 }
 
@@ -235,55 +235,65 @@ checkargs <- function(message, ...) {
   paste(toupper(substring(str, 1, 1)), substring(str, 2), sep = "")
 }
 
+
+
 .parms <- function(client, algo, m) {
-  P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))
+  P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
   p_val <- list()     # list for all of the algo arguments
-  p_type <- list()    # list for all of the algo argument types (e.g., enum, char, int, etc.)
-  p_fact <- list()    # list for all of the possible values (i.e., factors)
 
-  #---------- Generate Defaults ----------#
-  for( i in P$model_builders[[algo]]$parameters) {
-    tryCatch(p_type[[i$name]] <- .type.map[[i$type]], error = function(e) stop("Cannot find type" %p% i$type))
-
-    # generate default values, may require coercion
-    if( p_type[[i$name]] == "logical" ) p_val[[i$name]] <- as.logical(i$default_value)          #logical coercion
-    else if ( p_type[[i$name]] == "numeric" ) p_val[[i$name]] <- as.numeric(i$default_value)    #numeric coercion
-    else p_val[[i$name]] <- i$default_value                                                     #no coercion (char)
-
-    p_fact[[i$name]] <- i$values
-    if( !(p_val[[i$name]] %i% p_type[[i$name]]) && !is.null(p_val[[i$name]]) )
-      stop( i$name %p% "must be of type" %p% p_type[[i$name]] )
-  }
-
-  error <- "" #create error
-  #---------- Union of m and p ----------#
-  for( parm in names(m)){
-    p_val[[parm]] <- m[[parm]]
-
-    #error logging incorrect data types
-    if( !(m[[parm]] %i% p_type[[parm]]) )
-      error %p0% (parm %p% ("must of type" %p% (p_type[[parm]] %p0% (", but got" %p% (class(m[[parm]]) %p0% ".\n")))))
-
-    #error logging incorrect factors/enums types
-    if( length(p_fact[[parm]]) != 0  )
-      if( !(m[[parm]] %in% p_fact[[parm]]) ){
-        error %p0% (parm %p% "must be in")
-        for(fact in p_fact[[parm]]) error %p% (fact %p0% ",")
-        error %p% (" but got" %p% m[[parm]])
+  #---------- Check user param types ----------#
+  error <- lapply(P, function(i) {
+    e <- ""
+    if( i$required && !(i$name %in% names(m)) )
+      e %p0% ("argument \"" %p0% ( i$name %p0% "\" is missing, with no default\n"))
+    else if( i$name %in% names(m) ) {
+      # changing Java types to R types
+      tryCatch(p_type <- .type.map[[i$type]], error = function(e) stop("Cannot find type" %p% (i$type %p% "in .type.map.")))
+      switch(p_type, #create two type parameters for arrays
+        "sarray" = p_type[2] <- "character",
+        "barray" = p_type[2] <- "logical",
+        "narray" = p_type[2] <- "numeric")
+      #browser()
+      if( length(p_type) > 1) {
+        p_type <- p_type[2]
+        if( !(m[[i$name]] %i% p_type) )
+          e %p0% ("array of" %p% i$name %p% ("must be of type" %p% (p_type %p0% (", but got" %p% (class(m[[i$name]]) %p0% ".\n")))))
+          #         else p_val[[parm]] <- .collapse(m[[parm]])
+        else m[[i$name]] <<- .collapse(m[[i$name]])
+      } else if( !((m[[i$name]]) %i% p_type)  )
+        e %p0% ("\"" %p0% i$name %p0% ("\" must be of type" %p% (p_type %p0% (", but got" %p% (class(m[[i$name]]) %p0% ".\n")))))
+      else if( length(i$values) > 1)
+        if( !(m[[i$name]] %in% i$values) ) {
+          e %p0% ("\"" %p0% i$name %p0% ("\" must be in"))
+          for(fact in i$values) e %p% ("\"" %p0% (fact %p0% "\","))
+          e %p% ("but got" %p% m[[i$name]])
+        }
       }
-  }
-  if( error != "" ) stop(error)
+    e
+  })
 
+
+  if( !all(error == "") ) stop(error)
+
+  #---------- Create param list to pass ----------#
+  p_val <- lapply(m, function(i) {
+    if( i %i% "H2OParsedData" )
+      return(i@key)
+    i
+  })
   #---------- Verify Params ----------#
   rj <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo) %p0% "/parameters" , .params = p_val)
 
   if(length(rj$validation_messages) != 0)
-    for(i in rj$validation_messages) error %p% (i$message %p0% ".\n")
-
-  if( error != "" ) stop(error)
+    error <- lapply(rj$validation_messages, function(i) {
+      e <- ""
+      if(!i$message_type %in% c("HIDE","INFO")) e %p0% i$message %p0% ".\n"
+      e
+    })
+   if( !all(error == "") ) stop(error)
 
   #---------- Return Params ----------#
-  #browser  #uncomment to view values/types
+  #browser()  #uncomment to view values/types
   p_val
 }
 

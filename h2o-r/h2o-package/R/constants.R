@@ -166,16 +166,24 @@
 
 
 .type.map <- c("boolean" = "logical",
+               "boolean[]" = "barray",
                "enum" = "character",
+               "enum[]" = "sarray",
+               "double" = "numeric",
+               "double[]" = "narray",
                "float" = "numeric",
-               "Frame" = "character",
+               "float[]" = "narray",
+               "Frame" = "H2OParsedData",
                "int" = "numeric",
+               "int[]" = "narray",
                "Key" = "character",
                "long" = "numeric",
+               "long[]" = "narray",
                "string" = "character",
-               "string[]" = "character")
+               "string[]" = "sarray")
 
-.algo.map <- c("gbm" = ".gbm.builder",
+.algo.map <- c("deeplearning" = ".deeplearning.builder",
+               "gbm" = ".gbm.builder",
                "kmeans" = ".kmeans.builder")
 #'
 #' Inspect/Summary Endpoints

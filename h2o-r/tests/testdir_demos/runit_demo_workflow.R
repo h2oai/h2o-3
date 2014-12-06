@@ -3,14 +3,14 @@ source('../h2o-runit.R')
 
 demo_workflow <- function(conn) {
     Log.info("Import small airlines data...")
-    iris.hex <- as.h2o(conn, iris, key = "iris.hex")
+    iris.hex <- as.h2o(conn, iris, key = "iris")
     
     Log.info('Build kmeans model on pedal length and width...')
-    iris_model <- h2o.kmeans(data = iris.hex, ignored_columns = "Species", centers = 3)
+    iris_model <- h2o.kmeans(training_frame = iris.hex, ignored_columns = "Species", K = 3)
     print(iris_model)
     print(paste('Mean squared error : ', iris_model@model$mse))
     Log.info('Build kmeans model, cheating with species input...')
-    iris_model_wSpecies <- h2o.kmeans (data = iris.hex, centers = 3)
+    iris_model_wSpecies <- h2o.kmeans (training_frame = iris.hex, K = 3)
     print(iris_model_wSpecies)
     print(paste('Mean squared error : ', iris_model_wSpecies@model$mse))
     
@@ -37,8 +37,8 @@ demo_workflow <- function(conn) {
       row.names(cm) <- assignments
       print(cm)
     }
-    confusion_matrix(pred1.R)
-    confusion_matrix(pred2.R)
+    #confusion_matrix(pred1.R)
+    #confusion_matrix(pred2.R)
     testEnd()
 }
 
