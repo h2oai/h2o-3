@@ -28,8 +28,8 @@ def init(*args, **kwargs):
     global nodes, n0
     # ugly, but we have 3 places that are kept in sync..check them all 
     def checkIsNone(thingName, thing):
-        if thing is not None:
-            print "WARNING: %s is not None before h2o.init()..Unlikely that makes sense? %s" % (thingName, thing)
+        if not (thing is None or len(thing)==0):
+            print "WARNING: %s is not empty before h2o.init()..Unlikely that makes sense? %s" % (thingName, thing)
 
     checkIsNone("nodes", nodes)
     checkIsNone("n0", n0)
