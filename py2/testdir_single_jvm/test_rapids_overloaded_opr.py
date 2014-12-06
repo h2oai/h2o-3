@@ -2,7 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 from h2o_test import verboseprint, dump_json
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase, Key
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col, Xbase, Key
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):

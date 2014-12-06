@@ -39,7 +39,7 @@ class Basic(unittest.TestCase):
         numColsUsed = numCols - 1
         for trial in range(1):
             parameters = {
-                'validation_frame': parse_key, # Frame None
+                'validation_frame': parse_key, # KeyIndexed None
                 'ignored_columns': '[STR]', # string[] None
                 'score_each_iteration': None, # boolean false
                 'response_column': 'FNDX', # string None

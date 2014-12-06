@@ -2,7 +2,7 @@ import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i
 
-# avoid NPE due to Frame
+# avoid NPE due to KeyIndexed
 DO_INTERMEDIATE_RESULTS = False
 
 class Basic(unittest.TestCase):

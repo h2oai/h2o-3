@@ -310,7 +310,7 @@ class Basic(unittest.TestCase):
                 lhs = r.group(0)[1:]
                 print "Found key lhs assign", lhs
 
-                # Frames gets too many rollup stats problems. Don't use for now
+                # KeyIndexeds gets too many rollup stats problems. Don't use for now
                 if 1==0: 
                     inspect = h2o_cmd.runInspect(key=lhs)
                     missingList, labelList, numRows, numCols = infoFromInspect(inspect)

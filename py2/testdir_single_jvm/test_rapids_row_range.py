@@ -2,7 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 from h2o_test import verboseprint, dump_json
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col, Xbase
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
@@ -113,41 +113,41 @@ class Basic(unittest.TestCase):
                 assert numCols==1
             
                 print "z1" 
-                result = Assign(result_key, Frame(data_key, row=Seq(range(1, 5))) ).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) ).do()
                 print "z2" 
-                result = Assign('s1', Frame(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) ).do()
+                result = Assign('s1', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) ).do()
 
                 print "z3" 
-                result = Assign(result_key, Frame(data_key, row='#1')).do
+                result = Assign(result_key, KeyIndexed(data_key, row='#1')).do
                 print "z4" 
-                result = Assign(result_key, Frame(data_key, row=Colon('#1', '#100'))).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Colon('#1', '#100'))).do()
                 print "z5" 
-                result = Assign(result_key, Frame(data_key, row=Colon(1, 100))).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Colon(1, 100))).do()
                 # this should fail rapids because of reverse msb/lsb
                 # illegal, detected
-                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#100', '#1')))
+                # execResult, result = Assign(result_key, KeyIndexed(data_key, row=Colon('#100', '#1')))
                 print "z6" 
-                result = Assign(result_key, Frame(data_key, row=Colon('#-2', '#-1'))).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Colon('#-2', '#-1'))).do()
                 print "z7" 
-                result = Assign(result_key, Frame(data_key, row=Colon(-2, -1))).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Colon(-2, -1))).do()
                 # illegal, detected
-                # execResult, result = Assign(result_key, Frame(data_key, row=Colon('#-1', '#-2')))
+                # execResult, result = Assign(result_key, KeyIndexed(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
                 print "z8" 
-                result = Assign(result_key, Frame(data_key, row=Colon('#1', rowCount-10))).do()
+                result = Assign(result_key, KeyIndexed(data_key, row=Colon('#1', rowCount-10))).do()
                 print "z9" 
-                result = Assign(result_key, Frame(data_key, col=Colon('#1', colCount-1, ))).do()
+                result = Assign(result_key, KeyIndexed(data_key, col=Colon('#1', colCount-1, ))).do()
 
                 # no assign
                 print "z10" 
-                result = Frame(data_key, row=Colon('#1', rowCount-10)).do()
+                result = KeyIndexed(data_key, row=Colon('#1', rowCount-10)).do()
                 print "z11" 
-                # result = Frame(data_key, col=Colon('#1', colCount-1,)).do()
+                # result = KeyIndexed(data_key, col=Colon('#1', colCount-1,)).do()
 
 
                 # do some function translation
                 print "z12" 
-                # result = Fcn('==', 1, Frame(data_key, col=Colon('#1', colCount-1,))).do()
+                # result = Fcn('==', 1, KeyIndexed(data_key, col=Colon('#1', colCount-1,))).do()
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \

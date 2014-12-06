@@ -2,8 +2,8 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 from h2o_test import verboseprint, dump_json
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
-import h2o_xexec
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col, Xbase
+import h2o_xl
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
@@ -76,8 +76,8 @@ class Basic(unittest.TestCase):
             trial = 0
             good = []
             bad = []
-            both = h2o_xexec.xFcnOp1Set.union(h2o_xexec.xFcnOp3Set)
-            both = h2o_xexec.xFcnOp1Set
+            both = h2o_xl.xFcnOp1Set.union(h2o_xl.xFcnOp3Set)
+            both = h2o_xl.xFcnOp1Set
             for fun in both:
 
                 try:
@@ -86,60 +86,60 @@ class Basic(unittest.TestCase):
                     Assign(data_key2, data_key).do()
 
                     a = None
-                    # a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), True))
+                    # a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), True))
 
-                    # a = Assign(result_key, Fcn('sum', Frame(data_key2, col=0), True))
-                    # a = Assign(result_key, Fcn('xorsum', Frame(data_key2, col=0), True))
-                    # a = Assign(result_key, Fcn('sqrt', Frame(data_key2, col=0)))
-                    # a = Assign(result_key, Fcn('ncol', Frame(data_key2, col=0)))
+                    # a = Assign(result_key, Fcn('sum', KeyIndexed(data_key2, col=0), True))
+                    # a = Assign(result_key, Fcn('xorsum', KeyIndexed(data_key2, col=0), True))
+                    # a = Assign(result_key, Fcn('sqrt', KeyIndexed(data_key2, col=0)))
+                    # a = Assign(result_key, Fcn('ncol', KeyIndexed(data_key2, col=0)))
 
                     # what's wrong with mean?
                     if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan', 'sign', 'log', 'exp', 'sqrt', 'abs', 'floor', 'ceiling', 'trunc','is.factor', 'is.na', 'any.na', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0)))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0)))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['sum', 'max', 'min', 'xorsum', 'sd']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), True))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), True))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['scale']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), False, False))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, False))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['round', 'signif']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), 1))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 1))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['seq_len', 'rep_len']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), 4))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 4))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['seq']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), 1, 5, 1))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 1, 5, 1))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['mean']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), 0, False))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 0, False))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['var']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), False, False, False))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, False, False))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['match']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), Frame(data_key2, col=0), 1, None))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), KeyIndexed(data_key2, col=0), 1, None))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['unique']:
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), False, 10, 1))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, 10, 1))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)
                     else:
                         # bad functions kill h2o?
-                        a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0), None))
+                        a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), None))
                         bad.append(fun)
 
-                        # a = Fcn(fun, Frame(data_key, col=0), '$FALSE ')
+                        # a = Fcn(fun, KeyIndexed(data_key, col=0), '$FALSE ')
                         # a = Fcn(fun, data_key, '$FALSE')
                         # a = Fcn(fun, data_key)
 

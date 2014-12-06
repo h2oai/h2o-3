@@ -1,6 +1,6 @@
 import h2o_exec as h2e, h2o_print as h2p
 import re
-# from h2o_xexec import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
+# from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
 # local to this stuff. manually set the enable
 debugPrintEnable = False
@@ -76,8 +76,8 @@ class Xbase(object):
             # h2o probably can't index an indexed thing. (KeyIndexed) or Seq?
             if self is None:
                 raise Exception("Can't index something that doesn't exist yet,\
-                     even on lhs. %s %s" % (type(self), self))
-            myAssign = Assign(None, self)
+                     even on lhs. %s %s" % (type(self)))
+            myAssign = Assign(None)
             result = myAssign.do()
             myKey = Key(myAssign.frame)
             myKeyIndexed = myKey.add_indexing(items)
@@ -101,7 +101,7 @@ class Xbase(object):
             # KeyIndexed (not anything possible)
             # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
             # check if self and rhs are the same? it would be a noop
-            debugprint("%s __setitem__ completing %s" % (type(self), self))
+            debugprint("%s __setitem__ completing %s" % (type(self)))
             fr = self.add_indexing(items)
             Assign(fr, rhs).do()
         debugprint("%s __setitem__  end" % type(self))
@@ -113,7 +113,7 @@ class Xbase(object):
     # the "done" flag inhibits that?
     def __ilshift__(self, b):
         if not isinstance(self, (Key, KeyIndexed)):
-            debugprint(('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self), self)))
+            debugprint(('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self))))
             debugprint("coercing lhs to Key")
             lhs = Key() # anonymous
         else:
@@ -134,81 +134,78 @@ class Xbase(object):
         debugprint("ilshift Assign done")
         return newForOld
 
-    def unary_common(funstr, self):
+    def _unary_common(self, funstr):
         # funstr is the h2o function string..this function is just fot standard binary ops?
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn)):
-            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s' % (funstr, type(self)))
+            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s' % (funstr, type(self)))
         else:
-            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
+            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
                 (funstr, type(self)))
 
-    def binary_common(funstr, self, right):
+    def _binary_common(self, funstr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn)):
-            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
-                funstr, (type(self), type(right)))
+            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
+                (funstr, type(self), type(right)))
         elif isinstance(right, (int, list, tuple)):
             return Fcn(funStr, self, Item(right))
         elif isinstance(right, (Key, KeyIndexed, Fcn)):
             return Fcn(funStr, self, right)
         elif isinstance(right, (float)):
             raise TypeError('Rapids unsupported operand type(s) for %s: %s and %s' % \
-                funstr, (type(self), type(right)))
+                (funstr, type(self), type(right)))
         else:
-            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
-                funstr, (type(self), type(right)))
+            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
+                (funstr, type(self), type(right)))
 
     def __add__(self, right):
-        return self.binary_common('+', self, right)
+        return self._binary_common('+', right)
     def __radd_(self, left):
         return self.__add__(left)  # or self + left
 
     def __sub__(self, right):
-        return self.binary_common('+', self, right)
+        return self._binary_common('+', right)
     def __rsub_(self, left):
         return self.__add__(left)
 
     def __mul__(self, right):
-        return self.binary_common('+', self, right)
+        return self._binary_common('+', right)
     def __rmul_(self, left):
         return self.__add__(left)
 
     def __div__(self, right):
-        return self.binary_common('+', self, right)
+        return self._binary_common('+', right)
     def __rdiv_(self, left):
         return self.__add__(left) 
 
     def __mod__(self, right):
-        return self.binary_common('%', self, right)
+        return self._binary_common('%', right)
     def __rmod_(self, left):
         return self.__add__(left)
 
     def __pow__(self, right):
-        return self.binary_common('**', self, right)
+        return self._binary_common('**', right)
     def __rpow_(self, left):
         return self.__add__(left)
 
     def __and__(self, right):
-        return self.binary_common('&', self, right)
+        return self._binary_common('&', right)
     def __rand_(self, left):
         return self.__add__(left)
 
     def __or__(self, right):
-        return self.binary_common('|', self, right)
+        return self._binary_common('|', right)
     def __ror_(self, left):
         return self.__add__(left)
 
     def __xor__(self, right):
-        return self.binary_common('^', self, right)
+        return self._binary_common('^', right)
     def __rxor_(self, left):
         return self.__add__(left)
 
-    def __cmp__(self, right):
-        return self.binary_common('==', self, right)
-    def __rcmp_(self, left):
-        return self.__add__(left)
+    # don't use __cmp__ ?
 
     # http://www.python-course.eu/python3_magic_methods.php
     # none of the extended assigns (since we overload <<=)
@@ -218,54 +215,41 @@ class Xbase(object):
     # unary
     # -, +, abs, ~, int, float
     def __neg__(self):
-        return unary_common('_', self) # use special Rapids negation function
-    def __rneg_(self):
-        return self.__add__()
-
+        return _unary_common('_') # use special Rapids negation function
     # pos is a no-op? just return self?
     def __pos__(self):
-        return unary_common('_', self) # use special Rapids negation function
-    def __rpos_(self):
-        return self.__pos__()
-
+        return _unary_common('_') # use special Rapids negation function
     def __abs__(self):
-        return unary_common('abs', self) # use special Rapids negation function
-    def __rabs_(self):
-        return self.__abs__()
-
+        return _unary_common('abs') # use special Rapids negation function
     def __int__(self):
-        return unary_common('trunc', self) # use special Rapids negation function
-    def __rint_(self):
-        return self.__abs__()
+        return _unary_common('trunc') # use special Rapids negation function
 
     # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
     # (what if enums or strings)
     # FIX! for now, just leave it as is
     def __float__(self):
-        print "WARNING: not converting your h2o data to float %s %s" % (type(self), self)
+        print "WARNING: not converting your h2o data to float %s %s" % (type(self))
         return self
-    def __rfloat_(self):
-        return self.__abs__()
 
     # complex/long/oct/hex not supported
 
     def __lt__(self, right):
-        return self.binary_common('<', self, right)
+        return self._binary_common('<', right)
     def __rlt_(self, left):
         return self.__add__(left)
 
     def __le__(self, right):
-        return self.binary_common('<=', self, right)
+        return self._binary_common('<=', right)
     def __rle_(self, left):
         return self.__add__(left)
 
     def __gt__(self, right):
-        return self.binary_common('<', self, right)
+        return self._binary_common('<', right)
     def __rgt_(self, left):
         return self.__add__(left)
 
     def __ge__(self, right):
-        return self.binary_common('<=', self, right)
+        return self._binary_common('<=', right)
     def __rge_(self, left):
         return self.__add__(left)
 
@@ -287,11 +271,11 @@ class Xbase(object):
         debugprint("%s .do() start %s" % (type(self), self))
         if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn)):
             raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
-                (type(self), self))
+                (type(self)))
 
         # this can only happen if we already Exec'ed it? that's not legal. Just exception for now..means bug?
         if self.execExpr:
-            raise Exception(".do() Appears we already Exec'ed this? %s %s %s" % (self.execExpr, type(self), self))
+            raise Exception(".do() Appears we already Exec'ed this? %s %s %s" % (self.execExpr, type(self)))
 
         if self.funs:
             self.execExpr = "[%s]" % self
@@ -343,7 +327,7 @@ class Xbase(object):
                     execExpr = "(= !%s (c {#%s}))" % (self.frame, scalar)
                 else:
                     # rapids hack to get a zero row key
-                    debugprint("WARNING: %.do() is creating a zero-row result key, from %s" % (type(self), self))
+                    debugprint("WARNING: %.do() is creating a zero-row result key, from %s" % (type(self)))
                     execExpr = "(= !%s (is.na (c {#0})))" % self.frame
             
 
@@ -675,13 +659,11 @@ class KeyIndexed(Xbase):
         # None translates to "null"
         # not key yet
 
-
-
     def __str__(self):
         frame = self.frame
         row = self.row
         col = self.col
-        if row in [None, '"null"']  and col in [None, '"null"']:
+        if row in [None, '"null"'] and col in [None, '"null"']:
             return '$%s' % frame
 
         if row is None:
@@ -992,7 +974,7 @@ class Assign(Key):
         elif not isinstance(lhs, (Key, KeyIndexed, basestring)):
             raise Exception("Assign: lhs not Key/KeyIndexed/string or None %s %s" % (type(lhs), lhs))
 
-        super(Assign, self).__init__(key=lhs)
+        super(Assign, self).__init__(lhs)
 
         # to date, have been passing strings
         # all the __getitem__ stuff in Key should modify a Key?

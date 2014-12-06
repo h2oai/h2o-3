@@ -54,7 +54,7 @@ class Basic(unittest.TestCase):
 
                 # FIX! check if v is ever there.
 
-                # Frames gets too many rollup stats problems. Don't use for now
+                # KeyIndexeds gets too many rollup stats problems. Don't use for now
                 if 1==0: 
                     inspect = h2o_cmd.runInspect(key=lhs)
                     missingList, labelList, numRows, numCols = infoFromInspect(inspect)

@@ -3,7 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
-from h2o_xexec import Def, Fcn, Assign, Frame
+from h2o_xl import Def, Fcn, Assign, KeyIndexed
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
@@ -41,7 +41,7 @@ funsList = [
 
     Def('anon', 'x', 
         [Assign(key, Fcn('var', 'x', None, False, None)) for key in 'abdefghijklmnopqrstuvz'],
-        [Assign(key, Fcn('sum', Frame('x',col=0), False)) for key in 'abdefghijklmnopqrstuvz'],
+        [Assign(key, Fcn('sum', KeyIndexed('x',col=0), False)) for key in 'abdefghijklmnopqrstuvz'],
         Fcn('var', 'x', None, False, None),
     ),
 ]
@@ -80,7 +80,7 @@ class Basic(unittest.TestCase):
 
                 # rapids doesn't like complicated params right now?
                 if DO_FAIL:
-                    a = Assign('junk', Fcn('anon', Frame('r1',col=0)))
+                    a = Assign('junk', Fcn('anon', KeyIndexed('r1',col=0)))
                 else:
                     a = Assign('junk', Fcn('anon', 'r1'))
                 result = a.do(timeoutSecs=60)

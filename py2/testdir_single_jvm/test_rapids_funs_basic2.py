@@ -3,7 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 funsList = [
-    # bad (Frame.java: 78 assert)
+    # bad (KeyIndexed.java: 78 assert)
     # '(def anon {x} (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null");;;)',
     # bad also
     '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
