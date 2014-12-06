@@ -9,7 +9,7 @@ print "FIX!: need to test the && and || reduction operators"
 initList = [
         ]
 
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col
 
 DO_SUM = False
 
@@ -17,50 +17,50 @@ if DO_SUM:
     exprList = [
             # 'a=c(1); a = sum(r1[1,])',
             Assign('a', Col(Seq(1))).ast(),
-            Assign('a', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('a', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'b=c(1); b = sum(r1[1,])',
             Assign('b', Col(Seq(1))).ast(),
-            Assign('b', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('b', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'd=c(1); d = sum(r1[1,])'(),
             Assign('d', Col(Seq(1))).ast(),
-            Assign('d', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('d', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'e=c(1); e = sum(r1[1,])',
             Assign('e', Col(Seq(1))).ast(),
-            Assign('e', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('e', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'f=c(1); f = sum(r1[1,])',
             Assign('f', Col(Seq(1))).ast(),
-            Assign('f', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('f', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'f=c(1); g = sum(r1[1,])',
             Assign('g', Col(Seq(1))).ast(),
-            Assign('g', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('g', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             # 'h=c(1); h = sum(r1[1,])',
             Assign('h', Col(Seq(1))).ast(),
-            Assign('h', Fcn('sum', Frame('r1', row=1))).ast(),
+            Assign('h', Fcn('sum', KeyIndexed('r1', row=1))).ast(),
             ]
 else:
     exprList = [
             # 'a=c(1); a = log(r1[1,])',
             Assign('a', Col(Seq(1))).ast(),
             # can't force a scalar to have a key be created?
-            Assign('a', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('a', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'b=c(1); b = log(r1[1,])',
             Assign('b', Col(Seq(1))).ast(),
-            Assign('b', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('b', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'd=c(1); d = log(r1[1,])'(),
             Assign('d', Col(Seq(1))).ast(),
-            Assign('d', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('d', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'e=c(1); e = log(r1[1,])',
             Assign('e', Col(Seq(1))).ast(),
-            Assign('e', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('e', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'f=c(1); f = log(r1[1,])',
             Assign('f', Col(Seq(1))).ast(),
-            Assign('f', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('f', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'f=c(1); g = log(r1[1,])',
             Assign('g', Col(Seq(1))).ast(),
-            Assign('g', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('g', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             # 'h=c(1); h = log(r1[1,])',
             Assign('h', Col(Seq(1))).ast(),
-            Assign('h', Fcn('log', Frame('r1', row=1))).ast(),
+            Assign('h', Fcn('log', KeyIndexed('r1', row=1))).ast(),
             ]
 
 class Basic(unittest.TestCase):

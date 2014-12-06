@@ -2,7 +2,7 @@ import unittest, random, sys, time, re, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_glm, h2o_util
 import h2o_print as h2p, h2o_gbm
-from h2o_xexec import Fcn, Seq, Colon, Col, Cbind, Assign, Item, Frame
+from h2o_xl import Fcn, Seq, Colon, Col, Cbind, Assign, Item, KeyIndexed
 
 # FIX! This has some abbreviated stuff from h2o...look back there for completeness, eventually
 DO_QUANTILE = False
@@ -158,7 +158,7 @@ class Basic(unittest.TestCase):
                         # src[ src$age<17 && src$zip=95120 && ... , ]
                         # cutExprList.append('p$C'+str(i+1)+'=='+c)
                         # all column indexing in h2o-dev is with number
-                        e = Fcn('==', Item(c), Frame('p', col=i))
+                        e = Fcn('==', Item(c), KeyIndexed('p', col=i))
                         cutExprList.append(e)
 
                 cutExpr = None
@@ -176,7 +176,7 @@ class Basic(unittest.TestCase):
                 eKey = e[1]
 
                 # rowExpr = '%s[%s,];' % (hex_key, cutExpr)
-                rowExpr = Frame(hex_key, row=cutExpr)
+                rowExpr = KeyIndexed(hex_key, row=cutExpr)
                 print "rowExpr:", rowExpr
                 rowExprList.append(rowExpr)
 

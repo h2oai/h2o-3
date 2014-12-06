@@ -12,7 +12,7 @@ expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 55112
 
 def assertEqualMsg(a, b): assert a == b, "%s %s" % (a, b)
 
-def parseFrameCheck(frames_result, multiplyExpected):
+def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
@@ -75,7 +75,7 @@ class Basic(unittest.TestCase):
             frames_result = a_node.frames(key=k, len=5)
             # print "frames_result from the first parse_result key", dump_json(frames_result)
             
-            parseFrameCheck(frames_result, multiplyExpected)
+            parseKeyIndexedCheck(frames_result, multiplyExpected)
 
 if __name__ == '__main__':
     h2o.unit_main()

@@ -377,7 +377,7 @@ def build_cloud(node_count=1, base_port=None, hosts=None,
         # verifies cloud name too if param is not None
         verify_cloud_size(nodeList, expectedCloudName=nodeList[0].cloud_name, expectedLocked=0)
 
-        # FIX! should probably check that lock=0. It will go to one later.
+        # FIX! should probably check that the cloud's lock=0. It will go to 1 later.
         # but if it's an existing cloud, it may already be locked.
         # That will be in build_cloud_with_json, though
 

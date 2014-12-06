@@ -33,7 +33,6 @@ usecloud_size = None
 
 
 python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
-
 # no command line args if run with just nose
 python_cmd_args = ""
 # don't really know what it is if nosetests did some stuff. Should be just the test with no args
@@ -197,18 +196,23 @@ def unit_main():
         return
     g_unit_main_already_called = True
 
-    unittest_already_called = False
-    if True:
+    parse_our_args()
+    start_unittest_runner = True
+
+    if False:
         import traceback
         frames = traceback.extract_stack()
+        # PyDev remote debugger already active?
+        # http://pydev.org/manual_adv_remote_debugger.html
         if "pydevd.py" in frames[0][0]:
-            unittest_already_called = True
+            start_unittest_runner = False
+
+        # PyCharm or nose runner already active?
         for frame in frames:
             print(frame[0])
-            if "utrunner.py" in frame[0]:
-                unittest_already_called = True
+            if "utrunner.py" in frame[0] or "/nose/" in frame[0]:
+                start_unittest_runner = False
 
-    parse_our_args()
     global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
     # if I remember correctly there was an issue with using sys.argv[0]
     # under nosetests?.
@@ -220,8 +224,9 @@ def unit_main():
     python_username = getpass.getuser()
     # depends on ip_from_cmd_line
     python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
+
     # if test was run with nosetests, it wouldn't execute unit_main() so we won't see this
     # so this is correct, for stuff run with 'python ..."
     print "\nunit_main. Test: %s    command line: %s" % (python_test_name, python_cmd_line)
-    if not unittest_already_called:
+    if start_unittest_runner:
         unittest.main()

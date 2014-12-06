@@ -174,7 +174,7 @@ class Basic(unittest.TestCase):
             for trial in range(1):
 
                 parameters = {
-                    'validation_frame': parse_key, # Frame False []
+                    'validation_frame': parse_key, # KeyIndexed False []
                     'ignored_columns': None, # string[] None []
                     'score_each_iteration': None, # boolean false []
 

@@ -2,6 +2,7 @@
 import time
 import h2o_methods, h2o_print as h2p, h2o_sandbox
 from h2o_test import verboseprint, dump_json
+from h2o_xl import Key
 
 ###################
 # REST API ACCESSORS
@@ -231,6 +232,9 @@ def parse(self, key, hex_key=None,
 
 # TODO: remove .json
 def frames(self, key=None, timeoutSecs=10, **kwargs):
+    if not (key is None or isinstance(key, (basestring, Key))):
+        raise Exception("frames: key should be string or Key type %s %s" % (type(key), key))
+
     params_dict = {
         'find_compatible_models': 0,
         'offset': 0, # is offset working yet?
@@ -246,8 +250,13 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
     '''
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', False)
     
+    # key can be type Key? (from h2o_xl) str(key) should return
     if key:
-        result = self.do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
+        if isinstance(key, Key):
+            keyStr = key.frame
+        else:
+            keyStr = key
+        result = self.do_json_request('3/Frames.json/' + keyStr, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
     return result

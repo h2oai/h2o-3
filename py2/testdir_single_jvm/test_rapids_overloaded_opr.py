@@ -2,7 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 from h2o_test import verboseprint, dump_json
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase, Key
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col, Xbase, Key
 
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
@@ -120,18 +120,18 @@ class Basic(unittest.TestCase):
                 # as opposed to an object within a function
 
                 result_key.frame = 'a1'
-                result_key <<= data_key[Seq(range(1,2)),:]  
+                result_key <<= data_key[Seq(range(1,4)), :]  
                 result_key.frame = 'a2'
-                result_key <<= data_key[Seq(range(1,2)),:]
+                result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a3'
-                result_key <<= data_key[Seq(range(1,2)),:]
+                result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a4'
-                result_key <<= data_key[Seq(range(1,2)),0]
+                result_key <<= data_key[Seq(range(1,4)), 0:1]
                 result_key.frame = 'a5'
-                result_key <<= data_key[Seq(range(1,2)),0]
+                result_key <<= data_key[Seq(range(1,4)), 0:1]
 
                 result_key.frame = 'a6'
-                result_key <<= data_key[[1,2,3], 3:4]
+                result_key <<= data_key[[1,2,3], 1]
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \

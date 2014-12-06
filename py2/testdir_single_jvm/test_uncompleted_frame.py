@@ -25,7 +25,7 @@ SINGLE_CSVFILENAME = 'covtype.data'
 
 def assertEqualMsg(a, b): assert a == b, "%s %s" % (a, b)
 
-def parseFrameCheck(frames_result, multiplyExpected, expectedColumnNames):
+def parseKeyIndexedCheck(frames_result, multiplyExpected, expectedColumnNames):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
@@ -130,7 +130,7 @@ class Basic(unittest.TestCase):
             
             # we doubled the keyList, from what was in tryList
 
-            parseFrameCheck(frames_result, multiplyExpected, expectedColumnNames)
+            parseKeyIndexedCheck(frames_result, multiplyExpected, expectedColumnNames)
 
 if __name__ == '__main__':
     h2o.unit_main()

@@ -2,7 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd, h2o_util
 
-from h2o_xexec import Frame, Fcn, Seq, Colon, Assign, Item, Col, Xbase
+from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col, Xbase
 
 
 DO_UNIMPLEMENTED = False
@@ -29,10 +29,10 @@ class Basic(unittest.TestCase):
         # work up to the failing case incrementally
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
-            Assign('r0.hex', Frame('r.hex',col=0)),
-            Assign('s0.hex', Fcn("runif", Frame('r.hex',col=0), 0, 5, -1)),
-            Assign('s1.hex', Fcn("runif", Frame('r.hex',col=1), 0, 5, -1)),
-            Assign('s2.hex', Fcn("runif", Frame('r.hex',col=54), 0, 5, -1)),
+            Assign('r0.hex', KeyIndexed('r.hex',col=0)),
+            Assign('s0.hex', Fcn("runif", KeyIndexed('r.hex',col=0), 0, 5, -1)),
+            Assign('s1.hex', Fcn("runif", KeyIndexed('r.hex',col=1), 0, 5, -1)),
+            Assign('s2.hex', Fcn("runif", KeyIndexed('r.hex',col=54), 0, 5, -1)),
         ]
 
         results = []

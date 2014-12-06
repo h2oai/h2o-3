@@ -81,17 +81,33 @@ def shutdown_all(self):
 
 
 #*******************************************************************************
-def jobs_admin (self, *args, **kwargs):
-    print "WARNING: faking jobs admin"
-    a = { 'jobs': {} }
-    return a
-
 def unlock (self, *args, **kwargs):
-    print "WARNING: faking unlock keys"
-    pass
+    a = self.do_json_request('2/UnlockKeys.json', params=None, timeout=timeoutSecs)
+    return a
+    # print "WARNING: faking unlock keys"
+    # pass
 
 def remove_all_keys(self, timeoutSecs=120):
     return self.do_json_request('RemoveAll.json', timeout=timeoutSecs)
+
+# ignore errors on remove..key might already be gone due to h2o removing it now after parse
+def remove_key(self, key, timeoutSecs=120):
+    a = self.do_json_request('Remove.json',
+        params={"key": key}, ignoreH2oError=True, timeout=timeoutSecs)
+    self.unlock()
+    return a
+
+def jobs_admin(self, timeoutSecs=120, **kwargs):
+    params_dict = {
+        # 'expression': None,
+    }
+    params_dict.update(kwargs)
+    verboseprint("\njobs_admin:", params_dict)
+    a = self.do_json_request('Jobs.json', timeout=timeoutSecs, params=params_dict)
+    verboseprint("\njobs_admin result:", dump_json(a))
+    # print "WARNING: faking jobs admin"
+    # a = { 'jobs': {} }
+    return a
 
 #******************************************************************************************8
 def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
