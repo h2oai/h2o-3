@@ -94,8 +94,7 @@ class Basic(unittest.TestCase):
                     # a = Assign(result_key, Fcn('ncol', Frame(data_key2, col=0)))
 
                     # what's wrong with mean?
-                    if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan', 'sign', 'log', 'exp', 'sqrt', 'abs', 'floor', 'ceiling', 'trunc',\
-                        'is.factor', 'is.na', 'any.na', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
+                    if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan', 'sign', 'log', 'exp', 'sqrt', 'abs', 'floor', 'ceiling', 'trunc','is.factor', 'is.na', 'any.na', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
                         a = Assign(result_key, Fcn(fun, Frame(data_key2, col=0)))
                         result = a.do(timeoutSecs=14)
                         good.append(fun)

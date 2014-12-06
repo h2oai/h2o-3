@@ -2,32 +2,52 @@ import h2o_exec as h2e, h2o_print as h2p
 import re
 # from h2o_xexec import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
+# local to this stuff. manually set the enable
+debugPrintEnable = False
+debugNoH2O = False
+def debugprint(*args, **kwargs):
+    if debugPrintEnable:
+        # compatible with print definition
+        for x in args: 
+            print x,
+        for x in kwargs:
+            print x,
+        print
+
 class Xbase(object):
-    # can set this in a test to disable the actual exec, just print
-    debug = False
+    # can set this in a test to disable the actual exec, just debugprint()
     lastExecResult = {}
     lastResult = None
     defaultAst = "Empty from Xbase init"
 
-    def json(self): # returns a json string. prints it too.
+    def json(self): # returns a json string. debugprint(s it too.)
         import json
         s = vars(self)
-        print json.dumps(s, indent=4, sort_keys=True)
+        debugprint(json.dumps(s, indent=4, sort_keys=True))
         return s
 
     def __init__(self):
-        # maybe we should track depth/complexity of everything below too, and force an eval at a certain complexity
+        # maybe we should track depth/complexity of everything below too, 
+        # and force an eval at a certain complexity
         # track leaves and depth?
         self.ilshiftAssignDone = False
         self.depth = 0
         self.complexity = 0
 
+        # this probably doesn't mean that a Key got created
         self.execDone = False
         self.execResult = None
         self.result = None
         self.execExpr = None
         self.funs = False
         # self.ast = self.defaultAst
+
+        # should we init this to 0? or only after a KeyInit
+        # I guess None here means it's not in the h2o k/v store
+        # Maybe we'll say this state doesn't exit unless you create a Key at h2o
+        # with a .do()
+        # self.numRows = None
+        # self.numCols = None
 
     def __str__(self):
         # this should always be overwritten by the other classes"
@@ -36,12 +56,15 @@ class Xbase(object):
     __repr__ = __str__
 
     def __getitem__(self, items):
-        print "%s __getitem__ start" % type(self)
+        debugprint("%s __getitem__ start" % type(self))
         # If self is anything other a Key, means it was from a pending eval with no Assign.
         # Assign's should always have been .do()'ed, so views of them become Keys?
-        # Keys with indexed views, become KeyIndexeds. Fcn operations can happen on KeyIndexeds or Keys.
+        # Keys with indexed views, become KeyIndexed. 
+        # Fcn operations can happen on KeyIndexed or Key.
 
-        # a = b[0] is just a view. b[1] = c[3] is a transformation of a dataframe, since b[1:0] will be different view after.
+        # a = b[0] is just a view. 
+        # b[1] = c[3] is a transformation of a dataframe, since b[1:0] will be different view after.
+
         # Keys: If there's no name (None) , one will be created based on the instance id
         # KeyIndexeds are always already named.
         if isinstance(self, Key):
@@ -52,20 +75,21 @@ class Xbase(object):
             # Future? Maybe allow direct indexing of Fcn result, to avoid the temp?
             # h2o probably can't index an indexed thing. (KeyIndexed) or Seq?
             if self is None:
-                raise Exception("Can't index something that doesn't exist yet, even on lhs. %s %s" % (type(self), self))
+                raise Exception("Can't index something that doesn't exist yet,\
+                     even on lhs. %s %s" % (type(self), self))
             myAssign = Assign(None, self)
             result = myAssign.do()
             myKey = Key(myAssign.frame)
             myKeyIndexed = myKey.add_indexing(items)
-        print "%s __getitem__  end" % type(self)
+        debugprint("%s __getitem__  end" % type(self))
         return myKeyIndexed
 
-    # only Keys are flexible enough to be index'ed
-    # if you index a frame, assign it to temp (since it has a shape)
+    # Only Keys are flexible enough to be index'ed
+    # If you index a frame, assign it to temp (since it has a shape)
     # then reindex into that shape
     # Since it's a new temp don't re-use the name of the src key
     def __setitem__(self, items, rhs):
-        print "%s __setitem__ start" % type(self)
+        debugprint("%s __setitem__ start" % type(self))
         # .do() checks if already done, and noops if so
         # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
 
@@ -73,23 +97,24 @@ class Xbase(object):
         # but for it to be here, it has to be  Key?
         # so this is not required?
         if isinstance(self, Key) and not self.ilshiftAssignDone:
-            # this returns a KeyIndexed? (so we can go from Key (anything possible) to KeyIndexed (not anything possible)
+            # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
+            # KeyIndexed (not anything possible)
             # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
             # check if self and rhs are the same? it would be a noop
-            print "%s __setitem__ completing %s" % (type(self), self)
+            debugprint("%s __setitem__ completing %s" % (type(self), self))
             fr = self.add_indexing(items)
             Assign(fr, rhs).do()
-        print "%s __setitem__  end" % type(self)
+        debugprint("%s __setitem__  end" % type(self))
 
-    # try a trick for getting an assign overload (<<= with .do() too
-    # don't want the .do() if you're in a function though?
-    # need to be able to do KeyIndexed and Key here?
-    # FIX! disable this to avoid the double writes for a[0] <<=
-    # maybe the "done" flag inhibits that.
+    # A trick for getting an assign overload (<<=) with .do()
+    # Don't want the .do() if you're in a function though?
+    # Need to be able to do KeyIndexed and Key here?
+    # hacky disable  to avoid the double writes for a[0] <<=
+    # the "done" flag inhibits that?
     def __ilshift__(self, b):
         if not isinstance(self, (Key, KeyIndexed)):
-            print ('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self), self))
-            print "coercing lhs to Key"
+            debugprint(('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self), self)))
+            debugprint("coercing lhs to Key")
             lhs = Key() # anonymous
         else:
             lhs = self
@@ -97,38 +122,152 @@ class Xbase(object):
         # type checking is done downstream
         # I suppose lhs needs to be able to take [] stuff also (for set)
         # Only gets the default timeoutSecs?
-        # if we KeyIndexedd the lhs, it has a row and col and will be indexed
-        # that means a [] indexing must have done it, and __setitem__ will be called
+        # If we index the lhs, it has a row and col and will be KeyIndex
+        # That means a [] indexing must have done it, and __setitem__ will be called
         # after this again by python. We should let it redo the framing and .do()
-        print "ilshift Assign start"
+        debugprint("ilshift Assign start")
         Assign(lhs, b).do()
         # can start fresh!
         lhs.ilshiftAssignDone = True
         newForOld = Key(lhs.frame)
         newForOld.ilshiftAssignDone = True
-        print "ilshift Assign done"
+        debugprint("ilshift Assign done")
         return newForOld
 
-    def __add__(self, right):
-        # FIX! don't check ..rely on h2o to do length/size checks? maybe good to check here if we known size of frame
-        # We can probe h2o for size of frame?
-        # assert len(self)==len(right), 'Vector.__add__: operand self(%s) has different dimension that operand right(%s)' %\
-        #     ((len(self), len(right))
+    def unary_common(funstr, self):
+        # funstr is the h2o function string..this function is just fot standard binary ops?
+        # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn)):
-            raise TypeError('h2o_xexec unsupported operand type(s) for +: %s and %s' % (type(self), type(right)))
-        elif isinstance(right, (int, list, tuple)):
-            # what about Item checking that expanded list doesn't have float (not important right now?)
-            return Fcn('+', self, Item(right))
-        elif isinstance(right, (Key, KeyIndexed, Fcn)):
-            return Fcn('+', self, right)
-        elif isinstance(right, (float)):
-            raise TypeError('Rapids unsupported operand type(s) for +: %s and %s' % (type(self), type(right)))
+            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s' % (funstr, type(self)))
         else:
-            raise TypeError('h2o_xexec unsupported operand type(s) for +: %s and %s' % (type(self), type(right)))
+            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
+                (funstr, type(self)))
 
+    def binary_common(funstr, self, right):
+        # funstr is the h2o function string..this function is just fot standard binary ops?
+        # FIX! add row/col len checks against Key objects
+        if not isinstance(self, (Key, KeyIndexed, Fcn)):
+            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
+                funstr, (type(self), type(right)))
+        elif isinstance(right, (int, list, tuple)):
+            return Fcn(funStr, self, Item(right))
+        elif isinstance(right, (Key, KeyIndexed, Fcn)):
+            return Fcn(funStr, self, right)
+        elif isinstance(right, (float)):
+            raise TypeError('Rapids unsupported operand type(s) for %s: %s and %s' % \
+                funstr, (type(self), type(right)))
+        else:
+            raise TypeError('h2o_xexec unsupported operand type(s) for %s: %s and %s' % \
+                funstr, (type(self), type(right)))
+
+    def __add__(self, right):
+        return self.binary_common('+', self, right)
     def __radd_(self, left):
-        self.__add__(left)  # or self + left
+        return self.__add__(left)  # or self + left
 
+    def __sub__(self, right):
+        return self.binary_common('+', self, right)
+    def __rsub_(self, left):
+        return self.__add__(left)
+
+    def __mul__(self, right):
+        return self.binary_common('+', self, right)
+    def __rmul_(self, left):
+        return self.__add__(left)
+
+    def __div__(self, right):
+        return self.binary_common('+', self, right)
+    def __rdiv_(self, left):
+        return self.__add__(left) 
+
+    def __mod__(self, right):
+        return self.binary_common('%', self, right)
+    def __rmod_(self, left):
+        return self.__add__(left)
+
+    def __pow__(self, right):
+        return self.binary_common('**', self, right)
+    def __rpow_(self, left):
+        return self.__add__(left)
+
+    def __and__(self, right):
+        return self.binary_common('&', self, right)
+    def __rand_(self, left):
+        return self.__add__(left)
+
+    def __or__(self, right):
+        return self.binary_common('|', self, right)
+    def __ror_(self, left):
+        return self.__add__(left)
+
+    def __xor__(self, right):
+        return self.binary_common('^', self, right)
+    def __rxor_(self, left):
+        return self.__add__(left)
+
+    def __cmp__(self, right):
+        return self.binary_common('==', self, right)
+    def __rcmp_(self, left):
+        return self.__add__(left)
+
+    # http://www.python-course.eu/python3_magic_methods.php
+    # none of the extended assigns (since we overload <<=)
+    # // is __floordiv (does h2o do that)
+    # << and >> are lshift and rshift
+    
+    # unary
+    # -, +, abs, ~, int, float
+    def __neg__(self):
+        return unary_common('_', self) # use special Rapids negation function
+    def __rneg_(self):
+        return self.__add__()
+
+    # pos is a no-op? just return self?
+    def __pos__(self):
+        return unary_common('_', self) # use special Rapids negation function
+    def __rpos_(self):
+        return self.__pos__()
+
+    def __abs__(self):
+        return unary_common('abs', self) # use special Rapids negation function
+    def __rabs_(self):
+        return self.__abs__()
+
+    def __int__(self):
+        return unary_common('trunc', self) # use special Rapids negation function
+    def __rint_(self):
+        return self.__abs__()
+
+    # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
+    # (what if enums or strings)
+    # FIX! for now, just leave it as is
+    def __float__(self):
+        print "WARNING: not converting your h2o data to float %s %s" % (type(self), self)
+        return self
+    def __rfloat_(self):
+        return self.__abs__()
+
+    # complex/long/oct/hex not supported
+
+    def __lt__(self, right):
+        return self.binary_common('<', self, right)
+    def __rlt_(self, left):
+        return self.__add__(left)
+
+    def __le__(self, right):
+        return self.binary_common('<=', self, right)
+    def __rle_(self, left):
+        return self.__add__(left)
+
+    def __gt__(self, right):
+        return self.binary_common('<', self, right)
+    def __rgt_(self, left):
+        return self.__add__(left)
+
+    def __ge__(self, right):
+        return self.binary_common('<=', self, right)
+    def __rge_(self, left):
+        return self.__add__(left)
 
 
     # currently not used..can't create ast at init time
@@ -145,9 +284,10 @@ class Xbase(object):
 
     # not everything will "do" at h2o correctly? Should just be Assign/Expr/Def. maybe Key/KeyIndexed
     def do(self, timeoutSecs=30):
-        print "%s .do() start %s" % (type(self), self)
+        debugprint("%s .do() start %s" % (type(self), self))
         if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn)):
-            raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % (type(self), self))
+            raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
+                (type(self), self))
 
         # this can only happen if we already Exec'ed it? that's not legal. Just exception for now..means bug?
         if self.execExpr:
@@ -160,13 +300,13 @@ class Xbase(object):
         # self.check_do_against_ast()
 
         if self.execDone:
-            print "%s .do() already done:" (type (self, self.execExpr))
+            debugprint("%s .do() already done:" (type (self, self.execExpr)))
             return
 
         self.execResult = None
         self.result = None
 
-        if self.debug: # class variable
+        if debugNoH2O: 
             h2p.green_print("%s .do() debug ast: %s" % (type(self), self.execExpr))
             self.execResult =  {'debug': True}
             self.result = None
@@ -180,18 +320,38 @@ class Xbase(object):
             self.execResult, self.result = h2e.exec_expr(execExpr=self.execExpr,
                 doFuns=self.funs, timeoutSecs=timeoutSecs)
 
-            # Deal with h2o weirdness. If it gave a scalar result and didn't create a key, put that scalar in the key
+            # if we support indexing by col names
+            # remember the num_rows/num_cols (maybe update the saved col names 
+            # this could update to None for scalar/string 
+            # (temporary till we assign to key next in those cases)
+            self.numRows = self.execResult['num_rows']
+            self.numCols = self.execResult['num_cols']
+
+            # Deal with h2o weirdness. 
+            # If it gave a scalar result and didn't create a key, put that scalar in the key
             # with another assign. Why should I deal with another type that "depends" if the key existed already?
             if self.execResult['key'] is None:
-                print "Hacking scalar result %s into a key wth name I told h2o! %s" %\
-                    (self.execResult['scalar'], self.frame)
-
+                scalar = self.execResult['scalar']
+                debugprint("Hacking scalar result %s into a key wth name I told h2o! %s" % (scalar, self.frame))
                 # doesn't like 0.0?
-                print "FIX! Hacking scalar to int because rapids doesn't like reals?"
+                debugprint("FIX! Hacking scalar to int because rapids doesn't like reals?")
                 # execExpr = "(= !%s (c {#%s}))" % (self.frame, self.execResult['scalar'])
-                execExpr = "(= !%s (c {#%s}))" % (self.frame, int(self.execResult['scalar']))
+                
+                # FIX! hack to int, because rapids doesn't take reals yet
+                if scalar is not None:
+                    scalar = int(scalar)
+                    execExpr = "(= !%s (c {#%s}))" % (self.frame, scalar)
+                else:
+                    # rapids hack to get a zero row key
+                    debugprint("WARNING: %.do() is creating a zero-row result key, from %s" % (type(self), self))
+                    execExpr = "(= !%s (is.na (c {#0})))" % self.frame
+            
+
                 # execExpr = "(= !%s (c {#%s}))" % (self.frame, 0.0)
                 h2e.exec_expr(execExpr=execExpr)
+                # leave execResult/result as-is, from prior exec. set rows/cols again though?
+                self.numRows = self.execResult['num_rows']
+                self.numCols = self.execResult['num_cols']
 
         # these two are class variables. shouldn't be racy with multiple instances .do-ing?
         # execResult should always be a dict?
@@ -199,12 +359,12 @@ class Xbase(object):
         # this is a scalar or string that's a key name or ??
         # FIX! assume it's copied, for now
         self.lastResult = self.result
-        execDone = True
+        self.execDone = True
 
         # don't return the full json...can look that up if necessary
         # this this always nothing now, since we always init Key to a real h2o key?
-        # hopefully it gets the key name that we can use in an inspect (or does exec_expr read the key and return
-        # value if rows=1 and cols=1? (using min)
+        # hopefully it gets the key name that we can use in an inspect (or does exec_expr 
+        # read the key and return value if rows=1 and cols=1? (using min)
         return self.result
 
     # __call__ = __init__
@@ -247,7 +407,7 @@ class Item(Xbase):
 
     def __str__(self):
         item = self.item
-        # print "Item:", item
+        # debugprint("Item:", item)
         # xItem can't be used for lhs
         # if list or tuple, exception
         if isinstance(item, (list, tuple, dict)):
@@ -310,6 +470,7 @@ xFcnXlate = {
 '==': 'n',
 '!=': 'N',
 '!':  '_',
+'~':  '_',
 }
 
 # FIX! should we use weakref Dicts, to avoid inhibiting garbage collection by having it
@@ -319,25 +480,24 @@ xFcnUser = set()
 xFcnOpBinSet = set([
 '&&',
 '||',
+'+',
+'-',
+'*',
+'/',
+'**',
+'%',
+'&',
+'|',
 'not',
 'plus',
-'+',
 'sub',
-'-',
 'mul',
-'*',
 'div',
-'/',
 'pow',
-'*',
 'pow2',
-'**',
 'mod',
-'%',
 'and',
-'&',
 'or',
-'|',
 'lt',
 'le',
 'gt',
@@ -380,7 +540,7 @@ xFcnOp1Set = set([
 'acos',
 'asin',
 'atan',
-# 'cosh',
+'cosh',
 'sinh',
 'tanh',
 'min',
@@ -453,7 +613,7 @@ def unpackOperands(operands, parent=None, toItem=True):
         raise Exception("%s unpackOperands operandList is None or empty: %s" % (parent, operandList))
 
     if parent:
-        print "%s: %s" % (parent, map(str,operandList))
+        debugprint("%s: %s" % (parent, map(str,operandList)))
 
     # always returns a list, even if one thing
     return operandList
@@ -469,7 +629,7 @@ def legalKey(frame, parent):
             raise Exception("%s: frame can't be 'c' %s" % (parent, frameStr))
         if not re.match('[\a-zA-Z0-9_]', frameStr):
             raise Exception("%s: Don't like the chars in your frame %s" % (parent, frameStr))
-    print "%s frame: %s" % (parent, frameStr)
+    debugprint("%s frame: %s" % (parent, frameStr))
     return True
 
 
@@ -488,7 +648,7 @@ class KeyIndexed(Xbase):
         if frame is None:
             # no h2o name? give it one that's unique for the instance
             frame = "fnon_" + hex(id(self))
-            print "KeyIndexed creating h2o key name for the instance, none provided: %s" % frame
+            debugprint("KeyIndexed creating h2o key name for the instance, none provided: %s" % frame)
         # shouldn't get a key here, just a string
         elif not isinstance(frame, basestring):
             raise Exception("KeyIndexed should have frame param = string (or initially none) %s %s" % (type(frame), frame))
@@ -592,13 +752,14 @@ class Colon(Xbase):
 # key is a string
 # change to init from Xbase not KeyIndexed
 # a Key is the nebulous thing, that can get locked down into a KeyIndexed by indexing..
-# a KeyIndexed can't be re-indexed, or turned back into a Key, until it's executed by rapids (so the Key can be used again)
+# a KeyIndexed can't be re-indexed, or turned back into a Key, 
+# until it's executed by rapids (so the Key can be used again)
 class Key(KeyIndexed):
     def __init__(self, key=None):
         if key is None:
             # no h2o name? give it one that's unique for the instance
             key = "knon_" + hex(id(self))
-            print "Key creating h2o key name for the instance, none provided: %s" % key
+            debugprint("Key creating h2o key name for the instance, none provided: %s" % key)
 
         # to date, have been passing strings
         # all the __getitem__ stuff in Key should modify a Key?
@@ -647,18 +808,18 @@ class Key(KeyIndexed):
     # this is used on lhs and rhs? we never use a[0] = ... Just a[0] <== ...
     def add_indexing(self, items):
         def indexer(item):
-            print 'Key item %-15s  %s' % (type(item), item)
+            debugprint('Key item %-15s  %s' % (type(item), item))
 
             if type(item) is int:
-                print "Key item int", item
+                debugprint("Key item int", item)
                 return Item(item)
 
             elif isinstance(item, Seq):
-                print "Key item Seq", Seq
+                debugprint("Key item Seq", Seq)
                 return item
 
             elif isinstance(item, Colon):
-                print "Key item Colon", Colon
+                debugprint("Key item Colon", Colon)
                 return item
 
             # what if the indexer is a list/tuple, string, or Key?
@@ -676,9 +837,9 @@ class Key(KeyIndexed):
                 raise Exception("Key is trying to index a h2o frame with a dict? %s" % item)
 
             elif isinstance( item, slice):
-                # print "Key item start", str(item.start)
-                # print "Key item stop", str(item.stop)
-                # print "Key item step", str(item.step)
+                # debugprint("Key item start", str(item.start))
+                # debugprint("Key item stop", str(item.stop))
+                # debugprint("Key item step", str(item.step))
                 # assume step is always None..
                 assert item.step==None, "Key assuming step should be None %s" % item.step
                 return Colon(item.start, item.stop)
@@ -692,7 +853,7 @@ class Key(KeyIndexed):
             # if length 0, ignore
             # one is row, two is row/col
             if len(itemsList)==0:
-                print "Key ignoring length 0 items list/tuple) %s" % itemsList
+                debugprint("Key ignoring length 0 items list/tuple) %s" % itemsList)
 
             elif len(itemsList)==1:
                 # we return another python object, which inherits the h2o key name
@@ -744,7 +905,7 @@ class Fcn(Xbase):
         operandList = unpackOperands(operands, parent="Fcn operands")
 
         # no checking for correct number of params
-        print "Fcn %s has %s operands" % (function, len(operands))
+        debugprint("Fcn %s has %s operands" % (function, len(operands)))
         # see if we should translate the function name
         if function in xFcnXlate:
             function = xFcnXlate[function]
@@ -761,7 +922,7 @@ class Fcn(Xbase):
         self.operandList = operandList
         self.function = function
         # can I do a str() here before everything has been initted?
-        print "Fcn:", str(self)
+        debugprint("Fcn:", str(self))
         # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
@@ -795,6 +956,9 @@ class Return(Xbase):
 # like Assign with constant rhs, but doesn't inherit from Key or KeyIndexed
 # no indexing is allowed on key..it's just the whole key that get's initted, not some of it
 # KeyInit() should only be used by Key() with a .do() ...so it executes
+
+# GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
+# create a zero row result with a row slice that is never true.
 class KeyInit(Xbase):
     def __init__(self, frame):
         super(KeyInit, self).__init__()
@@ -804,8 +968,8 @@ class KeyInit(Xbase):
         # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
-        # FIX! init to null doesn't work for h2o? or 0
-        return "(= !%s %s)" % (self.frame, '(c {#0})' )
+        # This should give zero row key result. Does that result in Scalar?
+        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
 
     def __getitem__(self, items):
         raise Exception("trying to __getitem__ index a KeyInit? doesn't make sense? %s %s" % (self, items))
@@ -821,7 +985,7 @@ class Assign(Key):
     # then just one rhs, and can have obj param
     # but init can't selectively return the object vs the result of the .do()
     def __init__(self, lhs=None, rhs=None, timeoutSecs=30):
-        print "Assign enter. lhs %s %s" % (type(lhs), lhs)
+        debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
             lhs = Key()
@@ -846,8 +1010,8 @@ class Assign(Key):
         self.funs = False
         # self.ast = str(self) # for debug/comparision
 
-        print "Assign lhs: %s" % self.lhs
-        print "Assign rhs: %s" % self.rhs
+        debugprint("Assign lhs: %s" % self.lhs)
+        debugprint("Assign rhs: %s" % self.rhs)
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
@@ -923,7 +1087,7 @@ class Def(Xbase):
         self.exprList = exprList
         # self.ast = str(self) # for debug/comparision
 
-        print "xFcnUser", xFcnUser
+        debugprint("xFcnUser", xFcnUser)
 
     def __str__(self):
         # could check that it's a legal key name
@@ -1034,5 +1198,6 @@ class Cut(Fcn):
 
 # if you run this as the main, do debug only mode..so no h2o needed
 if __name__ == '__main__':
-    Xbase.debug = True
+    debugNoH2O = True
+    debugPrintEnable = True
 

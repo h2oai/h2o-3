@@ -33,7 +33,6 @@ usecloud_size = None
 
 
 python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
-
 # no command line args if run with just nose
 python_cmd_args = ""
 # don't really know what it is if nosetests did some stuff. Should be just the test with no args
