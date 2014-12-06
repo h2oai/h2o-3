@@ -415,7 +415,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         double d = point[column];
       if( Double.isNaN(d) ) pts--;
       else if( d != cluster[column] )
-        sqr += 1.0;           // Manhatten distance
+        sqr += 1.0;           // Manhattan distance
     }
     // Numeric column distance
     for( int column = ncats; column < cluster.length; column++ ) {
