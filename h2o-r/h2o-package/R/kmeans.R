@@ -39,7 +39,7 @@ h2o.kmeans <- function(training_frame, ignored_columns, K,
   if(delete <- (training_frame %i% "ASTNode")) invisible(nrow(training_frame))      # handle ASTNodes
 
   # Gather user input
-  parms <- lapply(as.list(match.call()[-1L]), eval)
+  parms <- eval.parent(as.list(match.call()[-1L]))
 
 
   # Extract valid H2O arguments
