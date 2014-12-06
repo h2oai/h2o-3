@@ -1,4 +1,10 @@
 
+Rapids is a functional language that can reduce multi-statement programs to a single statement.
+
+It supports indexed reads and writes of keys, with a robust definition of allowed index operations, user functions, and a large set of built in functions. Functions can have arbitrary static number of parameters.
+No recursive function definition is allowed
+
+
 # thinking about lhs
 ([ $a "null" "null" ])
 
