@@ -45,8 +45,15 @@ class Basic(unittest.TestCase):
         a <<= 0
         b <<= 0
         # FIX! how come I have to create c here first for python
+        # see here
+        # http://eli.thegreenplace.net/2011/05/15/understanding-unboundlocalerror-in-python
+        # is it too much to require c to exist first?
+        # c = DF()
+        # c <<= a + b
+
+        # this will trigger ok?
         c = DF()
-        c <<= a + b
+        c[0] <<= a + b
         inspect = h2o_cmd.runInspect(key=c)
         print "inspect c", dump_json(inspect)
 
@@ -54,8 +61,6 @@ class Basic(unittest.TestCase):
         # if you just want an existing Key, say existing=True
         a = DF('a') # named data frame
         b = DF('b')
-
-        # c has to exist first
         c = DF('c')
         inspect = h2o_cmd.runInspect(key=c)
         print "inspect c", dump_json(inspect)

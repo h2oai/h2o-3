@@ -31,7 +31,7 @@ class Xbase(object):
         # maybe we should track depth/complexity of everything below too, 
         # and force an eval at a certain complexity
         # track leaves and depth?
-        self.ilshiftAssignDone = False
+        self.assignDone = False
         self.depth = 0
         self.complexity = 0
 
@@ -93,7 +93,7 @@ class Xbase(object):
         # should we just assume this is a no-op? 
         # i.e. we will always have <<= when there is a lhs setitem??
         # I'm having problems with the redundant .do() for <<= and lhs []
-        if 1==0:
+        if 1==1:
             debugprint("%s __setitem__ start" % type(self))
             # .do() checks if already done, and noops if so
             # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
@@ -101,7 +101,7 @@ class Xbase(object):
             # anything other than a Key...complete it
             # but for it to be here, it has to be  Key?
             # so this is not required?
-            if isinstance(self, Key) and not self.ilshiftAssignDone:
+            if isinstance(self, Key) and not self.assignDone:
                 # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
                 # KeyIndexed (not anything possible)
                 # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
@@ -109,6 +109,7 @@ class Xbase(object):
                 debugprint("%s __setitem__ completing %s" % (type(self), self))
                 fr = self.add_indexing(items)
                 Assign(fr, rhs).do()
+                fr.assignDone = True
 
             debugprint("%s __setitem__  end" % type(self))
 
@@ -132,13 +133,18 @@ class Xbase(object):
         # That means a [] indexing must have done it, and __setitem__ will be called
         # after this again by python. We should let it redo the framing and .do()
         debugprint("ilshift Assign start")
-        Assign(lhs, b).do()
-        # can start fresh!
-        lhs.ilshiftAssignDone = True
-        newForOld = Key(lhs.frame)
-        newForOld.ilshiftAssignDone = True
-        debugprint("ilshift Assign done")
-        return newForOld
+        # don't do it id you know a lhs __setitem__ is going to happen after the __ilshift__
+        # because lhs is a KeyIndexed.
+        if lhs.assignDone or isinstance(self, KeyIndexed):
+            return lhs
+        else:
+            Assign(lhs, b).do()
+            # can start fresh!
+            lhs.assignDone = True
+            newForOld = Key(lhs.frame)
+            newForOld.assignDone = True
+            debugprint("ilshift Assign done")
+            return newForOld
 
     def _unary_common(self, funstr):
         # funstr is the h2o function string..this function is just fot standard binary ops?
@@ -234,7 +240,7 @@ class Xbase(object):
     # (what if enums or strings)
     # FIX! for now, just leave it as is
     def __float__(self):
-        print "WARNING: not converting your h2o data to float %s %s" % (type(self))
+        print "WARNING: not converting your h2o data to float %s %s" % (type(self), self)
         return self
 
     # complex/long/oct/hex not supported
@@ -436,13 +442,14 @@ class Item(Xbase):
             # can be a ref , or the start of a string with a ref at the beginning
         # elif number, add #
         else:
-            try:
-                junk = float(item)
+            # print "hello kevin %s %s" % (type(item), item)
+            if isinstance(item, (int, float)):
                 # number!
                 itemStr = "#%s" % item # good number!
-            except: # not number
-                # if it's just [a-zA-Z0-9], tack on the $ for probable initial key reference
-                if re.match(r"[a-zA-Z0-9]+$", itemStr):
+            else: # not number
+                # if it's just [a-zA-Z0-9_], tack on the $ for probable initial key reference
+                itemStr = "%s" % item 
+                if re.match(r"[a-zA-Z0-9_]+$", itemStr):
                     itemStr = "$%s" % item
 
         return itemStr
@@ -999,13 +1006,13 @@ class Def(Xbase):
 
         # check that all the parms are legal strings (variable names
         for p in paramList:
-            if not re.match(r"[a-zA-Z0-9]+$", str(p)):
+            if not re.match(r"[a-zA-Z0-9_]+$", str(p)):
                 raise Exception("Def, bad name for parameter: %s" % p)
 
         exprList = unpackOperands(exprs, parent="Def exprs")
 
         # legal function name (I overconstrain compared to what Rapids allows)
-        if not re.match(r"[a-zA-Z0-9]+$", function):
+        if not re.match(r"[a-zA-Z0-9_]+$", function):
             raise Exception("Def, bad name for function: %s" % function)
 
         self.funs = True
@@ -1128,3 +1135,26 @@ if __name__ == '__main__':
     debugNoH2O = True
     debugPrintEnable = True
 
+
+# http://eli.thegreenplace.net/2011/05/15/understanding-unboundlocalerror-in-python
+# understanding this
+#    c <<= a + b
+# UnboundLocalError: local variable 'c' referenced before assignment
+
+# section 6.2 "Assignment statements" in the Simple Statements chapter of the language reference:
+# Assignment of an object to a single target is recursively defined as follows. If the target is an identifier (name):
+# If the name does not occur in a global statement in the current code block: the name is bound to the object in the current local namespace.
+# Otherwise: the name is bound to the object in the current global namespace.
+# 
+# section 4.1 "Naming and binding" of the Execution model chapter:
+# If a name is bound in a block, it is a local variable of that block.
+# When a name is used in a code block, it is resolved using the nearest enclosing scope. 
+# # If the name refers to a local variable that has not been bound, a UnboundLocalError exception is raised.
+
+# <<= (augmented expression)
+# An augmented assignment evaluates the target (which, unlike normal assignment statements, cannot be an unpacking) and the expression list, performs the binary operation specific to the type of assignment on the two operands, and assigns the result to the original target. The target is only evaluated once.
+# 
+# An augmented assignment expression like x += 1 can be rewritten as x = x + 1 to achieve a similar, but not exactly equal effect. In the augmented version, x is only evaluated once. Also, when possible, the actual operation is performed in-place, meaning that rather than creating a new object and assigning that to the target, the old object is modified instead.
+# 
+# With the exception of assigning to tuples and multiple targets in a single statement, the assignment done by augmented assignment statements is handled the same way as normal assignments. Similarly, with the exception of the possible in-place behavior, the binary operation performed by augmented assignment is the same as the normal binary operations.
+# 
