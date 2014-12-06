@@ -15,6 +15,8 @@ def cloud_name():
     return nodes[0].cloud_name
 
 def init(*args, **kwargs):
+    unit_main()
+
     global nodes, n0
     # ugly, but we have 3 places that are kept in sync..check them all 
     def checkIsNone(thingName, thing):
@@ -24,7 +26,6 @@ def init(*args, **kwargs):
     checkIsNone("nodes", nodes)
     checkIsNone("n0", n0)
     checkIsNone("h2o_nodes.nodes", h2o_nodes.nodes)
-
     nodes = h2o_bc.init(*args, **kwargs)
     n0 = nodes[0] # use to save typing?..i.e. h2o.n0
 

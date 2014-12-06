@@ -10,7 +10,7 @@ description = "H2O R Package"
 
 apply plugin: 'water.gradle.plugins.convertR2html'
 apply plugin: 'water.gradle.plugins.manageLocalClouds'
-apply plugin: 'water.gradle.plugins.testThatRunner'
+//apply plugin: 'water.gradle.plugins.testThatRunner'
 
 dependencies {
     compile project(":h2o-assembly")
@@ -275,11 +275,11 @@ task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
 
 
-task prepareAcceptanceHtmlReports ( dependsOn: testThatRunner ) << {
-    project.ext.testGroup = "acceptance"
-    project.ext.R_test_folders = ["${projectDir}/src/test/R"]
-    project.ext.Regex_test_marker = ~/test.+\.Rout/
-
-}
+//task prepareAcceptanceHtmlReports ( dependsOn: testThatRunner ) << {
+//    project.ext.testGroup = "acceptance"
+//    project.ext.R_test_folders = ["${projectDir}/src/test/R"]
+//    project.ext.Regex_test_marker = ~/test.+\.Rout/
+//
+//}
 
 
