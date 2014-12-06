@@ -120,18 +120,18 @@ class Basic(unittest.TestCase):
                 # as opposed to an object within a function
 
                 result_key.frame = 'a1'
-                result_key <<= data_key[Seq(range(1,2)),:]  
+                result_key <<= data_key[Seq(range(1,4)), :]  
                 result_key.frame = 'a2'
-                result_key <<= data_key[Seq(range(1,2)),:]
+                result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a3'
-                result_key <<= data_key[Seq(range(1,2)),:]
+                result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a4'
-                result_key <<= data_key[Seq(range(1,2)),0]
+                result_key <<= data_key[Seq(range(1,4)), 0:1]
                 result_key.frame = 'a5'
-                result_key <<= data_key[Seq(range(1,2)),0]
+                result_key <<= data_key[Seq(range(1,4)), 0:1]
 
                 result_key.frame = 'a6'
-                result_key <<= data_key[[1,2,3], 3:4]
+                result_key <<= data_key[[1,2,3], 1]
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \

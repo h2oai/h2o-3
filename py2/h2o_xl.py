@@ -3,7 +3,7 @@ import re
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
 # local to this stuff. manually set the enable
-debugPrintEnable = False
+debugPrintEnable = True
 debugNoH2O = False
 def debugprint(*args, **kwargs):
     if debugPrintEnable:
@@ -19,6 +19,7 @@ class Xbase(object):
     lastExecResult = {}
     lastResult = None
     defaultAst = "Empty from Xbase init"
+    keyWriteHistoryList = []
 
     def json(self): # returns a json string. debugprint(s it too.)
         import json
@@ -89,22 +90,27 @@ class Xbase(object):
     # then reindex into that shape
     # Since it's a new temp don't re-use the name of the src key
     def __setitem__(self, items, rhs):
-        debugprint("%s __setitem__ start" % type(self))
-        # .do() checks if already done, and noops if so
-        # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
+        # should we just assume this is a no-op? 
+        # i.e. we will always have <<= when there is a lhs setitem??
+        # I'm having problems with the redundant .do() for <<= and lhs []
+        if 1==0:
+            debugprint("%s __setitem__ start" % type(self))
+            # .do() checks if already done, and noops if so
+            # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
 
-        # anything other than a Key...complete it
-        # but for it to be here, it has to be  Key?
-        # so this is not required?
-        if isinstance(self, Key) and not self.ilshiftAssignDone:
-            # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
-            # KeyIndexed (not anything possible)
-            # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
-            # check if self and rhs are the same? it would be a noop
-            debugprint("%s __setitem__ completing %s" % (type(self)))
-            fr = self.add_indexing(items)
-            Assign(fr, rhs).do()
-        debugprint("%s __setitem__  end" % type(self))
+            # anything other than a Key...complete it
+            # but for it to be here, it has to be  Key?
+            # so this is not required?
+            if isinstance(self, Key) and not self.ilshiftAssignDone:
+                # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
+                # KeyIndexed (not anything possible)
+                # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
+                # check if self and rhs are the same? it would be a noop
+                debugprint("%s __setitem__ completing %s" % (type(self), self))
+                fr = self.add_indexing(items)
+                Assign(fr, rhs).do()
+
+            debugprint("%s __setitem__  end" % type(self))
 
     # A trick for getting an assign overload (<<=) with .do()
     # Don't want the .do() if you're in a function though?
@@ -143,7 +149,7 @@ class Xbase(object):
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
                 (funstr, type(self)))
 
-    def _binary_common(self, funstr, right):
+    def _binary_common(self, funStr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn)):
@@ -304,12 +310,23 @@ class Xbase(object):
             self.execResult, self.result = h2e.exec_expr(execExpr=self.execExpr,
                 doFuns=self.funs, timeoutSecs=timeoutSecs)
 
+            # look at our secret stash in the base class
+            if self.execResult['key'] is not None:
+                Xbase.keyWriteHistoryList.append(self.execExpr)
+
             # if we support indexing by col names
             # remember the num_rows/num_cols (maybe update the saved col names 
             # this could update to None for scalar/string 
             # (temporary till we assign to key next in those cases)
             self.numRows = self.execResult['num_rows']
             self.numCols = self.execResult['num_cols']
+
+            # these two are class variables. shouldn't be racy with multiple instances .do-ing?
+            # execResult should always be a dict?
+            Xbase.lastExecResult = self.execResult.copy()
+            # this is a scalar or string that's a key name or ??
+            # FIX! assume it's copied, for now
+            Xbase.lastResult = self.result
 
             # Deal with h2o weirdness. 
             # If it gave a scalar result and didn't create a key, put that scalar in the key
@@ -329,26 +346,21 @@ class Xbase(object):
                     # rapids hack to get a zero row key
                     debugprint("WARNING: %.do() is creating a zero-row result key, from %s" % (type(self)))
                     execExpr = "(= !%s (is.na (c {#0})))" % self.frame
-            
 
                 # execExpr = "(= !%s (c {#%s}))" % (self.frame, 0.0)
-                h2e.exec_expr(execExpr=execExpr)
+                execResult, result = h2e.exec_expr(execExpr=execExpr)
+                if execResult['key'] is not None:
+                    Xbase.keyWriteHistoryList.append(self.execExpr)
+
                 # leave execResult/result as-is, from prior exec. set rows/cols again though?
                 self.numRows = self.execResult['num_rows']
                 self.numCols = self.execResult['num_cols']
-
-        # these two are class variables. shouldn't be racy with multiple instances .do-ing?
-        # execResult should always be a dict?
-        self.lastExecResult = self.execResult.copy()
-        # this is a scalar or string that's a key name or ??
-        # FIX! assume it's copied, for now
-        self.lastResult = self.result
-        self.execDone = True
 
         # don't return the full json...can look that up if necessary
         # this this always nothing now, since we always init Key to a real h2o key?
         # hopefully it gets the key name that we can use in an inspect (or does exec_expr 
         # read the key and return value if rows=1 and cols=1? (using min)
+        self.execDone = True
         return self.result
 
     # __call__ = __init__
@@ -446,95 +458,27 @@ class Item(Xbase):
 
 #********************************************************************************
 
-xFcnXlate = {
-'>':  'g',
-'>=': 'G',
-'<':  'l',
-'<=': 'L',
-'==': 'n',
-'!=': 'N',
-'!':  '_',
-'~':  '_',
-}
+xFcnXlate = { '>':'g', '>=':'G', '<':'l', '<=':'L', '==':'n', '!=':'N', '!':'_', '~':'_' }
 
 # FIX! should we use weakref Dicts, to avoid inhibiting garbage collection by having it
 # in a list here?
 xFcnUser = set()
 
 xFcnOpBinSet = set([
-'&&',
-'||',
-'+',
-'-',
-'*',
-'/',
-'**',
-'%',
-'&',
-'|',
-'not',
-'plus',
-'sub',
-'mul',
-'div',
-'pow',
-'pow2',
-'mod',
-'and',
-'or',
-'lt',
-'le',
-'gt',
-'ge',
-'eq',
-'ne',
-'la',
-'lo',
-'g',
-'G',
-'l',
-'L',
-'n',
-'N',
+'&&', '||', '+', '-', '*', '/', '**', '%', '&', '|',
+'not', 'plus', 'sub', 'mul', 'div', 'pow', 'pow2', 'mod',
+'and', 'or', 'lt', 'le', 'gt', 'ge', 'eq', 'ne',
+'la', 'lo', 'g', 'G', 'l', 'L', 'n', 'N',
 ])
 
 xFcnOp1Set = set([
-'c',
-'_',
-'is.na',
-'is.factor',
-'any.factor',
-'any.na',
+'c', '_',
+'is.na', 'is.factor', 'any.factor', 'any.na',
 'canbecoercedtological',
-'nrow',
-'ncol',
-'length',
-'abs',
-'sign',
-'sqrt',
-'ceiling',
-'floor',
-'log',
-'exp',
-'scale',
-'factor',
-'cos',
-'sin',
-'tan',
-'acos',
-'asin',
-'atan',
-'cosh',
-'sinh',
-'tanh',
-'min',
-'max',
-'sum',
-'sd',
-'mean',
-'match',
-'unique',
-'xorsum',
+'nrow', 'ncol', 'length',
+'abs', 'sign', 'sqrt', 'ceiling', 'floor', 'log', 'exp', 'scale', 'factor',
+'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh',
+'min', 'max', 'sum', 'sd', 'mean', 'match', 'unique', 'xorsum',
 'ls',
 ])
 # 'rename',
@@ -542,23 +486,8 @@ xFcnOp1Set = set([
 xFcnOp2Set = set()
 
 xFcnOp3Set = set([
-'cut',
-'ddply',
-'round',
-'signif',
-'trun',
-'cbind',
-'qtile',
-'ifelse',
-'apply',
-'sapply',
-'runif',
-'seq',
-'seq_len',
-'rep_len',
-'reduce',
-'table',
-'var',
+'cut', 'ddply', 'round', 'signif', 'trun', 'cbind', 'qtile', 'ifelse', 'apply', 'sapply', 'runif',
+'seq', 'seq_len', 'rep_len', 'reduce', 'table', 'var',
 ])
 
 #********************************************************************************
@@ -731,6 +660,28 @@ class Colon(Xbase):
         raise Exception("trying to __setitem__ index a Colon? doesn't make sense? %s %s" % (self, items))
 
 #********************************************************************************
+# like Assign with constant rhs, but doesn't inherit from Key or KeyIndexed
+# no indexing is allowed on key..it's just the whole key that get's initted, not some of it
+# KeyInit() should only be used by Key() with a .do() ...so it executes
+
+# GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
+# create a zero row result with a row slice that is never true.
+class KeyInit(Xbase):
+    def __init__(self, frame):
+        super(KeyInit, self).__init__()
+        # guaranteed to be string
+        assert isinstance(frame, basestring)
+        self.frame = frame
+        # self.ast = str(self) # for debug/comparision
+
+    def __str__(self):
+        # This should give zero row key result. Does that result in Scalar?
+        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
+
+    # this shouldn't be used with any of the setiem/getitem type stuff..add stuff to make that illegal?
+    # or any operators?
+
+#********************************************************************************
 # key is a string
 # change to init from Xbase not KeyIndexed
 # a Key is the nebulous thing, that can get locked down into a KeyIndexed by indexing..
@@ -759,6 +710,7 @@ class Key(KeyIndexed):
         # can have row/col?
         legalKey(frame, "Key")
         self.frame = frame
+
 
         # add to list of created h2o keys (for deletion later?)
         # FIX! should make this a weak dictionary reference? don't want to affect python GC?
@@ -870,6 +822,21 @@ class Key(KeyIndexed):
 # http://www.siafoo.net/article/57
 
 #********************************************************************************
+# Users uses this? it adds an init
+class DF(Key):
+    def __init__(self, key=None, existing=False):
+        super(DF, self).__init__(key)
+        if not existing:
+            # actually make the key in h2o with 0 rows
+            KeyInit(self.frame).do()
+        # if you don't init it, it assumes the name can be use for indexed write, or normal write
+        # normal writes always work, even if it really wasn't existing.
+
+    def __str__(self):
+        frame = self.frame
+        # no $ prefix
+        return '%s' % frame
+#********************************************************************************
 
 def legalFunction(function):
     # return required operands
@@ -935,28 +902,6 @@ class Return(Xbase):
     def __setitem__(self, items, rhs):
         raise Exception("trying to __setitem__ index a Return? doesn't make sense? %s %s" % (self, items))
 
-# like Assign with constant rhs, but doesn't inherit from Key or KeyIndexed
-# no indexing is allowed on key..it's just the whole key that get's initted, not some of it
-# KeyInit() should only be used by Key() with a .do() ...so it executes
-
-# GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
-# create a zero row result with a row slice that is never true.
-class KeyInit(Xbase):
-    def __init__(self, frame):
-        super(KeyInit, self).__init__()
-        # guaranteed to be string
-        assert isinstance(frame, basestring)
-        self.frame = frame
-        # self.ast = str(self) # for debug/comparision
-
-    def __str__(self):
-        # This should give zero row key result. Does that result in Scalar?
-        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
-
-    def __getitem__(self, items):
-        raise Exception("trying to __getitem__ index a KeyInit? doesn't make sense? %s %s" % (self, items))
-    def __setitem__(self, items, rhs):
-        raise Exception("trying to __setitem__ index a KeyInit? doesn't make sense? %s %s" % (self, items))
 
 
 class Assign(Key):
