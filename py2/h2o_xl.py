@@ -68,7 +68,9 @@ class Xbase(object):
 
         # Keys: If there's no name (None) , one will be created based on the instance id
         # KeyIndexeds are always already named.
-        if isinstance(self, Key):
+        if isinstance(self, KeyIndexed):
+            raise Exception("Shouldn't be getitem indexing KeyIndexed? %s %s" % (type(self), self))
+        elif isinstance(self, Key):
             myKeyIndexed = self.add_indexing(items)
         else:
             # h2o can support indexing on any Fcn or anything?
@@ -76,14 +78,39 @@ class Xbase(object):
             # Future? Maybe allow direct indexing of Fcn result, to avoid the temp?
             # h2o probably can't index an indexed thing. (KeyIndexed) or Seq?
             if self is None:
-                raise Exception("Can't index something that doesn't exist yet,\
-                     even on lhs. %s %s" % (type(self)))
-            myAssign = Assign(None)
-            result = myAssign.do()
-            myKey = Key(myAssign.frame)
+                raise Exception("Can't index something that doesn't exist yet, even on lhs. %s %s" % (type(self), self))
             myKeyIndexed = myKey.add_indexing(items)
         debugprint("%s __getitem__  end" % type(self))
         return myKeyIndexed
+
+
+    # this method is used by both ilshift and Assign class (inherits thru Key class)
+    def _do_the_assign(self, lhs, rhs, parent):
+        # type checking is done downstream
+        # I suppose lhs needs to be able to take [] stuff also (for set)
+        # Only gets the default timeoutSecs?
+        # If we index the lhs, it has a row and col and will be KeyIndex
+        # That means a [] indexing must have done it, and __setitem__ will be called
+        # after this again by python. We should let it redo the framing and .do()
+        # (result at ilshift only)
+        if lhs.assignDone:
+            debugprint("WARNING: %s _do_the_assign %s lhs already done %s" % (parent, type(self), lhs))
+        elif self.assignDone:
+            debugprint("WARNING: %s _do_the_assign %s self already done %s" % (parent, type(self), self))
+        else:
+            if isinstance(self, Assign):
+                debugprint("%s _do_the_assign self.do() %s" % (parent, type(self)))
+                self.do()
+                self.assignDone = True
+            else:
+                debugprint("%s _do_the_assign Assign.do() %s" % (parent, type(self)))
+                a = Assign(lhs=lhs, rhs=rhs) # it does it's own .do()
+                a.assignDone = True
+
+        lhs.assignDone = True
+        debugprint("%s _do_the_assign done" % parent)
+        return Key(key=lhs.frame)
+
 
     # Only Keys are flexible enough to be index'ed
     # If you index a frame, assign it to temp (since it has a shape)
@@ -93,58 +120,53 @@ class Xbase(object):
         # should we just assume this is a no-op? 
         # i.e. we will always have <<= when there is a lhs setitem??
         # I'm having problems with the redundant .do() for <<= and lhs []
-        if 1==1:
-            debugprint("%s __setitem__ start" % type(self))
-            # .do() checks if already done, and noops if so
-            # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
+        # Since this is done 'last' ..decided to disable the ilshift, and let this guy "do it"
+        # the self.assignDone may not be sufficient for managing, if new instances are created
+        # by python for <<= (see defn. of augmented assign at bottom) debugprint("%s __setitem__ start" % type(self))
+        # .do() checks if already done, and noops if so
+        # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
 
-            # anything other than a Key...complete it
-            # but for it to be here, it has to be  Key?
-            # so this is not required?
-            if isinstance(self, Key) and not self.assignDone:
-                # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
-                # KeyIndexed (not anything possible)
-                # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
-                # check if self and rhs are the same? it would be a noop
-                debugprint("%s __setitem__ completing %s" % (type(self), self))
-                fr = self.add_indexing(items)
-                Assign(fr, rhs).do()
-                fr.assignDone = True
+        # anything other than a Key...complete it
+        # but for it to be here, it has to be  Key?
+        # so this is not required?
+        if isinstance(self, KeyIndexed):
+            raise Exception("Shouldn't be setitem indexing KeyIndexed? %s %s" % (type(self), self))
+        if isinstance(self, Key) and not self.assignDone:
+            # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
+            # KeyIndexed (not anything possible)
+            # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
+            # check if self and rhs are the same? it would be a noop
+            debugprint("%s __setitem__ completing %s %s" % (type(self), self, rhs))
+            lhs = self.add_indexing(items)
+            self._do_the_assign(lhs, rhs, '__setitem__')
 
-            debugprint("%s __setitem__  end" % type(self))
+        debugprint("%s __setitem__  end" % type(self))
+        # no return?
+        return None
 
     # A trick for getting an assign overload (<<=) with .do()
-    # Don't want the .do() if you're in a function though?
+    # Don't want the .do() if you're in a user function though?
     # Need to be able to do KeyIndexed and Key here?
     # hacky disable  to avoid the double writes for a[0] <<=
     # the "done" flag inhibits that?
-    def __ilshift__(self, b):
-        if not isinstance(self, (Key, KeyIndexed)):
-            debugprint(('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self))))
+    def __ilshift__(self, rhs):
+        if isinstance(self, (Key, KeyIndexed)):
+            lhs = self
+        else:
+            debugprint('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self), self))
             debugprint("coercing lhs to Key")
             lhs = Key() # anonymous
-        else:
-            lhs = self
+        
 
-        # type checking is done downstream
-        # I suppose lhs needs to be able to take [] stuff also (for set)
-        # Only gets the default timeoutSecs?
-        # If we index the lhs, it has a row and col and will be KeyIndex
-        # That means a [] indexing must have done it, and __setitem__ will be called
-        # after this again by python. We should let it redo the framing and .do()
-        debugprint("ilshift Assign start")
         # don't do it id you know a lhs __setitem__ is going to happen after the __ilshift__
         # because lhs is a KeyIndexed.
-        if lhs.assignDone or isinstance(self, KeyIndexed):
-            return lhs
+        if isinstance(lhs, KeyIndexed):
+            debugprint("ilshift no-op %s %s" % (type(lhs), lhs))
+            return self
         else:
-            Assign(lhs, b).do()
-            # can start fresh!
-            lhs.assignDone = True
-            newForOld = Key(lhs.frame)
-            newForOld.assignDone = True
-            debugprint("ilshift Assign done")
-            return newForOld
+            debugprint("ilshift _do_the_assign %s %s" % (lhs, rhs))
+            return self._do_the_assign(lhs, rhs, 'ilshift')
+
 
     def _unary_common(self, funstr):
         # funstr is the h2o function string..this function is just fot standard binary ops?
@@ -287,7 +309,7 @@ class Xbase(object):
 
         # this can only happen if we already Exec'ed it? that's not legal. Just exception for now..means bug?
         if self.execExpr:
-            raise Exception(".do() Appears we already Exec'ed this? %s %s %s" % (self.execExpr, type(self)))
+            raise Exception(".do() Appears we already Exec'ed this? %s %s" % (type(self), self.execExpr))
 
         if self.funs:
             self.execExpr = "[%s]" % self
@@ -342,7 +364,6 @@ class Xbase(object):
                 debugprint("Hacking scalar result %s into a key wth name I told h2o! %s" % (scalar, self.frame))
                 # doesn't like 0.0?
                 debugprint("FIX! Hacking scalar to int because rapids doesn't like reals?")
-                # execExpr = "(= !%s (c {#%s}))" % (self.frame, self.execResult['scalar'])
                 
                 # FIX! hack to int, because rapids doesn't take reals yet
                 if scalar is not None:
@@ -413,7 +434,7 @@ class Item(Xbase):
         # xItem can't be used for lhs
         # if list or tuple, exception
         if isinstance(item, (list, tuple, dict)):
-            raise Exception("item doesn't take lists, tuples (or dicts) %s" % item)
+            raise Exception("Item doesn't take lists, tuples (or dicts) %s" % item)
 
         item = translateValue(item)
 
@@ -421,24 +442,24 @@ class Item(Xbase):
         # space can arise from prior expansion
         itemStr = str(item)
         if re.search(r"[,]", itemStr):
-            raise Exception("item has comma. Bad. %s" % item)
+            raise Exception("Item has comma. Bad. %s" % item)
         elif len(itemStr)==0:
             # Colon can return length 0 thing?..no longer
             # return itemStr
-            raise Exception("item is len 0 %s" % item)
+            raise Exception("Item is len 0 %s" % item)
 
         # if string & starts with #, strip and check it's a number. Done if so. Else Exception
         start = itemStr[0]
         if start=="!":
-            raise Exception("item starts with !. Only for lhs (Assign*). Bad. %s" % item)
+            raise Exception("Item starts with !. Only for lhs (Assign*). Bad. %s" % item)
         elif start=="#":
             if itemStr=="#":
-                raise Exception("item is just #. Bad. %s" % item)
+                raise Exception("Item is just #. Bad. %s" % item)
             # can be a number, or the start of a string with a number at the beginning
         # elif string & starts with $, Done. Else if next char is a-zA-Z, done. Else Exception
         elif start=="$":
             if itemStr=="$":
-                raise Exception("item is just $. Bad. %s" % item)
+                raise Exception("Item is just $. Bad. %s" % item)
             # can be a ref , or the start of a string with a ref at the beginning
         # elif number, add #
         else:
@@ -553,73 +574,6 @@ def legalKey(frame, parent):
     return True
 
 
-#*******************************************************************************
-# maybe do some reading here
-# http://python-3-patterns-idioms-test.readthedocs.org/en/latest/Factory.html
-# row/col can be numbers or strings or not specified
-
-# FIX! get rid of this? or ?? is Key sufficient? why KeyIndexed (no slicing?)
-# FIX! KeyIndexed doesn't create a key on h2o..only h2o does
-# KeyIndexed is used after a Key was created. it'a lower level way to use a frame, then Key
-# Key can do indexing/slicing. KeyIndexed is fixed at row/col
-class KeyIndexed(Xbase):
-    # row 0/col0 should always exist if we init keys to 0?
-    def __init__(self, frame=None, row=0, col=0, dim=2):
-        if frame is None:
-            # no h2o name? give it one that's unique for the instance
-            frame = "fnon_" + hex(id(self))
-            debugprint("KeyIndexed creating h2o key name for the instance, none provided: %s" % frame)
-        # shouldn't get a key here, just a string
-        elif not isinstance(frame, basestring):
-            raise Exception("KeyIndexed should have frame param = string (or initially none) %s %s" % (type(frame), frame))
-
-        super(KeyIndexed, self).__init__()
-
-        # can have row/col?
-        legalKey(frame, "KeyIndexed")
-        self.frame = frame
-        # if it's not a string, turn the assumed number into a number string
-        self.row = Item(row)
-        self.col = Item(col)
-        self.dim = dim # dimensions
-        # self.ast = str(self) # for debug/comparision
-
-        # how to decide whether to send 2d or 1d references to h2o
-        # is there no such thing as a row vector, only a column vector (or data frame)
-
-        # row and col can be Seq, Colon, Item (could return a Cbind?)
-        # or should it pass the python construct to h2o?
-        # it could put the list into a h2o key, and then do a[b] in hto?
-        # row extracts problematic?
-
-        # None translates to "null"
-        # not key yet
-
-    def __str__(self):
-        frame = self.frame
-        row = self.row
-        col = self.col
-        if row in [None, '"null"'] and col in [None, '"null"']:
-            return '$%s' % frame
-
-        if row is None:
-            row = '"null"'
-        if col is None:
-            col = '"null"'
-
-        # does it already start with '$' ?
-        # we always add $ to a here?. Suppose could detect whether it's already there
-        # does it already start with '$' ?
-        if not re.match('\$', frame):
-            frame = '$%s' % self.frame
-
-        # is a 1 dimensional frame all rows (1 col?)
-        if self.dim==1:
-            return '([ %s %s %s)' % (frame, row, '#0')
-        else:
-            return '([ %s %s %s)' % (frame, row, col)
-
-    __repr__ = __str__
 
 
 #********************************************************************************
@@ -630,7 +584,6 @@ class Seq(Xbase):
         self.operandList = operandList
         # FIX! should we do more type checking on operands?
         # self.ast = str(self) # for debug/comparision
-
 
     def __str__(self):
         oprString = ";".join(map(str, self.operandList))
@@ -667,34 +620,12 @@ class Colon(Xbase):
         raise Exception("trying to __setitem__ index a Colon? doesn't make sense? %s %s" % (self, items))
 
 #********************************************************************************
-# like Assign with constant rhs, but doesn't inherit from Key or KeyIndexed
-# no indexing is allowed on key..it's just the whole key that get's initted, not some of it
-# KeyInit() should only be used by Key() with a .do() ...so it executes
-
-# GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
-# create a zero row result with a row slice that is never true.
-class KeyInit(Xbase):
-    def __init__(self, frame):
-        super(KeyInit, self).__init__()
-        # guaranteed to be string
-        assert isinstance(frame, basestring)
-        self.frame = frame
-        # self.ast = str(self) # for debug/comparision
-
-    def __str__(self):
-        # This should give zero row key result. Does that result in Scalar?
-        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
-
-    # this shouldn't be used with any of the setiem/getitem type stuff..add stuff to make that illegal?
-    # or any operators?
-
-#********************************************************************************
 # key is a string
 # change to init from Xbase not KeyIndexed
 # a Key is the nebulous thing, that can get locked down into a KeyIndexed by indexing..
 # a KeyIndexed can't be re-indexed, or turned back into a Key, 
 # until it's executed by rapids (so the Key can be used again)
-class Key(KeyIndexed):
+class Key(Xbase):
     def __init__(self, key=None):
         if key is None:
             # no h2o name? give it one that's unique for the instance
@@ -712,7 +643,7 @@ class Key(KeyIndexed):
         else:
             raise Exception("Key: key not string/Key/Assign/KeyIndexed %s %s" % (type(key), key))
 
-        super(Key, self).__init__(frame)
+        super(Key, self).__init__()
 
         # can have row/col?
         legalKey(frame, "Key")
@@ -824,9 +755,92 @@ class Key(KeyIndexed):
 
     # __call__ = __str__
 
+#*******************************************************************************
+# maybe do some reading here
+# http://python-3-patterns-idioms-test.readthedocs.org/en/latest/Factory.html
+# row/col can be numbers or strings or not specified
+
+# FIX! get rid of this? or ?? is Key sufficient? why KeyIndexed (no slicing?)
+# FIX! KeyIndexed doesn't create a key on h2o..only h2o does
+# KeyIndexed is used after a Key was created. it'a lower level way to use a frame, then Key
+# Key can do indexing/slicing. KeyIndexed is fixed at row/col
+class KeyIndexed(Key):
+    # row 0/col0 should always exist if we init keys to 0?
+    def __init__(self, frame=None, row=0, col=0, dim=2):
+
+        super(KeyIndexed, self).__init__()
+
+        # can have row/col?
+        legalKey(frame, "KeyIndexed")
+        self.frame = frame
+        # if it's not a string, turn the assumed number into a number string
+        self.row = Item(row)
+        self.col = Item(col)
+        self.dim = dim # dimensions
+        # self.ast = str(self) # for debug/comparision
+
+        # how to decide whether to send 2d or 1d references to h2o
+        # is there no such thing as a row vector, only a column vector (or data frame)
+
+        # row and col can be Seq, Colon, Item (could return a Cbind?)
+        # or should it pass the python construct to h2o?
+        # it could put the list into a h2o key, and then do a[b] in hto?
+        # row extracts problematic?
+
+        # None translates to "null"
+        # not key yet
+
+    def __str__(self):
+        frame = self.frame
+        row = self.row
+        col = self.col
+        if row in [None, '"null"'] and col in [None, '"null"']:
+            return '$%s' % frame
+
+        if row is None:
+            row = '"null"'
+        if col is None:
+            col = '"null"'
+
+        # does it already start with '$' ?
+        # we always add $ to a here?. Suppose could detect whether it's already there
+        # does it already start with '$' ?
+        if not re.match('\$', frame):
+            frame = '$%s' % self.frame
+
+        # is a 1 dimensional frame all rows (1 col?)
+        if self.dim==1:
+            return '([ %s %s %s)' % (frame, row, '#0')
+        else:
+            return '([ %s %s %s)' % (frame, row, col)
+
+    __repr__ = __str__
 
 # slicing/indexing magic methods
 # http://www.siafoo.net/article/57
+
+#********************************************************************************
+# like Assign with constant rhs, but doesn't inherit from Key or KeyIndexed
+# no indexing is allowed on key..it's just the whole key that get's initted, not some of it
+# KeyInit() should only be used by Key() with a .do() ...so it executes
+
+# GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
+# create a zero row result with a row slice that is never true.
+class KeyInit(Xbase):
+    def __init__(self, frame):
+        super(KeyInit, self).__init__()
+        # guaranteed to be string
+        assert isinstance(frame, basestring)
+        self.frame = frame
+        # self.ast = str(self) # for debug/comparision
+
+    def __str__(self):
+        # This should give zero row key result. Does that result in Scalar?
+        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
+
+    # this shouldn't be used with any of the setiem/getitem type stuff..add stuff to make that illegal?
+    # or any operators?
+
 
 #********************************************************************************
 # Users uses this? it adds an init
@@ -910,7 +924,6 @@ class Return(Xbase):
         raise Exception("trying to __setitem__ index a Return? doesn't make sense? %s %s" % (self, items))
 
 
-
 class Assign(Key):
     # let rhs be more than one now, to allow for (if..) (else..)
     # obj for disabling the .do and just returning thr object
@@ -918,6 +931,11 @@ class Assign(Key):
     # maybe get rid of separate Else object and just have If and IfElse
     # then just one rhs, and can have obj param
     # but init can't selectively return the object vs the result of the .do()
+
+    # LOOK: put rhs first so unnamed args that don't name lhs work at user level
+    # Should always use named params in this module for safety
+
+    # back to normal
     def __init__(self, lhs=None, rhs=None, timeoutSecs=30):
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
@@ -940,12 +958,25 @@ class Assign(Key):
         legalKey(frame, "Assign")
         self.frame = frame
         self.lhs = lhs
-        self.rhs = Item(rhs)
+
+        # tolerate a list for rhs? Assume it's a list of things Seq can handle
+        if isinstance(rhs, (list, tuple)):
+            if len(rhs) > 1024:
+                raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" +
+                    "Probably don't want that? %s" % rhs)
+            self.rhs = Col(Seq(rhs)) # Seq can take a list or tuple
+        else:
+            # Item could map range() to the start:stop sequence rapids supports?
+            self.rhs = Item(rhs)
+
         self.funs = False
         # self.ast = str(self) # for debug/comparision
-
         debugprint("Assign lhs: %s" % self.lhs)
         debugprint("Assign rhs: %s" % self.rhs)
+
+        # this means Assign() doesn't use or need ilshift
+        self.do()
+        return None
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
@@ -962,7 +993,12 @@ class Assign(Key):
         lhsAssign = re.sub('^\$','',str(self.lhs))
 
         # only add the ! if Key..once indexed, you don't use !
-        lhsprefix = '!' if isinstance(self.lhs, (Key, basestring)) else ""
+        # KeyIndexed is also Key.
+        if isinstance(self.lhs, (Key, basestring)) and not isinstance(self.lhs, KeyIndexed):
+            lhsprefix = '!'
+        else: 
+            lhsprefix = ''
+
         return "(= %s%s %s)" % (lhsprefix, lhsAssign, self.rhs)
 
 # can only do one expression/statement per ast.
