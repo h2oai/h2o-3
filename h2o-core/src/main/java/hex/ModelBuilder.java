@@ -1,10 +1,9 @@
 package hex;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import hex.schemas.ModelBuilderSchema;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -162,6 +161,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  columns dropped out, plus whatever work the parent init did.
    */
   public void init(boolean expensive) {
+    // Log parameters
+    if (expensive) {
+      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+      Log.info(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(new String(_parms.writeJSON(new AutoBuffer()).buf()))));
+    }
+
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in
