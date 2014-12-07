@@ -9,7 +9,9 @@ from h2o_test import dump_json, verboseprint, check_sandbox_for_errors
 def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False, doFuns=False):
     if not node:
         if len(h2o_nodes.nodes)==0: 
-            raise Exception("You appeared to have not h2o.init() a h2o cloud? nodes is empty %", h2o_nodes.nodes)
+            raise Exception("You appeared to have not h2o.init() a h2o cloud? nodes is empty." + \
+                "You may be misusing xl/rapids objects so they try to talk to h2o, before you have a cloud built." + \
+                "Check if you're using .do() or Assign() with default do==True h2o_nodes.nodes: %s" % h2o_nodes.nodes)
         node = h2o_nodes.nodes[0]
 
     if doFuns:

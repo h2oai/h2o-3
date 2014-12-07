@@ -5,27 +5,30 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 from h2o_xl import Def, Fcn, Assign, KeyIndexed, If, IfElse, Return
 from h2o_test import dump_json, verboseprint
+from copy import copy
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
 # 'c' allowed
 # should be able to take a list of statements
 objList = [
-    Assign('e', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9)))),
-    Assign('f', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9)))),
-    Assign('g', IfElse(0, 2, IfElse(0, 5, IfElse(0, 8, 9)))),
+    Assign('e', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9))), do=False),
+    Assign('f', IfElse(1, 2, IfElse(4, 5, IfElse(7, 8, 9))), do=False),
+    Assign('g', IfElse(0, 2, IfElse(0, 5, IfElse(0, 8, 9))), do=False),
 
     Def('ms', 'x', [
         IfElse(0, 2, IfElse(0, 5, IfElse(0, 8, 9))),
-        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19))))] ),
-    Assign('e', Fcn('ms', 2)),
+        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19))), do=False),
+        ] ),
+    Assign('e', Fcn('ms', 2), do=False),
 
     Def('ms', 'x', [
         If(0, Return(3)),
         IfElse(0, 5, IfElse(0, 8, 9)),
-        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19)))),
-        If(1, Return(2)), ] ),
-    Assign('e', Fcn('ms', 2)),
+        Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19))), do=False),
+        If(1, Return(2)), 
+        ] ),
+    Assign('e', Fcn('ms', 2), do=False),
 ]
 
 resultList = [
@@ -64,7 +67,8 @@ class Basic(unittest.TestCase):
         keys = []
         for trial in range(2):
             for execObj, expected in zip(objList, resultList):
-                result = execObj.do()
+                freshObj = copy(execObj)
+                result = freshObj.do()
                 # do some scalar result checking
                 if expected is not None:
                     # result is a string now??
@@ -73,9 +77,9 @@ class Basic(unittest.TestCase):
                     assert float(result)==expected, "%s %s" (result,expected)
 
                 # rows might be zero!
-                print "execObj:", dump_json(execObj.execResult)
-                if execObj.execResult['num_rows'] or execObj.execResult['num_cols']:
-                    keys.append(execObj.execExpr)
+                print "freshObj:", dump_json(freshObj.execResult)
+                if 'key' in freshObj.execResult and freshObj.execResult['key']:
+                    keys.append(freshObj.execExpr)
 
         print "\nExpressions that created keys"
         for k in keys:

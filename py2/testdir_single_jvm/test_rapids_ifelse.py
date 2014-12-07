@@ -3,6 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
+from copy import copy
 from h2o_xl import Def, Fcn, Assign, KeyIndexed, If, IfElse, Return
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
@@ -14,15 +15,15 @@ objList = [
     Return(3),
     Return('r1'),
     IfElse(1, 2, 3),
-    Assign('a', If(1, 2)),
-    Assign('d', IfElse(1, 2, 3)),
-    Assign('e', If(1, 2)), 
-    Assign('f', IfElse(1, 'r1', 3)),
-    Assign('h', IfElse('1', 2, Return('r1'))),
-    Assign('i', IfElse('1', Return('r1'), 3)),
-    Assign('g', IfElse('r1', 2, 3)),
-    Assign('g', IfElse('r1', 'r1', 3)),
-    Assign('g', IfElse('r1', 2, 'r1')),
+    Assign('a', If(1, 2), do=False),
+    Assign('d', IfElse(1, 2, 3), do=False),
+    Assign('e', If(1, 2), do=False), 
+    Assign('f', IfElse(1, 'r1', 3), do=False),
+    Assign('h', IfElse(1, 2, Return('r1')), do=False),
+    Assign('i', IfElse(1, Return('r1'), 3), do=False),
+    Assign('g', IfElse('r1', 2, 3), do=False),
+    Assign('g', IfElse('r1', 'r1', 3), do=False),
+    Assign('g', IfElse('r1', 2, 'r1'), do=False),
 ]
 
 class Basic(unittest.TestCase):
@@ -49,10 +50,11 @@ class Basic(unittest.TestCase):
         keys = []
         for trial in range(2):
             for execObj in objList:
-                result = execObj.do()
+                freshObj = copy(execObj)
+                result = freshObj.do()
                 # rows might be zero!
-                if execObj.execResult['num_rows'] or execObj.execResult['num_cols']:
-                    keys.append(execObj.execExpr)
+                if freshObj.execResult['num_rows'] or freshObj.execResult['num_cols']:
+                    keys.append(freshObj.execExpr)
 
         print "\nExpressions that created keys"
         for k in keys:

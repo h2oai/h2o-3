@@ -8,6 +8,7 @@ from h2o_test import dump_json, verboseprint
 def checkAst(expected):
     ast = h2o_xl.Xbase.lastExecResult['ast']
     assert ast==expected, "Actual: %s    Expected: %s" % (ast, expected)
+    print "----------------------------------------------------------------\n"
 
 print "Going to see if different xl coding styles yield same ast strings"
 class Basic(unittest.TestCase):
@@ -69,9 +70,11 @@ class Basic(unittest.TestCase):
         Assign(c, (0,1,2))
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
-        print "Referring to non-existent rows causes a problem (AAIOBE). Don't do that"
-        Assign(c[2], (a[0] + b[1]))
-        checkAst("(= ([ $c1 #2 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        Assign(c, a[0] + b[1])
+        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+
+        Assign(c[0], (a[0] + b[1]))
+        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
@@ -109,9 +112,69 @@ class Basic(unittest.TestCase):
         c <<= (0,1,2)
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
-        print "Referring to non-existent rows causes a problem (AAIOBE). Don't do that"
-        c[2] <<= a[0] + b[1]
-        checkAst("(= ([ $c1 #2 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        c <<= a[0] + b[1]
+        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+
+        c[0] <<= a[0] + b[1]
+        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+
+        # print "\nDoes the keyWriteHistoryList work?"
+        for k in Xbase.keyWriteHistoryList:
+            print k
+
+        h2o.check_sandbox_for_errors()
+
+    def test_xl_seq_C(self):
+        a = DF('a1')
+        b = DF('b1')
+        c = DF('c1')
+
+        assert isinstance(a, Key)
+        assert isinstance(b, Key)
+        assert isinstance(c, Key)
+
+        # this just overwrite the a/b/c with python datatypes
+        if 1==0:
+            a = 0
+            checkAst("(= !a1 #0)")
+            b = 0
+            checkAst("(= !b1 #0)")
+            c = 0
+            checkAst("(= !c1 #0)")
+
+            a = [0]
+            checkAst("(= !a1 (c {#0}))")
+            b = [0,1]
+            checkAst("(= !b1 (c {#0;#1}))")
+            c = [0,1,2]
+            checkAst("(= !c1 (c {#0;#1;#2}))")
+
+            a = (0,) # make sure it's a tuple with comma
+            checkAst("(= !a1 (c {#0}))")
+            b = (0,1)
+            checkAst("(= !b1 (c {#0;#1}))")
+            c = (0,1,2)
+            checkAst("(= !c1 (c {#0;#1;#2}))")
+
+
+        # added to init the keys, to avoid AAIOBE at h2o
+        a <<= [0] # comma isn't needed
+        checkAst("(= !a1 (c {#0}))")
+        b <<= [0,1]
+        checkAst("(= !b1 (c {#0;#1}))")
+        c <<= [0,1,2]
+        checkAst("(= !c1 (c {#0;#1;#2}))")
+
+        # these don't work
+        if 1==0:
+            c = a[0] + b[1]
+            # no .do() needed because of types on rhs? or ?
+            c.do()
+            checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+
+            c[0] = a[0] + b[1]
+            c.do()
+            checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
