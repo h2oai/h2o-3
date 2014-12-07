@@ -68,6 +68,9 @@ def get_timeline(self):
 # safer if random things are wedged, rather than requiring response
 # so request library might retry and get exception. allow that.
 def shutdown_all(self):
+    print "Not doing Shutdown for now. Just process kill"
+    return True
+
     try:
         self.do_json_request('Shutdown.json', noExtraErrorCheck=True)
     except:
@@ -77,7 +80,7 @@ def shutdown_all(self):
     # if you care, wait after you send them to each node
     # Seems like it's not so good to just send to one node
     # time.sleep(1) # a little delay needed?
-    return (True)
+    return True
 
 
 #*******************************************************************************
@@ -107,6 +110,78 @@ def jobs_admin(self, timeoutSecs=120, **kwargs):
     verboseprint("\njobs_admin result:", dump_json(a))
     # print "WARNING: faking jobs admin"
     # a = { 'jobs': {} }
+    return a
+#******************************************************************************************8
+def log_view(self, timeoutSecs=10, **kwargs):
+    a = self.do_json_request('LogView.json', timeout=timeoutSecs)
+    verboseprint("\nlog_view result:", dump_json(a))
+    return a
+
+def csv_download(self, src_key, csvPathname, timeoutSecs=60, **kwargs):
+    params = {'src_key': src_key}
+    paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
+    url = self.url('2/DownloadDataset.json')
+    log('Start ' + url + paramsStr, comment=csvPathname)
+
+    # do it (absorb in 1024 byte chunks)
+    r = requests.get(url, params=params, timeout=timeoutSecs)
+    print "csv_download r.headers:", r.headers
+    if r.status_code == 200:
+        f = open(csvPathname, 'wb')
+        for chunk in r.iter_content(1024):
+            f.write(chunk)
+    print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
+
+def log_download(self, logDir=None, timeoutSecs=30, **kwargs):
+    if logDir == None:
+        logDir = get_sandbox_name()
+
+    url = self.url('LogDownload.json')
+    log('Start ' + url);
+    print "\nDownloading h2o log(s) using:", url
+    r = requests.get(url, timeout=timeoutSecs, **kwargs)
+    if not r or not r.ok:
+        raise Exception("Maybe bad url? no r in log_download %s in %s:" % inspect.stack()[1][3])
+
+    z = zipfile.ZipFile(StringIO.StringIO(r.content))
+    print "z.namelist:", z.namelist()
+    print "z.printdir:", z.printdir()
+
+    nameList = z.namelist()
+    # the first is the h2ologs dir name.
+    h2oLogDir = logDir + "/" + nameList.pop(0)
+    print "h2oLogDir:", h2oLogDir
+    print "logDir:", logDir
+
+    # it's a zip of zipped files
+    # first unzip it
+    z = zipfile.ZipFile(StringIO.StringIO(r.content))
+    z.extractall(logDir)
+    # unzipped file should be in LOG_DIR now
+    # now unzip the files in that directory
+    for zname in nameList:
+        resultList = h2o_util.flat_unzip(logDir + "/" + zname, logDir)
+
+    print "\nlogDir:", logDir
+    for logfile in resultList:
+        numLines = sum(1 for line in open(logfile))
+        print logfile, "Lines:", numLines
+    print
+    return resultList
+
+#******************************************************************************************8
+def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2oError=False,
+            timeoutSecs=30):
+    params = {
+        "src_key": key,
+        "offset": offset,
+        # view doesn't exist for 2. let it be passed here from old tests but not used
+    }
+    a = self.do_json_request('Inspect.json',
+        params=params,
+        ignoreH2oError=ignoreH2oError,
+        timeout=timeoutSecs
+    )
     return a
 
 #******************************************************************************************8
@@ -156,46 +231,30 @@ def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
     return a
 
 #******************************************************************************************8
-def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
-    params = {
-        'key': key
-    }
-
-    paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
-    url = self.url('DownloadDataset.json')
-    log('Start ' + url + paramsStr, comment=csvPathname)
-
-    # do it (absorb in 1024 byte chunks)
-    r = requests.get(url, params=params, timeout=timeoutSecs)
-    print "csv_download r.headers:", r.headers
-    if r.status_code == 200:
-        f = open(csvPathname, 'wb')
-        for chunk in r.iter_content(1024):
-            f.write(chunk)
-    else:
-        raise Exception("unexpected status for DownloadDataset: %s" % r.status_code)
-
-    print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
-    h2o_sandbox.check_sandbox_for_errors()
-
-    # FIX! we're skipping all the checks in do_json_request. And no json return?
-    return 
-    
-
-#******************************************************************************************8
 # attach methods to H2O object
 # this happens before any H2O instances are created
 # this file is imported into h2o
 
-H2O.quantiles = quantiles
-H2O.get_cloud = get_cloud
-H2O.h2o_log_msg = h2o_log_msg
+
+# ray has jobs below..is this old?
 H2O.jobs_admin = jobs_admin
+
+H2O.get_cloud = get_cloud
+H2O.shutdown_all = shutdown_all
+H2O.h2o_log_msg = h2o_log_msg
+
+H2O.inspect = inspect
+H2O.quantiles = quantiles
 H2O.rapids = rapids
 H2O.unlock = unlock
 H2O.get_timeline = get_timeline
+
+H2O.log_view = log_view
+H2O.log_download = log_download
 H2O.csv_download = csv_download
+
 H2O.remove_all_keys = remove_all_keys
+H2O.remove_key = remove_key
 # H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray
