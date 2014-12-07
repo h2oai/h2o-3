@@ -80,12 +80,12 @@ class Basic(unittest.TestCase):
             both = h2o_xl.xFcnOp1Set
             for fun in both:
 
+                a = None
                 try:
                     result_key = data_key + "_" + str(trial)
                     # copy the key
-                    Assign(data_key2, data_key).do()
+                    Assign(data_key2, data_key)
 
-                    a = None
                     # a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), True))
 
                     # a = Assign(result_key, Fcn('sum', KeyIndexed(data_key2, col=0), True))
@@ -96,43 +96,33 @@ class Basic(unittest.TestCase):
                     # what's wrong with mean?
                     if fun in ['ncol', 'asin', 'any.factor', 'sin', 'atan', 'tan', 'sign', 'log', 'exp', 'sqrt', 'abs', 'floor', 'ceiling', 'trunc','is.factor', 'is.na', 'any.na', 'nrow', 'tanh', 'length', 'acos', 'cos', 'sinh', 'cosh']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0)))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['sum', 'max', 'min', 'xorsum', 'sd']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), True))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['scale']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, False))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['round', 'signif']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 1))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['seq_len', 'rep_len']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 4))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['seq']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 1, 5, 1))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['mean']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), 0, False))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['var']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, False, False))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['match']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), KeyIndexed(data_key2, col=0), 1, None))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     elif fun in ['unique']:
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), False, 10, 1))
-                        result = a.do(timeoutSecs=14)
                         good.append(fun)
                     else:
                         # bad functions kill h2o?
@@ -155,7 +145,7 @@ class Basic(unittest.TestCase):
                             "    numCols:", "{:,}".format(numCols)
 
                 except: 
-                    if a:
+                    if not a:
                         # print dump_json(a.execResult)
                         bad.append(fun)
 

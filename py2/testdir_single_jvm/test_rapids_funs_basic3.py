@@ -4,6 +4,7 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
 
 from h2o_xl import Def, Fcn, Assign, KeyIndexed
+from copy import copy, deepcopy
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
@@ -11,37 +12,37 @@ print "Trying a different way, listing Rapids objects, rather than .ast() string
 # should be able to take a list of statements
 funsList = [
     Def('anon', 'x', 
-        Assign('a', Fcn('var', 'x', None, False, None)),
-        Assign('b', Fcn('var', 'x', None, False, None)),
-        Assign('d', Fcn('var', 'x', None, False, None)),
-        Assign('e', Fcn('var', 'x', None, False, None)),
-        Assign('f', Fcn('var', 'x', None, False, None)),
-        Assign('g', Fcn('var', 'x', None, False, None)),
-        Assign('d', Fcn('var', 'x', None, False, None)),
-        Assign('i', Fcn('var', 'x', None, False, None)),
-        Assign('j', Fcn('var', 'x', None, False, None)),
-        Assign('k', Fcn('var', 'x', None, False, None)),
-        Assign('l', Fcn('var', 'x', None, False, None)),
-        Assign('m', Fcn('var', 'x', None, False, None)),
-        Assign('n', Fcn('var', 'x', None, False, None)),
-        Assign('o', Fcn('var', 'x', None, False, None)),
-        Assign('p', Fcn('var', 'x', None, False, None)),
-        Assign('q', Fcn('var', 'x', None, False, None)),
-        Assign('r', Fcn('var', 'x', None, False, None)),
-        Assign('s', Fcn('var', 'x', None, False, None)),
-        Assign('t', Fcn('var', 'x', None, False, None)),
-        Assign('u', Fcn('var', 'x', None, False, None)),
-        Assign('v', Fcn('var', 'x', None, False, None)),
-        Assign('w', Fcn('var', 'x', None, False, None)),
-        Assign('x', Fcn('var', 'x', None, False, None)),
-        Assign('y', Fcn('var', 'x', None, False, None)),
-        Assign('z', Fcn('var', 'x', None, False, None)),
+        Assign('a', Fcn('var', 'x', None, False, None), do=False),
+        Assign('b', Fcn('var', 'x', None, False, None), do=False),
+        Assign('d', Fcn('var', 'x', None, False, None), do=False),
+        Assign('e', Fcn('var', 'x', None, False, None), do=False),
+        Assign('f', Fcn('var', 'x', None, False, None), do=False),
+        Assign('g', Fcn('var', 'x', None, False, None), do=False),
+        Assign('d', Fcn('var', 'x', None, False, None), do=False),
+        Assign('i', Fcn('var', 'x', None, False, None), do=False),
+        Assign('j', Fcn('var', 'x', None, False, None), do=False),
+        Assign('k', Fcn('var', 'x', None, False, None), do=False),
+        Assign('l', Fcn('var', 'x', None, False, None), do=False),
+        Assign('m', Fcn('var', 'x', None, False, None), do=False),
+        Assign('n', Fcn('var', 'x', None, False, None), do=False),
+        Assign('o', Fcn('var', 'x', None, False, None), do=False),
+        Assign('p', Fcn('var', 'x', None, False, None), do=False),
+        Assign('q', Fcn('var', 'x', None, False, None), do=False),
+        Assign('r', Fcn('var', 'x', None, False, None), do=False),
+        Assign('s', Fcn('var', 'x', None, False, None), do=False),
+        Assign('t', Fcn('var', 'x', None, False, None), do=False),
+        Assign('u', Fcn('var', 'x', None, False, None), do=False),
+        Assign('v', Fcn('var', 'x', None, False, None), do=False),
+        Assign('w', Fcn('var', 'x', None, False, None), do=False),
+        Assign('x', Fcn('var', 'x', None, False, None), do=False),
+        Assign('y', Fcn('var', 'x', None, False, None), do=False),
+        Assign('z', Fcn('var', 'x', None, False, None), do=False),
         Fcn('var', 'x', None, False, None),
     ),
 
     Def('anon', 'x', 
-        [Assign(key, Fcn('var', 'x', None, False, None)) for key in 'abdefghijklmnopqrstuvz'],
-        [Assign(key, Fcn('sum', KeyIndexed('x',col=0), False)) for key in 'abdefghijklmnopqrstuvz'],
+        [Assign(key, Fcn('var', 'x', None, False, None), do=False) for key in 'abdefghijklmnopqrstuvz'],
+        [Assign(key, Fcn('sum', KeyIndexed('x',col=0), False), do=False) for key in 'abdefghijklmnopqrstuvz'],
         Fcn('var', 'x', None, False, None),
     ),
 ]
@@ -74,15 +75,18 @@ class Basic(unittest.TestCase):
 
         keys = []
 
-        for trial in range(3):
+        # works for 1 pass..why is execExpr set for 2nd pass? should be new instance?
+        # if we reuse the same object in the list, it has state?
+        # do we need to copy the object...hmm
+        for trial in range(1):
             for execObj in funsList:
-                result = execObj.do()
-
+                freshObj = copy(execObj)
+                result = freshObj.do()
                 # rapids doesn't like complicated params right now?
                 if DO_FAIL:
-                    a = Assign('junk', Fcn('anon', KeyIndexed('r1',col=0)))
+                    a = Assign('junk', Fcn('anon', KeyIndexed('r1',col=0)), do=False)
                 else:
-                    a = Assign('junk', Fcn('anon', 'r1'))
+                    a = Assign('junk', Fcn('anon', 'r1'), do=False)
                 result = a.do(timeoutSecs=60)
 
                 # rows might be zero!

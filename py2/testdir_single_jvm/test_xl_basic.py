@@ -79,12 +79,11 @@ class Basic(unittest.TestCase):
 
         Assign(c[1], (a[2] + b[2]))
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= ([ $c1 #1 #1) (+ ([ $a1 #2 #2) ([ $b1 #2 #2)))"
+        astExpected = "(= ([ $c1 #1 #0) (+ ([ $a1 #2 #0) ([ $b1 #2 #0)))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         # assert ast = "(= !b1 (is.na (c {#0})))"
 
-        assert 1==0
         assert isinstance(c, Key), type(c)
 
         inspect = h2o_cmd.runInspect(key=c)
@@ -99,6 +98,9 @@ class Basic(unittest.TestCase):
         inspect = h2o_cmd.runInspect(key=c)
         # # print "inspect c", dump_json(inspect)
 
+        a <<= 3
+        b <<= 3
+        c <<= 3
         c[0] <<= a[0] + b[0]
         assert isinstance(c, Key)
         inspect = h2o_cmd.runInspect(key=c)
@@ -107,6 +109,10 @@ class Basic(unittest.TestCase):
         a = DF('a3') # named data frame
         b = DF('b3')
         c = DF('c3')
+        a <<= 4
+        b <<= 4
+        c <<= 4
+
         c[0] <<= a[0] - b[0]
         assert isinstance(c, Key)
         c[0] <<= a[0] * b[0]
@@ -115,6 +121,9 @@ class Basic(unittest.TestCase):
         a = DF('a4') # named data frame
         b = DF('b4')
         c = DF('c4')
+        a <<= 5
+        b <<= 5
+        c <<= 5
         c[0] <<= (a[0] - b[0])
         assert isinstance(c, Key)
         inspect = h2o_cmd.runInspect(key=c)

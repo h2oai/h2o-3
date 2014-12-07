@@ -2,8 +2,9 @@ import h2o_exec as h2e, h2o_print as h2p
 import re
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
-# local to this stuff. manually set the enable
+# can set this in a test to disable the actual exec, just debugprint()
 debugPrintEnable = True
+# to work without h2o (just print asts)
 debugNoH2O = False
 def debugprint(*args, **kwargs):
     if debugPrintEnable:
@@ -15,12 +16,12 @@ def debugprint(*args, **kwargs):
         print
 
 class Xbase(object):
-    # can set this in a test to disable the actual exec, just debugprint()
     lastExecResult = {}
     lastResult = None
     defaultAst = "Empty from Xbase init"
     keyWriteHistoryList = []
 
+    # not used
     def json(self): # returns a json string. debugprint(s it too.)
         import json
         s = vars(self)
@@ -28,27 +29,14 @@ class Xbase(object):
         return s
 
     def __init__(self):
-        # maybe we should track depth/complexity of everything below too, 
-        # and force an eval at a certain complexity
-        # track leaves and depth?
         self.assignDone = False
-        self.depth = 0
-        self.complexity = 0
+        self.ilshiftDone = False
 
-        # this probably doesn't mean that a Key got created
         self.execDone = False
         self.execResult = None
         self.result = None
         self.execExpr = None
         self.funs = False
-        # self.ast = self.defaultAst
-
-        # should we init this to 0? or only after a KeyInit
-        # I guess None here means it's not in the h2o k/v store
-        # Maybe we'll say this state doesn't exit unless you create a Key at h2o
-        # with a .do()
-        # self.numRows = None
-        # self.numCols = None
 
     def __str__(self):
         # this should always be overwritten by the other classes"
@@ -57,7 +45,7 @@ class Xbase(object):
     __repr__ = __str__
 
     def __getitem__(self, items):
-        debugprint("%s __getitem__ start" % type(self))
+        debugprint("\n%s __getitem__ start" % type(self))
         # If self is anything other a Key, means it was from a pending eval with no Assign.
         # Assign's should always have been .do()'ed, so views of them become Keys?
         # Keys with indexed views, become KeyIndexed. 
@@ -73,72 +61,45 @@ class Xbase(object):
         elif isinstance(self, Key):
             myKeyIndexed = self.add_indexing(items)
         else:
-            # h2o can support indexing on any Fcn or anything?
+            # h2o can support indexing on any Fcn or anything? Don't use that capability.
             # Assign.do() that anything so there is a temp key
             # Future? Maybe allow direct indexing of Fcn result, to avoid the temp?
             # h2o probably can't index an indexed thing. (KeyIndexed) or Seq?
             if self is None:
                 raise Exception("Can't index something that doesn't exist yet, even on lhs. %s %s" % (type(self), self))
             myKeyIndexed = myKey.add_indexing(items)
-        debugprint("%s __getitem__  end" % type(self))
+        debugprint("%s __getitem__  end\n" % type(self))
         return myKeyIndexed
 
-
     # this method is used by both ilshift and Assign class (inherits thru Key class)
-    def _do_the_assign(self, lhs, rhs, parent):
-        # type checking is done downstream
-        # I suppose lhs needs to be able to take [] stuff also (for set)
-        # Only gets the default timeoutSecs?
-        # If we index the lhs, it has a row and col and will be KeyIndex
-        # That means a [] indexing must have done it, and __setitem__ will be called
-        # after this again by python. We should let it redo the framing and .do()
-        # (result at ilshift only)
-        if lhs.assignDone:
-            debugprint("WARNING: %s _do_the_assign %s lhs already done %s" % (parent, type(self), lhs))
-        elif self.assignDone:
-            debugprint("WARNING: %s _do_the_assign %s self already done %s" % (parent, type(self), self))
+    def _do_assign(self, lhs, rhs, parent):
+        if lhs.assignDone and parent!="ilshift":
+            debugprint("WARNING: %s _do_assign %s lhs already done %s" % (parent, type(self), lhs))
+
+        elif self.assignDone and parent!="ilshift":
+            debugprint("WARNING: %s _do_assign %s self already done %s" % (parent, type(self), self))
         else:
             if isinstance(self, Assign):
-                debugprint("%s _do_the_assign self.do() %s" % (parent, type(self)))
-                self.do()
-                self.assignDone = True
+                raise Exception("%s _do_assign %s is already Assign..shouldn't happen? %s" % (parent, type(self), self))
             else:
-                debugprint("%s _do_the_assign Assign.do() %s" % (parent, type(self)))
+                debugprint("%s _do_assign Assign.do() %s" % (parent, type(self)))
+                # .do() sets assignDone
                 a = Assign(lhs=lhs, rhs=rhs) # it does it's own .do()
                 a.assignDone = True
+        debugprint("%s _do_assign done" % parent)
 
+        self.assignDone = True
         lhs.assignDone = True
-        debugprint("%s _do_the_assign done" % parent)
         return Key(key=lhs.frame)
 
 
     # Only Keys are flexible enough to be index'ed
-    # If you index a frame, assign it to temp (since it has a shape)
-    # then reindex into that shape
-    # Since it's a new temp don't re-use the name of the src key
     def __setitem__(self, items, rhs):
-        # should we just assume this is a no-op? 
-        # i.e. we will always have <<= when there is a lhs setitem??
-        # I'm having problems with the redundant .do() for <<= and lhs []
-        # Since this is done 'last' ..decided to disable the ilshift, and let this guy "do it"
-        # the self.assignDone may not be sufficient for managing, if new instances are created
-        # by python for <<= (see defn. of augmented assign at bottom) debugprint("%s __setitem__ start" % type(self))
-        # .do() checks if already done, and noops if so
-        # new!..may have already be done by ilshift? but that would turn it into a KeyIndexed
-
-        # anything other than a Key...complete it
-        # but for it to be here, it has to be  Key?
-        # so this is not required?
-        if isinstance(self, KeyIndexed):
-            raise Exception("Shouldn't be setitem indexing KeyIndexed? %s %s" % (type(self), self))
-        if isinstance(self, Key) and not self.assignDone:
-            # this returns a KeyIndexed? (so we can go from Key (anything possible) to 
-            # KeyIndexed (not anything possible)
-            # HACK if <<= already did the assign, don't redo it because of indexing on the lhs
-            # check if self and rhs are the same? it would be a noop
+        # Don't try to do it twice, if ilshift was involved
+        if isinstance(self, (Key, KeyIndexed)) and not (self.assignDone or self.ilshiftDone):
             debugprint("%s __setitem__ completing %s %s" % (type(self), self, rhs))
             lhs = self.add_indexing(items)
-            self._do_the_assign(lhs, rhs, '__setitem__')
+            self._do_assign(lhs, rhs, '__setitem__')
 
         debugprint("%s __setitem__  end" % type(self))
         # no return?
@@ -147,8 +108,6 @@ class Xbase(object):
     # A trick for getting an assign overload (<<=) with .do()
     # Don't want the .do() if you're in a user function though?
     # Need to be able to do KeyIndexed and Key here?
-    # hacky disable  to avoid the double writes for a[0] <<=
-    # the "done" flag inhibits that?
     def __ilshift__(self, rhs):
         if isinstance(self, (Key, KeyIndexed)):
             lhs = self
@@ -157,15 +116,14 @@ class Xbase(object):
             debugprint("coercing lhs to Key")
             lhs = Key() # anonymous
         
-
-        # don't do it id you know a lhs __setitem__ is going to happen after the __ilshift__
-        # because lhs is a KeyIndexed.
-        if isinstance(lhs, KeyIndexed):
-            debugprint("ilshift no-op %s %s" % (type(lhs), lhs))
-            return self
-        else:
-            debugprint("ilshift _do_the_assign %s %s" % (lhs, rhs))
-            return self._do_the_assign(lhs, rhs, 'ilshift')
+        a = self._do_assign(lhs, rhs, 'ilshift')
+        debugprint("ilshift _do_assign %s %s" % (lhs, rhs))
+        # belt and suspenders? may not be all needed
+        self.ilshiftDone = True
+        self.assignDone = True
+        a.ilshiftDone = True
+        a.assignDone = True
+        return a
 
 
     def _unary_common(self, funstr):
@@ -288,35 +246,22 @@ class Xbase(object):
         return self.__add__(left)
 
 
-    # currently not used..can't create ast at init time
-    def check_do_against_ast(self):
-        # We could bind to a string at init time, but we're still looking at the instances to decide type
-        # so they better not change while we're waiting to eval them at h2o..i.e. no benefit to binding the
-        # string early..it might fool us. If we're looking at instance, just look at instances
-        # (till you need a string)
-        # For debug, we could temporarily compare this, to a ast we generated at __init__ time for the instance?
-        # they should be identical (we can remove the check once we think things are solid.
-        if self.execExpr!=self.ast:
-            raise Exception("late binding to string should get same results as that during __init__?? %s %s" % \
-                (self.execExpr, self.ast))
-
     # not everything will "do" at h2o correctly? Should just be Assign/Expr/Def. maybe Key/KeyIndexed
     def do(self, timeoutSecs=30):
-        debugprint("%s .do() start %s" % (type(self), self))
-        if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn)):
+        if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn, If, IfElse, Return)):
             raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
-                (type(self)))
+                (type(self), self))
 
         # this can only happen if we already Exec'ed it? that's not legal. Just exception for now..means bug?
         if self.execExpr:
-            raise Exception(".do() Appears we already Exec'ed this? %s %s" % (type(self), self.execExpr))
+            raise Exception(".do() Appears already .do()'ed this?\n" +\
+                "You may need 'do=False' param on an Assign to avoid the default do=True\n" +\
+                "That causes .do() on all Assign inits.\n" +\
+                "Also, if you're using function objects multiple times, you should \n" +\
+                "use copy.copy() to copy them to fresh instances, because of internal state in the objects (mutables)..\n" +\
+                "Maybe I'll change this sometime \n    type self: %s \n    self.execExpr: %s" % (type(self), self.execExpr))
 
-        if self.funs:
-            self.execExpr = "[%s]" % self
-        else:
-            self.execExpr = "%s" % self
-        # self.check_do_against_ast()
-
+        # a little belt and suspenders
         if self.execDone:
             debugprint("%s .do() already done:" (type (self, self.execExpr)))
             return
@@ -324,17 +269,18 @@ class Xbase(object):
         self.execResult = None
         self.result = None
 
+        if self.funs:
+            self.execExpr = "[%s]" % self
+        else:
+            self.execExpr = "%s" % self
+        # self.check_do_against_ast()
+
+        h2p.green_print("%s .do() ast: %s" % (type(self), self.execExpr))
         if debugNoH2O: 
-            h2p.green_print("%s .do() debug ast: %s" % (type(self), self.execExpr))
             self.execResult =  {'debug': True}
             self.result = None
         else:
-            # functions can be multiple in Rapids, need []
-            # FIX! is it all right we don't reduce everything to string until here (until the .do)
-            # none of the instances will have changed?
-            # FIX! in here..if it returns a scalar, should we create a key with the scalar result and point to it?
-
-            # or do we propagate scalar results into expressions? Better?
+            # functions can be multiple statements in Rapids, need []
             self.execResult, self.result = h2e.exec_expr(execExpr=self.execExpr,
                 doFuns=self.funs, timeoutSecs=timeoutSecs)
 
@@ -342,7 +288,6 @@ class Xbase(object):
             if self.execResult['key'] is not None:
                 Xbase.keyWriteHistoryList.append(self.execExpr)
 
-            # if we support indexing by col names
             # remember the num_rows/num_cols (maybe update the saved col names 
             # this could update to None for scalar/string 
             # (temporary till we assign to key next in those cases)
@@ -359,7 +304,7 @@ class Xbase(object):
             # Deal with h2o weirdness. 
             # If it gave a scalar result and didn't create a key, put that scalar in the key
             # with another assign. Why should I deal with another type that "depends" if the key existed already?
-            if self.execResult['key'] is None:
+            if (not self.funs) and not isinstance(self, (If, IfElse, Return)) and (self.execResult['key'] is None):
                 scalar = self.execResult['scalar']
                 debugprint("Hacking scalar result %s into a key wth name I told h2o! %s" % (scalar, self.frame))
                 # doesn't like 0.0?
@@ -383,12 +328,34 @@ class Xbase(object):
                 self.numRows = self.execResult['num_rows']
                 self.numCols = self.execResult['num_cols']
 
-        # don't return the full json...can look that up if necessary
-        # this this always nothing now, since we always init Key to a real h2o key?
-        # hopefully it gets the key name that we can use in an inspect (or does exec_expr 
-        # read the key and return value if rows=1 and cols=1? (using min)
         self.execDone = True
+        if isinstance(self, Assign):
+            self.assignDone = True
+        # don't return the full json...can look that up if necessary
+        # this is a scalar, or the min/max of a 1 row/1 col key? this covers a lot of the test cases
         return self.result
+
+    # from http://stackoverflow.com/questions/1500718/what-is-the-right-way-to-override-the-copy-deepcopy-operations-on-an-object-in-p
+    def __copy__(self):
+        # I could use copy()?
+        from copy import copy
+        # just copy top level? so lists aren't copied? Need to think if I keep track of key history or ?? in lists
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        # I could use deepcopy()?
+        # here __deepcopy__ fills in the memo dict to avoid excess copying 
+        # in case the object itself is referenced from its member.
+        from copy import deepcopy
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
     # __call__ = __init__
     # __call__ = do
@@ -426,13 +393,11 @@ class Item(Xbase):
     def __init__(self, item):
         self.item = item
         # self.funs is not resolved until a string resolution?
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         item = self.item
         # debugprint("Item:", item)
         # xItem can't be used for lhs
-        # if list or tuple, exception
         if isinstance(item, (list, tuple, dict)):
             raise Exception("Item doesn't take lists, tuples (or dicts) %s" % item)
 
@@ -522,7 +487,7 @@ xFcnOp3Set = set([
 # operands is a list of items or an item. Each item can be number, string, list or tuple
 # there is only one level of unpacking lists or tuples
 # returns operandString, operandList
-# Note this can't unpack a dict
+# this doesn't unpack a dict
 def unpackOperands(operands, parent=None, toItem=True):
     def addItem(opr):
         if toItem:
@@ -583,7 +548,6 @@ class Seq(Xbase):
         operandList = unpackOperands(operands, parent="Seq operands")
         self.operandList = operandList
         # FIX! should we do more type checking on operands?
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         oprString = ";".join(map(str, self.operandList))
@@ -604,7 +568,6 @@ class Colon(Xbase):
         self.a = Item(a)
         self.b = Item(b)
         # FIX! should we do more type checking on operands?
-        # self.ast = str(self) # for debug/comparision
 
 
     def __str__(self):
@@ -625,6 +588,7 @@ class Colon(Xbase):
 # a Key is the nebulous thing, that can get locked down into a KeyIndexed by indexing..
 # a KeyIndexed can't be re-indexed, or turned back into a Key, 
 # until it's executed by rapids (so the Key can be used again)
+# Note we don't actually init a key in h2o with this class. User uses DF() for that if desired.
 class Key(Xbase):
     def __init__(self, key=None):
         if key is None:
@@ -649,24 +613,9 @@ class Key(Xbase):
         legalKey(frame, "Key")
         self.frame = frame
 
-
         # add to list of created h2o keys (for deletion later?)
         # FIX! should make this a weak dictionary reference? don't want to affect python GC?
         # xKeyIndexedList.append(frame)
-        # self.ast = str(self) # for debug/comparision
-
-        # make it appear in h2o as a real key..so when we op on it, we don't get scalars from rapids!
-        # FIX! is there a better way to think of this
-        # should assign be  method on key? but Assign figures out lhs/rhs views. so those are new instances?
-        # just want to point to the same h2o key name
-        # ..can't do Assign, it inherits from Key
-        # it will get checked again in KeyIndexed if we index..redundant
-        # KeyIndexed checks, since we init with KeyIndexed, we shouldn't have to check here
-        # legalKey(self.frame, "Key")
-
-        # FIX how to handle this? Look at a list of existing key names?
-        # would have to manage it correctly with respect to h2o. but user can delete keys in browser too.
-        # KeyInit(self.frame).do()
 
     def __str__(self):
         frame = self.frame
@@ -676,7 +625,7 @@ class Key(Xbase):
 
     __repr__ = __str__
 
-    # for debug/wip of slicing
+    # slicing
     # this is used on lhs and rhs? we never use a[0] = ... Just a[0] <== ...
     def add_indexing(self, items):
         def indexer(item):
@@ -759,10 +708,6 @@ class Key(Xbase):
 # maybe do some reading here
 # http://python-3-patterns-idioms-test.readthedocs.org/en/latest/Factory.html
 # row/col can be numbers or strings or not specified
-
-# FIX! get rid of this? or ?? is Key sufficient? why KeyIndexed (no slicing?)
-# FIX! KeyIndexed doesn't create a key on h2o..only h2o does
-# KeyIndexed is used after a Key was created. it'a lower level way to use a frame, then Key
 # Key can do indexing/slicing. KeyIndexed is fixed at row/col
 class KeyIndexed(Key):
     # row 0/col0 should always exist if we init keys to 0?
@@ -777,7 +722,6 @@ class KeyIndexed(Key):
         self.row = Item(row)
         self.col = Item(col)
         self.dim = dim # dimensions
-        # self.ast = str(self) # for debug/comparision
 
         # how to decide whether to send 2d or 1d references to h2o
         # is there no such thing as a row vector, only a column vector (or data frame)
@@ -788,7 +732,6 @@ class KeyIndexed(Key):
         # row extracts problematic?
 
         # None translates to "null"
-        # not key yet
 
     def __str__(self):
         frame = self.frame
@@ -832,7 +775,6 @@ class KeyInit(Xbase):
         # guaranteed to be string
         assert isinstance(frame, basestring)
         self.frame = frame
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         # This should give zero row key result. Does that result in Scalar?
@@ -840,7 +782,6 @@ class KeyInit(Xbase):
 
     # this shouldn't be used with any of the setiem/getitem type stuff..add stuff to make that illegal?
     # or any operators?
-
 
 #********************************************************************************
 # Users uses this? it adds an init
@@ -857,6 +798,7 @@ class DF(Key):
         frame = self.frame
         # no $ prefix
         return '%s' % frame
+
 #********************************************************************************
 
 def legalFunction(function):
@@ -882,7 +824,7 @@ class Fcn(Xbase):
 
         required = legalFunction(function)
         if required==0:
-            raise Exception("Fcn legalFunction not found: %s" % function)
+            print "Fcn legalFunction not found...maybe future defined user function?: %s" % function
 
         # FIX! currently not checking any.
         # only check 1 and 2. not sure of the 3 group. cbind is conditional..need to do that special
@@ -893,7 +835,6 @@ class Fcn(Xbase):
         self.function = function
         # can I do a str() here before everything has been initted?
         debugprint("Fcn:", str(self))
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         return "(%s %s)" % (self.function, " ".join(map(str, self.operandList)))
@@ -925,28 +866,19 @@ class Return(Xbase):
 
 
 class Assign(Key):
-    # let rhs be more than one now, to allow for (if..) (else..)
-    # obj for disabling the .do and just returning thr object
-    # rhs can be more than one for (if ..) (else ..)
-    # maybe get rid of separate Else object and just have If and IfElse
-    # then just one rhs, and can have obj param
-    # but init can't selectively return the object vs the result of the .do()
-
-    # LOOK: put rhs first so unnamed args that don't name lhs work at user level
-    # Should always use named params in this module for safety
-
-    # back to normal
-    def __init__(self, lhs=None, rhs=None, timeoutSecs=30):
+    # always does a .do() on init
+    def __init__(self, lhs=None, rhs=None, do=True, timeoutSecs=30):
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
             lhs = Key()
+            debugprint("Assign: creating Key for lhs: %s" % lhs)
         elif not isinstance(lhs, (Key, KeyIndexed, basestring)):
             raise Exception("Assign: lhs not Key/KeyIndexed/string or None %s %s" % (type(lhs), lhs))
 
         super(Assign, self).__init__(lhs)
 
-        # to date, have been passing strings
+        # can pass strings
         # all the __getitem__ stuff in Key should modify a Key?
         # same with Assign here, since we inherit from Key?
         if isinstance(lhs, basestring):
@@ -970,12 +902,14 @@ class Assign(Key):
             self.rhs = Item(rhs)
 
         self.funs = False
-        # self.ast = str(self) # for debug/comparision
         debugprint("Assign lhs: %s" % self.lhs)
         debugprint("Assign rhs: %s" % self.rhs)
 
-        # this means Assign() doesn't use or need ilshift
-        self.do()
+        if do: # param set to false when building functions and don't want auto .do()?
+            self.do()
+            self.assignDone = True
+            if not isinstance(lhs, basestring):
+                lhs.assignDone = True
         return None
 
     # leading $ is illegal on lhs
@@ -1002,13 +936,7 @@ class Assign(Key):
         return "(= %s%s %s)" % (lhsprefix, lhsAssign, self.rhs)
 
 # can only do one expression/statement per ast.
-# might be used to cause Fcn's to execute (with side effects?)
-
-# You can't Colon or Index an Expr. You can endlessly Expr an Expr
-# Expr includes all Fcn. So you can endlesly Fcn a Fcn.
-# So overloaders can keep creating Fcn's of Fcn's
-# if it needs to be resolve, and Expr can be used, and then the temp key name passed
-# (the Expr becomes a Key basically, so it can get Colon'ed or Indexed.
+# Not currently used
 class Expr(Assign):
     def __init__(self, expr, obj=False, timeoutSecs=30):
         # just be like Assign with no lhs?
@@ -1016,7 +944,6 @@ class Expr(Assign):
         # i.e. if we can't build up a new expression due to limitations of h2o support
         # suppose we can wait to create that name until we have to create a key
         super(Expr, self).__init__(lhs=None, rhs=expr, obj=obj, timeoutSecs=timeoutSecs)
-        # self.ast = str(self) # for debug/comparision
 
     def __getitem__(self, items):
         raise Exception("trying to __getitem__ index a Expr? doesn't make sense? %s %s" % (self, items))
@@ -1055,7 +982,6 @@ class Def(Xbase):
         self.function = function
         self.paramList = paramList
         self.exprList = exprList
-        # self.ast = str(self) # for debug/comparision
 
         debugprint("xFcnUser", xFcnUser)
 
@@ -1084,7 +1010,6 @@ class If(Xbase):
         exprList = unpackOperands(exprs, parent="If exprs")
         self.clause = Item(clause)
         self.exprList = exprList
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         exprStr = ";;".join(map(str, self.exprList))
@@ -1105,7 +1030,6 @@ class IfElse(Xbase):
         self.clause = Item(clause)
         self.ifExprList = ifExprList
         self.elseExprList = elseExprList
-        # self.ast = str(self) # for debug/comparision
 
     def __str__(self):
         ifExprStr = ";;".join(map(str, self.ifExprList))
@@ -1142,7 +1066,6 @@ class Cut(Fcn):
         right = self.translateValue(right) # boolean
         lab = Item(dig_lab) # integer
         super(Cut, self).__init__("cut", vector, breaks, labels, include_lowest, right, dig_lab)
-        # self.ast = str(self) # for debug/comparision
 
 # cut(a, breaks = c(min(a), mean(a), max(a)), labels = c("a", "b"))
 # (cut $a {4.3;5.84333333333333;7.9} {"a";"b"} $FALSE $TRUE #3))
