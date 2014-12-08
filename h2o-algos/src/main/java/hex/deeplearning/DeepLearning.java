@@ -327,7 +327,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
                   new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
-          if (!mp._quiet_mode) Log.info("Progress: " + PrettyPrint.formatPct(progress()));
         }
         while (model.doScoring(train, trainScoreFrame, validScoreFrame, self()));
 
