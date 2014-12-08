@@ -1257,10 +1257,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   /** Constructor to restart from a checkpointed model
+   * @param destKey New destination key for the model
    *  @param cp Checkpoint to restart from
-   *  @param destKey New destination key for the model
-   *  @param store_best_model Store only the best model instead of the latest one */
-  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, Frame train, final DataInfo dataInfo) {
+   * @param store_best_model Store only the best model instead of the latest one  */
+  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
     super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningOutput)cp._output.clone());
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
@@ -1448,7 +1448,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (!get_params()._quiet_mode)
               Log.info("Error reduced from " + _bestError + " to " + error() + ". Storing best model so far under key " + actual_best_model_key.toString() + ".");
             _bestError = error();
-            putMeAsBestModel(actual_best_model_key, train);
+            putMeAsBestModel(actual_best_model_key);
 
             // debugging check
             //if (false) {
@@ -1490,8 +1490,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       update(job_key);
     }
     catch (Exception ex) {
-      ex.printStackTrace();
-      throw new RuntimeException(ex);
+      //ex.printStackTrace();
+      //throw new RuntimeException(ex);
+      return false;
     }
     return keep_running;
  }
@@ -1743,8 +1744,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //  }
 
   // helper to push this model to another key (for keeping good models)
-  private void putMeAsBestModel(Key bestModelKey, Frame train) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, train, model_info().data_info());
+  private void putMeAsBestModel(Key bestModelKey) {
+    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
 //    bestModel.get_params()._state = Job.JobState.DONE; //FIXME
 //    bestModel.get_params()._key = get_params().self(); //FIXME : is private
     final Key job = null;

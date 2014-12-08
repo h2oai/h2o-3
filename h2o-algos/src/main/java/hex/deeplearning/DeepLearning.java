@@ -197,7 +197,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                                               _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
                                               isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
           DKV.put(dinfo._key,dinfo);
-          cp = new DeepLearningModel(dest(), previous, false, _train, dinfo);
+          cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());
           final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
           Object B = _parms;

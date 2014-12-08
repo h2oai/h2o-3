@@ -113,7 +113,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     final int[] h = params._hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input
-    neurons[0] = new Neurons.Input(dinfo.fullN(), dinfo);
+    neurons[0] = new Neurons.Input(minfo.units[0], dinfo);
     // hidden
     for( int i = 0; i < h.length + (params._autoencoder ? 1 : 0); i++ ) {
       int n = params._autoencoder && i == h.length ? minfo.units[0] : h[i];
@@ -146,8 +146,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     }
 
     //copy parameters from NN, and set previous/input layer links
-    for( int i = 0; i < neurons.length; i++ )
+    for( int i = 0; i < neurons.length; i++ ) {
       neurons[i].init(neurons, i, params, minfo, training);
+      neurons[i]._input = neurons[0];
+    }
 
 //    // debugging
 //    for (Neurons n : neurons) Log.info(n.toString());
