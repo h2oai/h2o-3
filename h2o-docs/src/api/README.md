@@ -14,3 +14,9 @@ Goals include:
 ### Data science workflows
 
 * [Data science example 1](data-science-example-1/README.md)
+
+
+### Resources
+
+* [Numpy for R users](http://mathesaurus.sourceforge.net/r-numpy.html)
+ 
