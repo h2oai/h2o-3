@@ -6,7 +6,7 @@ import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 
-class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl class; we generate these directly
+public class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl class; we generate these directly
   @API(help="Response header")
   String status_header = null;
 

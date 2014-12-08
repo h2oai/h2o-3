@@ -243,8 +243,9 @@ public final class SchemaMetadata extends Iced {
         return clz.getSimpleName();
       }
 
-      Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass());
-      return clz.toString();
+      String msg = "Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass();
+      Log.warn(msg);
+      throw H2O.fail(msg);
     }
 
     public static String consValue(Object o) {

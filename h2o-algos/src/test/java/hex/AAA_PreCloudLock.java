@@ -1,11 +1,15 @@
 package hex;
 
-import static org.junit.Assert.*;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import water.H2O;
+import water.Paxos;
+import water.TestUtil;
+import water.api.RequestServer;
 
 import java.util.Properties;
-import water.*;
-import water.api.*;
+
+import static org.junit.Assert.assertFalse;
 
 public class AAA_PreCloudLock extends TestUtil {
   static boolean testRan = false;
@@ -48,6 +52,6 @@ public class AAA_PreCloudLock extends TestUtil {
 
   private void serve(String s, Properties parms) {
     RequestServer.SERVER.serve(s,"GET",null,parms==null?new Properties():parms);
-    assertFalse(Paxos._cloudLocked);
+    assertFalse("Check of pre-cloud classes failed.  You likely added a class to TypeMap.BOOTSTRAP_CLASSES[].", Paxos._cloudLocked);
   }
 }

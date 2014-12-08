@@ -2,13 +2,12 @@ package water.api;
 
 import water.Iced;
 import water.Key;
-import water.fvec.Frame;
 
 class FindV2 extends Schema<Iced,FindV2> {
 
   // Input fields
   @API(help="Frame to search",required=true)
-  Frame key;
+  FrameV2 key;
 
   @API(help="Column, or null for all")
   String column;

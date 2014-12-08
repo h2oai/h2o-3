@@ -2,7 +2,7 @@ package water.api;
 
 import water.Iced;
 
-class TypeaheadV2 extends Schema<Iced,TypeaheadV2> {
+public class TypeaheadV2 extends Schema<Iced,TypeaheadV2> {
 
   // Input fields
   @API(help="training_frame", required=true)

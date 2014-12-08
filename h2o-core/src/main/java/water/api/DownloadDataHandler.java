@@ -3,6 +3,8 @@ package water.api;
 import water.DKV;
 import water.fvec.Frame;
 
+import java.io.InputStream;
+
 public class DownloadDataHandler extends Handler { // TODO: recursive generics seem to prevent more specific types here
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
@@ -12,7 +14,11 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
 
     if (DKV.get(server.key) == null) throw new IllegalArgumentException(server.key.toString() + " not found.");
     Frame value = server.key.get();
-    server.csv = value.toCSV(true, server.hex_string);
+
+    InputStream is = value.toCSV(true, server.hex_string);
+    java.util.Scanner scanner = new java.util.Scanner(is).useDelimiter("\\A");
+    server.csv = (scanner.hasNext() ? scanner.next() : "");
+
     // Clean up Key name back to something resembling a file system name.  Hope
     // the user's browser actually asks for what to do with the suggested
     // filename.  Without this code, my FireFox would claim something silly

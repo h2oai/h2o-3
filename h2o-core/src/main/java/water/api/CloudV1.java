@@ -4,7 +4,7 @@ import water.*;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-class CloudV1 extends Schema<Iced, CloudV1> {
+public class CloudV1 extends Schema<Iced, CloudV1> {
   // This Schema has no inputs
 
   // Output fields
@@ -33,10 +33,10 @@ class CloudV1 extends Schema<Iced, CloudV1> {
   public boolean locked;
 
   @API(help="nodes", direction=API.Direction.OUTPUT)
-  public Node[] nodes;
+  public NodeV1[] nodes;
 
   // Output fields one-per-JVM
-  protected static class Node extends Iced {
+  public static class NodeV1 extends Schema<Iced, NodeV1> {
     @API(help="IP", direction=API.Direction.OUTPUT)
     final public H2ONode h2o;
 
@@ -97,7 +97,7 @@ class CloudV1 extends Schema<Iced, CloudV1> {
     @API(help="PID", direction=API.Direction.OUTPUT)
     final public String pid;
 
-    Node( H2ONode h2o ) {
+    NodeV1( H2ONode h2o ) {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
@@ -171,7 +171,7 @@ class CloudV1 extends Schema<Iced, CloudV1> {
     int cores=0;
     float gflops_tot=0f;
     float mem_bw_tot=0f;
-    for( Node n : nodes ) {
+    for( NodeV1 n : nodes ) {
       max_ping = Math.max(max_ping,(now-n.last_ping));
       load       += n.sys_load;         // Sys health
       data_tot   += n.total_value_size; // Data
@@ -205,7 +205,7 @@ class CloudV1 extends Schema<Iced, CloudV1> {
               );
 
     // All Node lines
-    for( Node n : nodes )
+    for( NodeV1 n : nodes )
       formatRow(ab, n.healthy?"":"class=\"error\"",
                 n.h2o.toString(), now-n.last_ping, n.sys_load,
                 n.total_value_size, n.mem_value_size,n.num_keys,

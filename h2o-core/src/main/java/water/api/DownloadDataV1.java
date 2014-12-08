@@ -1,7 +1,7 @@
 package water.api;
 
-import water.*;
-import java.io.InputStream;
+import water.Iced;
+import water.Key;
 
 public class DownloadDataV1 extends Schema<Iced, DownloadDataV1> {
 
@@ -10,6 +10,6 @@ public class DownloadDataV1 extends Schema<Iced, DownloadDataV1> {
   @API(help="Emit double values in a machine readable lossless format with Double.toHexString().") boolean hex_string;
 
   // Output
-  @API(help="CSV Stream", direction=API.Direction.OUTPUT) InputStream csv;
+  @API(help="CSV Stream", direction=API.Direction.OUTPUT) String csv;
   @API(help="Suggested Filename", direction=API.Direction.OUTPUT) String filename;
 }

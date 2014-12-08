@@ -13,15 +13,16 @@ class FindHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FindV2 find(int version, FindV2 find) {
+    Frame frame = find.key.createAndFillImpl();
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
-      Vec vec = find.key.vec(find.column);
+      Vec vec = frame.vec(find.column);
       if( vec==null ) throw new IllegalArgumentException("Column "+find.column+" not found in frame "+find.key);
-      find.key = new Frame(new String[]{find.column}, new Vec[]{vec});
+      find.key = new FrameV2(new Frame(new String[]{find.column}, new Vec[]{vec}));
     }
 
     // Convert the search string into a column-specific flavor
-    Vec[] vecs = find.key.vecs();
+    Vec[] vecs = frame.vecs();
     double ds[] = new double[vecs.length];
     for( int i=0; i<vecs.length; i++ ) {
       if( vecs[i].isEnum() ) {
@@ -44,7 +45,7 @@ class FindHandler extends Handler {
       }
     }
 
-    Find f = new Find(find.row,ds).doAll(find.key);
+    Find f = new Find(find.row,ds).doAll(frame);
     find.prev = f._prev;
     find.next = f._next==Long.MAX_VALUE ? -1 : f._next;
     return find;

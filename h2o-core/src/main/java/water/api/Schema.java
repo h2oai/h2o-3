@@ -118,7 +118,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // We do now to get metadata for base classes: assert schema_version > -1 : "Cannot instantiate a schema whose classname does not end in a 'V' and a version #";
 
     if (null == schema_to_iced.get(this.schema_name)) {
-      Log.info("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
+      Log.debug("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
       if (null != schemas.get(this.schema_name))
         throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.schema_name) + " and: " + this.getClass().toString());
 
