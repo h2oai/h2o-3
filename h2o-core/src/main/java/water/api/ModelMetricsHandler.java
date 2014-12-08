@@ -219,7 +219,7 @@ class ModelMetricsHandler extends Handler {
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
     parms.model.score(parms.frame); // throw away predictions
-    ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+    ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
     // For the others cons one up here to return the predictions frame.

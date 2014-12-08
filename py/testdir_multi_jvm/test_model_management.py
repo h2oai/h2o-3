@@ -118,7 +118,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     Validate that the returned parameters list for a model build contains all the values we passed in as input.
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
-    for k, v in input_parameters.iteritems():
+    for k, expected in input_parameters.iteritems():
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
@@ -127,14 +127,34 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         if k is 'training_frame':
             continue
 
-        expected = str(v)
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
-        if actuals_dict[k]['type'] == 'boolean':
-            expected = expected.lower()
+        actual = actuals_dict[k]['actual_value']
 
-        assert expected == actuals_dict[k]['actual_value'], "FAIL: Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actuals_dict[k]['actual_value'])
+        print repr(actuals_dict[k])
+        if actuals_dict[k]['type'] == 'boolean':
+            expected = bool(expected)
+            actual = True if 'true' == actual else False # true -> True
+        elif actuals_dict[k]['type'] == 'int':
+            expected = int(expected)
+            actual = int(actual)
+        elif actuals_dict[k]['type'] == 'long':
+            expected = long(expected)
+            actual = long(actual)
+        elif actuals_dict[k]['type'] == 'string':
+            expected = str(expected)
+            actual = str(actual)
+        elif actuals_dict[k]['type'] == 'double':
+            expected = float(expected)
+            actual = float(actual)
+        elif actuals_dict[k]['type'] == 'float':
+            expected = float(expected)
+            actual = float(actual)
+            
+        # TODO: don't do exact comparison of floating point!
+
+        assert expected == actual, "FAIL: Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(expected)) + ", type of actual: " + str(type(actual)) + ")"
     # TODO: training_frame, validation_frame
 
 
@@ -248,6 +268,7 @@ class ModelSpec(dict):
     
 
     def build_and_validate_model(self, a_node):
+        before = time.time()
         if verbose: print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params'])
         result = a_node.build_model(algo=self['algo'], destination_key=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
@@ -263,7 +284,7 @@ class ModelSpec(dict):
         assert 'model_category' in model['output'], 'FAIL: Failed to find model_category in model: ' + self['dest_key']
         assert model['output']['model_category'] == self['model_category'], 'FAIL: Expected model_category: ' + self['model_category'] + ' but got: ' + model['output']['model_category'] + ' for model: ' + self['dest_key']
 
-        if verbose: print 'Done building: ' + self['dest_key']
+        if verbose: print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
         return model
 
 
@@ -502,7 +523,7 @@ assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile
 # Build and do basic validation checks on models
 ####################################################################################################
 models_to_build = [
-    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], {'K': 2} ),
+    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], { 'K': 2 } ),
 
     ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], { } ),
 
@@ -510,15 +531,15 @@ models_to_build = [
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
-    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'hidden': '[20, 20]' } ),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'hidden': '[10, 10]' } ),
-    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { } ),
+    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 2 } ),
+    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 2, 'hidden': '[20, 20]' } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 2, 'hidden': '[10, 10]' } ),
+    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 2 } ),
 
-    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { } ),
-    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { } ),
+    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5 } ),
+    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5 } ),
     ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5 } ),
-    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { } ),
+    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5 } ),
 ]
 
 built_models = {}
@@ -610,7 +631,7 @@ if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame='prostate_binomial')
 assert mm is not None, "FAIL: Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial'
 assert 'model_category' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a model_category."
-assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + mm['model_category']
+assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + str(mm['model_category'])
 assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an AUC."
 assert 'cm' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a CM."
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
