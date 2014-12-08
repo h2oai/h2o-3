@@ -491,6 +491,7 @@ class ASTIf extends ASTStatement {
   @Override void exec(Env e) {
     Env captured = e.capture();
     captured = _pred.treeWalk(captured);
+    if (captured.isAry()) throw new IllegalArgumentException("Frames not supported in the if's condition.");
     double v = captured.popDbl();
     captured.popScope();
     if (v == 0) if (_else == null) return; else _else.exec(e);
