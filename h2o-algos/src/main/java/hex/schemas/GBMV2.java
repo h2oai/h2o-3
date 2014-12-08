@@ -36,7 +36,7 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
     @API(help="Learning rate from 0.0 to 1.0")
     public float learn_rate;
 
-    @API(help = "Loss function", values = { "AUTO", "Bernoulli" })
+    @API(help = "Loss function", values = { "AUTO", "bernoulli" })
     public GBMParameters.Family loss;
 
     @API(help = "RNG Seed for balancing classes", level = API.Level.expert)

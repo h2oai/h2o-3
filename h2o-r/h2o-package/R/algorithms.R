@@ -1,4 +1,4 @@
-checkargs <- function(message, ...) {
+.checkargs <- function(message, ...) {
   failed <- FALSE
   tryCatch(stopifnot(...), error = function(e) {failed <<- TRUE; print(message)})
   if (failed) error(message)
