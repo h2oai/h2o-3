@@ -54,7 +54,7 @@ class Basic(unittest.TestCase):
             # 'seed': 
         }
 
-        model_key = 'benign_gbm.hex'
+        model_key = 'covtype_gbm.hex'
         bmResult = h2o.n0.build_model(
             algo='gbm',
             destination_key=model_key,
