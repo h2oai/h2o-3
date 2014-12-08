@@ -3,7 +3,7 @@ import re
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
 # can set this in a test to disable the actual exec, just debugprint()
-debugPrintEnable = True
+debugPrintEnable = False
 # to work without h2o (just print asts)
 debugNoH2O = False
 def debugprint(*args, **kwargs):
@@ -96,10 +96,11 @@ class Xbase(object):
     # Only Keys are flexible enough to be index'ed
     def __setitem__(self, items, rhs):
         # Don't try to do it twice, if ilshift was involved
-        if isinstance(self, (Key, KeyIndexed)) and not (self.assignDone or self.ilshiftDone):
-            debugprint("%s __setitem__ completing %s %s" % (type(self), self, rhs))
-            lhs = self.add_indexing(items)
-            self._do_assign(lhs, rhs, '__setitem__')
+        if 1==0: # should never happen (only if '=' was being used)
+            if isinstance(self, (Key, KeyIndexed)) and not (self.assignDone or self.ilshiftDone):
+                debugprint("%s __setitem__ completing %s %s" % (type(self), self, rhs))
+                lhs = self.add_indexing(items)
+                self._do_assign(lhs, rhs, '__setitem__')
 
         debugprint("%s __setitem__  end" % type(self))
         # no return?
@@ -129,25 +130,22 @@ class Xbase(object):
     def _unary_common(self, funstr):
         # funstr is the h2o function string..this function is just fot standard binary ops?
         # FIX! add row/col len checks against Key objects
-        if not isinstance(self, (Key, KeyIndexed, Fcn)):
+        if not isinstance(self, (Key, KeyIndexed, Fcn, Item)):
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s' % (funstr, type(self)))
         else:
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
                 (funstr, type(self)))
 
-    def _binary_common(self, funStr, right):
+    def _binary_common(self, funstr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
         # FIX! add row/col len checks against Key objects
-        if not isinstance(self, (Key, KeyIndexed, Fcn)):
-            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
-                (funstr, type(self), type(right)))
-        elif isinstance(right, (int, list, tuple)):
-            return Fcn(funStr, self, Item(right))
-        elif isinstance(right, (Key, KeyIndexed, Fcn)):
-            return Fcn(funStr, self, right)
+        if isinstance(right, (int, list, tuple)):
+            return Fcn(funstr, self, Item(right))
         elif isinstance(right, (float)):
             raise TypeError('Rapids unsupported operand type(s) for %s: %s and %s' % \
                 (funstr, type(self), type(right)))
+        elif isinstance(right, (Key, KeyIndexed, Fcn, Item)):
+            return Fcn(funstr, self, right)
         else:
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
                 (funstr, type(self), type(right)))
@@ -210,11 +208,11 @@ class Xbase(object):
         return _unary_common('_') # use special Rapids negation function
     # pos is a no-op? just return self?
     def __pos__(self):
-        return _unary_common('_') # use special Rapids negation function
+        return self
     def __abs__(self):
-        return _unary_common('abs') # use special Rapids negation function
+        return _unary_common('abs')
     def __int__(self):
-        return _unary_common('trunc') # use special Rapids negation function
+        return _unary_common('trunc')
 
     # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
     # (what if enums or strings)
@@ -225,6 +223,22 @@ class Xbase(object):
 
     # complex/long/oct/hex not supported
 
+    # this all work inside h2o
+    # FIX! how does a condition on a h2o operation, get used with a python if?
+    # these result in function objects, not booleans
+    # maybe h2o_to_boolean(...) expects as boolean h2o function 
+    # or a generic h2o_to_local(..) just gets whatever the response is? 
+    # if it's a column, it's a list. If it's a value, it can be used as a boolean
+    # maybe LocalAssign()
+    # I suppose LocalAssign() could be deduced, by seeing if a Assign() target is Key or not (we do allow string?)
+    # what if the Assign target was none? If Assigns always go to a key, then is it as simple as viewing the key
+    # can't know always, when to Get() to local
+    # a = Get(b)
+    # Could do Put, but Assign takes local objects okay? (will it know when to download csv)
+    # Put(key, a)
+    # or key <<= Put(a)
+    
+    # these are used for local h2o compare expressions..i.e when they operate on Keys
     def __lt__(self, right):
         return self._binary_common('<', right)
     def __rlt_(self, left):
@@ -245,9 +259,21 @@ class Xbase(object):
     def __rge_(self, left):
         return self.__add__(left)
 
+    def __eq__(self, right):
+        # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))
+        return self._binary_common('==', Item(right))
+        # return NotImplemented
+        # if result is NotImplemented:
 
-    # not everything will "do" at h2o correctly? Should just be Assign/Expr/Def. maybe Key/KeyIndexed
-    def do(self, timeoutSecs=30):
+    def __ne__(self, right):
+        # raise Exception("__ne__ What is doing this? %s %s %s" % (type(self), self, right))
+        return self._binary_common('!=', Item(right))
+
+
+    # not everything will "do" at h2o correctly? Should just be Assign/Expr/Def. maybe Key/KeyIndexed.
+    # get=True will get the actual result. Easy if it's scalar. Will have to inspect the key to get a col result/
+    # if it has more than one col, unsupported for now.
+    def do(self, timeoutSecs=30, get=False):
         if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn, If, IfElse, Return)):
             raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
                 (type(self), self))
@@ -304,20 +330,22 @@ class Xbase(object):
             # Deal with h2o weirdness. 
             # If it gave a scalar result and didn't create a key, put that scalar in the key
             # with another assign. Why should I deal with another type that "depends" if the key existed already?
+            scalar = None
             if (not self.funs) and not isinstance(self, (If, IfElse, Return)) and (self.execResult['key'] is None):
                 scalar = self.execResult['scalar']
                 debugprint("Hacking scalar result %s into a key wth name I told h2o! %s" % (scalar, self.frame))
                 # doesn't like 0.0?
                 debugprint("FIX! Hacking scalar to int because rapids doesn't like reals?")
                 
-                # FIX! hack to int, because rapids doesn't take reals yet
-                if scalar is not None:
-                    scalar = int(scalar)
-                    execExpr = "(= !%s (c {#%s}))" % (self.frame, scalar)
-                else:
+                if scalar is None: # this shouldn't happen? h2o should be giving a scalar result?
                     # rapids hack to get a zero row key
                     debugprint("WARNING: %.do() is creating a zero-row result key, from %s" % (type(self)))
-                    execExpr = "(= !%s (is.na (c {#0})))" % self.frame
+                    # execExpr = "(= !%s (is.na (c {#0})))" % self.frame
+                    execExpr = "(= !%s (c {#-1}))" % self.frame
+                else:
+                    # FIX! hack to int, because rapids doesn't take reals yet
+                    scalar = int(scalar)
+                    execExpr = "(= !%s (c {#%s}))" % (self.frame, scalar)
 
                 # execExpr = "(= !%s (c {#%s}))" % (self.frame, 0.0)
                 execResult, result = h2e.exec_expr(execExpr=execExpr)
@@ -333,7 +361,17 @@ class Xbase(object):
             self.assignDone = True
         # don't return the full json...can look that up if necessary
         # this is a scalar, or the min/max of a 1 row/1 col key? this covers a lot of the test cases
-        return self.result
+        if get: 
+            if scalar:
+                return scalar
+            else:
+                if self.numCols==1:
+                    pass
+                else:
+                    raise Exception(".do() get wants to return a key with >1 col. not supported yet frame: %s numRows: %s numCols %s" % \
+                        (self.frame, self.numRows, self.NumCols))
+        else:
+            return None
 
     # from http://stackoverflow.com/questions/1500718/what-is-the-right-way-to-override-the-copy-deepcopy-operations-on-an-object-in-p
     def __copy__(self):
@@ -390,9 +428,19 @@ def translateValue(item="F"):
 
 #********************************************************************************
 class Item(Xbase):
-    def __init__(self, item):
-        self.item = item
+    def __init__(self, item, listOk=False):
         # self.funs is not resolved until a string resolution?
+        # tolerate a list for item? Assume it's a list of things Seq can handle
+        if isinstance(item, (list, tuple)):
+            if not listOk:
+                raise Exception("Item doesn't take lists, tuples (or dicts) %s, unless listOk. %s" % (item, listOk))
+            else:
+                if len(item) > 1024:
+                    raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" +
+                        "Probably don't want that? %s" % item)
+                self.item = Col(Seq(item)) # Seq can take a list or tuple
+        else:
+            self.item = item
 
     def __str__(self):
         item = self.item
@@ -464,23 +512,28 @@ xFcnOpBinSet = set([
 'la', 'lo', 'g', 'G', 'l', 'L', 'n', 'N',
 ])
 
+#'canbecoercedtological',
 xFcnOp1Set = set([
 'c', '_',
 'is.na', 'is.factor', 'any.factor', 'any.na',
-'canbecoercedtological',
 'nrow', 'ncol', 'length',
 'abs', 'sign', 'sqrt', 'ceiling', 'floor', 'log', 'exp', 'scale', 'factor',
 'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh',
 'min', 'max', 'sum', 'sd', 'mean', 'match', 'unique', 'xorsum',
 'ls',
 ])
-# 'rename',
 
+# 'rename',
 xFcnOp2Set = set()
 
 xFcnOp3Set = set([
-'cut', 'ddply', 'round', 'signif', 'trun', 'cbind', 'qtile', 'ifelse', 'apply', 'sapply', 'runif',
-'seq', 'seq_len', 'rep_len', 'reduce', 'table', 'var',
+'cut', 'round', 'signif', 'trun', 'quantile', 'runif',
+'cbind', 'rbind',
+'ifelse', 
+'apply', 'sapply', 'ddply', 
+'seq', 'seq_len', 'rep_len', 
+'reduce', 'table', 
+'var',
 ])
 
 #********************************************************************************
@@ -537,9 +590,6 @@ def legalKey(frame, parent):
             raise Exception("%s: Don't like the chars in your frame %s" % (parent, frameStr))
     debugprint("%s frame: %s" % (parent, frameStr))
     return True
-
-
-
 
 #********************************************************************************
 # operands is a list of items
@@ -737,13 +787,23 @@ class KeyIndexed(Key):
         frame = self.frame
         row = self.row
         col = self.col
-        if row in [None, '"null"'] and col in [None, '"null"']:
-            return '$%s' % frame
+        # these could be slice objects, strings, ints
+        # row and col == None is okay too?
+        if row is not None:
+            assert isinstance(row, (Seq, Colon, Item)), "KeyIndexed unexpected row type. %s %s" % (type(row), row)
+        if col is not None:
+            assert isinstance(col, (Seq, Colon, Item)), "KeyIndexed unexpected col type. %s %s" % (type(col), col)
+        # 'row in' will use __eq__ method
 
         if row is None:
             row = '"null"'
         if col is None:
             col = '"null"'
+
+        # detect the case where row/col say "everything"
+        # have to use str() because they could be objects and don't want to use __eq__ (which is used for ast resolution?)
+        if  str(row)=='"null"' and str(col)=='"null"':
+            return '$%s' % frame
 
         # does it already start with '$' ?
         # we always add $ to a here?. Suppose could detect whether it's already there
@@ -778,7 +838,8 @@ class KeyInit(Xbase):
 
     def __str__(self):
         # This should give zero row key result. Does that result in Scalar?
-        return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
+        # return "(= !%s %s)" % (self.frame, '(is.na (c {#0}))' )
+        return "(= !%s (c {#-1}))" % self.frame
 
     # this shouldn't be used with any of the setiem/getitem type stuff..add stuff to make that illegal?
     # or any operators?
@@ -891,24 +952,19 @@ class Assign(Key):
         self.frame = frame
         self.lhs = lhs
 
-        # tolerate a list for rhs? Assume it's a list of things Seq can handle
-        if isinstance(rhs, (list, tuple)):
-            if len(rhs) > 1024:
-                raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" +
-                    "Probably don't want that? %s" % rhs)
-            self.rhs = Col(Seq(rhs)) # Seq can take a list or tuple
-        else:
-            # Item could map range() to the start:stop sequence rapids supports?
-            self.rhs = Item(rhs)
-
+        # mangling of lists into h2o column vectors of scalars, is done in Item now
+        self.rhs = Item(rhs, listOk=True) 
         self.funs = False
+
         debugprint("Assign lhs: %s" % self.lhs)
         debugprint("Assign rhs: %s" % self.rhs)
 
         if do: # param set to false when building functions and don't want auto .do()?
             self.do()
+            # some belt and suspenders. 
             self.assignDone = True
             if not isinstance(lhs, basestring):
+                # maybe can get rid of this down the road.
                 lhs.assignDone = True
         return None
 
@@ -918,7 +974,7 @@ class Assign(Key):
     def __str__(self):
         # if there is row/col for lhs, have to resolve here?
         # hack: change the rhs reference '$' to the lhs '!'
-        # to be diligent, only replace the first character
+        # to be 'more correct', only replace the first character
         # can't assign to immutable string indices
         # this is all side-effect of having the lhs get indexing like the rhs, so treated equally
         # no...self.lhs is type KeyIndexed

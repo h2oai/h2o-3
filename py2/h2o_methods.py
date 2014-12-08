@@ -173,7 +173,8 @@ def log_download(self, logDir=None, timeoutSecs=30, **kwargs):
 def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2oError=False,
             timeoutSecs=30):
     params = {
-        "src_key": key,
+        # "src_key": key,
+        "key": key,
         "offset": offset,
         # view doesn't exist for 2. let it be passed here from old tests but not used
     }

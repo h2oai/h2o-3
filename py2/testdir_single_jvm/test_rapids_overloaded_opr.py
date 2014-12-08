@@ -74,26 +74,23 @@ class Basic(unittest.TestCase):
             data_key = hex_key
             for i in range(REPEAT):
                 result_key = data_key + "_" + str(i)
-                result = Assign('s1', Seq(range(5)) ).do
+                Assign('s1', Seq(range(5)) )
 
                 # take advantage of default params for row/col (None)
                 # need the 'c' function, to make sure the key is created
 
                 # first try as object, then method
-                a = Assign('s2', Fcn('c', Seq(range(5)) ))
-                result = a.do()
-                print dump_json(a.execResult)
-                print dump_json(a.result)
+                Assign('s2', Fcn('c', Seq(range(5)) ))
 
                 # just combine
-                result = Assign('s3', Col(Seq(range(5)) )).do()
+                Assign('s3', Col(Seq(range(5)) ))
 
                 inspect = h2o_cmd.runInspect(key='s3')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==5
                 assert numCols==1
 
-                result = Assign('s2', Col(Seq(range(5))) ).do()
+                Assign('s2', Col(Seq(range(5))) )
 
                 inspect = h2o_cmd.runInspect(key='s2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
@@ -103,10 +100,10 @@ class Basic(unittest.TestCase):
                 # can't have sequence of sequences?
                 # make sure key is created with c()
                 f = Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) ))
-                result = Assign('s1', f).do()
+                Assign('s1', f)
 
                 f = Col(Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) ))
-                result = Assign('s2', f).do()
+                Assign('s2', f)
 
                 inspect = h2o_cmd.runInspect(key='s2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)

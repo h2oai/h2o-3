@@ -29,10 +29,10 @@ class Basic(unittest.TestCase):
         # work up to the failing case incrementally
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
-            Assign('r0.hex', KeyIndexed('r.hex',col=0)),
-            Assign('s0.hex', Fcn("runif", KeyIndexed('r.hex',col=0), 0, 5, -1)),
-            Assign('s1.hex', Fcn("runif", KeyIndexed('r.hex',col=1), 0, 5, -1)),
-            Assign('s2.hex', Fcn("runif", KeyIndexed('r.hex',col=54), 0, 5, -1)),
+            Assign('r0.hex', KeyIndexed('r.hex',col=0), do=False),
+            Assign('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=0), 0), do=False),
+            Assign('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=1), 0, 5, -1), do=False),
+            Assign('s2.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=54), 0, 5, -1), do=False),
         ]
 
         results = []

@@ -3,6 +3,7 @@ import h2o_nodes
 from h2o_test import dump_json, verboseprint
 import h2o_util
 import h2o_print as h2p
+from h2o_test import OutputObj
 
 #************************************************************************
 def runStoreView(node=None, **kwargs):
@@ -127,8 +128,6 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         def __iter__(self):
             for attr, value in self.__dict__.iteritems():
                 yield attr, value
-    # use his instead
-    from h2o_test import OutputObj
 
     inspect = runInspect(key=key)
     # change missingList definition: None if all empty, otherwise align to cols. 0 if 0?
@@ -138,11 +137,24 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
     lastChecksum = None
     # return first column, unless specified
     desiredResult = None
-    for label in labelList:
+
+    if isinstance(column, (basestring, int)):
+        raise Exception("column param should be string or integer index %s %s" % (type(column), column))
+
+    for colIndex, label in enumerate(labelList):
         print "doing summary on %s" % label
         summaryResult = node.summary(key=key, column=label)
-        if not desiredResult or (column and column==label):
-            desiredResult = summaryResult
+
+        # either return the first col, or the col indentified by label. the column identifed could be string or index?
+        if column is None: # means the first column will be it
+            thisIsTheColumn = True
+        elif isinstance(column, int):
+            thisIsTheColumn = (column==colIndex)
+        else:
+            thisIsTheColumn = (column==label)
+
+        if thisIsTheColumn:
+           desiredResult = summaryResult
         
         # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
 
@@ -151,7 +163,7 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         default_pctiles = frame['default_pctiles']
         checksum = frame['checksum']
         rows = frame['rows']
-        columns = frame['columns']
+        coJson = frame['columns'][0]
 
         # assert len(columns) == numCols
         assert rows == numRows
@@ -167,17 +179,18 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         lastChecksum = checksum
 
         # only one column
-        # co = Column(columns[0])
-        co = OutputObj(columns[0], 'summary_%s' % label)
+        co = OutputObj(coJson, 'summary %s' % label)
         # how are enums binned. Stride of 1? (what about domain values)
         coList = [co.base, len(co.bins), len(co.data),
             co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
             co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-        # for c in coList:
-        #    print c
         for k,v in co:
-            print k, v
+            # only print [0] of mins and maxs because of the e308 values when they don't have dataset values
+            if k=='mins' or k=='maxs':
+                print "%s[0]" % k, v[0]
+            else:
+                print k, v
 
         print "len(co.bins):", len(co.bins)
         print "co.label:", co.label, "mean (2 places):", h2o_util.twoDecimals(co.mean)
@@ -221,8 +234,10 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
             maxErr = 0
 
         pt = h2o_util.twoDecimals(pctiles)
-        mx = h2o_util.twoDecimals(co.maxs)
-        mn = h2o_util.twoDecimals(co.mins)
+
+        # only look at [0] for now...bit e308 numbers if unpopulated due to not enough unique values in dataset column
+        mx = h2o_util.twoDecimals(co.maxs[0])
+        mn = h2o_util.twoDecimals(co.mins[0])
 
         print "co.label:", co.label, "co.pctiles (2 places):", pt
         print "default_pctiles:", default_pctiles
@@ -231,11 +246,46 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
 
         # FIX! why would pctiles be None? enums?
         if pt is None:
-            compareActual = mn[0], [None] * 3, mx[0]
+            compareActual = mn, [None] * 3, mx
         else:
-            compareActual = mn[0], pt[3], pt[5], pt[7], mx[0]
+            compareActual = mn, pt[3], pt[5], pt[7], mx
 
         h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
         h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
 
     return desiredResult
+
+
+# this parses the json object returned for one col from runSummary...returns an OutputObj object
+# summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
+# co = h2o_cmd.infoFromSummary(summaryResult)
+# print co.label
+def infoFromSummary(summaryResult):
+    # this should be the same for all the cols? Or does the checksum change?
+    frame = summaryResult['frames'][0]
+    default_pctiles = frame['default_pctiles']
+    checksum = frame['checksum']
+    rows = frame['rows']
+    coJson = frame['columns'][0]
+
+    assert checksum !=0 and checksum is not None
+    assert rows!=0 and rows is not None
+    assert not frame['isText']
+
+    # FIX! why is frame['key'] = None here?
+    # assert frame['key'] == key, "%s %s" % (frame['key'], key)
+
+    co = OutputObj(coJson, 'infoFromSummary %s' % coJson['label'])
+    # how are enums binned. Stride of 1? (what about domain values)
+    coList = [co.base, len(co.bins), len(co.data),
+        co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
+        co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+
+    print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
+    for k,v in co:
+        # print k, v
+        print "co.%s" % k,
+    print
+    return co
+
+
