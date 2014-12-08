@@ -1,7 +1,7 @@
-#
-# This script was cut and pasted from the ipython notebook
-# example-native-pandas-scikit.ipynb
-#
+# -*- coding: utf-8 -*-
+# <nbformat>3.0</nbformat>
+
+# <codecell>
 
 from pandas import Series, DataFrame
 import pandas as pd
@@ -11,11 +11,15 @@ import sklearn
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import preprocessing
 
+# <codecell>
+
 air_raw = DataFrame.from_csv("allyears_tiny.csv", index_col = False)
 print(air_raw.head())
 
 air_raw['RandNum'] = Series(np.random.uniform(size = len(air_raw['Origin'])))
 print(air_raw.head())
+
+# <codecell>
 
 air_mapped = DataFrame()
 
@@ -62,12 +66,16 @@ air_mapped
 
 air = air_mapped
 
+# <codecell>
+
 air_train = air.ix[air['RandNum'] <= 0.8]
 # air_valid = air.ix[(air['RandNum'] > 0.8) & (air['RandNum'] <= 0.9)]
 air_test  = air.ix[air['RandNum'] > 0.9]
 
 print(air_train.shape)
 print(air_test.shape)
+
+# <codecell>
 
 X_train = air_train.copy(deep=True)
 del X_train['RandNum']
@@ -78,11 +86,12 @@ print(X_train.shape)
 y_train = air_train['IsDepDelayedInt']
 print(y_train.shape)
 
-print(X_train.head())
-print(y_train.head())
+# <codecell>
 
 clf = GradientBoostingClassifier(n_estimators = 10, max_depth = 3, learning_rate = 0.01)
 clf.fit(X_train, y_train)
+
+# <codecell>
 
 X_test = air_test.copy(deep=True)
 del X_test['RandNum']
@@ -95,3 +104,4 @@ print("--- PREDICTIONS ---")
 print("")
 pred = clf.predict(X_test)
 print(pred)
+
