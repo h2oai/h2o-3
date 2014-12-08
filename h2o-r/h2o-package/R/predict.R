@@ -8,6 +8,13 @@
 
 
 #'
+#' Model Predict Endpoint
+#'
+.h2o.__PREDICT <- function(modelKey, frameKey) {
+  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
+}
+
+#'
 #' Validate Predict Parameters
 #'
 .validate.predict<-
@@ -19,13 +26,6 @@ function(object, newdata, types) {
     warning("predicting on training data.")
   }
   if(!(newdata %i% types$newdata)) stop('`newdata` must be a H2O dataset')
-}
-
-#'
-#' Model Predict Endpoint
-#'
-.h2o.__PREDICT <- function(modelKey, frameKey) {
-  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
 }
 
 #'
