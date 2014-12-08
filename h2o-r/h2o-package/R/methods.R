@@ -331,17 +331,15 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   ast.cut
 }
 
-#match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
-
-#
-# `match` or %in% for an AST
+#'
+#' `match` or %in% for an AST
 setMethod("match", "H2OFrame", function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
   ast.match
 })
 
-#
-# `match` or %in% for H2OParsedData
+#'
+#' `match` or %in% for H2OParsedData
 setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match <- .h2o.varop("match", x, table, momatch, incomparables)
   ID <- "Last.value"
@@ -349,8 +347,8 @@ setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparable
   ast.match
 })
 
-#
-# %in% method
+#'
+#' %in% method
 setMethod("%in%", "H2OParsedData", function(x, table) match(x, table, nomatch = 0) > 0)
 setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0)
 
@@ -387,7 +385,6 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 #}
 
 
-#
 h2o.runif <- function(x, seed = -1) {
   if(missing(x)) stop("Must specify data set")
   if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
