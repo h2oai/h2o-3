@@ -5,8 +5,11 @@ package water.rapids;
 import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
+import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -158,8 +161,11 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRunif ());
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
-
     putPrefix(new ASTSetColNames());
+
+    // Date
+    putPrefix(new ASTasDate());
+
 //Classes that may not come back:
 
 //    putPrefix(new ASTfindInterval());
@@ -339,6 +345,54 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
+    env.cleanup(fr);
+    env.push(new ValFrame(fr2));
+  }
+}
+
+class ASTasDate extends ASTOp {
+  protected static String _format;
+  ASTasDate() { super(new String[]{"as.Date", "x", "format"}); }
+  @Override String opStr() { return "as.Date"; }
+  @Override ASTOp make() {return new ASTasDate();}
+  @Override ASTasDate parse_impl(Exec E) {
+    AST ast = E.parse();
+    try {
+      _format = ((ASTString)E.skipWS().parse())._s;
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("`format` must be a string.");
+    }
+    ASTasDate res = (ASTasDate) clone();
+    res._asts = new AST[]{ast};
+    return res;
+  }
+  @Override void apply(Env env) {
+    final String format = _format;
+    if (format.isEmpty()) throw new IllegalArgumentException("as.Date requires a non-empty format string");
+    // check the format string more?
+
+    Frame fr = env.pop0Ary();
+
+    if( fr.vecs().length != 1 || !fr.vecs()[0].isEnum() )
+      throw new IllegalArgumentException("as.Date requires a single column of factors");
+
+    Frame fr2 = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+        //done on each node in lieu of rewriting DateTimeFormatter as Iced
+        DateTimeFormatter dtf = ParseTime.forStrptimePattern(format);
+        for( int i=0; i<nchks.length; i++ ) {
+          NewChunk n =nchks[i];
+          Chunk c = chks[i];
+          int rlen = c._len;
+          for( int r=0; r<rlen; r++ ) {
+            if (!c.isNA0(r)) {
+              String date = c.vec().domain()[(int)c.at0(r)];
+              n.addNum(DateTime.parse(date, dtf).getMillis(), 0);
+            } else n.addNA();
+          }
+        }
+      }
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
     env.cleanup(fr);
     env.push(new ValFrame(fr2));
   }

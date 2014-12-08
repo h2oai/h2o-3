@@ -331,17 +331,15 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   ast.cut
 }
 
-#match <- function(x, table, nomatch = 0, incomparables = NULL) if (.isH2O(x)) UseMethod("match") else base::match(x,table, nomatch = 0, incomparables = NULL)
-
-#
-# `match` or %in% for an AST
+#'
+#' `match` or %in% for an AST
 setMethod("match", "H2OFrame", function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match <- .h2o.varop("match", x, table, nomatch, incomparables)
   ast.match
 })
 
-#
-# `match` or %in% for H2OParsedData
+#'
+#' `match` or %in% for H2OParsedData
 setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparables = NULL) {
   ast.match <- .h2o.varop("match", x, table, momatch, incomparables)
   ID <- "Last.value"
@@ -349,8 +347,8 @@ setMethod("match", "H2OParsedData", function(x, table, nomatch = 0, incomparable
   ast.match
 })
 
-#
-# %in% method
+#'
+#' %in% method
 setMethod("%in%", "H2OParsedData", function(x, table) match(x, table, nomatch = 0) > 0)
 setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0)
 
@@ -387,11 +385,11 @@ setMethod("%in%", "ASTNode", function(x, table) match(x, table, nomatch = 0) > 0
 #}
 
 
-#
 h2o.runif <- function(x, seed = -1) {
   if(missing(x)) stop("Must specify data set")
   if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
   if(!is.numeric(seed)) stop("seed must be an integer >= 0")
+  if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   .h2o.varop("h2o.runif", x, seed)
 }
 
@@ -489,7 +487,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   ..tmp <- x
-  m.call <- match.call(call = sys.call(sys.parent(1L)))
+#  m.call <- match.call(call = sys.call(sys.parent(1L)))
   if(missing(name) || !is.character(name) || nchar(name) == 0)
     stop("name must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
@@ -506,9 +504,8 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
   colnames(res)[idx] <- name
-  ID  <- as.list(m.call)$x
+  ID  <- "*tmp*" #as.list(m.call)$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  browser()
   if (identical(as.character(ID), as.character(quote(`*tmp*`)))) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), res, ID = ID, rID = 'res')
   assign(as.character(ID), res, parent.frame())
@@ -521,7 +518,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 #})
 
 
-setMethod("[[<-", "H2OFrame", function(x, i, value) {
+  setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if( !( value %i% "H2OFrame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
@@ -716,8 +713,10 @@ setMethod("ncol", "H2OFrame", function(x) {
   m.call <- tryCatch(match.call(call = sys.call(sys.parent(1L))), error = function(e) NULL)
   ..tmp <- x
   ID  <- as.list(match.call())$x
-  if (!is.null(m.call) && as.character(as.list(m.call)$x) == "..tmp") ID <- "..tmp"
-  if (as.character(as.list(m.call)$x) == as.character(quote(`*tmp*`))) ID <- "..tmp"
+  if (!is.null(m.call)) {
+    browser()
+    if (as.character(as.list(m.call)$x) == "..tmp") ID <- "..tmp"
+  }
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ..tmp, ID = ID, rID = '..tmp')
   ID <- ifelse(ID == "Last.value", ID, ..tmp@key)

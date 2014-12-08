@@ -8,6 +8,13 @@
 
 
 #'
+#' Model Predict Endpoint
+#'
+.h2o.__PREDICT <- function(modelKey, frameKey) {
+  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
+}
+
+#'
 #' Validate Predict Parameters
 #'
 .validate.predict<-
@@ -19,13 +26,6 @@ function(object, newdata, types) {
     warning("predicting on training data.")
   }
   if(!(newdata %i% types$newdata)) stop('`newdata` must be a H2O dataset')
-}
-
-#'
-#' Model Predict Endpoint
-#'
-.h2o.__PREDICT <- function(modelKey, frameKey) {
-  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
 }
 
 #'
@@ -64,7 +64,7 @@ predict.H2OGBMModel <- function(object, newdata, ...) {
   .validate.predict(object, newdata, types = list(object = "H2OGBMModel",
                                                   newdata = "H2OFrame"))
   # Send keys to create predictions
-  url <- .h2o.__predict_url(object@key, newdata@key)
+  url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
   res <- res$model_metrics[[1]]$predictions$key
   h2o.getFrame(res)
