@@ -417,8 +417,8 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
       CoxPHModel model = null;
       try {
         Scope.enter();
-        init(true);
         _parms.lock_frames(CoxPH.this);
+        init(true);
 
         applyScoringFrameSideEffects();
 

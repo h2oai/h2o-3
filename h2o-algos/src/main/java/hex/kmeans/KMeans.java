@@ -84,8 +84,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
       KMeansModel model = null;
       try {
-        init(true);
         _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
+        init(true);
 
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));

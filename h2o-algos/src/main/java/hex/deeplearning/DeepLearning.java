@@ -59,8 +59,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     @Override protected void compute2() {
       try {
         Scope.enter();
-        init(true);
         _parms.lock_frames(DeepLearning.this);
+        init(true);
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {

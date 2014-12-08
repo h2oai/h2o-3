@@ -56,8 +56,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null;
       try {
-        init(true);
         _parms.lock_frames(PCA.this); // Fetch & read-lock input frames
+        init(true);
 
         // The model to be built
         model = new PCAModel(dest(), _parms, new PCAModel.PCAOutput(PCA.this));

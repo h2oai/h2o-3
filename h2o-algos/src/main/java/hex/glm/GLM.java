@@ -60,10 +60,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   @Override
   public Job<GLMModel> trainModel() {
     _clean_enums = _parms._convert_to_enum && !_response.isEnum();
+    _parms.lock_frames(this);
     init(true);                 // Expensive tests & conversions
     DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
     DKV.put(dinfo._key,dinfo);
-    _parms.lock_frames(this);
     H2OCountedCompleter cmp = new H2OCountedCompleter(){
       AtomicBoolean _gotException = new AtomicBoolean(false);
       @Override public void compute2(){}

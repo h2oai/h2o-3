@@ -96,9 +96,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
-        init(true);             // Do any expensive tests & conversions now
-
         _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
+        init(true);             // Do any expensive tests & conversions now
 
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {

@@ -60,8 +60,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       float tDiff;
 
       try {
-        init(true);
         _parms.lock_frames(Word2Vec.this);
+        init(true);
 
         //The model to be built
         model = new Word2VecModel(dest(), _parms, new Word2VecOutput(Word2Vec.this));
