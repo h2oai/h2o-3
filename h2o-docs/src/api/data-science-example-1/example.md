@@ -7,7 +7,9 @@
 ## Scripts
 
 * [Native R](example-native.R)
-* [Native Python](example-native.py)
+* [Native Python/Pandas/Scikit](example-native-pandas-scikit.py)
+* [Native iPython Notebook Pandas/Scikit](example-native-pandas-scikit.ipynb)
+* [H2O REST API](example-h2o-REST.md)
 * [H2O R](example-h2o.R)
 * [H2O Python](example-h2o.py)
 * [Java](example.java)
