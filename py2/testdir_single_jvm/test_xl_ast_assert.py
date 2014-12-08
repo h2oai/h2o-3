@@ -1,13 +1,19 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_xl, h2o_print as h2p
-
-from h2o_xl import DF, Xbase, Key, KeyIndexed, Assign, Fcn
+from h2o_xl import DF, Xbase, Key, KeyIndexed, Assign, Fcn, Expr
+# just for test stuff
+from h2o_xl import checkAst, astForInit
 from h2o_test import dump_json, verboseprint
+import re
 
 def checkAst(expected):
     ast = h2o_xl.Xbase.lastExecResult['ast']
-    assert ast==expected, "Actual: %s    Expected: %s" % (ast, expected)
+    ast = re.sub('knon_0x[0-9a-fA-F]+', 'knon_0x...', ast)
+    expected  = re.sub('knon_0x[0-9a-fA-F]+', 'knon_0x...', expected)
+    # remove the id suffix for knon_ created keys, before comparing
+    # knon_0x1a34250
+    assert ast==expected, 'Actual: "%s"    Expected: "%s"' % (ast, expected)
     print "----------------------------------------------------------------\n"
 
 # we init to 1 row/col. (-1) can't figure how how to init to no rows in a single expression
@@ -29,8 +35,9 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_xl_ast_assert_A(self):
-        a = DF('a1')
+    def test_xl_ast_assert_ZZ(self):
+        #*****************************************
+        a = DF('a1') # inits to -1
         checkAst(astForInit(a))
         # I suppose use of the h2o inspect request is deprecated
         # h2o_cmd.runInspect uses Frames?
@@ -39,48 +46,81 @@ class Basic(unittest.TestCase):
             print "a/a1:", dump_json(inspect)
 
         # let's use runSummary for fun..returns OutputObj for the col
+        # will get from column 0, since column not specified
         summaryResult = h2o_cmd.runSummary(key=a)
         co = h2o_cmd.infoFromSummary(summaryResult)
         print "co.label:", co.label
+        print "co.data:", co.data
 
         # how can we get a bunch of data?
-
-        b = DF('b1')
+        b = DF('b1') # inits to -1
         checkAst(astForInit(b))
-        c = DF('c1')
+        c = DF('c1') # inits to -1
         checkAst(astForInit(c))
         print "lastExecResult:", dump_json(h2o_xl.Xbase.lastExecResult)
 
         h2p.yellow_print("Assign compare1")
         Assign(c[0], c[0] + 0)
+        checkAst("(= ([ $c1 #0 #0) (+ ([ $c1 #0 #0) #0))")
+
         h2p.yellow_print("Assign compare2")
         Assign(c[0], c[0] - 0)
+        checkAst("(= ([ $c1 #0 #0) (- ([ $c1 #0 #0) #0))")
+
         h2p.yellow_print("Assign compare3")
         Assign(c[0], c[0] == 0)
+        checkAst("(= ([ $c1 #0 #0) (n ([ $c1 #0 #0) #0))")
+
         h2p.yellow_print("Assign compare4")
         Assign(c[0], c[0] != 0)
+        checkAst("(= ([ $c1 #0 #0) (N ([ $c1 #0 #0) #0))")
 
-        h2o_xl.debugPrintEnable = True
+        # h2o_xl.debugPrintEnable = True
 
+        #*****************************************
         c = DF('c1')
+
         h2p.yellow_print("<<= compare1")
         c[0] <<= (c[0] + 0)
+        checkAst("(= ([ $c1 #0 #0) (+ ([ $c1 #0 #0) #0))")
+
         h2p.yellow_print("<<= compare2")
         c[0] <<= (c[0] - 0)
+        checkAst("(= ([ $c1 #0 #0) (- ([ $c1 #0 #0) #0))")
+
         h2p.yellow_print("<<= compare3")
         c[0] <<= (c[0] == 0)
+        checkAst("(= ([ $c1 #0 #0) (n ([ $c1 #0 #0) #0))")
 
-        c = DF('c1')
+        #*****************************************
+        c = DF('c1') # inits to -1
         h2p.yellow_print("compare1")
         # doesn't assign result to a key?, gets result if scalar, otherwise gets a list or ??? 
-        result = Expr(c[0] == 0))
-        # similar? Could save the result in a named key, or not
-        result = Assign(None, c[0] == 0))
+        # .result can give us scalar, list, Key, None
 
-        print "result..should be a python datatype/value: %s %s", (type(result), result)
+        # .result could be a property that triggers a csv download, if we didn't cache the scalar/list result because it was small?
+        # i.e. check if .result_cached was None, when .result property is used (property to avoid the need for ()
+        result = Expr(c[0] == -1).result
+        checkAst("(n ([ $c1 #0 #0) #-1)")
+        h2p.yellow_print("Expr result..Desire: python datatype/value if scalar or list,.else Key: %s %s" % (type(result), result))
+        assert result == 1.0, "%s %s" % (type(result), result) # real result?
+
         if result:
-            print "tried if of result"
+            print "true for if of result", type(result), result
+        else:
+            print "else for if of result", type(result), result
 
+        #*****************************************
+        # difference is this goes to a temp key, so if not scalar, you can still get the results by looking at the key
+        result = Assign(None, c[0]==-1).result
+        checkAst("(= !knon_0x1a34250 (n ([ $c1 #0 #0) #-1))")
+        h2p.yellow_print("Assign result..Desire: python datatype/value if scalar or list,.else Key: %s %s" % (type(result), result))
+        assert result == 1.0, "%s %s" % (type(result), result) # real result?
+
+        if result:
+            print "true if of result", result
+        else:
+            print "false if of result", result
     
     def test_xl_ast_assert_X(self):
         # uses h2o_xl to do magic with Rapids
@@ -108,12 +148,12 @@ class Basic(unittest.TestCase):
         assert isinstance(b, Key)
         assert isinstance(c, Key)
 
-        Assign(a, 0)
-        checkAst("(= !a1 #0)")
-        Assign(b, 0)
-        checkAst("(= !b1 #0)")
-        Assign(c, 0)
-        checkAst("(= !c1 #0)")
+        Assign(a, 2)
+        checkAst("(= !a1 #2)")
+        Assign(b, 2)
+        checkAst("(= !b1 #2)")
+        Assign(c, 2)
+        checkAst("(= !c1 #2)")
 
         Assign(a, [0])
         checkAst("(= !a1 (c {#0}))")
