@@ -389,11 +389,11 @@ class Xbase(object):
                     returnResult = Key(key=self.frame)
 
         if debugNoH2O:
-            self.execResult =  {'debug': True}
-            self.result = None
-        else:
-            self.execResult = execResult1
-            self.result = returnResult
+            execResult1 = {'debug': True}
+            returnResult = None
+        
+        self.execResult = execResult1
+        self.result = returnResult
 
         self.execExpr = execExpr1
         Xbase.lastExecResult = copy(execResult1)
