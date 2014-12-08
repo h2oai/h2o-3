@@ -489,7 +489,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   ..tmp <- x
-  m.call <- match.call(call = sys.call(sys.parent(1L)))
+#  m.call <- match.call(call = sys.call(sys.parent(1L)))
   if(missing(name) || !is.character(name) || nchar(name) == 0)
     stop("name must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
@@ -506,9 +506,8 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
   colnames(res)[idx] <- name
-  ID  <- as.list(m.call)$x
+  ID  <- "*tmp*" #as.list(m.call)$x
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
-  browser()
   if (identical(as.character(ID), as.character(quote(`*tmp*`)))) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), res, ID = ID, rID = 'res')
   assign(as.character(ID), res, parent.frame())
@@ -521,7 +520,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 #})
 
 
-setMethod("[[<-", "H2OFrame", function(x, i, value) {
+  setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if( !( value %i% "H2OFrame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
@@ -716,8 +715,10 @@ setMethod("ncol", "H2OFrame", function(x) {
   m.call <- tryCatch(match.call(call = sys.call(sys.parent(1L))), error = function(e) NULL)
   ..tmp <- x
   ID  <- as.list(match.call())$x
-  if (!is.null(m.call) && as.character(as.list(m.call)$x) == "..tmp") ID <- "..tmp"
-  if (as.character(as.list(m.call)$x) == as.character(quote(`*tmp*`))) ID <- "..tmp"
+  if (!is.null(m.call)) {
+    browser()
+    if (as.character(as.list(m.call)$x) == "..tmp") ID <- "..tmp"
+  }
   if(length(as.list(substitute(x))) > 1) ID <- "Last.value"
   .force.eval(.retrieveH2O(parent.frame()), ..tmp, ID = ID, rID = '..tmp')
   ID <- ifelse(ID == "Last.value", ID, ..tmp@key)
