@@ -5,7 +5,7 @@ import h2o_nodes
 from h2o_test import \
     tmp_dir, tmp_file, flatfile_pathname, spawn_cmd, find_file, verboseprint, \
     dump_json, log, check_sandbox_for_errors
-import json
+import json, platform, re
 
 # print "h2o_objects"
 
@@ -491,11 +491,13 @@ class H2O(object):
         if self.disable_h2o_log:
             args += ['-nolog']
 
-        # disable logging of requests, as some contain "error", which fails the test
-        ## FIXED. better escape in check_sandbox_for_errors
-        ## args += ['-no_requests_log']
-        return args
-
+        # psutil psopen needs param/value in different arg elements
+        # othetwise we'd need to pass as joined string, and run /bin/sh 
+        # this joins them up with space, then splits on space. 
+        # works as long as no pathnames have embedded space, which should be true
+        # for unix, maybe not windows. For windows we join them as string before use in psopen
+        argsSplitByWhiteSpace = " ".join(args).split()
+        return argsSplitByWhiteSpace
 
 #*****************************************************************
 import h2o_methods
@@ -523,7 +525,23 @@ class LocalH2O(H2O):
         # see https://docs.python.org/2/library/subprocess.html#subprocess.Popen
         # for why I'm using shlex to split the cmd string into a sequence
         # confusing issues, especially when thinking about windows too
-        cmd = " ".join(self.get_args())
+        # OS/build     | os.name | platform.system() 
+        # -------------+---------+-----------------------
+        # Win32 native | nt      | Windows
+        # Win32 cygwin | posix   | CYGWIN_NT-5.1*
+        # Win64 native | nt      | Windows
+        # Win64 cygwin | posix   | CYGWIN_NT-6.1-WOW64*
+        # Linux        | posix   | Linux
+
+        # make it a string if cygwin or windows
+        # in unix, the args was created with split by space. (assumption is no pathname has space)
+        # need to pass string in windows..doesn't seem to assemble string from args list correctly
+        # could make unix use shell and pass string?
+        pf = platform.system()
+        print "System is %s" % pf
+        cmd = self.get_args()
+        if re.match('win', pf, re.IGNORECASE): # covers cygwin and windows
+            cmd = " ".join(cmd)
         spawn = spawn_cmd(logPrefix, cmd=cmd, capture_output=self.capture_output)
         self.ps = spawn[0]
 
