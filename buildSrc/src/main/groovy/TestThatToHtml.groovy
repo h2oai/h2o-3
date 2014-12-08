@@ -140,7 +140,7 @@ class convertR2html implements Plugin<Project> {
     }
 
     void apply(Project project){
-        project.task('reportAcceptanceTests', dependsOn: 'prepareAcceptanceHtmlReports') << {
+        project.task('reportAcceptanceTests'/*, dependsOn: 'prepareAcceptanceHtmlReports'*/) << {
             new File(project.projectDir.canonicalPath + "/build/reports/site").mkdirs()
 
             stopCloudsOn(project)

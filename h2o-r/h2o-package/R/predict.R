@@ -66,8 +66,9 @@ predict.H2OGBMModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
-  res <- res$model_metrics[[1]]$predictions$key
-  h2o.getFrame(res)
+  res <- res$model_metrics[[1]]$predictions
+  # Grab info to make data frame
+  .h2o.parsedPredData(newdata@h2o, res)
 }
 
 #  LEGACY PREDICT BELOW
