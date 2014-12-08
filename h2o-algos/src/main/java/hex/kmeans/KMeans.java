@@ -72,7 +72,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     while( ncats != len ) {
       while( ncats < len && vecs[ncats].isEnum() ) ncats++;
       while( len > 0 && !vecs[len-1].isEnum() ) len--;
-      if( ncats < len-1 ) { _train.swap(ncats,len-1); _valid.swap(ncats,len-1); }
+      if( ncats < len-1 ) _train.swap(ncats,len-1);
     }
     _ncats = ncats;
   }
