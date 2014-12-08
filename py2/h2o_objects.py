@@ -524,8 +524,7 @@ class LocalH2O(H2O):
         # for why I'm using shlex to split the cmd string into a sequence
         # confusing issues, especially when thinking about windows too
         cmd = " ".join(self.get_args())
-        cmdSplit = shlex.split(cmd)
-        spawn = spawn_cmd(logPrefix, cmd=cmdSplit, capture_output=self.capture_output)
+        spawn = spawn_cmd(logPrefix, cmd=cmd, capture_output=self.capture_output)
         self.ps = spawn[0]
 
     def get_h2o_jar(self):
