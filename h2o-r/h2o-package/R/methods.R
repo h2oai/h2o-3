@@ -392,6 +392,7 @@ h2o.runif <- function(x, seed = -1) {
   if(missing(x)) stop("Must specify data set")
   if(!inherits(x, "H2OFrame")) stop(cat("\nData must be an H2O data set. Got ", class(x), "\n"))
   if(!is.numeric(seed)) stop("seed must be an integer >= 0")
+  if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   .h2o.varop("h2o.runif", x, seed)
 }
 
