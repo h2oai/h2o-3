@@ -212,11 +212,6 @@
 .h2o.__MODELS       <- "3/Models.json/"
 
 #'
-#' Rapids/Exec3
-#'
-.h2o.__RAPIDS      <- "Rapids.json"
-
-#'
 #' Removal
 #'
 .h2o.__REMOVE       <- "Remove.json"
