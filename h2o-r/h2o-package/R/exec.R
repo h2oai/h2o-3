@@ -9,6 +9,12 @@
 #' be done with H2OFrame objects (this includes H2OParsedData objects and ASTNode objects).
 
 #'
+#' Rapids End point
+#'
+.h2o.__RAPIDS <- "Rapids.json"
+
+
+#'
 #' Prefix Operation With A Single Argument
 #'
 #' Operation on an object that inherits from H2OFrame.
@@ -102,6 +108,26 @@ function(client, Last.value, ID, rID = NULL, env = parent.frame()) {
   if (!is.null(ID)) assign(ID, ret, env = env)
   else assign(rID, ret, env = env)
 }
+
+#'
+#' Ship AST to H2O for evaluation
+#'
+#' Force the evaluation of the AST.
+#'
+#' @param h2o: an h2o.client object
+#' @param ast: an ast.node object
+#' @param h2o.ID: the name of the key in h2o (hopefully matches top-most level user-defined variable)
+#' @param parent.ID: the name of the object in the calling frame
+#' @param env: the environment back to which we assign
+#'
+#' Here's a quick diagram to illustrate what is going on here
+#'
+
+#.force.eval<-
+#function(h2o, ast, h2o.ID, parent.ID, env = parent.frame()) {
+#
+#
+#}
 
 #'
 #' Have H2O Learn A New Function

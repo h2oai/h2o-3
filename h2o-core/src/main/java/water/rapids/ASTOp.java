@@ -159,6 +159,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCut   ());
     putPrefix(new ASTLs    ());
 
+    putPrefix(new ASTSetColNames());
 //Classes that may not come back:
 
 //    putPrefix(new ASTfindInterval());
@@ -1896,6 +1897,49 @@ class ASTQtile extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetColNames extends ASTUniPrefixOp {
+  protected static long[] _idxs;
+  protected static String[] _names;
+  @Override String opStr() { return "colnames="; }
+  public ASTSetColNames() { super(new String[]{}); }
+  @Override ASTSetColNames make() { return new ASTSetColNames(); }
+
+  // AST: (colnames<- $ary {indices} {names})
+  // example:  (colnames<- $iris {#3;#5} {new_name1;new_name2})
+  // also acceptable: (colnames<- $iris (: #3 #5) {new_name1;new_name2})
+  @Override ASTSetColNames parse_impl(Exec E) {
+    // frame we're changing column names of
+    AST ary = E.parse();
+
+    // col ids: can be a {#;#;#} or (: # #)
+    AST a = E.skipWS().parse();
+    if (a instanceof ASTSpan || a instanceof ASTSeries) {
+      _idxs = (a instanceof ASTSpan) ? ((ASTSpan) a).toArray() : ((ASTSeries) a).toArray();
+      Arrays.sort(_idxs);
+    } else if (a instanceof ASTNum) {
+      _idxs = new long[]{(long)((ASTNum) a).dbl()};
+    } else throw new IllegalArgumentException("Bad AST: Expected a span, series, or number for the column indices.");
+
+    // col names may ONLY be ASTSeries
+    _names = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').replaceAll("\"","").split(";") : null;
+    if (_names == null) throw new IllegalArgumentException("Bad AST: Expected names to not be null.");
+
+    if (_names.length != _idxs.length)
+      throw new IllegalArgumentException("Mismatch! Number of columns to change ("+(_idxs.length)+") does not match number of names given ("+(_names.length)+").");
+
+    ASTSetColNames res = (ASTSetColNames)clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    Frame f = env.pop0Ary();
+    for (int i=0; i < _names.length; ++i)
+      f._names[(int)_idxs[i]] = _names[i];
+    env.push0Ary(f);
+  }
+}
+
 class ASTRunif extends ASTUniPrefixOp {
   protected static double _min;
   protected static double _max;
@@ -1951,15 +1995,21 @@ class ASTSdev extends ASTUniPrefixOp {
     return res;
   }
   @Override void apply(Env env) {
-    Frame fr = env.peekAry();
-    if (fr.vecs().length > 1)
-      throw new IllegalArgumentException("sd does not apply to multiple cols.");
-    if (fr.vecs()[0].isEnum())
-      throw new IllegalArgumentException("sd only applies to numeric vector.");
+    if (env.isNum()) {
+      env.pop();
+      env.push(new ValNum(Double.NaN));
+    } else {
+      Frame fr = env.peekAry();
+      if (fr.vecs().length > 1)
+        throw new IllegalArgumentException("sd does not apply to multiple cols.");
+      if (fr.vecs()[0].isEnum())
+        throw new IllegalArgumentException("sd only applies to numeric vector.");
 
-    double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
-    env.push(new ValNum(sig));
+      double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
+      if (env.isAry()) env.cleanup(env.popAry());
+      else env.pop();
+      env.push(new ValNum(sig));
+    }
   }
 }
 
@@ -2162,6 +2212,7 @@ class ASTMean extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
+    if (env.isNum()) return;
     Frame fr = env.pop0Ary(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
@@ -2358,7 +2409,7 @@ class ASTTable extends ASTUniPrefixOp {
 //     3.  v     v      f
 //     4.  v     v      v
 //
-//  Additionally, how to cut/expand frames/vecs of true and false to match tst.
+//  Additionally, how to cut/expand frames `true` and `false` to match `tst`.
 
 class ASTIfElse extends ASTUniPrefixOp {
   static final String VARS[] = new String[]{"ifelse","tst","true","false"};
