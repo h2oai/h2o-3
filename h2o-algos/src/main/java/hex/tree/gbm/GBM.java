@@ -9,6 +9,7 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
 import water.util.ArrayUtils;
@@ -36,6 +37,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override public Job<GBMModel> trainModel() {
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
+
+  //FIXME: GBM uses the training frame as validation... bad practice.
+  @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

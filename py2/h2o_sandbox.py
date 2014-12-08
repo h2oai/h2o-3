@@ -7,7 +7,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
     cloudShutdownIsError=False, sandboxIgnoreErrors=False, pattern=None, verbose=False):
     # show the parameters
     ### print "check_sandbox_for_errors:", locals()
-    
+
     # gets set below on error (returned)
     errorFound = False
 
@@ -43,7 +43,8 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 goodLogsList.append(os.path.basename(filename))
 
         if len(goodLogsList)==0:
-            raise Exception("Unexpected: h2o_sandbox found 0 files in %s that matched the pattern: %s" % (LOG_DIR, pattern) )
+            raise Exception("Unexpected: h2o_sandbox found 0 files in %s that matched the pattern: %s" % \
+                (LOG_DIR, pattern) )
     else:
         tempFileList = os.listdir(LOG_DIR)
         if verbose:
@@ -69,7 +70,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 print emsg
                 return
             else:
-                # FIX! have to figure out what to do about when there are logs available to check for h2o on hadoop
+                # FIX! have to figure out what to do when there are logs available to check for h2o on hadoop
                 # and when to not care if they're not there
                 pass
                 # raise Exception(emsg)
@@ -97,7 +98,8 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     try:
                         doneToLine = int(r)
                     except:
-                        raise Exception("%s/doneToLine.%s is corrupted (multiprocess issue?): %s" % (LOG_DIR, filename, r))
+                        raise Exception("%s/doneToLine.%s is corrupted (multiprocess issue?): %s" % \
+                            (LOG_DIR, filename, r))
                     
         except IOError:
             # no file
@@ -163,10 +165,12 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 #[Loaded java.lang.Error from /usr/lib/jvm/java-7-oracle/jre/lib/rt.jar]
                 foundBadPartial = regex1.search(line)
                 foundBad = foundBadPartial and not (
+                    ('python_test_name' in line) or
                     ('Retrying after IO error' in line) or
                     ('Error on' in line) or
                     # temporary hack. getting these on shutdown in multi-machine
-                    # ApiWatch  ERRR WATER: ApiPortWatchdog: Failed trying to connect to REST API IP and Port (/10.73.149.39:54323, 30000 ms)
+                    # ApiWatch  ERRR WATER: ApiPortWatchdog: 
+                    #   Failed trying to connect to REST API IP and Port (/10.73.149.39:54323, 30000 ms)
                     ('ApiPortWatchdog' in line) or
                     ('Error reduced' in line) or
                     ('out-of-bag error estimation' in line) or
@@ -176,10 +180,8 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     (('AUC' in line) and ('Gini' in line) and ('Precision' in line)) or
                     ('Error on training data' in line) or
                     ('Error on validation data' in line) or
-
                     # These are real!
                     # ('water.DException' in line) or
-
                     # the manyfiles data has eRRr in a warning about test/train data
                     ('WARN SCORM' in line) or
                     # ignore the long, long lines that the JStack prints as INFO
@@ -274,9 +276,9 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
 
             # just print if using the pattern match
             if pattern or sandboxIgnoreErrors:
-                print "########################################################################################################################################"
+                print "###############################################################################################"
                 print errorMessage
-                print "########################################################################################################################################"
+                print "###############################################################################################"
             else: 
                 raise Exception(errorMessage)
 
@@ -288,6 +290,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
         return
 
 #*********************************************************************************************
+# for use from the command line
 if __name__ == "__main__":
 
     arg_names = ['me', 'LOG_DIR', 'python_test_name', 'cloudShutdownIsError', 'sandboxIgnoreErrors', 'verbose']
@@ -304,7 +307,8 @@ if __name__ == "__main__":
         LOG_DIR = args['LOG_DIR']
 
     if os.path.exists(LOG_DIR):
-        print "Checking for any marker files to remove first.. (multi-test cloud log scrape uses and we always leave the droppings)"
+        print "Checking for any marker files to remove first.." +\
+             "(multi-test cloud log scrape uses and we always leave the droppings)"
         for f in glob.glob(LOG_DIR + '/*doneToLine*'):
             print "cleaning marker file:", f
             os.remove(f)
@@ -321,7 +325,4 @@ if __name__ == "__main__":
         # sandboxIgnoreErrors=args['sandboxIgnoreErrors'],
         # verbose=args['verbose'],
 
-    # it shouldn't return here because it should take the exception)
-    # if errorMessage:
-    #    raise Exception('Error found in the logs that we want to consider fatal')
 

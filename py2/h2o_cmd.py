@@ -3,6 +3,7 @@ import h2o_nodes
 from h2o_test import dump_json, verboseprint
 import h2o_util
 import h2o_print as h2p
+from h2o_test import OutputObj
 
 #************************************************************************
 def runStoreView(node=None, **kwargs):
@@ -113,7 +114,9 @@ def infoFromInspect(inspect):
     return missingList, labelList, numRows, numCols
 
 #************************************************************************
-def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
+# does all columns unless you specify column index.
+# only will return first or specified column
+def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, **kwargs):
     if not key: raise Exception('No key for Summary')
     if not node: node = h2o_nodes.nodes[0]
     # return node.summary(key, **kwargs)
@@ -127,22 +130,32 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         def __iter__(self):
             for attr, value in self.__dict__.iteritems():
                 yield attr, value
-    # use his instead
-    from h2o_test import OutputObj
 
     inspect = runInspect(key=key)
     # change missingList definition: None if all empty, otherwise align to cols. 0 if 0?
     missingList, labelList, numRows, numCols = infoFromInspect(inspect)
 
     # doesn't take indices? only column labels?
-    lastChecksum = None
     # return first column, unless specified
     desiredResult = None
-    for label in labelList:
+
+    if not (column is None or isinstance(column, (basestring, int))):
+        raise Exception("column param should be string or integer index or None %s %s" % (type(column), column))
+
+    for colIndex, label in enumerate(labelList):
         print "doing summary on %s" % label
         summaryResult = node.summary(key=key, column=label)
-        if not desiredResult or (column and column==label):
-            desiredResult = summaryResult
+
+        # either return the first col, or the col indentified by label. the column identifed could be string or index?
+        if column is None: # means the first column will be it
+            thisIsTheColumn = True
+        elif isinstance(column, int):
+            thisIsTheColumn = (column==colIndex)
+        else:
+            thisIsTheColumn = (column==label)
+
+        if thisIsTheColumn:
+           desiredResult = summaryResult
         
         # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
 
@@ -151,7 +164,7 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         default_pctiles = frame['default_pctiles']
         checksum = frame['checksum']
         rows = frame['rows']
-        columns = frame['columns']
+        coJson = frame['columns'][0]
 
         # assert len(columns) == numCols
         assert rows == numRows
@@ -161,81 +174,117 @@ def runSummary(node=None, key=None, expected=None, column=None, **kwargs):
         # FIX! why is frame['key'] = None here?
         # assert frame['key'] == key, "%s %s" % (frame['key'], key)
 
-        # it changes?
-        # assert not lastChecksum or lastChecksum == checksum
-
-        lastChecksum = checksum
-
         # only one column
-        # co = Column(columns[0])
-        co = OutputObj(columns[0], 'summary_%s' % label)
+        # checks that json is as expected, I guess.
+        co = OutputObj(coJson, 'summary %s' % label)
+        # just touching them will make sure they exist
         # how are enums binned. Stride of 1? (what about domain values)
         coList = [co.base, len(co.bins), len(co.data),
             co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
             co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-        # for c in coList:
-        #    print c
-        for k,v in co:
-            print k, v
+        if not noPrint:
+            for k,v in co:
+                # only print [0] of mins and maxs because of the e308 values when they don't have dataset values
+                if k=='mins' or k=='maxs':
+                    print "%s[0]" % k, v[0]
+                else:
+                    print k, v
 
-        print "len(co.bins):", len(co.bins)
-        print "co.label:", co.label, "mean (2 places):", h2o_util.twoDecimals(co.mean)
-        # what is precision. -1?
-        print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
+        if expected is not None:
+            print "len(co.bins):", len(co.bins)
+            print "co.label:", co.label, "mean (2 places):", h2o_util.twoDecimals(co.mean)
+            # what is precision. -1?
+            print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
 
-        print "FIX! hacking the co.pctiles because it's short by two"
-        
-        if co.pctiles:
-            pctiles = [0] + co.pctiles + [0]
-        else:
-            pctiles = None
+            print "FIX! hacking the co.pctiles because it's short by two"
+            
+            if co.pctiles:
+                pctiles = [0] + co.pctiles + [0]
+            else:
+                pctiles = None
 
-        # the thresholds h2o used, should match what we expected
-        if expected ==None:
-            expected = [0] * 5
-        # Fix. doesn't check for expected = 0?
-        if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
-            msg='min is not approx. expected')
-        if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
-            msg='25th percentile is not approx. expected')
-        if expected[2]: h2o_util.assertApproxEqual(pctiles[5], expected[2], tol=maxDelta, 
-            msg='50th percentile (median) is not approx. expected')
-        if expected[3]: h2o_util.assertApproxEqual(pctiles[7], expected[3], tol=maxDelta, 
-            msg='75th percentile is not approx. expected')
-        if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
-            msg='max is not approx. expected')
+            # the thresholds h2o used, should match what we expected
+                # expected = [0] * 5
+            # Fix. doesn't check for expected = 0?
+            if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
+                msg='min is not approx. expected')
+            if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
+                msg='25th percentile is not approx. expected')
+            if expected[2]: h2o_util.assertApproxEqual(pctiles[5], expected[2], tol=maxDelta, 
+                msg='50th percentile (median) is not approx. expected')
+            if expected[3]: h2o_util.assertApproxEqual(pctiles[7], expected[3], tol=maxDelta, 
+                msg='75th percentile is not approx. expected')
+            if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
+                msg='max is not approx. expected')
 
-        # figure out the expected max error
-        # use this for comparing to sklearn/sort
-        MAX_QBINS = 1000
-        if expected[0] and expected[4]:
-            expectedRange = expected[4] - expected[0]
-            # because of floor and ceil effects due we potentially lose 2 bins (worst case)
-            # the extra bin for the max value, is an extra bin..ignore
-            expectedBin = expectedRange/(MAX_QBINS-2)
-            maxErr = expectedBin # should we have some fuzz for fp?
+            # figure out the expected max error
+            # use this for comparing to sklearn/sort
+            MAX_QBINS = 1000
+            if expected[0] and expected[4]:
+                expectedRange = expected[4] - expected[0]
+                # because of floor and ceil effects due we potentially lose 2 bins (worst case)
+                # the extra bin for the max value, is an extra bin..ignore
+                expectedBin = expectedRange/(MAX_QBINS-2)
+                maxErr = expectedBin # should we have some fuzz for fp?
 
-        else:
-            print "Test won't calculate max expected error"
-            maxErr = 0
+            else:
+                print "Test won't calculate max expected error"
+                maxErr = 0
 
-        pt = h2o_util.twoDecimals(pctiles)
-        mx = h2o_util.twoDecimals(co.maxs)
-        mn = h2o_util.twoDecimals(co.mins)
+            pt = h2o_util.twoDecimals(pctiles)
 
-        print "co.label:", co.label, "co.pctiles (2 places):", pt
-        print "default_pctiles:", default_pctiles
-        print "co.label:", co.label, "co.maxs: (2 places):", mx
-        print "co.label:", co.label, "co.mins: (2 places):", mn
+            # only look at [0] for now...bit e308 numbers if unpopulated due to not enough unique values in dataset column
+            mx = h2o_util.twoDecimals(co.maxs[0])
+            mn = h2o_util.twoDecimals(co.mins[0])
 
-        # FIX! why would pctiles be None? enums?
-        if pt is None:
-            compareActual = mn[0], [None] * 3, mx[0]
-        else:
-            compareActual = mn[0], pt[3], pt[5], pt[7], mx[0]
+            print "co.label:", co.label, "co.pctiles (2 places):", pt
+            print "default_pctiles:", default_pctiles
+            print "co.label:", co.label, "co.maxs: (2 places):", mx
+            print "co.label:", co.label, "co.mins: (2 places):", mn
 
-        h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
-        h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
+            # FIX! why would pctiles be None? enums?
+            if pt is None:
+                compareActual = mn, [None] * 3, mx
+            else:
+                compareActual = mn, pt[3], pt[5], pt[7], mx
+
+            h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
+            h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
 
     return desiredResult
+
+
+# this parses the json object returned for one col from runSummary...returns an OutputObj object
+# summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
+# co = h2o_cmd.infoFromSummary(summaryResult)
+# print co.label
+def infoFromSummary(summaryResult):
+    # this should be the same for all the cols? Or does the checksum change?
+    frame = summaryResult['frames'][0]
+    default_pctiles = frame['default_pctiles']
+    checksum = frame['checksum']
+    rows = frame['rows']
+    coJson = frame['columns'][0]
+
+    assert checksum !=0 and checksum is not None
+    assert rows!=0 and rows is not None
+    assert not frame['isText']
+
+    # FIX! why is frame['key'] = None here?
+    # assert frame['key'] == key, "%s %s" % (frame['key'], key)
+
+    co = OutputObj(coJson, 'infoFromSummary %s' % coJson['label'])
+    # how are enums binned. Stride of 1? (what about domain values)
+    coList = [co.base, len(co.bins), len(co.data),
+        co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
+        co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+
+    print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
+    for k,v in co:
+        # print k, v
+        print "co.%s" % k,
+    print
+    return co
+
+
