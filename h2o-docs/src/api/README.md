@@ -4,4 +4,4 @@
 
 ### Data science workflows
 
-* [Data science example 1](data-science-example-1/example.md)
+* [Data science example 1](data-science-example-1/README.md)
