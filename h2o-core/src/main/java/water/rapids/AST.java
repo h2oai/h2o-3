@@ -1033,15 +1033,21 @@ class ASTSlice extends AST {
       long row = (long)((ValNum)rows)._d;
       int  col = (int )((ValNum)cols)._d;
       Frame ary=env.popAry();
-      if (ary.vecs()[col].isEnum()) { env.push(new ValStr(ary.vecs()[col].domain()[(int)ary.vecs()[col].at(row)])); }
-      else env.push( new ValNum(ary.vecs()[col].at(row)));
+      try {
+        if (ary.vecs()[col].isEnum()) {
+          env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
+        } else env.push(new ValNum(ary.vecs()[col].at(row)));
+      } catch (ArrayIndexOutOfBoundsException e) {
+        if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
+        if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
+      }
       env.cleanup(ary);
     } else {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
       Frame ary= env.peekAry(); // Get without popping
-      Object colSelect = select(ary.numCols(),cols,env, true);
+      Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
