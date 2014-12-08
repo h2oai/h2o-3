@@ -71,13 +71,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       public void onCompletion(CountedCompleter cc){
         done();
         _parms.unlock_frames(GLM.this);
-        if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
+        if( _clean_enums ) {
+          train().lastVec().remove();
+          if (valid() != null) valid().lastVec().remove();
+        }
       }
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
           cancel2(ex);
           _parms.unlock_frames(GLM.this);
-          if( _clean_enums ) { train().lastVec().remove(); valid().lastVec().remove(); }
+          if( _clean_enums ) {
+            train().lastVec().remove();
+            if (valid() != null) valid().lastVec().remove();
+          }
           return true;
         }
         return false;

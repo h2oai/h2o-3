@@ -29,10 +29,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
-  /** Validation frame: derived from the parameter's training frame, excluding
+  /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
-   *  response column to an Enum, etc.  Never null; the training frame is used
-   *  if no validation key is set.  */
+   *  response column to an Enum, etc.  Is null if no validation key is set.  */
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
@@ -213,14 +212,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
     Frame va = _parms.valid();  // User-given validation set
-    _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+    if (va != null)
+      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
       String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
       if( expensive ) for( String s : msgs ) Log.info(s);
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }
-    assert !expensive || Arrays.equals(_train._names,_valid._names);
+    assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
 
   /** A list of field validation issues. */
