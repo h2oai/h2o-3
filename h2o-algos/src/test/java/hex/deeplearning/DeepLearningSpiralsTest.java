@@ -12,7 +12,7 @@ import water.parser.ParseDataset2;
 import water.util.Log;
 
 public class DeepLearningSpiralsTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void run() {
     Scope.enter();
@@ -90,6 +90,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         }
       }
     }
+    frame.delete();
     Scope.exit();
   }
 }

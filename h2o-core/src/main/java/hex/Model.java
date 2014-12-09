@@ -323,8 +323,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *         response classes. For regression it contains only one column with
    *         predicted values.
    */
-  public final Frame score(Frame fr) throws IllegalArgumentException {
-    long start_time = System.currentTimeMillis();
+  public Frame score(Frame fr) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     Vec sresp = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
     adaptTestForTrain(adaptFr,true);   // Adapt
