@@ -4,7 +4,7 @@ from h2o_test import check_sandbox_for_errors, dump_json, verboseprint
 import h2o_nodes
 
 #************************************************************88
-def newSimpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
+def simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
     prettyPrint=False, noPrint=False, maxExpectedIterations=None, doNormalized=False):
 
     warnings = ''
@@ -166,7 +166,7 @@ def simpleCheckGLMScore(self, glmScore, family='gaussian', allowFailWarning=Fals
         ## raise Exception(emsg)
         pass
 
-def simpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=False,
+def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=False,
     prettyPrint=False, noPrint=False, maxExpectedIterations=None, doNormalized=False, **kwargs):
     # if we hit the max_iter, that means it probably didn't converge. should be 1-maxExpectedIter
 
