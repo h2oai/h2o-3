@@ -70,7 +70,9 @@ class Basic(unittest.TestCase):
         cmm = OutputObj(cmmResult, 'cmm')
 
         mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-        mm = OutputObj(mmResult, 'mm')
+        mmResultShort = mmResult['model_metrics'][0]
+        del mmResultShort['frame'] # too much!
+        mm = OutputObj(mmResultShort, 'mm')
 
         prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
         pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')

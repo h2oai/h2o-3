@@ -26,6 +26,8 @@ class OutputObj(object):
                 print "Not showing 'frame'"
             elif k == 'model':
                 print "Not showing 'model'"
+            elif k == 'columns':
+                print "Not showing 'columns'"
             else:
                 #  if it's a list > 20, just print it normal
                 if isinstance(v, list) and len(v) > 20:
