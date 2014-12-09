@@ -1,11 +1,12 @@
 package hex.tree;
 
-import java.util.Arrays;
-import hex.AUCData;
-import hex.ConfusionMatrix2;
 import hex.SupervisedModel;
 import hex.VarImp;
-import water.*;
+import water.DKV;
+import water.Futures;
+import water.Key;
+
+import java.util.Arrays;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModel<M,P,O> {
 
@@ -45,7 +46,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     final TreeStats _treeStats;
 
     /** Trees get big, so store each one seperately in the DKV. */
-    public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
     /** Train and validation errors per-tree (scored).  Zero index is the no-tree
      *  error, guessing only the class distribution.  Not all trees are
@@ -86,7 +87,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
 
     public String toStringTree( int tnum, int knum ) {
-      return _treeKeys[tnum][knum].<CompressedTree>get().toString(this);
+      return _treeKeys[tnum][knum].get().toString(this);
     }
 
   }

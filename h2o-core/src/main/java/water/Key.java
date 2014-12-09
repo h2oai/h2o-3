@@ -1,6 +1,7 @@
 package water;
 
 import water.util.DocGen.HTML;
+import water.util.ReflectionUtils;
 import water.util.UnsafeUtils;
 import water.fvec.*;
 
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
-final public class Key extends Iced implements Comparable {
+final public class Key<T extends Keyed> extends Iced implements Comparable {
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
@@ -79,7 +80,7 @@ final public class Key extends Iced implements Comparable {
 
   /** Convenience function to fetch key contents from the DKV. 
    * @return null if the Key is not mapped, or an instance of {@link Keyed} */
-  public final <T extends Keyed> T get() {
+  public final T get() {
     Value val = DKV.get(this);
     return val == null ? null : (T)val.get(); 
   }
@@ -452,5 +453,10 @@ final public class Key extends Iced implements Comparable {
   @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    * auto-genned code.  Not intended to be called by user code. */
-  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); } // TODO: this is ugly; do just a String
+  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    ab.putJSONStr("name",toString());
+    ab.put1(',');
+    ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(this.getClass(), 0).getSimpleName());
+    return ab;
+  }
 }

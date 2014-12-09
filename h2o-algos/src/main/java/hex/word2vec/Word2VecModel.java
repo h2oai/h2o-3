@@ -220,7 +220,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
     public Word2Vec.WordModel _wordModel = Word2Vec.WordModel.SkipGram;
     public Word2Vec.NormModel _normModel = Word2Vec.NormModel.HSM;
-    public Key _vocabKey;
+    public Key<Frame> _vocabKey;
     public int _minWordFreq = 5;
     public int _vecSize = 100;
     public int _windowSize = 5;

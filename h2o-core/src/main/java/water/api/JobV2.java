@@ -9,7 +9,7 @@ public class JobV2 extends Schema<Job, JobV2> {
 
   // Input fields
   @API(help="Job Key",required=true)
-  public Key key;
+  public Key<Job> key;
 
   @API(help="Job description")
   public String description;
@@ -31,7 +31,7 @@ public class JobV2 extends Schema<Job, JobV2> {
   public String exception;
 
   public JobV2() {}
-  public JobV2(Key key, String description, String status, float progress, long msec, Key dest, String exception) {
+  public JobV2(Key<Job> key, String description, String status, float progress, long msec, Key dest, String exception) {
     this.key = key;
     this.description = description;
     this.status = status;

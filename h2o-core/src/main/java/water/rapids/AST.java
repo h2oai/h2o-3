@@ -165,7 +165,7 @@ class ASTFrame extends AST {
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
-    Key k = Key.make(key);
+    Key<Frame> k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = k.get();

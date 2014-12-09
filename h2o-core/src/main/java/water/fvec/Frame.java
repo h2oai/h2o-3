@@ -56,10 +56,10 @@ import java.util.HashMap;
  *  </pre>
  *
  */
-public class Frame extends Lockable {
+public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
-  private Key[] _keys;      // Keys for the vectors
+  private Key<Vec>[] _keys;      // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
@@ -180,7 +180,7 @@ public class Frame extends Lockable {
   // Compute vectors for caching
   private Vec[] vecs_impl() {
     // Load all Vec headers; load them all in parallel by starting prefetches
-    for( Key key : _keys ) DKV.prefetch(key);
+    for( Key<Vec> key : _keys ) DKV.prefetch(key);
     Vec [] vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) vecs[i] = _keys[i].get();
     return vecs;
@@ -529,7 +529,7 @@ public class Frame extends Lockable {
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   static NewChunk[] createNewChunks( String name, int cidx ) {
-    Frame fr = Key.make(name).get();
+    Frame fr = (Frame)Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for( int i=0; i<nchks.length; i++ )
       nchks[i] = new NewChunk(new AppendableVec(fr._keys[i]),cidx);
@@ -856,7 +856,7 @@ public class Frame extends Lockable {
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
-    Frame f2 = k.get();
+    Frame f2 = (Frame)k.get();
     DKV.remove(k);
     return f2;
   }
