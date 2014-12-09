@@ -45,6 +45,7 @@ def bv = new H2OBuildVersion(rootDir, version)
 
 ext {
     BUILD_BRANCH       = bv.getBranch()
+    BUILD_NUMBER       = bv.getBuildNumber()
     PROJECT_VERSION    = bv.getProjectVersion()
     PDF_LATEX          = ""                     /* task pdflatex          */
     R_PLATFORM         = ""                     /* task getRPlatform      */
@@ -132,6 +133,7 @@ task setPackageFiles << {
     File DESC_TEMP   = new File([T, "h2o-DESCRIPTION.template"]                              .join(File.separator))
     File h2oRd_TEMP  = new File([T, "h2o-package.template"]                                  .join(File.separator))
     File build_branch= new File([T, "h2o-package", "inst", "branch.txt"]                     .join(File.separator))
+    File build_num   = new File([T, "h2o-package", "inst", "buildnum.txt"]                   .join(File.separator))
     File src_info    = new File([T, "h2o-package", "inst", "source_code_repository_info.txt"].join(File.separator))
     def txt = ""
     def today = new Date()
@@ -142,7 +144,8 @@ task setPackageFiles << {
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
     h2oRd.parentFile.mkdirs()
     h2oRd.write(txt)
-    build_branch.write(BUILD_BRANCH)
+    build_branch.write(BUILD_BRANCH + "\n")
+    build_num.write(BUILD_NUMBER + "\n")
     src_info.write("https://github.com/h2oai/h2o")
 }
 
@@ -236,6 +239,7 @@ task cleanUp << {
     new File([T, "h2o_package.pdf"].join(File.separator)).delete()
     new File([T, "h2o-package", "man", "h2o-package.Rd"].join(File.separator)).delete()
     new File([T, "h2o-package", "inst", "branch.txt"].join(File.separator)).delete()
+    new File([T, "h2o-package", "inst", "buildnum.txt"].join(File.separator)).delete()
     new File([T, "h2o-package", "inst", "java"].join(File.separator)).deleteDir()
     new File([T, "h2o"].join(File.separator)).deleteDir()
     new File([T, "tmp_build"].join(File.separator)).deleteDir()
