@@ -153,7 +153,8 @@ function(o) {
 #'                        ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
 #'                        ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
 #'                        ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
-#'                        ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
+#'                        ‘"cos"’,   ‘"cosh"’,   ‘"cospi"’,  ‘"sin"’,     ‘"sinh"’, ‘"sinpi"’,
+#'                        ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
 #'                        ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’, ‘"is.na"’
 #'
 #'      B. .h2o.varop: ‘"round"’, ‘"signif"’
