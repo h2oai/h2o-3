@@ -69,7 +69,8 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o
 #' ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
 #' ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
 #' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
-#' ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
+#' ‘"cos"’,   ‘"cosh"’,   ‘"cospi"’,  ‘"sin"’,     ‘"sinh"’, ‘"sinpi"’,
+#' ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
 #' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
 #' @name MathGenerics
 NULL
