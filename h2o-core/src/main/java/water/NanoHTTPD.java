@@ -606,11 +606,11 @@ public class NanoHTTPD
             // This call is handled as a POST request in method NanoHTTPD#fileUpload
             //
             // JSON Payload returned is:
-            //     { total_bytes: nnn }
+            //     { "total_bytes": nnn }
             //
             UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
             UploadFileVec.readPut(key, new InputStreamWrapper(in, boundary.getBytes()), stats);
-            String responsePayload = "{ total_bytes: " + stats.total_bytes + " }";
+            String responsePayload = "{ \"total_bytes\": " + stats.total_bytes + " }";
             sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
             return true;
           }
