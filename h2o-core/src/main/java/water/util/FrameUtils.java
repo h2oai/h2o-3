@@ -2,8 +2,11 @@ package water.util;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Random;
 
 import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.persist.Persist;
@@ -50,5 +53,24 @@ public class FrameUtils {
     }
     for (int i=0; i<num; i++) ks[i] = Key.make(n+delim+i+suffix);
     return ks;
+  }
+
+  /**
+   * Helper to insert missing values into a Frame
+   */
+  public static class MissingInserter extends MRTask<MissingInserter> {
+    final long _seed;
+    final double _frac;
+    public MissingInserter(long seed, double frac){ _seed = seed; _frac = frac; }
+
+    @Override public void map (Chunk[]cs){
+      final Random rng = new Random();
+      for (int c = 0; c < cs.length; c++) {
+        for (int r = 0; r < cs[c]._len; r++) {
+          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+          if (rng.nextDouble() < _frac) cs[c].setNA0(r);
+        }
+      }
+    }
   }
 }
