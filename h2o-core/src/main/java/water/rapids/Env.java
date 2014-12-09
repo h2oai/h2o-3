@@ -32,8 +32,9 @@ public class Env extends Iced {
   final static int FUN   =4;
   final static int SPAN  =5;
   final static int SERIES=6;
+  final static int LARY  =7;  // special value for arrays in _local_array
+  final static int AST   =8;  // basically what we're calling RAFT objects...
   final static int NULL  =99999;
-  final static int LARY  =99;  // special value for arrays in _local_array
 
   transient final ExecStack _stack;                      // The stack
   final IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
@@ -697,8 +698,11 @@ public class Env extends Iced {
     return res;
   }
 
-  private int kvLookup(String name) {
-    if (DKV.get(Key.make(name)) != null) return ARY; else return NULL;
+  private static int kvLookup(String name) {
+    Value v = DKV.get(Key.make(name));
+    if (v == null) return NULL;
+    if (v.get() instanceof Frame) return ARY;
+    else return AST;
   }
 
   String getValue(String name, boolean search_global) {
@@ -722,11 +726,18 @@ public class Env extends Iced {
     switch(getType(id.value(), true)) {
       case NUM: return new ASTNum(Double.valueOf(getValue(id.value(), true)));
       case ARY: return new ASTFrame(id.value());
-//      case LARY:return new ASTFrame(_local._local_frames.get(id.value())); // pull the local frame out
       case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
-      // case for FUN
+      case AST: return new ASTRaft(id.value());
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);
+    }
+  }
+
+  static AST staticLookup(water.rapids.ASTId id) {
+    switch(kvLookup(id.value())) {
+      case AST: return new ASTRaft(id.value());
+      case ARY: return new ASTFrame(id.value());
+      default: return id;
     }
   }
 

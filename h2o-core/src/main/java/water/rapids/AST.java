@@ -98,10 +98,10 @@ abstract public class AST extends Iced {
       _asts[2].treeWalk(e); // push cols
       this.exec(e);         // do the slice
 
-    // Check if String, Num, Null, Series, Key, Span, or Frame
+    // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this._asts[0] instanceof ASTFrame) { this.exec(e); }
+            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame) { this.exec(e); }
 
     else { throw H2O.fail("Unknown AST: " + this.getClass());}
     return e;
@@ -115,12 +115,26 @@ abstract public class AST extends Iced {
   StringBuilder toString( StringBuilder sb, int d ) { return indent(sb,d).append(this); }
 }
 
+class ASTRaft extends AST {
+  final Key _key;
+  ASTRaft(String id) { _key = Key.make(id); }
+  @Override public String toString() { return _key.toString(); }
+  @Override void exec(Env e) {
+    Key k;
+    Raft r = DKV.get(_key).get();
+    if ((k=r.get_key())==null) r.get_ast().treeWalk(e);
+    else (new ASTFrame(k)).exec(e);
+  }
+  @Override int type() { return Env.AST; }
+  @Override String value() { return _key.toString(); }
+
+}
+
 class ASTId extends AST {
   final String _id;
   final char _type; // either '$' or '!'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     return new ASTId(_type, E.parseID());
   }
   @Override public String toString() { return _type+_id; }
@@ -130,14 +144,6 @@ class ASTId extends AST {
   boolean isSet() { return _type == '!'; }
   boolean isLookup() { return _type == '$'; }
   boolean isValid() { return isSet() || isLookup(); }
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-    ab.put2(_type);
-    ab.putStr(_id);
-    return ab;
-  }
-  @Override public ASTId read_impl(AutoBuffer ab) {
-    return new ASTId(ab.get2(), ab.getStr());
-  }
 }
 
 class ASTKey extends AST {
@@ -157,6 +163,7 @@ class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
+  ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
     Key k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
@@ -180,20 +187,12 @@ class ASTFrame extends AST {
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-    ab.putStr(_key);
-    return ab;
-  }
-  @Override public ASTFrame read_impl(AutoBuffer ab) {
-    return new ASTFrame(ab.getStr());
-  }
 }
 
 class ASTNum extends AST {
   final double _d;
   ASTNum(double d) { _d = d; }
   ASTNum parse_impl(Exec E) {
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     try {
       return new ASTNum(Double.valueOf(E.parseID()));
     } catch (NumberFormatException e) {
@@ -206,13 +205,6 @@ class ASTNum extends AST {
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
   double dbl() { return _d; }
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-    ab.put8d(_d);
-    return ab;
-  }
-  @Override public ASTNum read_impl(AutoBuffer ab) {
-    return new ASTNum(ab.get8d());
-  }
 }
 
 /**
@@ -229,9 +221,7 @@ class ASTSpan extends AST {
     if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
   }
   ASTSpan parse_impl(Exec E) {
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST l = E.parse();
-    if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();
     return new ASTSpan((ASTNum)l, (ASTNum)r);
   }
@@ -257,14 +247,14 @@ class ASTSpan extends AST {
   boolean all_pos() { return !all_neg(); }
   boolean isNum() { return _min == _max; }
   long toNum() { return _min; }
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-    ab.put8(_min);
-    ab.put8(_max);
-    return ab;
-  }
-  @Override public ASTSpan read_impl(AutoBuffer ab) {
-    return new ASTSpan(ab.get8(), ab.get8());
-  }
+//  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+//    ab.put8(_min);
+//    ab.put8(_max);
+//    return ab;
+//  }
+//  @Override public ASTSpan read_impl(AutoBuffer ab) {
+//    return new ASTSpan(ab.get8(), ab.get8());
+//  }
 }
 
 class ASTSeries extends AST {
@@ -380,31 +370,31 @@ class ASTSeries extends AST {
     }
     return res;
   }
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
-    ab.putA8(_idxs);
-    ab.put1(_spans.length);
-    for (int i = 0; i < _spans.length; ++i) {
-      ab = _spans[i].write_impl(ab);
-    }
-    ab.putZ(_isCol);
-    ab.putA4(_order);
-    return ab;
-  }
-  @Override public ASTSeries read_impl(AutoBuffer ab) {
-    long[] idxs = ab.getA8();
-    int nspans = ab.get1();
-    ASTSpan[] spans = new ASTSpan[nspans];
-    for (int i = 0; i < nspans; ++i) {
-      spans[i] = ab.get(ASTSpan.class);
-    }
-    boolean isCol = ab.getZ();
-    int[] order = ab.getA4();
-    ASTSeries series = new ASTSeries(idxs, spans);
-    series._order = order;
-    series._isCol = isCol;
-    series._isRow = !isCol;
-    return series;
-  }
+//  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+//    ab.putA8(_idxs);
+//    ab.put1(_spans.length);
+//    for (int i = 0; i < _spans.length; ++i) {
+//      ab = _spans[i].write_impl(ab);
+//    }
+//    ab.putZ(_isCol);
+//    ab.putA4(_order);
+//    return ab;
+//  }
+//  @Override public ASTSeries read_impl(AutoBuffer ab) {
+//    long[] idxs = ab.getA8();
+//    int nspans = ab.get1();
+//    ASTSpan[] spans = new ASTSpan[nspans];
+//    for (int i = 0; i < nspans; ++i) {
+//      spans[i] = ab.get(ASTSpan.class);
+//    }
+//    boolean isCol = ab.getZ();
+//    int[] order = ab.getA4();
+//    ASTSeries series = new ASTSeries(idxs, spans);
+//    series._order = order;
+//    series._isCol = isCol;
+//    series._isRow = !isCol;
+//    return series;
+//  }
 }
 
 class ASTStatement extends AST {

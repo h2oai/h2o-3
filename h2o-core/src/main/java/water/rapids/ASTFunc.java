@@ -56,7 +56,10 @@ public class ASTFunc extends ASTFuncDef {
   @Override ASTFunc parse_impl(Exec E) {
     int nargs = _arg_names.length;
     AST[] args = new AST[nargs];
-    for (int i = 0; i < nargs; ++i) args[i] = E.skipWS().parse();
+    for (int i = 0; i < nargs; ++i) {
+      args[i] = E.skipWS().parse();
+      if (args[i] instanceof ASTId) args[i] = Env.staticLookup((ASTId)args[i]);
+    }
 
     ASTFunc res = (ASTFunc)clone();
     res._args = args;

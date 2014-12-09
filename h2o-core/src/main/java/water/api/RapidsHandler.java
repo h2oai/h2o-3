@@ -1,9 +1,11 @@
 package water.api;
 
+import water.DKV;
 import water.Iced;
 import water.Key;
-import water.rapids.Env;
 import water.fvec.Frame;
+import water.rapids.Env;
+import water.rapids.Raft;
 import water.util.Log;
 
 class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
@@ -17,10 +19,13 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
    */
   protected static final class Rapids extends Iced {
     // Inputs
-    String _ast; // A Lisp-like ast.
-    String[] _funs;
+    String   _ast;      // A Lisp-like ast.
+    String[] _funs;     // A list of functions, each fcn is a lispy d00d
+    Key      _astKey;   // A key to lookup the Raft object
 
     //Outputs
+    String   _raft_ast;
+    Key      _raft_key;
     String   _error;
     Key      _key;
     long     _num_rows;
@@ -31,6 +36,43 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
     String[] _col_names;
     String   _result;
   }
+
+//  public RapidsV1 setAST(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids._astKey == null) throw new IllegalArgumentException("No key supplied to setAST.");
+//    Raft raft = DKV.getGet(rapids._astKey);
+//    if (raft == null) raft = new Raft();
+//    raft.set_ast(rapids._ast);
+//    rapids._raft_ast = rapids._ast;
+//    DKV.put(rapids._astKey, raft);
+//    return schema(version).fillFromImpl(rapids);
+//  }
+
+//  public RapidsV1 getAST(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids._astKey == null) throw new IllegalArgumentException("No key supplied to getAST.");
+//    Raft raft = DKV.getGet(rapids._astKey);
+//    rapids._raft_ast=raft.get_ast();
+//    if (rapids._raft_ast == null) rapids._raft_key=raft.get_key();  // get the key if no ast.
+//    return schema(version).fillFromImpl(rapids);
+//  }
+
+  public RapidsV1 getKey(int version, Rapids rapids) {
+    if (rapids == null) return null;
+    if (rapids._astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    Raft raf = DKV.getGet(rapids._astKey);
+    rapids._raft_key = raf.get_key();
+    return schema(version).fillFromImpl(rapids);
+  }
+
+//  public RapidsV1 force(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids._astKey == null) throw new IllegalArgumentException("No key supplied to force.");
+//    Raft raft = DKV.getGet(rapids._astKey);
+//    // get the ast and exec
+//    rapids._ast = raft.get_ast();
+//    return exec(version, rapids);
+//  }
 
   public RapidsV1 exec(int version, Rapids rapids) {
     if (rapids == null) return null;
