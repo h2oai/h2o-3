@@ -308,9 +308,7 @@ h2o.clusterInfo <- function(client) {
 }
 
 .uri.exists <- function(uri) {
-  h <- basicHeaderGatherer()
-  invisible(getURI(uri, headerfunction = h$update))
-  "200" == as.list(h$value())$status
+  url.exists(uri)
 }
 
 .h2o.__formatError <- function(error,prefix="  ") {
