@@ -10,14 +10,14 @@ import water.util.PrettyPrint;
 import java.util.Random;
 
 public class NeuronsTest extends water.TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test @Ignore
+  @Test
   public void matrixVecTest() {
     int rows = 2048;
     int cols = 8192;
-    int loops = 50;
-    int warmup_loops = 50;
+    int loops = 5;
+    int warmup_loops = 5;
     long seed = 0x533D;
     float nnz_ratio_vec = 0.01f; //fraction of non-zeroes for vector
     float nnz_ratio_mat = 0.1f; //fraction of non-zeroes for matrix
@@ -90,12 +90,6 @@ public class NeuronsTest extends water.TestUtil {
     for (int l=0;l<warmup_loops;++l) {
       gemv(dres, sca, sx, dy, bits);
       sum += res[rows/2];
-    }
-
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
     }
 
     /**
@@ -196,7 +190,7 @@ public class NeuronsTest extends water.TestUtil {
     System.out.println("sparse col * sparse time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
   }
 
-  @Test @Ignore
+  @Test
   public void sparseTester() {
     DenseVector dv = new DenseVector(20);
     dv.set(3,0.21f);

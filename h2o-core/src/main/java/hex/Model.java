@@ -67,9 +67,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
-    /** @return the validation frame instance, or the training frame
+    /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
-    public final Frame valid() { return _valid==null ? train() : _valid.<Frame>get(); }
+    public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
 
     /** Read-Lock both training and validation User frames. */
     public void lock_frames( Job job ) { 
@@ -262,6 +262,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  @param missing Substitute for missing columns; usually NaN
    * */
   public static String[] adaptTestForTrain( String[] names, String[][] domains, Frame test, double missing, boolean expensive ) throws IllegalArgumentException {
+    if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
     if( names == test._names && domains == tdomains )

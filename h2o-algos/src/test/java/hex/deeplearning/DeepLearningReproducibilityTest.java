@@ -123,7 +123,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           stddev /= N;
           stddev = Math.sqrt(stddev);
           //Log.info("standard deviation: " + stddev);
-          assertTrue(stddev < 0.1 / Math.sqrt(N));
+          assertTrue(stddev < 0.15 / Math.sqrt(N));
           //Log.info("difference to reproducible mode: " + Math.abs(mean - repro_error) / stddev + " standard deviations");
         }
       } finally {

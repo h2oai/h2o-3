@@ -261,6 +261,11 @@ test 'airlines ingest and model building flow', (t) ->
         training_frame: 'allyears2k_headers.hex'
         response_column: 'IsDepDelayed'
         reproducible: true
+        epochs: 0.01
+        hidden: '[10,10]'
+        adaptive_rate: false
+        rate: 0.05
+        activation: 'Tanh'
       _.requestModelBuild 'deeplearning', parameters, (error, result) ->
         if error
           t.fail 'model build request failed ' + pp error

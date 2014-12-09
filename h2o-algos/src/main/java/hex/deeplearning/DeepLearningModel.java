@@ -652,7 +652,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public Errors[] scoring_history() { return errors; }
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
-  private float _bestError = Float.MAX_VALUE;
+  private float _bestError = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
 
@@ -1257,10 +1257,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   /** Constructor to restart from a checkpointed model
+   * @param destKey New destination key for the model
    *  @param cp Checkpoint to restart from
-   *  @param destKey New destination key for the model
-   *  @param store_best_model Store only the best model instead of the latest one */
-  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, Frame train, final DataInfo dataInfo) {
+   * @param store_best_model Store only the best model instead of the latest one  */
+  public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
     super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningOutput)cp._output.clone());
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
@@ -1329,7 +1329,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return true if model building is ongoing
    */
   boolean doScoring(Frame train, Frame ftrain, Frame ftest, Key job_key) {
-    boolean keep_running = true;
+    boolean keep_running;
     try {
       final long now = System.currentTimeMillis();
       epoch_counter = (float)model_info().get_processed_total()/training_rows;
@@ -1396,16 +1396,26 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (m.length() > 0) Log.info(m);
           final Frame trainPredict = score(ftrain);
           trainPredict.delete();
+
           hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
           err.trainAUC = mm1._aucdata;
           err.train_confusion_matrix = mm1._cm;
+          err.train_err = mm1._cm.err();
           err.train_hitratio = mm1._hr;
           err.train_mse = mm1._mse;
-          hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
-          err.validAUC = mm1._aucdata;
-          err.valid_confusion_matrix = mm1._cm;
-          err.valid_hitratio = mm1._hr;
-          err.valid_mse = mm1._mse;
+
+          if (ftest != null) {
+            Frame validPred = score(ftest);
+            validPred.delete();
+            hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
+            if (mm2 != null) {
+              err.validAUC = mm2._aucdata;
+              err.valid_confusion_matrix = mm2._cm;
+              err.valid_err = mm2._cm.err();
+              err.valid_hitratio = mm2._hr;
+              err.valid_mse = mm2._mse;
+            }
+          }
 
           if (get_params()._variable_importances) {
             if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
@@ -1438,7 +1448,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (!get_params()._quiet_mode)
               Log.info("Error reduced from " + _bestError + " to " + error() + ". Storing best model so far under key " + actual_best_model_key.toString() + ".");
             _bestError = error();
-            putMeAsBestModel(actual_best_model_key, train);
+            putMeAsBestModel(actual_best_model_key);
 
             // debugging check
             //if (false) {
@@ -1480,9 +1490,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       update(job_key);
     }
     catch (Exception ex) {
-      ex.printStackTrace();
-      keep_running = false;
-      throw new RuntimeException(ex);
+      //ex.printStackTrace();
+      //throw new RuntimeException(ex);
+      return false;
     }
     return keep_running;
  }
@@ -1612,6 +1622,64 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return adaptFrm.extractFrame(x, y);
   }
 
+
+//  /**
+//   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
+//   * @param frame Original data (can contain response, will be ignored)
+//   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
+//   */
+//  public Frame scoreDeepFeatures(Frame frame, final int layer) {
+//    assert(layer >= 0 && layer < model_info().get_params().hidden.length);
+//    final int len = nfeatures();
+//    Vec resp = null;
+//    if (isSupervised()) {
+//      int ridx = frame.find(responseName());
+//      if (ridx != -1) { // drop the response for scoring!
+//        frame = new Frame(frame);
+//        resp = frame.vecs()[ridx];
+//        frame.remove(ridx);
+//      }
+//    }
+//    // Adapt the Frame layout - returns adapted frame and frame containing only
+//    // newly created vectors
+//    Frame[] adaptFrms = adapt(frame,false,false/*no response*/);
+//    // Adapted frame containing all columns - mix of original vectors from fr
+//    // and newly created vectors serving as adaptors
+//    Frame adaptFrm = adaptFrms[0];
+//    // Contains only newly created vectors. The frame eases deletion of these vectors.
+//    Frame onlyAdaptFrm = adaptFrms[1];
+//    //create new features, will be dense
+//    final int features = model_info().get_params().hidden[layer];
+//    Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
+//    for (int j=0; j<features; ++j) {
+//      adaptFrm.add("DF.C" + (j+1), vecs[j]);
+//    }
+//    new MRTask2() {
+//      @Override public void map( Chunk chks[] ) {
+//        double tmp [] = new double[len];
+//        float df[] = new float [features];
+//        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+//        for( int row=0; row<chks[0]._len; row++ ) {
+//          for( int i=0; i<len; i++ )
+//            tmp[i] = chks[i].at0(row);
+//          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
+//          DeepLearningTask.step(-1, neurons, model_info, false, null);
+//          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+//          for( int c=0; c<df.length; c++ )
+//            chks[_names.length+c].set0(row,out[c]);
+//        }
+//      }
+//    }.doAll(adaptFrm);
+//
+//    // Return just the output columns
+//    int x=_names.length, y=adaptFrm.numCols();
+//    Frame ret = adaptFrm.extractFrame(x, y);
+//    onlyAdaptFrm.delete();
+//    if (resp != null) ret.prepend(responseName(), resp);
+//    return ret;
+//  }
+
+
   // Make (potentially expanded) reconstruction
   private float[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds, Neurons[] neurons) {
     assert(get_params()._autoencoder);
@@ -1676,8 +1744,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //  }
 
   // helper to push this model to another key (for keeping good models)
-  private void putMeAsBestModel(Key bestModelKey, Frame train) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, train, model_info().data_info());
+  private void putMeAsBestModel(Key bestModelKey) {
+    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
 //    bestModel.get_params()._state = Job.JobState.DONE; //FIXME
 //    bestModel.get_params()._key = get_params().self(); //FIXME : is private
     final Key job = null;

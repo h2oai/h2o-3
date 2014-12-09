@@ -59,8 +59,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     @Override protected void compute2() {
       try {
         Scope.enter();
-        init(true);
         _parms.lock_frames(DeepLearning.this);
+        init(true);
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
@@ -197,7 +197,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                                               _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
                                               isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
           DKV.put(dinfo._key,dinfo);
-          cp = new DeepLearningModel(dest(), previous, false, _train, dinfo);
+          cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());
           final DeepLearningModel.DeepLearningParameters A = cp.model_info().get_params();
           Object B = _parms;
@@ -327,7 +327,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
                   new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
-          if (!mp._quiet_mode) Log.info("Progress: " + PrettyPrint.formatPct(progress()));
         }
         while (model.doScoring(train, trainScoreFrame, validScoreFrame, self()));
 

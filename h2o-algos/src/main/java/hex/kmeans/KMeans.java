@@ -72,7 +72,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     while( ncats != len ) {
       while( ncats < len && vecs[ncats].isEnum() ) ncats++;
       while( len > 0 && !vecs[len-1].isEnum() ) len--;
-      if( ncats < len-1 ) { _train.swap(ncats,len-1); _valid.swap(ncats,len-1); }
+      if( ncats < len-1 ) _train.swap(ncats,len-1);
     }
     _ncats = ncats;
   }
@@ -84,8 +84,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
       KMeansModel model = null;
       try {
-        init(true);
         _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
+        init(true);
 
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
@@ -415,7 +415,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         double d = point[column];
       if( Double.isNaN(d) ) pts--;
       else if( d != cluster[column] )
-        sqr += 1.0;           // Manhatten distance
+        sqr += 1.0;           // Manhattan distance
     }
     // Numeric column distance
     for( int column = ncats; column < cluster.length; column++ ) {

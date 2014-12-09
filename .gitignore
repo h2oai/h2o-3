@@ -49,3 +49,8 @@ h2o-r/h2o-package/man/h2o-package.Rd
 # Data folders
 bigdata/
 
+# Ignore Eclipse project settings
+.classpath
+.project
+.settings/
+
