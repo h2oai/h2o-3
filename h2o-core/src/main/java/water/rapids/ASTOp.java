@@ -109,6 +109,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTExpm1 ());
     putPrefix(new ASTGamma());
     putPrefix(new ASTLGamma());
+    putPrefix(new ASTDiGamma());
+    putPrefix(new ASTTriGamma());
     putPrefix(new ASTScale());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
@@ -132,6 +134,9 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTACosh());
     putPrefix(new ASTASinh());
     putPrefix(new ASTATanh());
+    putPrefix(new ASTCosPi());
+    putPrefix(new ASTSinPi());
+    putPrefix(new ASTTanPi());
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -314,6 +319,9 @@ class ASTTanh extends ASTUniPrefixOp { @Override String opStr(){ return "tanh"; 
 class ASTACosh extends ASTUniPrefixOp { @Override String opStr(){ return "acosh"; } @Override ASTOp make() {return new ASTACosh ();} @Override double op(double d) { return FastMath.acosh(d);}}
 class ASTASinh extends ASTUniPrefixOp { @Override String opStr(){ return "asinh"; } @Override ASTOp make() {return new ASTASinh ();} @Override double op(double d) { return FastMath.asinh(d);}}
 class ASTATanh extends ASTUniPrefixOp { @Override String opStr(){ return "atanh"; } @Override ASTOp make() {return new ASTATanh ();} @Override double op(double d) { return FastMath.atanh(d);}}
+class ASTCosPi extends ASTUniPrefixOp { @Override String opStr(){ return "cospi"; } @Override ASTOp make() {return new ASTCosPi ();} @Override double op(double d) { return Math.cos(Math.PI*d);}}
+class ASTSinPi extends ASTUniPrefixOp { @Override String opStr(){ return "sinpi"; } @Override ASTOp make() {return new ASTSinPi ();} @Override double op(double d) { return Math.sin(Math.PI*d);}}
+class ASTTanPi extends ASTUniPrefixOp { @Override String opStr(){ return "tanpi"; } @Override ASTOp make() {return new ASTTanPi ();} @Override double op(double d) { return Math.tan(Math.PI*d);}}
 class ASTAbs  extends ASTUniPrefixOp { @Override String opStr(){ return "abs";  } @Override ASTOp make() {return new ASTAbs ();} @Override double op(double d) { return Math.abs(d);}}
 class ASTSgn  extends ASTUniPrefixOp { @Override String opStr(){ return "sign" ; } @Override ASTOp make() {return new ASTSgn ();} @Override double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniPrefixOp { @Override String opStr(){ return "sqrt"; } @Override ASTOp make() {return new ASTSqrt();} @Override double op(double d) { return Math.sqrt(d);}}
@@ -328,6 +336,8 @@ class ASTExp  extends ASTUniPrefixOp { @Override String opStr(){ return "exp";  
 class ASTExpm1  extends ASTUniPrefixOp { @Override String opStr(){ return "expm1";  } @Override ASTOp make() {return new ASTExpm1 ();} @Override double op(double d) { return Math.expm1(d);}}
 class ASTGamma  extends ASTUniPrefixOp { @Override String opStr(){ return "gamma";  } @Override ASTOp make() {return new ASTGamma ();} @Override double op(double d) {  return Gamma.gamma(d);}}
 class ASTLGamma extends ASTUniPrefixOp { @Override String opStr(){ return "lgamma"; } @Override ASTOp make() {return new ASTLGamma ();} @Override double op(double d) { return Gamma.logGamma(d);}}
+class ASTDiGamma  extends ASTUniPrefixOp { @Override String opStr(){ return "digamma";  } @Override ASTOp make() {return new ASTDiGamma ();} @Override double op(double d) {  return Gamma.digamma(d);}}
+class ASTTriGamma  extends ASTUniPrefixOp { @Override String opStr(){ return "trigamma";  } @Override ASTOp make() {return new ASTTriGamma ();} @Override double op(double d) {  return Gamma.trigamma(d);}}
 
 class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";} @Override ASTOp make() { return new ASTIsNA();} @Override double op(double d) { return Double.isNaN(d)?1:0;}
   @Override void apply(Env env) {

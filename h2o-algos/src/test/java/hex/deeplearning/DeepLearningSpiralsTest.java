@@ -4,7 +4,6 @@ import hex.ModelMetrics;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
@@ -15,7 +14,8 @@ import water.util.Log;
 public class DeepLearningSpiralsTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test @Ignore public void run() {
+  @Test public void run() {
+    Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
     Frame frame = ParseDataset2.parse(Key.make(), nfs._key);
     int resp = frame.names().length-1;
@@ -30,7 +30,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         {
           DeepLearningParameters p = new DeepLearningParameters();
           p._seed = 0xbabe;
-          p._epochs = 100;
+          p._epochs = 10000;
           p._hidden = new int[]{100};
           p._sparse = sparse;
           p._col_major = col_major;
@@ -56,14 +56,13 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._score_training_samples = 1000;
           p._score_validation_samples = 10000;
           p._shuffle_training_data = false;
-          p._force_load_balance = true; //multi-threaded
+          p._force_load_balance = false;
           p._replicate_training_data = false;
           p._destination_key = dest;
-//          p._adaptive_rate = true;
-          p._adaptive_rate = false;
+          p._adaptive_rate = true;
           p._reproducible = true;
-//          p._rho = 0.99;
-//          p._epsilon = 5e-3;
+          p._rho = 0.99;
+          p._epsilon = 5e-3;
           DeepLearning dl = new DeepLearning(p);
           try {
             dl.trainModel().get();
@@ -81,9 +80,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           Frame pred = mymodel.score(frame);
           ModelMetrics mm = ModelMetrics.getFromDKV(mymodel,frame);
           double error = mm._aucdata.err();
-
-//          double error = new ConfusionMatrix2(frame.vecs()[resp].toEnum(),pred).err();
-
           Log.info("Error: " + error);
           if (error >= 0.025) {
             Assert.fail("Classification error is not less than 0.025, but " + error + ".");
@@ -94,7 +90,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
         }
       }
     }
-
-    frame.delete();
+    Scope.exit();
   }
 }

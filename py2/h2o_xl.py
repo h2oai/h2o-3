@@ -27,7 +27,9 @@ def checkAst(expected):
 
 # we init to 1 row/col. (-1) can't figure how how to init to no rows in a single expression
 def astForInit(frame):
-     return '(= !%s (c {#-1}))' % frame
+    return '(= !%s (c {#-1}))' % frame
+    # will this work?
+    # return '(= !%s "null")' % frame
 
 class Xbase(object):
     lastExecResult = {}
@@ -228,10 +230,12 @@ class Xbase(object):
     
     # unary
     # -, +, abs, ~, int, float
+    def __invert__(self):
+        # FIX! this isn't right if more than one col?
+        return self._binary_common('^', 1)
     def __neg__(self):
         return self._unary_common('_') # use special Rapids negation function
-    # pos is a no-op? just return self?
-    def __pos__(self):
+    def __pos__(self): # pos is a no-op? just return self?
         return self
     def __abs__(self):
         return self._unary_common('abs')
@@ -266,22 +270,22 @@ class Xbase(object):
     def __lt__(self, right):
         return self._binary_common('<', right)
     def __rlt_(self, left):
-        return self.__add__(left)
+        return self.__lt__(left)
 
     def __le__(self, right):
         return self._binary_common('<=', right)
     def __rle_(self, left):
-        return self.__add__(left)
+        return self.__le__(left)
 
     def __gt__(self, right):
         return self._binary_common('<', right)
     def __rgt_(self, left):
-        return self.__add__(left)
+        return self.__gt__(left)
 
     def __ge__(self, right):
         return self._binary_common('<=', right)
     def __rge_(self, left):
-        return self.__add__(left)
+        return self.__ge__(left)
 
     def __eq__(self, right):
         # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))
