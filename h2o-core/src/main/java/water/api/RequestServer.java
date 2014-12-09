@@ -89,6 +89,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
+    register("/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
     addToNavbar(register("/Jobs"       ,"GET",JobsHandler       .class,"list"        ,"Get a list of all the H2O Jobs (long-running actions)."),"/Jobs"       , "Jobs",          "Admin");
     addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
@@ -440,6 +441,12 @@ public class RequestServer extends NanoHTTPD {
     String path = type.requestName(uripath); // Strip suffix type from middle of URI
     String versioned_path = "/" + version + path;
     alwaysLogRequest(path, method, parms);
+
+    // Blank response used by R's uri.exists("/")
+    if (method.equals("HEAD") && uri.equals("/")) {
+      Response r = new Response(HTTP_OK, MIME_PLAINTEXT, "");
+      return r;
+    }
 
     // Load resources, or dispatch on handled requests
     try {

@@ -327,6 +327,7 @@ public class NetworkInit {
         // allows the socket to be bound even though a previous connection is in a timeout state.
         // cnc: this is busted on windows.  Back to the old code.
         _apiSocket = new ServerSocket(H2O.API_PORT);
+        _apiSocket.setReuseAddress(true);
         _udpSocket = DatagramChannel.open();
         _udpSocket.socket().setReuseAddress(true);
         _udpSocket.socket().bind(new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT));

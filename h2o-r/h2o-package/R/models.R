@@ -337,3 +337,9 @@ function(model) {
   new("H2OGBMModel", h2o = client, key = json$key, model = json$output,
       valid = new("H2OParsedData", h2o=client, key="NA"), xval = list())
 }
+
+.deeplearning.builder <- function(json, client) {
+  new("H2ODeepLearningModel", h2o = client, key = json$key, model = json$output,
+      valid = new("H2OParsedData", h2o=client, key="NA"), xval = list())
+
+}

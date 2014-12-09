@@ -137,28 +137,29 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
 
     # doesn't take indices? only column labels?
     # return first column, unless specified
-    desiredResult = None
 
     if not (column is None or isinstance(column, (basestring, int))):
         raise Exception("column param should be string or integer index or None %s %s" % (type(column), column))
 
+    # either return the first col, or the col indentified by label. the column identifed could be string or index?
+    if column is None: # means the summary json when we ask for col 0, will be what we return (do all though)
+        labelsToDo = labelList
+    elif isinstance(column, int):
+        labelsToDo = [labelList[column]]
+    elif isinstance(column, basestring):
+        labelsToDo = [column]
+    else:
+        raise Exception("wrong type %s for column %s" % (type(column), column))
+
+    # we get the first column as result after walking across all, if no column parameter
+    desiredResult = None
     for colIndex, label in enumerate(labelList):
         print "doing summary on %s" % label
         summaryResult = node.summary(key=key, column=label)
+        if not desiredResult:
+            desiredResult = summaryResult
 
-        # either return the first col, or the col indentified by label. the column identifed could be string or index?
-        if column is None: # means the first column will be it
-            thisIsTheColumn = True
-        elif isinstance(column, int):
-            thisIsTheColumn = (column==colIndex)
-        else:
-            thisIsTheColumn = (column==label)
-
-        if thisIsTheColumn:
-           desiredResult = summaryResult
-        
         # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
-
         # this should be the same for all the cols? Or does the checksum change?
         frame = summaryResult['frames'][0]
         default_pctiles = frame['default_pctiles']
@@ -259,13 +260,17 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
 # summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
 # co = h2o_cmd.infoFromSummary(summaryResult)
 # print co.label
-def infoFromSummary(summaryResult):
+def infoFromSummary(summaryResult, column=0):
     # this should be the same for all the cols? Or does the checksum change?
     frame = summaryResult['frames'][0]
     default_pctiles = frame['default_pctiles']
     checksum = frame['checksum']
     rows = frame['rows']
-    coJson = frame['columns'][0]
+
+    assert column < len(frame['columns']), "You're asking for column %s but there are only %s" % \
+        (column, len(frame['columns']))
+    coJson = frame['columns'][column]
+      
 
     assert checksum !=0 and checksum is not None
     assert rows!=0 and rows is not None
@@ -282,9 +287,9 @@ def infoFromSummary(summaryResult):
 
     print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
     for k,v in co:
-        # print k, v
         print "co.%s" % k,
-    print
+
+    print "\nReturning", co.label, "for column", column
     return co
 
 

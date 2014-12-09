@@ -80,7 +80,7 @@ class Basic(unittest.TestCase):
 
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
-            h2o_glm.newSimpleCheckGLM(self, model, parameters, labelList, labelListUsed)
+            h2o_glm.simpleCheckGLM(self, model, parameters, labelList, labelListUsed)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')

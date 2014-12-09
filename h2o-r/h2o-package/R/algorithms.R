@@ -237,9 +237,17 @@
 
 
 
-.parms <- function(client, algo, m) {
+.parms <- function(client, algo, m, envir) {
   P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
   p_val <- list()     # list for all of the algo arguments
+  m <- as.list(m)
+
+  m <- lapply(m, function(i)  {
+                                if( is.name(i) ) i <- get(deparse(i), envir)
+                                if( is.call(i) ) i <- eval(i, envir)
+                                if( is.integer(i) ) i <- as.numeric(i)
+                                i
+                                })
 
   #---------- Check user param types ----------#
   error <- lapply(P, function(i) {
@@ -254,7 +262,7 @@
         "barray" = p_type[2] <- "logical",
         "narray" = p_type[2] <- "numeric")
       #browser()
-      if( length(p_type) > 1) {
+      if( length(p_type) > 1 ) {
         p_type <- p_type[2]
         if( !(m[[i$name]] %i% p_type) )
           e %p0% ("array of" %p% i$name %p% ("must be of type" %p% (p_type %p0% (", but got" %p% (class(m[[i$name]]) %p0% ".\n")))))
@@ -287,7 +295,7 @@
   if(length(rj$validation_messages) != 0)
     error <- lapply(rj$validation_messages, function(i) {
       e <- ""
-      if(!i$message_type %in% c("HIDE","INFO")) e %p0% i$message %p0% ".\n"
+      if( !(i$message_type %in% c("HIDE","INFO")) ) e %p0% i$message %p0% ".\n"
       e
     })
    if( !all(error == "") ) stop(error)
@@ -297,8 +305,8 @@
   p_val
 }
 
-.run <- function(client, algo, m) {
-  p_val <- .parms(client, algo, m)
+.run <- function(client, algo, m, envir) {
+  p_val <- .parms(client, algo, m, envir)
 
   res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
 

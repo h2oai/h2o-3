@@ -15,7 +15,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_GBM_regess(self):
+    def test_GBM_basic_regress(self):
 
         bucket = 'home-0xdiag-datasets'
         importFolderPath = 'standard'
@@ -39,7 +39,7 @@ class Basic(unittest.TestCase):
             'ignored_columns': None,
             'score_each_iteration': True,
             'response_column': 'C55',
-            'do_classification': True,
+            'do_classification': False,
             # 'balance_classes':
             # 'max_after_balance_size':
             'ntrees': 2,
@@ -68,11 +68,14 @@ class Basic(unittest.TestCase):
 
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
+        # just check that it's something non-zero
+        assert cmm.cm['prediction_error']!=0.0
 
         mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         mmResultShort = mmResult['model_metrics'][0]
         del mmResultShort['frame'] # too much!
         mm = OutputObj(mmResultShort, 'mm')
+
 
         prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
         pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')

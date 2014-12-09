@@ -1,6 +1,7 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
+from h2o_test import OutputObj
 
 print "Same as test_summary2_uniform.py but with exponential distribution on the data"
 DO_TRY_SCIPY = False
@@ -83,12 +84,6 @@ class Basic(unittest.TestCase):
         x = 0
         timeoutSecs = 60
 
-        class Column(object):
-            def __init__(self, column):
-                assert isinstance(column, dict)
-                for k,v in column.iteritems():
-                    setattr(self, k, v) # achieves self.k = v
-
         for (rowCount, colCount, hex_key, rangeMin, rangeMax, expected) in tryList:
             SEEDPERFILE = random.randint(0, sys.maxint)
             x += 1
@@ -126,10 +121,10 @@ class Basic(unittest.TestCase):
             # key
             # checksum
 
-            # only one column
+            # only one column (column 0)
             columns = summaryResult['frames'][0]['columns']
             default_pctiles = summaryResult['frames'][0]['default_pctiles']
-            co = Column(columns[0])
+            co = OutputObj(columns[0], 'summary')
             # how are enums binned. Stride of 1? (what about domain values)
             coList = [
                 co.base,
@@ -152,8 +147,8 @@ class Basic(unittest.TestCase):
                 co.zeros,
                 ]
 
-            for c in coList:
-                print c
+            for k,v in co:
+                print k, v
 
             print "len(co.bins):", len(co.bins)
 
