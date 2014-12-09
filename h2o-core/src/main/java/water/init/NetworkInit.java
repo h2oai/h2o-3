@@ -346,7 +346,7 @@ public class NetworkInit {
       H2O.API_PORT += 2;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
-    Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http:/",H2O.SELF_ADDRESS,":"+_apiSocket.getLocalPort()+"/");
+    Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http://",H2O.SELF_ADDRESS.getHostAddress(),":"+_apiSocket.getLocalPort()+"/");
 
     String embeddedConfigFlatfile = null;
     //AbstractEmbeddedH2OConfig ec = getEmbeddedH2OConfig();
