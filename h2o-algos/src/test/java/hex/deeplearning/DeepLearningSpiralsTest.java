@@ -90,7 +90,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         }
       }
     }
-    fr.delete();
+    frame.delete();
     Scope.exit();
   }
 }
