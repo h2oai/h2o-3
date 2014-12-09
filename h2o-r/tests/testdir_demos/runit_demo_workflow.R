@@ -2,18 +2,17 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 demo_workflow <- function(conn) {
-    Log.info("Import small airlines data...")
+    Log.info("Import small iris data...")
     hex <- as.h2o(conn, iris, key = "iris")
     k <- 3
+    setSeed <- 148008988978
     
     Log.info('Build kmeans model on pedal length and width...')
-    myX <- names(hex)[-5]
-    print(myX)
-    iris_model <- h2o.kmeans(training_frame = hex, x = myX, K = k)
+    iris_model <- h2o.kmeans(training_frame = hex, x = 1:4, K = k, seed = setSeed)
     print(iris_model)
     print(paste('Mean squared error : ', iris_model@model$mse))
     Log.info('Build kmeans model, cheating with species input...')
-    iris_model_wSpecies <- h2o.kmeans (training_frame = hex, K = k)
+    iris_model_wSpecies <- h2o.kmeans (training_frame = hex, x = 1:5, K = k, seed = setSeed)
     print(iris_model_wSpecies)
     print(paste('Mean squared error : ', iris_model_wSpecies@model$mse))
     
@@ -24,8 +23,13 @@ demo_workflow <- function(conn) {
     Log.info('Print confusion matrix...')
     species.R <- iris$Species
     
+    Mode <- function(x) {
+      ux <- unique(x)
+      ux[which.max(tabulate(match(x, ux)))]
+    }    
+    
     confusion_matrix <- function(pred){
-      assignments <- names(sapply(c(0, 1, 2), function(id) which.max(summary(species.R[pred == id]))))
+      assignments <- sapply(c(0, 1, 2), function(id) Mode(species.R[pred == id]))
       foo <- function(x) {
                 if(x == assignments[1]) 0 
                 else if(x == assignments[2]) 1 
