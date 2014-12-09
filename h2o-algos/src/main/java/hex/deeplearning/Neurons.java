@@ -981,11 +981,11 @@ public abstract class Neurons {
         scale += _a.get(row);
       }
       for( int row = 0; row < rows; row++ ) {
+        _a.raw()[row] /= scale;
         if (Float.isNaN(_a.get(row))) {
           _minfo.set_unstable();
           throw new RuntimeException("Numerical instability, predicted NaN.");
         }
-        _a.raw()[row] /= scale;
       }
     }
 
