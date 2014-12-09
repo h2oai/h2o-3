@@ -596,7 +596,8 @@ public class NanoHTTPD
             sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
             return true;
           }
-          else {
+          boolean uploadFile = Pattern.matches("/PostFile.json", uri) || Pattern.matches("/[1-9][0-9]*/PostFile.json", uri);
+          if (uploadFile) {
             //
             // Here is an example of how to upload a file from the command line.
             //
@@ -613,6 +614,7 @@ public class NanoHTTPD
             sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
             return true;
           }
+          sendError(HTTP_NOTFOUND, "(Attempt to upload data) URL not found");
         }
       }
       catch (Exception e) {
