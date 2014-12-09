@@ -1,4 +1,3 @@
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
@@ -7,7 +6,7 @@ test.km.benign <- function(conn) {
   Log.info("Importing benign.csv data...\n")
   # benign.hex = h2o.importURL(conn, "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/benign.csv")
   # benign.hex = h2o.importFile(conn, normalizePath("../../../smalldata/logreg/benign.csv"))
-  benign.hex <- h2o.importFile(conn, locate("smalldata/logreg/benign.csv"))
+  benign.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
   
@@ -21,7 +20,7 @@ test.km.benign <- function(conn) {
     print(benign.km.h2o)
     benign.km <- kmeans(benign.data, centers = i)
   }
-  
+
   testEnd()
 }
 
