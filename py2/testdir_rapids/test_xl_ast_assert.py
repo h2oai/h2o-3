@@ -155,6 +155,18 @@ class Basic(unittest.TestCase):
         Assign(c, 2)
         checkAst("(= !c1 #2)")
 
+        # - doesn't exist? multiply by -1?
+        Assign(c, ~c)
+        checkAst("(= !c1 (^ $c1 #1))") # not right if more than 1 col?
+        Assign(c, -c)
+        checkAst("(= !c1 (_ $c1))")
+        Assign(c, abs(c))
+        checkAst("(= !c1 (abs $c1))")
+
+        # this needs to be an h2o int? because it expects int return
+        # Assign(c, int(c))
+        # checkAst("(= !c1 (trunc c1 ))")
+
         Assign(a, [0])
         checkAst("(= !a1 (c {#0}))")
         Assign(b, [0,1])

@@ -27,7 +27,9 @@ def checkAst(expected):
 
 # we init to 1 row/col. (-1) can't figure how how to init to no rows in a single expression
 def astForInit(frame):
-     return '(= !%s (c {#-1}))' % frame
+    return '(= !%s (c {#-1}))' % frame
+    # will this work?
+    # return '(= !%s "null")' % frame
 
 class Xbase(object):
     lastExecResult = {}
@@ -148,9 +150,7 @@ class Xbase(object):
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn, Item)):
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s' % (funstr, type(self)))
-        else:
-            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
-                (funstr, type(self)))
+        return Fcn(funstr, self)
 
     def _binary_common(self, funstr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
@@ -174,42 +174,42 @@ class Xbase(object):
     def __sub__(self, right):
         return self._binary_common('-', right)
     def __rsub_(self, left):
-        return self.__add__(left)
+        return self._sub__(left)
 
     def __mul__(self, right):
         return self._binary_common('*', right)
     def __rmul_(self, left):
-        return self.__add__(left)
+        return self.__mul__(left)
 
     def __div__(self, right):
         return self._binary_common('/', right)
     def __rdiv_(self, left):
-        return self.__add__(left) 
+        return self.__div__(left) 
 
     def __mod__(self, right):
         return self._binary_common('%', right)
     def __rmod_(self, left):
-        return self.__add__(left)
+        return self.__mod__(left)
 
     def __pow__(self, right):
         return self._binary_common('**', right)
     def __rpow_(self, left):
-        return self.__add__(left)
+        return self.__pow__(left)
 
     def __and__(self, right):
         return self._binary_common('&', right)
     def __rand_(self, left):
-        return self.__add__(left)
+        return self.__and__(left)
 
     def __or__(self, right):
         return self._binary_common('|', right)
     def __ror_(self, left):
-        return self.__add__(left)
+        return self.__or__(left)
 
     def __xor__(self, right):
         return self._binary_common('^', right)
     def __rxor_(self, left):
-        return self.__add__(left)
+        return self.__xor__(left)
 
     # don't use __cmp__ ?
 
@@ -220,15 +220,17 @@ class Xbase(object):
     
     # unary
     # -, +, abs, ~, int, float
+    def __invert__(self):
+        # FIX! this isn't right if more than one col?
+        return self._binary_common('^', 1)
     def __neg__(self):
-        return _unary_common('_') # use special Rapids negation function
-    # pos is a no-op? just return self?
-    def __pos__(self):
+        return self._unary_common('_') # use special Rapids negation function
+    def __pos__(self): # pos is a no-op? just return self?
         return self
     def __abs__(self):
-        return _unary_common('abs')
+        return self._unary_common('abs')
     def __int__(self):
-        return _unary_common('trunc')
+        return self._unary_common('trunc')
 
     # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
     # (what if enums or strings)
@@ -258,22 +260,22 @@ class Xbase(object):
     def __lt__(self, right):
         return self._binary_common('<', right)
     def __rlt_(self, left):
-        return self.__add__(left)
+        return self.__lt__(left)
 
     def __le__(self, right):
         return self._binary_common('<=', right)
     def __rle_(self, left):
-        return self.__add__(left)
+        return self.__le__(left)
 
     def __gt__(self, right):
         return self._binary_common('<', right)
     def __rgt_(self, left):
-        return self.__add__(left)
+        return self.__gt__(left)
 
     def __ge__(self, right):
         return self._binary_common('<=', right)
     def __rge_(self, left):
-        return self.__add__(left)
+        return self.__ge__(left)
 
     def __eq__(self, right):
         # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))

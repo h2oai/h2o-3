@@ -114,7 +114,7 @@ h2o.clusterInfo <- function(client) {
 
   res = NULL
   {
-    res <- fromJSON(postForm(myURL, style = "POST"))
+    res <- fromJSON(getURL(myURL))
 
     nodeInfo <- res$nodes
     numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
@@ -125,7 +125,7 @@ h2o.clusterInfo <- function(client) {
       # to post its information yet.
       threeSeconds = 3
       Sys.sleep(threeSeconds)
-      res <- fromJSON(postForm(myURL, style = "POST"))
+      res <- fromJSON(getURL(myURL))
     }
   }
 
@@ -308,9 +308,7 @@ h2o.clusterInfo <- function(client) {
 }
 
 .uri.exists <- function(uri) {
-  h <- basicHeaderGatherer()
-  invisible(getURI(uri, headerfunction = h$update))
-  "200" == as.list(h$value())$status
+  url.exists(uri)
 }
 
 .h2o.__formatError <- function(error,prefix="  ") {
