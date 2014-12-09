@@ -52,7 +52,7 @@ NULL
 #' @aliases H2OClient
 H2OClient <- setClass("H2OClient",
                       representation(ip="character", port="numeric"),
-                      prototype(ip="127.0.0.1", port=54321)
+                      prototype(ip=NA_character_, port=NA_integer_)
                       )
 
 #' @rdname H2OClient-class
@@ -122,6 +122,17 @@ setMethod("show", "H2OParsedData", function(object) {
   print(head(Last.value))
 })
 
+
+#setClass("h2o.frame",
+#         representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
+#         col_names="vector", nrows="numeric", ncols="numeric"),
+#         prototype(h2o       = NULL,
+#                   key       = NA_character_,
+#                   ast       = NULL,
+#                   col_names = NA_integer_,
+#                   nrows     = NA_integer_,
+#                   ncols     = NA_integer_)
+#         )
 
 #'
 #' The H2OW2V object.

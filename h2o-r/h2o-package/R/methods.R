@@ -37,8 +37,8 @@
 #'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
 #'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
 #'         .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')  # call the force eval
-#'         ID <- ifelse(ID == "Last.value", ID, x@@key)                       # bridge the IDs between the force.eval and the parent frame
-#'         assign(ID, x, parent.frame())                                     # assign the eval'ed frame into the parent env
+#'         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
+#'         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
 #'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
 #'       }
 #'

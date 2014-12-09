@@ -30,6 +30,7 @@ public class ASTddply extends ASTOp {
   @Override ASTddply parse_impl(Exec E) {
     // get the frame to work
     AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
 
     // Get the col ids
     AST s=null;
