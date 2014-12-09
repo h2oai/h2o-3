@@ -32,7 +32,7 @@ public class AppendableVec extends Vec {
   long _totalCnt;
 
   public AppendableVec( Key key ) {
-    super(key, (long[])null);
+    super(key, null);
     _espc = new long[4];
     _chunkTypes = new byte[4];
   }

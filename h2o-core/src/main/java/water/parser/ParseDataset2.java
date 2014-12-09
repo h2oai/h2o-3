@@ -47,7 +47,7 @@ public final class ParseDataset2 extends Job<Frame> {
 
       throw ex;
     } finally {
-      assert DKV.get(job._key).<Job>get().isStopped();
+      assert DKV.<Job>getGet(job._key).isStopped();
     }
   }
 
@@ -80,9 +80,14 @@ public final class ParseDataset2 extends Job<Frame> {
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long sum=0;
-    for( Key k : keys ) {
+    for( int i=0; i<keys.length; i++ ) {
+      Key k = keys[i];
       if( dest.equals(k) )
         throw new IllegalArgumentException("Destination key "+dest+" must be different from all sources");
+      if( delete_on_done )
+        for( int j=i+1; j<keys.length; j++ )
+          if( k==keys[j] )
+            throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
       sum += getByteVec(k).length(); // Sum of all input filesizes
     }
     long memsz = H2O.CLOUD.memsz();
@@ -151,13 +156,13 @@ public final class ParseDataset2 extends Job<Frame> {
         ecols[n++] = i;
     ecols =  Arrays.copyOf(ecols, n);
     if( ecols.length > 0 ) {
-      EnumFetchTask eft = new EnumFetchTask(H2O.SELF.index(), mfpt._eKey, ecols).doAllNodes();
+      EnumFetchTask eft = new EnumFetchTask(mfpt._eKey, ecols).doAllNodes();
       Enum[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];
       EnumMapping [] emaps = new EnumMapping[H2O.CLOUD.size()];
       int k = 0;
-      for(int i = 0; i < ecols.length; ++i)
-        mfpt._dout._vecs[ecols[i]].setDomain(ValueString.toString(ds[k++] = enums[ecols[i]].computeColumnDomain()));
+      for( int ei : ecols)
+        mfpt._dout._vecs[ei].setDomain(ValueString.toString(ds[k++] = enums[ei].computeColumnDomain()));
       for(int nodeId = 0; nodeId < H2O.CLOUD.size(); ++nodeId) {
         if(eft._lEnums[nodeId] == null)continue;
         int[][] emap = new int[ecols.length][];
@@ -214,9 +219,8 @@ public final class ParseDataset2 extends Job<Frame> {
     private final ValueString [][] _gDomain;
     private final EnumMapping [] _emaps;
     private final int  [] _chunk2Enum;
-    private final int [] _colIds;
     private EnumUpdateTask(ValueString [][] gDomain, EnumMapping [] emaps, int [] chunk2Enum, int [] colIds){
-      _gDomain = gDomain; _emaps = emaps; _chunk2Enum = chunk2Enum; _colIds = colIds;
+      _gDomain = gDomain; _emaps = emaps; _chunk2Enum = chunk2Enum;
     }
     private int[][] emap(int nodeId) {return _emaps[nodeId].map;}
     @Override public void map(Chunk [] chks){
@@ -246,10 +250,9 @@ public final class ParseDataset2 extends Job<Frame> {
   private static class EnumFetchTask extends MRTask<EnumFetchTask> {
     private final Key _k;
     private final int[] _ecols;
-    private final int _homeNode; // node where the computation started, enum from this node MUST be cloned!
     private Enum[] _gEnums;      // global enums per column
     public Enum[][] _lEnums;    // local enums per node per column
-    private EnumFetchTask(int homeNode, Key k, int[] ecols){_homeNode = homeNode; _k = k;_ecols = ecols;}
+    private EnumFetchTask(Key k, int[] ecols){_k = k;_ecols = ecols;}
     @Override public void setupLocal() {
       _lEnums = new Enum[H2O.CLOUD.size()][];
       if( !MultiFileParseTask._enums.containsKey(_k) ) return;
@@ -414,7 +417,7 @@ public final class ParseDataset2 extends Job<Frame> {
     @Override public void map( Key key ) {
       // Get parser setup info for this chunk
       ByteVec vec = getByteVec(key);
-      final int chunkStartIdx = _fileChunkOffsets[ArrayUtils.find(_keys,key)];
+      final int chunkStartIdx = _fileChunkOffsets[_lo];
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr);
@@ -715,7 +718,7 @@ public final class ParseDataset2 extends Job<Frame> {
     @Override public final void addInvalidCol(int colIdx) {
       if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
     }
-    @Override public final boolean isString(int colIdx) { return ((colIdx < _nCols) ?  (_ctypes[colIdx]==ECOL || _ctypes[colIdx]==SCOL) : false);}
+    @Override public final boolean isString(int colIdx) { return (colIdx < _nCols) &&  (_ctypes[colIdx]==ECOL || _ctypes[colIdx]==SCOL);}
 
     @Override public final void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _nvs.length){
