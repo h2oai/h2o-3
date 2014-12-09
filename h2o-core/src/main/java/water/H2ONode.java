@@ -205,6 +205,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     // Must make a fresh socket
     SocketChannel sock2 = SocketChannel.open();
+    sock2.socket().setReuseAddress(true);
     sock2.socket().setSendBufferSize(AutoBuffer.BBSIZE);
     boolean res = sock2.connect( _key );
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
