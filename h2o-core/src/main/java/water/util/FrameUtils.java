@@ -37,4 +37,18 @@ public class FrameUtils {
   public static ChunkSummary chunkSummary(Frame fr) {
     return new ChunkSummary().doAll(fr);
   }
+
+  /** Generate given numbers of keys by suffixing key by given numbered suffix. */
+  public static Key[] generateNumKeys(Key mk, int num) { return generateNumKeys(mk, num, "_part"); }
+  public static Key[] generateNumKeys(Key mk, int num, String delim) {
+    Key[] ks = new Key[num];
+    String n = mk!=null ? mk.toString() : "noname";
+    String suffix = "";
+    if (n.endsWith(".hex")) {
+      n = n.substring(0, n.length()-4); // be nice
+      suffix = ".hex";
+    }
+    for (int i=0; i<num; i++) ks[i] = Key.make(n+delim+i+suffix);
+    return ks;
+  }
 }
