@@ -38,7 +38,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   parseSetup$data <- NULL
 
   # Perform the parse
-  res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "GET", .params = parseSetup)
+  res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "POST", .params = parseSetup)
 
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$name)
