@@ -167,7 +167,7 @@ public class Vec extends Keyed {
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
-  final long[] _espc;
+  final public long[] _espc;
 
   private String [] _domain;
   /** Returns the enum toString mapping array, or null if not an Enum column.
@@ -220,7 +220,7 @@ public class Vec extends Keyed {
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array). */
-  Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
+  public Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
 
   /** Build a numeric-type or enum-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); enum Vecs need to pass the
@@ -379,7 +379,7 @@ public class Vec extends Keyed {
 
   
   // Make a bunch of compatible zero Vectors
-  Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
+  public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];

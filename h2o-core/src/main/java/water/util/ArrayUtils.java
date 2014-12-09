@@ -260,7 +260,7 @@ public class ArrayUtils {
   }
   public static float maxValue(float[] ary, int from, int to) {
     float result = ary[from];
-    for (int i = from+11; i<to; ++i)
+    for (int i = from+1; i<to; ++i)
       if (ary[i]>result) result = ary[i];
     return result;
   }
