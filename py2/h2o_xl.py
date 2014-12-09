@@ -109,6 +109,16 @@ class Xbase(object):
 
         return Key(key=lhs.frame)
 
+    # this allows a Key to be used to slice another Key?
+    def __index__(self):
+        return self
+        
+    # http://www.siafoo.net/article/57
+    # def __len__(self)
+    # def __contains__(self, item)
+    # def __iter__(self)
+    # def __reversed__(self)
+
     # Only Keys are flexible enough to be index'ed
     def __setitem__(self, items, rhs):
         # Don't try to do it twice, if ilshift was involved
@@ -148,9 +158,7 @@ class Xbase(object):
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn, Item)):
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s' % (funstr, type(self)))
-        else:
-            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
-                (funstr, type(self)))
+        return Fcn(funstr, self)
 
     def _binary_common(self, funstr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
@@ -174,42 +182,42 @@ class Xbase(object):
     def __sub__(self, right):
         return self._binary_common('-', right)
     def __rsub_(self, left):
-        return self.__add__(left)
+        return self.__sub__(left)
 
     def __mul__(self, right):
         return self._binary_common('*', right)
     def __rmul_(self, left):
-        return self.__add__(left)
+        return self.__mul__(left)
 
     def __div__(self, right):
         return self._binary_common('/', right)
     def __rdiv_(self, left):
-        return self.__add__(left) 
+        return self.__div__(left) 
 
     def __mod__(self, right):
         return self._binary_common('%', right)
     def __rmod_(self, left):
-        return self.__add__(left)
+        return self.__mod__(left)
 
     def __pow__(self, right):
         return self._binary_common('**', right)
     def __rpow_(self, left):
-        return self.__add__(left)
+        return self.__pow__(left)
 
     def __and__(self, right):
         return self._binary_common('&', right)
     def __rand_(self, left):
-        return self.__add__(left)
+        return self.__and__(left)
 
     def __or__(self, right):
         return self._binary_common('|', right)
     def __ror_(self, left):
-        return self.__add__(left)
+        return self.__or__(left)
 
     def __xor__(self, right):
         return self._binary_common('^', right)
     def __rxor_(self, left):
-        return self.__add__(left)
+        return self.__xor__(left)
 
     # don't use __cmp__ ?
 
@@ -221,14 +229,14 @@ class Xbase(object):
     # unary
     # -, +, abs, ~, int, float
     def __neg__(self):
-        return _unary_common('_') # use special Rapids negation function
+        return self._unary_common('_') # use special Rapids negation function
     # pos is a no-op? just return self?
     def __pos__(self):
         return self
     def __abs__(self):
-        return _unary_common('abs')
+        return self._unary_common('abs')
     def __int__(self):
-        return _unary_common('trunc')
+        return self._unary_common('trunc')
 
     # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
     # (what if enums or strings)
