@@ -58,28 +58,25 @@ h2o.gbm <- function(x, y, training_frame,
 {
   parms <- list()
 
-  # Required args: x, y, data
+  # Required args: x, y, training_frame
   if( missing(x) ) stop("argument \"x\" is missing, with no default")
   if( missing(y) ) stop("argument \"y\" is missing, with no default")
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
   if(delete <- (training_frame %i% "ASTNode")) invisible(nrow(training_frame))
 
-  parms <- eval.parent(as.list(match.call()[-1L]))
+  parms <- as.list(match.call()[-1L])
 
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
   args <- .verify_dataxy(training_frame, x, y)
+  parms$x <- args$x_ignore
+  parms$y <- args$y
+  if(!missing(max_after_balance_size) ) parms$max_after_balance_size <- max_after_balance_size #hard-code due to Inf bug
+  
+  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
-  parms[["ignored_columns"]] <- args$x_ignore
-  parms[["response_column"]] <- args$y
-  parms[["training_frame"]] <- training_frame
-  if(!missing(max_after_balance_size) ) parms[["max_after_balance_size"]] <- max_after_balance_size #hard-code due to Inf bug
+  model <- .run(training_frame@h2o, 'gbm', parms, parent.frame())
 
-
-
-  model <- .run(training_frame@h2o, 'gbm', parms)
-
-  if(delete) h2o.rm("data")
+  if(delete) h2o.rm("training_frame")
 
   model
 }
@@ -87,5 +84,4 @@ h2o.gbm <- function(x, y, training_frame,
 #required map for params with different names, assuming it will change in the RESTAPI end
 .gbm.map <- c("x" = "ignored_columns",
               "y" = "response_column",
-              "data" = "training_frame",
               "key" = "destination_key")

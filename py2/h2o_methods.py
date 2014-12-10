@@ -112,13 +112,26 @@ def jobs_admin(self, timeoutSecs=120, **kwargs):
     # a = { 'jobs': {} }
     return a
 #******************************************************************************************8
-def log_view(self, timeoutSecs=10, **kwargs):
-    a = self.do_json_request('LogView.json', timeout=timeoutSecs)
-    verboseprint("\nlog_view result:", dump_json(a))
-    return a
+def put_file(self, f, key=None, timeoutSecs=60):
+    if key is None:
+        key = os.path.basename(f)
+        ### print "putfile specifying this key:", key
 
-def csv_download(self, src_key, csvPathname, timeoutSecs=60, **kwargs):
-    params = {'src_key': src_key}
+    fileObj = open(f, 'rb')
+    resp = self.do_json_request(
+        '2/PostFile.json',
+        cmd='post',
+        timeout=timeoutSecs,
+        params={"key": key},
+        files={"file": fileObj},
+        extraComment=str(f))
+
+    verboseprint("\nput_file response: ", dump_json(resp))
+    fileObj.close()
+    return key
+
+def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
+    params = {'key': key}
     paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
     url = self.url('2/DownloadDataset.json')
     log('Start ' + url + paramsStr, comment=csvPathname)
@@ -131,6 +144,11 @@ def csv_download(self, src_key, csvPathname, timeoutSecs=60, **kwargs):
         for chunk in r.iter_content(1024):
             f.write(chunk)
     print csvPathname, "size:", h2o_util.file_size_formatted(csvPathname)
+
+def log_view(self, timeoutSecs=10, **kwargs):
+    a = self.do_json_request('LogView.json', timeout=timeoutSecs)
+    verboseprint("\nlog_view result:", dump_json(a))
+    return a
 
 def log_download(self, logDir=None, timeoutSecs=30, **kwargs):
     if logDir == None:
@@ -253,6 +271,7 @@ H2O.get_timeline = get_timeline
 H2O.log_view = log_view
 H2O.log_download = log_download
 H2O.csv_download = csv_download
+H2O.put_file = put_file
 
 H2O.remove_all_keys = remove_all_keys
 H2O.remove_key = remove_key

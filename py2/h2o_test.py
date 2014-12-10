@@ -5,35 +5,45 @@ import h2o_nodes
 import h2o_sandbox
 
 # print "h2o_test"
+# generic python object generation from json object.
 class OutputObj(object):
     def __iter__(self):
         for attr, value in self.__dict__.iteritems():
             yield attr, value
 
-    def __init__(self, output, name):
-        assert isinstance(output, dict)
-        for k,v in output.iteritems():
-            setattr(self, k, v) # achieves self.k = v
+    def __init__(self, output, name, noPrint=False):
+        assert isinstance(output, dict), "top level json given to OutputObj should be dict"
+        for k1,v1 in output.iteritems():
+            # let's go 2 levels deep
+            # list/dict/value should be only choices
+            if not isinstance(v1, dict):
+                setattr(self, k1, v1) # achieves self.k1 = v
+            else:
+                for k2,v2 in v1.iteritems():
+                    if isinstance(v2, dict):
+                        print "Warning: the json object has dict. at 3rd level" +\
+                            "Keeping those as json-like dicts. never check at >3" 
+                        setattr(self.k1, k2, v2) # achieves self.k1.k2 = v2
 
         self.name = name
-
-        for k,v in self:
-            if k == 'parameters':
-                print "Not showing 'parameters'"
-            elif k == 'data':
-                print "Not showing 'data'"
-            elif k == 'frame':
-                print "Not showing 'frame'"
-            elif k == 'model':
-                print "Not showing 'model'"
-            elif k == 'columns':
-                print "Not showing 'columns'"
-            else:
-                #  if it's a list > 20, just print it normal
-                if isinstance(v, list) and len(v) > 20:
-                    print self.name, k, v
+        if not noPrint:
+            for k,v in self:
+                if k == 'parameters':
+                    print "Not showing 'parameters'"
+                elif k == 'data':
+                    print "Not showing 'data'"
+                elif k == 'frame':
+                    print "Not showing 'frame'"
+                elif k == 'model':
+                    print "Not showing 'model'"
+                elif k == 'columns':
+                    print "Not showing 'columns'"
                 else:
-                    print self.name, k, dump_json(v)
+                    #  if it's a list with > 20, just print it normal
+                    if isinstance(v, list) and len(v) > 20:
+                        print self.name, k, v
+                    else:
+                        print self.name, k, dump_json(v)
 
 
 # this is just for putting timestamp in front of all stdout

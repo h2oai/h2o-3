@@ -1355,6 +1355,8 @@ cbind <- function(..., deparse.level = 1) if( .isH2O(list(...)[[1]])) UseMethod(
 #' @rdname cbind.h2o
 cbind.H2OFrame <- function(..., deparse.level = 1) {
   if(deparse.level != 1) stop("Unimplemented")
+  klasses <- unlist(lapply(list(...), function(l) { l %i% "H2OFrame" }))
+  if (any(!klasses)) stop("`cbind` must consist of H2O objects only.")
   ast <- .h2o.varop("cbind", ...)
   ast
 }

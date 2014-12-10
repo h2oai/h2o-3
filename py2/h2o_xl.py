@@ -111,6 +111,16 @@ class Xbase(object):
 
         return Key(key=lhs.frame)
 
+    # this allows a Key to be used to slice another Key?
+    def __index__(self):
+        return self
+        
+    # http://www.siafoo.net/article/57
+    # def __len__(self)
+    # def __contains__(self, item)
+    # def __iter__(self)
+    # def __reversed__(self)
+
     # Only Keys are flexible enough to be index'ed
     def __setitem__(self, items, rhs):
         # Don't try to do it twice, if ilshift was involved
@@ -174,7 +184,7 @@ class Xbase(object):
     def __sub__(self, right):
         return self._binary_common('-', right)
     def __rsub_(self, left):
-        return self._sub__(left)
+        return self.__sub__(left)
 
     def __mul__(self, right):
         return self._binary_common('*', right)
