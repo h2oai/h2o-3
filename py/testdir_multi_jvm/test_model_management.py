@@ -5,6 +5,7 @@ import h2o, h2o_util
 import os
 import argparse
 import time
+import json
 
 #################
 # Config is below
@@ -41,10 +42,27 @@ h2o.H2O.verboseprint("port" + str(port))
 pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
 def list_to_dict(l, key):
+    '''
+    Given a List and a key to look for in each element return a Dict which maps the value of that key to the element.  
+    Also handles nesting for the key, so you can use this for things like a list of elements which contain H2O Keys and 
+    return a Dict indexed by the 'name" element within the key.
+    list_to_dict([{'key': {'name': 'joe', 'baz': 17}}, {'key': {'name': 'bobby', 'baz': 42}}], 'key/name') =>
+    {'joe': {'key': {'name': 'joe', 'baz': 17}}, 'bobby': {'key': {'name': 'bobby', 'baz': 42}}}
+    '''
     result = {}
     for entry in l:
-        k = entry[key]
-        result[k] = entry
+        # print 'In list_to_dict, entry: ', repr(entry)
+
+        part = entry
+        k = None
+        for keypart in key.split('/'):
+            part = part[keypart]
+            k = keypart
+
+            # print 'for keypart: ', keypart, ' part: ', repr(part)
+
+        result[part] = entry
+    # print 'result: ', repr(result)
     return result
 
 
@@ -108,7 +126,7 @@ def validate_model_exists(model_name, models):
     '''
     Validate that a given model key is found in the models list.
     '''
-    models_dict = list_to_dict(models, 'key')
+    models_dict = list_to_dict(models, 'key/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
 
@@ -131,26 +149,31 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
         actual = actuals_dict[k]['actual_value']
+        actual_type = actuals_dict[k]['type']
 
         # print repr(actuals_dict[k])
-        if actuals_dict[k]['type'] == 'boolean':
+        if actual_type == 'boolean':
             expected = bool(expected)
             actual = True if 'true' == actual else False # true -> True
-        elif actuals_dict[k]['type'] == 'int':
+        elif actual_type == 'int':
             expected = int(expected)
             actual = int(actual)
-        elif actuals_dict[k]['type'] == 'long':
+        elif actual_type == 'long':
             expected = long(expected)
             actual = long(actual)
-        elif actuals_dict[k]['type'] == 'string':
+        elif actual_type == 'string':
             expected = str(expected)
             actual = str(actual)
-        elif actuals_dict[k]['type'] == 'double':
+        elif actual_type == 'double':
             expected = float(expected)
             actual = float(actual)
-        elif actuals_dict[k]['type'] == 'float':
+        elif actual_type == 'float':
             expected = float(expected)
             actual = float(actual)
+        elif actual_type.startswith('Key<'):
+            # For keys we send just a String but receive an object
+            expected = expected
+            actual = json.loads(actual)['name']
             
         # TODO: don't do exact comparison of floating point!
 
@@ -640,12 +663,16 @@ assert 'model_metrics' in mms, 'FAIL: Failed to find model_metrics in result of 
 found_mm = False
 for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
-    assert 'key' in mm['model'], "FAIL: mm[model] does not contain a key: " + repr(mm)
-    assert 'frame' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
+    assert 'name' in mm['model'], "FAIL: mm[model] isn't a key with a name: " + repr(mm)
+    assert 'type' in mm['model'], "FAIL: mm[model] does not contain a type: " + repr(mm)
+    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm)
+
+    assert 'frame' in mm, "FAIL: mm does not contain a frame element: " + repr(mm)
     assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)
     assert 'type' in mm['frame'], "FAIL: mm[frame] does not contain a type: " + repr(mm)
-    assert 'Key<Frame>' == mm['frame']['type'], "FAIL: mm[frame] type is not Key[Frame]: " + repr(mm)
-    model_key = mm['model']['key']
+    assert 'Key<Frame>' == mm['frame']['type'], "FAIL: mm[frame] type is not Key<Frame>: " + repr(mm)
+
+    model_key = mm['model']['name']
     frame_key = mm['frame']['name'] # TODO: should match
     if model_key == 'deeplearning_prostate_binomial' and frame_key == 'prostate_binomial':
         found_mm = True
@@ -699,7 +726,7 @@ frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 
 compatible_models = result['compatible_models']
-models_dict = h2o_util.list_to_dict(compatible_models, 'key')
+models_dict = h2o_util.list_to_dict(compatible_models, 'key/name')
 assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list."
 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."

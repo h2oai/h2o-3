@@ -1,6 +1,7 @@
 package water.util;
 
 import water.*;
+import water.api.KeySchema;
 import water.api.Schema;
 
 import java.lang.reflect.Array;
@@ -159,11 +160,34 @@ public class PojoUtils {
             //
             Value v = DKV.get((Key) orig_field.get(origin));
             dest_field.set(dest, (null == v ? null : v.get()));
+          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a Keyed (e.g., a Frame or Model) to a KeySchema.
+            //
+            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>)dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
+          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // Assigning a KeySchema (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
+            //
+            KeySchema k = (KeySchema)orig_field.get(origin);
+            Value v = DKV.get(Key.make(k.name));
+            dest_field.set(dest, (null == v ? null : v.get()));
+          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a Key to a KeySchema.
+            //
+            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>)dest_field.getType()), (Key)orig_field.get(origin)));
+          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // Assigning a KeySchema to a Key.
+            //
+            KeySchema k = (KeySchema)orig_field.get(origin);
+            dest_field.set(dest, Key.make(k.name));
           } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a Pattern.
             //
-            dest_field.set(dest, Pattern.compile((String)orig_field.get(origin)));
+            dest_field.set(dest, Pattern.compile((String) orig_field.get(origin)));
           } else if (orig_field.getType() == Pattern.class && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // We are assigning a Pattern to a String.

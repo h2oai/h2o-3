@@ -1,9 +1,6 @@
 package water.api;
 
-import water.H2O;
-import water.Iced;
-import water.Keyed;
-import water.Weaver;
+import water.*;
 import water.util.Log;
 
 import java.lang.reflect.Array;
@@ -264,8 +261,13 @@ public final class SchemaMetadata extends Iced {
         return k._key.toString();
       }
 
-      if (! o.getClass().isArray())
-        return o.toString();
+      if (! o.getClass().isArray()) {
+        if (Schema.class.isAssignableFrom(o.getClass())) {
+          return new String(((Schema)o).writeJSON(new AutoBuffer()).buf());
+        } else {
+          return o.toString();
+        }
+      }
 
       StringBuilder sb = new StringBuilder();
       sb.append("[");

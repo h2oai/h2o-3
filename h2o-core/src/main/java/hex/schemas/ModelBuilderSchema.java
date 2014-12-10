@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.H2O;
 import water.Job;
+import water.Key;
 import water.api.API;
 import water.api.JobV2;
 import water.api.ModelParametersSchema;
@@ -76,7 +77,8 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
         if (null != parameters) {
           _parameters = (Model.Parameters) parameters.createImpl();
-          _parameters._destination_key = parameters.destination_key;
+          if (null != parameters.destination_key)
+            _parameters._destination_key = Key.make(parameters.destination_key.name);
         }
         Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
         impl = (B) builder_constructor.newInstance(_parameters);

@@ -1,8 +1,11 @@
 package water.api;
 
+import water.H2O;
 import water.Key;
 import water.Keyed;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.Constructor;
 
 /**
  * Base Schema Class for Keys.  Note that Key schemas are generally typed by the type of
@@ -27,6 +30,18 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
 
   public KeySchema() {
     __schema_type = "Key<" + _impl_class.getSimpleName() + ">";
+  }
+
+  public static KeySchema make(Class<? extends KeySchema> clz, Key key) {
+    KeySchema result = null;
+    try {
+      Constructor c = clz.getConstructor(Key.class);
+      result = (KeySchema)c.newInstance(key);
+    }
+    catch (Exception e) {
+      throw H2O.fail("Caught exception trying to instantiate KeySchema: " + e);
+    }
+    return result;
   }
 
   @Override

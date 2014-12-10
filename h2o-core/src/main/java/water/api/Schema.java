@@ -378,11 +378,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         a[i] = (E)parse(splits[i].trim(),afclz, required);
       return a;
     }
+
     if( fclz.equals(Key.class) )
-      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       else if (!required && (s == null || s.length() == 0)) return null;
-      else if (!required) return Key.make(s);
       else return Key.make(s);
+
+    if( KeySchema.class.isAssignableFrom(fclz) ) {
+      if ((s == null || s.length() == 0) && required) throw new IllegalArgumentException("Missing key"); // TODO: better message!
+      if (!required && (s == null || s.length() == 0)) return null;
+
+      return KeySchema.make(fclz, Key.make(s));
+    }
 
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);

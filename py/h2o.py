@@ -636,7 +636,7 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
@@ -656,7 +656,7 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
