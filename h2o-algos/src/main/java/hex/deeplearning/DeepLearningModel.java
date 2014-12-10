@@ -462,27 +462,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
 
-      if (_valid == null)
-        dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
+      if (!_autoencoder) {
+        if (_valid == null)
+          dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
 
-      if (classification) {
-        dl.hide("_regression_stop", "regression_stop is used only with regression.");
-      } else {
-        dl.hide("_classification_stop", "classification_stop is used only with classification.");
-        dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
-        dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-        dl.hide("_balance_classes", "balance_classes is used only with classification.");
+        if (classification) {
+          dl.hide("_regression_stop", "regression_stop is used only with regression.");
+        } else {
+          dl.hide("_classification_stop", "classification_stop is used only with classification.");
+          dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
+          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+          dl.hide("_balance_classes", "balance_classes is used only with classification.");
+        }
+
+        if( !classification || !_balance_classes )
+          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+
+        if (classification && !_balance_classes || !classification)
+          dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
+
+
+        if (!classification && _valid != null || _valid == null)
+          dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
       }
-
-      if( !classification || !_balance_classes )
-        dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-
-      if (classification && !_balance_classes || !classification)
-        dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
-
-
-      if (!classification && _valid != null || _valid == null)
-        dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
@@ -515,8 +517,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         _single_node_mode = false;
       }
 
-      if (_autoencoder)
+      if (_autoencoder) {
         dl.hide("_use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
+        dl.hide("_convert_to_enum", "convert_to_enum is unsupported in combination with autoencoder.");
+      }
       if (!_use_all_factor_levels && _autoencoder ) {
         dl.warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
         _use_all_factor_levels = true;
@@ -593,9 +597,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (_autoencoder && _loss != Loss.MeanSquare) dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-      if (_autoencoder && classification) { dl.error("_classification", "Can only use regression mode for auto-encoder.");}
+      else if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
@@ -1605,7 +1608,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public Frame scoreAutoEncoder(Frame frame) {
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
-    adaptFrm.add("Reconstruction.MSE", adaptFrm.anyVec().makeZero());
+    Vec v0 = adaptFrm.anyVec().makeZero();
+    Scope.enter();
+    adaptTestForTrain(adaptFrm,true);
+    adaptFrm.add("Reconstruction.MSE", v0);
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
@@ -1618,6 +1624,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
     }.doAll(adaptFrm);
+    Scope.exit();
 
     // Return just the output columns
     return adaptFrm.extractFrame(len, adaptFrm.numCols());
