@@ -107,7 +107,8 @@ class Basic(unittest.TestCase):
                 hcntTotal = sum(co.bins)
 
                 print "\nComparing column %s to expected" % i
-                self.assertEqual(nacnt, expectedNaCnt[i], "Column %s Expected %s. nacnt %s incorrect" % (i, expectedNaCnt[i], nacnt))
+                self.assertEqual(nacnt, expectedNaCnt[i], "Column %s Expected %s. nacnt %s incorrect" % \
+                    (i, expectedNaCnt[i], nacnt))
                 self.assertEqual(hcntTotal, rowCount - expectedNaCnt[i])
                 self.assertEqual(rowCount, numRows, 
                     msg="numRows %s should be %s" % (numRows, rowCount))

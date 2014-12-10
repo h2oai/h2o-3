@@ -226,49 +226,51 @@ class Basic(unittest.TestCase):
         # rowCount = 1000
         rowCount = ROWS
         write_syn_dataset(csvPathname, rowCount, colCount, headerData)
-
+        
         for trial in range (20):
             rowData = rand_rowData()
             # make sure all key names are unique, when we re-put and re-parse (h2o caching issues)
             # src_key = csvFilename + "_" + str(trial)
             hex_key = csvFilename + "_" + str(trial) + ".hex"
-
-            start = time.time()
-            parseResultA = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key)
-            print "\nA trial #", trial, "parse end on ", csvFilename, 'took', time.time() - start, 'seconds'
-
-            inspect = h2o_cmd.runInspect(key=hex_key)
-            missingValuesListA, labelListA, numRowsA, numColsA  = h2o_cmd.infoFromInspect(inspect)
-            print "missingValuesListA", missingValuesListA
-
-            self.assertEqual(missingValuesListA, [], "missingValuesList should be empty")
-            self.assertEqual(numColsA, colCount)
-            self.assertEqual(numRowsA, rowCount)
+            parseResultA = h2i.import_parse(path=csvPathname, schema='local', hex_key=hex_key)
+            print "A trial #", trial
+            # optional. only needed to extract parse_key?
+            pA = h2o_cmd.ParseObj(parseResultA, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pA.numRows
+            print pA.numCols
+            print pA.parse_key
+            # this guy can take json object as first thing, or re-read with key
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
 
             csvDownloadPathname = SYNDATASETS_DIR + "/csvDownload.csv"
-            h2o.nodes[0].csv_download(key=hex_key, csvPathname=csvDownloadPathname)
+            h2o.nodes[0].csv_download(key=pA.parse_key, csvPathname=csvDownloadPathname)
 
             # do a little testing of saving the key as a csv
-
             # remove the original parsed key. source was already removed by h2o
             if 1==0:
-                h2o.nodes[0].remove_key(hex_key)
-            # interesting. what happens when we do csv download with time data?
-            start = time.time()
-            parseResultB = h2i.import_parse(path=csvDownloadPathname, schema='put', hex_key=hex_key)
-            print "B trial #", trial, "parse end on ", csvFilename, 'took', time.time() - start, 'seconds'
-            inspect = h2o_cmd.runInspect(key=hex_key)
-            missingValuesListB, labelListB, numRowsB, numColsB  = h2o_cmd.infoFromInspect(inspect)
-            print "missingValuesListB", missingValuesListB
+                h2o.nodes[0].remove_key(pA.parse_key)
 
-            self.assertEqual(missingValuesListA, missingValuesListB,
+            # interesting. what happens when we do csv download with time data?
+            parseResultB = h2i.import_parse(path=csvDownloadPathname, schema='put', hex_key=hex_key)
+            print "B trial #", trial
+            pB = h2o_cmd.ParseObj(parseResultB, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pB.numRows
+            print pB.numCols
+            print pB.parse_key
+            iB = h2o_cmd.InspectObj(pB.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
+
+            # these checks are redundant now
+            self.assertEqual(iA.missingList, iB.missingList,
                 "missingValuesList mismatches after re-parse of downloadCsv result")
-            self.assertEqual(numColsA, numColsB,
+            self.assertEqual(iA.numCols, iB.numCols,
                 "numCols mismatches after re-parse of downloadCsv result")
             # H2O adds a header to the csv created. It puts quotes around the col numbers if no header
             # so I guess that's okay. So allow for an extra row here.
-            self.assertEqual(numRowsA, numRowsB,
-                "numRowsA: %s numRowsB: %s mismatch after re-parse of downloadCsv result" % (numRowsA, numRowsB) )
+            self.assertEqual(iA.numRows, iB.numRows,
+                "pA.numRows: %s pB.numRows: %s mismatch after re-parse of downloadCsv result" % \
+                (iA.numRows, iB.numRows) )
             print "H2O writes the internal format (number) out for time."
 
             # ==> syn_time.csv <==
@@ -279,12 +281,6 @@ class Basic(unittest.TestCase):
             # "0","1","2","3","4","5"
             # 2.5219584E12,1.293264E12,2.3437116E12,2.0504736E12,3.9829788E12,1.9110204E12
 
-            # FIX! should do some comparison of values? 
-            # maybe can use exec to checksum the columns and compare column list.
-            # or compare to expected values? (what are the expected values for the number for time inside h2o?)
-
-            # FIX! should compare the results of the two parses. The infoFromInspect result?
-            ### h2b.browseJsonHistoryAsUrlLastMatch("Inspect")
             h2o.check_sandbox_for_errors()
 
 if __name__ == '__main__':

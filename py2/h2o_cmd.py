@@ -121,19 +121,12 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
     if not node: node = h2o_nodes.nodes[0]
     # return node.summary(key, **kwargs)
 
-    class Column(object):
-        def __init__(self, column):
-            assert isinstance(column, dict)
-            for k,v in column.iteritems():
-                setattr(self, k, v) # achieves self.k = v
-
-        def __iter__(self):
-            for attr, value in self.__dict__.iteritems():
-                yield attr, value
-
-    inspect = runInspect(key=key)
-    # change missingList definition: None if all empty, otherwise align to cols. 0 if 0?
-    missingList, labelList, numRows, numCols = infoFromInspect(inspect)
+    i = InspectObj(key=key)
+    # just so I don't have to change names below
+    missingList = i.missingList
+    labelList = i.labelList
+    numRows = i.numRows
+    numCols = i.numCols
 
     # doesn't take indices? only column labels?
     # return first column, unless specified
@@ -155,34 +148,9 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
     desiredResult = None
     for colIndex, label in enumerate(labelList):
         print "doing summary on %s" % label
-        summaryResult = node.summary(key=key, column=label)
+        co = SummaryObj(key=key, column=column)
         if not desiredResult:
-            desiredResult = summaryResult
-
-        # verboseprint("column", column, "summaryResult:", dump_json(summaryResult))
-        # this should be the same for all the cols? Or does the checksum change?
-        frame = summaryResult['frames'][0]
-        default_pctiles = frame['default_pctiles']
-        checksum = frame['checksum']
-        rows = frame['rows']
-        coJson = frame['columns'][0]
-
-        # assert len(columns) == numCols
-        assert rows == numRows
-        assert checksum !=0 and checksum is not None
-        assert rows!=0 and rows is not None
-        assert not frame['isText']
-        # FIX! why is frame['key'] = None here?
-        # assert frame['key'] == key, "%s %s" % (frame['key'], key)
-
-        # only one column
-        # checks that json is as expected, I guess.
-        co = OutputObj(coJson, 'summary %s' % label)
-        # just touching them will make sure they exist
-        # how are enums binned. Stride of 1? (what about domain values)
-        coList = [co.base, len(co.bins), len(co.data),
-            co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
-            co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+            desiredResult = co
 
         if not noPrint:
             for k,v in co:
@@ -260,36 +228,105 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
 # summaryResult = h2o_cmd.runSummary(key=hex_key, column=0)
 # co = h2o_cmd.infoFromSummary(summaryResult)
 # print co.label
+
+# legacy
 def infoFromSummary(summaryResult, column=0):
-    # this should be the same for all the cols? Or does the checksum change?
-    frame = summaryResult['frames'][0]
-    default_pctiles = frame['default_pctiles']
-    checksum = frame['checksum']
-    rows = frame['rows']
+    return SummaryObj(summaryResult, column=column)
 
-    assert column < len(frame['columns']), "You're asking for column %s but there are only %s" % \
-        (column, len(frame['columns']))
-    coJson = frame['columns'][column]
-      
+class ParseObj(OutputObj):
+    # the most basic thing is that the data frame has the # of rows and cols we expected
+    # embed that checking here, so every test doesn't have to
+    def __init__(self, parseResult, expectedNumRows=None, expectedNumCols=None, noPrint=False, **kwargs):
+        super(ParseObj, self).__init__(parseResult['frames'][0], "Parse", noPrint=noPrint)
+        # add my stuff
+        self.numRows, self.numCols, self.parse_key = infoFromParse(parseResult)
+        if expectedNumRows is not None:
+            assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
+        if expectedNumCols is not None:
+            assert self.numCols == expectedNumCols, "%s %s" % (self.numCols, expectedNumCols)
+        print "ParseObj created:", self # vars(self)
 
-    assert checksum !=0 and checksum is not None
-    assert rows!=0 and rows is not None
-    assert not frame['isText']
+# Let's experiment with creating new objects that are an api I control for generic operations (Inspect)
+class InspectObj(OutputObj):
+    # the most basic thing is that the data frame has the # of rows and cols we expected
+    # embed that checking here, so every test doesn't have to
+    def __init__(self, key,
+        expectedNumRows=None, expectedNumCols=None, expectedMissingList=None, expectedLabelList=None,
+        noPrint=False, **kwargs):
 
-    # FIX! why is frame['key'] = None here?
-    # assert frame['key'] == key, "%s %s" % (frame['key'], key)
+        inspectResult = runInspect(key=key)
+        super(InspectObj, self).__init__(inspectResult['frames'][0], "Inspect", noPrint=noPrint)
+        # add my stuff
+        self.missingList, self.labelList, self.numRows, self.numCols = infoFromInspect(inspectResult)
+        if expectedNumRows is not None:
+            assert self.numRows == expectedNumRows
+        if expectedNumCols is not None:
+            assert self.numCols == expectedNumCols
+        if expectedMissingList is not None:
+            assert self.missingList == expectedMissingList
+        if expectedLabelList is not None:
+            assert self.labelList == expectedLabelList
+        print "InspectObj created" #,  vars(self)
 
-    co = OutputObj(coJson, 'infoFromSummary %s' % coJson['label'])
-    # how are enums binned. Stride of 1? (what about domain values)
-    coList = [co.base, len(co.bins), len(co.data),
-        co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
-        co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-    print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
-    for k,v in co:
-        print "co.%s" % k,
+class SummaryObj(OutputObj):
+    @classmethod
+    def check(self, key, column, 
+        expectedNumRows=None, expectedNumCols=None, 
+        expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
+        noPrint=False, **kwargs):
 
-    print "\nReturning", co.label, "for column", column
-    return co
+        if expectedLabel is not None:
+            assert self.label != expectedLabel
+        if expectedType is not None:
+            assert self.type != expectedType
+        if expectedMissing is not None:
+            assert self.missing != expectedMissing
+        if expectedDomain is not None:
+            assert self.domain != expectedDomain
+        if expectedBinsSum is not None:
+            assert self.binsSum != expectedBinsSum
+
+    def __init__(self, key, column, 
+        expectedNumRows=None, expectedNumCols=None, 
+        expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
+        noPrint=False, **kwargs):
+
+        summaryResult = runSummary(key=key, column=column)
+        # this should be the same for all the cols? Or does the checksum change?
+        frame = summaryResult['frames'][0]
+        default_pctiles = frame['default_pctiles']
+        checksum = frame['checksum']
+        rows = frame['rows']
+
+        assert column < len(frame['columns']), "You're asking for column %s but there are only %s" % \
+            (column, len(frame['columns']))
+        coJson = frame['columns'][column]
+
+        assert checksum !=0 and checksum is not None
+        assert rows!=0 and rows is not None
+        assert not frame['isText']
+
+        # FIX! why is frame['key'] = None here?
+        # assert frame['key'] == key, "%s %s" % (frame['key'], key)
+        super(SummaryObj, self).__init__(coJson, "Summary for %s" % coJson['label'], noPrint=noPrint)
+
+        # how are enums binned. Stride of 1? (what about domain values)
+        coList = [co.base, len(co.bins), len(co.data),
+            co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
+            co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+
+        print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
+        for k,v in co:
+            print "co.%s" % k,
+
+        print "\nSummaryObj for", co.label, "for column", column
+        print "SummaryObj created with:", vars(self)
+        
+        # now do the assertion checks
+        self.check(key, column,
+            expectedNumRows, expectedNumCols, 
+            expectedLabel, expectedType, expectedMissing, expectedDomain, expectedBinsSum,
+            noPrint=noPrint, **kwargs)
 
 
