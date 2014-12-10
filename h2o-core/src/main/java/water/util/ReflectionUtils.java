@@ -23,6 +23,9 @@ public class ReflectionUtils {
       } else if (handler_type_parms[parm] instanceof TypeVariable) {
         // The handler's Iced class is parameterized, e.g. to handle multiple layers of Schema classes as in ModelsHandler:
         iced_class = (Class) ((TypeVariable) (handler_type_parms[parm])).getBounds()[parm];
+      } else if (handler_type_parms[parm] instanceof ParameterizedType) {
+        // The handler's Iced class is parameterized, e.g. to handle multiple layers of Schema classes as in ModelsHandler:
+        iced_class = (Class) ((ParameterizedType) (handler_type_parms[parm])).getRawType(); // For a Key<Frame> this returns Key.class; see also getActualTypeArguments()
       } else {
         String msg = "Iced parameter for handler: " + clz + " uses a type parameterization scheme that we don't yet handle: " + handler_type_parms[parm];
         Log.warn(msg);

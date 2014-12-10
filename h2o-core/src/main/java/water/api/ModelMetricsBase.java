@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.KeyV1.FrameKeyV1;
 import hex.Model;
 import hex.ModelMetrics;
 import water.fvec.Frame;
@@ -11,13 +12,15 @@ import water.util.PojoUtils;
 public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetricsBase> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
+  // public KeyV1<Key<Model>> model;
   public ModelSchema model;
 
   @API(help="The checksum for the model used for this scoring run.", direction=API.Direction.INOUT)
   public long model_checksum;
 
   @API(help="The frame used for this scoring run.", direction=API.Direction.INOUT)
-  public FrameV2 frame; // TODO: should use a base class!
+  public FrameKeyV1 frame;
+  // public FrameV2 frame; // TODO: should use a base class!
 
   @API(help="The checksum for the frame used for this scoring run.", direction=API.Direction.INOUT)
   public long frame_checksum;
@@ -43,7 +46,8 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
 
   // Non-version-specific filling into the impl
   @Override public ModelMetrics createImpl() {
-    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
+//    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
+    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl().get());
     return m;
   }
 
@@ -60,25 +64,25 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();
     if( m != null ) {
-      this.model = (ModelSchema) Schema.schema(this.schema_version, m.getClass()).fillFromImpl(m);
+      this.model = (ModelSchema) Schema.schema(this.__schema_version, m.getClass()).fillFromImpl(m);
       this.model_category = m._output.getModelCategory();
       this.model_checksum = m.checksum();
     }
 
     // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
     Frame f = modelMetrics.frame();
-    if (null != f) {
-      this.frame = new FrameV2().fillFromImpl(f);
+    if (null != f) { //true == f.getClass().getSuperclass().getGenericSuperclass() instanceof ParameterizedType
+      this.frame = new FrameKeyV1(f._key);
       this.frame_checksum = f.checksum();
     }
 
     // super.fillFromImpl(modelMetrics);
 
     if (null != modelMetrics._aucdata)
-      this.auc = (AUCBase)Schema.schema(this.schema_version, modelMetrics._aucdata);
+      this.auc = (AUCBase)Schema.schema(this.__schema_version, modelMetrics._aucdata);
 
     if (null != modelMetrics._cm)
-      this.cm = (ConfusionMatrixBase)Schema.schema(this.schema_version, modelMetrics._cm);
+      this.cm = (ConfusionMatrixBase)Schema.schema(this.__schema_version, modelMetrics._cm);
 
     // For the Model we want the key and the parameters, but no output.
     if (null != this.model)

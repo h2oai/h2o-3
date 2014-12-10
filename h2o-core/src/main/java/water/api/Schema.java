@@ -82,18 +82,18 @@ import java.util.regex.Pattern;
  *
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
   @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
-  public int schema_version;
-  public final int getSchemaVersion() { return schema_version; }
+  public int __schema_version;
+  public final int getSchemaVersion() { return __schema_version; }
 
   /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
   @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
-  public String schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
+  public String __schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
 
   @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
-  public final String schema_type = _impl_class.getSimpleName();
+  public String __schema_type = _impl_class.getSimpleName(); // subclasses can redfine this
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -114,22 +114,22 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   public Schema() {
     // Check version number
-    schema_version = extractVersion(schema_name);
+    __schema_version = extractVersion(__schema_name);
     // We do now to get metadata for base classes: assert schema_version > -1 : "Cannot instantiate a schema whose classname does not end in a 'V' and a version #";
 
-    if (null == schema_to_iced.get(this.schema_name)) {
-      Log.debug("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
-      if (null != schemas.get(this.schema_name))
-        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.schema_name) + " and: " + this.getClass().toString());
+    if (null == schema_to_iced.get(this.__schema_name)) {
+      Log.debug("Registering schema: " + this.__schema_name + " schema_version: " + this.__schema_version + " with Iced class: " + _impl_class.toString());
+      if (null != schemas.get(this.__schema_name))
+        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.__schema_name) + " and: " + this.getClass().toString());
 
-      schemas.put(this.schema_name, this.getClass());
-      schema_to_iced.put(this.schema_name, _impl_class);
+      schemas.put(this.__schema_name, this.getClass());
+      schema_to_iced.put(this.__schema_name, _impl_class);
 
       if (_impl_class != Iced.class) {
-        Pair versioned = new Pair(_impl_class.getSimpleName(), this.schema_version);
+        Pair versioned = new Pair(_impl_class.getSimpleName(), this.__schema_version);
         // Check for conflicts
         if (null != iced_to_schema.get(versioned)) {
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + schema_version + " of Iced class: " + _impl_class);
+          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + __schema_version + " of Iced class: " + _impl_class);
         }
         iced_to_schema.put(versioned, this.getClass());
       }

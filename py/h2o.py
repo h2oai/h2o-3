@@ -354,8 +354,9 @@ class H2O(object):
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
             result = self.__do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
             
-            if result['jobs'][0]['status'] == 'DONE' or result['jobs'][0]['status'] == 'CANCELLED' or result['jobs'][0]['status'] == 'FAILED':
-                H2O.verboseprint('Job ' + result['jobs'][0]['status'] + ': ' + job_key + '.')
+            status = result['jobs'][0]['status']
+            if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
+                H2O.verboseprint('Job ' + status + ': ' + job_key + '.')
                 return result
 
             if time.time() - start_time > timeoutSecs:

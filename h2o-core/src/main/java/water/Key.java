@@ -367,6 +367,31 @@ final public class Key<T extends Keyed> extends Iced implements Comparable {
   // Returns the type of the key.
   public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
 
+  /** Return the classname for the Value that this Key points to, if any (e.g., "water.fvec.Frame"). */
+  public String valueClass() {
+    // Because Key<Keyed> doesn't have concrete parameterized subclasses (e.g.
+    // class FrameKey extends Key<Frame>) we can't get the type parameter at
+    // runtime.  See:
+    // http://www.javacodegeeks.com/2013/12/advanced-java-generics-retreiving-generic-type-arguments.html
+    //
+    // Therefore, we have to fetch the type of the item the Key is pointing to at runtime.
+    Value v = DKV.get(this);
+    if (null == v)
+      return null;
+    else
+      return v.className();
+  }
+
+  /** Return the base classname (not including the package) for the Value that this Key points to, if any (e.g., "Frame"). */
+  public String valueClassSimple() {
+    String vc = this.valueClass();
+
+    if (null == vc) return null;
+
+    String[] elements = vc.split("\\.");
+    return elements[elements.length - 1];
+  }
+
   static final char MAGIC_CHAR = '$'; // Used to hexalate displayed keys
   private static final char[] HEX = "0123456789abcdef".toCharArray();
 

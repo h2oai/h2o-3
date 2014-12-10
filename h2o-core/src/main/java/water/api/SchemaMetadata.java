@@ -159,8 +159,9 @@ public final class SchemaMetadata extends Iced {
         this.is_schema = (Schema.class.isAssignableFrom(f.getType()));
 
         // TODO: NOPE. Note, this has to work when the field is null.
-        if (this.is_schema)
+        if (this.is_schema) {
           this.schema_name = f.getType().getSimpleName();
+        }
 
         API annotation = f.getAnnotation(API.class);
 
@@ -231,8 +232,14 @@ public final class SchemaMetadata extends Iced {
       // TODO: NOTE, this is a mix of Schema types and Iced types; that's not right. . .
       // Should ONLY have schema types.
       // Also, this mapping could/should be moved to Schema.
-      if (water.Key.class.isAssignableFrom(clz))
+      if (water.Key.class.isAssignableFrom(clz)) {
+        Log.warn("Raw Key (not KeySchema) in Schema: " + schema.getClass());
         return "Key";
+      }
+
+      if (KeySchema.class.isAssignableFrom(clz)) {
+        return "Key<" + KeySchema.getKeyedClassType((Class<? extends KeySchema>)clz) + ">";
+      }
 
       if (Schema.class.isAssignableFrom(clz)) {
         return Schema.getImplClass((Class<Schema>)clz).getSimpleName();  // same as Schema.schema_type
@@ -278,8 +285,8 @@ public final class SchemaMetadata extends Iced {
 
   public SchemaMetadata(Schema schema) {
     version = schema.getSchemaVersion();
-    name = schema.schema_name;
-    type = schema.schema_type;
+    name = schema.__schema_name;
+    type = schema.__schema_type;
 
     fields = new ArrayList<>();
     // Fields up to but not including Schema

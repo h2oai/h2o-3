@@ -132,7 +132,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
 
         actual = actuals_dict[k]['actual_value']
 
-        print repr(actuals_dict[k])
+        # print repr(actuals_dict[k])
         if actuals_dict[k]['type'] == 'boolean':
             expected = bool(expected)
             actual = True if 'true' == actual else False # true -> True
@@ -272,9 +272,6 @@ class ModelSpec(dict):
         if verbose: print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params'])
         result = a_node.build_model(algo=self['algo'], destination_key=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
-
-        # TODO: remove!
-        # time.sleep(10)
 
         model = validate_model_exists(self['dest_key'], a_node.models()['models'])
         validate_actual_parameters(self['params'], model['parameters'], self['frame_key'], None)
@@ -531,10 +528,10 @@ models_to_build = [
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
-    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 2 } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 2, 'hidden': '[20, 20]' } ),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 2, 'hidden': '[10, 10]' } ),
-    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 2 } ),
+    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1 } ),
+    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': '[20, 20]' } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': '[10, 10]' } ),
+    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
 
     ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5 } ),
     ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5 } ),
@@ -645,10 +642,11 @@ for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
     assert 'key' in mm['model'], "FAIL: mm[model] does not contain a key: " + repr(mm)
     assert 'frame' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
-    assert 'key' in mm['frame'], "FAIL: mm[frame] does not contain a key: " + repr(mm)
-    assert 'name' in mm['frame']['key'], "FAIL: mm[frame][key] does not contain a name: " + repr(mm)
+    assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)
+    assert 'type' in mm['frame'], "FAIL: mm[frame] does not contain a type: " + repr(mm)
+    assert 'Key<Frame>' == mm['frame']['type'], "FAIL: mm[frame] type is not Key[Frame]: " + repr(mm)
     model_key = mm['model']['key']
-    frame_key = mm['frame']['key']['name'] # TODO: should match
+    frame_key = mm['frame']['name'] # TODO: should match
     if model_key == 'deeplearning_prostate_binomial' and frame_key == 'prostate_binomial':
         found_mm = True
 assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binomial' + " and frame: " + 'prostate_binomial'
