@@ -122,7 +122,7 @@ def put_file(self, f, key=None, timeoutSecs=60):
         '2/PostFile.json',
         cmd='post',
         timeout=timeoutSecs,
-        params={"key": key},
+        params={"destination_key": key},
         files={"file": fileObj},
         extraComment=str(f))
 

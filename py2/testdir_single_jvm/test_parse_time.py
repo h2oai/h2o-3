@@ -232,7 +232,7 @@ class Basic(unittest.TestCase):
             # make sure all key names are unique, when we re-put and re-parse (h2o caching issues)
             # src_key = csvFilename + "_" + str(trial)
             hex_key = csvFilename + "_" + str(trial) + ".hex"
-            parseResultA = h2i.import_parse(path=csvPathname, schema='local', hex_key=hex_key)
+            parseResultA = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key)
             print "A trial #", trial
             # optional. only needed to extract parse_key?
             pA = h2o_cmd.ParseObj(parseResultA, expectedNumRows=rowCount, expectedNumCols=colCount)

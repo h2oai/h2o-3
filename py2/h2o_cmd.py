@@ -116,7 +116,7 @@ def infoFromInspect(inspect):
 #************************************************************************
 # does all columns unless you specify column index.
 # only will return first or specified column
-def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, **kwargs):
+def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, noPrint=False, **kwargs):
     if not key: raise Exception('No key for Summary')
     if not node: node = h2o_nodes.nodes[0]
     # return node.summary(key, **kwargs)
@@ -136,19 +136,23 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
 
     # either return the first col, or the col indentified by label. the column identifed could be string or index?
     if column is None: # means the summary json when we ask for col 0, will be what we return (do all though)
-        labelsToDo = labelList
+        colNameToDo = labelList
+        colIndexToDo = range(len(labelList))
     elif isinstance(column, int):
-        labelsToDo = [labelList[column]]
+        colNameToDo = [labelList[column]]
+        colIndexToDo = [column]
     elif isinstance(column, basestring):
-        labelsToDo = [column]
+        colNameToDo = [column]
+        colIndexToDo = [labelList.index[column]]
     else:
         raise Exception("wrong type %s for column %s" % (type(column), column))
 
     # we get the first column as result after walking across all, if no column parameter
     desiredResult = None
-    for colIndex, label in enumerate(labelList):
-        print "doing summary on %s" % label
-        co = SummaryObj(key=key, column=column)
+    for (colIndex, colName) in zip(colIndexToDo, colNameToDo):
+        print "doing summary on %s %s" % (colIndex, colName)
+        # ugly looking up the colIndex
+        co = SummaryObj(key=key, colIndex=colIndex, colName=colName)
         if not desiredResult:
             desiredResult = co
 
@@ -176,6 +180,11 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
             # the thresholds h2o used, should match what we expected
                 # expected = [0] * 5
             # Fix. doesn't check for expected = 0?
+
+            # max of one bin
+            if maxDelta is None:
+                maxDelta = (co.maxs[0] - co.mins[0])/1000
+
             if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
                 msg='min is not approx. expected')
             if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
@@ -208,7 +217,7 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
             mn = h2o_util.twoDecimals(co.mins[0])
 
             print "co.label:", co.label, "co.pctiles (2 places):", pt
-            print "default_pctiles:", default_pctiles
+            print "co.default_pctiles:", co.default_pctiles
             print "co.label:", co.label, "co.maxs: (2 places):", mx
             print "co.label:", co.label, "co.mins: (2 places):", mn
 
@@ -230,7 +239,7 @@ def runSummary(node=None, key=None, expected=None, column=None, noPrint=False, *
 # print co.label
 
 # legacy
-def infoFromSummary(summaryResult, column=0):
+def infoFromSummary(summaryResult, column=None):
     return SummaryObj(summaryResult, column=column)
 
 class ParseObj(OutputObj):
@@ -271,7 +280,7 @@ class InspectObj(OutputObj):
 
 class SummaryObj(OutputObj):
     @classmethod
-    def check(self, key, column, 
+    def check(self,
         expectedNumRows=None, expectedNumCols=None, 
         expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
         noPrint=False, **kwargs):
@@ -287,21 +296,26 @@ class SummaryObj(OutputObj):
         if expectedBinsSum is not None:
             assert self.binsSum != expectedBinsSum
 
-    def __init__(self, key, column, 
+    # column is column name?
+    def __init__(self, key, colIndex, colName,
         expectedNumRows=None, expectedNumCols=None, 
         expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
-        noPrint=False, **kwargs):
+        noPrint=False, timeoutSecs=30, **kwargs):
 
-        summaryResult = runSummary(key=key, column=column)
+        # we need both colInndex and colName for doing Summary efficiently
+        # ugly.
+        assert colIndex is not None
+        assert colName is not None
+        summaryResult = h2o_nodes.nodes[0].summary(key=key, column=colName, timeoutSecs=timeoutSecs, **kwargs)
         # this should be the same for all the cols? Or does the checksum change?
         frame = summaryResult['frames'][0]
         default_pctiles = frame['default_pctiles']
         checksum = frame['checksum']
         rows = frame['rows']
 
-        assert column < len(frame['columns']), "You're asking for column %s but there are only %s" % \
-            (column, len(frame['columns']))
-        coJson = frame['columns'][column]
+        assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s" % \
+            (colIndex, len(frame['columns']))
+        coJson = frame['columns'][colIndex]
 
         assert checksum !=0 and checksum is not None
         assert rows!=0 and rows is not None
@@ -309,23 +323,31 @@ class SummaryObj(OutputObj):
 
         # FIX! why is frame['key'] = None here?
         # assert frame['key'] == key, "%s %s" % (frame['key'], key)
-        super(SummaryObj, self).__init__(coJson, "Summary for %s" % coJson['label'], noPrint=noPrint)
+        super(SummaryObj, self).__init__(coJson, "Summary for %s" % colName, noPrint=noPrint)
 
         # how are enums binned. Stride of 1? (what about domain values)
-        coList = [co.base, len(co.bins), len(co.data),
-            co.domain, co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
-            co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+        # touch all
+        coList = [self.base, len(self.bins), len(self.data),
+            self.domain, self.label, self.maxs, self.mean, self.mins, self.missing, self.ninfs, self.pctiles,
+            self.pinfs, self.precision, self.sigma, self.str_data, self.stride, self.type, self.zeros]
+
+        assert self.label==colName, "%s You must have told me the wrong colName %s for the given colIndex %s" % \
+            (self.label, colName, colIndex)
 
         print "you can look at this attributes in the returned object (which is OutputObj if you assigned to 'co')"
-        for k,v in co:
-            print "co.%s" % k,
+        for k,v in self:
+            print "%s" % k,
 
-        print "\nSummaryObj for", co.label, "for column", column
-        print "SummaryObj created with:", vars(self)
+        # hack these into the column object from the full summary
+        self.default_pctiles = default_pctiles
+        self.checksum = checksum
+        self.rows = rows
+
+        print "\nSummaryObj for", key, "for colName", colName, "colIndex:", colIndex
+        print "SummaryObj created" # vars(self)
         
         # now do the assertion checks
-        self.check(key, column,
-            expectedNumRows, expectedNumCols, 
+        self.check(expectedNumRows, expectedNumCols, 
             expectedLabel, expectedType, expectedMissing, expectedDomain, expectedBinsSum,
             noPrint=noPrint, **kwargs)
 

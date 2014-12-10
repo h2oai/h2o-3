@@ -506,7 +506,6 @@ def delete_keys(node=None, pattern=None, timeoutSecs=120):
         storeViewResult = h2o_cmd.runStoreView(node, timeoutSecs=timeoutSecs, view=20, **kwargs)
         # we get 20 at a time with default storeView
         keys = storeViewResult['keys']
-        print "kevin", keys
         
         if not keys:
             break

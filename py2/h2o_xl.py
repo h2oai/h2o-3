@@ -347,11 +347,9 @@ class Xbase(object):
             # If it gave a scalar result and didn't create a key, put that scalar in the key
             # with another assign. Why should I deal with another type that "depends" if the key existed already?
             if self.funs or isinstance(self, (If, IfElse, Return)):
-                print "kevin1"
                 returnResult = None
 
             elif execResult1['key'] is None:
-                print "kevin2"
                 debugprint("Hacking scalar result %s into a key. %s" % (self.scalar, self.frame))
                 if self.scalar is None: # this shouldn't happen? h2o should be giving a scalar result?
                     debugprint("WARNING: %.do() is creating a one-row/oneCol result key, for %s" % (type(self)))
@@ -377,27 +375,22 @@ class Xbase(object):
 
             elif self.numCols==1:
                 if self.numRows<=1024:
-                    print "kevin3"
                     summaryResult = h2o_cmd.runSummary(key=self.frame, column=0, noPrint=True)
                     # data json
                     returnResult = summaryResult['frames'][0]['columns'][0]['data']
                 else:
-                    print "kevin4"
                     raise Exception("Expr-caused Assign.do() wants to return a key with num_rows>1024\n" + \
                         "Did you really mean it?. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
             else:
                 if self.numCols==0 and self.numRows==0:
-                    print "kevin5"
                     return None # both assignDisable or not
                 elif self.assignDisable: # Expr modifies Assign with this
-                    print "kevin6"
                     if self.numCols>1:
                         h2p.red_print("Expr-caused Assign.do()  wants to return a key with num_cols>1\n" + \
                             "not supported. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
                     # return a nice clean Key that points to the frame
                     returnResult = Key(key=self.frame)
                 else:
-                    print "kevin7"
                     returnResult = Key(key=self.frame)
 
         if debugNoH2O:
@@ -520,7 +513,6 @@ class Item(Xbase):
             # can be a ref , or the start of a string with a ref at the beginning
         # elif number, add #
         else:
-            # print "hello kevin %s %s" % (type(item), item)
             if isinstance(item, (int, float)):
                 # number!
                 itemStr = "#%s" % item # good number!
@@ -1016,10 +1008,8 @@ class Assign(Key):
     # FIX! what about checking rhs references have $ for keys.
     def __str__(self):
         if self.assignDisable:
-            print "Hi kevin1"
             return "%s" % self.rhs
         else:
-            print "Hi kevin2"
             # if there is row/col for lhs, have to resolve here?
             # hack: change the rhs reference '$' to the lhs '!'
             # to be 'more correct', only replace the first character
