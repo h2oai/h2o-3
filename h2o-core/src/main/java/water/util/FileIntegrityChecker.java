@@ -1,14 +1,12 @@
 package water.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import water.*;
 import water.fvec.*;
 import water.persist.PersistNFS;
 
 public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
-  final String   _root;         // Root of directory
   final String[] _files;        // File names found locally
   final long  [] _sizes;        // File sizes found locally
   int[] _ok;                    // OUTPUT: files which are globally compatible
@@ -27,8 +25,9 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
 
   private void addFolder(File folder, ArrayList<File> filesInProgress ) {
     if( !folder.canRead() ) return;
-    if (folder.isDirectory()) {
-      for (File f: folder.listFiles()) {
+    File[] files = folder.listFiles();
+    if( files != null ) {
+      for( File f : files ) {
         if( !f.canRead() ) continue; // Ignore unreadable files
         if( f.isHidden() && !folder.isHidden() )
           continue;             // Do not dive into hidden dirs unless asked
@@ -45,10 +44,7 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   public static FileIntegrityChecker check(File r) {  return new FileIntegrityChecker(r).doAllNodes(); }
 
   public FileIntegrityChecker(File root) {
-    String abspath = root.getAbsolutePath();
-    File fi = new File(abspath);
-    _root = PersistNFS.decodeFile(fi).toString();
-    ArrayList<File> filesInProgress = new ArrayList();
+    ArrayList<File> filesInProgress = new ArrayList<>();
     addFolder(root,filesInProgress);
     _files = new String[filesInProgress.size()];
     _sizes = new long[filesInProgress.size()];
@@ -78,8 +74,9 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         if( fails != null ) fails.add(_files[i]);
       } else {
         File f = new File(_files[i]);
-        try { f = f.getCanonicalFile(); _files[i] = f.getPath(); } // Attempt to canonicalize
-        catch( IOException ignore ) {}
+        // Do not call getCanonicalFile - which resolves symlinks - breaks test harness
+//        try { f = f.getCanonicalFile(); _files[i] = f.getPath(); } // Attempt to canonicalize
+//        catch( IOException ignore ) {}
         k = PersistNFS.decodeFile(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());

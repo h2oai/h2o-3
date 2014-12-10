@@ -91,27 +91,28 @@ class Basic(unittest.TestCase):
 
             print "Creating random", csvPathname
             expectedNaCnt = write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE, choices)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, timeoutSecs=10, doSummary=False)
-            inspect = h2o_cmd.runInspect(key=hex_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
+
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+                timeoutSecs=10, doSummary=False)
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pA.numRows, pA.numCols, pA.parse_key
+
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
+            print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
             for i in range(colCount):
                 # walks across the columns triggering a summary on the col desired
-                summaryResult = h2o_cmd.runSummary(key=hex_key, column=i)
-                # co is a returned object for the specified column. (is the summaryResult all columns?
-                co = h2o_cmd.infoFromSummary(summaryResult, column=i)
-                colname = co.label
-                coltype = co.type
-                nacnt = co.missing
-                cardinality = co.domain
-                hcntTotal = sum(co.bins)
+                # runSummary returns a column object now. inspect and parse don't. They return json.
+                # maybe eventually will make them return object? But I also pass expected stuff to them
+                # should I pass expected to summary? no, more complex?
+                co = h2o_cmd.runSummary(key=hex_key, column=i)
+                print co.label, co.type, co.missing, co.domain, sum(co.bins)
 
                 print "\nComparing column %s to expected" % i
-                self.assertEqual(nacnt, expectedNaCnt[i], "Column %s Expected %s. nacnt %s incorrect" % \
-                    (i, expectedNaCnt[i], nacnt))
-                self.assertEqual(hcntTotal, rowCount - expectedNaCnt[i])
-                self.assertEqual(rowCount, numRows, 
-                    msg="numRows %s should be %s" % (numRows, rowCount))
+                self.assertEqual(expectedNaCnt[i], co.missing, "Column %s Expected %s. missing: %s is incorrect" % \
+                    (i, expectedNaCnt[i], co.missing))
+                self.assertEqual(rowCount - expectedNaCnt[i], sum(co.bins))
 
             h2p.green_print("\nDone with trial", trial)
             trial += 1

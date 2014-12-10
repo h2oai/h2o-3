@@ -359,7 +359,7 @@ class H2O(object):
                 return result
 
             if time.time() - start_time > timeoutSecs:
-                H2O.verboseprint('Job: ' + job_key + ' timed out in: ' + timeoutSecs + '.')
+                H2O.verboseprint('Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.')
                 return None
 
             time.sleep(retryDelaySecs)
