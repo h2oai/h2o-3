@@ -7,7 +7,7 @@ require(R.utils)
 
 test.mnist.manyCols <- function(conn) {
   Log.info("Importing mnist train data...\n")
-  train.hex = h2o.uploadFile(conn, locate("smalldata/mnist/train.csv.gz"), "train.hex")
+  train.hex <- h2o.uploadFile(conn, locate("smalldata/mnist/train.csv.gz"), "train.hex")
   Log.info("Check that tail works...")
   tail(train.hex)
   tail_ <- tail(train.hex)
