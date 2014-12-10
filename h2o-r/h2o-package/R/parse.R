@@ -104,8 +104,8 @@ function(client, predictions) {
   nrows = predictions$rows
   ncols = length(col_names)
   factors = sapply(predictions$columns, function(column) if(column$type == "enum") TRUE else FALSE )
-  factors = as.data.frame(factors)
   names(factors) = col_names
+  factors = as.data.frame(factors)
 
   new("H2OParsedData", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
 }
