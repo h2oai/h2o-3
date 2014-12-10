@@ -1,6 +1,5 @@
 import sys, getpass, os, psutil, time, requests, errno, threading, inspect, shlex
-import h2o_args
-import h2o_os_util, h2o_print as h2p
+import h2o_os_util, h2o_print as h2p, h2o_args
 import h2o_nodes
 from h2o_test import \
     tmp_dir, tmp_file, flatfile_pathname, spawn_cmd, find_file, verboseprint, \
@@ -302,7 +301,7 @@ class H2O(object):
         '''
         start = time.time()
         numberOfRetries = 0
-        while time.time() - start < timeoutSecs:
+        while h2o_args.no_timeout or (time.time() - start < timeoutSecs):
             if test_func(self, tries=numberOfRetries, timeoutSecs=timeoutSecs):
                 break
             time.sleep(retryDelaySecs)

@@ -1,6 +1,6 @@
 
 import time
-import h2o_methods, h2o_print as h2p, h2o_sandbox
+import h2o_methods, h2o_print as h2p, h2o_sandbox, h2o_args
 from h2o_test import verboseprint, dump_json
 from h2o_xl import Key
 
@@ -59,7 +59,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
 
         # FIX! what are the other legal polling statuses that we should check for?
 
-        if time.time() - start_time > timeoutSecs:
+        if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
             h2o_sandbox.check_sandbox_for_errors()
             emsg = "Job:", job_key, "timed out in:", timeoutSecs
             raise Exception(emsg)
