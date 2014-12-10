@@ -16,14 +16,16 @@ class OutputObj(object):
         for k1,v1 in output.iteritems():
             # let's go 2 levels deep
             # list/dict/value should be only choices
-            if not isinstance(v1, dict):
-                setattr(self, k1, v1) # achieves self.k1 = v
-            else:
-                for k2,v2 in v1.iteritems():
-                    if isinstance(v2, dict):
-                        print "Warning: the json object has dict. at 3rd level" +\
-                            "Keeping those as json-like dicts. never check at >3" 
-                        setattr(self.k1, k2, v2) # achieves self.k1.k2 = v2
+            setattr(self, k1, v1) # achieves self.k1 = v
+            if 1==0:
+                if not isinstance(v1, dict):
+                    setattr(self, k1, v1) # achieves self.k1 = v
+                else:
+                    for k2,v2 in v1.iteritems():
+                        if isinstance(v2, dict):
+                            print "Warning: the json object has dict. at 3rd level" +\
+                                "Keeping those as json-like dicts. never check at >3" 
+                            setattr(k1, k2, v2) # achieves self.k1.k2 = v2
 
         self.name = name
         if not noPrint:
