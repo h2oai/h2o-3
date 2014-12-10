@@ -495,7 +495,10 @@ models_to_build = [
 
     ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { } ),
     ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], {'hidden': '[10, 20, 10]' }),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { } ),
+    # This DL job is SLOOOOWW.... at 1 epoch its still 33sec of train time
+    # which is half of the total runtime for this entire file.  Ponder
+    # switching to a smaller dataset.
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], {'epochs': '1' } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { } ),
 
     ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { } ),
