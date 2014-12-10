@@ -558,10 +558,11 @@ public class NanoHTTPD
       return sz;
     }
 
-    private final String validKeyNamePattern = "[\\.\\-a-zA-Z0-9_]+";
     private boolean validKeyName(String name) {
-      if (! Pattern.matches(validKeyNamePattern, name)) {
-        return false;
+      byte[] arr = name.getBytes();
+      for (byte b : arr) {
+        if (b == '"') return false;
+        if (b == '\\') return false;
       }
 
       return true;
@@ -615,7 +616,7 @@ public class NanoHTTPD
               destination_key = "upload" + Key.rand();
             }
             if (!validKeyName(destination_key)) {
-              sendError(HTTP_BADREQUEST, "Invalid key name, does not match pattern: \"" + validKeyNamePattern + "\"");
+              sendError(HTTP_BADREQUEST, "Invalid key name, contains illegal characters");
             }
             boolean uploadFile = Pattern.matches("/PostFile.json", uri) || Pattern.matches("/[1-9][0-9]*/PostFile.json", uri);
             if (uploadFile) {
