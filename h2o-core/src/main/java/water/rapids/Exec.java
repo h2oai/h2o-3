@@ -103,6 +103,7 @@ public class Exec extends Iced {
   }
 
   protected AST parse() {
+    skipWS();
     // Parse a token --> look for a function or a special char.
     if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     String tok = parseID();

@@ -77,7 +77,7 @@ public class DeepLearningMissingTest extends TestUtil {
           DeepLearning dl = new DeepLearning(p);
           try {
             Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
-            dl.trainModel().get();
+            mymodel = dl.trainModel().get();
           } catch (Throwable t) {
             t.printStackTrace();
             throw new RuntimeException(t);
@@ -86,7 +86,6 @@ public class DeepLearningMissingTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          mymodel = DKV.get(p._destination_key).get();
           double err = mymodel.error();
 
           Log.info("Missing " + missing_fraction * 100 + "% -> Err: " + err);

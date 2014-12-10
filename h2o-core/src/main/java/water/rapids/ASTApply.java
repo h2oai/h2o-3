@@ -20,6 +20,7 @@ public class ASTApply extends ASTOp {
   @Override ASTOp make() {return new ASTApply();}
   @Override ASTApply parse_impl(Exec E) {
     AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     _margin = (int)((ASTNum)E.skipWS().parse())._d;
     _fun = ((ASTId)E.skipWS().parse())._id;
     ArrayList<AST> fun_args = new ArrayList<>();
@@ -145,6 +146,7 @@ class ASTSApply extends ASTApply {
   @Override ASTOp make() {return new ASTSApply();}
   @Override ASTSApply parse_impl(Exec E) {
     AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     _margin = 2;
     _fun = ((ASTId)E.skipWS().parse())._id;
     ArrayList<AST> fun_args = new ArrayList<>();

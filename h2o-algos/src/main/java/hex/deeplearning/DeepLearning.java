@@ -315,7 +315,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
 
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
-        if (_parms._autoencoder) model.doScoring(train, trainScoreFrame, validScoreFrame, self()); //get the null model reconstruction error
+        if (_parms._autoencoder) model.doScoring(trainScoreFrame, validScoreFrame, self()); //get the null model reconstruction error
         // put the initial version of the model into DKV
         model.update(self());
         Log.info("Starting to train the Deep Learning model.");
@@ -328,7 +328,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
         }
-        while (model.doScoring(train, trainScoreFrame, validScoreFrame, self()));
+        while (model.doScoring(trainScoreFrame, validScoreFrame, self()));
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
@@ -341,7 +341,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(train, trainScoreFrame, validScoreFrame, self());
+            model.doScoring(trainScoreFrame, validScoreFrame, self());
             assert(best_model.error() == model.error());
           }
         }

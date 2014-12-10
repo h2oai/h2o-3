@@ -71,6 +71,18 @@ predict.H2OGBMModel <- function(object, newdata, ...) {
   .h2o.parsedPredData(newdata@h2o, res)
 }
 
+predict.H2OGLMModel <- function(object, newdata, ...) {
+  # Validate that the object is a H2OModel and the newdata is a H2OFrame
+  .validate.predict(object, newdata, types = list(object = "H2OGLMModel",
+                                                  newdata = "H2OFrame"))
+  # Send keys to create predictions
+  url <- .h2o.__PREDICT(object@key, newdata@key)
+  res <- .h2o.__remoteSend(object@h2o, url, method = "HTTPPOST")
+  res <- res$model_metrics[[1]]$predictions
+  # Grab info to make data frame
+  .h2o.parsedPredData(newdata@h2o, res)
+}
+
 #  LEGACY PREDICT BELOW
 #h2o.predict <- function(object, newdata, ...) {
 #  if( missing(object) ) stop('Must specify object')
