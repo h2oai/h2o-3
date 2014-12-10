@@ -181,7 +181,7 @@ public final class ParseDataset2 extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      eut = new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum, ecols);
+      eut = new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum);
     }
     Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
@@ -219,7 +219,7 @@ public final class ParseDataset2 extends Job<Frame> {
     private final ValueString [][] _gDomain;
     private final EnumMapping [] _emaps;
     private final int  [] _chunk2Enum;
-    private EnumUpdateTask(ValueString [][] gDomain, EnumMapping [] emaps, int [] chunk2Enum, int [] colIds){
+    private EnumUpdateTask(ValueString [][] gDomain, EnumMapping [] emaps, int [] chunk2Enum) {
       _gDomain = gDomain; _emaps = emaps; _chunk2Enum = chunk2Enum;
     }
     private int[][] emap(int nodeId) {return _emaps[nodeId].map;}
