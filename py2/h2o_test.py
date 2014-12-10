@@ -317,8 +317,12 @@ def check_h2o_version():
     output = p2.communicate()[0]
     print output
 
-
 def setup_random_seed(seed=None):
+    # h2o_args.unit_main() or h2o.init() or this function, may be the first to call it
+    # that makes sure it's called to setup any --seed init before we look for a 
+    # command line arg here. (h2o.setup_random_seed() is done before h2o.init() in tests)
+    # parse_our_args() will be a noop if it was already called once
+    h2o_args.parse_our_args()
     if h2o_args.random_seed is not None:
         SEED = h2o_args.random_seed
     elif seed is not None:

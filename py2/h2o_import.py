@@ -260,8 +260,8 @@ def import_only(node=None, schema='local', bucket=None, path=None,
         # importPattern = folderURI + "/" + pattern
         # could include this on the entire importPattern if we no longer have regex basename in h2o-dev?
           
-        # folderURI = 'nfs:/' + folderPath
-        folderURI = 'nfs:/' + os.path.realpath(folderPath)
+        folderURI = 'nfs:/' + folderPath
+        # folderURI = 'nfs:/' + os.path.realpath(folderPath)
         if importParentDir:
             finalImportString = folderPath
         else:
@@ -382,15 +382,18 @@ def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None,
     if importKeyList:
         # the pattern is a full path/key name, so no false matches
         for key_name in importKeyList:
-            if fnmatch.fnmatch(key_name, pattern):
+            if fnmatch.fnmatch(str(key_name), pattern):
                 matchingList.append(key_name)
     else:
         h2p.yellow_print("WARNING: using frames to look up key names for possible parse regex")
         framesResult = node.frames(timeoutSecs=timeoutSecs)
         for frame in framesResult['frames']:
             key_name = frame['key']['name']
-            if fnmatch.fnmatch(key_name, pattern):
+            if fnmatch.fnmatch(str(key_name), pattern):
                 matchingList.append(key_name)
+
+    if len(matchingList)==0:
+        raise Exception("Didn't find %s in key list %s or Frames result" % (pattern, importKeyList))
 
     start = time.time()
     parseResult = node.parse(key=matchingList, hex_key=hex_key,
@@ -419,7 +422,6 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     #    schema = 'local'
 
     if not node: node = h2o_nodes.nodes[0]
-
     (importResult, importPattern) = import_only(node, schema, bucket, path,
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, doSummary, src_key, noPrint, importParentDir, **kwargs)
@@ -428,7 +430,7 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     verboseprint("importResult", dump_json(importResult))
 
     assert len(importResult['keys']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
-    print "importResult:", importResult
+    # print "importResult:", importResult
 
     parseResult = parse_only(node, importPattern, hex_key, importResult['keys'],
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
