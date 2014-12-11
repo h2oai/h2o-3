@@ -3,8 +3,8 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_args
 
 DEBUG = False
-UTF8 = True
-UTF8_MULTIBYTE = True
+UTF8 = False
+UTF8_MULTIBYTE = False
 
 DO_WITH_INT = False
 
@@ -54,6 +54,7 @@ def massageUTF8Choices(ordinalChoices):
         ordinalChoices.remove(0x38) # 8
         ordinalChoices.remove(0x39) # 9
 
+    # ordinalChoices.remove(0x7f) # ?? h2o-dev
     # print ordinalChoices
 
 # h2o-dev doesn't like 0 thru 1d?
@@ -78,7 +79,7 @@ if UTF8_MULTIBYTE:
         return random.sample(range(a,b),10)
 
     if 1==0: # this full range causes too many unique enums? and we get flipped to NA
-        ordinalChoicesMulti  = range(0x000000,0x00007f) # 1byte
+        ordinalChoicesMulti  = range(0x00001e,0x00007f) # 1byte
         ordinalChoicesMulti += range(0x000080,0x00009f) # 2byte
         ordinalChoicesMulti += range(0x0000a0,0x0003ff) # 2byte
         ordinalChoicesMulti += range(0x000400,0x0007ff) # 2byte
@@ -328,23 +329,18 @@ class Basic(unittest.TestCase):
 
                 parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, checkHeader=0,
                     timeoutSecs=30, sep=colSepInt, doSummary=DO_SUMMARY)
-                print "Parse result['destination_key']:", parseResult['destination_key']
-                
-                inspect = h2o_cmd.runInspect(key=parseResult['destination_key'])
+                parseResultA = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key)
+                # optional. only needed to extract parse_key?
+                pA = h2o_cmd.ParseObj(parseResultA, expectedNumRows=rowCount, expectedNumCols=colCount)
+                print pA.numRows
+                print pA.numCols
+                print pA.parse_key
+                # this guy can take json object as first thing, or re-read with key
+                iA = h2o_cmd.InspectObj(pA.parse_key,
+                    expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
 
-                # Each column should get .10 random NAs per iteration. Within 10%? 
-                missingValuesList, labelsList, numRows, numCols  = h2o_cmd.infoFromInspect(inspect)
-                # print "missingValuesList", missingValuesList
-                # for mv in missingValuesList:
-                #     self.assertAlmostEqual(mv, expectedNA, delta=0.1 * mv, 
-                #        msg='mv %s is not approx. expected %s' % (mv, expectedNA))
-
-                self.assertEqual(rowCount, numRows)
-                self.assertEqual(colCount, numCols)
-
-                # (missingValuesDict, constantValuesDict, enumSizeDict, colTypeDict, colNameDict) = \
-                #    h2o_cmd.columnInfoFromInspect(parseResult['destination_key'], 
-                #    exceptionOnMissingValues=DISABLE_ALL_NA)
+                self.assertEqual(rowCount, iA.numRows)
+                self.assertEqual(colCount, iA.numCols)
 
 if __name__ == '__main__':
     h2o.unit_main()

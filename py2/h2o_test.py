@@ -22,7 +22,8 @@ class AttrDict(dict):
 # generic python object generation with dotted attributes, from json object which was created with dict = AttrDict
 class OutputObj(AttrDict):
     def __iter__(self):
-        for attr, value in self.__dict__.iteritems():
+        # for attr, value in self.__dict__.iteritems():
+        for attr, value in self.iteritems():
             yield attr, value
 
     def __init__(self, output, name, noPrint=False):
