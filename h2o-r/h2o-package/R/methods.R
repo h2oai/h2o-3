@@ -1448,7 +1448,12 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   vars <- vars - 1
   if( vars < 0 || vars > (ncol(.data)-1) ) stop('Column' %p% vars %p% 'out of range for frame columns' %p% (ncol(.data)) %p0% '.')
 
-  FUN <- .fun
+  # FUN <- deparse(substitute(.fun))
+  # if( .fun %i% 'character' ) FUN <- gsub("\"", "", FUN)
+  # .FUN <- get(FUN)
+  # if( !is.function(.FUN) ) stop("FUN must be an R function
+  if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun))
+  else FUN <- .fun
   .FUN <- NULL
   if (is.character(FUN)) .FUN <- get(FUN)
   if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
