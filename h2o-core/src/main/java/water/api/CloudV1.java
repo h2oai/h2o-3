@@ -5,6 +5,8 @@ import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
 public class CloudV1 extends Schema<Iced, CloudV1> {
+  public CloudV1() {}
+
   // This Schema has no inputs
 
   // Output fields
@@ -37,65 +39,67 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
 
   // Output fields one-per-JVM
   public static class NodeV1 extends Schema<Iced, NodeV1> {
+    public NodeV1() {}
+
     @API(help="IP", direction=API.Direction.OUTPUT)
-    final public H2ONode h2o;
+    public H2ONode h2o;
 
     @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT", direction=API.Direction.OUTPUT)
-    final public boolean healthy;
+    public boolean healthy;
 
     @API(help="Time (in msec) of last ping", direction=API.Direction.OUTPUT)
-    final public long last_ping;
+    public long last_ping;
 
     @API(help="System load; average #runnables/#cores", direction=API.Direction.OUTPUT)
-    final public float sys_load;       // Average #runnables/#cores
+    public float sys_load;       // Average #runnables/#cores
 
     @API(help="Linpack GFlops", direction=API.Direction.OUTPUT)
-    final public double gflops;
+    public double gflops;
 
     @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
-    final public double mem_bw;
+    public double mem_bw;
 
     @API(help="Data on Node (memory or disk)", direction=API.Direction.OUTPUT)
-    final public long total_value_size;
+    public long total_value_size;
 
     @API(help="Data on Node (memory only)", direction=API.Direction.OUTPUT)
-    final public long mem_value_size;
+    public long mem_value_size;
 
     @API(help="#local keys", direction=API.Direction.OUTPUT)
-    final public int num_keys;
+    public int num_keys;
 
     @API(help="Free heap", direction=API.Direction.OUTPUT)
-    final public long free_mem;
+    public long free_mem;
     @API(help="Total heap", direction=API.Direction.OUTPUT)
-    final public long tot_mem;
+    public long tot_mem;
     @API(help="Max heap", direction=API.Direction.OUTPUT)
-    final public long max_mem;
+    public long max_mem;
 
     @API(help="Free disk", direction=API.Direction.OUTPUT)
-    final public long free_disk;
+    public long free_disk;
     @API(help="Max disk", direction=API.Direction.OUTPUT)
-    final public long max_disk;
+    public long max_disk;
 
     @API(help="Active Remote Procedure Calls", direction=API.Direction.OUTPUT)
-    final public int rpcs_active;
+    public int rpcs_active;
 
     @API(help="F/J Thread count, by priority", direction=API.Direction.OUTPUT)
-    final public short fjthrds[];
+    public short fjthrds[];
 
     @API(help="F/J Task count, by priority", direction=API.Direction.OUTPUT)
-    final public short fjqueue[];
+    public short fjqueue[];
 
     @API(help="Open TCP connections", direction=API.Direction.OUTPUT)
-    final public int tcps_active;
+    public int tcps_active;
 
     @API(help="Open File Descripters", direction=API.Direction.OUTPUT)
-    final public int open_fds;
+    public int open_fds;
 
     @API(help="num_cpus", direction=API.Direction.OUTPUT)
-    final public int num_cpus;
+    public int num_cpus;
 
     @API(help="PID", direction=API.Direction.OUTPUT)
-    final public String pid;
+    public String pid;
 
     NodeV1( H2ONode h2o ) {
       HeartBeat hb = h2o._heartbeat;
