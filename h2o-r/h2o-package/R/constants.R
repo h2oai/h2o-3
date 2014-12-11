@@ -18,8 +18,7 @@
 .pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
 
-#'
-#' Some handy infix utilities
+# Some handy infix utilities
 "%i%"    <- function(x,y) inherits(x, y)                                                         # instanceof
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix

@@ -343,15 +343,13 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   ast
 }
 
-#'
-#' `match` or %in% for h2o.frame
+# `match` or %in% for h2o.frame
 setMethod("match", "h2o.frame", function(x, table, nomatch = 0, incomparables = NULL) {
   ast <- .h2o.varop("match", x, table, nomatch, incomparables)
   ast
 })
 
-#'
-#' %in% method
+# %in% method
 setMethod("%in%", "h2o.frame", function(x, table) match(x, table, nomatch = 0) > 0)
 
 #-----------------------------------------------------------------------------------------------------------------------

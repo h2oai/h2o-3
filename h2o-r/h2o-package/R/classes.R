@@ -84,9 +84,9 @@ setMethod("show", "H2ORawData", function(object) {
 })
 
 #'
-#' The h2o.frame class.
+#' The H2OFrame class.
 #'
-#' An h2o.frame is a virtual class that is the ancestor of all AST and h2o.frame objects.
+#' An H2OFrame is a virtual class that is the ancestor of all AST and H2OFrame objects.
 setClass("H2OFrame", contains="VIRTUAL")
 
 # No show method for this type of object.
