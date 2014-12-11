@@ -243,8 +243,13 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
-        return clz.getSimpleName();
+        if (clz == Schema.Meta.class) {
+          // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
+          return "Schema.Meta";
+        } else{
+          Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
+          return clz.getSimpleName();
+        }
       }
 
       String msg = "Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name;
@@ -286,9 +291,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.getSchemaVersion();
-    name = schema.__schema_name;
-    type = schema.__schema_type;
+    version = schema.__meta.schema_version;
+    name = schema.__meta.schema_name;
+    type = schema.__meta.schema_type;
 
     fields = new ArrayList<>();
     // Fields up to but not including Schema

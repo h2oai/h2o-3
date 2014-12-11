@@ -21,7 +21,6 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-
   static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "score_each_iteration" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */

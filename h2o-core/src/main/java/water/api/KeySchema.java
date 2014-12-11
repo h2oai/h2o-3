@@ -29,7 +29,7 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
   }
 
   public KeySchema() {
-    __schema_type = "Key<" + _impl_class.getSimpleName() + ">";
+    __meta.schema_type = "Key<" + _impl_class.getSimpleName() + ">";
   }
 
   public static KeySchema make(Class<? extends KeySchema> clz, Key key) {
