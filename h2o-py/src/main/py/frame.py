@@ -5,27 +5,23 @@ import csv
 # and overload everything.
 class Frame(object):
   def __init__(self, str=None, file=None, vecs=None):
+    # Read a CSV file
     if file != None:
       with open(file, 'rb') as csvfile:
-        __reader__ = csv.reader(csvfile)
-        self._vecs=None
-        for row in __reader__:
-          if self._vecs==None: 
-            self._vecs = []
-            for name in row:
-              self._vecs.append(Vec(str+name,[]))
-          else:
-            for i,data in enumerate(row):
-              self._vecs[i].append(data)
+        self._vecs = []
+        for name in csvfile.readline().split(','): 
+          self._vecs.append(Vec(str+name.rstrip(),[]))
+        for row in csv.reader(csvfile):
+          for i,data in enumerate(row): self._vecs[i].append(data)
+    # Construct from an array of Vecs already passed in
     elif vecs!= None:
       self._vecs=vecs
 
-  def __str__(self):
-    return self._vecs.__repr__()
+  # Print [col, cols...]
+  def __str__(self):  return self._vecs.__repr__()
 
-  def foo(self):
-    return "{"+",".join([v.foo() for v in self._vecs])+"}"
-
+  # Column selection via integer, string (name) returns a Vec
+  # Column selection via slice returns a subset Frame
   def __getitem__(self,i):
     if isinstance(i,int):
       return self._vecs[i]
@@ -34,16 +30,17 @@ class Frame(object):
         if i==v._name:
           return v
       raise ValueError("Name "+i+" not in Frame")
+    # Slice; return a Frame not a Vec
     if isinstance(i,slice):
       return Frame(vecs=self._vecs[i])
     raise NotImplementedError
 
-  def __len__(self):
-    return len(self._vecs)
+  # Number of columns
+  def __len__(self): return len(self._vecs)
 
+  # Addition
   def __add__(self,i):
-    if len(self)==0:
-      return self;
+    if len(self)==0:  return self
     if isinstance(i,Frame):
       if len(i) != len(self):
         raise ValueError("Frame len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
@@ -56,61 +53,56 @@ class Frame(object):
       return Frame(vecs=[x+i for x in self._vecs])
     raise NotImplementedError
 
-  def __radd__(self,i):
-    return self+i # Add is associative
+  def __radd__(self,i):  return self+i # Add is associative
 
 
-###
+########
+# A single column of data, possibly lazily computed
 class Vec(object):
   def __init__(self, name, data):
     self._name = name
     self._data = data
     self._len = len(data)
 
+  # Force eager evaluation
   def eager(self):
-    if isinstance(self._data,Expr):
-      self._data=self._data.compute()
+    if isinstance(self._data,Expr):  self._data=self._data.compute()
     return self._data
 
+  # Append a value during CSV read, convert to float
   def append(self,data):
     __x__ = data
-    try:
-      __x__ = float(data)
-    except ValueError:
-      pass
+    try:  __x__ = float(data)  
+    except ValueError:  pass
     self._data.append(__x__)
-    
-  def __repr__(self):
-    return self._name+" "+self.eager().__str__()
 
-  def foo(self):
-    return self._name+" "+str(self._data)
+  # Print self; forces eager evaluation
+  def __repr__(self): return self._name+" "+self.eager().__str__()
 
-  def __getitem__(self,i):
-    return self._data[i]
+  # Basic indexed or sliced lookup
+  def __getitem__(self,i):  return self._data[i]
 
   def __add__(self,i):
-    if isinstance(i,Vec):
+    if isinstance(i,Vec):       # Vec+Vec
       if len(i) != len(self):
         raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
       return Vec(self._name+"+"+i._name,Expr("+",self,i))
-    if isinstance(i,int):
-      if i==0:                  # Additive identity
-        return self
+    if isinstance(i,int):       # Vec+int
+      if i==0:  return self     # Additive identity
       return Vec(self._name+"+"+str(i),Expr("+",self,i))
     raise NotImplementedError
 
-  def __radd__(self,i):
-    return self+i # Add is associative
+  def __radd__(self,i):  return self+i # Add is associative
 
-  def __len__(self):
-    return len(self._data)
+  # Number of rows
+  def __len__(self):  return len(self._data)
 
   def __del__(self):
     if Expr==None or not isinstance(self._data,Expr):
       print "DEL of "+self._name
 
-###
+########
+# A pending to-be-computed expression
 class Expr(object):
   def __init__(self,op,left,rite):
     self._op = op
@@ -131,11 +123,11 @@ class Expr(object):
     return len(self._left) if isinstance(self._left,Vec) else len(self._rite)
 
   def __repr__(self):
-    return str(self._left._name)+self._op+str(self._rite._name if isinstance(self._rite,Vec) else self._rite)
+    return "("+str(self._left._name)+self._op+str(self._rite._name if isinstance(self._rite,Vec) else self._rite)+")"
 
 ######################################################
 #
-#
+# Sample use-cases
 
 a = Frame("a.",file="smalldata/iris/iris_wheader.csv")[0:4]
 
@@ -157,7 +149,7 @@ b = Frame("b.",file="smalldata/iris/iris_wheader.csv")[0:4]
 print "EVAL c=a+b"
 c = a+b
 print "EVAL d=c+c+sum(a)"
-d = (c+c)+sum(a)
+d = c+c+sum(a)
 print "EVAL c+a+1"
 e = c+(a+1)
 print "EVAL e is: ",e
