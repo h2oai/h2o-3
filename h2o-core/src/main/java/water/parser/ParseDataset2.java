@@ -610,9 +610,6 @@ public final class ParseDataset2 extends Job<Frame> {
    * @author tomasnykodym
    */
   static class FVecDataOut extends Iced implements Parser.StreamDataOut {
-
-    transient int DEBUG_WEAVER = 1;
-
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Categorical [] _enums;

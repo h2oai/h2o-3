@@ -767,10 +767,14 @@ final public class H2O {
     JarHash.registerResourceRoot(f);
   }
 
+  private static boolean schemas_registered = false;
   /**
    * Find all schemas using reflection and register them.
    */
-  static private void registerAllSchemas() {
+  synchronized static public void registerAllSchemasIfNecessary() {
+    if (schemas_registered) return;
+    if (!Paxos._cloudLocked) return;
+
     Reflections reflections = null;
 
     // Microhack to effect Schema.register(Schema.class), which is
@@ -789,6 +793,7 @@ final public class H2O {
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);
 
+    schemas_registered = true;
     Log.info("Registered: " + Schema.schemas().size() + " schemas.");
   }
 
@@ -796,7 +801,6 @@ final public class H2O {
    *  Returns a Runnable that will be notified once the server is up.  */
   static public Runnable finalizeRegistration() {
     if( _doneRequests ) return null;
-    registerAllSchemas();
     _doneRequests = true;
     // Start the Nano HTTP server thread
     return water.api.RequestServer.start();

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public final class Categorical extends Iced {
-  transient int DEBUG_WEAVER = 1;
 
   public static final int MAX_ENUM_SIZE = 65000;
   AtomicInteger _id = new AtomicInteger();

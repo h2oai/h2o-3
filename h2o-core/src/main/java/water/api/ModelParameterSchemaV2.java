@@ -67,7 +67,7 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
       this.actual_value = FieldMetadata.consValue(o);
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-      this.type = FieldMetadata.consType(schema, f.getType());
+      this.type = FieldMetadata.consType(schema, f.getType(), f.getName());
 
       API annotation = f.getAnnotation(API.class);
 

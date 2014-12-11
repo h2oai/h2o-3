@@ -18,9 +18,6 @@ import java.util.Arrays;
  */
 public class AppendableVec extends Vec {
 
-
-  transient int DEBUG_WEAVER = 1;
-
   public long _espc[];
   public static final byte NA     = 1;
   public static final byte ENUM   = 2;

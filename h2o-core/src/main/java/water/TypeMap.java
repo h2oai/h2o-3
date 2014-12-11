@@ -45,7 +45,7 @@ public class TypeMap {
   // Unique IDs
   static private int IDS;
   // JUnit helper flag
-  static volatile boolean _check_no_locking;
+  static public volatile boolean _check_no_locking; // ONLY TOUCH IN AAA_PreCloudLock!
   static {
     CLAZZES = BOOTSTRAP_CLASSES;
     GOLD = new Icer[BOOTSTRAP_CLASSES.length];

@@ -454,6 +454,9 @@ public class RequestServer extends NanoHTTPD {
       // Find handler for url
       Route route = lookup(method, versioned_path);
 
+      if (route != null)
+        H2O.registerAllSchemasIfNecessary();
+
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
         return getResource(uri);

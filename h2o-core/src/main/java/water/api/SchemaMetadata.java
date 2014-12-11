@@ -152,7 +152,7 @@ public final class SchemaMetadata extends Iced {
         this.value = consValue(o);
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.type = consType(schema, f.getType());
+        this.type = consType(schema, f.getType(), f.getName());
         this.is_schema = (Schema.class.isAssignableFrom(f.getType()));
 
         // TODO: NOPE. Note, this has to work when the field is null.
@@ -202,7 +202,7 @@ public final class SchemaMetadata extends Iced {
     }
 
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-    public static String consType(Schema schema, Class clz) {
+    public static String consType(Schema schema, Class clz, String field_name) {
       boolean is_enum = Enum.class.isAssignableFrom(clz);
       boolean is_array = clz.isArray();
 
@@ -217,7 +217,7 @@ public final class SchemaMetadata extends Iced {
         return clz.toString();
 
       if (is_array)
-        return consType(schema, clz.getComponentType()) + "[]";
+        return consType(schema, clz.getComponentType(), field_name) + "[]";
 
       if (Map.class.isAssignableFrom(clz))
         return "Map";
@@ -230,7 +230,7 @@ public final class SchemaMetadata extends Iced {
       // Should ONLY have schema types.
       // Also, this mapping could/should be moved to Schema.
       if (water.Key.class.isAssignableFrom(clz)) {
-        Log.warn("Raw Key (not KeySchema) in Schema: " + schema.getClass());
+        Log.warn("Raw Key (not KeySchema) in Schema: " + schema.getClass() + " field: " + field_name);
         return "Key";
       }
 
@@ -243,11 +243,11 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass());
+        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
         return clz.getSimpleName();
       }
 
-      String msg = "Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass();
+      String msg = "Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name;
       Log.warn(msg);
       throw H2O.fail(msg);
     }
