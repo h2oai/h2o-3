@@ -19,19 +19,19 @@ class RapidsHandler extends Handler {
 
 //  public RapidsV1 setAST(int version, Rapids rapids) {
 //    if (rapids == null) return null;
-//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to setAST.");
-//    Raft raft = DKV.getGet(rapids.astKey);
+//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to setAST.");
+//    Raft raft = DKV.getGet(rapids.ast_key);
 //    if (raft == null) raft = new Raft();
 //    raft.set_ast(rapids.ast);
 //    rapids.raft_ast = rapids.ast;
-//    DKV.put(rapids.astKey, raft);
+//    DKV.put(rapids.ast_key, raft);
 //    return schema(version).fillFromImpl(rapids);
 //  }
 
 //  public RapidsV1 getAST(int version, Rapids rapids) {
 //    if (rapids == null) return null;
-//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getAST.");
-//    Raft raft = DKV.getGet(rapids.astKey);
+//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getAST.");
+//    Raft raft = DKV.getGet(rapids.ast_key);
 //    rapids.raft_ast=raft.get_ast();
 //    if (rapids.raft_ast == null) rapids.raft_key=raft.get_key();  // get the key if no ast.
 //    return schema(version).fillFromImpl(rapids);
@@ -39,10 +39,10 @@ class RapidsHandler extends Handler {
 
   public RapidsV1 isEvaluated(int version, RapidsV1 rapids) {
     if (rapids == null) return null;
-    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
     boolean isEval = false;
     Value v;
-    if ((v=DKV.get(rapids.astKey.key()))!=null) {
+    if ((v=DKV.get(rapids.ast_key.key()))!=null) {
       if (!(v.get() instanceof Frame)) {
         Raft raft = v.get();
         Value vv = raft == null ? null : DKV.get(raft.get_key());
@@ -55,16 +55,16 @@ class RapidsHandler extends Handler {
 
   public RapidsV1 getKey(int version, RapidsV1 rapids) {
     if (rapids == null) return null;
-    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
-    Raft raf = DKV.getGet(rapids.astKey.key());
+    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    Raft raf = DKV.getGet(rapids.ast_key.key());
     rapids.raft_key = new KeyV1(raf.get_key());
     return rapids;
   }
 
 //  public RapidsV1 force(int version, Rapids rapids) {
 //    if (rapids == null) return null;
-//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to force.");
-//    Raft raft = DKV.getGet(rapids.astKey);
+//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to force.");
+//    Raft raft = DKV.getGet(rapids.ast_key);
 //    // get the ast and exec
 //    rapids.ast = raft.get_ast();
 //    return exec(version, rapids);
@@ -87,7 +87,7 @@ class RapidsHandler extends Handler {
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
         Frame fr = env.pop0Ary();
-        rapids.key = new KeyV1(fr._key);
+        rapids.key = new KeyV1.FrameKeyV1(fr._key);
         rapids.num_rows = fr.numRows();
         rapids.num_cols = fr.numCols();
         rapids.col_names = fr.names();

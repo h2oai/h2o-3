@@ -1,17 +1,17 @@
 package water.api;
 
-import water.*;
+import water.Iced;
 
 public class RapidsV1 extends Schema<Iced, RapidsV1> {
 
   // Input fields
   @API(help="An Abstract Syntax Tree."            , direction=API.Direction.INPUT) String ast;
   @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String[] funs;
-  @API(help="A pointer to a Frame or Raft."       , direction=API.Direction.INPUT) KeyV1 astKey;
+  @API(help="A pointer to a Frame or Raft."       , direction=API.Direction.INPUT) KeyV1 ast_key;
 
   // Output
   @API(help="Parsing error, if any"  , direction=API.Direction.OUTPUT) String error;
-  @API(help="Result key"             , direction=API.Direction.OUTPUT) KeyV1 key;
+  @API(help="Result key"             , direction=API.Direction.OUTPUT) KeyV1.FrameKeyV1 key;
   @API(help="Rows in Frame result"   , direction=API.Direction.OUTPUT) long num_rows;
   @API(help="Columns in Frame result", direction=API.Direction.OUTPUT) int  num_cols;
   @API(help="Scalar result"          , direction=API.Direction.OUTPUT) double scalar;
