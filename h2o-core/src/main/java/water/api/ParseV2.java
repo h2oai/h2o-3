@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.KeyV1.FrameKeyV1;
 import water.Iced;
 import water.Key;
 import water.parser.ParserType;
@@ -10,7 +11,7 @@ import java.util.Arrays;
 public class ParseV2 extends Schema<Iced, ParseV2> {
   // Input fields
   @API(help="Final hex key name",required=true)
-  Key hex;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
+  FrameKeyV1 hex;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
   @API(help="Source keys",required=true)
   FrameV2[] srcs;
@@ -43,14 +44,14 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   boolean blocking;
 
   // Output fields
-  @API(help="Job Key", direction=API.Direction.OUTPUT)
+  @API(help="Parse Job", direction=API.Direction.OUTPUT)
   JobV2 job;
 
   //==========================
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Parse Started");
-    String url = JobV2.link(job.key);
+    String url = JobV2.link(job.key.key());
     return ab.href("Poll",url,url);
   }
 

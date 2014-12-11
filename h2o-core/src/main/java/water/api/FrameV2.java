@@ -1,6 +1,7 @@
 package water.api;
 
 import water.*;
+import water.api.KeyV1.FrameKeyV1;
 import water.fvec.*;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
@@ -11,7 +12,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
   @API(help="Key to inspect",required=true)
-  public Key key;
+  public FrameKeyV1 key;
 
   @API(help="Row offset to display",direction=API.Direction.INPUT)
   public long off;
@@ -154,7 +155,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public FrameV2() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
-  FrameV2( Key key ) { this.key = key; }
+  FrameV2( Key key ) { this.key = new FrameKeyV1(key); }
 
   FrameV2( Frame fr ) {
     this(fr, 1, (int)fr.vec(0).length()); // NOTE: possible len truncation
@@ -164,7 +165,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   FrameV2( Frame fr, long off2, int len2 ) {
     if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
-    key = fr._key;
+    key = new FrameKeyV1(fr._key);
     _fr = fr;
     off = off2-1;
     rows = fr.numRows();
@@ -185,7 +186,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
     this._fr = f;
-    this.key = f._key;
+    this.key = new FrameKeyV1(f._key);
     this.checksum = _fr.checksum();
     off = 0;
     rows = _fr.numRows();

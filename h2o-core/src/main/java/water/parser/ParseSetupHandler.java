@@ -13,8 +13,8 @@ import java.util.Arrays;
 public class ParseSetupHandler extends Handler {
 
   public ParseSetupV2 guessSetup(int version, ParseSetupV2 p) {
-    if( DKV.get(p.srcs[0]) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p.srcs[0]));
+    if( DKV.get(p.srcs[0].key()) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
+    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p.srcs[0].key()));
     ParseSetup ps = ParseSetup.guessSetup(bits, p.singleQuotes, p.checkHeader);
     // Update in-place
     assert ps._checkHeader != 0; // Need to fill in the guess

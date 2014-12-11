@@ -146,7 +146,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
     ab.title(this.getClass().getSimpleName()+" Started");
-    String url = JobV2.link(job.key);
+    String url = JobV2.link(job.key.key());
     return ab.href("Poll",url,url);
   }
 

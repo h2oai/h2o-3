@@ -8,7 +8,7 @@ public class RemoveHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public RemoveV1 remove(int version, RemoveV1 u) {
-    Lockable.delete(u.key);
+    Lockable.delete(u.key.key());
     return u;
   }
 }

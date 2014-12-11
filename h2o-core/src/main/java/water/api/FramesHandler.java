@@ -155,7 +155,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
-    Frame frame = getFromDKV(s.key);
+    Frame frame = getFromDKV(s.key.key());
 
     // TODO: We really want to return a different schema here!
     Vec vec = frame.vec(s.column);
@@ -173,7 +173,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
-    Frame frame = getFromDKV(s.key);
+    Frame frame = getFromDKV(s.key.key());
     Vec vec = frame.vec(s.column);
     if (null == vec)
       throw new IllegalArgumentException("Did not find column: " + s.column + " in frame: " + s.key.toString());
@@ -197,7 +197,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 fetch(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
 
-    Frame frame = getFromDKV(s.key);
+    Frame frame = getFromDKV(s.key.key());
     s.frames = new FrameV2[1];
     s.frames[0] = new FrameV2().fillFromImpl(frame);
 
@@ -224,7 +224,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public void delete(int version, FramesV3 frames) {
-    Frame frame = getFromDKV(frames.key);
+    Frame frame = getFromDKV(frames.key.key());
     frame.delete();             // lock & remove
   }
 

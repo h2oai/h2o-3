@@ -2,6 +2,7 @@ package water.parser;
 
 import water.Key;
 import water.api.API;
+import water.api.KeyV1.FrameKeyV1;
 import water.api.Schema;
 import water.util.DocGen.HTML;
 
@@ -11,7 +12,7 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   // Input fields
   @API(help="Source keys",required=true, direction=API.Direction.INPUT)
-  public Key[] srcs;  // TODO: should be Frame[]
+  public FrameKeyV1[] srcs;
 
   @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header",direction=API.Direction.INOUT)
   public int checkHeader;
@@ -57,10 +58,17 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("ParseSetup");
-    if (null != srcs && srcs.length > 0)
-      ab.href("Parse",srcs[0].toString(),water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
-    else
-      ab.href("Parse","unknown",water.api.ParseV2.link(srcs,hexName,pType,sep,ncols,checkHeader,singleQuotes,columnNames));
+    if (null != srcs && srcs.length > 0) {
+      Key[] srcs_key = new Key[srcs.length];
+      for (int i = 0; i < srcs.length; i++)
+        srcs_key[i] = srcs[i].key();
+      ab.href("Parse", srcs[0].toString(), water.api.ParseV2.link(srcs_key, hexName, pType, sep, ncols, checkHeader, singleQuotes, columnNames));
+    } else {
+      Key[] srcs_key = new Key[srcs.length];
+      for (int i = 0; i < srcs.length; i++)
+        srcs_key[i] = srcs[i].key();
+      ab.href("Parse", "unknown", water.api.ParseV2.link(srcs_key, hexName, pType, sep, ncols, checkHeader, singleQuotes, columnNames));
+    }
     ab.putA( "srcs", srcs);
     ab.putStr( "hexName", hexName);
     ab.putEnum("pType",pType);

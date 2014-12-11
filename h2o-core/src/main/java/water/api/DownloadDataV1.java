@@ -1,13 +1,12 @@
 package water.api;
 
 import water.Iced;
-import water.Key;
-import water.fvec.Frame;
+import water.api.KeyV1.FrameKeyV1;
 
 public class DownloadDataV1 extends Schema<Iced, DownloadDataV1> {
 
   // Input fields
-  @API(help="Key of file to download", required=true) Key<Frame> key;
+  @API(help="Key of file to download", required=true) FrameKeyV1 key;
   @API(help="Emit double values in a machine readable lossless format with Double.toHexString().") boolean hex_string;
 
   // Output

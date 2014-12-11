@@ -116,7 +116,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, ModelsV3 s) {
-    Model model = getFromDKV(s.key);
+    Model model = getFromDKV(s.key.key());
     s.models = new ModelSchema[1];
     s.models[0] = (ModelSchema)Schema.schema(version, model).fillFromImpl(model);
 
@@ -143,7 +143,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Remove an unlocked model.  Fails if model is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema delete(int version, ModelsV3 s) {
-    Model model = getFromDKV(s.key);
+    Model model = getFromDKV(s.key.key());
     if (null == model)
       throw new IllegalArgumentException("Model key not found: " + s.key);
     model.delete();             // lock & remove

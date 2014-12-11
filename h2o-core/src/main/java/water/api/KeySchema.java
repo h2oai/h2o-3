@@ -22,7 +22,7 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
   public String URL;
 
   // need versioned
-  KeySchema(Key key) {
+  public KeySchema(Key key) {
     this();
     if (null != key)
       this.fillFromImpl(key);
@@ -42,6 +42,11 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
       throw H2O.fail("Caught exception trying to instantiate KeySchema: " + e);
     }
     return result;
+  }
+
+  /** TODO: figure out the right KeySchema class from the Key, so the type is set properly. */
+  public static KeySchema make(Key key) {
+    return make(KeySchema.class, key);
   }
 
   @Override
@@ -82,4 +87,14 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
     return getKeyedClassType(this.getClass());
   }
 
+  public Key<T> key() {
+    if (null == name) return null;
+
+    return Key.make(this.name);
+  }
+
+  @Override
+  public String toString() {
+    return "Key<" + type + ">" + name;
+  }
 }

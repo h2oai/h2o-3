@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.Model;
+import water.Job;
 import water.Key;
 import water.Keyed;
 import water.fvec.Frame;
@@ -8,6 +9,12 @@ import water.fvec.Frame;
 public class KeyV1<T extends Keyed> extends KeySchema<T> {
   public KeyV1(Key<T> key) {
     super(key);
+  }
+
+  public static class JobKeyV1 extends KeySchema<Job> {
+    public JobKeyV1(Key<Job> key) {
+      super(key);
+    }
   }
 
   public static class FrameKeyV1 extends KeySchema<Frame> {

@@ -12,8 +12,8 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV1 fetch(int version, DownloadDataV1 server) {
 
-    if (DKV.get(server.key) == null) throw new IllegalArgumentException(server.key.toString() + " not found.");
-    Frame value = server.key.get();
+    if (DKV.get(server.key.key()) == null) throw new IllegalArgumentException(server.key.toString() + " not found.");
+    Frame value = server.key.key().get();
 
     InputStream is = value.toCSV(true, server.hex_string);
     java.util.Scanner scanner = new java.util.Scanner(is).useDelimiter("\\A");

@@ -1,17 +1,16 @@
 package water.api;
 
-
 import water.H2O;
 import water.Iced;
-import water.Key;
 import water.api.FramesHandler.Frames;
+import water.api.KeyV1.FrameKeyV1;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
 
 class FramesV2 extends FramesBase<Frames, FramesV2> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  Key key; // TODO: this should NOT appear in the output
+  FrameKeyV1 key; // TODO: this should NOT appear in the output
 
   @API(help="Name of column of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   String column; // TODO: this should NOT appear in the output
@@ -71,7 +70,7 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
 
   // Version-specific filling into the impl
   @Override public Frames fillImpl(Frames f) {
-    f.key = this.key;
+    f.key = this.key.key();
     f.column = this.column; // NOTE: this is needed for request handling, but isn't really part of state
 
     if (null != frames) {
@@ -87,7 +86,7 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
 
   // Version&Schema-specific filling from the impl
   @Override public FramesV2 fillFromImpl(Frames f) {
-    this.key = f.key;
+    this.key = new FrameKeyV1(f.key);
     this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state
 
     this.frames = new IcedHashMap<String, FrameSummaryV2>();

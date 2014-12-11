@@ -15,7 +15,7 @@ public class SynonymsHandler extends Handler {
    *  Synonym: A process in which information is successively passed on.
    */
   public SynonymV1 findSynonyms(int version, SynonymV1 synonym) {
-    Word2VecModel w2vmodel = DKV.get(synonym.key).get();
+    Word2VecModel w2vmodel = DKV.get(synonym.key.key()).get();
     HashMap<String, Float> hm = w2vmodel.findSynonyms(synonym.target, synonym.cnt);
     synonym.synonyms = hm.keySet().toArray(new String[hm.keySet().size()]);
     Float[] f = hm.values().toArray(new Float[hm.keySet().size()]);

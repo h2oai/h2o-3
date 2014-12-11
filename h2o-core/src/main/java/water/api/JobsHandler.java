@@ -27,7 +27,7 @@ public class JobsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, JobsV2 s) {
-    Key key = s.key.key;
+    Key key = s.key.key.key();
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");
     Iced ice = val.get();

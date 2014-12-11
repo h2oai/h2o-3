@@ -182,7 +182,7 @@ public class PojoUtils {
             // Assigning a KeySchema to a Key.
             //
             KeySchema k = (KeySchema)orig_field.get(origin);
-            dest_field.set(dest, Key.make(k.name));
+            dest_field.set(dest, (null == k.name ? null : Key.make(k.name)));
           } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a Pattern.
