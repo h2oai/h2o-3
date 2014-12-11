@@ -122,9 +122,8 @@ setClassUnion("data.frame.N", c("data.frame", "NULL"))
 
 
 #'
-#' The h2o.frame class.
+#' The h2o.frame class
 #'
-#' An h2o.frame is a virtual class that is the ancestor of all AST and h2o.frame objects.
 setClass("h2o.frame",
          representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
          col_names="vector", nrows="numeric", ncols="numeric", scalar="numeric",

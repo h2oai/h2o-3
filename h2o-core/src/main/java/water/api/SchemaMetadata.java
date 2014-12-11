@@ -153,11 +153,11 @@ public final class SchemaMetadata extends Iced {
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
         this.type = consType(schema, f.getType(), f.getName());
-        this.is_schema = (Schema.class.isAssignableFrom(f.getType()));
+        this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
 
-        // TODO: NOPE. Note, this has to work when the field is null.
+        // Note, this has to work when the field is null.
         if (this.is_schema) {
-          this.schema_name = f.getType().getSimpleName();
+          this.schema_name = f.getType().getSimpleName(); // handles arrays as well
         }
 
         API annotation = f.getAnnotation(API.class);

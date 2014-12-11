@@ -59,16 +59,12 @@ final class Route extends Iced {
       {
         Class<? extends Schema> clz = Handler.getHandlerMethodOutputSchema(_handler_method);
 
-        if (null != clz) {
-          builder.paragraph("(void)");
-        } else {
           Schema s = Schema.newInstance(clz);
 
           if (null == s)
             throw H2O.fail("Call to Schema.newInstance(clz) failed for class: " + clz);
 
           builder.append(s.markdown(null, false, true));
-        }
       }
 
       // TODO: render examples and other stuff, if it's passed in
