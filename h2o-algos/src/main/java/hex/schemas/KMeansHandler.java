@@ -5,7 +5,7 @@ import hex.kmeans.KMeansModel.KMeansParameters;
 import water.H2O;
 import water.api.Handler;
 
-/** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */
+/** TODO: only used by old-school web ui: remove!  ModelBuilderHandler does this for all the algos.  */
 @Deprecated
 public class KMeansHandler extends Handler<KMeans, KMeansV2> {
   @Override protected int min_ver() { return 2; }

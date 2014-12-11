@@ -60,9 +60,9 @@ class Basic(unittest.TestCase):
                 'validation_frame': parse_key,
                 'ignored_columns': None,
                 'score_each_iteration': False,
-                'K': 4, 
+                'k': 4,
                 'max_iters': 50,
-                'normalize': False,
+                'standardize': False,
                 'seed': kmeansSeed,
                 'init': 'PlusPlus',
             }
@@ -132,9 +132,9 @@ class Basic(unittest.TestCase):
                 'validation_frame': parse_key,
                 'ignored_columns': '[ID]',
                 'score_each_iteration': False,
-                'K': 3, 
+                'k': 3,
                 'max_iters': 500,
-                'normalize': False,
+                'standardize': False,
                 'seed': kmeansSeed,
                 'init': 'PlusPlus',
             }

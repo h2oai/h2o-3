@@ -163,9 +163,9 @@ class Basic(unittest.TestCase):
                 'validation_frame': parse_key,
                 'ignored_columns': None,
                 'score_each_iteration': False,
-                'K': CLUSTERS,
+                'k': CLUSTERS,
                 'max_iters': 50,
-                'normalize': False,
+                'standardize': False,
                 # 'seed': kmeansSeed,
                 'init': 'Furthest',
             }

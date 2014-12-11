@@ -53,11 +53,11 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     if numRows:
         assert numRows==sum(rows)
 
-    if 'K' in parameters:
-        K = parameters['K']
-        assert len(mses) == K
-        assert len(clusters) == K
-        assert len(rows) == K
+    if 'k' in parameters:
+        k = parameters['k']
+        assert len(mses) == k
+        assert len(clusters) == k
+        assert len(rows) == k
 
     if numCols:
         assert len(names) == numCols, \
@@ -88,7 +88,7 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
 
     # create a tuple for each cluster result, then sort by rows for easy comparison
     # maybe should sort by centers?
-    # put a cluster index in there too, (leftmost) so we don't lose teack
+    # put a cluster index in there too, (leftmost) so we don't lose track
     tuples = zip(range(len(clusters)), mses, rows, clusters)
     tuplesSorted = sorted(tuples, key=itemgetter(3))
 
@@ -119,7 +119,7 @@ def bigCheckResults(self, kmeans, csvPathname, parseResult, predictKey, **kwargs
     cluster_variances = model["within_cluster_variances"]
     error = model["total_within_SS"]
     iterations = model["iterations"]
-    normalized = model["normalized"]
+    standardized = model["standardized"]
     max_iter = model["max_iter"]
     kmeansResult = kmeans
 

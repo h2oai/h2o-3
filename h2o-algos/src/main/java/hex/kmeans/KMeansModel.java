@@ -8,9 +8,9 @@ import water.api.ModelSchema;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters {
-    public int _K = 2;                     // Number of clusters
+    public int _k = 2;                     // Number of clusters
     public int _max_iters = 1000;          // Max iterations
-    public boolean _normalize = true;      // Normalize columns
+    public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
   }
@@ -23,15 +23,16 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Cluster centers.  During model init, might be null or might have a "K"
-    // which is oversampled alot.  Not normalized (although if normalization is
-    // used during the building process, the *builders* clusters are normalized).
-    public double[/*K*/][/*features*/] _clusters;
+    // Cluster centers.  During model init, might be null or might have a "k"
+    // which is oversampled a lot.  Not standardized (although if standardization
+    // is used during the building process, the *builders* clusters are standardized).
+    public double[/*k*/][/*features*/] _clusters;
+
     // Rows per cluster
-    public long[/*K*/] _rows;
+    public long[/*k*/] _rows;
 
     // Sum squared distance between each point and its cluster center, divided by rows
-    public double[/*K*/] _mses;   // Per-cluster MSE, variance
+    public double[/*k*/] _mses;   // Per-cluster MSE, variance
 
     // Sum squared distance between each point and its cluster center, divided by rows.
     public double _mse;           // Total MSE, variance

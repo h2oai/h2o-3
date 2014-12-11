@@ -10,19 +10,19 @@ import water.util.PojoUtils;
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
   public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
-    static public String[] own_fields = new String[] { "K", "max_iters", "normalize", "seed", "init" };
+    static public String[] own_fields = new String[] { "k", "max_iters", "standardize", "seed", "init" };
 
     // Input fields
     @API(help = "Number of clusters", required = true)
-    public int K;
+    public int k;
 
     @API(help="Maximum training iterations.")
     public int max_iters;        // Max iterations
 
-    @API(help = "Normalize columns", level = API.Level.secondary)
-    public boolean normalize = true;
+    @API(help = "Standardize columns", level = API.Level.secondary)
+    public boolean standardize = true;
 
-    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"K", "max_iters"} */ )
+    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"k", "max_iters"} */ )
     public long seed;
 
     @API(help = "Initialization mode", values = { "None", "PlusPlus", "Furthest" }) // TODO: pull out of enum class. . .

@@ -30,7 +30,7 @@ public class KMeansRandomTest extends TestUtil {
       try {
         for (int clusters : new int[]{2, 10, 100}) {
           for (int max_iter : new int[]{1, 10, 100}) {
-            for (boolean normalize : new boolean[]{false, true}) {
+            for (boolean standardize : new boolean[]{false, true}) {
               for (KMeans.Initialization init : new KMeans.Initialization[]{
                       KMeans.Initialization.None,
                       KMeans.Initialization.Furthest,
@@ -41,10 +41,10 @@ public class KMeansRandomTest extends TestUtil {
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
                 parms._train = frame._key;
-                parms._K = clusters;
+                parms._k = clusters;
                 parms._seed = rng.nextLong();
                 parms._max_iters = max_iter;
-                parms._normalize = normalize;
+                parms._standardize = standardize;
                 parms._init = init;
 
                 KMeans job = new KMeans(parms);
@@ -53,7 +53,7 @@ public class KMeansRandomTest extends TestUtil {
 
                 Frame score = null;
                 try {
-                  for (int j = 0; j < parms._K; j++)
+                  for (int j = 0; j < parms._k; j++)
                     Assert.assertTrue(m._output._rows[j] != 0);
 
                   Assert.assertTrue(m._output._iters <= max_iter);
