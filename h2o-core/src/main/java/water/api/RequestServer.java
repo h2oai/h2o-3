@@ -455,7 +455,7 @@ public class RequestServer extends NanoHTTPD {
       // Find handler for url
       Route route = lookup(method, versioned_path);
 
-      if (route != null && route._handler_class != TutorialsHandler.class && route._handler_class != TypeaheadHandler.class)
+      if (route != null && route._handler_class != CloudHandler.class && route._handler_class != TutorialsHandler.class && route._handler_class != TypeaheadHandler.class)
         H2O.registerAllSchemasIfNecessary();
 
       // if the request is not known, treat as resource request, or 404 if not found
