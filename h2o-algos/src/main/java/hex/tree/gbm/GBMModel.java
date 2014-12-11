@@ -23,7 +23,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
-    public GBMOutput( GBM b, double mse_train, double mse_test ) { super(b,mse_train,mse_test); }
+    public GBMOutput( GBM b, double mse_train, double mse_valid ) { super(b,mse_train,mse_valid); }
   }
 
   public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }

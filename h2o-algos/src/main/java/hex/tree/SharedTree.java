@@ -194,7 +194,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_test );
+    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_valid );
     abstract protected void buildModel();
   }
 
@@ -370,7 +370,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
       out._mse_train[out._ntrees] = _parms._valid==null ? mm._mse : Double.NaN;
-      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : mm._mse;
+      out._mse_valid[out._ntrees] = _parms._valid==null ? Double.NaN : mm._mse;
 
       Log.info("============================================================== ");
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");

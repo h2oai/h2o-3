@@ -20,8 +20,6 @@ invisible(lapply(packages, usePackage))
 
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("h2oR.R")
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 failed <<- F

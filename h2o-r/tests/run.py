@@ -936,9 +936,7 @@ class TestRunner:
             cmd = ["R",
                    "--quiet",
                    "-f",
-                   os.path.join(self.test_root_dir, "Utils/runnerSetupPackage.R"),
-                   "--args",
-                   ip + str(port)]
+                   os.path.join(self.test_root_dir, "Utils/runnerSetupPackage.R")]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
