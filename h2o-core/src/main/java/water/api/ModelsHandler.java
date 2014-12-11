@@ -86,10 +86,10 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Return all the models. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list(int version, ModelsV3 s) {
+  public ModelsV3 list(int version, ModelsV3 s) {
     Models m = s.createAndFillImpl();
     m.models = Models.fetchAll();
-    return s.fillFromImpl(m);
+    return (ModelsV3) s.fillFromImpl(m);
   }
 
   // TODO: almost identical to ModelsHandler; refactor
@@ -115,7 +115,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema fetch(int version, ModelsV3 s) {
+  public ModelsV3 fetch(int version, ModelsV3 s) {
     Model model = getFromDKV(s.key.key());
     s.models = new ModelSchema[1];
     s.models[0] = (ModelSchema)Schema.schema(version, model).fillFromImpl(model);
@@ -142,14 +142,11 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Remove an unlocked model.  Fails if model is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema delete(int version, ModelsV3 s) {
+  public ModelsV3 delete(int version, ModelsV3 s) {
     Model model = getFromDKV(s.key.key());
     if (null == model)
       throw new IllegalArgumentException("Model key not found: " + s.key);
     model.delete();             // lock & remove
-    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
-    InspectV1 i = new InspectV1();
-    i.key = s.key;
     return s;
   }
 
@@ -158,7 +155,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
    * (perhaps because the Models were locked & in-use).
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema deleteAll(int version, ModelsV3 models) {
+  public ModelsV3 deleteAll(int version, ModelsV3 models) {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return Value.isSubclassOf(k._type, Model.class);
@@ -177,8 +174,6 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     fs.blockForPending();
     if( err != null ) throw new IllegalArgumentException(err);
 
-    // TODO: Hm, which Schema should we use here?  Surely not a hardwired InspectV1. . .
-    InspectV1 s = new InspectV1();
-    return s;
+    return models;
   }
 }

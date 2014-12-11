@@ -223,9 +223,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public void delete(int version, FramesV3 frames) {
+  public FramesV3 delete(int version, FramesV3 frames) {
     Frame frame = getFromDKV(frames.key.key());
     frame.delete();             // lock & remove
+    return frames;
   }
 
   /**
@@ -233,7 +234,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
    * (perhaps because the Frames were locked & in-use).
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public void deleteAll(int version, FramesV3 frames) {
+  public FramesV3 deleteAll(int version, FramesV3 frames) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return k._type == TypeMap.FRAME;
@@ -251,5 +252,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
     fs.blockForPending();
     if( err != null ) throw new IllegalArgumentException(err);
+    return frames;
   }
 }
