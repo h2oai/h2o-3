@@ -279,6 +279,19 @@ h2o.clusterInfo <- function(client) {
 }
 
 #------------------------------------ Utilities ------------------------------------#
+.h2o.__writeToFile <- function(res, fileName) {
+  formatVector <- function(vec) {
+    result <- rep(" ", length(vec))
+    nams <- names(vec)
+    for(i in 1:length(vec))
+      result[i] = paste(nams[i], ": ", vec[i], sep="")
+    paste(result, collapse="\n")
+  }
+
+  cat("Writing JSON response to", fileName, "\n")
+  temp <- strsplit(as.character(Sys.time()), " ")[[1]]
+  write(paste(temp[1], temp[2], '\t', formatVector(unlist(res))), file = fileName, append = TRUE)
+}
 
 .h2o.__checkForFactors <- function(object) {
   if(class(object) != "h2o.frame") return(FALSE)

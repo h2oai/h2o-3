@@ -773,7 +773,7 @@ final public class H2O {
    */
   synchronized static public void registerAllSchemasIfNecessary() {
     if (schemas_registered) return;
-    if (!Paxos._cloudLocked) return;
+    // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
 
     Reflections reflections = null;
 

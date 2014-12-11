@@ -36,12 +36,15 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   # remove the following from the parseSetup list: not passed to PARSE page
   parseSetup$hexName <- NULL
   parseSetup$data <- NULL
+  parseSetup$headerlines <- NULL
+  parseSetup$invalidLines <- NULL
+  parseSetup$isValid <- NULL
 
   # Perform the parse
   res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "POST", .params = parseSetup)
 
   # Poll on job
-  .h2o.__waitOnJob(data@h2o, res$job$name)
+  .h2o.__waitOnJob(data@h2o, res$job$key$name)
 
   # Return a new h2o.frame object
   nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
