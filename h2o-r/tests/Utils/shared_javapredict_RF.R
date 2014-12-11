@@ -1,5 +1,5 @@
 heading("BEGIN TEST")
-conn <- new("H2OClient", ip=myIP, port=myPort)
+conn <- new("h2o.client", ip=myIP, port=myPort)
 
 heading("Uploading train data to H2O")
 iris_train.hex <- h2o.importFile(conn, train)

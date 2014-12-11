@@ -16,7 +16,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!(missing(header) || is.logical(header))) stop(paste("header cannot be of class", class(header)))
   if(!is.character(sep)) stop("sep must be of class character")
-  if(!(missing(col.names) || class(col.names) == "H2OParsedData")) stop(paste("col.names cannot be of class", class(col.names)))
+  if(!(missing(col.names) || class(col.names) == "h2o.frame")) stop(paste("col.names cannot be of class", class(col.names)))
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
   srcs <- c(data@key)
@@ -43,9 +43,11 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$name)
 
-  # Return a new H2OParsedData object
+  # Return a new h2o.frame object
   nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
-  .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
+  o <- .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
+  .pkg.env[[o@key]] <- o
+  o
 
   # If both header and column names missing, then let H2O guess if header exists
 #  sepAscii <- ifelse(sep == "", sep, strtoi(charToRaw(sep), 16L))
@@ -82,30 +84,29 @@ function(v) {
 #' Load a saved H2O model from disk.
 h2o.loadModel <- function(object, path="") {
   if(missing(object)) stop('Must specify object')
-  if(class(object) != 'H2OClient') stop('object must be of class H2OClient')
+  if(class(object) != 'h2o.client') stop('object must be of class h2o.client')
   if(!is.character(path)) stop('path must be of class character')
-  res = .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
+  res <- .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
   h2o.getModel(object, res$model$'_key')
 }
 
 #'
-#' The H2OParsedData Constructor
-.h2o.parsedData<-
-function(h2o, key, nrow, ncol, col_names) {
-  new("H2OParsedData", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
-}
+#' The h2o.frame Constructor
+.h2o.parsedData <- function(h2o, key, nrow, ncol, col_names) new("h2o.frame", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 
 #'
-#' Create new H2OParsedData object for predictions
+#' Create new h2o.frame object for predictions
 .h2o.parsedPredData<-
 function(client, predictions) {
-  key = predictions$key$name
-  col_names = sapply(predictions$columns, function(column) column$label)
-  nrows = predictions$rows
-  ncols = length(col_names)
-  factors = sapply(predictions$columns, function(column) if(column$type == "enum") TRUE else FALSE )
-  names(factors) = col_names
-  factors = as.data.frame(factors)
-
-  new("H2OParsedData", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  browser()
+  key <- predictions$key$name
+  col_names <- sapply(predictions$columns, function(column) column$label)
+  nrows <- predictions$rows
+  ncols <- length(col_names)
+  factors <- sapply(predictions$columns, function(column) if(column$type == "enum") TRUE else FALSE )
+  names(factors) <- col_names
+  factors <- as.data.frame(factors)
+  o <- new("h2o.frame", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  .pkg.env[[o@key]] <- o
+  o
 }

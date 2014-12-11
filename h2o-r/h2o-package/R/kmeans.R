@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{H2OParsedData} object containing the variables in the model.
+#' @param training_frame An \linkS4class{h2o.frame} object containing the variables in the model.
 #' @param ignored_columns (Optional) A vector containing the data columns on which k-means ignores.
 #' @param K \code{Defaults to 2} The number of clusters k. Must be between 2 and 1e7.
 #' @param destination_key (Optional) The unique hex key assigned to the resulting modle. Automatically generated if none

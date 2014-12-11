@@ -34,7 +34,7 @@ colPlus.numeric <- function(conn) {
   expect_that(as.data.frame(slicedPlusFive), equals(as.data.frame(fivePlusSliced)))
 
 
-  Log.info("Checking the variation of H2OParsedData + H2OParsedData")
+  Log.info("Checking the variation of h2o.frame + h2o.frame")
 
   hexPlusHex <- fivePlusSliced + slicedPlusFive
 

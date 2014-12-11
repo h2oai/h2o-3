@@ -327,6 +327,7 @@ class SummaryObj(OutputObj):
 
         # how are enums binned. Stride of 1? (what about domain values)
         # touch all
+        print "vars", vars(self)
         coList = [self.base, len(self.bins), len(self.data),
             self.domain, self.label, self.maxs, self.mean, self.mins, self.missing, self.ninfs, self.pctiles,
             self.pinfs, self.precision, self.sigma, self.str_data, self.stride, self.type, self.zeros]

@@ -4,44 +4,44 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.cbind <- function(conn) {
-  Log.info('test cbind')
+test.h2o.cbind <- function(conn) {
+  Log.info('test h2o.cbind')
 
   hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
   otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
 
   ##### WORKS #####
-  # cbind self to self
-  hdf2 <- cbind(hdf, hdf)
+  # h2o.cbind self to self
+  hdf2 <- h2o.cbind(hdf, hdf)
   expect_that( dim(hdf2), equals(c(12, 8)) )
 
-  # cbind a sliced column to a sliced column
+  # h2o.cbind a sliced column to a sliced column
   xx <- hdf[,1]
   yy <- hdf[,2]
-  expect_that( dim(cbind(xx,yy)), equals(c(12,2)) )
+  expect_that( dim(h2o.cbind(xx,yy)), equals(c(12,2)) )
 
-  # cbind logical expressions
-  hdf_filt <- cbind(hdf[,3] <= 5, hdf[,4] >= 4)
+  # h2o.cbind logical expressions
+  hdf_filt <- h2o.cbind(hdf[,3] <= 5, hdf[,4] >= 4)
   expect_that(dim(hdf_filt), equals(c(12, 2)))
   
-  # cbind sets column names correctly
-  hdf_names <- cbind(colX = xx, colY = yy)
+  # h2o.cbind sets column names correctly
+  hdf_names <- h2o.cbind(colX = xx, colY = yy)
 
   print(hdf_names)
 
   # ignore column names for now, need to impl HACK_SETCOLNAMES2
   #expect_that(colnames(hdf_names), equals(c("colX", "colY")))
   
-  # cbind unequal rows fails
-  expect_that(head(cbind(hdf, otherhdf)), throws_error())
+  # h2o.cbind unequal rows fails
+  expect_that(head(h2o.cbind(hdf, otherhdf)), throws_error())
   
   ##### BROKEN #####
-  # cbind a df to a slice
+  # h2o.cbind a df to a slice
   # Note: Not working because hdf is VA and hdf[,1] is FV
-  # expect_that( dim(cbind(hdf, hdf[,1])), equals(c(12,5)) )
+  # expect_that( dim(h2o.cbind(hdf, hdf[,1])), equals(c(12,5)) )
 
   testEnd()
 }
 
-doTest("test cbind", test.cbind)
+doTest("test h2o.cbind", test.h2o.cbind)
 

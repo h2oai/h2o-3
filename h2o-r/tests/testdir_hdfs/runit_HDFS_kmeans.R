@@ -26,7 +26,7 @@ if (running_inside_hexdata) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- new("H2OClient", ip=myIP, port=myPort)
+conn <- new("h2o.client", ip=myIP, port=myPort)
 
 #----------------------------------------------------------------------
 # Single file cases.

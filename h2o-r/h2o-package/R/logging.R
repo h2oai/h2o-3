@@ -91,8 +91,8 @@ h2o.setLogPath <- function(path, type) {
 }
 
 h2o.logAndEcho <- function(conn, message) {
-  if(!is(conn, "H2OClient"))
-    stop("conn must be an H2OClient")
+  if(!is(conn, "h2o.client"))
+    stop("conn must be an h2o.client")
 
   if(!is.character(message))
     stop("message must be a character string")
@@ -102,8 +102,8 @@ h2o.logAndEcho <- function(conn, message) {
 }
 
 h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
-  if(!is(client, "H2OClient"))
-    stop("client must be of class H2OClient")
+  if(!is(client, "h2o.client"))
+    stop("client must be of class h2o.client")
 
   if(!is.character(dirname))
     stop("dirname must be of class character")

@@ -1,13 +1,76 @@
 package water.api;
 
+import water.DKV;
+import water.Iced;
+import water.Key;
+import water.Value;
 import water.fvec.Frame;
 import water.rapids.Env;
+import water.rapids.Raft;
 import water.util.Log;
 
 class RapidsHandler extends Handler {
 
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
+
+  /**
+   *  Rapids:
+   *    A process in which information is successively passed on.
+   */
+
+//  public RapidsV1 setAST(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to setAST.");
+//    Raft raft = DKV.getGet(rapids.astKey);
+//    if (raft == null) raft = new Raft();
+//    raft.set_ast(rapids.ast);
+//    rapids.raft_ast = rapids.ast;
+//    DKV.put(rapids.astKey, raft);
+//    return schema(version).fillFromImpl(rapids);
+//  }
+
+//  public RapidsV1 getAST(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getAST.");
+//    Raft raft = DKV.getGet(rapids.astKey);
+//    rapids.raft_ast=raft.get_ast();
+//    if (rapids.raft_ast == null) rapids.raft_key=raft.get_key();  // get the key if no ast.
+//    return schema(version).fillFromImpl(rapids);
+//  }
+
+  public RapidsV1 isEvaluated(int version, RapidsV1 rapids) {
+    if (rapids == null) return null;
+    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    boolean isEval = false;
+    Value v;
+    if ((v=DKV.get(rapids.astKey))!=null) {
+      if (!(v.get() instanceof Frame)) {
+        Raft raft = v.get();
+        Value vv = raft == null ? null : DKV.get(raft.get_key());
+        isEval = vv != null && (vv.get() != null);
+      } else isEval = true;
+    }
+    rapids.evaluated = isEval;
+    return rapids;
+  }
+
+  public RapidsV1 getKey(int version, RapidsV1 rapids) {
+    if (rapids == null) return null;
+    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    Raft raf = DKV.getGet(rapids.astKey);
+    rapids.raft_key = raf.get_key();
+    return rapids;
+  }
+
+//  public RapidsV1 force(int version, Rapids rapids) {
+//    if (rapids == null) return null;
+//    if (rapids.astKey == null) throw new IllegalArgumentException("No key supplied to force.");
+//    Raft raft = DKV.getGet(rapids.astKey);
+//    // get the ast and exec
+//    rapids.ast = raft.get_ast();
+//    return exec(version, rapids);
+//  }
 
   public RapidsV1 exec(int version, RapidsV1 rapids) {
     if (rapids == null) return null;
@@ -47,8 +110,8 @@ class RapidsHandler extends Handler {
     catch( Throwable e2 ) { Log.err(e=e2); }
     finally {
       if (e != null) e.printStackTrace();
-      if (e != null) rapids.exception = e.getMessage() == null ? e.toString() : e.getMessage();
-      if (e != null && e instanceof ArrayIndexOutOfBoundsException) rapids.exception = e.toString();
+      if (e != null) rapids.error = e.getMessage() == null ? e.toString() : e.getMessage();
+      if (e != null && e instanceof ArrayIndexOutOfBoundsException) rapids.error = e.toString();
       if (env != null) {
         try {env.remove_and_unlock(); }
         catch (Exception xe) { Log.err("env.remove_and_unlock() failed", xe); }
