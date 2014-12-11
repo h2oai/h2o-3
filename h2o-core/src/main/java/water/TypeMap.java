@@ -32,6 +32,7 @@ public class TypeMap {
     water.api.CloudV1.NodeV1.class.getName(),
     water.api.HttpErrorV1.class.getName(),
     water.api.Schema.class.getName(),
+    water.api.Schema.Meta.class.getName(),
     water.api.TutorialsV1.class.getName(),
     water.api.TypeaheadV2.class.getName(),    // Allow typeahead without locking
     water.Key.class.getName(),

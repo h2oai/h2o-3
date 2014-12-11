@@ -84,16 +84,36 @@ import java.util.regex.Pattern;
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
-  @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
-  public int __schema_version;
-  public final int getSchemaVersion() { return __schema_version; }
+  public static final class Meta extends Iced {
+    @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
+    public int schema_version;
 
-  /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
-  @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
-  public String __schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
+    /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
+    @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.", direction=API.Direction.OUTPUT)
+    public String schema_name;
 
-  @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
-  public String __schema_type = _impl_class.getSimpleName(); // subclasses can redfine this
+    @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
+    public String schema_type; // subclasses can redefine this
+
+    public Meta() {}
+    public Meta(int version, String name, String type) {
+      this.schema_version = version;
+      this.schema_name = name;
+      this.schema_type = type;
+    }
+
+    @Override
+    public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
+      // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
+      ab.putJSON4("schema_version", schema_version)
+        .put1(',').putJSONStr("schema_name", schema_name)
+        .put1(',').putJSONStr("schema_type", schema_type);
+      return ab;
+    }
+  }
+
+  @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)
+  public Meta __meta = null;
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -113,23 +133,25 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
   public Schema() {
-    // Check version number
-    __schema_version = extractVersion(__schema_name);
-    // We do now to get metadata for base classes: assert schema_version > -1 : "Cannot instantiate a schema whose classname does not end in a 'V' and a version #";
+    String name = this.getClass().getSimpleName();
+    int version = extractVersion(name);
+    String type = _impl_class.getSimpleName();
 
-    if (null == schema_to_iced.get(this.__schema_name)) {
-      Log.debug("Registering schema: " + this.__schema_name + " schema_version: " + this.__schema_version + " with Iced class: " + _impl_class.toString());
-      if (null != schemas.get(this.__schema_name))
-        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.__schema_name) + " and: " + this.getClass().toString());
+    __meta = new Meta(version, name, type);
 
-      schemas.put(this.__schema_name, this.getClass());
-      schema_to_iced.put(this.__schema_name, _impl_class);
+    if (null == schema_to_iced.get(name)) {
+      Log.debug("Registering schema: " + name + " schema_version: " + version + " with Iced class: " + _impl_class.toString());
+      if (null != schemas.get(name))
+        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(name) + " and: " + this.getClass().toString());
+
+      schemas.put(name, this.getClass());
+      schema_to_iced.put(name, _impl_class);
 
       if (_impl_class != Iced.class) {
-        Pair versioned = new Pair(_impl_class.getSimpleName(), this.__schema_version);
+        Pair versioned = new Pair(type, version);
         // Check for conflicts
         if (null != iced_to_schema.get(versioned)) {
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + __schema_version + " of Iced class: " + _impl_class);
+          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + version + " of Iced class: " + _impl_class);
         }
         iced_to_schema.put(versioned, this.getClass());
       }
@@ -144,6 +166,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     Matcher m =  _version_pattern.matcher(clz_name);
     if (! m.matches()) return -1;
     return Integer.valueOf(m.group(1));
+  }
+
+  public int getSchemaVersion() {
+    return __meta.schema_version;
   }
 
   /** Helper to fetch the class name in a static initializer block. */

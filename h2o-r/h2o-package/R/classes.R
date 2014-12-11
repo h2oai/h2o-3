@@ -8,33 +8,53 @@
 #' will typically never have to reason with these objects directly, as there are
 #' S3 accessor methods provided for creating new objects.
 #'
-#' The S4 classes used by the h2o package are grouped into two divisions,
-#' namely the '"FluidVec"' (FV) and '"AST"' groups.
-#'
-#'      1. Group '"FluidVec"':
-#'          FluidVec (or FV for short) is an H2O specific internal
-#'          representation of the data. Data is stored in columns (vectors),
-#'          and vectors are sliced into chunks, distributed around the cluster.
-#'
-#'          FluidVec replaced the row-based representation known as ValueArray
-#'          (another H2O specific data format that no longer exists), and is
-#'          now the dominant data type used by algorithms and analytical
-#'          operations in H2O.
-#'
-#'      2. Group '"AST"':
-#'          R expressions involving objects from group '"FluidVec"' or group
-#'          are _lazily evaluated_. Therefore, when assigning to a new R variable,
-#'          the R variable represents a _promise_ to evaluate the expression on
-#'          demand. The usual lexical scoping rules of R apply to these objects.
-#'
-#'
-#' Note: <WARNING> Do NOT touch the env slot! It is used to link garbage collection between R and H2O
 #' @name ClassesIntro
 NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
-# FluidVec Class Defintions
+# Class Defintions
 #-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' The Node class.
+#'
+#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' has as its ancestor this class.
+#'
+#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
+#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
+#' by looking up the tree to the nearest symbol table defining that symbol.
+setClass("Node", contains="VIRTUAL")
+
+#'
+#' The ASTNode class.
+#'
+#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
+#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
+#' @slot root Object of type \code{Node}
+#' @slot children Object of type \code{list}
+setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
+
+#' @rdname ASTNode-class
+setMethod("show", "ASTNode", function(object) cat(visitor(object)$ast, "\n") )
+
+#'
+#' The ASTApply class.
+#'
+#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
+#' are never leaf nodes. Operators are discussed more in depth in ops.R.
+setClass("ASTApply", representation(op="character"), contains="Node")
+
+setClass("ASTEmpty",  representation(key="character"), contains="Node")
+setClass("ASTBody",   representation(statements="list"), contains="Node")
+setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
+setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
+setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
+setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
+setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
+setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
+
 #'
 #' The h2o.client class.
 #'
@@ -60,61 +80,6 @@ setMethod("show", "h2o.client", function(object) {
   cat("IP Address:", object@ip,   "\n")
   cat("Port      :", object@port, "\n")
 })
-
-#'
-#' The H2ORawData class.
-#'
-#' This class represents data in a post-import format.
-#'
-#' Data ingestion is a two-step process in H2O. First, a given path to a data source is _imported_ for validation by the
-#' user. The user may continue onto _parsing_ all of the data into memory, or the user may choose to back out and make
-#' corrections. Imported data is in a staging area such that H2O is aware of the data, but the data is not yet in
-#' memory.
-#'
-#' The H2ORawData is a representation of the imported, not yet parsed, data.
-#' @slot h2o An \code{h2o.client} object containing the IP address and port number of the H2O server.
-#' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
-#' @aliases H2ORawData
-setClass("H2ORawData", representation(h2o="h2o.client", key="character"))
-
-#' @rdname H2ORawData-class
-setMethod("show", "H2ORawData", function(object) {
-  print(object@h2o)
-  cat("Raw Data Key:", object@key, "\n")
-})
-
-#'
-#' The H2OFrame class.
-#'
-#' An H2OFrame is a virtual class that is the ancestor of all AST and H2OFrame objects.
-setClass("H2OFrame", contains="VIRTUAL")
-
-# No show method for this type of object.
-
-#-----------------------------------------------------------------------------------------------------------------------
-# AST Class Defintions: Part 1
-#-----------------------------------------------------------------------------------------------------------------------
-#'
-#' The Node class.
-#'
-#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' has as its ancestor this class.
-#'
-#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
-#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
-#' by looking up the tree to the nearest symbol table defining that symbol.
-setClass("Node", contains="H2OFrame")
-
-#'
-#' The ASTNode class.
-#'
-#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
-#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
-#' @slot root Object of type \code{Node}
-#' @slot children Object of type \code{list}
-setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
-
-setMethod("show", "ASTNode", function(object) cat(visitor(object)$ast, "\n") )
 
 setClassUnion("h2o.client.N", c("h2o.client", "NULL"))
 setClassUnion("ast.node.N", c("ASTNode", "NULL"))
@@ -146,28 +111,28 @@ setMethod("show", "h2o.frame", function(object) {
 })
 
 #'
-#' The ASTApply class.
+#' The H2ORawData class.
 #'
-#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
-#' are never leaf nodes. Operators are discussed more in depth in ops.R.
-setClass("ASTApply", representation(op="character"), contains="Node")
+#' This class represents data in a post-import format.
+#'
+#' Data ingestion is a two-step process in H2O. First, a given path to a data source is _imported_ for validation by the
+#' user. The user may continue onto _parsing_ all of the data into memory, or the user may choose to back out and make
+#' corrections. Imported data is in a staging area such that H2O is aware of the data, but the data is not yet in
+#' memory.
+#'
+#' The H2ORawData is a representation of the imported, not yet parsed, data.
+#' @slot h2o An \code{h2o.client} object containing the IP address and port number of the H2O server.
+#' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
+#' @aliases H2ORawData
+setClass("H2ORawData", representation(h2o="h2o.client", key="character"))
 
+#' @rdname H2ORawData-class
+setMethod("show", "H2ORawData", function(object) {
+  print(object@h2o)
+  cat("Raw Data Key:", object@key, "\n")
+})
 
-#-----------------------------------------------------------------------------------------------------------------------
-# AST Class Defintions: Part 2
-#-----------------------------------------------------------------------------------------------------------------------
-
-setClass("ASTEmpty",  representation(key="character"), contains="Node")
-setClass("ASTBody",   representation(statements="list"), contains="Node")
-setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
-setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
-setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
-setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
-setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
-setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
-setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
-
-
+# No show method for this type of object.
 
 #'
 #' The H2OW2V object.

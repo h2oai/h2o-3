@@ -136,7 +136,7 @@ function(fun.ast) {
 
 .is.eval <- function(h2o.frame) {
   key <- h2o.frame@key
-  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS %p0% "/isEval", astKey=key)
+  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS %p0% "/isEval", ast_key=key)
   res$evaluated
 }
 

@@ -10,7 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
-/** Class to auto-gen serielizer delegate classes.  */
+/** Class to auto-gen serializer delegate classes.  */
 public class Weaver {
 
   /** Get all woven fields in this class, including subclasses, up to the
