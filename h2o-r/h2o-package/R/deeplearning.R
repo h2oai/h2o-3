@@ -1,16 +1,16 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an \linkS4class{H2OParsedData}
+#' Performs Deep Learning neural networks on an \linkS4class{h2o.frame}
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param data An \linkS4class{H2OParsedData} object containing the variables in the model.
+#' @param data An \linkS4class{h2o.frame} object containing the variables in the model.
 #' @param key (Optional) The unique \code{character} hex key assigned to the resulting model. If none is given, a key will automatically be generated.
 #' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best model found during traning. Defaults to \code{TRUE}.
 #' @param classification Logical. Indicates whether the algorithm should conduct classification.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
-#' @param validation (Optional) An \code{\link{H2OParsedData}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param validation (Optional) An \code{\link{h2o.frame}} object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance. Otherwise the first factor level is omittted (without loss of accuracy). Useful for variable imporotances and auto-enabled for autoencoder.
@@ -151,16 +151,16 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
 
   model
 #  if(nfolds == 1) stop("nfolds cannot be 1")
-#  if(!missing(validation) && class(validation) != "H2OParsedData")
+#  if(!missing(validation) && class(validation) != "h2o.frame")
 #    stop("validation must be an H2O parsed dataset")
 #
 #  if(missing(validation) && nfolds == 0) {
 #    # validation = data
 #    # parms$validation = validation@key
-#    validation <- new ("H2OParsedData", key = as.character(NA))
+#    validation <- new ("h2o.frame", key = as.character(NA))
 #    parms$n_folds <- nfolds
 #  } else if(missing(validation) && nfolds >= 2) {
-#    validation <- new("H2OParsedData", key = as.character(NA))
+#    validation <- new("h2o.frame", key = as.character(NA))
 #    parms$n_folds <- nfolds
 #  } else if(!missing(validation) && nfolds == 0)
 #    parms$validation <- validation@key
@@ -259,7 +259,7 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
 #  .h2o.__waitOnJob(data@h2o, job_key)
 #  res_model <- list()
 #  res_model$params <- model_params
-#  new("H2ODeepLearningModel", h2o = data@h2o, key = dest_key, model = res_model, valid = new("H2OParsedData", h2o=data@h2o, key="NA"), xval = list())
+#  new("H2ODeepLearningModel", h2o = data@h2o, key = dest_key, model = res_model, valid = new("h2o.frame", h2o=data@h2o, key="NA"), xval = list())
 #
 ##  if(noGrid)
 ##    .h2o.singlerun.internal("DeepLearning", data, res, nfolds, validation, parms)

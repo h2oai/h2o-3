@@ -21,6 +21,7 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
   @API(help="result"                 , direction=API.Direction.OUTPUT) String result;
   @API(help="Raft ast"               , direction=API.Direction.OUTPUT) String raft_ast;
   @API(help="Raft key"               , direction=API.Direction.OUTPUT) Key    raft_key;
+  @API(help="Was evaluated"          , direction=API.Direction.OUTPUT) boolean evaluated;
 
 //  TODO @API(help="Array of Column Summaries.") Inspect2.ColSummary cols[];
 
@@ -53,6 +54,7 @@ public class RapidsV1 extends Schema<RapidsHandler.Rapids, RapidsV1> {
     col_names = rapids._col_names;
     string    = rapids._string;
     exception = rapids._error;
+    evaluated = rapids._evaluated;
     return this;
   }
 }

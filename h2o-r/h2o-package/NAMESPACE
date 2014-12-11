@@ -6,10 +6,10 @@ exportMethods(
   "show", "%in%"
 )
 exportClasses(
-  "H2OClient",
+  "h2o.frame",
   "H2OGLMModel",
   "H2OKMeansModel",
-  "H2OParsedData",
+  "h2o.frame",
   "H2ORawData",
   "H2ODRFModel",
   "H2OPCAModel",

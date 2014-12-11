@@ -199,7 +199,7 @@ withWarnings <- function(expr) {
 doTest<-
 function(testDesc, test) {
     Log.info("======================== Begin Test ===========================\n")
-    conn <<- new("H2OClient", ip=myIP, port=myPort)
+    conn <<- new("h2o.client", ip=myIP, port=myPort)
     assign("conn", conn, globalenv())
     tryCatch(test_that(testDesc, withWarnings(test(conn))), warning = function(w) WARN(w), error =function(e) FAIL(e))
     if (!PASSS) FAIL("Did not reach the end of test. Check Rsandbox/errors.log for warnings and errors.")

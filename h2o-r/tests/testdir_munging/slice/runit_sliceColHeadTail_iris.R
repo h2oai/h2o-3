@@ -19,7 +19,7 @@ test.slice.colTail <- function(conn) {
   sepalLength <- iris.hex[,1]
   
   Log.info("Slicing out the first column still gives an h2o object.")
-  expect_that(sepalLength, is_a("H2OFrame"))
+  expect_that(sepalLength, is_a("h2o.frame"))
   print(head(sepalLength))
   
   Log.info("Tail of sepalLength is:\n")

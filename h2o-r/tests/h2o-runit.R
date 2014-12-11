@@ -134,12 +134,12 @@ sandbox()
 h2o.logIt("[SEED] :", SEED, "Command")
 
 
-h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
-h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "")
-h2o.logAndEcho(new("H2OClient", ip=myIP, port=myPort), "------------------------------------------------------------")
-h2o.removeAll( new("H2OClient", ip=myIP, port=myPort))
+h2o.logAndEcho(new("h2o.client", ip=myIP, port=myPort), "------------------------------------------------------------")
+h2o.logAndEcho(new("h2o.client", ip=myIP, port=myPort), "")
+h2o.logAndEcho(new("h2o.client", ip=myIP, port=myPort), paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+h2o.logAndEcho(new("h2o.client", ip=myIP, port=myPort), "")
+h2o.logAndEcho(new("h2o.client", ip=myIP, port=myPort), "------------------------------------------------------------")
+h2o.removeAll( new("h2o.client", ip=myIP, port=myPort))
 
 # Set up some directories.
 if (exists("TEST_ROOT_DIR")) {

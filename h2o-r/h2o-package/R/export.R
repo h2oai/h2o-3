@@ -5,8 +5,8 @@
 #' Save models to local disk or HDFS.
 
 h2o.exportFile <- function(data, path, force = FALSE) {
-  if (!is(data, "H2OParsedData"))
-    stop("data must be an H2OParsedData object")
+  if (!is(data, "h2o.frame"))
+    stop("data must be an h2o.frame object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("path must be a non-empty character string")
@@ -19,8 +19,8 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 }
 
 h2o.exportHDFS <- function(object, path) {
-  if(!is(object, "H2OModel"))
-    stop("object must be an H2OModel object")
+  if(!is(object, "h2o.model"))
+    stop("object must be an h2o.model object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("path must be a non-empty character string")
@@ -29,8 +29,8 @@ h2o.exportHDFS <- function(object, path) {
 }
 
 h2o.downloadCSV <- function(data, filename) {
-  if (!is(data, "H2OParsedData"))
-    stop("data must be an H2OParsedData object")
+  if (!is(data, "h2o.frame"))
+    stop("data must be an h2o.frame object")
 
   str <- paste0('http://', data@h2o@ip, ':', data@h2o@port, '/2/DownloadDataset?src_key=', data@key)
   has_wget <- nzchar(Sys.which('wget'))
@@ -54,8 +54,8 @@ h2o.downloadCSV <- function(data, filename) {
 
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
-  if(!is(object, "H2OModel"))
-    stop("object must be an H2OModel object")
+  if(!is(object, "h2o.model"))
+    stop("object must be an h2o.model object")
 
   if(!is.character(dir) || length(dir) != 1L || is.na(dir))
     stop("dir must be a character string")

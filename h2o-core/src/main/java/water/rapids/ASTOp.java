@@ -1464,7 +1464,8 @@ class ASTCbind extends ASTUniPrefixOp {
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.pop0Ary();
-      Frame new_frame = fr.makeCompatible(f);
+      Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
+      Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }

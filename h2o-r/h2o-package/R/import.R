@@ -14,7 +14,7 @@
 #' Import an entire directory of files. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
 h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
-  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
   if(nchar(path) == 0) stop("path must be a non-empty string")
   if(!is.character(pattern)) stop("pattern must be of class character")
@@ -79,7 +79,7 @@ h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, h
 #'
 #' Upload local files to the H2O instance.
 h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names, silent = TRUE) {
-  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
   if(nchar(path) == 0) stop("path must be a non-empty string")
   if(!is.character(key)) stop("key must be of class character")

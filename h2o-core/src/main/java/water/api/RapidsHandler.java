@@ -3,6 +3,7 @@ package water.api;
 import water.DKV;
 import water.Iced;
 import water.Key;
+import water.Value;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.Raft;
@@ -24,6 +25,7 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
     Key      _astKey;   // A key to lookup the Raft object
 
     //Outputs
+    boolean  _evaluated;
     String   _raft_ast;
     Key      _raft_key;
     String   _error;
@@ -56,6 +58,22 @@ class RapidsHandler extends Handler<RapidsHandler.Rapids, RapidsV1> {
 //    if (rapids._raft_ast == null) rapids._raft_key=raft.get_key();  // get the key if no ast.
 //    return schema(version).fillFromImpl(rapids);
 //  }
+
+  public RapidsV1 isEvaluated(int version, Rapids rapids) {
+    if (rapids == null) return null;
+    if (rapids._astKey == null) throw new IllegalArgumentException("No key supplied to getKey.");
+    boolean isEval = false;
+    Value v;
+    if ((v=DKV.get(rapids._astKey))!=null) {
+      if (!(v.get() instanceof Frame)) {
+        Raft raft = v.get();
+        Value vv = raft == null ? null : DKV.get(raft.get_key());
+        isEval = vv != null && (vv.get() != null);
+      } else isEval = true;
+    }
+    rapids._evaluated = isEval;
+    return schema(version).fillFromImpl(rapids);
+  }
 
   public RapidsV1 getKey(int version, Rapids rapids) {
     if (rapids == null) return null;
