@@ -9,11 +9,10 @@ exportClasses(
   "h2o.frame",
   "H2OGLMModel",
   "H2OKMeansModel",
-  "h2o.frame",
+  "h2o.model",
   "H2ORawData",
   "H2ODRFModel",
   "H2OPCAModel",
   "H2ONBModel",
-  "H2OGBMModel",
-  "H2OModel"
+  "H2OGBMModel"
 )
