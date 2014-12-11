@@ -13,6 +13,7 @@ class Frame(object):
           self._vecs.append(Vec(str+name.rstrip(),[]))
         for row in csv.reader(csvfile):
           for i,data in enumerate(row): self._vecs[i].append(data)
+      print "READ: +",len(self),file
     # Construct from an array of Vecs already passed in
     elif vecs!= None:
       self._vecs=vecs
@@ -23,16 +24,13 @@ class Frame(object):
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
   def __getitem__(self,i):
-    if isinstance(i,int):
-      return self._vecs[i]
+    if isinstance(i,int):   return self._vecs[i]
     if isinstance(i,str):
-      for v in self._vecs:
-        if i==v._name:
-          return v
+      for v in self._vecs:  
+        if i==v._name:  return v
       raise ValueError("Name "+i+" not in Frame")
     # Slice; return a Frame not a Vec
-    if isinstance(i,slice):
-      return Frame(vecs=self._vecs[i])
+    if isinstance(i,slice): return Frame(vecs=self._vecs[i])
     raise NotImplementedError
 
   # Number of columns
@@ -82,6 +80,7 @@ class Vec(object):
   # Basic indexed or sliced lookup
   def __getitem__(self,i):  return self._data[i]
 
+  # Basic (broadening) addition
   def __add__(self,i):
     if isinstance(i,Vec):       # Vec+Vec
       if len(i) != len(self):
@@ -99,7 +98,7 @@ class Vec(object):
 
   def __del__(self):
     if Expr==None or not isinstance(self._data,Expr):
-      print "DEL of "+self._name
+      print "DELE: -1",self._name
 
 ########
 # A pending to-be-computed expression
@@ -110,7 +109,7 @@ class Expr(object):
     self._rite = rite
 
   def compute(self):
-    print "WORK: ",self
+    print "WORK: +1",self
     if self._op == "+":
       if isinstance(self._rite,Vec):
         return [x+y for x,y in zip(self._left.eager(),self._rite.eager())]
@@ -134,22 +133,15 @@ a = Frame("a.",file="smalldata/iris/iris_wheader.csv")[0:4]
 print a[0]._name    # Column header
 print a[0][2]       # column 0, row 2 value
 print a["a.sepal_len"][2] # Column 0, row 2 value
-print "EVAL a[0]+2 is: "   ,a[0]+2        # Add 2 to every element; broadcast a constant
-print "EVAL a[0]+a[1] is: ",a[0]+a[1]     # Add 2 columns; broadcast parallel add
-print "EVAL mean(a) is: ",sum(a["a.sepal_len"])/len(a[0])
+print a[0]+2        # Add 2 to every element; broadcast a constant
+print a[0]+a[1]     # Add 2 columns; broadcast parallel add
+print sum(a["a.sepal_len"])/len(a[0])
 
-print "FAIL TEST"
-try:
-  print a["Sepal_len"] # Error, mispelt column name
-except ValueError,e:
-  pass              # Expected error
+try:   print a["Sepal_len"] # Error, mispelt column name
+except ValueError,e:  pass  # Expected error
 
-print "READ b"
 b = Frame("b.",file="smalldata/iris/iris_wheader.csv")[0:4]
-print "EVAL c=a+b"
 c = a+b
-print "EVAL d=c+c+sum(a)"
 d = c+c+sum(a)
-print "EVAL c+a+1"
 e = c+(a+1)
-print "EVAL e is: ",e
+print e
