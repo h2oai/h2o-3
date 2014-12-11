@@ -144,7 +144,12 @@ public class Weaver {
     icer_cc.setSuperclass(super_icer);
     icer_cc.setModifiers(javassist.Modifier.PUBLIC);
 
-    // Debug printing?
+    // Overall debug printing?
+    if (false) {
+      System.out.println("Iced class " + icer_cc.getName() + " is number: " + id);
+    }
+
+    // Detailed debug printing?
     boolean debug_print=false;
     CtField ctfs[] = iced_cc.getDeclaredFields();
     for( CtField ctf : ctfs ) debug_print |= ctf.getName().equals("DEBUG_WEAVER");

@@ -354,8 +354,9 @@ class H2O(object):
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
             result = self.__do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
             
-            if result['jobs'][0]['status'] == 'DONE' or result['jobs'][0]['status'] == 'CANCELLED' or result['jobs'][0]['status'] == 'FAILED':
-                H2O.verboseprint('Job ' + result['jobs'][0]['status'] + ': ' + job_key + '.')
+            status = result['jobs'][0]['status']
+            if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
+                H2O.verboseprint('Job ' + status + ': ' + job_key + '.')
                 return result
 
             if time.time() - start_time > timeoutSecs:
@@ -429,7 +430,8 @@ class H2O(object):
         parse_result = self.__do_json_request(jsonRequest="Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
-        job_key = parse_result['job']['name']
+        # print("Parse result:", repr(parse_result))
+        job_key = parse_result['job']['key']['name']
 
         # TODO: dislike having different shapes for noPoll and poll
         if noPoll:
@@ -613,7 +615,7 @@ class H2O(object):
 
         if asynchronous:
             return result
-        elif 'validation_error_count' in result:
+        elif 'validation_error_count' in result and result['validation_error_count'] > 0:
             # parameters validation failure
             # TODO: add schema_type and schema_version into all the schemas to make this clean to check
             return result
@@ -634,7 +636,7 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)
@@ -654,7 +656,7 @@ class H2O(object):
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
         assert models is not None, "FAIL: /Models REST call failed"
-        assert models['models'][0]['key'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+        assert models['models'][0]['key']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
         # TODO: test this assert, I don't think this is working. . .
         frames = self.frames(key=frame)

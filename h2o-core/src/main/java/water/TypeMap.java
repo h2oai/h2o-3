@@ -1,8 +1,9 @@
 package water;
 
-import java.util.Arrays;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -11,31 +12,29 @@ public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, KEY;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
-    "[B",                 // 1 - 
+    "[B",                 // 1 -
     "water.Iced",         // 2 - Base serialization class
-    "water.H2O$H2OCountedCompleter",  // 3 - Base serialization class
-    "water.HeartBeat",    // Used to Paxos up a cloud & leader
-    "water.H2ONode",      // Needed to write H2ONode target/sources
-    "water.FetchClazz",   // used to fetch IDs from leader
-    "water.FetchId",      // used to fetch IDs from leader
-    "water.DTask",        // Needed for those first Tasks
-    "water.DException",   // Needed for those first Tasks: can pass exceptions
+    water.H2O.H2OCountedCompleter.class.getName(),  // 3 - Base serialization class
+    water.HeartBeat.class.getName(),    // Used to Paxos up a cloud & leader
+    water.H2ONode.class.getName(),      // Needed to write H2ONode target/sources
+    water.FetchClazz.class.getName(),   // used to fetch IDs from leader
+    water.FetchId.class.getName(),      // used to fetch IDs from leader
+    water.DTask.class.getName(),        // Needed for those first Tasks
+    water.DException.class.getName(),   // Needed for those first Tasks: can pass exceptions
 
-    "water.fvec.Chunk",   // parent of Chunk
-    "water.fvec.C1NChunk",// used as constant in parser
-    "water.fvec.Frame",   // used in TypeaheadKeys & Exec2
-    "water.fvec.Vec$VectorGroup", // Used in TestUtil
+    water.fvec.Chunk.class.getName(),   // parent of Chunk
+    water.fvec.C1NChunk.class.getName(),// used as constant in parser
+    water.fvec.Frame.class.getName(),   // used in TypeaheadKeys & Exec2
+    water.fvec.Vec.VectorGroup.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
-    "water.api.CloudV1",
-    "water.api.CloudV1$Node",
-    "water.api.HTTP404V1",
-    "water.api.HTTP500V1",
-    "water.api.HttpErrorV1",
-    "water.api.Schema",
-    "water.api.TutorialsV1",
-    "water.api.TypeaheadV2",    // Allow typeahead without locking
-    "water.Key",
+    water.api.CloudV1.class.getName(),
+    water.api.CloudV1.NodeV1.class.getName(),
+    water.api.HttpErrorV1.class.getName(),
+    water.api.Schema.class.getName(),
+    water.api.TutorialsV1.class.getName(),
+    water.api.TypeaheadV2.class.getName(),    // Allow typeahead without locking
+    water.Key.class.getName(),
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
@@ -46,7 +45,7 @@ public class TypeMap {
   // Unique IDs
   static private int IDS;
   // JUnit helper flag
-  static volatile boolean _check_no_locking;
+  static public volatile boolean _check_no_locking; // ONLY TOUCH IN AAA_PreCloudLock!
   static {
     CLAZZES = BOOTSTRAP_CLASSES;
     GOLD = new Icer[BOOTSTRAP_CLASSES.length];
@@ -131,7 +130,7 @@ public class TypeMap {
   synchronized static private int install( String className, int id ) {
     assert !_check_no_locking : "Locking cloud to assign typeid to "+className;
     Paxos.lockCloud();
-    if( id == -1 ) {            // Leader requesting a new ID 
+    if( id == -1 ) {            // Leader requesting a new ID
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID
       id = IDS++;               // Leader gets an ID under lock
@@ -159,12 +158,12 @@ public class TypeMap {
     //noinspection SynchronizationOnLocalVariableOrMethodParameter
     synchronized( ice_clz ) {
       f = goForGold(id);        // Recheck under lock
-      if( f != null ) return f; 
+      if( f != null ) return f;
       // Hard work: make a new delegate class
       try { f = Weaver.genDelegate(id,ice_clz); }
-      catch( Exception e ) { 
-        Log.err("Weaver generally only throws if classfiles are not found, e.g. IDE setups running test code from a remote node that is not in the classpath on this node."); 
-        Log.throwErr(e); 
+      catch( Exception e ) {
+        Log.err("Weaver generally only throws if classfiles are not found, e.g. IDE setups running test code from a remote node that is not in the classpath on this node.");
+        Log.throwErr(e);
       }
       // Now install until the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
@@ -175,7 +174,7 @@ public class TypeMap {
   }
 
   static Iced newInstance(int id) { return (Iced)newFreezable(id); }
-  static Freezable newFreezable(int id) { 
+  static Freezable newFreezable(int id) {
     Freezable iced = theFreezable(id);
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
     return iced.clone();

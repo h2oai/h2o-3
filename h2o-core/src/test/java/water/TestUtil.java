@@ -143,8 +143,8 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(int...rows) { return vec(null, rows); }
-  /** A Enum/Factor Vec from an array of ints - with enum/domain mapping
-   *  @param domain Enum/Factor names, mapped by the data values
+  /** A Categorical/Factor Vec from an array of ints - with enum/domain mapping
+   *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) { 

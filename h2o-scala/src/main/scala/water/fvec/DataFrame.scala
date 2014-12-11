@@ -6,7 +6,7 @@ import java.net.URI
 import water._
 import water.parser.ParseSetup
 
-class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
+class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[Vec] )
   extends Frame(key,names,vecs) 
   with Map[Long,Array[Option[Any]]] {
   type T = Array[Option[Any]]
@@ -14,12 +14,12 @@ class DataFrame private ( key : Key, names : Array[String], vecs : Array[Vec] )
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
   // underlying arrays.  Recommended that the input Java Frame be dead after
   // this call.
-  def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make("dframe"+Key.rand()), fr._names, fr.vecs())
+  def this(fr : Frame) = this( if (fr._key!=null) fr._key else Key.make("dframe"+Key.rand()).asInstanceOf[Key[Frame]], fr._names, fr.vecs())
 
   // Create DataFrame from existing Frame
-  def this(k : Key) = this ( DKV.get(k).get.asInstanceOf[Frame] )
+  def this(k : Key[Frame]) = this ( DKV.get(k).get.asInstanceOf[Frame] )
 
-  def this(s : String) = this ( Key.make(s) )
+  def this(s : String) = this ( Key.make(s).asInstanceOf[Key[Frame]] )
 
   // Scala DataFrame by reading a CSV file
   def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(file.getName)),file))

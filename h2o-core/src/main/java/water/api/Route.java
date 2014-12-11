@@ -48,10 +48,28 @@ final class Route extends Iced {
 
     // parameters and output tables
     try {
-      Handler h = _handler_class.newInstance();
-      Schema s = h.schema(h.min_ver()); // TODO: iterate over each version!
+      builder.heading1("Input schema: ");
+      {
+        Class<? extends Schema> clz = Handler.getHandlerMethodInputSchema(_handler_method);
+        Schema s = Schema.newInstance(clz);
+        builder.append(s.markdown(null, true, false));
+      }
 
-      builder.append(s.markdown(null));
+      builder.heading1("Output schema: ");
+      {
+        Class<? extends Schema> clz = Handler.getHandlerMethodOutputSchema(_handler_method);
+
+        if (null != clz) {
+          builder.paragraph("(void)");
+        } else {
+          Schema s = Schema.newInstance(clz);
+
+          if (null == s)
+            throw H2O.fail("Call to Schema.newInstance(clz) failed for class: " + clz);
+
+          builder.append(s.markdown(null, false, true));
+        }
+      }
 
       // TODO: render examples and other stuff, if it's passed in
     }
@@ -88,5 +106,20 @@ final class Route extends Iced {
     result = 31 * result + _doc_method.hashCode();
     result = 31 * result + Arrays.hashCode(_path_params);
     return (int)result;
+  }
+
+  @Override
+  public String toString() {
+    return "Route{" +
+            "_http_method='" + _http_method + '\'' +
+            ", _url_pattern=" + _url_pattern +
+            ", _summary='" + _summary + '\'' +
+            ", _handler_class=" + _handler_class +
+            ", _handler_method=" + _handler_method +
+            ", _input_schema=" + Handler.getHandlerMethodInputSchema(_handler_method) +
+            ", _output_schema=" + Handler.getHandlerMethodOutputSchema(_handler_method) +
+            ", _doc_method=" + _doc_method +
+            ", _path_params=" + Arrays.toString(_path_params) +
+            '}';
   }
 } // Route

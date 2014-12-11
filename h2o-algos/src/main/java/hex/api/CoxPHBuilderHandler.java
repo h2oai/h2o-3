@@ -2,16 +2,20 @@ package hex.api;
 
 import hex.coxph.CoxPH;
 import hex.schemas.CoxPHV2;
-import water.H2O;
 import water.api.ModelBuilderHandler;
+import water.api.Schema;
 
 public class CoxPHBuilderHandler extends ModelBuilderHandler<CoxPH, CoxPHV2, CoxPHV2.CoxPHParametersV2> {
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public Schema train(int version, CoxPHV2 builderSchema) {
+    return super.do_train(version, builderSchema);
+  }
 
-  @Override protected CoxPHV2 schema(int version) {
-    switch (version) {
-      case 2:   { CoxPHV2 b = new CoxPHV2(); b.parameters = b.createParametersSchema(); return b; }
-      default:  throw H2O.fail("Bad version for ModelBuilder schema: " + version);
-    }
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public CoxPHV2 validate_parameters(int version, CoxPHV2 builderSchema) {
+    return super.do_validate_parameters(version, builderSchema);
   }
 }
 

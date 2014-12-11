@@ -2,6 +2,7 @@ package water.parser;
 
 import water.DKV;
 import water.api.Handler;
+import water.util.PojoUtils;
 
 import java.util.Arrays;
 
@@ -9,30 +10,25 @@ import java.util.Arrays;
  *  header labels, whether or not to allow single-quotes to quote, number of
  *  columns discovered.
  */
-public class ParseSetupHandler extends Handler<ParseSetup,ParseSetupV2> {
+public class ParseSetupHandler extends Handler {
 
-  // back to the handler!
-  public ParseSetupV2 guessSetup(int version, ParseSetup p ) {
-    if( DKV.get(p._srcs[0]) == null ) throw new IllegalArgumentException("Key not loaded: "+p._srcs[0]);
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p._srcs[0]));
-    ParseSetup ps = ParseSetup.guessSetup(bits, p._singleQuotes, p._checkHeader);
+  public ParseSetupV2 guessSetup(int version, ParseSetupV2 p) {
+    if( DKV.get(p.srcs[0].key()) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
+    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p.srcs[0].key()));
+    ParseSetup ps = ParseSetup.guessSetup(bits, p.singleQuotes, p.checkHeader);
     // Update in-place
     assert ps._checkHeader != 0; // Need to fill in the guess
-    p._checkHeader = ps._checkHeader;
-    p._hexName = ParseSetup.hex(p._srcs[0].toString());
-    p._pType = ps._pType;
-    p._sep = ps._sep;
-    p._ncols = ps._ncols;
-    p._columnNames = ps._columnNames == null ? ParseDataset2.genericColumnNames(p._ncols) : ps._columnNames;
-    p._data = ps._data;
-    if( p._checkHeader==1 ) p._data = Arrays.copyOfRange(p._data,1,p._data.length-1); // Drop header from the preview data
-    p._isValid = ps._isValid;
-    p._invalidLines = ps._invalidLines;
-    return schema(version).fillFromImpl(p);
+
+    // TODO: ParseSetup throws away the srcs list. . .
+    PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "hex", "srcs" });
+
+    p.columnNames = ps._columnNames == null ? ParseDataset2.genericColumnNames(p.ncols) : ps._columnNames;
+    p.hexName = ParseSetup.hex(p.srcs[0].toString());
+    if( p.checkHeader==1 ) p.data = Arrays.copyOfRange(p.data,1,p.data.length-1); // Drop header from the preview data
+
+    return p;
   }
 
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  // ParseSetup Schemas are at V2
-  @Override protected ParseSetupV2 schema(int version) { return new ParseSetupV2(); }
 }

@@ -13,7 +13,7 @@ abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelO
   @API(help="Domains for categorical (enum) columns.", direction=API.Direction.OUTPUT)
   public String[][] domains;
 
-  @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"})
+  @API(help="Category of the model (e.g., Binomial).", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
   Model.ModelCategory model_category;
 
   public ModelOutputSchema() {

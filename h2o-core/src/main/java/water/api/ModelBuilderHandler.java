@@ -2,10 +2,10 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import water.H2O;
+import water.api.JobsHandler.Jobs;
 import water.Job;
 
-abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler<B, S> {
+abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -14,34 +14,20 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
    * parameters pass validation this returns a Job schema; if not it
    * returns a ModelParametersSchema containing the validation messages.
    */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema train(int version, B builder) {
+  public Schema do_train(int version, S builderSchema) {
+    B builder = builderSchema.createAndFillImpl();
     if (builder.error_count() > 0) {
-      S builder_schema = (S) builder.schema().fillFromImpl(builder);
-      return builder_schema;
+      S errors = (S) Schema.schema(version, builder).fillFromImpl(builder);
+      return errors;
     }
 
     Job j = builder.trainModel();
-    return JobsHandler.jobToSchemaHelper(version, j);
+    return new JobsV2().fillFromImpl(new Jobs(j)); // TODO: version
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public S validate_parameters(int version, B builder) {
+  public S do_validate_parameters(int version, S builderSchema) {
+    B builder = builderSchema.createAndFillImpl();
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
     return builder_schema;
   }
-
-  abstract protected S schema(int version);
-  /*
-  Children must override, because we can't create a new instance from the type parameter.  :-(
-  @Override protected ModelBuilderSchema schema(int version) {
-    switch (version) {
-    case 2:   return new ModelBuilderV2();
-    default:  throw H2O.fail("Bad version for ModelBuilder schema: " + version);
-    }
-  }
-  */
-
-  // Need to stub this because it's required by H2OCountedCompleter:
-  @Override public void compute2() { throw H2O.fail(); }
 }

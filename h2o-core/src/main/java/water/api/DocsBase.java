@@ -1,8 +1,8 @@
 package water.api;
 
-import water.util.PojoUtils;
+import water.Iced;
 
-public class DocsBase<I extends DocsHandler.DocsPojo, S extends DocsBase<I, S>> extends Schema<I, DocsBase<I, S>> {
+public class DocsBase<I extends Iced, S extends DocsBase<I, S>> extends Schema<I, DocsBase<I, S>> {
   @API(help="Number for specifying an endpoint", json=false)
   public int num;
 
@@ -12,36 +12,19 @@ public class DocsBase<I extends DocsHandler.DocsPojo, S extends DocsBase<I, S>> 
   @API(help="Path for specifying an endpoint", json=false)
   public String path;
 
-  @API(help="Class name, for fetching docs for a schema", json=false)
+  @API(help="Class name, for fetching docs for a schema (DEPRECATED)", json=false)
   public String classname;
 
+  @API(help="Schema name (e.g., DocsV1), for fetching docs for a schema", json=false)
+  public String schemaname;
+
   // Outputs
-  @API(help="List of endpoint routes.")
+  @API(help="List of endpoint routes", direction=API.Direction.OUTPUT)
   public RouteBase[] routes;
 
-  @API(help="List of schemas.")
+  @API(help="List of schemas", direction=API.Direction.OUTPUT)
   public SchemaMetadataBase[] schemas;
 
-  // NOTE: we don't currently have a need to take the routes and schemas in the reverse direction,
-  // so no fillImpl() is required.
-
-  @Override public DocsBase fillFromImpl(DocsHandler.DocsPojo impl) {
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] { "routes", "schemas" });
-    this.routes = new RouteBase[null == impl.routes ? 0 : impl.routes.length];
-    this.schemas = new SchemaMetadataBase[null == impl.schemas ? 0 : impl.schemas.length];
-
-    if (null != impl.routes) {
-      int i = 0;
-      for (Route r : impl.routes) {
-        this.routes[i++] = new RouteV1().fillFromImpl(r); // TODO: version!
-      }
-    }
-    if (null != impl.schemas) {
-      int i = 0;
-      for (SchemaMetadata m : impl.schemas) {
-        this.schemas[i++] = new SchemaMetadataV1().fillFromImpl(m); // TODO: version!
-      }
-    }
-    return this;
-  }
+  @API(help="Table of Contents Markdown", direction=API.Direction.OUTPUT)
+  public String markdown;
 }

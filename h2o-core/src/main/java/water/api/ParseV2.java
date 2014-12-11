@@ -1,20 +1,20 @@
 package water.api;
 
+import water.api.KeyV1.FrameKeyV1;
+import water.Iced;
 import water.Key;
-import water.api.ParseHandler.Parse;
 import water.parser.ParserType;
 import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 
-public class ParseV2 extends Schema<Parse,ParseV2> {
-
+public class ParseV2 extends Schema<Iced, ParseV2> {
   // Input fields
   @API(help="Final hex key name",required=true)
-  Key hex;
+  FrameKeyV1 hex;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
   @API(help="Source keys",required=true)
-  Key[] srcs;
+  FrameV2[] srcs;
 
   @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType pType;
@@ -34,6 +34,9 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   @API(help="Column Names")
   String[] columnNames;
 
+  @API(help="Domains for categorical columns")
+  String[][] domains;
+
   @API(help="Delete input key after parse")
   boolean delete_on_done;
 
@@ -41,14 +44,14 @@ public class ParseV2 extends Schema<Parse,ParseV2> {
   boolean blocking;
 
   // Output fields
-  @API(help="Job Key", direction=API.Direction.OUTPUT)
-  Key job;
+  @API(help="Parse Job", direction=API.Direction.OUTPUT)
+  JobV2 job;
 
   //==========================
 
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Parse Started");
-    String url = JobV2.link(job);
+    String url = JobV2.link(job.key.key());
     return ab.href("Poll",url,url);
   }
 

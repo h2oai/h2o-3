@@ -3,12 +3,10 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+import org.reflections.Reflections;
 import water.api.RequestServer;
-import water.init.AbstractBuildVersion;
-import water.init.AbstractEmbeddedH2OConfig;
-import water.init.JarHash;
-import water.init.NetworkInit;
-import water.init.NodePersistentStorage;
+import water.api.Schema;
+import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
 import water.util.DocGen.HTML;
@@ -17,6 +15,7 @@ import water.util.PrettyPrint;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -416,8 +415,10 @@ final public class H2O {
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
-  public static RuntimeException fail() { return new RuntimeException("do not call"); }
-  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }
+  @Deprecated public static RuntimeException fail() { return new RuntimeException("do not call"); } // DO NOT USE: always return an actionable reason to the user
+  public static RuntimeException fail(String msg) {
+    return new RuntimeException(msg);
+  }
   public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
 
   // --------------------------------------------------------------------------
@@ -766,9 +767,39 @@ final public class H2O {
     JarHash.registerResourceRoot(f);
   }
 
+  private static boolean schemas_registered = false;
+  /**
+   * Find all schemas using reflection and register them.
+   */
+  synchronized static public void registerAllSchemasIfNecessary() {
+    if (schemas_registered) return;
+    if (!Paxos._cloudLocked) return;
+
+    Reflections reflections = null;
+
+    // Microhack to effect Schema.register(Schema.class), which is
+    // normally not allowed because it has no version:
+    new Schema();
+
+    Set<Class<? extends Schema>> schemas = null;
+
+    schemas = (new Reflections("water")).getSubTypesOf(Schema.class);
+    for (Class<? extends Schema> schema_class : schemas)
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    schemas = (new Reflections("hex")).getSubTypesOf(Schema.class);
+    for (Class<? extends Schema> schema_class : schemas)
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    schemas_registered = true;
+    Log.info("Registered: " + Schema.schemas().size() + " schemas.");
+  }
+
   /** Start the web service; disallow future URL registration.
    *  Returns a Runnable that will be notified once the server is up.  */
-  static public Runnable finalizeRequest() {
+  static public Runnable finalizeRegistration() {
     if( _doneRequests ) return null;
     _doneRequests = true;
     // Start the Nano HTTP server thread

@@ -1,10 +1,10 @@
 package water.api;
 
 import water.H2O;
-import water.api.ProfilerHandler.Profiler;
+import water.Iced;
 import water.util.DocGen;
 
-abstract class ProfilerBase<I extends Profiler, S extends Schema<I, S>> extends Schema<I, S> {
+abstract class ProfilerBase<I extends Iced, S extends Schema<I, S>> extends Schema<I, S> {
   // Input
   @API(help="Stack trace depth", required=true)
   public int depth = 5;

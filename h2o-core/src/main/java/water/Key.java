@@ -1,6 +1,7 @@
 package water;
 
 import water.util.DocGen.HTML;
+import water.util.ReflectionUtils;
 import water.util.UnsafeUtils;
 import water.fvec.*;
 
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
-final public class Key extends Iced implements Comparable {
+final public class Key<T extends Keyed> extends Iced implements Comparable {
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
@@ -79,7 +80,7 @@ final public class Key extends Iced implements Comparable {
 
   /** Convenience function to fetch key contents from the DKV. 
    * @return null if the Key is not mapped, or an instance of {@link Keyed} */
-  public final <T extends Keyed> T get() {
+  public final T get() {
     Value val = DKV.get(this);
     return val == null ? null : (T)val.get(); 
   }
@@ -366,6 +367,31 @@ final public class Key extends Iced implements Comparable {
   // Returns the type of the key.
   public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
 
+  /** Return the classname for the Value that this Key points to, if any (e.g., "water.fvec.Frame"). */
+  public String valueClass() {
+    // Because Key<Keyed> doesn't have concrete parameterized subclasses (e.g.
+    // class FrameKey extends Key<Frame>) we can't get the type parameter at
+    // runtime.  See:
+    // http://www.javacodegeeks.com/2013/12/advanced-java-generics-retreiving-generic-type-arguments.html
+    //
+    // Therefore, we have to fetch the type of the item the Key is pointing to at runtime.
+    Value v = DKV.get(this);
+    if (null == v)
+      return null;
+    else
+      return v.className();
+  }
+
+  /** Return the base classname (not including the package) for the Value that this Key points to, if any (e.g., "Frame"). */
+  public String valueClassSimple() {
+    String vc = this.valueClass();
+
+    if (null == vc) return null;
+
+    String[] elements = vc.split("\\.");
+    return elements[elements.length - 1];
+  }
+
   static final char MAGIC_CHAR = '$'; // Used to hexalate displayed keys
   private static final char[] HEX = "0123456789abcdef".toCharArray();
 
@@ -452,5 +478,10 @@ final public class Key extends Iced implements Comparable {
   @Override public final HTML writeHTML_impl( HTML ab ) { return ab.p(toString()); }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    * auto-genned code.  Not intended to be called by user code. */
-  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab.putJSONStr("name",toString()); } // TODO: this is ugly; do just a String
+  @Override public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
+    ab.putJSONStr("name",toString());
+    ab.put1(',');
+    ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(this.getClass(), 0).getSimpleName());
+    return ab;
+  }
 }

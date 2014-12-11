@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelBuilder.ValidationMessage;
 import hex.ModelBuilder.ValidationMessage.MessageType;
 import water.*;
+import water.api.KeyV1.FrameKeyV1;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -51,13 +52,13 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   // Parameters common to all models:
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
-  public Key destination_key;
+  public FrameKeyV1 destination_key;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
-  public Frame training_frame;
+  public FrameKeyV1 training_frame;
 
   @API(help="Validation frame", direction=API.Direction.INOUT)
-  public Frame validation_frame;
+  public FrameKeyV1 validation_frame;
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
@@ -78,13 +79,13 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     if (null != impl._train) {
       Value v = DKV.get(impl._train);
       if (null == v) throw new IllegalArgumentException("Failed to find training_frame: " + impl._train);
-      training_frame = v.get();
+      training_frame = new FrameKeyV1(((Frame)v.get())._key);
     }
 
     if (null != impl._valid) {
       Value v = DKV.get(impl._valid);
       if (null == v) throw new IllegalArgumentException("Failed to find validation_frame: " + impl._valid);
-      validation_frame = v.get();
+      validation_frame = new FrameKeyV1(((Frame)v.get())._key);
     }
 
     return (S)this;
@@ -93,8 +94,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : this.training_frame._key);
-    impl._valid = (null == this.validation_frame ? null : this.validation_frame._key);
+    impl._train = (null == this.training_frame ? null : Key.make(this.training_frame.name));
+    impl._valid = (null == this.validation_frame ? null : Key.make(this.validation_frame.name));
 
     return impl;
   }

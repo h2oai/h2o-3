@@ -18,7 +18,7 @@ public class UnlockTask extends MRTask<UnlockTask> {
       final Key[] lockers = lockable._lockers;
       if (lockers != null) {
         // check that none of the locking jobs is still running
-        for (Key locker : lockers) {
+        for (Key<Job> locker : lockers) {
           if (locker != null && locker.type() == Key.JOB) {
             final Job job = locker.get();
             if (job != null && job.isRunning())

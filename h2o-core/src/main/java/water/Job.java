@@ -17,11 +17,11 @@ import java.util.Arrays;
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
-  static final Key LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed {
-    Key[] _jobs;
+    Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
-    private JobList(Key[]jobs) { super(LIST); _jobs = jobs; }
+    private JobList(Key<Job>[]jobs) { super(LIST); _jobs = jobs; }
     public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
   }
 
@@ -50,10 +50,10 @@ public class Job<T extends Keyed> extends Keyed {
   transient H2OCountedCompleter _barrier;// Top-level task you can block on
 
   /** Jobs produce a single DKV result into Key _dest */
-  public final Key _dest;   // Key for result
+  public final Key<T> _dest;   // Key for result
   /** Since _dest is public final, not sure why we have a getter but some
    *  people like 'em. */
-  public final Key dest() { return _dest; }
+  public final Key<T> dest() { return _dest; }
 
   /** User description */
   public final String _description;
@@ -94,7 +94,7 @@ public class Job<T extends Keyed> extends Keyed {
   /** Check if given job is running.
    *  @param job_key job key
    *  @return true if job is still running else returns false.  */
-  public static boolean isRunning(Key job_key) { return job_key.<Job>get().isRunning(); }
+  public static boolean isRunning(Key<Job> job_key) { return job_key.get().isRunning(); }
 
   /** Current runtime; zero if not started */
   public final long msec() {
@@ -105,7 +105,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  protected Job(Key jobKey, Key dest, String desc) {
+  protected Job(Key<Job> jobKey, Key<T> dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -115,7 +115,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @param dest Final result Key to be produced by this Job
    *  @param desc String description
    */
-  public Job(Key dest, String desc) {
+  public Job(Key<T> dest, String desc) {
     this(defaultJobKey(),dest,desc);
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
@@ -188,7 +188,7 @@ public class Job<T extends Keyed> extends Keyed {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert !isRunning();
-    return _dest.get();
+    return (T)_dest.get();
   }
 
   /** Marks job as finished and records job end time. */
@@ -272,14 +272,14 @@ public class Job<T extends Keyed> extends Keyed {
   public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
 
   /** Report new work done for a given job key */
-  public static void update(final long newworked, Key jobkey) {
-    jobkey.<Job>get().update(newworked);
+  public static void update(final long newworked, Key<Job> jobkey) {
+    jobkey.get().update(newworked);
   }
 
   /**
    * Helper class to store the job progress in the DKV
    */
-  public static class Progress extends Iced{
+  public static class Progress extends Iced { // TODO: shouldn't this be a Keyed? And keys for it be Key<Progress> ?
     private final long _work;
     private long _worked;
     public Progress(long total) { _work = total; }

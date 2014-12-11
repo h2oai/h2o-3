@@ -4,19 +4,16 @@ package water.api;
 //import com.amazonaws.services.s3.model.ObjectListing;
 //import com.amazonaws.services.s3.model.S3ObjectSummary;
 //import org.apache.hadoop.fs.Path;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.hadoop.fs.Path;
-import water.H2O;
-import water.Iced;
-import water.api.ImportFilesHandler.ImportFiles;
 import water.persist.PersistHdfs;
 import water.util.FileIntegrityChecker;
 import water.util.Log;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The handler provides import capabilities.
@@ -25,30 +22,14 @@ import water.util.Log;
  *   Currently import from local filesystem, hdfs and s3 is supported.
  * </p>
  */
-public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
+public class ImportFilesHandler extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  /**
-   * Holder for parameters.
-   */
-  protected static final class ImportFiles extends Iced {
-    // Input
-    String _path;
-
-    // Outputs
-    String _files[], _keys[], _fails[], _dels[];
-  }
-
-  // Running all in GET, no need for backgrounding on F/J threads
-  @Override public void compute2() {
-    throw H2O.unimpl();
-  }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ImportFilesV2 importFiles(int version, ImportFiles importFiles) {
-    assert importFiles._path != null;
-    String path = importFiles._path.toLowerCase();
+  public ImportFilesV2 importFiles(int version, ImportFilesV2 importFiles) {
+    assert importFiles.path != null;
+    String path = importFiles.path.toLowerCase();
     if (path.startsWith("hdfs://") )
       return serveHDFS(version, importFiles);
     else if (path.startsWith("s3n://" ))
@@ -62,26 +43,26 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  private ImportFilesV2 serveHDFS(int version, ImportFiles importFiles)  {
+  private ImportFilesV2 serveHDFS(int version, ImportFilesV2 importFiles)  {
     // Fix for S3N kind of URL
-    if (isBareS3NBucketWithoutTrailingSlash(importFiles._path)) {
-      importFiles._path += "/";
+    if (isBareS3NBucketWithoutTrailingSlash(importFiles.path)) {
+      importFiles.path += "/";
     }
-    Log.info("ImportHDFS processing (" + importFiles._path + ")");
+    Log.info("ImportHDFS processing (" + importFiles.path + ")");
     // List of processed files
     ArrayList<String> succ = new ArrayList<String>();
     ArrayList<String> fail = new ArrayList<String>();
     try {
       // Recursively import given file/folder
-      PersistHdfs.addFolder(new Path(importFiles._path), succ, fail);
+      PersistHdfs.addFolder(new Path(importFiles.path), succ, fail);
       // Save results into schema holder
-      importFiles._keys = succ.toArray(new String[succ.size()]);
-      importFiles._files = importFiles._keys;
-      importFiles._fails = fail.toArray(new String[fail.size()]);
+      importFiles.keys = succ.toArray(new String[succ.size()]);
+      importFiles.files = importFiles.keys;
+      importFiles.fails = fail.toArray(new String[fail.size()]);
       // write barrier was here : DKV.write_barrier();
-      return schema(version).fillFromImpl(importFiles);
+      return importFiles;
     } catch (IOException e) {
-      throw new HDFSIOException(importFiles._path, PersistHdfs.CONF.toString(), e);
+      throw new HDFSIOException(importFiles.path, PersistHdfs.CONF.toString(), e);
     }
   }
 //
@@ -119,19 +100,19 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
 //  }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  private ImportFilesV2 serveLocalDisk(int version, ImportFiles importFiles) {
-    File f = new File(importFiles._path);
-    if( !f.exists() ) throw new IllegalArgumentException("File " + importFiles._path + " does not exist!");
+  private ImportFilesV2 serveLocalDisk(int version, ImportFilesV2 importFiles) {
+    File f = new File(importFiles.path);
+    if( !f.exists() ) throw new IllegalArgumentException("File " + importFiles.path + " does not exist!");
     ArrayList<String> afiles = new ArrayList();
     ArrayList<String> akeys  = new ArrayList();
     ArrayList<String> afails = new ArrayList();
     ArrayList<String> adels  = new ArrayList();
     FileIntegrityChecker.check(f).syncDirectory(afiles,akeys,afails,adels);
-    importFiles._files = afiles.toArray(new String[afiles.size()]);
-    importFiles._keys  = akeys .toArray(new String[akeys .size()]);
-    importFiles._fails = afails.toArray(new String[afails.size()]);
-    importFiles._dels  = adels .toArray(new String[adels .size()]);
-    return schema(version).fillFromImpl(importFiles);
+    importFiles.files = afiles.toArray(new String[afiles.size()]);
+    importFiles.keys  = akeys .toArray(new String[akeys .size()]);
+    importFiles.fails = afails.toArray(new String[afails.size()]);
+    importFiles.dels  = adels .toArray(new String[adels .size()]);
+    return importFiles;
   }
 
 //  private void serveHttp() {
@@ -194,7 +175,5 @@ public class ImportFilesHandler extends Handler<ImportFiles,ImportFilesV2> {
     boolean b = m.matches();
     return b;
   }
-//
-  @Override protected ImportFilesV2 schema(int version) { return new ImportFilesV2(); }
 }
 

@@ -5,7 +5,6 @@ import hex.kmeans.KMeansModel.KMeansParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
@@ -35,12 +34,8 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     }
 
     public KMeansParameters fillImpl(KMeansParameters impl) {
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      super.fillImpl(impl);
       impl._init = KMeans.Initialization.Furthest;
-
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
       return impl;
     }
   }

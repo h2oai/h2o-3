@@ -1,10 +1,9 @@
 package water.api;
 
-import hex.AUCData;
 import hex.Model;
 import hex.ModelMetrics;
-import water.DKV;
-import water.H2O;
+import water.api.KeyV1.FrameKeyV1;
+import water.api.KeyV1.ModelKeyV1;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
@@ -14,19 +13,21 @@ import water.util.PojoUtils;
 public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetricsBase> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
-  public ModelSchema model;
+  // public KeyV1<Key<Model>> model;
+  public ModelKeyV1 model;
 
   @API(help="The checksum for the model used for this scoring run.", direction=API.Direction.INOUT)
   public long model_checksum;
 
   @API(help="The frame used for this scoring run.", direction=API.Direction.INOUT)
-  public FrameV2 frame; // TODO: should use a base class!
+  public FrameKeyV1 frame;
+  // public FrameV2 frame; // TODO: should use a base class!
 
   @API(help="The checksum for the frame used for this scoring run.", direction=API.Direction.INOUT)
   public long frame_checksum;
 
   // Output fields
-  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", direction=API.Direction.OUTPUT)
+  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
   public Model.ModelCategory model_category ;
 
   @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)
@@ -46,7 +47,9 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
 
   // Non-version-specific filling into the impl
   @Override public ModelMetrics createImpl() {
-    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl()); // TODO: why does the model need a cast but not the frame?
+//    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
+//     ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl().get());
+    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl().get(), this.frame.createImpl().get());
     return m;
   }
 
@@ -62,47 +65,26 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   @Override public ModelMetricsBase fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();
-    if( m != null )
-      this.model = (ModelSchema)Schema.schema(this.schema_version, m.getClass());
+    if( m != null ) {
+      this.model = new ModelKeyV1(m._key);
+      this.model_category = m._output.getModelCategory();
+      this.model_checksum = m.checksum();
+    }
 
     // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
     Frame f = modelMetrics.frame();
-    if( f != null )
-      this.frame = (FrameV2)Schema.schema(this.schema_version, f.getClass());
+    if (null != f) { //true == f.getClass().getSuperclass().getGenericSuperclass() instanceof ParameterizedType
+      this.frame = new FrameKeyV1(f._key);
+      this.frame_checksum = f.checksum();
+    }
 
-    // TODO: remove this hack:
-    new AUCV3();
-    new ConfusionMatrixV3();
-    //modelMetrics._cm = null; // still have to decide between CM and CM2
-
+    // super.fillFromImpl(modelMetrics);
 
     if (null != modelMetrics._aucdata)
-      this.auc = (AUCBase)Schema.schema(this.schema_version, modelMetrics._aucdata);
+      this.auc = (AUCBase)Schema.schema(this.__schema_version, modelMetrics._aucdata);
 
     if (null != modelMetrics._cm)
-      this.cm = (ConfusionMatrixBase)Schema.schema(this.schema_version, modelMetrics._cm);
-
-    super.fillFromImpl(modelMetrics);
-
-    // TODO: Schema.fillFromImpl really ought to be able to do this.
-    if( m != null )
-      if (Model.class.isAssignableFrom(m.getClass()))
-        this.model.fillFromImpl(m);
-      else
-        throw H2O.fail("Can't fill a model schema from a non-Model key" );
-
-    if( f != null )
-      if (Frame.class.isAssignableFrom(f.getClass()))
-        this.frame.fillFromImpl(f);
-      else
-        throw H2O.fail("Can't fill a frame schema from a non-Frame key");
-
-    // For the Model we want the key and the parameters, but no output.
-    if (null != this.model)
-      this.model.output = null;
-
-    // TODO: need to have only one Iced CM class. . .
-    // this._cm = new ConfusionMatrixV3().fillFromImpl(modelMetrics.cm);  // TODO: shouldn't be version-specific
+      this.cm = (ConfusionMatrixBase)Schema.schema(this.__schema_version, modelMetrics._cm);
 
     return this;
   }

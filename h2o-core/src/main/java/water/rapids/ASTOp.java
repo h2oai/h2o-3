@@ -1895,7 +1895,7 @@ class ASTQtile extends ASTUniPrefixOp {
     if (x.numCols() != 1) throw new IllegalArgumentException("Must specify a single column in quantile. Got: "+ x.numCols() + " columns.");
     Vec xv  = x.anyVec();
     if ( xv.isEnum() ) {
-      throw new  IllegalArgumentException("Quantile: column type cannot be Enum.");
+      throw new  IllegalArgumentException("Quantile: column type cannot be Categorical.");
     }
 
     double p[];

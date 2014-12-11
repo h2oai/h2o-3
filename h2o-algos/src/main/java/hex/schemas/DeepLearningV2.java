@@ -2,8 +2,8 @@ package hex.schemas;
 
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import water.Key;
 import water.api.API;
+import water.api.KeyV1.ModelKeyV1;
 import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
 
@@ -85,7 +85,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * continuation of a previously generated model (e.g., by a grid search).
      */
     @API(help = "Model checkpoint to resume training with", direction=API.Direction.INOUT)
-    public Key checkpoint;
+    public ModelKeyV1 checkpoint;
 
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.

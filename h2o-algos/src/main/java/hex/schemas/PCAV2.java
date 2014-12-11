@@ -5,7 +5,6 @@ import hex.pca.PCAModel.PCAParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public class PCAV2 extends ModelBuilderSchema<PCA,PCAV2,PCAV2.PCAParametersV2> {
 
@@ -21,20 +20,6 @@ public class PCAV2 extends ModelBuilderSchema<PCA,PCAV2,PCAV2.PCAParametersV2> {
 
     @API(help = "standardize")
     public boolean standardize;
-
-    @Override public PCAParametersV2 fillFromImpl(PCAParameters parms) {
-      super.fillFromImpl(parms);
-      return this;
-    }
-
-    public PCAParameters fillImpl(PCAParameters impl) {
-      PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-
-      // Sigh:
-      impl._train = (this.training_frame == null ? null : this.training_frame._key);
-      impl._valid = (this.validation_frame == null ? null : this.validation_frame._key);
-      return impl;
-    }
   }
 
   //==========================

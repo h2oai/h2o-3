@@ -1,17 +1,21 @@
 package hex.api;
 
-import hex.tree.gbm.GBM;
 import hex.schemas.GBMV2;
-import water.H2O;
+import hex.tree.gbm.GBM;
 import water.api.ModelBuilderHandler;
+import water.api.Schema;
 
 public class GBMBuilderHandler extends ModelBuilderHandler<GBM, GBMV2, GBMV2.GBMParametersV2> {
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public Schema train(int version, GBMV2 builderSchema) {
+    return super.do_train(version, builderSchema);
+  }
 
-  @Override protected GBMV2 schema(int version) {
-    switch (version) {
-      case 2:   { GBMV2 b = new GBMV2(); b.parameters = b.createParametersSchema(); return b; }
-      default:  throw H2O.fail("Bad version for ModelBuilder schema: " + version);
-    }
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public GBMV2 validate_parameters(int version, GBMV2 builderSchema) {
+    return super.do_validate_parameters(version, builderSchema);
   }
 }
 

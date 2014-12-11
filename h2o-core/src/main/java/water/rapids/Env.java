@@ -761,7 +761,7 @@ class ValFrame extends Val {
   final Frame _fr;
   ValFrame(Frame fr) { _key = null; _fr = fr; }
   ValFrame(String key) {
-    Key k = Key.make(key);
+    Key<Frame> k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = k.get();

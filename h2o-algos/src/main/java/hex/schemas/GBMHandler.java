@@ -2,25 +2,25 @@ package hex.schemas;
 
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
-import water.H2O;
+import water.Job;
+import water.api.JobV2;
+import water.api.Schema;
 
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */
 @Deprecated
-public class GBMHandler extends SharedTreeHandler<GBM, GBMV2> {
+public class GBMHandler extends SharedTreeHandler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   public GBMHandler() {}
 
-  public GBMV2 train(int version, GBM builder) {
+  public GBMV2 train(int version, GBMV2 s) {
+    GBM builder = s.createAndFillImpl();
     GBMParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
     builder.trainModel();
-    GBMV2 schema = schema(version); // TODO: superclass!
-    schema.parameters = new GBMV2.GBMParametersV2();
-    schema.job = builder._key;
-    return schema;
+    s.parameters = new GBMV2.GBMParametersV2();
+    s.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(builder);
+    return s;
   }
-  @Override protected GBMV2 schema(int version) { GBMV2 schema = new GBMV2(); schema.parameters = schema.createParametersSchema(); return schema; }
-  @Override public void compute2() { throw H2O.fail(); }
 }

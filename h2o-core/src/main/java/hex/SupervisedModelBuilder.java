@@ -27,7 +27,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the response column; move it to the end; flip it to an Enum if
+   *  Validate the response column; move it to the end; flip it to an Categorical if
    *  requested.  Validate the max_after_balance_size; compute the number of
    *  classes.   */
   @Override public void init(boolean expensive) {

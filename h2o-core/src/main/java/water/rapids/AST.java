@@ -165,7 +165,7 @@ class ASTFrame extends AST {
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
-    Key k = Key.make(key);
+    Key<Frame> k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = k.get();
@@ -606,7 +606,7 @@ class ASTNull extends AST {
  *
  *     The RHS is already on the stack, the LHS is not yet on the stack.
  *
- *     Note about Enum/Non-Enum Vecs:
+ *     Note about Categorical/Non-Categorical Vecs:
  *
  *       If the vec is enum, then the RHS must also be enum (if enum is not in domain of LHS produce NAs).
  *       If the vec is numeric, then the RHS must also be numeric (if enum, then produce NAs or throw IAE).
@@ -671,7 +671,7 @@ class ASTAssign extends AST {
 
   private static void assignRows(Env e, Object rows, final Frame lhs_ary, Object cols) {
     // For every col at the range of indexes, set the value to be the rhs, which is expected to be a scalar (or possibly a string).
-    // If the rhs is a double or str, then fill with doubles or NA when type is Enum.
+    // If the rhs is a double or str, then fill with doubles or NA when type is Categorical.
     final long[] cols0 = cols == null ? new long[lhs_ary.numCols()] : (long[])cols;
     if (cols == null) for (int i = 0; i < lhs_ary.numCols(); ++i) cols0[i] = i;
 

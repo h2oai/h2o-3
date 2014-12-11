@@ -5,22 +5,19 @@ import water.util.Log;
 
 import java.util.Set;
 
-public class RemoveAllHandler extends Handler<RemoveAllHandler.RemoveAll,RemoveAllV1> {
-  protected static final class RemoveAll extends Iced {  }
+public class RemoveAllHandler extends Handler {
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  @Override protected RemoveAllV1 schema(int version) { return new RemoveAllV1(); }
-  @Override public void compute2() { throw H2O.unimpl(); }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public RemoveAllV1 remove(int version, RemoveAll u) {
+  public RemoveAllV1 remove(int version, RemoveAllV1 u) {
     Log.info("Removing all keys");
     Futures fs = new Futures();
     for (Job j : Job.jobs()) { j.cancel(); j.remove(fs); }
     fs.blockForPending();
     new RemoveAllTask().doAllNodes();
     Log.info("Finished removing keys");
-    return schema(version).fillFromImpl(u);
+    return u;
   }
 
   public class RemoveAllTask extends MRTask<RemoveAllTask> {

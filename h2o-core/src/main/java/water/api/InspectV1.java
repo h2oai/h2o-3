@@ -7,7 +7,7 @@ import water.util.DocGen.HTML;
 class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Input fields
   @API(help="Key to inspect",required=true)
-  Key key;
+  KeySchema key;
 
   @API(help="Offset, used to page through large objects",direction=API.Direction.INPUT)
   long off;
@@ -29,7 +29,7 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   transient Value _val; // To avoid a race, cached lookup here
 
   @Override public InspectPojo fillImpl(InspectPojo impl) {
-    _val = DKV.get(key);
+    _val = DKV.get(key.key());
     if( _val == null ) throw new IllegalArgumentException("Key not found");
     if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
     if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
@@ -40,7 +40,7 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Version&Schema-specific filling from the impl
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
     if (null != i._val) {
-      key = i._val._key;
+      key = KeySchema.make(i._val._key);
       if (i._val.isFrame())
         kind = "frame";
       else if (i._val.isModel())

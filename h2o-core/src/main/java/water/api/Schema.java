@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
@@ -26,13 +25,17 @@ import java.util.regex.Pattern;
  * without knowing any details about the specific algo).
  * <p>
  * Most schemas have a 1-to-1 mapping to an Iced implementation object.
- * Both may have children, or (more often) not.  Occasionally, e.g. in
- * the case of schemas used only to handle HTTP request parameters, there
- * will not be a backing impl object.
+ * Both the Schema and the Iced object may have children, or (more often) not.
+ * Occasionally, e.g. in the case of schemas used only to handle HTTP request
+ * parameters, there will not be a backing impl object and the Schema will be
+ * parameterized by Iced.
  * <p>
  * Schemas have a State section (broken into Input, Output and InOut fields)
- * and an Adapter section which fills the State to and from the Iced impl objects
- * and from HTTP request parameters.
+ * and an Adapter section.  The adapter methods fill the State to and from the
+ * Iced impl objects and from HTTP request parameters.  In the simple case, where
+ * the backing object corresponds 1:1 with the Schema and no adapting need be
+ * done, the methods here in the Schema class will do all the work based on
+ * reflection.
  * <p>
  * Methods here allow us to convert from Schema to Iced (impl) and back in a
  * flexible way.  The default behaviour is to map like-named fields back and
@@ -40,10 +43,13 @@ import java.util.regex.Pattern;
  * Model will be automagically converted back and forth to a Key).
  * Subclasses can override methods such as fillImpl or fillFromImpl to
  * provide special handling when adapting from schema to impl object and back.
+ * Usually they will want to call super to get the default behavior, and then
+ * modify the results a bit (e.g., to map differently-named fields, or to
+ * compute field values).
  * <p>
- * Schema Fields must have a single API annotation describing in their direction
- * of operation (all fields will be output by default), and any other properties
- * such as "required".  Transient and static fields are ignored.
+ * Schema Fields must have a single API annotation describing their direction
+ * of operation and any other properties such as "required".  Fields are
+ * API.Direction.OUTPUT by default.  Transient and static fields are ignored.
  * @see water.api.API for information on the field annotations
  * <p>
  * Some use cases:
@@ -75,19 +81,19 @@ import java.util.regex.Pattern;
  * }
  *
  */
-public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
+  protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
   @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).")
-  public int schema_version;
-  final int getSchemaVersion() { return schema_version; }
+  public int __schema_version;
+  public final int getSchemaVersion() { return __schema_version; }
 
   /** The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be changed after creation (treat as final).  */
   @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.")
-  public String schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
+  public String __schema_name = this.getClass().getSimpleName(); // this.getClass().getSimpleName();
 
   @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
-  public final String schema_type = _impl_class.getSimpleName();
+  public String __schema_type = _impl_class.getSimpleName(); // subclasses can redfine this
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -108,17 +114,25 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   public Schema() {
     // Check version number
-    schema_version = extractVersion(schema_name);
+    __schema_version = extractVersion(__schema_name);
     // We do now to get metadata for base classes: assert schema_version > -1 : "Cannot instantiate a schema whose classname does not end in a 'V' and a version #";
 
-    if (null == schema_to_iced.get(this.schema_name)) {
-      Log.info("Registering schema: " + this.schema_name + " schema_version: " + this.schema_version + " with Iced class: " + _impl_class.toString());
-      if (null != schemas.get(this.schema_name))
-        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.schema_name) + " and: " + this.getClass().toString());
+    if (null == schema_to_iced.get(this.__schema_name)) {
+      Log.debug("Registering schema: " + this.__schema_name + " schema_version: " + this.__schema_version + " with Iced class: " + _impl_class.toString());
+      if (null != schemas.get(this.__schema_name))
+        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(this.__schema_name) + " and: " + this.getClass().toString());
 
-      schemas.put(this.schema_name, this.getClass());
-      schema_to_iced.put(this.schema_name, _impl_class);
-      iced_to_schema.put(new Pair(_impl_class.getSimpleName(), this.schema_version), this.getClass());
+      schemas.put(this.__schema_name, this.getClass());
+      schema_to_iced.put(this.__schema_name, _impl_class);
+
+      if (_impl_class != Iced.class) {
+        Pair versioned = new Pair(_impl_class.getSimpleName(), this.__schema_version);
+        // Check for conflicts
+        if (null != iced_to_schema.get(versioned)) {
+          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + __schema_version + " of Iced class: " + _impl_class);
+        }
+        iced_to_schema.put(versioned, this.getClass());
+      }
     }
   }
 
@@ -139,18 +153,22 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     }
   }
 
-  // Ensure that all Schema classes get registered up front.
 
   /** Register the given schema class. */
-  // TODO: walk over the fields and register sub-schemas
   public static void register(Class<? extends Schema> clz) {
     if (extractVersion(clz.getSimpleName()) > -1) {
+      Schema s = null;
       try {
-        clz.newInstance();
+        s = clz.newInstance();
       } catch (Exception e) {
         Log.err("Failed to instantiate schema class: " + clz);
       }
-      Log.info("Instantiated: " + clz.getSimpleName());
+      if (null != s) {
+        Log.debug("Instantiated: " + clz.getSimpleName());
+
+        // Validate the fields:
+        SchemaMetadata ignoreme = new SchemaMetadata(s);
+      }
     }
   }
 
@@ -360,26 +378,46 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         a[i] = (E)parse(splits[i].trim(),afclz, required);
       return a;
     }
+
     if( fclz.equals(Key.class) )
-      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       else if (!required && (s == null || s.length() == 0)) return null;
-      else if (!required) return Key.make(s);
       else return Key.make(s);
+
+    if( KeySchema.class.isAssignableFrom(fclz) ) {
+      if ((s == null || s.length() == 0) && required) throw new IllegalArgumentException("Missing key"); // TODO: better message!
+      if (!required && (s == null || s.length() == 0)) return null;
+
+      return KeySchema.make(fclz, Key.make(s));
+    }
 
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
 
-    if( Frame.class.isAssignableFrom(fclz) )
+    // TODO: these can be refactored into a single case using the facilities in Schema:
+    if( FrameV2.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
-        if (! v.isFrame()) throw new IllegalArgumentException("Frame argument points to a non-frame object.");
-        return v.get();
+        if (! v.isFrame()) throw new IllegalArgumentException("Frame argument points to a non-Frame object: " + v.get().getClass());
+        return new FrameV2((Frame) v.get()); // TODO: version!
       }
 
-    if( Model.class.isAssignableFrom(fclz) )
+    if( JobV2.class.isAssignableFrom(fclz) )
+      if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
+      else if (!required && (s == null || s.length() == 0)) return null;
+      else {
+        Value v = DKV.get(s);
+        if (null == v) return null; // not required
+        if (! v.isJob()) throw new IllegalArgumentException("Job argument points to a non-Job object: " + v.get().getClass());
+        return new JobV2().fillFromImpl((Job) v.get()); // TODO: version!
+      }
+
+    if( ModelSchema.class.isAssignableFrom(fclz) )
+      throw H2O.fail("Can't yet take ModelSchema as input.");
+      /*
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
@@ -388,6 +426,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         if (! v.isModel()) throw new IllegalArgumentException("Model argument points to a non-model object.");
         return v.get();
       }
+      */
 
     throw new RuntimeException("Unimplemented schema fill from "+fclz.getSimpleName());
   }
@@ -464,7 +503,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     return schema(version, impl_class.getSimpleName());
   }
 
-  private static Schema newInstance(Class<? extends Schema> clz) {
+  public static Schema newInstance(Class<? extends Schema> clz) {
     Schema s = null;
     try {
       s = clz.newInstance();
@@ -509,13 +548,24 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * Generate Markdown documentation for this Schema.
    */
   public StringBuffer markdown(StringBuffer appendToMe) {
-    return markdown(new SchemaMetadata(this), appendToMe);
+    return markdown(appendToMe, true, true);
+  }
+
+  /**
+   * Generate Markdown documentation for this Schema possibly including only the input or output fields.
+   */
+  public StringBuffer markdown(StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
+    return markdown(new SchemaMetadata(this), appendToMe, include_input_fields, include_output_fields);
+  }
+
+  public StringBuffer markdown(SchemaMetadata meta, StringBuffer appendToMe) {
+    return markdown(meta, appendToMe, true, true);
   }
 
   /**
    * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
    */
-  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe) {
+  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
     MarkdownBuilder builder = new MarkdownBuilder();
 
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
@@ -528,53 +578,58 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     // fields
     boolean first; // don't print the table at all if there are no rows
 
-    first = true;
-    builder.heading2("input fields");
     try {
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
-            first = false;
-          }
-          builder.tableRow(
-                  field_meta.name,
-                  String.valueOf(field_meta.required),
-                  field_meta.level.name(),
-                  field_meta.type,
-                  String.valueOf(field_meta.is_schema),
-                  field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
-                  field_meta.help,
-                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
-          );
-        }
-      }
-      if (first)
-        builder.paragraph("(none)");
+      if (include_input_fields) {
+        first = true;
+        builder.heading2("input fields");
 
-      first = true;
-      builder.heading2("output fields");
-      for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-        if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
-          if (first) {
-            builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
-            first = false;
+        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+          if (field_meta.direction == API.Direction.INPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "required?", "level", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
+              first = false;
+            }
+            builder.tableRow(
+                    field_meta.name,
+                    String.valueOf(field_meta.required),
+                    field_meta.level.name(),
+                    field_meta.type,
+                    String.valueOf(field_meta.is_schema),
+                    field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
+                    field_meta.help,
+                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
+            );
           }
-          builder.tableRow(field_meta.name,
-                  field_meta.type,
-                  String.valueOf(field_meta.is_schema),
-                  field_meta.is_schema ? field_meta.schema_name : "",
-                  field_meta.value,
-                  field_meta.help,
-                  (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                  (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                  (field_meta.is_mutually_exclusive_with== null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
         }
+        if (first)
+          builder.paragraph("(none)");
       }
-      if (first)
-        builder.paragraph("(none)");
+
+      if (include_output_fields) {
+        first = true;
+        builder.heading2("output fields");
+        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+          if (field_meta.direction == API.Direction.OUTPUT || field_meta.direction == API.Direction.INOUT) {
+            if (first) {
+              builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
+              first = false;
+            }
+            builder.tableRow(field_meta.name,
+                    field_meta.type,
+                    String.valueOf(field_meta.is_schema),
+                    field_meta.is_schema ? field_meta.schema_name : "",
+                    field_meta.value,
+                    field_meta.help,
+                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
+          }
+        }
+        if (first)
+          builder.paragraph("(none)");
+      }
 
       // TODO: render examples and other stuff, if it's passed in
     }
