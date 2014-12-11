@@ -101,6 +101,14 @@ h2o.logAndEcho <- function(conn, message) {
   res$message
 }
 
+#' Download H2O Log Files to Disk
+#' 
+#' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
+#' 
+#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
+#' @param filename (Optional) A character string indicating the name that the log file should be saved to.
+#' @seealso \code{h2o.client}
 h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
   if(!is(client, "h2o.client"))
     stop("client must be of class h2o.client")
