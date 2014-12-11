@@ -8,11 +8,7 @@ import water.api.ModelSchema;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters {
-<<<<<<< HEAD
     public int _k = 2;                     // Number of clusters
-=======
-    public int _K;                         // Number of clusters
->>>>>>> 83c25289072c6910b27a2a439cb656ee27dc1812
     public int _max_iters = 1000;          // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
