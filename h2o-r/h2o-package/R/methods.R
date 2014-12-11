@@ -157,7 +157,7 @@ h2o.gc <- function(object) {
     object <- .retrieveH2O(parent.frame())
   }
   frame_keys <- as.vector(h2o.ls()[,1])
-  # no global reference, then destroy
+  # no reference? then destroy!
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
