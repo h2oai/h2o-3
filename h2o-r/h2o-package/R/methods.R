@@ -161,13 +161,12 @@ h2o.gc <- function(object) {
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(o %i% "h2o.frame") o@key
-      if(o %i% "h2o.model") o@key
+      if(o %i% "h2o.frame" || o %i% "h2o.model") o@key
     })
     Filter(Negate(is.null), l)
   }
-  p_list <- f(.pkg.env)
-  g_list <- f(globalenv())
+  p_list  <- f(.pkg.env)
+  g_list  <- f(globalenv())
   f1_list <- f(parent.frame())
 
   g_list <- unlist(c(p_list, g_list, f1_list))
