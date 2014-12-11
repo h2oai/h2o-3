@@ -15,7 +15,7 @@ class ParseHandler extends Handler {
 
     Key[] srcs = new Key[parse.srcs.length];
     for (int i = 0; i < parse.srcs.length; i++)
-      srcs[i] = parse.srcs[i].key.key();
+      srcs[i] = parse.srcs[i].key();
 
     // TODO: add JobBase:
     parse.job = (JobV2)Schema.schema(version, Job.class).fillFromImpl(water.parser.ParseDataset2.startParse2(parse.hex.key(), srcs, parse.delete_on_done, setup));

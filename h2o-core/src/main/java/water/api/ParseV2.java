@@ -14,7 +14,7 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   FrameKeyV1 hex;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
   @API(help="Source keys",required=true)
-  FrameV2[] srcs;
+  FrameKeyV1[] srcs;
 
   @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
   ParserType pType;

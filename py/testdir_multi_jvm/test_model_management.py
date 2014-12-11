@@ -245,7 +245,7 @@ def cleanup(a_node, models=None, frames=None):
     # TODO
     ####################
     # test delete_models
-    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame='prostate_binomial', parameters={'K': 2 }, timeoutSecs=240) # synchronous
+    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame='prostate_binomial', parameters={'k': 2 }, timeoutSecs=240) # synchronous
     # a_node.delete_models()
     # models = a_node.models()
 
@@ -368,7 +368,7 @@ a_node = h2o.H2O(host, port)
 # Config:
 algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
-                                   'kmeans' : { 'K' : 2 }
+                                   'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
 clean_up_after = False
 
@@ -543,7 +543,7 @@ assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile
 # Build and do basic validation checks on models
 ####################################################################################################
 models_to_build = [
-    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], { 'K': 2 } ),
+    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], { 'k': 2 } ),
 
     ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], { } ),
 
