@@ -47,22 +47,22 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** Trees get big, so store each one seperately in the DKV. */
     public Key[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    /** Train and test errors per-tree (scored).  Zero index is the no-tree
+    /** Train and validation errors per-tree (scored).  Zero index is the no-tree
      *  error, guessing only the class distribution.  Not all trees are
      *  scored, NaN represents trees not scored. */
     public double _mse_train[/*_ntrees+1*/];
-    public double _mse_test [/*_ntrees+1*/];
+    public double _mse_valid[/*_ntrees+1*/];
 
     /** Variable Importance, if asked for */
     public VarImp _varimp;
 
-    public SharedTreeOutput( SharedTree b, double mse_train, double mse_test ) { 
+    public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _mse_train = new double[]{mse_train};
-      _mse_test  = Double.isNaN(mse_test) ? null : new double[]{mse_test };
+      _mse_valid  = Double.isNaN(mse_valid) ? null : new double[]{mse_valid };
     }
 
     // Append next set of K trees
@@ -80,8 +80,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train= Arrays.copyOf(_mse_train,_ntrees+1);
-      if( _mse_test != null )
-        _mse_test = Arrays.copyOf(_mse_test ,_ntrees+1);
+      if( _mse_valid != null )
+        _mse_valid = Arrays.copyOf(_mse_valid ,_ntrees+1);
       fs.blockForPending();
     }
 

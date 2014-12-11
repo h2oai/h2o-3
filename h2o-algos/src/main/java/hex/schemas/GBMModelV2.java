@@ -12,8 +12,8 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GB
     // Output fields; input fields are in the parameters list
     @API(help="Mean Square Error for Train Frame")
     public double mse_train[];           // Total MSE, variance
-    @API(help="Mean Square Error for Test Frame")
-    public double mse_test[];           // Total MSE, variance
+    @API(help="Mean Square Error for Validation Frame")
+    public double mse_valid[];           // Total MSE, variance
   } // GBMModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

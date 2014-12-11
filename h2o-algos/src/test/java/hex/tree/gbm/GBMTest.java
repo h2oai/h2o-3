@@ -303,14 +303,14 @@ public class GBMTest extends TestUtil {
   @Test public void testModelMSEEqualityOnProstate() {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.AUTO)._mse_train;
-    double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_test;
+    double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
 
   @Test public void testModelMSEEqualityOnTitanic() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.AUTO)._mse_train;
-    double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_test;
+    double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
 
