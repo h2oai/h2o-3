@@ -310,7 +310,7 @@
 
   res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
 
-  job_key <- res$key$name
+  job_key <- res$job[[1]]$key$name
   dest_key <- res$jobs[[1]]$dest$name
   .h2o.__waitOnJob(client, job_key)
   # Grab model output and flatten one level
@@ -318,7 +318,6 @@
 
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models
-
   .newModel(algo, res_model, client)
 }
 

@@ -960,16 +960,11 @@ class ASTAssign extends AST {
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
-            Vec v = lhs_ary.replace(cidx, rv);
-            System.out.println(v._key);
-            e._locked.remove(v._key);
-            fs = e.subVec(v, fs);
-            if(subit) e.subVec(rv);
+            lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
           }
         }
         fs.blockForPending();
         e.cleanup(rhs_ary);
-//        rhs_ary.delete();
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");

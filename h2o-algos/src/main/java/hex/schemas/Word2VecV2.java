@@ -51,7 +51,7 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
     /**
      *
      */
-    @API(help="Number of negative examples, common values are 3 - 10 (0 = not used)")
+    @API(help="Number of negative examples, common values are 3 - 10 (0 = not used)", required = true)
     public int negSampleCnt;
 
     /**

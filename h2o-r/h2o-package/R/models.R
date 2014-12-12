@@ -329,22 +329,22 @@ function(model) {
 }
 
 .kmeans.builder <- function(json, client) {
-  new("H2OKMeansModel", h2o = client, key = json$key, model = json$output,
+  new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o = client, key="NA"))
 }
 
 .gbm.builder <- function(json, client) {
-  new("H2OGBMModel", h2o = client, key = json$key, model = json$output,
+  new("H2OGBMModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
 }
 
 .glm.builder <- function(json, client) {
-  new("H2OGLMModel", h2o = client, key = json$key, model = json$output,
+  new("H2OGLMModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
 }
 
 .deeplearning.builder <- function(json, client) {
-  new("H2ODeepLearningModel", h2o = client, key = json$key, model = json$output,
+  new("H2ODeepLearningModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
 
 }

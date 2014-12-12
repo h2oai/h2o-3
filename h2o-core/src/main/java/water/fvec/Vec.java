@@ -880,10 +880,10 @@ public class Vec extends Keyed {
   /** Transform this vector to enum.  If the vector is integer vector then its
    *  domain is collected and transformed to corresponding strings.  If the
    *  vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  Transformation is done by a {@link EnumWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new Categorical Vec  */
-  public TransfVec toEnum() {
+  public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     // Right now, limited to small dense integers.
@@ -896,15 +896,25 @@ public class Vec extends Keyed {
   }
 
   /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted
-   *  TransfVec has 'this' as it's masterVec, but returns results in the 'to'
+   *  EnumWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
    *  domain (or just past it, if 'this' has elements not appearing in the 'to'
    *  domain). */
-  public TransfVec adaptTo( String[] domain ) {
-    return new TransfVec(group().addVec(),_espc,domain,this._key);
+  public EnumWrappedVec adaptTo( String[] domain ) {
+    return new EnumWrappedVec(group().addVec(),_espc,domain,this._key);
+  }
+
+  /** Transform this vector to strings.  If the
+   *  vector is enum an identity transformation vector is returned.
+   *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
+   *  between values - without copying the underlying data.
+   *  @return A new String Vec  */
+  public StrWrappedVec toStringVec() {
+    if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
+    return new StrWrappedVec(group().addVec(),_espc,this._key);
   }
 
   /** This Vec does not have dependent hidden Vec it uses.
-   *  @see TransfVec
+   *  @see EnumWrappedVec
    *  @return dependent hidden vector or <code>null</code>  */
 //  public Vec masterVec() { return null; }
 

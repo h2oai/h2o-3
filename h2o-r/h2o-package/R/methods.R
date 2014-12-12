@@ -298,9 +298,7 @@ h2o.table <- function(x, y = NULL) {
   if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
   if (!is.null(y) && !(y %i% "h2o.frame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  .force.eval(ast@ast)
 }
 
 
@@ -723,9 +721,7 @@ NULL
 #' Returns Boolean.
 setMethod("is.factor", "h2o.frame", function(x) {
   ast <- .h2o.unop("is.factor", x)
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  .force.eval(ast@ast)
 })
 
 #quantile.h2o.frame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
@@ -1066,6 +1062,7 @@ NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable wit
 as.matrix.h2o.frame <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 
 setMethod("as.factor", "h2o.frame", function(x) .h2o.unop("as.factor", x))
+setMethod("as.character", "h2o.frame",      function(x) .h2o.unop("as.character", x))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Model Plot/Summary Operations: PCA model summary and screeplot
