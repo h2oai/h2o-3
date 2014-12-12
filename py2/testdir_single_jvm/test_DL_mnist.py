@@ -41,7 +41,7 @@ class Basic(unittest.TestCase):
 
         parameters = {
             'validation_frame': validation_key, # KeyIndexed None
-            'ignored_columns': '[STR]', # string[] None
+            'ignored_columns': None, # string[] None
             'score_each_iteration': None, # boolean false
             'response_column': labelList[response], # string None
             'do_classification': True, # boolean false
