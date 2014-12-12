@@ -512,14 +512,14 @@ setMethod("$<-", "h2o.frame", function(x, name, value) {
   if (value %i% "h2o.frame") rhs <- .get(value)
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
-  res <- new("h2o.frame", ast = res, key = .key.make(), h2o = .retrieveH2O())
-#  .pkg.env[[res@key]] <- res
+  res <- new("h2o.frame", ast = res, key = x@key, h2o = .retrieveH2O())
+  .force.eval(res@ast,new.assign=F)
   colnames(res)[idx] <- name
   res
 })
 
 
-  setMethod("[[<-", "h2o.frame", function(x, i, value) {
+setMethod("[[<-", "h2o.frame", function(x, i, value) {
   if( !( value %i% "h2o.frame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
@@ -529,10 +529,10 @@ setMethod("colnames<-", signature(x="h2o.frame", value="character"),
     if(any(nchar(value) == 0)) stop("Column names must be of non-zero length")
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop(paste("Must specify a vector of exactly", num, "column names"))
-    idxs <- (1:length(x)) - 1;
-    ast <- .h2o.varop("colnames=", x, idxs, value)
-    .force.eval(x@ast, NULL, parent.frame(), x@key)
-    return()
+    idxs <- (1:length(x)) - 1
+    ast <- .h2o.varop("colnames=", x, idxs, value, useKey=x@key)
+    .force.eval(ast@ast,new.assign=F)
+    x
 })
 
 setMethod("names", "h2o.frame", function(x) { colnames(x) })
