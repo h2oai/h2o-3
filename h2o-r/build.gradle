@@ -237,7 +237,7 @@ task rbuild(type: Exec) { commandLine getOsSpecificCommandLine(['R', "CMD", "REM
 task cleanUp << {
     new File([T, "h2o-package", "DESCRIPTION"].join(File.separator)).delete()
     new File([T, "h2o_package.pdf"].join(File.separator)).delete()
-    new File([T, "h2o-package", "man", "h2o-package.Rd"].join(File.separator)).delete()
+    new File([T, "h2o-package", "man"].join(File.separator)).deleteDir()
     new File([T, "h2o-package", "inst", "branch.txt"].join(File.separator)).delete()
     new File([T, "h2o-package", "inst", "buildnum.txt"].join(File.separator)).delete()
     new File([T, "h2o-package", "inst", "java"].join(File.separator)).deleteDir()
