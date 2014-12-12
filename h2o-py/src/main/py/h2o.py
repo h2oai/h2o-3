@@ -132,7 +132,10 @@ class Vec(object):
       print "DELE: -1",self._name
 
 ########
-# A pending to-be-computed expression
+# A pending to-be-computed expression.  Points to Vecs, and Vecs point to
+# these, defining a DAG of pending computations.  The Vecs are all kept
+# alive by the Exprs and vice-versa.  
+# 
 class Expr(object):
   def __init__(self,op,left,rite):
     self._op = op     # String op
@@ -153,7 +156,7 @@ class Expr(object):
     return "("+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Vec) else self._rite)+")"
 
 ########
-def deVec(x):
+def _deVec(x):
   return (x._rapids() if isinstance(x._data,Expr) else RX(x._name,x._data)) if isinstance(x,Vec) else x
 
 ########
@@ -166,8 +169,8 @@ class RX(object):
     self._name = name   # String
     if isinstance(x,Expr):
       self._op   = x._op  # String op
-      self._left = deVec(x._left); assert isinstance(self._left,(int,float,list,RX))
-      self._rite = deVec(x._rite); assert isinstance(self._rite,(int,float,list,RX)) or not self._rite
+      self._left = _deVec(x._left); assert isinstance(self._left,(int,float,list,RX))
+      self._rite = _deVec(x._rite); assert isinstance(self._rite,(int,float,list,RX)) or not self._rite
       self._data = None
     else:
       assert isinstance(x,list)
@@ -209,29 +212,3 @@ class RX(object):
     assert self._data
     return self._data
 
-
-######################################################
-#
-# Sample use-cases
-
-a = Frame("a.",fname="smalldata/iris/iris_wheader.csv")[0:4]
-
-print a[0]._name    # Column header
-print a[0][2]       # column 0, row 2 value
-print a["a.sepal_len"][2]  # Column 0, row 2 value
-print a[0]+2        # Add 2 to every element; broadcast a constant
-print a[0]+a[1]     # Add 2 columns; broadcast parallel add
-print sum(a["a.sepal_len"])/len(a[0])
-print sum(a)
-
-try: print a["a.Sepal_len"]  # Error, mispelt column name
-except ValueError,ex: pass  # Expected error
-
-b = Frame("b.",fname="smalldata/iris/iris_wheader.csv")[0:4]
-c = a+b
-d = c+c+sum(a)
-e = c+a+1
-print e
-print c
-
-print 1+(a[0]+b[1]).mean()
