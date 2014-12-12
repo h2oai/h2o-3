@@ -298,9 +298,7 @@ h2o.table <- function(x, y = NULL) {
   if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
   if (!is.null(y) && !(y %i% "h2o.frame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  .force.eval(ast@ast)
 }
 
 
