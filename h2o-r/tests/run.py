@@ -1632,7 +1632,7 @@ def main(argv):
     # Sanity check existence of H2O jar file before starting the cloud.
     if ((h2o_jar is None) or (not os.path.exists(h2o_jar))):
         print("")
-        print("ERROR: H2O jar not found: " + h2o_jar)
+        print("ERROR: H2O jar not found")
         print("")
         sys.exit(1)
 
