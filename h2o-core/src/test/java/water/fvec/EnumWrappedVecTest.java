@@ -5,7 +5,7 @@ import org.junit.*;
 import water.Scope;
 import water.TestUtil;
 
-public class TransfVecTest extends TestUtil {
+public class EnumWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(5); }
 
   // Need to move test files over
@@ -15,7 +15,7 @@ public class TransfVecTest extends TestUtil {
     try {
       v1 = parse_test_file("smalldata/junit/mixcat_train.csv");
       v2 = parse_test_file("smalldata/junit/mixcat_test.csv");
-      TransfVec vv = v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
+      EnumWrappedVec vv = v2.vecs()[0].adaptTo(v1.vecs()[0].domain());
       Assert.assertArrayEquals("Mapping differs",new int[]{0,1,3},vv._map);
       Assert.assertArrayEquals("Mapping differs",new String[]{"A","B","C","D"},vv.domain());
       vv.remove();
@@ -26,7 +26,7 @@ public class TransfVecTest extends TestUtil {
     }
   }
 
-  /** Verifies that {@link TransfVec#computeMap(String[], String[])} returns
+  /** Verifies that {@link EnumWrappedVec#computeMap(String[], String[])} returns
    *  correct values. */
   @Test public void testModelMappingCall() {
     Scope.enter();
@@ -41,7 +41,7 @@ public class TransfVecTest extends TestUtil {
   }
 
   private static void testModelMapping(String[] modelDomain, String[] colDomain, int[] expectedMapping) {
-    int[] mapping = new TransfVec(colDomain, modelDomain)._map;
+    int[] mapping = new EnumWrappedVec(colDomain, modelDomain)._map;
     Assert.assertArrayEquals("Mapping differs",  expectedMapping, mapping);
   }
 }

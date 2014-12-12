@@ -795,7 +795,10 @@ public class Frame extends Lockable<Frame> {
               if (oc._vec.isUUID()) nc.addUUID(oc, j);
               else if (oc.isNA0(j)) nc.addNA();
               else nc.addNum(oc.at80(j), 0);
-          } else {                // Slice on double columns
+          } else if (oc._vec.isString()) {
+            for (int j = rlo; j < rhi; j++)
+              nc.addStr(oc.atStr0(new ValueString(), j));
+          } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
               nc.addNum(oc.at0(j));
           }

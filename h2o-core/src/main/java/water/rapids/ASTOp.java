@@ -112,6 +112,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTDiGamma());
     putPrefix(new ASTTriGamma());
     putPrefix(new ASTScale());
+    putPrefix(new ASTCharacter());
     putPrefix(new ASTFactor());
     putPrefix(new ASTIsFactor());
     putPrefix(new ASTAnyFactor());              // For Runit testing
@@ -2748,6 +2749,28 @@ class ASTFactor extends ASTUniPrefixOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+//    env.cleanup(ary);
+    env.push(new ValFrame(fr));
+  }
+}
+
+class ASTCharacter extends ASTUniPrefixOp {
+  ASTCharacter() { super(new String[]{"", "ary"});}
+  @Override String opStr() { return "as.character"; }
+  @Override ASTOp make() {return new ASTFactor();}
+  ASTCharacter parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
+    ASTCharacter res = (ASTCharacter) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame ary = env.pop0Ary(); // pop w/o lowering refs
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
+    Vec v0 = ary.anyVec();
+    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
 //    env.cleanup(ary);
     env.push(new ValFrame(fr));

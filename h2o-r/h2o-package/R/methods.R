@@ -1066,6 +1066,7 @@ NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable wit
 as.matrix.h2o.frame <- function(x, ...) { as.matrix(as.data.frame(x, ...)) }
 
 setMethod("as.factor", "h2o.frame", function(x) .h2o.unop("as.factor", x))
+setMethod("as.character", "h2o.frame",      function(x) .h2o.unop("as.character", x))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Model Plot/Summary Operations: PCA model summary and screeplot
