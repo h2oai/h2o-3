@@ -1,43 +1,44 @@
 package water.api;
 
 import water.*;
+import water.api.KeyV1.JobKeyV1;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-/** Schema for a single Job */
+/** Schema for a single Job. */
 public class JobV2 extends Schema<Job, JobV2> {
 
   // Input fields
   @API(help="Job Key",required=true)
-  Key key;
+  public JobKeyV1 key;
 
   @API(help="Job description")
-  String description;
+  public String description;
 
   // Output fields
   @API(help="job status", direction=API.Direction.OUTPUT)
-  String status;
+  public String status;
 
-  @API(help="progress", direction=API.Direction.OUTPUT)
-  float progress;               // A number from 0 to 1
+  @API(help="progress, from 0 to 1", direction=API.Direction.OUTPUT)
+  public float progress;               // A number from 0 to 1
 
   @API(help="runtime", direction=API.Direction.OUTPUT)
-  long msec;
+  public long msec;
 
   @API(help="destination key", direction=API.Direction.OUTPUT)
-  Key dest;
+  public KeySchema dest;
 
   @API(help="exception", direction=API.Direction.OUTPUT)
-  String exception;
+  public String exception;
 
-  JobV2() {}
-  JobV2(Key key, String description, String status, float progress, long msec, Key dest, String exception) {
-    this.key = key;
+  public JobV2() {}
+  public JobV2(Key<Job> key, String description, String status, float progress, long msec, Key dest, String exception) {
+    this.key = new JobKeyV1(key);
     this.description = description;
     this.status = status;
     this.progress = progress;
     this.msec = msec;
-    this.dest = dest;
+    this.dest = KeySchema.make(dest);
     this.exception = exception;
   }
 
@@ -46,7 +47,7 @@ public class JobV2 extends Schema<Job, JobV2> {
 
   // Version&Schema-specific filling into the impl
   @Override public Job createImpl( ) {
-    Job j = new Job(key, description);
+    Job j = new Job(key.key(), description);
     return j;
   }
 
@@ -55,10 +56,11 @@ public class JobV2 extends Schema<Job, JobV2> {
     // Fetch the latest Job status from the K/V store
     // Do this in the handler:
     // Job job = DKV.get(j._key).get();
+    key = new JobKeyV1(job._key);
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
-    dest = job.dest();
+    dest = KeySchema.make(job.dest());
     exception = job._exception;
     return this;
   }
@@ -70,11 +72,11 @@ public class JobV2 extends Schema<Job, JobV2> {
   @Override public HTML writeHTML_impl( HTML ab ) {
     ab.title("Job Poll");
     if( "DONE".equals(status) ) {
-      Job job = key.get();
+      Job job = (Job)Key.make(key.name).get();
       String url = InspectV1.link(job.dest());
       ab.href("Inspect",url,url).putStr("status",status).put4f("progress",progress);
     } else {
-      String url = link(key);
+      String url = link(key.key());
       ab.href("JobPoll",url,url).putStr("status",status).put4f("progress",progress);
   }
     return ab.putStr("msec",PrettyPrint.msecs(msec,false)).putStr("exception",exception);

@@ -2,9 +2,9 @@
 #' Overview:
 #' ---------
 #'
-#' R operators mixed with H2OFrame objects.
+#' R operators mixed with h2o.frame objects.
 #'
-#' Operating on an object of type H2OFrame triggers the rollup of the
+#' Operating on an object of type h2o.frame triggers the rollup of the
 #' expression _to be executed_ : the expression itself is not evaluated. Instead,
 #' an AST is built up from the R expression using R's built-in parser (which handles
 #' operator precedence), and, in the case of assignment, is stashed into the variable
@@ -14,21 +14,21 @@
 #' When evaluation is forced, the AST is walked, converted to JSON, and shipped over to H2O.
 #' The result returned by H2O is a key pointing to the newly created frame.
 #'
-#' Methods may have a non-H2OFrame return type. Any extra preprocessing of data returned by H2O
+#' Methods may have a non-h2o.frame return type. Any extra preprocessing of data returned by H2O
 #' is discussed in each instance, as it varies from method to method.
 #'
 #'
 #' What's implemented?
 #' --------------------
 #'
-#' Many of R's generic S3 methods may be mixed with H2OFrame objects wherein the result
-#' is coerced to the appropraitely typed object (typically an H2OParsedData object).
+#' Many of R's generic S3 methods may be mixed with h2o.frame objects wherein the result
+#' is coerced to the appropraitely typed object (typically an h2o.frame object).
 #'
 #' A list of R's generic methods may be found by calling `getGenerics()`. Likewise, a call to
-#' `h2o.getGenerics()` will list the operations that are permissible with H2OParsedData objects.
+#' `h2o.getGenerics()` will list the operations that are permissible with h2o.frame objects.
 #'
 #' S3 methods are divided into four groups: Math, Ops, Complex, and Summary.
-#' H2OFrame methods follow these divisions as well, with the exception of Complex, which are
+#' h2o.frame methods follow these divisions as well, with the exception of Complex, which are
 #' unimplemented.
 #'
 #' More precicely, the group divisions follow the S4 divisions: Ops, Math, Math2, Summary.
@@ -47,20 +47,20 @@
 #' @name OpsIntro
 NULL
 
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,0,e2))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binop(.Generic,e1,0))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
-setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="missing",   e2="h2o.frame" ), function(e1,e2) .h2o.binop(.Generic,0,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="h2o.frame",  e2="missing"  ), function(e1,e2) .h2o.binop(.Generic,e1,0))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="h2o.frame",  e2="h2o.frame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="numeric",   e2="h2o.frame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="h2o.frame",  e2="numeric"  ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="h2o.frame",  e2="character"), function(e1,e2) .h2o.binop(.Generic,e1,e2))
+#' @describeIn h2o.frame
+setMethod("Ops", signature(e1="character", e2="h2o.frame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
 
 #'
 #' Math Generics:
@@ -75,8 +75,8 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o
 #' @name MathGenerics
 NULL
 
-#' @describeIn H2OFrame
-setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unop(.Generic,x) })
+#' @describeIn h2o.frame
+setMethod("Math", signature(x = "h2o.frame"), function(x) { .h2o.unop(.Generic,x) })
 
 #'
 #' Math2 Generics:
@@ -84,8 +84,8 @@ setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unop(.Generic,x)
 #' ‘"round"’, ‘"signif"’
 #' @name MathGenerics2
 NULL
-#' @describeIn H2OFrame
-setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.varop(.Generic,x,digits))
+#' @describeIn h2o.frame
+setMethod("Math2", signature(x = "h2o.frame"), function(x, digits) .h2o.varop(.Generic,x,digits))
 
 #'
 #' Summary Generics:
@@ -94,12 +94,10 @@ setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.varop(.Ge
 #' @name SummaryGenerics
 
 NULL
-#' @describeIn H2OFrame
-setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
+#' @describeIn h2o.frame
+setMethod("Summary", signature(x = "h2o.frame"), function(x, ..., na.rm = FALSE) {
   ast <- .h2o.varop(.Generic, x, ..., na.rm)
-  ID <- "Last.value"
-  .force.eval(.retrieveH2O(parent.frame()), ast, ID = ID, rID = 'ast')
-  ast
+  .force.eval(ast@ast)
 })
 
 #'
@@ -111,20 +109,16 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 #' @name MethodsMisc
 NULL
 
-#' @describeIn H2OFrame
-setMethod("!",     "H2OFrame", function(x) .h2o.unop("!", x))
-#' @describeIn H2OFrame
-setMethod("is.na", "H2OFrame", function(x) .h2o.unop("is.na", x) )
-#' @describeIn H2OFrame
-setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )
-#' @describeIn H2OFrame
-setMethod("log",   "H2OFrame", function(x, ...) .h2o.varop("log", x, ...))
-#' @describeIn H2OFrame
-setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))
-xorsum <- function(x, ..., na.rm=TRUE) UseMethod("xorsum")
-xorsum.H2OFrame <- function(x, ...,na.rm=TRUE) .h2o.varop("xorsum", x, ..., na.rm)
-#setMethod("xorsum","H2OFrame", function(x, ...) .h2o.varop("xorsum", x, ...))
-
+#' @describeIn h2o.frame
+setMethod("!",     "h2o.frame", function(x) .h2o.unop("!", x))
+#' @describeIn h2o.frame
+setMethod("is.na", "h2o.frame", function(x) .h2o.unop("is.na", x) )
+#' @describeIn h2o.frame
+setMethod("t",     "h2o.frame", function(x) .h2o.unop("t", x) )
+#' @describeIn h2o.frame
+setMethod("log",   "h2o.frame", function(x, ...) .h2o.varop("log", x, ...))
+#' @describeIn h2o.frame
+setMethod("trunc", "h2o.frame", function(x, ...) .h2o.varop("trunc", x, ...))
 
 ## WORK IN PROGRESS: Get these to work? (if possible...)
 #'
@@ -132,15 +126,15 @@ xorsum.H2OFrame <- function(x, ...,na.rm=TRUE) .h2o.varop("xorsum", x, ..., na.r
 #'
 #`&&` <- function(e1, e2) UseMethod("&&", c(e1,e2))
 #`&&.default`  <- function(e1, e2) {
-#  if (e2 %<i-% "H2OFrame") .binops.fun(e1, e2)
+#  if (e2 %<i-% "h2o.frame") .binops.fun(e1, e2)
 #  else .Primitive("&&")(e1, e2)
 #}
-#`&&.H2OFrame` <- function(e1, e2) .binops.fun(e1,e2)
+#`&&.h2o.frame` <- function(e1, e2) .binops.fun(e1,e2)
 
 #`||` <- function(e1, e2) UseMethod("||", c(e1,e2))
 #`||.default`  <- function(e1, e2) {
-#  l <- (e2 %<i-% "H2OFrame")
+#  l <- (e2 %<i-% "h2o.frame")
 #  if (l) .binops.fun(e1, e2)
 #  else .Primitive("||")(e1, e2)
 #}
-#`||.H2OFrame` <- function(e1, e2) .binops.fun(e1,e2)
+#`||.h2o.frame` <- function(e1, e2) .binops.fun(e1,e2)

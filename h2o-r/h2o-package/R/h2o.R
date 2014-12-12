@@ -108,7 +108,7 @@
 #'
 h2o.clusterInfo <- function(client) {
   if(missing(client)) client <- .retrieveH2O(parent.frame())
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+  if(class(client) != "h2o.client") stop("client must be a h2o.client object")
   myURL <- paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
   if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
 
@@ -216,7 +216,7 @@ h2o.clusterInfo <- function(client) {
 #' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
   if(missing(client)) stop("client is missing!")
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+  if(class(client) != "h2o.client") stop("client must be a h2o.client object")
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
@@ -279,9 +279,22 @@ h2o.clusterInfo <- function(client) {
 }
 
 #------------------------------------ Utilities ------------------------------------#
+.h2o.__writeToFile <- function(res, fileName) {
+  formatVector <- function(vec) {
+    result <- rep(" ", length(vec))
+    nams <- names(vec)
+    for(i in 1:length(vec))
+      result[i] = paste(nams[i], ": ", vec[i], sep="")
+    paste(result, collapse="\n")
+  }
+
+  cat("Writing JSON response to", fileName, "\n")
+  temp <- strsplit(as.character(Sys.time()), " ")[[1]]
+  write(paste(temp[1], temp[2], '\t', formatVector(unlist(res))), file = fileName, append = TRUE)
+}
 
 .h2o.__checkForFactors <- function(object) {
-  if(class(object) != "H2OParsedData") return(FALSE)
+  if(class(object) != "h2o.frame") return(FALSE)
   h2o.anyFactor(object)
 }
 
@@ -307,9 +320,7 @@ h2o.clusterInfo <- function(client) {
   return(paste(x1,x2))
 }
 
-.uri.exists <- function(uri) {
-  url.exists(uri)
-}
+.uri.exists <- function(uri) url.exists(uri)
 
 .h2o.__formatError <- function(error,prefix="  ") {
   result = ""

@@ -1,13 +1,13 @@
 package water.api;
 
 import hex.Model;
-import water.Key;
+import water.api.KeyV1.ModelKeyV1;
 import water.api.ModelsHandler.Models;
 
 abstract class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends Schema<I, ModelsBase<I, S>> {
   // Input fields
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  public Key key;
+  public ModelKeyV1 key;
 
   @API(help="Find and return compatible frames?", json=false, direction=API.Direction.INPUT)
   public boolean find_compatible_frames = false;
@@ -39,7 +39,7 @@ abstract class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends 
     // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
     // Shouldn't need to do this manually. . .
-    this.key = m.key;
+    this.key = new ModelKeyV1(m.key);
     this.find_compatible_frames = m.find_compatible_frames;
 
     if (null != m.models) {

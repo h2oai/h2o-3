@@ -1,6 +1,6 @@
 import time, sys
 import h2o, h2o_browse as h2b
-import h2o_nodes
+import h2o_nodes, h2o_args
 from h2o_test import dump_json, check_sandbox_for_errors, verboseprint
 
 def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
@@ -74,7 +74,7 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
             check_sandbox_for_errors()
 
         time.sleep(retryDelaySecs)
-        if ((time.time() - start) > timeoutSecs):
+        if not h2o_args.no_timeout and ((time.time() - start) > timeoutSecs):
             raise Exception("Timeout while polling in pollStatsWhileBusy: %s seconds" % timeoutSecs)
     
 
@@ -175,7 +175,7 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
             break
 
         ### h2b.browseJsonHistoryAsUrlLastMatch("Jobs")
-        if (wait and waitTime > timeoutSecs):
+        if not h2o_args.no_timeout and (wait and waitTime > timeoutSecs):
             print dump_json(jobs)
             raise Exception("Some queued jobs haven't completed after", timeoutSecs, "seconds")
 

@@ -32,7 +32,7 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 1;
       parms._min_rows = 1;
       parms._nbins = 20;
-      // Drop Col 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
+      // Drop ColV2 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
       String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
       xcols[0] = fr._names[0];
       System.arraycopy(fr._names,3,xcols,1,fr.numCols()-3);
@@ -303,14 +303,14 @@ public class GBMTest extends TestUtil {
   @Test public void testModelMSEEqualityOnProstate() {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.AUTO)._mse_train;
-    double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_test;
+    double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.AUTO)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
 
   @Test public void testModelMSEEqualityOnTitanic() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.AUTO)._mse_train;
-    double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_test;
+    double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.AUTO)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
 

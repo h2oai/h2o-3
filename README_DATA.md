@@ -1,14 +1,6 @@
-# PROPOSAL:  how to get data for testing
+# Testing Data
 
-# Data used for testing
-
-Here we spell out the conventions for how to get data needed to test H2O for different test environments.
-
-
-## Software Assumptions
-
-* You must have the s3cmd tool installed.
-
+Here we spell out the conventions for how to get data needed to test H2O for different test environments.  All data is retrieved using the gradlew wrapper that comes as a part of this repository.  Please keep in mind that anywhere below that says `$ ./gradlew` may require you run `C:\> gradlew.bat` on windows machines instead.  All sync commands use file size and "last modified" time stamps of each local file to determine whether the file needs to be updated.
 
 ## Use cases
 
@@ -25,7 +17,7 @@ Running time for all tests should be a few minutes.
 
 #### Data assumptions:
 
-* All test data is either generated or exists in the h2o-dev/smalldata directory in the git repo
+* All test data is either generated or exists in the s3://h2o-public-test-data/smalldata/ directory.
 
 #### Test environment:
 
@@ -33,11 +25,11 @@ Running time for all tests should be a few minutes.
 
 #### How to get the data:
 
-The smalldata directory comes with the repo git clone.  You don't need to do anything.
+`$ ./gradlew syncSmalldata`
 
 #### How to run tests:
 
-`./gradlew test`
+`$ ./gradlew test`
 
 
 ### Laptop (or small server)
@@ -56,7 +48,7 @@ Running time for all tests should be less than an hour.
 * Search for data in the following order:
 
 	1.  path specified by environment variable H2O_BIGDATA + "/laptop"
-	1.  h2o-dev/bigdata/laptop (A "magic" directory in your git workspace)
+	1.  ./bigdata/laptop (A "magic" directory in your git workspace)
 	1.  /home/h2opublictestdata/bigdata/laptop
 	1.  /mnt/h2o-public-test-data/bigdata/laptop
 	
@@ -69,13 +61,6 @@ Running time for all tests should be less than an hour.
 
 `$ ./gradlew syncBigdataLaptop`  
 
-Under the hood, this actually does:
-
-```
-mkdir -p bigdata  
-cd bigdata  
-s3cmd --no-check-md5 sync s3://h2o-public-test-data/bigdata/laptop .  
-```
 
 #### How to run tests:
 
@@ -98,7 +83,7 @@ Big server tests are meant to run stressful workloads on modern server hardware 
 * Search for data in the following order:
 
 	1.  path specified by environment variable H2O_BIGDATA + "/bigserver"
-	1.  h2o-dev/bigdata/bigserver (A "magic" directory in your git workspace)
+	1.  ./bigdata/bigserver (A "magic" directory in your git workspace)
 	1.  /home/h2opublictestdata/bigdata/bigserver
 	1.  /mnt/h2o-public-test-data/bigdata/bigserver
 
@@ -112,14 +97,6 @@ Big server tests are meant to run stressful workloads on modern server hardware 
 CAUTION: Don't do this at home.
 
 `$ ./gradlew syncBigdataBigserver`
-
-Under the hood, this actually does:
-
-```
-mkdir -p bigdata  
-cd bigdata  
-s3cmd --no-check-md5 sync s3://h2o-public-test-data/bigdata/bigserver .
-```
 
 #### How to run tests:
 
@@ -151,3 +128,4 @@ You don't.  Just point your test directly to s3://h2o-public-test-data/bigdata. 
 #### How to run tests:
 
 Jenkins launches them nightly or on-demand.  (Need instructions for how to do this.)
+

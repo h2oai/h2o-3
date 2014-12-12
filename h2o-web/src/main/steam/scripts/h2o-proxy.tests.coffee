@@ -148,8 +148,10 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got parse reply'
           tdiff t, (readGoldJson 'parse-allyears2k_headers-zip.json'), result, exclude: [ 'job' ]
-          t.ok (isString result.job.name), 'has job name'
-          go null, result.job.name
+          t.ok (isString result.job.key.name), 'has job name'
+          console.log("HEY!!!")
+          console.log(JSON.stringify(result))
+          go null, result.job.key.name
 
     fetchJobs = (jobKey, go) ->
       _.requestJobs (error, result) ->
@@ -158,6 +160,7 @@ test 'airlines ingest and model building flow', (t) ->
           go error
         else
           t.pass 'got jobs reply'
+          console.log(result)
           t.ok result.jobs.length is 1
           t.equal result.jobs[0].key.name, jobKey
           go null, jobKey

@@ -7,7 +7,7 @@ import jsr166y.ForkJoinTask;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.parser.Enum;
+import water.parser.Categorical;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
 
@@ -272,7 +272,7 @@ class RollupStats extends Iced {
       int nbins=MAX_SIZE;
       if( _rs._isInt && (int)span==span ) {
         nbins = (int)span+1;      // 1 bin per int
-        int lim = vec.isEnum() ? Enum.MAX_ENUM_SIZE : MAX_SIZE;
+        int lim = vec.isEnum() ? Categorical.MAX_ENUM_SIZE : MAX_SIZE;
         nbins = Math.min(lim,nbins); // Cap nbins at sane levels
       }
       addToPendingCount(1);

@@ -3,11 +3,12 @@ package water.api;
 import water.Quantiles;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.PojoUtils;
 
 public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
 
   // IN
-  @API(help="An existing H2O Frame key.")                                                      public Frame source_key;
+  @API(help="An existing H2O Frame key.")                                                      public FrameV2 source_key;
   @API(help="Column to calculate quantile for")                                                public String column;      // was a VecSelect in H2O1
   @API(help = "Quantile desired (0.0-1.0). Median is 0.5. 0 and 1 are min/max")                public double quantile;
   @API(help = "Number of bins used (1-1000000). 1000 recommended")                             public int max_qbins;
@@ -32,7 +33,8 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
   // TODO: MOVE TO Quantile.init()!
   protected void sanityCheck() throws IllegalArgumentException {
     if (column.equals("") || column == null) throw new IllegalArgumentException("Column is missing.");
-    Vec _column = source_key.vecs()[source_key.find(column)];
+    Frame f = source_key.createAndFillImpl();
+    Vec _column = f.vecs()[f.find(column)];
     if (source_key == null) throw new IllegalArgumentException("Source key is missing");
     if (_column == null) throw new IllegalArgumentException("Column is missing");
     if (_column.isEnum()) throw new IllegalArgumentException("Column is an enum");
@@ -41,30 +43,23 @@ public class QuantilesV1 extends Schema<Quantiles,QuantilesV1> {
     }
   }
 
+  // TODO: refactor
   @Override public Quantiles fillImpl(Quantiles q) {
     sanityCheck();
-    q.setAllFields(source_key.vecs()[source_key.find(column)], source_key, quantile, max_qbins, multiple_pass,
+    Frame f = source_key.createAndFillImpl();
+    q.setAllFields(f.vecs()[f.find(column)], f, quantile, max_qbins, multiple_pass,
                          interpolation_type, max_ncols, column_name, quantile_requested, interpolation_type_used,
                          interpolated, iterations, result, result_single);
     return q;
   }
 
+  // TODO: refactor:
   @Override public QuantilesV1 fillFromImpl(Quantiles q) {
     sanityCheck();
-    source_key = q._source_key;
+    PojoUtils.copyProperties(this, q, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"source_key", "column" });
+
+    source_key = new FrameV2(q._source_key);
     column = q._source_key.names()[q._source_key.find(q._column)];
-    quantile = q._quantile;
-    max_qbins = q._max_qbins;
-    multiple_pass = q._multiple_pass;
-    interpolation_type = q._interpolation_type;
-    max_ncols = q._max_ncols;
-    column_name = q._column_name;
-    quantile_requested = q._quantile_requested;
-    interpolation_type_used = q._interpolation_type_used;
-    interpolated = q._interpolated;
-    iterations = q._iterations;
-    result = q._result;
-    result_single = q._result_single;
     return this;
   }
 }

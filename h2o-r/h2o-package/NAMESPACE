@@ -6,14 +6,13 @@ exportMethods(
   "show", "%in%"
 )
 exportClasses(
-  "H2OClient",
+  "h2o.frame",
   "H2OGLMModel",
   "H2OKMeansModel",
-  "H2OParsedData",
+  "h2o.model",
   "H2ORawData",
   "H2ODRFModel",
   "H2OPCAModel",
   "H2ONBModel",
-  "H2OGBMModel",
-  "H2OModel"
+  "H2OGBMModel"
 )

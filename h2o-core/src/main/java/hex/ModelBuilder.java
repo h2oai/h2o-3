@@ -25,13 +25,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
-   *  response column to an Enum, etc.  */
+   *  response column to an Categorical, etc.  */
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
-   *  response column to an Enum, etc.  Is null if no validation key is set.  */
+   *  response column to a Categorical, etc.  Is null if no validation key is set.  */
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
@@ -155,9 +155,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  the front-end whenever the GUI is clicked, and needs to be fast whenever
    *  {@code expensive} is false; it will be called once again at the start of
    *  model building {@see #trainModel()} with expensive set to true.
-   *
+   *<p>
    *  The incoming training frame (and validation frame) will have ignored
    *  columns dropped out, plus whatever work the parent init did.
+   *<p>
+   *  NOTE: The front end initially calls this through the parameters validation
+   *  endpoint with no training_frame, so each subclass's {@code init()} method
+   *  has to work correctly with the training_frame missing.
    */
   public void init(boolean expensive) {
     // Log parameters

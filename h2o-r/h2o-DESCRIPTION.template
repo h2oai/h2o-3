@@ -12,12 +12,15 @@ URL: http://www.0xdata.com
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.7)
 Depends: R (>= 2.13.0),
+         stats,
+         tools,
          RCurl,
          rjson,
          statmod,
-         tools,
          methods,
-         utils
+         utils,
+         devtools,
+         roxygen2
 Collate:
          'wrapper.R'
          'constants.R'

@@ -39,7 +39,7 @@ public class ParserTestARFF extends TestUtil {
           Assert.assertFalse(vec.isEnum());
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.ECOL) { //Enum
+        } else if (exp[j] == ParseDataset2.FVecDataOut.ECOL) { //Categorical
           Assert.assertTrue(vec.isEnum());
 //          Assert.assertFalse(vec.isInt()); //FIXME enum is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isString());

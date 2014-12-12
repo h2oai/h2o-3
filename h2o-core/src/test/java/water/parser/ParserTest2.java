@@ -31,7 +31,7 @@ public class ParserTest2 extends TestUtil {
 
   @Test public void testNAs() {
     String [] data = new String[]{
-      "'C1Chunk',C1SChunk, 'C2Chunk', 'C2SChunk',  'C4Chunk',  'C4FChunk',  'C8Chunk',  'C8DChunk',   'Enum'\n"  +
+      "'C1Chunk',C1SChunk, 'C2Chunk', 'C2SChunk',  'C4Chunk',  'C4FChunk',  'C8Chunk',  'C8DChunk',   'Categorical'\n"  +
       "0,       0.0,          0,           0,           0,          0 ,          0,   8.878979,           A \n" ,
       "1,       0.1,          1,         0.1,           1,          1 ,          1,   1.985934,           B \n" ,
       "2,       0.2,          2,         0.2,           2,          2 ,          2,   3.398018,           C \n" ,

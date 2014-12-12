@@ -1,9 +1,6 @@
 package water.api;
 
-import water.H2O;
-import water.Iced;
-import water.Keyed;
-import water.Weaver;
+import water.*;
 import water.util.Log;
 
 import java.lang.reflect.Array;
@@ -17,6 +14,10 @@ import java.util.Map;
  * and to generate language bindings for route handlers and entities.
  */
 public final class SchemaMetadata extends Iced {
+
+  public int version;
+  public String name ;
+  public String type;
 
   public List<FieldMetadata> fields;
   public String markdown;
@@ -151,12 +152,13 @@ public final class SchemaMetadata extends Iced {
         this.value = consValue(o);
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.type = consType(schema, f.getType());
-        this.is_schema = (Schema.class.isAssignableFrom(f.getType()));
+        this.type = consType(schema, f.getType(), f.getName());
+        this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
 
-        // TODO: NOPE. Note, this has to work when the field is null.
-        if (this.is_schema)
-          this.schema_name = f.getType().getSimpleName();
+        // Note, this has to work when the field is null.
+        if (this.is_schema) {
+          this.schema_name = f.getType().getSimpleName(); // handles arrays as well
+        }
 
         API annotation = f.getAnnotation(API.class);
 
@@ -200,7 +202,7 @@ public final class SchemaMetadata extends Iced {
     }
 
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-    private static String consType(Schema schema, Class clz) {
+    public static String consType(Schema schema, Class clz, String field_name) {
       boolean is_enum = Enum.class.isAssignableFrom(clz);
       boolean is_array = clz.isArray();
 
@@ -215,7 +217,7 @@ public final class SchemaMetadata extends Iced {
         return clz.toString();
 
       if (is_array)
-        return consType(schema, clz.getComponentType()) + "[]";
+        return consType(schema, clz.getComponentType(), field_name) + "[]";
 
       if (Map.class.isAssignableFrom(clz))
         return "Map";
@@ -225,21 +227,37 @@ public final class SchemaMetadata extends Iced {
 
       // H2O-specific types:
       // TODO: NOTE, this is a mix of Schema types and Iced types; that's not right. . .
+      // Should ONLY have schema types.
       // Also, this mapping could/should be moved to Schema.
+      if (water.Key.class.isAssignableFrom(clz)) {
+        Log.warn("Raw Key (not KeySchema) in Schema: " + schema.getClass() + " field: " + field_name);
+        return "Key";
+      }
+
+      if (KeySchema.class.isAssignableFrom(clz)) {
+        return "Key<" + KeySchema.getKeyedClassType((Class<? extends KeySchema>)clz) + ">";
+      }
+
       if (Schema.class.isAssignableFrom(clz)) {
         return Schema.getImplClass((Class<Schema>)clz).getSimpleName();  // same as Schema.schema_type
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass());
-        return clz.getSimpleName();
+        if (clz == Schema.Meta.class) {
+          // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
+          return "Schema.Meta";
+        } else{
+          Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
+          return clz.getSimpleName();
+        }
       }
 
-      Log.warn("Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass());
-      return clz.toString();
+      String msg = "Don't know how to generate a client-friendly type name for class: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name;
+      Log.warn(msg);
+      throw H2O.fail(msg);
     }
 
-    private static String consValue(Object o) {
+    public static String consValue(Object o) {
       if (null == o)
         return null;
 
@@ -248,8 +266,13 @@ public final class SchemaMetadata extends Iced {
         return k._key.toString();
       }
 
-      if (! o.getClass().isArray())
-        return o.toString();
+      if (! o.getClass().isArray()) {
+        if (Schema.class.isAssignableFrom(o.getClass())) {
+          return new String(((Schema)o).writeJSON(new AutoBuffer()).buf());
+        } else {
+          return o.toString();
+        }
+      }
 
       StringBuilder sb = new StringBuilder();
       sb.append("[");
@@ -268,6 +291,10 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
+    version = schema.__meta.schema_version;
+    name = schema.__meta.schema_name;
+    type = schema.__meta.schema_type;
+
     fields = new ArrayList<>();
     // Fields up to but not including Schema
     for (Field field : Weaver.getWovenFields(schema.getClass())) {

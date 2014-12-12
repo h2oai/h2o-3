@@ -68,6 +68,7 @@ class Basic(unittest.TestCase):
 
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
+        print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
 
         mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         mmResultShort = mmResult['model_metrics'][0]

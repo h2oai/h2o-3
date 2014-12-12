@@ -25,8 +25,8 @@ clone_cloud_json = None
 disable_time_stamp = True # change to default to True, for h2o-dev (for now?)
 debug_rest = False
 long_test_case = False
+no_timeout = False
 usecloud = None
-
 # optionally checks expected size if usecloud is used
 # None means no check
 usecloud_size = None
@@ -130,6 +130,9 @@ def parse_our_args():
         help="ip:port of cloud to send tests to instead of starting clouds.")
     parser.add_argument('-ucs', '--usecloud_size',
         help="optionally say the size of the usecloud, code will check size is as expected")
+    parser.add_argument('-nt', '--no_timeout',
+        help="disable all timeout checks and exceptions",
+        action='store_true')
 
     parser.add_argument('unittest_args', nargs='*')
     args = parser.parse_args()
@@ -141,7 +144,7 @@ def parse_our_args():
     global browse_disable, browse_json, verbose, ip_from_cmd_line, port_from_cmd_line, config_json, debugger
     global random_udp_drop
     global random_seed, beta_features, sleep_at_tear_down, abort_after_import
-    global clone_cloud_json, disable_time_stamp, debug_rest, long_test_case, usecloud, usecloud_size
+    global clone_cloud_json, disable_time_stamp, debug_rest, long_test_case, no_timeout, usecloud, usecloud_size
 
     browse_disable = args.browse_disable or getpass.getuser() == 'jenkins'
     browse_json = args.browse_json
@@ -167,6 +170,7 @@ def parse_our_args():
     debug_rest = args.debug_rest
     long_test_case = args.long_test_case
 
+    no_timeout = args.no_timeout
     # Take usecloud from the command line and from the environment.
     # Environment USECLOUD=1 is equivalent to USECLOUD=localhost:54321
     usecloud = args.usecloud
@@ -202,7 +206,10 @@ def unit_main():
         print "unit_main() already done"
         return
     unit_main_done = True
-    # parse_our_args()
+
+    # need this here to do args stripping before unittest sees things?
+    # other calls will be noop-ed..i.e. this will only do work once
+    parse_our_args()
 
     # global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
     global python_test_name, python_cmd_args, python_cmd_line

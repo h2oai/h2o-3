@@ -31,7 +31,7 @@ public final class ParseSetup extends Iced {
   boolean _isValid;           // The initial parse is sane
   String[] _errors;           // Errors in this parse setup
   long _invalidLines; // Number of broken/invalid lines found
-  long _headerlines; // Number of broken/invalid lines found
+  long _headerlines; // Number of header lines found
 
   public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, byte[] ctypes) {
     _isValid = isValid;

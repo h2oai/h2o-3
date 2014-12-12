@@ -38,7 +38,7 @@ combine_ratio = 0.2
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- new("H2OClient", ip=myIP, port=myPort)
+conn <- new("h2o.client", ip=myIP, port=myPort)
 
 
 #----------------------------------------------------------------------

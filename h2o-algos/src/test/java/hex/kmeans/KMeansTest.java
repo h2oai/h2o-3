@@ -25,7 +25,7 @@ public class KMeansTest extends TestUtil {
     } finally {
       if (job != null) job.remove();
     }
-    for( int i=0; i<parms._K; i++ )
+    for( int i=0; i<parms._k; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._rows[i] != 0 );
     return kmm;
   }
@@ -38,8 +38,8 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 3;
-      parms._normalize = true;
+      parms._k = 3;
+      parms._standardize = true;
       parms._max_iters = 10;
       parms._init = KMeans.Initialization.None;
       kmm = doSeed(parms,0);
@@ -62,8 +62,8 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 3;
-      parms._normalize = true;
+      parms._k = 3;
+      parms._standardize = true;
       parms._max_iters = 10;
       parms._init = KMeans.Initialization.None;
 
@@ -88,8 +88,8 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 7;
-      parms._normalize = true;
+      parms._k = 7;
+      parms._standardize = true;
       parms._max_iters = 100;
       parms._init = KMeans.Initialization.None;
 
@@ -116,8 +116,8 @@ public class KMeansTest extends TestUtil {
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 3;
-      parms._normalize = true;
+      parms._k = 3;
+      parms._standardize = true;
       parms._max_iters = 100;
       parms._init = KMeans.Initialization.None;
 
@@ -133,12 +133,12 @@ public class KMeansTest extends TestUtil {
         Assert.assertTrue(kmm._output._clusters.length == 3);
 
         boolean gotit = false;
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp1[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp2[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp3[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp4[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp5[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._K; ++j) gotit |= close(exp6[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp1[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp2[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp3[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp4[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp5[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp6[j], kmm._output._clusters[j]);
         Assert.assertTrue(gotit);
 
         kmm.delete();
@@ -154,8 +154,8 @@ public class KMeansTest extends TestUtil {
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 2;
-      parms._normalize = true;
+      parms._k = 2;
+      parms._standardize = true;
       parms._max_iters = 100;
       parms._init = KMeans.Initialization.Furthest;
 
@@ -179,7 +179,7 @@ public class KMeansTest extends TestUtil {
 
       parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._K = 10; //too high -> will throw
+      parms._k = 10; //too high -> will throw
       kmm = doSeed(parms, System.nanoTime());
 
     } finally {

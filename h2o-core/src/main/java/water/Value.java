@@ -1,12 +1,15 @@
 package water;
 
-import java.io.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import jsr166y.ForkJoinPool;
-import water.fvec.*;
-import water.util.Log;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingSetInt;
-import water.persist.*;
+import water.persist.Persist;
+import water.util.Log;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
  *  Java Objects, and maintain coherency around the cluster.  It contains an
@@ -274,7 +277,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Check if the Value's POJO is a {@link Job} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Job} subtype. */
   public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
-
 
   // --------------------------------------------------------------------------
 

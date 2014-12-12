@@ -6,7 +6,7 @@ import water.util.DocGen.HTML;
 
 import java.util.Arrays;
 
-class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl class; we generate these directly
+public class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl class; we generate these directly
   @API(help="Response header")
   String status_header = null;
 
@@ -38,6 +38,7 @@ class HttpErrorV1 extends Schema<Iced, HttpErrorV1> { // no need to an impl clas
     }
   }
 
+  HttpErrorV1() { }
   HttpErrorV1( Exception e ) {
     status_header = "500 Internal Server Error";
     errmsg = e.getClass().getSimpleName()+": "+e.getMessage();

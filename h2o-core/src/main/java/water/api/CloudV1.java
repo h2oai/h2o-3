@@ -1,104 +1,107 @@
 package water.api;
 
 import water.*;
-import water.api.CloudHandler.Cloud;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
-class CloudV1 extends Schema<Cloud,CloudV1> {
+public class CloudV1 extends Schema<Iced, CloudV1> {
+  public CloudV1() {}
+
   // This Schema has no inputs
 
   // Output fields
   @API(help="version", direction=API.Direction.OUTPUT)
-  private String version;
+  public String version;
 
   @API(help="cloud_name", direction=API.Direction.OUTPUT)
-  private String cloud_name;
+  public String cloud_name;
 
   @API(help="cloud_size", direction=API.Direction.OUTPUT)
-  private int cloud_size;
+  public int cloud_size;
 
   @API(help="cloud_uptime_millis", direction=API.Direction.OUTPUT)
-  private long cloud_uptime_millis;
+  public long cloud_uptime_millis;
 
   @API(help="cloud_healthy", direction=API.Direction.OUTPUT)
-  private boolean cloud_healthy;
+  public boolean cloud_healthy;
 
   @API(help="Nodes reporting unhealthy", direction=API.Direction.OUTPUT)
-  private int bad_nodes;
+  public int bad_nodes;
 
   @API(help="Cloud voting is stable", direction=API.Direction.OUTPUT)
-  private boolean consensus;
+  public boolean consensus;
 
   @API(help="Cloud is accepting new members or not", direction=API.Direction.OUTPUT)
-  private boolean locked;
+  public boolean locked;
 
   @API(help="nodes", direction=API.Direction.OUTPUT)
-  private Node[] nodes;
+  public NodeV1[] nodes;
 
   // Output fields one-per-JVM
-  protected static class Node extends Iced {
+  public static class NodeV1 extends Schema<Iced, NodeV1> {
+    public NodeV1() {}
+
     @API(help="IP", direction=API.Direction.OUTPUT)
-    final H2ONode h2o;
+    public H2ONode h2o;
 
     @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT", direction=API.Direction.OUTPUT)
-    final boolean healthy;
+    public boolean healthy;
 
     @API(help="Time (in msec) of last ping", direction=API.Direction.OUTPUT)
-    final long last_ping;
+    public long last_ping;
 
     @API(help="System load; average #runnables/#cores", direction=API.Direction.OUTPUT)
-    final float sys_load;       // Average #runnables/#cores
+    public float sys_load;       // Average #runnables/#cores
 
     @API(help="Linpack GFlops", direction=API.Direction.OUTPUT)
-    final double gflops;
+    public double gflops;
 
     @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
-    final double mem_bw;
+    public double mem_bw;
 
     @API(help="Data on Node (memory or disk)", direction=API.Direction.OUTPUT)
-    final long total_value_size;
+    public long total_value_size;
 
     @API(help="Data on Node (memory only)", direction=API.Direction.OUTPUT)
-    final long mem_value_size;
+    public long mem_value_size;
 
     @API(help="#local keys", direction=API.Direction.OUTPUT)
-    final int num_keys;
+    public int num_keys;
 
     @API(help="Free heap", direction=API.Direction.OUTPUT)
-    final long free_mem;
+    public long free_mem;
     @API(help="Total heap", direction=API.Direction.OUTPUT)
-    final long tot_mem;
+    public long tot_mem;
     @API(help="Max heap", direction=API.Direction.OUTPUT)
-    final long max_mem;
+    public long max_mem;
 
     @API(help="Free disk", direction=API.Direction.OUTPUT)
-    final long free_disk;
+    public long free_disk;
     @API(help="Max disk", direction=API.Direction.OUTPUT)
-    final long max_disk;
+    public long max_disk;
 
     @API(help="Active Remote Procedure Calls", direction=API.Direction.OUTPUT)
-    final int rpcs_active;
+    public int rpcs_active;
 
     @API(help="F/J Thread count, by priority", direction=API.Direction.OUTPUT)
-    final short fjthrds[];
+    public short fjthrds[];
 
     @API(help="F/J Task count, by priority", direction=API.Direction.OUTPUT)
-    final short fjqueue[];
+    public short fjqueue[];
 
     @API(help="Open TCP connections", direction=API.Direction.OUTPUT)
-    final int tcps_active;
+    public int tcps_active;
 
     @API(help="Open File Descripters", direction=API.Direction.OUTPUT)
-    final int open_fds;
+    public int open_fds;
 
     @API(help="num_cpus", direction=API.Direction.OUTPUT)
-    final int num_cpus;
+    public int num_cpus;
 
     @API(help="PID", direction=API.Direction.OUTPUT)
-    final String pid;
+    public String pid;
 
-    Node( H2ONode h2o ) {
+    NodeV1( H2ONode h2o ) {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
@@ -132,19 +135,6 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
       num_cpus = hb._num_cpus;
       pid = hb._pid;
     }
-  }
-
-  @Override public CloudV1 fillFromImpl(Cloud c) {
-    super.fillFromImpl(c);
-
-    if (null != c._members) {
-      nodes = new Node[c._members.length];
-      for (int i = 0; i < c._members.length; i++) {
-        nodes[i] = new Node(c._members[i]);
-        if (!nodes[i].healthy) bad_nodes++;
-      }
-    }
-    return this;
   }
 
   // Pretty-print the status in HTML
@@ -185,7 +175,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
     int cores=0;
     float gflops_tot=0f;
     float mem_bw_tot=0f;
-    for( Node n : nodes ) {
+    for( NodeV1 n : nodes ) {
       max_ping = Math.max(max_ping,(now-n.last_ping));
       load       += n.sys_load;         // Sys health
       data_tot   += n.total_value_size; // Data
@@ -219,7 +209,7 @@ class CloudV1 extends Schema<Cloud,CloudV1> {
               );
 
     // All Node lines
-    for( Node n : nodes )
+    for( NodeV1 n : nodes )
       formatRow(ab, n.healthy?"":"class=\"error\"",
                 n.h2o.toString(), now-n.last_ping, n.sys_load,
                 n.total_value_size, n.mem_value_size,n.num_keys,

@@ -1,0 +1,43 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.runit_NOPASS_pub_532_negative_exponent <- function(localH2O) {
+
+covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+
+# Are we in the right universe?
+expect_equal(20000, dim(covtype.hex)[1])
+expect_equal(55, dim(covtype.hex)[2])
+
+# currently works:
+h2o.exec(covtype.hex$C55^2)
+h2o.exec(covtype.hex$C55^(-2))
+
+# currently fails:
+val0 <- h2o.exec(covtype.hex$C55^-2)
+h2o.exec(covtype.hex$C55^ -2)
+h2o.exec(covtype.hex$C55 ^-2)
+h2o.exec(covtype.hex$C55 ^-2 )
+
+
+#w/o h2o.exec:
+val <- covtype.hex$C55^-2
+covtype.hex$C55^ -2
+covtype.hex$C55 ^-2
+covtype.hex$C55 ^-2 
+
+print(val0)
+
+print("================")
+
+print(val)
+
+print(tail(val))
+
+
+testEnd()
+
+}
+
+doTest("PUB-532 expresison parser fails on negative exponents.", test.runit_NOPASS_pub_532_negative_exponent)
+

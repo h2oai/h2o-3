@@ -10,14 +10,14 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
 
   public static final class KMeansModelOutputV2 extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelOutputV2> {
     // Output fields; input fields are in the parameters list
-    @API(help="Clusters[K][features]")
-    public double[/*K*/][/*features*/] clusters;
+    @API(help="Clusters[k][features]")
+    public double[/*k*/][/*features*/] clusters;
 
-    @API(help="Rows[K]")
-    public long[/*K*/]  rows;
+    @API(help="Rows[k]")
+    public long[/*k*/]  rows;
 
     @API(help="Mean Square Error per cluster")
-    public double[/*K*/] mses;   // Per-cluster MSE, variance
+    public double[/*k*/] mses;   // Per-cluster MSE, variance
 
     @API(help="Mean Square Error")
     public double mse;           // Total MSE, variance

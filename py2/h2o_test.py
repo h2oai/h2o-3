@@ -4,30 +4,42 @@ import h2o_args
 import h2o_nodes
 import h2o_sandbox
 
-# print "h2o_test"
-# generic python object generation from json object.
-class OutputObj(object):
+# http://stackoverflow.com/questions/10026797/using-json-keys-as-python-attributes-in-nested-json
+# http://stackoverflow.com/questions/5021041/are-there-any-gotchas-with-this-python-pattern
+# other:
+# class AttributeDict(dict): 
+#     __getattr__ = dict.__getitem__
+#     __setattr__ = dict.__setitem__
+
+# http://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute-in-python#answer-14620633
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+# j = '{"y": [2, 3, {"a": 55, "b": 66}], "x": 4}'
+# aa = json.loads(j, object_hook=AttrDict)
+
+# generic python object generation with dotted attributes, from json object which was created with dict = AttrDict
+class OutputObj(AttrDict):
     def __iter__(self):
-        for attr, value in self.__dict__.iteritems():
+        # for attr, value in self.__dict__.iteritems():
+        for attr, value in self.iteritems():
             yield attr, value
 
     def __init__(self, output, name, noPrint=False):
+        super(OutputObj, self).__init__()
         assert isinstance(output, dict), "top level json given to OutputObj should be dict"
-        for k1,v1 in output.iteritems():
-            # let's go 2 levels deep
-            # list/dict/value should be only choices
-            if not isinstance(v1, dict):
-                setattr(self, k1, v1) # achieves self.k1 = v
-            else:
-                for k2,v2 in v1.iteritems():
-                    if isinstance(v2, dict):
-                        print "Warning: the json object has dict. at 3rd level" +\
-                            "Keeping those as json-like dicts. never check at >3" 
-                        setattr(self.k1, k2, v2) # achieves self.k1.k2 = v2
+
+        # hacky, but simplest to get all dicts to AttrDicts?
+        aa = json.dumps(output)
+        bb = json.loads(aa, object_hook=AttrDict)
+        self.update(bb)
 
         self.name = name
+        # print "label", self.columns[0].label
+
         if not noPrint:
-            for k,v in self:
+            for k,v in self.iteritems():
                 if k == 'parameters':
                     print "Not showing 'parameters'"
                 elif k == 'data':
@@ -44,6 +56,32 @@ class OutputObj(object):
                         print self.name, k, v
                     else:
                         print self.name, k, dump_json(v)
+
+    # these might be useful
+    def rec_getattr(self, attr):
+        """Get object's attribute. May use dot notation.
+        >>> class C(object): pass
+        >>> a = C()
+        >>> a.b = C()
+        >>> a.b.c = 4
+        >>> rec_getattr(a, 'b.c')
+        4
+        """
+        return reduce(getattr, attr.split("."), self)
+
+    def rec_setattr(self, attr, value):
+        """Set object's attribute. May use dot notation.
+        >>> class C(object): pass
+        >>> a = C()
+        >>> a.b = C()
+        >>> a.b.c = 4
+        >>> rec_setattr(a, 'b.c', 2)
+        >>> a.b.c
+        2
+        """
+        attrs = attr.split(".")
+        setattr(reduce(getattr, attrs[:-1], self), attrs[-1], value)
+
 
 
 # this is just for putting timestamp in front of all stdout

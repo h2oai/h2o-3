@@ -24,7 +24,7 @@ function(node) {
     res %p0% '('
     res %p0% node@root@op
     children <- lapply(node@children, visitor)
-    for (child in children) res %p% child
+    for (child in children) res %p% visitor(child)
     res %p0% ')'
     list( ast = res)
 
@@ -37,6 +37,8 @@ function(node) {
     res
   } else if (node %i% "ASTEmpty") {
     node@key
+  } else if (node %i% "h2o.frame") {
+    .get(node)
   } else {
     node
   }
@@ -67,14 +69,14 @@ function(expr) {
 }
 
 #'
-#' Check if any item in the expression is an H2OParsedData object.
+#' Check if any item in the expression is an h2o.frame object.
 #'
 #' Useful when trying to unravel an expression
 .any.h2o<-
 function(expr, envir) {
   l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
-  a <- any( "H2OParsedData" == unlist(lapply(l, .eval_class, envir)))
-  b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
+  a <- any("h2o.frame" == unlist(lapply(l, .eval_class, envir)))
+  b <- any("h2o.frame" == unlist(lapply(l, .eval_class, envir)))
   any(a|b)
 }
 
@@ -179,8 +181,8 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (a %i%"H2OParsedData") {
-    '$' %p0% a@key
+  if (a %i% "h2o.frame") {
+    .get(a)
   } else if (a %i% "ASTNode") {
     a
   } else if (a %i% "ASTFun") {

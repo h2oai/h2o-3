@@ -14,14 +14,12 @@ function(p) {
 # what packages did the h2o_master_DEV_test need?
 packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "rjson", "statmod", "testthat", "bitops", "tools", "LiblineaR",
               "gdata", "caTools", "ROCR", "digest", "penalized", "rgl", "randomForest", "expm", "Matrix", "glmnet",
-              "survival", "gbm", "lattice", "RUnit", "plyr")
+              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2")
 
 invisible(lapply(packages, usePackage))
 
 library(R.utils)
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("h2oR.R")
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 failed <<- F

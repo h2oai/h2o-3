@@ -1,7 +1,8 @@
 package water;
 
-import java.util.Arrays;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /** Lockable Keys - Keys locked during long running {@link Job}s, to prevent
  *  overwriting in-use keys.  E.g. model-building: expected to read-lock input
@@ -21,7 +22,7 @@ import water.util.Log;
  *  @author <a href="mailto:cliffc@0xdata.com"></a>
  *  @version 1.0
  */
-public abstract class Lockable<T extends Lockable<T>> extends Keyed {
+public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** List of Job Keys locking this Key.
    *  <ul>
    *  <li>Write-locker job  is  in {@code _lockers[0 ]}.  Can be null locker.</li>

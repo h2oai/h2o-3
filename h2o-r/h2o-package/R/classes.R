@@ -8,35 +8,55 @@
 #' will typically never have to reason with these objects directly, as there are
 #' S3 accessor methods provided for creating new objects.
 #'
-#' The S4 classes used by the h2o package are grouped into two divisions,
-#' namely the '"FluidVec"' (FV) and '"AST"' groups.
-#'
-#'      1. Group '"FluidVec"':
-#'          FluidVec (or FV for short) is an H2O specific internal
-#'          representation of the data. Data is stored in columns (vectors),
-#'          and vectors are sliced into chunks, distributed around the cluster.
-#'
-#'          FluidVec replaced the row-based representation known as ValueArray
-#'          (another H2O specific data format that no longer exists), and is
-#'          now the dominant data type used by algorithms and analytical
-#'          operations in H2O.
-#'
-#'      2. Group '"AST"':
-#'          R expressions involving objects from group '"FluidVec"' or group
-#'          are _lazily evaluated_. Therefore, when assigning to a new R variable,
-#'          the R variable represents a _promise_ to evaluate the expression on
-#'          demand. The usual lexical scoping rules of R apply to these objects.
-#'
-#'
-#' Note: <WARNING> Do NOT touch the env slot! It is used to link garbage collection between R and H2O
 #' @name ClassesIntro
 NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
-# FluidVec Class Defintions
+# Class Defintions
 #-----------------------------------------------------------------------------------------------------------------------
+
 #'
-#' The H2OClient class.
+#' The Node class.
+#'
+#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' has as its ancestor this class.
+#'
+#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
+#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
+#' by looking up the tree to the nearest symbol table defining that symbol.
+setClass("Node", contains="VIRTUAL")
+
+#'
+#' The ASTNode class.
+#'
+#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
+#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
+#' @slot root Object of type \code{Node}
+#' @slot children Object of type \code{list}
+setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
+
+#' @rdname ASTNode-class
+setMethod("show", "ASTNode", function(object) cat(visitor(object)$ast, "\n") )
+
+#'
+#' The ASTApply class.
+#'
+#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
+#' are never leaf nodes. Operators are discussed more in depth in ops.R.
+setClass("ASTApply", representation(op="character"), contains="Node")
+
+setClass("ASTEmpty",  representation(key="character"), contains="Node")
+setClass("ASTBody",   representation(statements="list"), contains="Node")
+setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
+setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
+setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
+setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
+setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
+setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
+
+#'
+#' The h2o.client class.
 #'
 #' This class represents a connection to the H2O Cloud.
 #'
@@ -49,16 +69,45 @@ NULL
 #' is not found at port 54321.
 #' @slot ip Object of class \code{character} representing the IP address of the H2O server.
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
-#' @aliases H2OClient
-H2OClient <- setClass("H2OClient",
+#' @aliases h2o.client
+h2o.client <- setClass("h2o.client",
                       representation(ip="character", port="numeric"),
                       prototype(ip=NA_character_, port=NA_integer_)
                       )
 
-#' @rdname H2OClient-class
-setMethod("show", "H2OClient", function(object) {
+#' @rdname h2o.client-class
+setMethod("show", "h2o.client", function(object) {
   cat("IP Address:", object@ip,   "\n")
   cat("Port      :", object@port, "\n")
+})
+
+setClassUnion("h2o.client.N", c("h2o.client", "NULL"))
+setClassUnion("ast.node.N", c("ASTNode", "NULL"))
+setClassUnion("data.frame.N", c("data.frame", "NULL"))
+
+
+#'
+#' The h2o.frame class
+#'
+setClass("h2o.frame",
+         representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
+         col_names="vector", nrows="numeric", ncols="numeric", scalar="numeric",
+         factors="data.frame.N"),
+         prototype(h2o       = NULL,
+                   key       = NA_character_,
+                   ast       = NULL,
+                   col_names = NA_integer_,
+                   nrows     = NA_integer_,
+                   ncols     = NA_integer_,
+                   factors   = NULL,
+                   scalar    = NA_integer_)
+         )
+
+setMethod("show", "h2o.frame", function(object) {
+  print(object@h2o)
+  cat("Key: " %p0% object@key, "\n")
+  print(head(object))
+  invisible(h2o.gc())
 })
 
 #'
@@ -72,10 +121,10 @@ setMethod("show", "H2OClient", function(object) {
 #' memory.
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
-#' @slot h2o An \code{H2OClient} object containing the IP address and port number of the H2O server.
+#' @slot h2o An \code{h2o.client} object containing the IP address and port number of the H2O server.
 #' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
 #' @aliases H2ORawData
-setClass("H2ORawData", representation(h2o="H2OClient", key="character"))
+setClass("H2ORawData", representation(h2o="h2o.client", key="character"))
 
 #' @rdname H2ORawData-class
 setMethod("show", "H2ORawData", function(object) {
@@ -83,78 +132,29 @@ setMethod("show", "H2ORawData", function(object) {
   cat("Raw Data Key:", object@key, "\n")
 })
 
-#'
-#' The H2OFrame class.
-#'
-#' An H2OFrame is a virtual class that is the ancestor of all AST and H2OParsedData objects.
-setClass("H2OFrame", contains="VIRTUAL")
-
 # No show method for this type of object.
-
-#'
-#' The H2OParsedData class.
-#'
-#' This is a common data type used by the h2o package. An object of type H2OParsedData has slots
-#' for the h2o cloud it belongs to (an object of type H2OClient), the key that resides in the
-#' H2O cloud, and whether or not is a logical data type.
-#'
-#' The slot `key` is a character string _of the same name_ as the key that resides in the H2O cloud.
-#'
-#' This class inherits from H2OFrame.
-#' @slot h2o Object of class \code{H2OClient}, which is the client object that was passed into the function call.
-#' @slot key Object of class \code{character}, which is the hex key assigned to the imported data.
-#' @slot col_names Object of class \code{vector}, holds the column names of the \code{"H2OParsedData"} object.
-#' @slot nrows Object of class \code{numeric}, holds the number of rows of the \code{H2OParsedData} object.
-#' @slot ncols Object of class \code{numeric}, holds the number of columns of the \code{"H2OParsedData"} object.
-#' @slot any_enum Object of class \code{logical}, indicating whether the frame has any factor columns.
-#' @aliases H2OParsedData
-setClass("H2OParsedData",
-            representation(h2o="H2OClient", key="character", col_names="vector",
-                           nrows="numeric", ncols="numeric", factors="data.frame"),
-            prototype(col_names="", ncols=-1, nrows=-1),
-            contains="H2OFrame")
-
-#' @rdname H2OParsedData-class
-setMethod("show", "H2OParsedData", function(object) {
-  Last.value <- object
-  print(Last.value@h2o)
-  cat("Parsed Data Key:", Last.value@key, "\n")
-  print(head(Last.value))
-})
-
-
-#setClass("h2o.frame",
-#         representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
-#         col_names="vector", nrows="numeric", ncols="numeric"),
-#         prototype(h2o       = NULL,
-#                   key       = NA_character_,
-#                   ast       = NULL,
-#                   col_names = NA_integer_,
-#                   nrows     = NA_integer_,
-#                   ncols     = NA_integer_)
-#         )
 
 #'
 #' The H2OW2V object.
 #'
 #' This class represents a h2o-word2vec object.
 #'
-setClass("H2OW2V", representation(h2o="H2OClient", key="character", train.data="H2OParsedData"))
+setClass("H2OW2V", representation(h2o="h2o.client", key="character", train.data="h2o.frame"))
 
 #'
-#' The H2OModel object.
+#' The h2o.model object.
 #'
 #' This virtual class represents a model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class H2OParsedData).
+#' the data used to build the model (an object of class h2o.frame).
 
-#' @slot h2o Object of class \code{H2OClient}, which is the client object that was passed into the function call.
+#' @slot h2o Object of class \code{h2o.client}, which is the client object that was passed into the function call.
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @slot raw_json Object of class \code{list} containing the raw JSON response
-#' @aliases H2OModel
-setClass("H2OModel", representation(h2o="H2OClient", key="character", model="list", raw_json="list"), contains="VIRTUAL")
+#' @aliases h2o.model
+setClass("h2o.model", representation(h2o="h2o.client", key="character", model="list", raw_json="list"), contains="VIRTUAL")
 
 # No show method for this type of object.
 #'
@@ -204,7 +204,7 @@ setMethod("show", "H2OPerfModel", function(object) {
 #'
 #' @slot xval List of objects of class \code{H2OGLMModel}, representing the n-fold cross-validation models.
 #' @aliases H2OGLMModel
-setClass("H2OGLMModel", representation(xval="list"), contains="H2OModel")
+setClass("H2OGLMModel", representation(xval="list"), contains="h2o.model")
 
 #' @rdname H2OGLMModel-class
 setMethod("show", "H2OGLMModel", function(object) {
@@ -292,10 +292,10 @@ setMethod("show", "H2OGLMModelList", function(object) {
 #' The H2ODeepLearningModel class.
 #'
 #' This class represents a deep learning model.
-#' @slot valid Object of class \code{H2OParsedData}, representing the validation data set.
+#' @slot valid Object of class \code{h2o.frame}, representing the validation data set.
 #' @slot xval List of objects of class \code{H2ODeepLearningModel}, representing the n-fold cross-validation models.
 #' @aliases H2ODeepLearningModel
-setClass("H2ODeepLearningModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
+setClass("H2ODeepLearningModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
 
 #' @rdname H2ODeepLearningModel-class
 setMethod("show", "H2ODeepLearningModel", function(object) {
@@ -339,10 +339,10 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
 #'
 #' This class represents a distributed random forest model.
 #'
-#' @slot valid Object of class \code{H2OParsedData}, which is the data used for validating the model.
+#' @slot valid Object of class \code{h2o.frame}, which is the data used for validating the model.
 #' @slot xval List of objects of class \code{H2ODRFModel}, representing the n-fold cross-validation models.
 #' @aliases H2ODRFModel
-setClass("H2ODRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
+setClass("H2ODRFModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
 
 #' @rdname H2ODRFModel-class
 setMethod("show", "H2ODRFModel", function(object) {
@@ -380,10 +380,10 @@ setMethod("show", "H2ODRFModel", function(object) {
 #' The H2OGBMModel class.
 #'
 #' This class represents a gradient boosted machines model.
-#' @slot valid Object of class \code{\linkS4class{H2OParsedData}}, which is the dataset used to validate the model.
+#' @slot valid Object of class \code{\linkS4class{h2o.frame}}, which is the dataset used to validate the model.
 #' @slot xval List of objects of class \code{H2OGBMModel}, representing the n-fold cross-validation models.
 #' @aliases H2OGBMModel
-setClass("H2OGBMModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
+setClass("H2OGBMModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
 
 #' @rdname H2OGBMModel-class
 setMethod("show", "H2OGBMModel", function(object) {
@@ -418,10 +418,10 @@ setMethod("show", "H2OGBMModel", function(object) {
 #' The H2OSpeeDRFModel class.
 #'
 #' This class represents a speedrf model. Another random forest model variant.
-#' @slot valid Object of class \code{H2OParsedData}, which is the data used for validating the model.
+#' @slot valid Object of class \code{h2o.frame}, which is the data used for validating the model.
 #' @slot list List of objects of class \code{H2OSpeeDRFModel}, representing the n-fold cross-validation models.
 #' @aliases H2OSpeeDRFModel
-setClass("H2OSpeeDRFModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
+setClass("H2OSpeeDRFModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
 
 #' @rdname H2OSpeeDRFModel-class
 setMethod("show", "H2OSpeeDRFModel", function(object) {
@@ -470,7 +470,7 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 #'
 #' This class represents a naive bayes model.
 #' @aliases H2ONBModel
-setClass("H2ONBModel", contains="H2OModel")
+setClass("H2ONBModel", contains="h2o.model")
 
 #' @rdname H2ONBModel-class
 setMethod("show", "H2ONBModel", function(object) {
@@ -489,7 +489,7 @@ setMethod("show", "H2ONBModel", function(object) {
 #'
 #' This class represents the results from a pricnipal components analysis.
 #' @aliases H2OPCAModel
-setClass("H2OPCAModel", contains="H2OModel")
+setClass("H2OPCAModel", contains="h2o.model")
 
 #' @rdname H2OPCAModel-class
 setMethod("show", "H2OPCAModel", function(object) {
@@ -507,7 +507,7 @@ setMethod("show", "H2OPCAModel", function(object) {
 #'
 #' This class represents the results of a KMeans model.
 #' @aliases H2OKMeansModel
-setClass("H2OKMeansModel", representation(valid="H2OParsedData", xval="list"), contains="H2OModel")
+setClass("H2OKMeansModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
 
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
@@ -531,11 +531,11 @@ setMethod("show", "H2OKMeansModel", function(object) {
 #'
 #' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
 #' @slot keys Object of class \code{character}, representing the unique hex key that identifies the model.
-#' @slot data Object of class \code{H2OParsedData}, which is the input data used to build the model.
-#' @slot model Object of class \code{list} containing \code{H2OModel} objects representing the models returned by the grid search algorithm.
+#' @slot data Object of class \code{h2o.frame}, which is the input data used to build the model.
+#' @slot model Object of class \code{list} containing \code{h2o.model} objects representing the models returned by the grid search algorithm.
 #' @slot sumtable Object of class \code{list} containing summary statistics of all the models returned by the grid search algorithm.
 #' @aliases H2OGrid
-setClass("H2OGrid", representation(key="character",   data="H2OParsedData", model="list", sumtable="list", "VIRTUAL"))
+setClass("H2OGrid", representation(key="character",   data="h2o.frame", model="list", sumtable="list", "VIRTUAL"))
 
 #' @rdname H2OGrid-class
 setMethod("show", "H2OGrid", function(object) {
@@ -590,89 +590,14 @@ setClass("H2ODeepLearningGrid", contains="H2OGrid")
 setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 
 #-----------------------------------------------------------------------------------------------------------------------
-# AST Class Defintions: Part 1
-#-----------------------------------------------------------------------------------------------------------------------
-#'
-#' The Node class.
-#'
-#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' has as its ancestor this class.
-#'
-#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
-#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
-#' by looking up the tree to the nearest symbol table defining that symbol.
-setClass("Node", contains="H2OFrame")
-
-#'
-#' The ASTNode class.
-#'
-#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
-#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
-#' @slot root Object of type \code{Node}
-#' @slot children Object of type \code{list}
-setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
-
-setMethod("show", "ASTNode", function(object) {
-   cat(visitor(object)$ast, "\n")
-   assign.to.parent <- FALSE
-   if (object@root@op == '=') assign.to.parent <- TRUE
-   name <- .getFrameName(object@children[[1]])
-   if (assign.to.parent) {
-    print(head(object, n = 6L, ID = name))
-   } else {
-    print(head(object))
-    h2o.rm("object")
-   }
-})
-
-#setMethod("show", "ASTFun", function(object) {
-#  cat(.fun.visitor(object)$ast, "\n")
-#})
-
-#'
-#' The ASTApply class.
-#'
-#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
-#' are never leaf nodes. Operators are discussed more in depth in ops.R.
-setClass("ASTApply", representation(op="character"), contains="Node")
-
-#'
-#' The ASTUnk class.
-#'
-#' This class represents a leaf that
-#' will be assigned to and has unkown type before evaluation (it's an 'unknown' identifier)
-#' -OR-
-#' it represents an operation on a function's argument if the symbol appears in the functions formals.
-#' The distinction between these two cases is denoted by isFormal (TRUE -> Function arg, FALSE -> assignment)
-#'
-#' Note: Formal args are free variables.
-setClass("ASTUnk", representation(key="character", isFormal="logical"), contains="Node",
-         prototype(node_type = "ASTUnk"))
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-# AST Class Defintions: Part 2
-#-----------------------------------------------------------------------------------------------------------------------
-
-setClass("ASTEmpty",  representation(key="character"), contains="Node")
-setClass("ASTBody",   representation(statements="list"), contains="Node")
-setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
-setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
-setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
-setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
-setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
-setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
-setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
-
-#-----------------------------------------------------------------------------------------------------------------------
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
 
-.isH2O <- function(x) { x %i% "H2OFrame" || x %i% "H2OClient" || x %i% "H2ORawData" }
+.isH2O <- function(x) { x %i% "h2o.frame" || x %i% "h2o.client" || x %i% "H2ORawData" }
 .retrieveH2O<-
 function(env) {
   e_list <- unlist(lapply(ls(env), function(x) {
-    tryCatch(get(x, envir=env) %i% "H2OClient", error = function(e) FALSE)
+    tryCatch(get(x, envir=env) %i% "h2o.client", error = function(e) FALSE)
              }))
   if (any(e_list)) {
     if (sum(e_list) > 1) {
@@ -682,7 +607,7 @@ function(env) {
     }
       return(get(ls(env)[which(e_list)[1]], envir=env))
   }
-  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "H2OClient"))
+  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "h2o.client"))
   if (any(g_list)) {
     if (sum(g_list) > 1) {
       x <- g_list[1]
@@ -691,21 +616,5 @@ function(env) {
     }
     return(get(ls(globalenv())[which(g_list)[1]], envir=globalenv()))
   }
-  stop("Could not find any H2OClient. Do you have an active connection to H2O from R? Please specify the h2o connection.")
-}
-
-.getFrameName<-
-function(child) {
-  # recurse down the LHS children
-  if (is.character(child)) {
-    if (grepl("^\\$", child)) return(gsub("\\$", "", child))
-  }
-  if (.hasSlot(child, "children")) {
-    if (is.character(child@children[[1]])) {
-      if (grepl("^\\$", child@children[[1]])) return(gsub("\\$", "", child@children[[1]]))
-    } else {
-      return(.getFrameName(child@children[[1]]))
-    }
-  }
-  NULL
+  stop("Could not find any h2o.client. Do you have an active connection to H2O from R? Please specify the h2o connection.")
 }

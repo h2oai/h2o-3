@@ -1,52 +1,37 @@
 package water.api;
 
 import hex.ModelBuilder;
-import water.H2O;
-import water.Iced;
+import hex.schemas.ModelBuilderSchema;
 import water.util.IcedHashMap;
 
 import java.util.Map;
 
-class ModelBuildersHandler<I extends ModelBuildersHandler.ModelBuilders, S extends ModelBuildersBase<I, S>> extends Handler<I, ModelBuildersBase<I, S>> {
+class ModelBuildersHandler<S extends ModelBuildersBase<S>> extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  /** Class which contains the internal representation of the modelbuilders list and params. */
-  protected static final class ModelBuilders extends Iced {
-    String algo;
-    IcedHashMap<String, ModelBuilder> model_builders;
-  }
-
   /** Return all the modelbuilders. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list(int version, ModelBuilders m) {
+  public ModelBuildersV2 list(int version, ModelBuildersV2 m) {
     Map<String, Class<? extends ModelBuilder>> builders = ModelBuilder.getModelBuilders();
     m.model_builders = new IcedHashMap<>();
 
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : builders.entrySet()) {
         String algo = entry.getKey();
-        m.model_builders.put(algo, ModelBuilder.createModelBuilder(algo));
+        ModelBuilder builder = ModelBuilder.createModelBuilder(algo);
+        m.model_builders.put(algo, (ModelBuilderSchema)Schema.schema(2, builder).fillFromImpl(builder));
     }
-    return this.schema(version).fillFromImpl(m);
+    return m;
   }
 
   /** Return a single modelbuilder. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema fetch(int version, ModelBuilders m) {
+  public ModelBuildersV2 fetch(int version, ModelBuildersV2 m) {
     m.model_builders = new IcedHashMap<>();
-    m.model_builders.put(m.algo, ModelBuilder.createModelBuilder(m.algo));
-    return this.schema(version).fillFromImpl(m);
+    ModelBuilder builder = ModelBuilder.createModelBuilder(m.algo);
+    m.model_builders.put(m.algo, (ModelBuilderSchema)Schema.schema(2, builder).fillFromImpl(builder));
+    return m;
   }
-
-  @Override protected ModelBuildersBase schema(int version) {
-    switch (version) {
-    case 2:   return new ModelBuildersV2();
-    default:  throw H2O.fail("Bad version for ModelBuilders schema: " + version);
-    }
-  }
-
-  // Need to stub this because it's required by H2OCountedCompleter:
-  @Override public void compute2() { throw H2O.fail(); }
 }
 
 

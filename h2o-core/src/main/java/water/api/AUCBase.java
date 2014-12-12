@@ -8,11 +8,11 @@ public class AUCBase<I extends AUCData, S extends AUCBase<I, S>> extends Schema<
   @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", direction=API.Direction.OUTPUT)
   public float[] thresholds;
 
-  @API(help = "Threshold criterion", direction=API.Direction.OUTPUT)
+  @API(help = "Threshold criterion", values={"maximum_F1", "maximum_F2", "maximum_F0point5", "maximum_Accuracy", "maximum_Precision", "maximum_Recall", "maximum_Specificity", "maximum_absolute_MCC", "minimizing_max_per_class_Error"}, direction=API.Direction.OUTPUT)
   public ThresholdCriterion threshold_criterion = ThresholdCriterion.maximum_F1;
 
   @API(help="domain of the actual response", direction=API.Direction.OUTPUT)
-  public String [] actual_domain;
+  public String[] actual_domain;
 
   @API(help="AUC (ROC)", direction=API.Direction.OUTPUT)
   public double AUC;

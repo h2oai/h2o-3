@@ -1,4 +1,6 @@
 package water.api;
 
-public class RemoveAllV1 extends Schema<RemoveAllHandler.RemoveAll,RemoveAllV1> {
+import water.Iced;
+
+public class RemoveAllV1 extends Schema<Iced, RemoveAllV1> {
 }

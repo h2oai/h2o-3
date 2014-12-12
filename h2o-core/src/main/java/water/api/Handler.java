@@ -4,55 +4,64 @@ import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
 import water.util.Log;
+import water.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2OCountedCompleter {
+// TODO: remove type parameters!!!
+public abstract class Handler extends H2OCountedCompleter {
   protected Handler( ) { super(); }
   protected Handler( Handler completer ) { super(completer); }
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
-  /** Dumb Version-&gt;Schema mapping */
-  abstract protected S schema(int version); // TODO: should be static
+  // TODO: REMOVE ASAP:
   abstract protected int min_ver();         // TODO: should be static
   abstract protected int max_ver();         // TODO: should be static
 
+  public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
+     return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
+  }
+
+  public static Class<? extends Schema> getHandlerMethodOutputSchema(Method method) {
+    return (Class<? extends Schema>)ReflectionUtils.findMethodOutputClass(method);
+  }
+
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
-//    if (route._url_pattern.toString().endsWith("Inspect")) {
-//      int line_for_setting_a_breakpoint = 1;
-//    }
-
+    // TODO: remove:
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
       return new HttpErrorV1(new IllegalArgumentException("Version "+version+" is not in range V"+min_ver()+"-V"+max_ver()));
 
-    // Make a version-specific Schema; primitive-parse the URL into the Schema,
-    // then fill the Iced from the versioned Schema.
-    S schema = schema(version);
-    if (null == schema)
-      throw H2O.fail("Failed to find a schema for version: " + version + " in: " + this.getClass());
+    Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
+    Schema schema = Schema.newInstance(handler_schema_class);
 
-    // Fill a Schema from the defaults from the impl, and then the request params:
-    I defaults = schema.createImpl();          // get impl defaults
-    schema.fillFromImpl(defaults);             // fill from impl defaults
-    schema = schema.fillFromParms(parms);      // fill from http request params
+    if (null == schema)
+      throw H2O.fail("Failed to instantiate Schema of class: " + handler_schema_class + " for route: " + route);
+
+    // If the schema has a real backing class fill from it to get the default field values:
+    Class<? extends Iced> iced_class = schema.getImplClass();
+    if (iced_class != Iced.class) {
+      Iced defaults = schema.createImpl();
+      schema.fillFromImpl(defaults);
+    }
+
+    // Fill from http request params:
+    schema = schema.fillFromParms(parms);
     if (null == schema)
       throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
 
-    // Fill an impl object from the schema
-    final I i = schema.createAndFillImpl();  // NOTE: it's ok to get a null implementation object
-                                      // (as long as handler_method knows what to do with it).
-
     // Run the Handler in the Nano Thread (nano does not grok CPS!)
+    // NOTE! The handler method is free to modify the input schema and hand it back.
     _t_start = System.currentTimeMillis();
     Schema result = null;
-    try { result = (Schema)route._handler_method.invoke(this, version, i); }
+    try { result = (Schema)route._handler_method.invoke(this, version, schema); }
     // Exception throws out of the invoked method turn into InvocationTargetException
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {
@@ -67,7 +76,7 @@ public abstract class Handler<I extends Iced, S extends Schema<I,S>> extends H2O
     return result;
   }
 
-  @Override protected void compute2() {
+  @Override final protected void compute2() {
     throw H2O.unimpl();
   }
 

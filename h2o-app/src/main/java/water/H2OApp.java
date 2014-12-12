@@ -5,11 +5,11 @@ import hex.ModelBuilder;
 import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
+import hex.glm.GLM;
 import hex.grep.Grep;
+import hex.kmeans.KMeans;
 import hex.quantile.Quantile;
 import hex.tree.gbm.GBM;
-import hex.glm.GLM;
-import hex.kmeans.KMeans;
 import hex.word2vec.Word2Vec;
 
 import java.io.File;
@@ -79,6 +79,6 @@ public class H2OApp {
     H2O.registerPOST("/2/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
 
     // Done adding menu items; fire up web server
-    H2O.finalizeRequest();
+    H2O.finalizeRegistration();
   }
 }

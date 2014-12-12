@@ -8,7 +8,7 @@ import water.fvec.Vec;
 
 import java.util.*;
 
-class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler<I, FramesBase<I, S>> {
+class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -92,38 +92,43 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list_or_fetch(int version, Frames f) {
+  public FramesV2 list_or_fetch(int version, FramesV2 f) {
     //if (this.version != 2)
     //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
+    FramesV3 f3 = new FramesV3();
+    f3.fillFromImpl(f.createAndFillImpl());
 
     if (null != f.key) {
-      return fetch(version, f);
+      f3 = fetch(version, f3);
     } else {
-      return list(version, f);
+      f3 = list(version, f3);
     }
+    FramesV2 f2 = new FramesV2().fillFromImpl(f3.createAndFillImpl());
+    return f2;
   }
 
   /** Return all the frames. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema list(int version, Frames f) {
+  public FramesV3 list(int version, FramesV3 s) {
+    Frames f = s.createAndFillImpl();
     f.frames = Frames.fetchAll();
 
-    FramesBase schema = this.schema(version).fillFromImpl(f);
+    s.fillFromImpl(f);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameV2 a_frame: schema.frames) {
+    for (FrameV2 a_frame: s.frames) {
       a_frame.clearBinsField();
     }
 
-    return schema;
+    return s;
   }
 
   /** NOTE: We really want to return a different schema here! */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema columns(int version, Frames f) {
+  public FramesV3 columns(int version, FramesV3 s) {
     // TODO: return *only* the columns. . .  This may be a different schema.
-    return fetch(version, f);
+    return fetch(version, s);
   }
 
   // TODO: almost identical to ModelsHandler; refactor
@@ -149,38 +154,37 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema column(int version, Frames f) { // TODO: should return a Vec schema
-    Frame frame = getFromDKV(f.key);
+  public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
+    Frame frame = getFromDKV(s.key.key());
 
     // TODO: We really want to return a different schema here!
-    Vec vec = frame.vec(f.column);
+    Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new IllegalArgumentException("Did not find column: " + f.column + " in frame: " + f.key.toString());
+      throw new IllegalArgumentException("Did not find column: " + s.column + " in frame: " + s.key.toString());
 
     Vec[] vecs = { vec };
-    String[] names = { f.column };
+    String[] names = { s.column };
     Frame new_frame = new Frame(names, vecs);
-    f.frames = new Frame[1];
-    f.frames[0] = new_frame;
-    FramesBase schema = this.schema(version).fillFromImpl(f);
-    schema.frames[0].clearBinsField();
-    return schema;
+    s.frames = new FrameV2[1];
+    s.frames[0] = new FrameV2().fillFromImpl(new_frame);
+    s.frames[0].clearBinsField();
+    return s;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesBase columnSummary(int version, Frames frames) {
-    Frame frame = getFromDKV(frames.key);
-    Vec vec = frame.vec(frames.column);
+  public FramesV3 columnSummary(int version, FramesV3 s) {
+    Frame frame = getFromDKV(s.key.key());
+    Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new IllegalArgumentException("Did not find column: " + frames.column + " in frame: " + frames.key.toString());
+      throw new IllegalArgumentException("Did not find column: " + s.column + " in frame: " + s.key.toString());
 
     // Compute second pass of rollups: the histograms.
     vec.bins();
 
     // Cons up our result
-    frames.frames = new Frame[1];
-    frames.frames[0] = new Frame(new String[] {frames.column }, new Vec[] { vec });
-    return schema(version).fillFromImpl(frames);
+    s.frames = new FrameV2[1];
+    s.frames[0] = new FrameV2().fillFromImpl(new Frame(new String[] {s.column }, new Vec[] { vec }));
+    return s;
   }
 
   /** Docs for column summary. */
@@ -190,38 +194,39 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public Schema fetch(int version, Frames f) {
-    Frame frame = getFromDKV(f.key);
-    f.frames = new Frame[1];
-    f.frames[0] = frame;
+  public FramesV3 fetch(int version, FramesV3 s) {
+    Frames f = s.createAndFillImpl();
 
-    FramesBase schema = this.schema(version).fillFromImpl(f);
+    Frame frame = getFromDKV(s.key.key());
+    s.frames = new FrameV2[1];
+    s.frames[0] = new FrameV2().fillFromImpl(frame);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameV2 a_frame: schema.frames) {
+    for (FrameV2 a_frame: s.frames) {
       a_frame.clearBinsField();
 
     }
-    if (f.find_compatible_models) {
+    if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll(), f.fetchModelCols());
-      schema.compatible_models = new ModelSchema[compatible.length];
-      schema.frames[0].compatible_models = new String[compatible.length];
+      s.compatible_models = new ModelSchema[compatible.length];
+      s.frames[0].compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
-        schema.compatible_models[i] = m.schema().fillFromImpl(m);
-        schema.frames[0].compatible_models[i] = m._key.toString();
+        s.compatible_models[i] = m.schema().fillFromImpl(m);
+        s.frames[0].compatible_models[i] = m._key.toString();
         i++;
       }
     }
-    return schema;
+    return s;
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public void delete(int version, Frames frames) {
-    Frame frame = getFromDKV(frames.key);
+  public FramesV3 delete(int version, FramesV3 frames) {
+    Frame frame = getFromDKV(frames.key.key());
     frame.delete();             // lock & remove
+    return frames;
   }
 
   /**
@@ -229,7 +234,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
    * (perhaps because the Frames were locked & in-use).
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public void deleteAll(int version, Frames frames) {
+  public FramesV3 deleteAll(int version, FramesV3 frames) {
     final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
         @Override public boolean filter(KeySnapshot.KeyInfo k) {
           return k._type == TypeMap.FRAME;
@@ -247,18 +252,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
     fs.blockForPending();
     if( err != null ) throw new IllegalArgumentException(err);
+    return frames;
   }
-
-
-  @Override protected FramesBase schema(int version) {
-    switch (version) {
-    case 2:   return new FramesV2();
-    case 3:   return new FramesV3();
-    default:  throw H2O.fail("Bad version for Frames schema: " + version);
-    }
-  }
-
-  // Need to stub this because it's required by H2OCountedCompleter:
-  @Override public void compute2() { throw H2O.fail(); }
-
 }

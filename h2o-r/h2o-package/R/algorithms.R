@@ -28,7 +28,7 @@
 }
 .verify_dataxy_full <- function(data, x, y, autoencoder) {
   if( missing(data) ) stop('Must specify data')
-  if(class(data) != "H2OParsedData") stop('data must be an H2O parsed dataset')
+  if(class(data) != "h2o.frame") stop('data must be an H2O parsed dataset')
 
   if( missing(x) ) stop('Must specify x')
   if( missing(y) ) stop('Must specify y')
@@ -73,7 +73,7 @@
 
 .verify_datacols <- function(data, cols) {
   if( missing(data) ) stop('Must specify data')
-  if(!(data %i% "H2OFrame")) stop('data must be an H2O parsed dataset')
+  if(!(data %i% "h2o.frame")) stop('data must be an H2O parsed dataset')
 
   if( missing(cols) ) stop('Must specify cols')
   if(!( class(cols) %in% c('numeric', 'character', 'integer') )) stop('cols must
@@ -97,9 +97,9 @@
   return(l)
 }
 
-.h2o.singlerun.internal <- function(algo, data, response, nfolds = 0, validation = new("H2OParsedData", key = as.character(NA)), params = list()) {
+.h2o.singlerun.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
   if(!algo %in% c("GBM", "RF", "DeepLearning", "SpeeDRF")) stop("Unsupported algorithm ", algo)
-  if(missing(validation)) validation = new("H2OParsedData", key = as.character(NA))
+  if(missing(validation)) validation = new("h2o.frame", key = as.character(NA))
   model_obj <- switch(algo, GBM = "H2OGBMModel", RF = "H2ODRFModel", DeepLearning = "H2ODeepLearningModel", SpeeDRF = "H2OSpeeDRFModel")
   model_view <- switch(algo, GBM = .h2o.__PAGE_GBMModelView, RF = .h2o.__PAGE_DRFModelView, DeepLearning = .h2o.__PAGE_DeepLearningModelView, SpeeDRF = .h2o.__PAGE_SpeeDRFModelView)
   results_fun <- switch(algo, GBM = .h2o.__getGBMResults, RF = .h2o.__getDRFResults, DeepLearning = .h2o.__getDeepLearningResults, SpeeDRF = .h2o.__getSpeeDRFResults)
@@ -116,9 +116,9 @@
   new(model_obj, key=dest_key, data=data, model=modelOrig, valid=validation, xval=res_xval)
 }
 
-.h2o.gridsearch.internal <- function(algo, data, response, nfolds = 0, validation = new("H2OParsedData", key = as.character(NA)), params = list()) {
+.h2o.gridsearch.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
   if(!algo %in% c("GBM", "KM", "RF", "DeepLearning", "SpeeDRF")) stop("General grid search not supported for ", algo)
-  if(missing(validation)) validation <- new("H2OParsedData", key = as.character(NA))
+  if(missing(validation)) validation <- new("h2o.frame", key = as.character(NA))
   prog_view <- switch(algo, GBM = .h2o.__PAGE_GBMProgress, KM = .h2o.__PAGE_KM2Progress, RF = .h2o.__PAGE_DRFProgress, DeepLearning = .h2o.__PAGE_DeepLearningProgress, SpeeDRF = .h2o.__PAGE_SpeeDRFProgress)
 
   job_key <- response$job_key
@@ -176,7 +176,7 @@
   for(i in 1:nfolds) {
       resX <- .h2o.__remoteSend(data@h2o, model_view, '_modelKey'=xvalKey[i])
       modelXval <- results_fun(resX[[3]], params)
-      res_xval[[i]] <- new(model_obj, key=xvalKey[i], data=data, model=modelXval, valid=new("H2OParsedData", key=as.character(NA)), xval=list())
+      res_xval[[i]] <- new(model_obj, key=xvalKey[i], data=data, model=modelXval, valid=new("h2o.frame", key=as.character(NA)), xval=list())
     }
   return(res_xval)
 }
@@ -285,7 +285,7 @@
 
   #---------- Create param list to pass ----------#
   p_val <- lapply(m, function(i) {
-    if( i %i% "H2OParsedData" )
+    if( i %i% "h2o.frame" )
       return(i@key)
     i
   })

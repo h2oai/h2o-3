@@ -18,13 +18,12 @@
 .pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
 
-#'
-#' Some handy infix utilities
+# Some handy infix utilities
 "%i%"    <- function(x,y) inherits(x, y)                                                         # instanceof
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
 "%<-%"   <- function(x,y) {
-  if ( x %i% "H2OParsedData" ) x <- x@key
+  if ( x %i% "h2o.frame" ) x <- x@key
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %p0% x, right = y))   # assignment node
 }
 
@@ -41,6 +40,7 @@
   temp <- tempA %p0% tempB %p0% tempC %p0% tempD %p0% tempE %p0% tempF %p0% tempG
   prefix %p0% '_' %p0% temp
 }
+.key.make <- function() .uniq.id("rapids")
 
 #'
 #' Map of binary operators to their "AST" operator value.
@@ -176,7 +176,7 @@
                "double[]" = "narray",
                "float" = "numeric",
                "float[]" = "narray",
-               "Frame" = "H2OParsedData",
+               "Frame" = "h2o.frame",
                "int" = "numeric",
                "int[]" = "narray",
                "Key" = "character",

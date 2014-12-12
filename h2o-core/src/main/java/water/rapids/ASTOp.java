@@ -1464,7 +1464,8 @@ class ASTCbind extends ASTUniPrefixOp {
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
       Frame f = env.pop0Ary();
-      Frame new_frame = fr.makeCompatible(f);
+      Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
+      Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }
@@ -1894,7 +1895,7 @@ class ASTQtile extends ASTUniPrefixOp {
     if (x.numCols() != 1) throw new IllegalArgumentException("Must specify a single column in quantile. Got: "+ x.numCols() + " columns.");
     Vec xv  = x.anyVec();
     if ( xv.isEnum() ) {
-      throw new  IllegalArgumentException("Quantile: column type cannot be Enum.");
+      throw new  IllegalArgumentException("Quantile: column type cannot be Categorical.");
     }
 
     double p[];
