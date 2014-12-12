@@ -23,10 +23,10 @@ public class CStrChunk extends Chunk {
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }
 
-  @Override public boolean setNA_impl(int idx) { throw new IllegalArgumentException("Only Strings allowed");}
-  @Override public boolean set_impl(int idx, float f) { throw new IllegalArgumentException("Only Strings allowed");}
-  @Override public boolean set_impl(int idx, double d) { throw new IllegalArgumentException("Only Strings allowed");}
-  @Override public boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Only Strings allowed");}
+  @Override public boolean setNA_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean set_impl(int idx, float f) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean set_impl(int idx, double d) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, String str) { return false; }
 
   @Override public boolean isNA_impl(int idx) {
@@ -35,8 +35,8 @@ public class CStrChunk extends Chunk {
     else return false;
   }
 
-  @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Only Strings allowed");}
-  @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Only Strings allowed");}
+  @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public ValueString atStr_impl(ValueString vstr, int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     if( off == NA ) return null;
