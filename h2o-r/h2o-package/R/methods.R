@@ -723,9 +723,7 @@ NULL
 #' Returns Boolean.
 setMethod("is.factor", "h2o.frame", function(x) {
   ast <- .h2o.unop("is.factor", x)
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  .force.eval(ast@ast)
 })
 
 #quantile.h2o.frame <- function(x, probs = seq(0, 1, 0.25), na.rm = FALSE, names = TRUE, type = 7, ...) {
