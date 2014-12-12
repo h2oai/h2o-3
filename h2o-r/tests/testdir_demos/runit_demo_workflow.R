@@ -8,13 +8,13 @@ demo_workflow <- function(conn) {
     setSeed <- 148008988978
     
     Log.info('Build kmeans model on pedal length and width...')
-    iris_model <- h2o.kmeans(training_frame = hex, x = 1:4, K = k, seed = setSeed)
+    iris_model <- h2o.kmeans(training_frame = hex, x = 1:4, k = k, seed = setSeed)
     print(iris_model)
     print(paste('Mean squared error : ', iris_model@model$mse))
     Log.info('Build kmeans model, cheating with species input...')
-    iris_model_wSpecies <- h2o.kmeans (training_frame = hex, x = 1:5, K = k, seed = setSeed)
+    iris_model_wSpecies <- h2o.kmeans (training_frame = hex, x = 1:5, k = k, seed = setSeed)
     print(iris_model_wSpecies)
-    print(paste('Mean squared error : ', iris_model_wSpecies@model$mse))
+    print(paste('Mean squared error : ', iris_model_wSpecies@rmodel$mse))
     
     Log.info('Predict on the same iris dataset...')
     pred1.R <- as.data.frame(predict(object = iris_model, newdata = hex))
