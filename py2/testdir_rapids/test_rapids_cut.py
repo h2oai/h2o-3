@@ -2,6 +2,8 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 
+from h2o_xl import Key, KeyIndexed, Fcn,Seq, Colon, Assign, Item, Expr, Col, Cut
+
 print "Slice many rows"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED):
     # 8 random generatators, 1 per column
@@ -64,25 +66,23 @@ class Basic(unittest.TestCase):
             self.assertEqual(numRows, rowCount,
                 "parse created result with the wrong number of rows %s %s" % (numRows, rowCount))
 
-            from h2o_xl import Key, Fcn,\
-                 Seq, Colon, Assign, Item, Expr, Col, Cut
 
             REPEAT = 1
             data_key = hex_key
             for i in range(REPEAT):
                 result_key = data_key + "_" + str(i)
 
-                resultExpr, result = Expr( Assign('seq1', Seq(range(5)) ))
+                Assign('seq1', Seq(range(5)) )
                 # take advantage of default params for row/col (None)
                 # need the 'c' function, to make sure the key is created
 
-                resultExpr, result = Expr( Assign('seq1', Fcn('c', Seq(range(5)) )))
+                Assign('seq1', Fcn('c', Seq(range(5)) ))
                 inspect = h2o_cmd.runInspect(key='seq1')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==5
                 assert numCols==1
 
-                resultExpr, result = Expr( Assign('seq2', Col(Seq(range(5))) ))
+                Assign('seq2', Col(Seq(range(5))) )
                 inspect = h2o_cmd.runInspect(key='seq2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==5
@@ -90,7 +90,7 @@ class Basic(unittest.TestCase):
 
                 # can't have sequence of sequences?
                 # make sure key is created with c()
-                resultExpr, result = Assign('seq1', 
+                Assign('seq1', 
                     Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) )) )
 
                 inspect = h2o_cmd.runInspect(key='seq1')
@@ -98,35 +98,35 @@ class Basic(unittest.TestCase):
                 assert numRows==313
                 assert numCols==1
             
-                resultExpr, result = Assign(result_key, Key(data_key, row=Seq(range(1, 5))) )
-                resultExpr, result = Assign('seq1', Key(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
+                Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) )
+                Assign('seq1', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
 
-                resultExpr, result = Assign(result_key, Cut(Key(data_key, col=0)))
-                resultExpr, result = Assign(result_key, Cut(Key(data_key, col=1), breaks=3))
-                resultExpr, result = Assign(result_key, Fcn('mean', Key(data_key, col=1), True))
-                resultExpr, result = Assign(result_key, Fcn('min', Key(data_key, col=1), True))
-                resultExpr, result = Assign(result_key, Fcn('max', Key(data_key, col=1), True))
+                Assign(result_key, Cut(KeyIndexed(data_key, col=0)))
+                Assign(result_key, Cut(KeyIndexed(data_key, col=1), breaks=3))
+                Assign(result_key, Fcn('mean', KeyIndexed(data_key, col=1), True))
+                Assign(result_key, Fcn('min', KeyIndexed(data_key, col=1), True))
+                Assign(result_key, Fcn('max', KeyIndexed(data_key, col=1), True))
 
-                resultExpr, result = Assign(result_key, Key(data_key, row='#1'))
-                resultExpr, result = Assign(result_key, Key(data_key, row=Colon('#1', '#100')))
-                resultExpr, result = Assign(result_key, Key(data_key, row=Colon(1, 100)))
+                Assign(result_key, KeyIndexed(data_key, row='#1'))
+                Assign(result_key, KeyIndexed(data_key, row=Colon('#1', '#100')))
+                Assign(result_key, KeyIndexed(data_key, row=Colon(1, 100)))
                 # this should fail rapids because of reverse msb/lsb
                 # illegal, detected
-                # resultExpr, result = Assign(result_key, Key(data_key, row=Colon('#100', '#1')))
-                resultExpr, result = Assign(result_key, Key(data_key, row=Colon('#-2', '#-1')))
-                resultExpr, result = Assign(result_key, Key(data_key, row=Colon(-2, -1)))
+                # resultExpr, result = Assign(result_key, KeyIndexed(data_key, row=Colon('#100', '#1')))
+                Assign(result_key, KeyIndexed(data_key, row=Colon('#-2', '#-1')))
+                Assign(result_key, KeyIndexed(data_key, row=Colon(-2, -1)))
                 # illegal, detected
-                # resultExpr, result = Assign(result_key, Key(data_key, row=Colon('#-1', '#-2')))
+                # resultExpr, result = Assign(result_key, KeyIndexed(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
-                resultExpr, result = Assign(result_key, Key(data_key, row=Colon('#1', rowCount-10)))
-                resultExpr, result = Assign(result_key, Key(data_key, col=Colon('#1', colCount-1, )))
+                Assign(result_key, KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
+                Assign(result_key, KeyIndexed(data_key, col=Colon('#1', colCount-1, )))
 
                 # no assign
-                resultExpr, result = Expr(Key(data_key, row=Colon('#1', rowCount-10)))
-                resultExpr, result = Expr(Key(data_key, col=Colon('#1', colCount-1,)))
+                Expr(KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
+                Expr(KeyIndexed(data_key, col=Colon('#1', colCount-1,)))
 
                 # do some function translation
-                resultExpr, result = Expr(Fcn('==', 1, Key(data_key, col=Colon('#1', colCount-1,))) )
+                Expr(Fcn('==', 1, KeyIndexed(data_key, col=Colon('#1', colCount-1,))) )
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \
