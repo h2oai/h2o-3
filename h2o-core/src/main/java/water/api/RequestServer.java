@@ -203,7 +203,7 @@ public class RequestServer extends NanoHTTPD {
 
     register("/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.  DEPRECATED: Use POST because of its higher data limit.");
-    register("/Rapids/isEval"                         ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
+    register("/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
     register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");

@@ -24,31 +24,31 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # First go through ParseSetup
   parseSetup <- .h2o.__remoteSend(data@h2o, 'ParseSetup.json', srcs = srcs)
-  parseSetup$schema_name <- NULL
-  parseSetup$schema_version <- NULL
-  parseSetup$schema_type <- NULL
-  col.names <- parseSetup$columnNames
-  ncols <- parseSetup$ncols
-  parseSetup$hex <- ifelse(key != "", key %p0% ".hex", parseSetup$hexName)
-  parseSetup$srcs <- srcs
-  parseSetup$columnNames <- .collapse(parseSetup$columnNames)
 
-  # remove the following from the parseSetup list: not passed to PARSE page
-  parseSetup$hexName <- NULL
-  parseSetup$data <- NULL
-  parseSetup$headerlines <- NULL
-  parseSetup$invalidLines <- NULL
-  parseSetup$isValid <- NULL
+  ncols <- parseSetup$ncols
+  col.names <- parseSetup$columnNames
+
+  parse.params <- list(
+        srcs = srcs,
+        hex  = ifelse(key != "", key %p0% ".hex", parseSetup$hexName),
+        columnNames = .collapse(col.names),
+        sep = parseSetup$sep,
+        pType = parseSetup$pType,
+        ncols = ncols,
+        checkHeader = parseSetup$checkHeader,
+        singleQuotes = parseSetup$singleQuotes
+        )
 
   # Perform the parse
-  res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "POST", .params = parseSetup)
+  res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "POST", .params = parse.params)
+  hex <- res$job$dest$name
 
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$key$name)
 
   # Return a new h2o.frame object
-  nrows <- .h2o.fetchNRows(data@h2o, parseSetup$hex)
-  o <- .h2o.parsedData(data@h2o, parseSetup$hex, nrows, ncols, col.names)
+  nrows <- .h2o.fetchNRows(data@h2o, hex)
+  o <- .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names)
   .pkg.env[[o@key]] <- o
   o
 
