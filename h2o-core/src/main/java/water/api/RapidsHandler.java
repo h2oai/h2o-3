@@ -12,31 +12,6 @@ class RapidsHandler extends Handler {
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
-  /**
-   *  Rapids:
-   *    A process in which information is successively passed on.
-   */
-
-//  public RapidsV1 setAST(int version, Rapids rapids) {
-//    if (rapids == null) return null;
-//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to setAST.");
-//    Raft raft = DKV.getGet(rapids.ast_key);
-//    if (raft == null) raft = new Raft();
-//    raft.set_ast(rapids.ast);
-//    rapids.raft_ast = rapids.ast;
-//    DKV.put(rapids.ast_key, raft);
-//    return schema(version).fillFromImpl(rapids);
-//  }
-
-//  public RapidsV1 getAST(int version, Rapids rapids) {
-//    if (rapids == null) return null;
-//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getAST.");
-//    Raft raft = DKV.getGet(rapids.ast_key);
-//    rapids.raft_ast=raft.get_ast();
-//    if (rapids.raft_ast == null) rapids.raft_key=raft.get_key();  // get the key if no ast.
-//    return schema(version).fillFromImpl(rapids);
-//  }
-
   public RapidsV1 isEvaluated(int version, RapidsV1 rapids) {
     if (rapids == null) return null;
     if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
