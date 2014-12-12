@@ -15,8 +15,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_GBM_regess(self):
-
+    def test_GBM_basic(self):
         bucket = 'home-0xdiag-datasets'
         importFolderPath = 'standard'
         trainFilename = 'covtype.shuffled.90pct.data'
@@ -24,12 +23,15 @@ class Basic(unittest.TestCase):
         model_key = 'GBMModelKey'
         timeoutSecs = 1800
         csvPathname = importFolderPath + "/" + trainFilename
-
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
             hex_key=train_key, timeoutSecs=timeoutSecs)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         labelListUsed = list(labelList)
         numColsUsed = numCols
