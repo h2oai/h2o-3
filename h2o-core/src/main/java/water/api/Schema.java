@@ -703,7 +703,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
               builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
               first = false;
             }
-            builder.tableRow(field_meta.name,
+            builder.tableRow(
+                    field_meta.name,
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
                     field_meta.is_schema ? field_meta.schema_name : "",
