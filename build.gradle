@@ -84,7 +84,7 @@ ext {
     hadoopVersion = '2.5.0-cdh5.2.0'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
-    h2oFlowVersion = '0.2.8'
+    h2oFlowVersion = '0.2.9'
 }
 
 //
