@@ -3,6 +3,7 @@ import sys, os, glob, time, datetime, stat, json, tempfile, shutil, psutil, rand
 import h2o_args
 import h2o_nodes
 import h2o_sandbox
+from copy import copy
 
 # http://stackoverflow.com/questions/10026797/using-json-keys-as-python-attributes-in-nested-json
 # http://stackoverflow.com/questions/5021041/are-there-any-gotchas-with-this-python-pattern
@@ -50,12 +51,21 @@ class OutputObj(AttrDict):
                     print "Not showing 'model'"
                 elif k == 'columns':
                     print "Not showing 'columns'"
+                elif k == '__meta':
+                    print "Not showing '__meta'"
                 else:
                     #  if it's a list with > 20, just print it normal
                     if isinstance(v, list) and len(v) > 20:
                         print self.name, k, v
+                    elif not isinstance(v,dict):
+                        print self.name, k, v
                     else:
-                        print self.name, k, dump_json(v)
+                        # don't print any __meta entry in a dict
+                        v2 = v
+                        if '__meta' in v2:
+                            v2 = copy(v)
+                            del v2['__meta']
+                        print self.name, k, dump_json(v2)
 
     # these might be useful
     def rec_getattr(self, attr):

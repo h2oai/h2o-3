@@ -17,27 +17,21 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_DL_mnist(self):
-        csvPathname_train = 'laptop/mnist/train.csv.gz'
-        csvPathname_test  = 'laptop/mnist/test.csv.gz'
-        hex_key = 'mnist_train.hex'
-        validation_key = 'mnist_test.hex'
-        timeoutSecs = 30
-        parseResult  = h2i.import_parse(bucket='bigdata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
-        pA = h2o_cmd.ParseObj(parseResult)
-        iA = h2o_cmd.InspectObj(pA.parse_key)
-        parse_key = pA.parse_key
-        numRows = iA.numRows
-        numCols = iA.numCols
-        labelList = iA.labelList
+    def test_DL_covtype(self):
+        csvPathname_train = 'standard/covtype.data'
+        csvPathname_test  = 'standard/covtype.data'
+        hex_key = 'covtype.hex'
+        validation_key = 'covtype_v.hex'
+        timeoutSecs = 180
+        parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
+        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
+        inspectResult = h2o_cmd.runInspect(key=parse_key)
+        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
 
-        parseResultV = h2i.import_parse(bucket='bigdata', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        pV = h2o_cmd.ParseObj(parseResult)
-        iV = h2o_cmd.InspectObj(pA.parse_key)
-        parse_keyV = pV.parse_key
-        numRowsV = iV.numRows
-        numColsV = iV.numCols
-        labelListV = iV.labelList
+        parseResultV = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
+        numRowsV, numColsV, parse_keyV = h2o_cmd.infoFromParse(parseResultV)
+        inspectResultV = h2o_cmd.runInspect(key=parse_keyV)
+        missingListV, labelListV, numRowsV, numColsV = h2o_cmd.infoFromInspect(inspectResultV)
 
         response = numCols-1
 
@@ -62,13 +56,13 @@ class Basic(unittest.TestCase):
             'autoencoder': None, # boolean false
             'use_all_factor_levels': None, # boolean true
             # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
-            'activation': 'RectifierWithDropout', # enum Rectifier 
-            'hidden': '[117,131,129]', # int[] [200, 200]
-            'epochs': 2.0, # double 10.0
-            'train_samples_per_iteration': None, # long -2
+            'activation': 'Tanh', # enum Rectifier 
+            'hidden': '[100,100,100]', # int[] [200, 200]
+            'epochs': 0.7, # double 10.0
+            'train_samples_per_iteration': 100000, # long -2
             'target_ratio_comm_to_comp': None, # double 0.02
             'seed': None, # long 1679194146842485659
-            'adaptive_rate': False, # boolean true
+            'adaptive_rate': True, # boolean true
             'rho': None, # double 0.99
             'epsilon': None, # double 1.0E-8
             'rate': None, # double 0.005
@@ -78,11 +72,11 @@ class Basic(unittest.TestCase):
             'momentum_ramp': 100000, # double 1000000.0
             'momentum_stable': 0.9, # double 0.0
             'nesterov_accelerated_gradient': None, # boolean true
-            'input_dropout_ratio': 0.2, # double 0.0
-            'hidden_dropout_ratios': None, # double[] None (this can grid?)
+            'input_dropout_ratio': 0.0, # double 0.0
+            'hidden_dropout_ratios': None, # double[] None
             'l1': 1e-5, # double 0.0
             'l2': 1e-7, # double 0.0
-            'max_w2': 15, # float Infinity
+            'max_w2': None, # float Infinity
             'initial_weight_distribution': None, # enum UniformAdaptive [u'UniformAdaptive', u'Uniform', u'Normal']
             'initial_weight_scale': None, # double 1.0
             'loss': 'CrossEntropy', # enum MeanSquare [u'Automatic', u'MeanSquare', u'CrossEntropy']
@@ -113,8 +107,8 @@ class Basic(unittest.TestCase):
             'average_activation': None, # double 0.0
             'sparsity_beta': None, # double 0.0
         }
-        expectedErr = 0.057 ## expected validation error for the above model
-        relTol = 0.20 ## 20% rel. error tolerance due to Hogwild!
+        expectedErr = 0.27 ## expected validation error for the above model
+        relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
         timeoutSecs = 600
         start = time.time()

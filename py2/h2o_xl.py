@@ -37,11 +37,19 @@ class Xbase(object):
     defaultAst = "Empty from Xbase init"
     keyWriteHistoryList = []
 
-    def refcntInc(self): 
+    def refcntInc(self, *args): 
+    # Expr shouldn't be used? but maybe useful redirect.
+        if not isinstance(thing, (Key, KeyIndexed, Fcn, Expr)):
+            return
+
+        # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
+        # by making that non-indexed assign look like the indexed assign, things should be easier.
+        # Items can be root? 
+        print "refcntInc for", id(self), type(self), self
         self.refcnt += 1
         if self.refcnt > 1:
             print "INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self)
-        for a in [self.rhs, self.lhs]:
+        for a in args:
             if a:
                 a.refcntInc()
 
@@ -51,7 +59,8 @@ class Xbase(object):
                     operand.refcntInc()
                 
     def assignIfRoot(self): 
-        pass
+        if not isinstance(thing, (Key, KeyIndexed, Fcn, Expr)):
+            print "assignIfRoot for", id(self), type(self), self
 
     # not used
     def json(self): # returns a json string. debugprint(s it too.)
@@ -404,14 +413,16 @@ class Xbase(object):
                     returnResult = summaryResult['frames'][0]['columns'][0]['data']
                 else:
                     raise Exception("Expr-caused Assign.do() wants to return a key with num_rows>1024\n" + \
-                        "Did you really mean it?. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
+                        "Did you really mean it?. frame: %s numRows: %s numCols %s" %\
+                         (self.frame, self.numRows, self.numCols))
             else:
                 if self.numCols==0 and self.numRows==0:
                     return None # both assignDisable or not
                 elif self.assignDisable: # Expr modifies Assign with this
                     if self.numCols>1:
                         h2p.red_print("Expr-caused Assign.do()  wants to return a key with num_cols>1\n" + \
-                            "not supported. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
+                            "not supported. frame: %s numRows: %s numCols %s" % \
+                            (self.frame, self.numRows, self.numCols))
                     # return a nice clean Key that points to the frame
                     returnResult = Key(key=self.frame)
                 else:
@@ -487,23 +498,9 @@ def translateValue(item="F"):
     else:
         return item
 
-def refcntInc(thing, *args):
-    # Expr shouldn't be used? but maybe useful redirect.
-    if isinstance(thing, (Key, KeyIndexed, Fcn, Expr)):
-        # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
-        # by making that non-indexed assign look like the indexed assign, things should be easier.
-        # Items can be root? 
-        for a in args:
-            a.refcntInc() # will fail if the item doesn't have the method!
-
-def assignIfRoot(thing):
-    if isinstance(thing, (Key, KeyIndexed, Fcn, Expr)): # Expr shouldn't be used? but maybe useful redirect.
-        thing.assignIfRoot()
 
 #********************************************************************************
 class Item(Xbase):
-
-
     def __init__(self, item, listOk=False):
 
         # self.funs is not resolved until a string resolution?
@@ -528,8 +525,6 @@ class Item(Xbase):
             assignIfRoot(self) 
 
 
-        # creates Assign if I've got refcnt==0
-        self.assignIfRoot()
 
     def __str__(self):
         item = self.item
@@ -751,6 +746,10 @@ class Key(Xbase):
         legalKey(frame, "Key")
         self.frame = frame
 
+        refcntInc(item) 
+        # how do I know all references to me have done their refcntInc?
+        assignIfRoot(self) 
+
         # add to list of created h2o keys (for deletion later?)
         # FIX! should make this a weak dictionary reference? don't want to affect python GC?
         # xKeyIndexedList.append(frame)
@@ -870,6 +869,9 @@ class KeyIndexed(Key):
         # row extracts problematic?
 
         # None translates to "null"
+        refcntInc(item) 
+        # how do I know all references to me have done their refcntInc?
+        assignIfRoot(self) 
 
     def __str__(self):
         frame = self.frame

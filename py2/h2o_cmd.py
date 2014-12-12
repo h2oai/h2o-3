@@ -253,7 +253,7 @@ class ParseObj(OutputObj):
             assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
         if expectedNumCols is not None:
             assert self.numCols == expectedNumCols, "%s %s" % (self.numCols, expectedNumCols)
-        print "ParseObj created:", self # vars(self)
+        print "ParseObj created for:", self.parse_key # vars(self)
 
 # Let's experiment with creating new objects that are an api I control for generic operations (Inspect)
 class InspectObj(OutputObj):
@@ -275,7 +275,7 @@ class InspectObj(OutputObj):
             assert self.missingList == expectedMissingList
         if expectedLabelList is not None:
             assert self.labelList == expectedLabelList
-        print "InspectObj created" #,  vars(self)
+        print "InspectObj created for:", key  #,  vars(self)
 
 
 class SummaryObj(OutputObj):
@@ -345,7 +345,7 @@ class SummaryObj(OutputObj):
         self.rows = rows
 
         print "\nSummaryObj for", key, "for colName", colName, "colIndex:", colIndex
-        print "SummaryObj created" # vars(self)
+        print "SummaryObj created for:", key # vars(self)
         
         # now do the assertion checks
         self.check(expectedNumRows, expectedNumCols, 

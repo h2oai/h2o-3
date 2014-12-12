@@ -1,6 +1,6 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, as h2b, h2o_import as h2i, h2o_jobs as h2j
+import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs as h2j
 
 DO_PCA_SCORE = True
 
