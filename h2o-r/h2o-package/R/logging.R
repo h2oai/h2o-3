@@ -90,6 +90,17 @@ h2o.setLogPath <- function(path, type) {
   write(s, file = myFile, append = TRUE)
 }
 
+#' Log a message on the server-side logs
+#' 
+#' This is helpful when running several pieces of work one after the other on a single H2O
+#' cluster and you want to make a notation in the H2O server side log where one piece of
+#' work ends and the next piece of work begins.
+#' 
+#' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
+#' 
+#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param message A character string with the message to write to the log.
+#' @seealso \code{\link{h2o.client}}
 h2o.logAndEcho <- function(conn, message) {
   if(!is(conn, "h2o.client"))
     stop("conn must be an h2o.client")
