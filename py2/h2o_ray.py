@@ -190,7 +190,7 @@ def parse(self, key, hex_key=None,
     parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
-    job_key = parse_result['job']['name']
+    job_key = parse_result['job']['key']['name']
     hex_key = parse_params['hex']
 
     # TODO: dislike having different shapes for noPoll and poll
@@ -476,7 +476,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
 
     models = self.models(key=model, timeoutSecs=timeoutSecs)
     assert models is not None, "/Models REST call failed"
-    assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+    assert models['models'][0]['key']['name'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=frame)
@@ -497,7 +497,7 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
 
     models = self.models(key=model, timeoutSecs=timeoutSecs)
     assert models is not None, "/Models REST call failed"
-    assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+    assert models['models'][0]['key']['name'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=frame)
@@ -535,6 +535,8 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'models', True)
 
     if key:
+        # result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+        # print "for ray:", dump_json(result)
         result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)

@@ -37,6 +37,22 @@ class Xbase(object):
     defaultAst = "Empty from Xbase init"
     keyWriteHistoryList = []
 
+    def refcntInc(self): 
+        self.refcnt += 1
+        if self.refcnt > 1:
+            print "INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self)
+        for a in [self.rhs, self.lhs]:
+            if a:
+                a.refcntInc()
+
+        if self.function:
+            for operand in self.operandList:
+                if operand:
+                    operand.refcntInc()
+                
+    def assignIfRoot(self): 
+        pass
+
     # not used
     def json(self): # returns a json string. debugprint(s it too.)
         import json
@@ -45,6 +61,9 @@ class Xbase(object):
         return s
 
     def __init__(self):
+        # increment this on every rhs of an object. If an objec still has this == 0, then it's the root object for a rhs.
+        self.refcnt = 0
+
         self.assignDisable = True # easier than making type-dependent decisions in .do()?
         self.funs = False
         self.execExpr = None
@@ -58,9 +77,14 @@ class Xbase(object):
         self.result = None
         self.scalar = None 
 
+        # refcnt looks at this?
+        self.function = None
+        self.rhs = None
+        self.lhs = None
+
     def __str__(self):
         # this should always be overwritten by the other classes"
-        return self.defaultAst
+        return Xbase.defaultAst
 
     __repr__ = __str__
 
@@ -463,9 +487,25 @@ def translateValue(item="F"):
     else:
         return item
 
+def refcntInc(thing, *args):
+    # Expr shouldn't be used? but maybe useful redirect.
+    if isinstance(thing, (Key, KeyIndexed, Fcn, Expr)):
+        # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
+        # by making that non-indexed assign look like the indexed assign, things should be easier.
+        # Items can be root? 
+        for a in args:
+            a.refcntInc() # will fail if the item doesn't have the method!
+
+def assignIfRoot(thing):
+    if isinstance(thing, (Key, KeyIndexed, Fcn, Expr)): # Expr shouldn't be used? but maybe useful redirect.
+        thing.assignIfRoot()
+
 #********************************************************************************
 class Item(Xbase):
+
+
     def __init__(self, item, listOk=False):
+
         # self.funs is not resolved until a string resolution?
         # tolerate a list for item? Assume it's a list of things Seq can handle
         if isinstance(item, (list, tuple)):
@@ -475,9 +515,21 @@ class Item(Xbase):
                 if len(item) > 1024:
                     raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" +
                         "Probably don't want that? %s" % item)
+                # Seq and Col don't need to inc refcnt, since they can never be root
                 self.item = Col(Seq(item)) # Seq can take a list or tuple
         else:
+            # includes other python native datatypes
             self.item = item
+            # will only try to refcntInc objects that can be root (only the will have the refcntInc method
+            # everyone could increment everyone they see? so the deepest expressions will have the largest #'s 
+            # only need to know non-zero.
+            refcntInc(item) 
+            # how do I know all references to me have done their refcntInc?
+            assignIfRoot(self) 
+
+
+        # creates Assign if I've got refcnt==0
+        self.assignIfRoot()
 
     def __str__(self):
         item = self.item
@@ -909,6 +961,10 @@ def legalFunction(function):
 
 # function is a string. operands is a list of items
 class Fcn(Xbase):
+
+    # Attach an Assign to all root Fcn's
+    # And put it on the pending Assign list, which is flushed at appropriate times.
+    # figure out if this is a root function. Only the root function can create an Assign, which accomplishes a .do()
     def __init__(self, function='sum', *operands):
         super(Fcn, self).__init__()
         operandList = unpackOperands(operands, parent="Fcn operands")
@@ -960,10 +1016,43 @@ class Return(Xbase):
     def __setitem__(self, items, rhs):
         raise Exception("trying to __setitem__ index a Return? doesn't make sense? %s %s" % (self, items))
 
-
+from weakref import WeakSet
+# always does a .do() on init
 class Assign(Key):
-    # always does a .do() on init
+
+    # want to use weak references for tracking instances.
+    # Otherwise the class could likely end up keeping track of instances 
+    # that were meant to have been deleted. 
+    # A weakref.WeakSet will automatically remove any dead instances from its set.
+
+    # http://stackoverflow.com/questions/12101958/keep-track-of-instances-in-python
+    # 1) Each subclass of ... will keep track of its own instances separately. 
+    # 2) The instances set uses weak references to the classs instances, 
+    # so if you del or reassign all the other references to an instance elsewhere in your code, 
+    # the bookkeeping code will not prevent it from being garbage collected. 
+
+    # can put this in the Xbase base class if I want?
+    # pass the instances set to list() before printing.
+    def __new__(cls, *args, **kwargs):
+        instance = Key.__new__(cls, *args, **kwargs)
+        if "instances" not in cls.__dict__:
+            cls.instances = WeakSet()
+        cls.instances.add(instance)
+        return instance
+        # can create a dict from the list with:
+        # foo_vars = {id(instance): instance.foo for instance in Assign.instances} 
+
+    @classmethod
+    def get_instances(cls):
+        # the list should go empty after del ... of the instance
+        return list(Assign.instances) #Returns list of all current instances
+
     def __init__(self, lhs=None, rhs=None, do=True, assignDisable=False, timeoutSecs=30):
+        super(Assign, self).__init__(lhs)
+
+         # this is going to inhibit GC..this probably should be a weakref dict. (but then entries may disappear)
+        Assign.instances.add(self)
+
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
@@ -972,7 +1061,6 @@ class Assign(Key):
         elif not isinstance(lhs, (Key, KeyIndexed, basestring)):
             raise Exception("Assign: lhs not Key/KeyIndexed/string or None %s %s" % (type(lhs), lhs))
 
-        super(Assign, self).__init__(lhs)
 
         # can pass strings
         # all the __getitem__ stuff in Key should modify a Key?
