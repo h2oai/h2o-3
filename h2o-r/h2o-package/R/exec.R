@@ -64,12 +64,13 @@ function(op, e1, e2) {
 #'
 #' Operation on an h2o.frame object with some extra parameters.
 .h2o.varop<-
-function(op, ..., .args=list()) {
+function(op, ..., .args=list(), useKey=NULL) {
   op <- new("ASTApply", op = op)
   if (length(.args) == 0) ASTargs <- .args.to.ast(...)
   else ASTargs <- .args.to.ast(.args=.args)
   ast <- new("ASTNode", root=op, children=ASTargs)
-  new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  key <- if(is.null(useKey)) .key.make() else useKey
+  new("h2o.frame", ast = ast, key = key, h2o = .retrieveH2O())
 }
 
 #'
@@ -86,11 +87,11 @@ function(op, ..., .args=list()) {
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL) {
+function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.assign=TRUE) {
   if (is.null(h2o)) h2o <- .retrieveH2O(parent.frame())
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
-  ast <- h2o.ID %<-% ast
+  if (new.assign) ast <- h2o.ID %<-% ast
   expr <- visitor(ast)
 
   res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=expr$ast)
