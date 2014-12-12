@@ -111,6 +111,12 @@ class Vec(object):
       return Vec(self._name+"+"+str(i),Expr("+",self,i))
     raise NotImplementedError
 
+  def mean(self):
+    if isinstance(self._data,list):
+      return sum(self._data)/len(self._data)
+    assert isinstance(self._data,Expr)
+    return Vec("mean("+self._name+")",Expr("mean",self,None))
+
   def __radd__(self,i): return self+i  # Add is associative
 
   # Number of rows
@@ -131,7 +137,7 @@ class Expr(object):
   def __init__(self,op,left,rite):
     self._op = op     # String op
     self._left = left; assert isinstance(left,(Vec,int))
-    self._rite = rite; assert isinstance(rite,(Vec,int))
+    self._rite = rite; assert isinstance(rite,(Vec,int)) or not rite
 
   def _check_subtree_no_rx(self):
     if isinstance(self._left,Vec) and isinstance(self._left._data,RX): raise ValueError("Found RX",self)
@@ -140,6 +146,7 @@ class Expr(object):
     if isinstance(self._rite,Vec) and isinstance(self._rite._data,Expr): self._rite._check_subtree_no_rx()
 
   def __len__(self):
+    if self._op=="mean": return 1
     return len(self._left) if isinstance(self._left,Vec) else len(self._rite)
 
   def __repr__(self):
@@ -160,7 +167,7 @@ class RX(object):
     if isinstance(x,Expr):
       self._op   = x._op  # String op
       self._left = deVec(x._left); assert isinstance(self._left,(int,float,list,RX))
-      self._rite = deVec(x._rite); assert isinstance(self._rite,(int,float,list,RX))
+      self._rite = deVec(x._rite); assert isinstance(self._rite,(int,float,list,RX)) or not self._rite
       self._data = None
     else:
       assert isinstance(x,list)
@@ -172,21 +179,33 @@ class RX(object):
   # Do Big Data Work.  Returns a tuple of vec's key/name, and the actual Big Data
   def do_it(self):
     assert not self._data
-    if isinstance(self._left,RX) and not self._left._data: self._left.do_it()
-    if isinstance(self._rite,RX) and not self._rite._data: self._rite.do_it()
+    if isinstance(self._left,RX):
+      if not self._left._data:  self._left.do_it()
+      if isinstance(self._left._data,(int,float)):  self._left = self._left._data
+    if isinstance(self._rite,RX):
+      if not self._rite._data:  self._rite.do_it()
+      if isinstance(self._rite._data,(int,float)):  self._rite = self._rite._data
     if self._op == "+":
       if isinstance(self._left,(int,float)):
-        lname, rname = str(self._left), self._rite._name
-        self._data = [self._left+x for x in self._rite._data]
+        if isinstance(self._rite,(int,float)):
+          lname = None
+          self._data = self._left+self._rite
+        else:
+          lname, rname = str(self._left), self._rite._name
+          self._data = [self._left+x for x in self._rite._data]
       elif isinstance(self._rite,(int,float)):
         lname, rname = self._left._name, str(self._rite)
         self._data = [x+self._rite for x in self._left._data]
       else:
         lname, rname = self._left._name, self._rite._name
         self._data = [x+y for x,y in zip(self._left._data,self._rite._data)]
+    elif self._op == "mean":
+      lname, rname = self._left._name, None
+      self._data = sum(self._left._data)/len(self._left._data)  # Stores a small data result
     else:
       raise NotImplementedError
-    print "WORK:",self._name,"=",lname,self._op,rname
+    if lname:
+      print "WORK:",self._name,"=",lname,self._op,rname
     assert self._data
     return self._data
 
@@ -206,7 +225,7 @@ print sum(a["a.sepal_len"])/len(a[0])
 print sum(a)
 
 try: print a["a.Sepal_len"]  # Error, mispelt column name
-except ValueError,e: pass  # Expected error
+except ValueError,ex: pass  # Expected error
 
 b = Frame("b.",fname="smalldata/iris/iris_wheader.csv")[0:4]
 c = a+b
@@ -214,3 +233,5 @@ d = c+c+sum(a)
 e = c+a+1
 print e
 print c
+
+print 1+(a[0]+b[1]).mean()
