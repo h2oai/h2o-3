@@ -243,7 +243,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  The {@code test} frame is updated in-place to be compatible, by altering
    *  the names and Vecs; make a defensive copy if you do not want it modified.
    *  There is a fast-path cutout if the test set is already compatible.  Since
-   *  the test-set is conditionally modifed with extra TransfVec optionally
+   *  the test-set is conditionally modifed with extra EnumWrappedVec optionally
    *  added it is recommended to use a Scope enter/exit to track Vec lifetimes.
    *
    *  @param test Testing Frame, updated in-place
@@ -289,13 +289,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       } 
       if( vec != null ) {       // I have a column with a matching name
         if( domains[i] != null ) { // Result needs to be an enum
-          TransfVec tvec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
-          String[] ds = tvec.domain();
+          EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+          String[] ds = evec.domain();
           assert ds!=null && ds.length >= domains[i].length;
           if( ds.length > domains[i].length )
             msgs.add("Validation column "+names[i]+" has levels not trained on: "+Arrays.toString(Arrays.copyOfRange(ds,domains[i].length,ds.length)));
-          if( expensive ) { vec = tvec; good++; } // Keep it
-          else { tvec.remove(); vec = null; } // No leaking if not-expensive
+          if( expensive ) { vec = evec; good++; } // Keep it
+          else { evec.remove(); vec = null; } // No leaking if not-expensive
         } else if( vec.isEnum() ) {
           throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
@@ -341,7 +341,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
       String sdomain[] = sresp.domain(); // Scored/test domain; can be null
       if( mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
-        output.replace(0,new TransfVec(sresp.group().addVec(),sresp.get_espc(),sdomain,mresp._key));
+        output.replace(0,new EnumWrappedVec(sresp.group().addVec(),sresp.get_espc(),sdomain,mresp._key));
     }
     
     // Remove temp keys.  TODO: Really should use Scope but Scope does not

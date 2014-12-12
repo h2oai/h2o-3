@@ -22,27 +22,27 @@ import java.util.HashMap;
  *  range-checked (note that returning some flag for NA, say -1, would also
  *  need to be checked for).
  */
-public class TransfVec extends WrappedVec {
+public class EnumWrappedVec extends WrappedVec {
   /** List of values from underlying vector which this vector map to a new
    *  value in the union domain.  */
   int[] _map;
 
   /** Main constructor: convert from one enum to another */
-  public TransfVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
+  public EnumWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
     super(key, espc, masterVecKey);
     computeMap(masterVec().domain(),toDomain);
     DKV.put(this);
   }
 
   /** Constructor just to generate the map and domain; used in tests */
-  TransfVec( String[] from, String[] to ) {
+  EnumWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
     computeMap(from,to);
     DKV.put(this);
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new TransfChunk(masterVec().chunkForChunkIdx(cidx), this);
+    return new EnumWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -111,11 +111,11 @@ public class TransfVec extends WrappedVec {
   }
 
 
-  static class TransfChunk extends Chunk {
+  static class EnumWrappedChunk extends Chunk {
     final Chunk _c;             // Test-set map
     final transient int[] _map;
 
-    TransfChunk(Chunk c, TransfVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _map = vec._map; }
+    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _map = vec._map; }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk return
