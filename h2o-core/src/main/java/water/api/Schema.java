@@ -1,5 +1,6 @@
 package water.api;
 
+import org.reflections.Reflections;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
@@ -182,18 +183,24 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Register the given schema class. */
   public static void register(Class<? extends Schema> clz) {
-    if (extractVersion(clz.getSimpleName()) > -1) {
-      Schema s = null;
-      try {
-        s = clz.newInstance();
-      } catch (Exception e) {
-        Log.err("Failed to instantiate schema class: " + clz);
-      }
-      if (null != s) {
-        Log.debug("Instantiated: " + clz.getSimpleName());
+    synchronized(clz) {
+      // Was there a race to get here?  If so, return.
+      if (null != schemas.get(clz.getSimpleName()))
+        return;
 
-        // Validate the fields:
-        SchemaMetadata ignoreme = new SchemaMetadata(s);
+      if (extractVersion(clz.getSimpleName()) > -1) {
+        Schema s = null;
+        try {
+          s = clz.newInstance();
+        } catch (Exception e) {
+          Log.err("Failed to instantiate schema class: " + clz);
+        }
+        if (null != s) {
+          Log.debug("Instantiated: " + clz.getSimpleName());
+
+          // Validate the fields:
+          SchemaMetadata ignoreme = new SchemaMetadata(s);
+        }
       }
     }
   }
@@ -462,6 +469,57 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
+
+  private static boolean schemas_registered = false;
+  /**
+   * Find all schemas using reflection and register them.
+   */
+  synchronized static public void registerAllSchemasIfNecessary() {
+    if (schemas_registered) return;
+    // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
+
+    Reflections reflections = null;
+
+    // Microhack to effect Schema.register(Schema.class), which is
+    // normally not allowed because it has no version:
+    new Schema();
+
+    for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(Schema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(Schema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelSchema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelSchema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelOutputSchema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelOutputSchema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("water")).getSubTypesOf(ModelParameterSchemaV2.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("hex")).getSubTypesOf(ModelParameterSchemaV2.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    schemas_registered = true;
+    Log.info("Registered: " + Schema.schemas().size() + " schemas.");
+  }
+
   /**
    * Return an immutable Map of all the schemas: schema_name -> schema Class.
    */
@@ -494,6 +552,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * be returned.  This compatibility lookup is cached.
    */
   public static Class<? extends Schema> schemaClass(int version, String type) {
+    Schema.registerAllSchemasIfNecessary();
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -510,6 +569,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
    */
   public static Class<? extends Schema>  schemaClass(String schema_name) {
+    Schema.registerAllSchemasIfNecessary();
     return schemas.get(schema_name);
   }
 
@@ -558,6 +618,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
   public static Schema schema(String schema_name) {
+    Schema.registerAllSchemasIfNecessary();
     Class<? extends Schema> clz = schemas.get(schema_name);
     if (null == clz) throw H2O.fail("Failed to find schema for schema_name: " + schema_name);
     return Schema.newInstance(clz);

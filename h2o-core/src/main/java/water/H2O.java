@@ -4,8 +4,7 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.reflections.Reflections;
-import water.api.RequestServer;
-import water.api.Schema;
+import water.api.*;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
@@ -765,36 +764,6 @@ final public class H2O {
 
   public static void registerResourceRoot(File f) {
     JarHash.registerResourceRoot(f);
-  }
-
-  private static boolean schemas_registered = false;
-  /**
-   * Find all schemas using reflection and register them.
-   */
-  synchronized static public void registerAllSchemasIfNecessary() {
-    if (schemas_registered) return;
-    // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
-
-    Reflections reflections = null;
-
-    // Microhack to effect Schema.register(Schema.class), which is
-    // normally not allowed because it has no version:
-    new Schema();
-
-    Set<Class<? extends Schema>> schemas = null;
-
-    schemas = (new Reflections("water")).getSubTypesOf(Schema.class);
-    for (Class<? extends Schema> schema_class : schemas)
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    schemas = (new Reflections("hex")).getSubTypesOf(Schema.class);
-    for (Class<? extends Schema> schema_class : schemas)
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    schemas_registered = true;
-    Log.info("Registered: " + Schema.schemas().size() + " schemas.");
   }
 
   /** Start the web service; disallow future URL registration.
