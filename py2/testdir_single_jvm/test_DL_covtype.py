@@ -68,9 +68,9 @@ class Basic(unittest.TestCase):
             'rate': None, # double 0.005
             'rate_annealing': None, # double 1.0E-6
             'rate_decay': None, # double 1.0
-            'momentum_start': 0.5, # double 0.0
-            'momentum_ramp': 100000, # double 1000000.0
-            'momentum_stable': 0.9, # double 0.0
+            'momentum_start': None, # double 0.0
+            'momentum_ramp': None, # double 1000000.0
+            'momentum_stable': None, # double 0.0
             'nesterov_accelerated_gradient': None, # boolean true
             'input_dropout_ratio': 0.0, # double 0.0
             'hidden_dropout_ratios': None, # double[] None
