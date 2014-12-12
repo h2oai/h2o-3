@@ -268,13 +268,13 @@ class InspectObj(OutputObj):
         # add my stuff
         self.missingList, self.labelList, self.numRows, self.numCols = infoFromInspect(inspectResult)
         if expectedNumRows is not None:
-            assert self.numRows == expectedNumRows
+            assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
         if expectedNumCols is not None:
-            assert self.numCols == expectedNumCols
+            assert self.numCols == expectedNumCols, "%s %s" % (self.numCols, expectedNumCols)
         if expectedMissingList is not None:
-            assert self.missingList == expectedMissingList
+            assert self.missingList == expectedMissingList, "%s %s" % (self.MissingList, expectedMissingList)
         if expectedLabelList is not None:
-            assert self.labelList == expectedLabelList
+            assert self.labelList == expectedLabelList, "%s %s" % (self.labelList, expectedLabelList)
         print "InspectObj created for:", key  #,  vars(self)
 
 

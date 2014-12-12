@@ -165,10 +165,12 @@ class Basic(unittest.TestCase):
             # just parse to make sure it's good
             parseResult = h2i.import_parse(path=csvPathname,
                 checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-
-            inspectResult = h2o_cmd.runInspect(key=parse_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+            pA = h2o_cmd.ParseObj(parseResult)
+            iA = h2o_cmd.InspectObj(pA.parse_key)
+            parse_key = pA.parse_key
+            numRows = iA.numRows
+            numCols = iA.numCols
+            labelList = iA.labelList
 
             src_key = h2i.find_key('syn_.*csv')
 

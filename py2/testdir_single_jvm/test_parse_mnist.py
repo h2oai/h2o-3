@@ -29,12 +29,8 @@ class Basic(unittest.TestCase):
         allDelta = []
         for (csvFilename,  timeoutSecs) in csvFilelist:
             testKey2 = csvFilename + "_" + str(trial) + ".hex"
-            start = time.time()
             parseResult = h2i.import_parse(bucket='home-0xdiag-datasets', path=importFolderPath+"/"+csvFilename,
                 hex_key=testKey2, timeoutSecs=timeoutSecs, intermediateResults=DO_INTERMEDIATE_RESULTS)
-            elapsed = time.time() - start
-            print "parse end on ", csvFilename, 'took', elapsed, 'seconds',\
-                "%d pct. of timeout" % ((elapsed*100)/timeoutSecs)
 
     def test_parse_mnist_B_testing(self):
         importFolderPath = "mnist"
@@ -47,12 +43,8 @@ class Basic(unittest.TestCase):
         allDelta = []
         for (csvFilename, timeoutSecs) in csvFilelist:
             testKey2 = csvFilename + "_" + str(trial) + ".hex"
-            start = time.time()
             parseResult = h2i.import_parse(bucket='home-0xdiag-datasets', path=importFolderPath+"/"+csvFilename,
                 hex_key=testKey2, timeoutSecs=timeoutSecs, intermediateResults=DO_INTERMEDIATE_RESULTS)
-            elapsed = time.time() - start
-            print "parse end on ", csvFilename, 'took', elapsed, 'seconds',\
-                "%d pct. of timeout" % ((elapsed*100)/timeoutSecs)
 
 
 if __name__ == '__main__':

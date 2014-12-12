@@ -24,14 +24,20 @@ class Basic(unittest.TestCase):
         validation_key = 'covtype_v.hex'
         timeoutSecs = 180
         parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         parseResultV = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRowsV, numColsV, parse_keyV = h2o_cmd.infoFromParse(parseResultV)
-        inspectResultV = h2o_cmd.runInspect(key=parse_keyV)
-        missingListV, labelListV, numRowsV, numColsV = h2o_cmd.infoFromInspect(inspectResultV)
+        pV = h2o_cmd.ParseObj(parseResult)
+        iV = h2o_cmd.InspectObj(pV.parse_key)
+        parse_keyV = pV.parse_key
+        numRowsV = iV.numRows
+        numColsV = iV.numCols
+        labelListV = iV.labelList
 
         response = numCols-1
 

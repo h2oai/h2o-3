@@ -423,8 +423,13 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         parameters['destination_key'] = destination_key
 
     print "build_model parameters", parameters
+    start = time.time()
     result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
+    elapsed = time.time() - start
+    print "ModelBuilders end on ", training_frame, 'took', time.time() - start, 'seconds'
+    print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
+
     verboseprint("build_model result", dump_json(result1))
 
     if asynchronous:

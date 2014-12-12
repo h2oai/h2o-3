@@ -125,28 +125,14 @@ class Basic(unittest.TestCase):
             parseResult = h2i.parse_only(pattern='*'+rowxcol+'*',
                 hex_key=hex_key, timeoutSecs=timeoutSecs, checkHeader="1") # header_from_file=header
 
-            inspect = h2o_cmd.runInspect(key=hex_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-            # FIX! did it pick up the header correctly?
-            # FIX! was missingList empty?
-            print "\n" + csvPathname, \
-                "    numRows:", "{}".format(numRows),\
-                "    numCols:", "{}".format(numCols), \
-                "    labelList:", "{}".format(labelList),\
-                "    missingList:", "{}".format(missingList)
-
-            # should match # of cols in header or ??
-            self.assertEqual(numCols, totalCols, 
-                "parse created result with the wrong number of cols %s %s" % (numCols, totalCols))
-            self.assertEqual(numRows, totalDataRows,
-                "parse created result with the wrong number of rows (header shouldn't count) %s %s" % \
-                (numRows, totalDataRows))
-
-            self.assertEqual(len(missingList), 0, "parse created result with some missing values %s" % missingList)
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=totalDataRows, expectedNumCols=totalCols)
+            print pA.numRows
+            print pA.numCols
+            print pA.parse_key
 
             expectedLabelList = headerData.split(",")
-            self.assertEqual(labelList, expectedLabelList, "parse created result with wrong header %s %s" % \
-                (labelList, expectedLabelList))
+            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=totalDataRows, expectedNumCols=totalCols,
+                expectedMissinglist=[], expectedLabelList=expectedLabelList)
 
             if DO_RF:
                 # put in an ignore param, that will fail unless headers were parsed correctly
@@ -155,13 +141,7 @@ class Basic(unittest.TestCase):
                 else:
                     kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1}
 
-
-                start = time.time()
                 rfv = h2o_cmd.runRF(parseResult=parseResult, timeoutSecs=timeoutSecs, **kwargs)
-                elapsed = time.time() - start
-                print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
-                print "trial #", trial, "totalDataRows:", totalDataRows, "parse end on ", csvFilename, \
-                    'took', time.time() - start, 'seconds'
 
             h2o.check_sandbox_for_errors()
 

@@ -41,9 +41,12 @@ class Basic(unittest.TestCase):
             elapsed = time.time() - start
             print csvFilename, "completed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs)
 
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-            inspect = h2o_cmd.runInspect(key=parse_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+            pA = h2o_cmd.ParseObj(parseResult)
+            iA = h2o_cmd.InspectObj(pA.parse_key)
+            parse_key = pA.parse_key
+            numRows = iA.numRows
+            numCols = iA.numCols
+            labelList = iA.labelList
 
             parameters = {
                 'response_column': 1, 

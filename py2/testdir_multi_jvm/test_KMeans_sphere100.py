@@ -145,12 +145,15 @@ class Basic(unittest.TestCase):
 
         print "\nStarting", csvFilename
         parseResult = h2i.import_parse(path=csvPathname2, schema='put', hex_key=csvFilename2 + ".hex")
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
+
         numColsUsed = numCols
         labelListUsed = labelList
-        
 
         ### h2b.browseTheCloud()
 
