@@ -2,11 +2,8 @@ package hex;
 
 import water.Key;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.Log;
-import water.util.ModelUtils;
 import water.util.MRUtils;
+import water.util.ModelUtils;
 
 /** Supervised Model
  *  There is a response column used in training.
@@ -45,7 +42,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public int _max_hit_ratio_k = 10;
 
     @Override public long checksum() {
-      return super.checksum()^_response_column.hashCode()^(_convert_to_enum ?1:0)^(_balance_classes?1:0);
+      return super.checksum()^_response_column.hashCode()^(_convert_to_enum ?31:33)^(_balance_classes?37:39);
     }
   }
 

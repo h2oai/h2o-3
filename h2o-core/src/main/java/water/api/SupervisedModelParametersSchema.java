@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.SupervisedModel;
+import water.api.FrameV2.ColSpecifierV2;
 
 /**
  * An instance of a SupervisedModelParameters schema contains the common SupervisedModel build parameters (e.g., response_column).
@@ -13,7 +14,7 @@ abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.
   @API(help="Response column", is_member_of_frames={"training_frame", "validation_frame"}, is_mutually_exclusive_with={"ignored_columns"}, direction=API.Direction.INOUT)
-  public String response_column;
+  public ColSpecifierV2 response_column;
 
   @API(help="Convert the response column to an enum (forcing a classification instead of a regression) if needed.", direction=API.Direction.INOUT)
   public boolean do_classification;
