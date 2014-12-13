@@ -392,7 +392,7 @@ class ASTasDate extends ASTOp {
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
-        DateTimeFormatter dtf = ParseTime.forStrptimePattern(format);
+        DateTimeFormatter dtf = ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone());
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
           Chunk c = chks[i];

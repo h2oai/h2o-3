@@ -6,6 +6,7 @@ import hex.ModelBuilder.ValidationMessage;
 import hex.ModelBuilder.ValidationMessage.MessageType;
 import water.*;
 import water.api.KeyV1.FrameKeyV1;
+import water.api.KeyV1.ModelKeyV1;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -51,7 +52,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   // Parameters common to all models:
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
-  public FrameKeyV1 destination_key;
+  public ModelKeyV1 destination_key;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
   public FrameKeyV1 training_frame;

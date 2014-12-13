@@ -238,6 +238,20 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  /** Pair of (column name, Frame key). */
+  public static class VecSpecifier extends Iced {
+    public Key<Frame> _frame;
+    String _column_name;
+
+    public Vec vec() {
+      Value v = DKV.get(_frame);
+      if (null == v) return null;
+      Frame f = v.get();
+      if (null == f) return null;
+      return f.vec(_column_name);
+    }
+  }
+
   /** Type for every Vec */
   byte[] types() {
     Vec[] vecs = vecs();
@@ -280,6 +294,8 @@ public class Frame extends Lockable<Frame> {
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
     }
+
+    // TODO: include column names and types?  Vec.checksum() should include type?
     return _checksum;
   }
 
