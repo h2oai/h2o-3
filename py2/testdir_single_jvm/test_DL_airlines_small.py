@@ -48,7 +48,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 600
+        timeoutSecs = 30
         start = time.time()
 
         bmResult = h2o.n0.build_model(
