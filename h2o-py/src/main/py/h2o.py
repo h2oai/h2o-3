@@ -1,21 +1,26 @@
-import csv
+import csv, requests
 
-
+##############################################################################
 # A Frame will one day be a pointer to an h2o cloud
 # For now, see if we can make (small) 2-D associative arrays,
 # and overload everything.
 class Frame(object):
-  def __init__(self, lead=None, fname=None, vecs=None):
+  def __init__(self, h2o=None, fname=None, vecs=None):
     # Read a CSV file
-    if fname is not None:
-      with open(fname, 'rb') as csvfile:
-        self._vecs = []
-        for name in csvfile.readline().split(','): 
-          self._vecs.append(Vec(lead+name.rstrip(), Expr([])))
-        for row in csv.reader(csvfile):
-          for i,data in enumerate(row):
-            self._vecs[i].append(data)
-      print "READ: +",len(self),fname
+    if h2o and fname:
+      rawkey = h2o.ImportFile(fname)
+      setup = h2o.ParseSetup(rawkey)
+      key = h2o.Parse(setup['hexName'],rawkey)
+      print key
+      #with open(fname, 'rb') as csvfile:
+      #  self._vecs = []
+      #  for name in csvfile.readline().split(','): 
+      #    self._vecs.append(Vec(lead+name.rstrip(), Expr([])))
+      #  for row in csv.reader(csvfile):
+      #    for i,data in enumerate(row):
+      #      self._vecs[i].append(data)
+      #print "READ: +",len(self),fname
+      raise NotImplementedError
     # Construct from an array of Vecs already passed in
     elif vecs is not None:
       vlen = len(vecs[0])
@@ -61,8 +66,9 @@ class Frame(object):
   def __radd__(self,i): return self+i  # Add is associative
 
 
-########
-# A single column of data, possibly lazily computed
+##############################################################################
+# A single column of uniform data, possibly lazily computed
+# 
 class Vec(object):
   def __init__(self, name, expr):
     assert isinstance(name,str)
@@ -108,7 +114,8 @@ class Vec(object):
     # be used in some other larger computation)
     self._expr._name = "TMP_"+self._name
 
-########
+
+##############################################################################
 #
 # A pending to-be-computed expression.  Points to other Exprs in a DAG of
 # pending computations.  Pointed at by at most one Vec (during construction)
@@ -190,3 +197,66 @@ class Expr(object):
 
 # Global list of pending expressions and deletes to ship to the cluster
 _CMD = None
+
+
+##############################################################################
+#
+# Cluster connection
+#
+class Cluster(object):
+  def __init__(self,ip="localhost",port=54321):
+    assert isinstance(port,int) and 0 <= port <= 65535
+    self._ip = ip
+    self._port = port
+    cld = self.connect()
+    ncpus=0;  mmax=0
+    for n in cld['nodes']:
+      ncpus += n['num_cpus']
+      mmax  += n['max_mem']
+    print "Connected to cloud '"+cld['cloud_name']+"' size",cld['cloud_size'],"ncpus",ncpus,"maxmem",get_human_readable_size(mmax)
+
+  # Dumb url prefix
+  def url(self):  return "http://"+self._ip+":"+str(self._port)+"/"
+
+  # Does not actually "connect", instead simply tests that the cluster can be
+  # reached, is of a certain size, and is taking basic status commands
+  def connect(self,size=1):
+    while True:
+      cld = requests.get(self.url()+"Cloud.json").json()
+      if not cld['cloud_healthy']:
+        raise ValueError("Cluster reports unhealthy status",cld)
+      if cld['cloud_size'] >= size and cld['consensus']: return cld
+      # Cloud too small or voting in progress; sleep; try again
+      time.sleep(0.1)
+
+  # Import a single file; very basic error checking
+  # Returns h2o Key
+  def ImportFile(self,path):
+    j = requests.get(self.url()+"ImportFiles.json",params={'path':path}).json()
+    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    if j['fails']:  raise ValueError("ImportFiles of "+path+" failed on "+j['fails'])
+    return j['keys'][0]
+
+  # Return basic parse setup object
+  def ParseSetup(self,rawkey):
+    # Unable to use 'requests.params=' syntax because it flattens array
+    # parameters, but ParseSetup really expects a real array of Keys.
+    j = requests.get(self.url()+"ParseSetup.json?srcs=["+rawkey.encode('utf-8')+"]").json()
+    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    return j
+
+  # Trigger a parse; blocking
+  def Parse(self,hexkey,rawkey):
+    j = requests.get(self.url()+"Parse.json?hex="+hexkey.encode('utf-8')+"&srcs=["+rawkey.encode('utf-8')+"]&pType=AUTO").json()
+    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    raise NotImplementedError
+
+
+# Simple stackoverflow pretty-printer for big numbers
+def get_human_readable_size(num):
+  exp_str = [ (0, 'B'), (10, 'KB'),(20, 'MB'),(30, 'GB'),(40, 'TB'), (50, 'PB'),]               
+  i = 0
+  while i+1 < len(exp_str) and num >= (2 ** exp_str[i+1][0]):
+    i += 1
+    rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
+  return '%s %s' % (rounded_val, exp_str[i][1])

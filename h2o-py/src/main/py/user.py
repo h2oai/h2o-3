@@ -4,7 +4,10 @@ import h2o
 #
 # Sample use-cases
 
-a = h2o.Frame("a.",fname="smalldata/iris/iris_wheader.csv")[0:4]
+# Connect to a pre-existing cluster
+cluster = h2o.Cluster()
+
+a = h2o.Frame(cluster,fname="smalldata/iris/iris_wheader.csv")[0:4]
 
 print a[0]._name    # Column header
 print a[0][2]       # column 0, row 2 value
