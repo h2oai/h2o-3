@@ -11,7 +11,7 @@ print a[0][2]       # column 0, row 2 value
 print a["a.sepal_len"][2]  # Column 0, row 2 value
 print a[0]+2        # Add 2 to every element; broadcast a constant
 print a[0]+a[1]     # Add 2 columns; broadcast parallel add
-print sum(a["a.sepal_len"])/len(a[0])
+print a["a.sepal_len"].mean()
 print sum(a)
 
 try: print a["a.Sepal_len"]  # Error, mispelt column name

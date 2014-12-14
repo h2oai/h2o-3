@@ -11,7 +11,7 @@ class Frame(object):
       with open(fname, 'rb') as csvfile:
         self._vecs = []
         for name in csvfile.readline().split(','): 
-          self._vecs.append(Vec(lead+name.rstrip(), []))
+          self._vecs.append(Vec(lead+name.rstrip(), Expr([])))
         for row in csv.reader(csvfile):
           for i,data in enumerate(row):
             self._vecs[i].append(data)
@@ -59,46 +59,25 @@ class Frame(object):
 ########
 # A single column of data, possibly lazily computed
 class Vec(object):
-  def __init__(self, name, data):
+  def __init__(self, name, expr):
+    assert isinstance(name,str)
+    assert isinstance(expr,Expr)
     self._name = name  # String
-    self._data = data  # Either [float] or Expr (eager) or RX (in-progress)
-    self._len = len(data)  # int
-
-  # External API for eager; called by all top-level demanders (e.g. print)
-  def eager(self):
-    if isinstance(self._data,RX):
-      assert self._data._data
-      self._data = self._data._data
-      return self._data;
-    if not isinstance(self._data,Expr):  return self._data
-    self._check_subtree_no_rx()  # Assert we're clean
-    self._rapids()               # Swap Expr for RX; allow lonely Vecs to go dead but gather work
-    #
-    # GC/RefCnt happen(s,ed) here, Vecs went dead and recorded death in RX tree
-    #
-    self._data = self._data.do_it()  # Ship RX over wire for Big Work
-    return self._data
-
-  def _check_subtree_no_rx(self): self._data._check_subtree_no_rx()
-
-  # _data is Expr
-  def _rapids(self):
-    assert isinstance(self._data,Expr)
-    self._data = RX(self._name,self._data)
-    return self._data
+    self._expr = expr  # Always an expr
+    expr._name = name  # Pass name along to expr
 
   # Append a value during CSV read, convert to float
   def append(self,data):
     __x__ = data
     try: __x__ = float(data)
     except ValueError: pass
-    self._data.append(__x__)
+    self._expr._data.append(__x__)
 
-  # Print self; forces eager evaluation
-  def __repr__(self): return self._name+" "+self.eager().__str__()
+  # Print self
+  def __repr__(self): return self._name+" "+self._expr.__str__()
 
   # Basic indexed or sliced lookup
-  def __getitem__(self,i): return self._data[i]
+  def __getitem__(self,i): return self._expr[i]
 
   # Basic (broadening) addition
   def __add__(self,i):
@@ -111,87 +90,68 @@ class Vec(object):
       return Vec(self._name+"+"+str(i),Expr("+",self,i))
     raise NotImplementedError
 
-  def mean(self):
-    if isinstance(self._data,list):
-      return sum(self._data)/len(self._data)
-    assert isinstance(self._data,Expr)
-    return Vec("mean("+self._name+")",Expr("mean",self,None))
-
   def __radd__(self,i): return self+i  # Add is associative
 
+  def mean(self):
+    return Expr("mean",self._expr,None)
+
   # Number of rows
-  def __len__(self): return len(self._data)
+  def __len__(self): return len(self._expr)
 
   def __del__(self):
-    if RX and isinstance(self._data,RX):
-      if self._data._data:
-        print "DELE: -1",self._name
-      else: 
-        self._data.is_dead_tmp()
-    elif not Expr or not isinstance(self._data,Expr):
-      print "DELE: -1",self._name
+    # Vec is dead, so this Expr is unused by the python interpreter (but might
+    # be used in some other larger computation)
+    self._expr._name = "TMP_"+self._name
 
 ########
-# A pending to-be-computed expression.  Points to Vecs, and Vecs point to
-# these, defining a DAG of pending computations.  The Vecs are all kept
-# alive by the Exprs and vice-versa.  
+#
+# A pending to-be-computed expression.  Points to other Exprs in a DAG of
+# pending computations.  Pointed at by at most one Vec (during construction)
+# and no others.  If that Vec goes dead, this computation is known to be an
+# internal tmp; used only in building other Exprs.
 # 
 class Expr(object):
-  def __init__(self,op,left,rite):
-    self._op = op     # String op
-    self._left = left; assert isinstance(left,(Vec,int))
-    self._rite = rite; assert isinstance(rite,(Vec,int)) or not rite
-
-  def _check_subtree_no_rx(self):
-    if isinstance(self._left,Vec) and isinstance(self._left._data,RX): raise ValueError("Found RX",self)
-    if isinstance(self._rite,Vec) and isinstance(self._rite._data,RX): raise ValueError("Found RX",self)
-    if isinstance(self._left,Vec) and isinstance(self._left._data,Expr): self._left._check_subtree_no_rx()
-    if isinstance(self._rite,Vec) and isinstance(self._rite._data,Expr): self._rite._check_subtree_no_rx()
+  def __init__(self,op,left=None,rite=None):
+    self._op,self._data = (op,None) if isinstance(op,str) else ("csvfile",op)
+    self._left = left._expr if isinstance(left,Vec) else left
+    self._rite = rite._expr if isinstance(rite,Vec) else rite
+    self._name = self._op # Set an initial name, generally overwritten
 
   def __len__(self):
     if self._op=="mean": return 1
-    return len(self._left) if isinstance(self._left,Vec) else len(self._rite)
+    if isinstance(self._data,list): return len(self._data)
+    return len(self._left) if isinstance(self._left,Expr) else len(self._rite)
 
+  # Print structure without eval'ing
+  def debug(self):
+    return "(["+self._name+"]="+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Expr) else self._rite)+")"
+
+  # Eval and print
   def __repr__(self):
-    return "("+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Vec) else self._rite)+")"
+    return self.eager().__str__()
 
-########
-def _deVec(x):
-  return (x._rapids() if isinstance(x._data,Expr) else RX(x._name,x._data)) if isinstance(x,Vec) else x
+  # Basic indexed or sliced lookup
+  def __getitem__(self,i): return self.eager()[i]
 
-########
-# An in-flight computation; a DAG of int/floats, or a tuple of Big Data
-# (name,data), or a nested RX
-class RX(object):
-  # Build a DAG of Big Data work, allowing local temp Vecs to go dead
-  def __init__(self, name,x):
-    assert isinstance(name,str)
-    self._name = name   # String
-    if isinstance(x,Expr):
-      self._op   = x._op  # String op
-      self._left = _deVec(x._left); assert isinstance(self._left,(int,float,list,RX))
-      self._rite = _deVec(x._rite); assert isinstance(self._rite,(int,float,list,RX)) or not self._rite
-      self._data = None
-    else:
-      assert isinstance(x,list)
-      self._data = x
+  # Small-data add; result of a (lazy but small) Expr vs a plain int/float
+  def __add__ (self,i): return self.eager()+i
+  def __radd__(self,i): return self+i  # Add is associative
 
-  # Flag RX work being dead for a Vec that goes dead at the end of the computation
-  def is_dead_tmp(self): self._name = str(self)
+  def __del__(self):
+    if self._data is None: print "DELE: Expr never evaluated:",self._name
+    if isinstance(self._data,list):
+      print "DELE:", self._name  # Tell cluster to delete temp
 
-  # Do Big Data Work.  Returns a tuple of vec's key/name, and the actual Big Data
-  def do_it(self):
-    assert not self._data
-    if isinstance(self._left,RX):
-      if not self._left._data:  self._left.do_it()
-      if isinstance(self._left._data,(int,float)):  self._left = self._left._data
-    if isinstance(self._rite,RX):
-      if not self._rite._data:  self._rite.do_it()
-      if isinstance(self._rite._data,(int,float)):  self._rite = self._rite._data
+  # External API for eager; called by all top-level demanders (e.g. print)
+  # May trigger (recursive) big-data eval.
+  def eager(self):
+    if self._data is not None: return self._data
+    if isinstance(self._left,Expr): self._left.eager()
+    if isinstance(self._rite,Expr): self._rite.eager()
     if self._op == "+":
       if isinstance(self._left,(int,float)):
-        if isinstance(self._rite,(int,float)):
-          lname = None
+        if isinstance(self._rite,(int,float)):  # Small data
+          lname, rname = None,None  
           self._data = self._left+self._rite
         else:
           lname, rname = str(self._left), self._rite._name
@@ -210,5 +170,7 @@ class RX(object):
     if lname:
       print "WORK:",self._name,"=",lname,self._op,rname
     assert self._data
+    self._left = None # Trigger GC/ref-cnt of temps
+    self._rite = None
     return self._data
 
