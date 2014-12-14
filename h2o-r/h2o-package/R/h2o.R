@@ -35,6 +35,25 @@
   return(url)
 }
 
+#' Perform a low-level HTTP GET operation on an H2O instance
+#'
+#' Does not do any I/O level error checking.  Caller must do its own validations.
+#' Does not modify the response payload in any way.
+#' Log the request and response if h2o.startLogging() has been called.
+#'
+#' The return value is a list as follows:
+#'     $url                -- Final calculated URL.
+#'     $curlError          -- TRUE if a socket-level error occurred.  FALSE otherwise.
+#'     $curlErrorMessage   -- If curlError is TRUE a message about the error.
+#'     $httpStatusCode     -- The HTTP status code.  Usually 200 if the request succeeded.
+#'     $httpStatusMessage  -- A string describing the httpStatusCode.
+#'     $payload            -- The raw response payload as a character vector.
+#'
+#' @param conn An H2OConnection object
+#' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
+#' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
+#' @param parms (Optional) Parameters to include in the request
+#' @return A list object as described above
 h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
@@ -106,6 +125,13 @@ h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   return(rv)
 }
 
+#' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
+#'
+#' @param conn An H2OConnection object
+#' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
+#' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
+#' @param parms (Optional) Parameters to include in the request
+#' @return A list object as described above
 h2o.doGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
@@ -121,6 +147,17 @@ h2o.doGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   return(rv)
 }
 
+#' An error-checked version of doGET.
+#'
+#' This function validates that no CURL error occurred and that the HTTP response code is successful.
+#' If a failure occurred, then stop() is called with an error message.
+#' Since all necessary error checking is done inside this call, the valid payload is directly returned if the function successfully finishes without calling stop().
+#'
+#' @param conn An H2OConnection object
+#' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
+#' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
+#' @param parms (Optional) Parameters to include in the request
+#' @return The raw response payload as a character vector
 h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
@@ -241,23 +278,29 @@ h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #   H2O Server Health & Info
 #-----------------------------------------------------------------------------------------------------------------------
 
+#' Determine if an H2O cluster is up or not
+#'
+#' @param conn H2O connection object
+#' @return TRUE if the cluster is up; FALSE otherwise
 h2o.clusterIsUp <- function(conn) {
   if (missing(conn)) conn <- .retrieveH2O(parent.frame())
   if (class(conn) != "h2o.client") stop("client must be a h2o.client object")
 
-  rv = h2o.doGET(conn = conn, urlSuffix = "")
+  rv = h2o.doRawGET(conn = conn, urlSuffix = "")
+
   if (rv$curlError) {
     return(FALSE)
   }
   if (rv$httpStatusCode != 200) {
     return(FALSE)
   }
+
   return(TRUE)
 }
 
+#' Print H2O cluster info
 #'
-#' Obtain the cluster info.
-#'
+#' @param conn H2O connection object
 h2o.clusterInfo <- function(conn) {
   if(missing(conn)) conn <- .retrieveH2O(parent.frame())
   stopifnot(class(conn) == "h2o.client")
@@ -296,7 +339,6 @@ h2o.clusterInfo <- function(conn) {
   cat("    H2O cluster total cores:  ", numCPU, "\n")
   cat("    H2O cluster healthy:      ", clusterHealth, "\n")
 }
-
 
 #'
 #' Check H2O Server Health
