@@ -12,8 +12,6 @@ get.eval.result <- function(conn, expr) {
 # use this for interactive setup
 #        library(h2o)
 #        library(testthat)
-#        h2o.setLogPath(getwd(), "Command")
-#        h2o.setLogPath(getwd(), "Error")
 #        h2o.startLogging()
 #        conn <- h2o.init()
 

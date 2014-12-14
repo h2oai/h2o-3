@@ -41,11 +41,7 @@ function() {
   if(file.exists(commandsLog)) file.remove(commandsLog)
   if(file.exists(errorsLog)) file.remove(errorsLog)
   write.table(SEED, paste(Rsandbox, "/seed", sep = ""), row.names = F, col.names = F)
-  h2o.__LOG_COMMAND <- Rsandbox
-  h2o.__LOG_ERROR   <- Rsandbox
-  h2o.setLogPath(normalizePath(h2o.__LOG_COMMAND), "Command")
-  h2o.setLogPath(normalizePath(h2o.__LOG_ERROR), "Error")
-  h2o.startLogging()  
+  h2o.startLogging(paste(Rsandbox, "/rest.log", sep = ""))
 }
 
 Log.info<-
