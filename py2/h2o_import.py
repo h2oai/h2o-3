@@ -2,6 +2,7 @@ import h2o, h2o_cmd, h2o_jobs, h2o_print as h2p
 import getpass, time, re, os, fnmatch
 import h2o_args, h2o_util, h2o_nodes, h2o_print as h2p
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors
+import json
 
 #****************************************************************************************
 # hdfs/maprfs/s3/s3n paths should be absolute from the bucket (top level)
@@ -26,11 +27,10 @@ def find_folder_and_filename(bucket, pathWithRegex, schema='put', returnFullPath
     elif h2o_nodes.nodes[0].remoteH2O and schema!='put' and \
         (os.environ.get('H2O_REMOTE_BUCKETS_ROOT') or h2o_nodes.nodes[0].h2o_remote_buckets_root):
         if (bucket=='smalldata' or bucket=='datasets') and schema=='local':
-            msg1 = "\nWARNING: you're using remote nodes, and 'smalldata' or 'datasets' git buckets, with schema!=put"
-            msg2 = "\nThose aren't git pull'ed by the test. Since they are user-maintained, not globally-maintained-by-0xdata,"
-            msg3 = "\nthey may be out of date at those remote nodes?"
-            msg4 = "\nGoing to assume we find a path to them locally, and remote path will be the same"
-            h2p.red_print(msg1, msg2, msg3, msg4)
+            h2p.red_print("\nWARNING: you're using remote nodes, and 'smalldata' or 'datasets' git buckets, with schema!=put" +\
+            "\nThose aren't git pull'ed by the test. Since they are user-maintained, not globally-maintained-by-0xdata," +\
+            "\nthey may be out of date at those remote nodes?" +\
+            "\nGoing to assume we find a path to them locally, and remote path will be the same")
             giveUpAndSearchLocally = True
         else:
             if os.environ.get('H2O_REMOTE_BUCKETS_ROOT'):
@@ -167,10 +167,11 @@ def import_only(node=None, schema='local', bucket=None, path=None,
 
     # FIX! hack all put to local, since h2o-dev doesn't have put yet?
     # multi-machine put will fail as a result.
-    if schema=='put':
-        h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
-            "\nMeans multi-machine with 'put' will fail")
-        schema = 'local'
+
+    # if schema=='put':
+    #    h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
+    #        "\nMeans multi-machine with 'put' will fail")
+    #    schema = 'local'
 
     if src_key and schema!='put':
         raise Exception("can only specify a 'src_key' param for schema='put'. You have %s %s" % (schema, src_key))
@@ -220,13 +221,26 @@ def import_only(node=None, schema='local', bucket=None, path=None,
         if h2o_args.abort_after_import:
             raise Exception("Aborting due to abort_after_import (-aai) argument's effect in import_only()")
     
+        # h2o-dev: it always wants a key name
+        if src_key is None:
+            src_key = filename
         key = node.put_file(filePath, key=src_key, timeoutSecs=timeoutSecs)
 
         # hmm.. what should importResult be in the put case
         # set it to None. No import is done, and shouldn't be used if you're doing schema='put'
-        importResult = None
-        
-        return (None, key)
+        # ..make it look like an import files result..This is just for test consistency
+        a = '{\
+          "dels": [],\
+          "fails": [],\
+          "files": ["%s"],\
+          "keys": ["%s"],\
+          "path": "%s",\
+          "schema_name": null, "schema_type": null, "schema_version": null\
+        }'% (filename, src_key, filePath)
+
+        print "json string:", a
+        importResult = json.loads(a)
+        return (importResult, key)
 
     if schema=='local' and not \
             (node.redirect_import_folder_to_s3_path or node.redirect_import_folder_to_s3n_path):
@@ -246,8 +260,8 @@ def import_only(node=None, schema='local', bucket=None, path=None,
         # importPattern = folderURI + "/" + pattern
         # could include this on the entire importPattern if we no longer have regex basename in h2o-dev?
           
-        # folderURI = 'nfs:/' + folderPath
-        folderURI = 'nfs:/' + os.path.realpath(folderPath)
+        folderURI = 'nfs:/' + folderPath
+        # folderURI = 'nfs:/' + os.path.realpath(folderPath)
         if importParentDir:
             finalImportString = folderPath
         else:
@@ -355,8 +369,8 @@ def import_only(node=None, schema='local', bucket=None, path=None,
 #****************************************************************************************
 # can take header, header_from_file, exclude params
 def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None, 
-    timeoutSecs=30, retryDelaySecs=0.1, initialDelaySecs=0, pollTimeoutSecs=180, noise=None,
-    benchmarkLogging=None, noPoll=False, **kwargs):
+    timeoutSecs=30, retryDelaySecs=0.1, initialDelaySecs=0, pollTimeoutSecs=180,
+    noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
     if not node: node = h2o_nodes.nodes[0]
     # Get the list of all keys and use those that match the pattern
@@ -368,20 +382,26 @@ def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None,
     if importKeyList:
         # the pattern is a full path/key name, so no false matches
         for key_name in importKeyList:
-            if fnmatch.fnmatch(key_name, pattern):
+            if fnmatch.fnmatch(str(key_name), pattern):
                 matchingList.append(key_name)
     else:
         h2p.yellow_print("WARNING: using frames to look up key names for possible parse regex")
         framesResult = node.frames(timeoutSecs=timeoutSecs)
         for frame in framesResult['frames']:
             key_name = frame['key']['name']
-            if fnmatch.fnmatch(key_name, pattern):
+            if fnmatch.fnmatch(str(key_name), pattern):
                 matchingList.append(key_name)
 
+    if len(matchingList)==0:
+        raise Exception("Didn't find %s in key list %s or Frames result" % (pattern, importKeyList))
+
+    start = time.time()
     parseResult = node.parse(key=matchingList, hex_key=hex_key,
         timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, 
         initialDelaySecs=initialDelaySecs, pollTimeoutSecs=pollTimeoutSecs, noise=noise,
         benchmarkLogging=benchmarkLogging, noPoll=noPoll, **kwargs)
+    # FIX! extract and print the result key name (from parseResult)
+    print "\nparse took", time.time() - start, "seconds"
 
     parseResult['python_source'] = pattern
     return parseResult
@@ -396,13 +416,12 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
 
     # FIX! hack all put to local, since h2o-dev doesn't have put yet?
     # multi-machine put will fail as a result.
-    if schema=='put':
-        h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
-            "\nMeans multi-machine with 'put' will fail")
-        schema = 'local'
+    # if schema=='put':
+    #    h2p.yellow_print("WARNING: hacking schema='put' to 'local'..h2o-dev doesn't support upload." +  
+    #        "\nMeans multi-machine with 'put' will fail")
+    #    schema = 'local'
 
     if not node: node = h2o_nodes.nodes[0]
-
     (importResult, importPattern) = import_only(node, schema, bucket, path,
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, doSummary, src_key, noPrint, importParentDir, **kwargs)
@@ -411,9 +430,16 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     verboseprint("importResult", dump_json(importResult))
 
     assert len(importResult['keys']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
+    # print "importResult:", importResult
+
+    # get rid of parse timing in tests now
+    start = time.time()
     parseResult = parse_only(node, importPattern, hex_key, importResult['keys'],
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, **kwargs)
+    elapsed = time.time() - start
+    print importPattern, "parsed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs), "\n"
+
     verboseprint("parseResult:", dump_json(parseResult))
 
     # do SummaryPage here too, just to get some coverage
@@ -487,7 +513,6 @@ def delete_keys(node=None, pattern=None, timeoutSecs=120):
         storeViewResult = h2o_cmd.runStoreView(node, timeoutSecs=timeoutSecs, view=20, **kwargs)
         # we get 20 at a time with default storeView
         keys = storeViewResult['keys']
-        print "kevin", keys
         
         if not keys:
             break

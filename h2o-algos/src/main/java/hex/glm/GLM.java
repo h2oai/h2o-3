@@ -47,7 +47,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
 
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
-  public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); }
+  public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
 
   private static class TooManyPredictorsException extends RuntimeException {}
 

@@ -13,14 +13,14 @@ test.basic.minmax <- function(conn) {
   hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
 
   Log.info("Computing min & max of the first column of iris...")
-  iris1_min <- min(hex[,1]); Log.info(paste("Minimum:", iris1_min))
-  iris1_max <- max(hex[,1]); Log.info(paste("Maximum:", iris1_max))
+  iris1_min <- min(hex[,1]); Log.info("Minimum:"); print(iris1_min)
+  iris1_max <- max(hex[,1]); Log.info("Maximum:"); print(iris1_max)
   expect_that(iris1_min, equals(min(iris[,1])))
   expect_that(iris1_max, equals(max(iris[,1])))
 
   Log.info("Computing min & max of all numeric columns of iris...")
-  irisall_min <- min(hex[,-5]); Log.info(paste("Minimum:", irisall_min))
-  irisall_max <- max(hex[,-5]); Log.info(paste("Maximum", irisall_max))
+  irisall_min <- min(hex[,-5]); Log.info("Minimum:"); print(irisall_min)
+  irisall_max <- max(hex[,-5]); Log.info("Maximum"); print(irisall_max)
   expect_that(irisall_min, equals(min(iris[,-5])))
   expect_that(irisall_max, equals(max(iris[,-5])))
   

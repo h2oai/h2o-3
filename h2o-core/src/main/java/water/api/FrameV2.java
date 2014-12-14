@@ -1,105 +1,123 @@
 package water.api;
 
 import water.*;
+import water.api.KeyV1.FrameKeyV1;
 import water.fvec.*;
+import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
 // TODO: need a base (versionless) class!
-class FrameV2 extends Schema<Frame, FrameV2> {
+public class FrameV2 extends Schema<Frame, FrameV2> {
 
   // Input fields
   @API(help="Key to inspect",required=true)
-  Key key;
+  public FrameKeyV1 key;
 
   @API(help="Row offset to display",direction=API.Direction.INPUT)
-  long off;
+  public long off;
 
   @API(help="Number of rows to display",direction=API.Direction.INOUT)
-  int len;
+  public int len;
 
   // Output fields
   @API(help="checksum", direction=API.Direction.OUTPUT)
-  protected long checksum;
+  public long checksum;
 
   @API(help="Number of rows", direction=API.Direction.OUTPUT)
-  long rows;
+  public long rows;
 
   @API(help="Total data size in bytes", direction=API.Direction.OUTPUT)
-  long byteSize;
+  public long byteSize;
 
   @API(help="Raw unparsed text", direction=API.Direction.OUTPUT)
-  boolean isText;
+  public boolean isText;
 
   @API(help="Default percentiles, from 0 to 1", direction=API.Direction.OUTPUT)
-  double[] default_pctiles;
+  public double[] default_pctiles;
 
   @API(help="Columns", direction=API.Direction.OUTPUT)
-  Col[] columns;
+  public ColV2[] columns;
 
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
-  String[] compatible_models;
+  public String[] compatible_models;
 
-  // Output fields one-per-column
-  protected static class Col extends Iced {
+  public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
+    public ColSpecifierV2() { }
+    public ColSpecifierV2(String column_name) {
+      this.column_name = column_name;
+    }
+
+    @API(help="Name of the column", direction= API.Direction.INOUT)
+    public String column_name;
+
+    @API(help="List of fields which specify columns that must contain this column", direction= API.Direction.INOUT)
+    public String[] is_member_of_frames;
+
+  }
+
+  public static class ColV2 extends Schema<Vec, ColV2> {
+
+    public ColV2() {}
+
     @API(help="label", direction=API.Direction.OUTPUT)
-    String label;
+    public String label;
 
     @API(help="missing", direction=API.Direction.OUTPUT)
-    long missing;
+    public long missing;
 
     @API(help="zeros", direction=API.Direction.OUTPUT)
-    long zeros;
+    public long zeros;
 
     @API(help="positive infinities", direction=API.Direction.OUTPUT)
-    long pinfs;
+    public long pinfs;
 
     @API(help="negative infinities", direction=API.Direction.OUTPUT)
-    long ninfs;
+    public long ninfs;
 
     @API(help="mins", direction=API.Direction.OUTPUT)
-    double[] mins;
+    public double[] mins;
 
     @API(help="maxs", direction=API.Direction.OUTPUT)
-    double[] maxs;
+    public double[] maxs;
 
     @API(help="mean", direction=API.Direction.OUTPUT)
-    double mean;
+    public double mean;
 
     @API(help="sigma", direction=API.Direction.OUTPUT)
-    double sigma;
+    public double sigma;
 
     @API(help="datatype: {enum, string, int, real, time, uuid}", direction=API.Direction.OUTPUT)
-    String type;
+    public String type;
 
     @API(help="domain; not-null for enum columns only", direction=API.Direction.OUTPUT)
-    String[] domain;
+    public String[] domain;
 
     @API(help="data", direction=API.Direction.OUTPUT)
-    double[] data;
+    public double[] data;
 
     @API(help="string data", direction=API.Direction.OUTPUT)
-    String[] str_data;
+    public String[] str_data;
 
     @API(help="decimal precision, -1 for all digits", direction=API.Direction.OUTPUT)
-    byte precision;
+    public byte precision;
 
     @API(help="Histogram bins; null if not computed", direction=API.Direction.OUTPUT)
-    long[] bins;
+    public long[] bins;
 
     @API(help="Start of histogram bin zero", direction=API.Direction.OUTPUT)
-    double base;
+    public double base;
 
     @API(help="Stride per bin", direction=API.Direction.OUTPUT)
-    double stride;
+    public double stride;
 
     @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
-    double[] pctiles;
+    public double[] pctiles;
 
     transient Vec _vec;
 
-    Col( String name, Vec vec, long off, int len ) {
+    ColV2(String name, Vec vec, long off, int len) {
       label=name;
       missing = vec.naCnt();
       zeros = vec.length()-vec.nzCnt();
@@ -151,7 +169,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   public FrameV2() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
-  FrameV2( Key key ) { this.key = key; }
+  FrameV2( Key key ) { this.key = new FrameKeyV1(key); }
 
   FrameV2( Frame fr ) {
     this(fr, 1, (int)fr.vec(0).length()); // NOTE: possible len truncation
@@ -161,16 +179,16 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   FrameV2( Frame fr, long off2, int len2 ) {
     if( off2==0 ) off2=1;       // 1-based row-numbering; so default offset is 1
     if( len2==0 ) len2=100;     // Default length if zero passed
-    key = fr._key;
+    key = new FrameKeyV1(fr._key);
     _fr = fr;
     off = off2-1;
     rows = fr.numRows();
     len = (int)Math.min(len2,rows);
     byteSize = fr.byteSize();
-    columns = new Col[fr.numCols()];
+    columns = new ColV2[fr.numCols()];
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new Col(fr._names[i],vecs[i],off,len);
+      columns[i] = new ColV2(fr._names[i],vecs[i],off,len);
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_pctiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
@@ -182,7 +200,7 @@ class FrameV2 extends Schema<Frame, FrameV2> {
   // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
     this._fr = f;
-    this.key = f._key;
+    this.key = new FrameKeyV1(f._key);
     this.checksum = _fr.checksum();
     off = 0;
     rows = _fr.numRows();
@@ -193,15 +211,16 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     off = off-1;                // 0-based row-numbering
     len = (int)Math.min(len,rows);
     byteSize = _fr.byteSize();
-    columns = new Col[_fr.numCols()];
+    columns = new ColV2[_fr.numCols()];
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new Col(_fr._names[i],vecs[i],off,len);
+      columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);
+    isText = f.numCols()==1 && vecs[0] instanceof ByteVec;
     return this;
   }
 
   public void clearBinsField() {
-    for (Col col: columns)
+    for (ColV2 col: columns)
       col.clearBinsField();
   }
 
@@ -219,30 +238,30 @@ class FrameV2 extends Schema<Frame, FrameV2> {
 
     // Rollup data
     final long nrows = _fr.numRows();
-    formatRow(ab,"","type" ,new ColOp() { String op(Col c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mins[0]); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.maxs[0]); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mean   ); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(Col c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.sigma  ); } } );
+    formatRow(ab,"","type" ,new ColOp() { String op(ColV2 c) { return c.type; } } );
+    formatRow(ab,"","min"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mins[0]); } } );
+    formatRow(ab,"","max"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.maxs[0]); } } );
+    formatRow(ab,"","mean" ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mean   ); } } );
+    formatRow(ab,"","sigma",new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.sigma  ); } } );
 
     // Optional rows: missing elements, zeros, positive & negative infinities, levels
-    for( Col c : columns ) if( c.missing > 0 )
-        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(Col c) { return c.missing== 0 ?"":Long.toString(c.missing      );}}); break; }
-    for( Col c : columns ) if( c.zeros   > 0 )
-        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(Col c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}}); break; }
-    for( Col c : columns ) if( c.pinfs   > 0 )
-        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(Col c) { return c.pinfs  == 0 ?"":Long.toString(c.pinfs        );}}); break; }
-    for( Col c : columns ) if( c.ninfs   > 0 )
-        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(Col c) { return c.ninfs  == 0 ?"":Long.toString(c.ninfs        );}}); break; }
-    for( Col c : columns ) if( c.domain!=null)
-        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(Col c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
+    for( ColV2 c : columns ) if( c.missing > 0 )
+        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV2 c) { return c.missing== 0 ?"":Long.toString(c.missing      );}}); break; }
+    for( ColV2 c : columns ) if( c.zeros   > 0 )
+        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV2 c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}}); break; }
+    for( ColV2 c : columns ) if( c.pinfs   > 0 )
+        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV2 c) { return c.pinfs  == 0 ?"":Long.toString(c.pinfs        );}}); break; }
+    for( ColV2 c : columns ) if( c.ninfs   > 0 )
+        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV2 c) { return c.ninfs  == 0 ?"":Long.toString(c.ninfs        );}}); break; }
+    for( ColV2 c : columns ) if( c.domain!=null)
+        { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(ColV2 c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
 
     // Frame data
     final int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
       formatRow(ab,"",Long.toString(off+row+1),new ColOp() {
-          String op(Col c) {
+          String op(ColV2 c) {
             return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c,0); }
         } );
     }
@@ -252,19 +271,19 @@ class FrameV2 extends Schema<Frame, FrameV2> {
     return ab.bodyTail();
   }
 
-  private abstract static class ColOp { abstract String op(Col v); }
-  private String rollUpStr(Col c, double d) {
+  private abstract static class ColOp { abstract String op(ColV2 v); }
+  private String rollUpStr(ColV2 c, double d) {
     return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);
   }
 
   private void formatRow( HTML ab, String color, String msg, ColOp vop ) {
     ab.p("<tr").p(color).p(">");
     ab.cell(msg);
-    for( Col c : columns )  ab.cell(vop.op(c));
+    for( ColV2 c : columns )  ab.cell(vop.op(c));
     ab.p("</tr>");
   }
 
-  private String formatCell( double d, String str, Col c, int precision ) {
+  private String formatCell( double d, String str, ColV2 c, int precision ) {
     if( Double.isNaN(d) ) return "-";
     if( c.domain!=null ) return c.domain[(int)d];
     if( "uuid".equals(c.type) || "string".equals(c.type)) {

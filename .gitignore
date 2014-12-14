@@ -42,10 +42,17 @@ private/
 *Rsandbox*
 h2o-r/R/
 h2o-r/h2o-package/inst/branch.txt
+h2o-r/h2o-package/man/inst/buildnum.txt
 h2o-r/h2o-package/inst/java/
 h2o-r/h2o-package/inst/source_code_repository_info.txt
 h2o-r/h2o-package/man/h2o-package.Rd
+py2/testdir_single_jvm/h2o_fc-nodes.json
 
 # Data folders
 bigdata/
+
+# Ignore Eclipse project settings
+.classpath
+.project
+.settings/
 

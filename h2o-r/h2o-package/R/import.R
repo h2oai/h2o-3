@@ -14,7 +14,7 @@
 #' Import an entire directory of files. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
 h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
-  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
   if(nchar(path) == 0) stop("path must be a non-empty string")
   if(!is.character(pattern)) stop("pattern must be of class character")
@@ -32,10 +32,7 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
   # Return only the files that successfully imported
   if(length(res$files) > 0) {
     if(parse) {
-      if(substr(path, nchar(path), nchar(path)) == .Platform$file.sep)
-        path <- substr(path, 1, nchar(path)-1)
-      regPath <- paste(path, pattern, sep=.Platform$file.sep)
-      srcKey <- ifelse(length(res$keys) == 1, res$keys[[1]], paste("*", regPath, "*", sep=""))
+      srcKey = res$keys
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
       assign("dd", rawData, globalenv())
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
@@ -82,7 +79,7 @@ h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, h
 #'
 #' Upload local files to the H2O instance.
 h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names, silent = TRUE) {
-  if(class(object) != "H2OClient") stop("object must be of class H2OClient")
+  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
   if(nchar(path) == 0) stop("path must be a non-empty string")
   if(!is.character(key)) stop("key must be of class character")
@@ -91,13 +88,13 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
   if(!is.logical(parse)) stop("parse must be of class logical")
   if(!is.logical(silent)) stop("silent must be of class logical")
 
+  destination_key = key
   url = paste("http://", object@ip, ":", object@port, "/2/PostFile.json", sep="")
-  url = paste(url, "?key=", URLencode(path), sep="")
-  if(file.exists(h2o.getLogPath("Command"))) .h2o.__logIt(url, NULL, "Command")
+  url = paste(url, "?destination_key=", URLencode(path), sep="")
   if(silent)
     temp = postForm(url, .params = list(fileData = fileUpload(normalizePath(path))))
   else
     temp = postForm(url, .params = list(fileData = fileUpload(normalizePath(path))), .opts = list(verbose = TRUE))
   rawData = new("H2ORawData", h2o=object, key=path)
-  if(parse) parsedData = h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names) else rawData
+  if(parse) parsedData = h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names) else rawData
 }

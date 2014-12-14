@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 get.eval.result <- function(conn, expr) {
   res <-  .h2o.__exec2(conn, expr)
-  return(new("H2OParsedData", h2o=conn, key=res$dest_key))
+  return(new("h2o.frame", h2o=conn, key=res$dest_key))
 }
 
 
@@ -12,8 +12,6 @@ get.eval.result <- function(conn, expr) {
 # use this for interactive setup
 #        library(h2o)
 #        library(testthat)
-#        h2o.setLogPath(getwd(), "Command")
-#        h2o.setLogPath(getwd(), "Error")
 #        h2o.startLogging()
 #        conn <- h2o.init()
 

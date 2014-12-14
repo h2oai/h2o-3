@@ -3,35 +3,103 @@ import sys, os, glob, time, datetime, stat, json, tempfile, shutil, psutil, rand
 import h2o_args
 import h2o_nodes
 import h2o_sandbox
+from copy import copy
 
-# print "h2o_test"
-class OutputObj(object):
+# http://stackoverflow.com/questions/10026797/using-json-keys-as-python-attributes-in-nested-json
+# http://stackoverflow.com/questions/5021041/are-there-any-gotchas-with-this-python-pattern
+# other:
+# class AttributeDict(dict): 
+#     __getattr__ = dict.__getitem__
+#     __setattr__ = dict.__setitem__
+
+# http://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute-in-python#answer-14620633
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+# j = '{"y": [2, 3, {"a": 55, "b": 66}], "x": 4}'
+# aa = json.loads(j, object_hook=AttrDict)
+
+# generic python object generation with dotted attributes, from json object which was created with dict = AttrDict
+class OutputObj(AttrDict):
     def __iter__(self):
-        for attr, value in self.__dict__.iteritems():
+        # for attr, value in self.__dict__.iteritems():
+        for attr, value in self.iteritems():
             yield attr, value
 
-    def __init__(self, output, name):
-        assert isinstance(output, dict)
-        for k,v in output.iteritems():
-            setattr(self, k, v) # achieves self.k = v
+    def __init__(self, output, name, noPrint=False):
+        super(OutputObj, self).__init__()
+        assert isinstance(output, dict), "json obj given to OutputObj should be dict"
+
+        # hacky, but simplest to get all dicts to AttrDicts?
+        aa = json.dumps(output)
+        bb = json.loads(aa, object_hook=AttrDict)
+        self.update(bb)
 
         self.name = name
 
-        for k,v in self:
-            if k == 'parameters':
-                print "Not showing 'parameters'"
-            elif k == 'data':
-                print "Not showing 'data'"
-            elif k == 'frame':
-                print "Not showing 'frame'"
-            elif k == 'model':
-                print "Not showing 'model'"
-            else:
-                #  if it's a list > 20, just print it normal
-                if isinstance(v, list) and len(v) > 20:
-                    print self.name, k, v
+        if 'validation_messages' in self:
+            if self.validation_messages:
+                raise Exception("The h2o json response says something failed. validation_messages: %s" % \
+                    dump_json(self.validation_messages))
+        if 'validation_error_count' in self:
+            if self.validation_error_count >= 1:
+                raise Exception("The h2o json response says something failed. validation_error_count: %s" % \
+                    self.validation_error_count)
+            
+        if not noPrint:
+            for k,v in self.iteritems():
+                if k == 'parameters':
+                    print "Not showing 'parameters'"
+                elif k == 'data':
+                    print "Not showing 'data'"
+                elif k == 'frame':
+                    print "Not showing 'frame'"
+                elif k == 'model':
+                    print "Not showing 'model'"
+                elif k == 'columns':
+                    print "Not showing 'columns'"
+                elif k == '__meta':
+                    print "Not showing '__meta'"
                 else:
-                    print self.name, k, dump_json(v)
+                    #  if it's a list with > 20, just print it normal
+                    if isinstance(v, list) and len(v) > 20:
+                        print self.name, k, v
+                    elif not isinstance(v,dict):
+                        print self.name, k, v
+                    else:
+                        # don't print any __meta entry in a dict
+                        v2 = v
+                        if '__meta' in v2:
+                            v2 = copy(v)
+                            del v2['__meta']
+                        print self.name, k, dump_json(v2)
+
+    # these might be useful
+    def rec_getattr(self, attr):
+        """Get object's attribute. May use dot notation.
+        >>> class C(object): pass
+        >>> a = C()
+        >>> a.b = C()
+        >>> a.b.c = 4
+        >>> rec_getattr(a, 'b.c')
+        4
+        """
+        return reduce(getattr, attr.split("."), self)
+
+    def rec_setattr(self, attr, value):
+        """Set object's attribute. May use dot notation.
+        >>> class C(object): pass
+        >>> a = C()
+        >>> a.b = C()
+        >>> a.b.c = 4
+        >>> rec_setattr(a, 'b.c', 2)
+        >>> a.b.c
+        2
+        """
+        attrs = attr.split(".")
+        setattr(reduce(getattr, attrs[:-1], self), attrs[-1], value)
+
 
 
 # this is just for putting timestamp in front of all stdout
@@ -305,8 +373,12 @@ def check_h2o_version():
     output = p2.communicate()[0]
     print output
 
-
 def setup_random_seed(seed=None):
+    # h2o_args.unit_main() or h2o.init() or this function, may be the first to call it
+    # that makes sure it's called to setup any --seed init before we look for a 
+    # command line arg here. (h2o.setup_random_seed() is done before h2o.init() in tests)
+    # parse_our_args() will be a noop if it was already called once
+    h2o_args.parse_our_args()
     if h2o_args.random_seed is not None:
         SEED = h2o_args.random_seed
     elif seed is not None:

@@ -1,17 +1,20 @@
 package hex.tree;
 
-import java.util.Arrays;
-
 import hex.ModelMetrics;
-import jsr166y.CountedCompleter;
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.ModelUtils;
+import water.util.Timer;
+
+import java.util.Arrays;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
@@ -194,7 +197,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_test );
+    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_valid );
     abstract protected void buildModel();
   }
 
@@ -370,7 +373,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
       out._mse_train[out._ntrees] = _parms._valid==null ? mm._mse : Double.NaN;
-      out._mse_test [out._ntrees] = _parms._valid==null ? Double.NaN : mm._mse;
+      out._mse_valid[out._ntrees] = _parms._valid==null ? Double.NaN : mm._mse;
 
       Log.info("============================================================== ");
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");

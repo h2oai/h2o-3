@@ -22,7 +22,7 @@ checkGBMModel <- function(myGBM.h2o, myGBM.r, h2oTest, RTest) {
   Log.info("Performing the predictions on h2o GBM model: ")
 
   # TODO: Building CM in R instead of in H2O
-  h2ogbm.predict <- h2o.predict(myGBM.h2o, ecologyTest.hex)
+  h2ogbm.predict <- predict(myGBM.h2o, ecologyTest.hex)
   h2o.preds <- head(h2ogbm.predict,nrow(h2ogbm.predict))[,1]
   h2oCM <- table(actual,h2o.preds)
   Log.info("H2O CM is: \n")

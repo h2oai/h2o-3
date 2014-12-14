@@ -17,6 +17,7 @@ import java.util.Arrays;
  * Vec type.  NEW Vectors do NOT support reads!
  */
 public class AppendableVec extends Vec {
+
   public long _espc[];
   public static final byte NA     = 1;
   public static final byte ENUM   = 2;
@@ -32,7 +33,7 @@ public class AppendableVec extends Vec {
   long _totalCnt;
 
   public AppendableVec( Key key ) {
-    super(key, (long[])null);
+    super(key, null);
     _espc = new long[4];
     _chunkTypes = new byte[4];
   }

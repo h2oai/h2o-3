@@ -33,7 +33,7 @@ class TimingsListener implements TaskExecutionListener, BuildListener {
     void buildFinished(BuildResult result) {
         def sortedTimings = timings.sort { -it.secs }
 
-        def maxNumItemized = 15
+        def maxNumItemized = 7
         println ""
         println "Task timings:"
         def i = 0

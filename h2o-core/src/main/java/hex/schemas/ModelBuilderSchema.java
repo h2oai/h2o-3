@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.H2O;
+import water.Job;
 import water.Key;
 import water.api.API;
 import water.api.JobV2;
@@ -32,13 +33,17 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
-  Key job;
+  JobV2 job;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
   public ValidationMessageBase validation_messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;
+
+  public ModelBuilderSchema() {
+    this.parameters = createParametersSchema();
+  }
 
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
@@ -72,7 +77,8 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
         if (null != parameters) {
           _parameters = (Model.Parameters) parameters.createImpl();
-          _parameters._destination_key = parameters.destination_key;
+          if (null != parameters.destination_key)
+            _parameters._destination_key = Key.make(parameters.destination_key.name);
         }
         Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
         impl = (B) builder_constructor.newInstance(_parameters);
@@ -95,7 +101,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @Override public S fillFromImpl(B builder) {
     builder.init(false); // check params
     this.can_build = builder.can_build();
-    job = builder._key;
+    job = (JobV2)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
@@ -140,7 +146,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
     ab.title(this.getClass().getSimpleName()+" Started");
-    String url = JobV2.link(job);
+    String url = JobV2.link(job.key.key());
     return ab.href("Poll",url,url);
   }
 
@@ -149,7 +155,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @Override
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.put1(','); // the schema and version fields get written before we get called
-    ab.putJSONStr("job", (null == job ? null : job.toString())); // TODO: is currently null, but probably should never be. . .
+    ab.putJSON("job", job);
     ab.put1(',');
     ab.putJSONAEnum("can_build", can_build);
     ab.put1(',');

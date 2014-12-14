@@ -92,20 +92,18 @@ class Basic(unittest.TestCase):
             #***************************
             # Parse
             parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, timeoutSecs=30, doSummary=False)
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-
-            #***************************
-            # Inspect
-            inspect = h2o_cmd.runInspect(key=parse_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(parseResult)
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
+            numRows = pA.numRows
+            numCols = pA.numCols
+            parse_key = pA.parse_key
+            # this guy can take json object as first thing, or re-read with key
+            iA = h2o_cmd.InspectObj(parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
 
             #***************************
             # Summary
-            summaryResult = h2o_cmd.runSummary(key=parse_key)
-            columns = summaryResult['frames'][0]['columns']
-            default_pctiles = summaryResult['frames'][0]['default_pctiles']
-
-            co = OutputObj(columns[0], 'summary')
+            co = h2o_cmd.runSummary(key=parse_key)
+            default_pctiles = co.default_pctiles
 
             coList = [ co.base, len(co.bins), len(co.data), co.domain,
                 co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,

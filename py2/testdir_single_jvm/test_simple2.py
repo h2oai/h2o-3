@@ -67,7 +67,6 @@ class Basic(unittest.TestCase):
         print "Inspect:", hex_key, "took", time.time() - start, "seconds"
         numCols = len(inspect['frames'][0]['columns'])
         numRows = inspect['frames'][0]['rows']
-        # h2o_cmd.infoFromInspect(inspect, csvPathname)
         print "\n" + csvPathname, \
             "    rows:", "{:,}".format(numRows), \
             "    len(columns):", "{:,}".format(numCols)

@@ -1,14 +1,12 @@
 package water.api;
 
-import water.H2O;
 import water.Quantiles;
 import water.util.Log;
 
-public class QuantilesHandler extends Handler<Quantiles,QuantilesV1> {
+public class QuantilesHandler extends Handler {
 
   @Override protected int min_ver() { return 1; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  @Override public void compute2() { throw H2O.unimpl(); }
 
   protected void init(Quantiles q) throws IllegalArgumentException {
     if( q._source_key == null ) throw new IllegalArgumentException("Source key is missing");
@@ -20,7 +18,8 @@ public class QuantilesHandler extends Handler<Quantiles,QuantilesV1> {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public QuantilesV1 quantiles(int version, Quantiles q) {
+  public QuantilesV1 quantiles(int version, QuantilesV1 s) {
+    Quantiles q = s.createAndFillImpl();
     init(q);
     String[] names = new String[1];
 
@@ -145,8 +144,6 @@ public class QuantilesHandler extends Handler<Quantiles,QuantilesV1> {
       // always the best result if we ran here
       q._result = exactResult;
     }
-    return schema(version).fillFromImpl(q);
+    return s.fillFromImpl(q);
   }
-
-  @Override protected QuantilesV1 schema(int version) { return new QuantilesV1(); }
 }

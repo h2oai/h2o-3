@@ -1,6 +1,6 @@
 
 import time
-import h2o_methods, h2o_print as h2p, h2o_sandbox
+import h2o_methods, h2o_print as h2p, h2o_sandbox, h2o_args
 from h2o_test import verboseprint, dump_json
 from h2o_xl import Key
 
@@ -59,7 +59,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
 
         # FIX! what are the other legal polling statuses that we should check for?
 
-        if time.time() - start_time > timeoutSecs:
+        if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
             h2o_sandbox.check_sandbox_for_errors()
             emsg = "Job:", job_key, "timed out in:", timeoutSecs
             raise Exception(emsg)
@@ -190,7 +190,7 @@ def parse(self, key, hex_key=None,
     parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
-    job_key = parse_result['job']['name']
+    job_key = parse_result['job']['key']['name']
     hex_key = parse_params['hex']
 
     # TODO: dislike having different shapes for noPoll and poll
@@ -423,8 +423,13 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         parameters['destination_key'] = destination_key
 
     print "build_model parameters", parameters
+    start = time.time()
     result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
+    elapsed = time.time() - start
+    print "ModelBuilders end on ", training_frame, 'took', time.time() - start, 'seconds'
+    print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
+
     verboseprint("build_model result", dump_json(result1))
 
     if asynchronous:
@@ -476,7 +481,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
 
     models = self.models(key=model, timeoutSecs=timeoutSecs)
     assert models is not None, "/Models REST call failed"
-    assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+    assert models['models'][0]['key']['name'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=frame)
@@ -497,7 +502,7 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
 
     models = self.models(key=model, timeoutSecs=timeoutSecs)
     assert models is not None, "/Models REST call failed"
-    assert models['models'][0]['key'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
+    assert models['models'][0]['key']['name'] == model, "/Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['key']['name'], model)
 
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=frame)
@@ -535,6 +540,8 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'models', True)
 
     if key:
+        # result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+        # print "for ray:", dump_json(result)
         result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)

@@ -15,16 +15,16 @@
 .pkg.env$result_count <- 0
 .pkg.env$temp_count   <- 0
 .pkg.env$IS_LOGGING   <- FALSE
+.pkg.env$LOG_FILE_NAME<- NULL
 .pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
 
-#'
-#' Some handy infix utilities
+# Some handy infix utilities
 "%i%"    <- function(x,y) inherits(x, y)                                                         # instanceof
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
 "%<-%"   <- function(x,y) {
-  if ( x %i% "H2OParsedData" ) x <- x@key
+  if ( x %i% "h2o.frame" ) x <- x@key
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %p0% x, right = y))   # assignment node
 }
 
@@ -41,6 +41,7 @@
   temp <- tempA %p0% tempB %p0% tempC %p0% tempD %p0% tempE %p0% tempF %p0% tempG
   prefix %p0% '_' %p0% temp
 }
+.key.make <- function() .uniq.id("rapids")
 
 #'
 #' Map of binary operators to their "AST" operator value.
@@ -116,10 +117,13 @@
                   "expm1" = "expm1",
                   "cos" = "cos",
                   "cosh" = "cosh",
+                  "cospi" = "cospi",
                   "sin" = "sin",
                   "sinh" = "sinh",
+                  "sinpi" = "sinpi",
                   "tan" = "tan",
                   "tanh" = "tanh",
+                  "tanpi" = "tanpi",
                   "gamma" = "gamma",
                   "lgamma" = "lgamma",
                   "digamma" = "digamma",
@@ -173,10 +177,10 @@
                "double[]" = "narray",
                "float" = "numeric",
                "float[]" = "narray",
-               "Frame" = "H2OParsedData",
+               "Key<Frame>" = "h2o.frame",
                "int" = "numeric",
                "int[]" = "narray",
-               "Key" = "character",
+               "Key<Key>" = "character",
                "long" = "numeric",
                "long[]" = "narray",
                "string" = "character",
@@ -184,7 +188,8 @@
 
 .algo.map <- c("deeplearning" = ".deeplearning.builder",
                "gbm" = ".gbm.builder",
-               "kmeans" = ".kmeans.builder")
+               "kmeans" = ".kmeans.builder",
+               "glm" = ".glm.builder")
 #'
 #' Inspect/Summary Endpoints
 #'

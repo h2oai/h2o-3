@@ -60,11 +60,15 @@ class Basic(unittest.TestCase):
             start = time.time()
             hex_key = "a.hex"
             csvPathname = "datasets/" + csvFilename
+
             parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=hex_key, timeoutSecs=1000)
             print "hdfs parse of", csvPathname, "took", time.time() - start, 'secs'
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-            inspectResult = h2o_cmd.runInspect(key=parse_key)
-            missingValuesListA, labelListA, numRowsA, numColsA  = h2o_cmd.infoFromInspect(inspectResult)
+            pA = h2o_cmd.ParseObj(parseResult)
+            iA = h2o_cmd.InspectObj(pA.parse_key)
+            parse_key = pA.parse_key
+            numRows = iA.numRows
+            numCols = iA.numCols
+            labelList = iA.labelList
 
             if DO_EXPORT:
                 start = time.time()

@@ -1,9 +1,7 @@
 package water.api;
 
 import water.H2O;
-import water.Iced;
 import water.MRTask;
-import water.api.FindHandler.FindPojo;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -11,30 +9,24 @@ import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
-class
-        FindHandler extends Handler<FindPojo,FindV2> {
-
-  protected static final class FindPojo extends Iced {
-    // Inputs
-    public Frame _fr;                    // Thing to inspect
-    public long _row;                    // Row to start from
-    public String _val;                  // Thing to search for
-
-    // Outputs
-    public long _prev, _next;            // Nearest matching row in either direction
-  }
-
-  // Running all in exec2, no need for backgrounding on F/J threads
-  @Override public void compute2() { throw H2O.fail(); }
+class FindHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FindV2 find(int version, FindPojo find) {
+  public FindV2 find(int version, FindV2 find) {
+    Frame frame = find.key.createAndFillImpl();
+    // Peel out an optional column; restrict to this column
+    if( find.column != null ) {
+      Vec vec = frame.vec(find.column);
+      if( vec==null ) throw new IllegalArgumentException("Column "+find.column+" not found in frame "+find.key);
+      find.key = new FrameV2(new Frame(new String[]{find.column}, new Vec[]{vec}));
+    }
+
     // Convert the search string into a column-specific flavor
-    Vec[] vecs = find._fr.vecs();
+    Vec[] vecs = frame.vecs();
     double ds[] = new double[vecs.length];
     for( int i=0; i<vecs.length; i++ ) {
       if( vecs[i].isEnum() ) {
-        int idx = ArrayUtils.find(vecs[i].domain(),find._val);
+        int idx = ArrayUtils.find(vecs[i].domain(),find.match);
         if( idx==-1 && vecs.length==1 ) throw new IllegalArgumentException("Not one of "+Arrays.toString(vecs[i].domain()));
         ds[i] = idx;
       } else if( vecs[i].isUUID() ) {
@@ -45,18 +37,18 @@ class
         throw H2O.unimpl();
       } else {
         try {
-          ds[i] = find._val==null ? Double.NaN : Double.parseDouble(find._val);
+          ds[i] = find.match==null ? Double.NaN : Double.parseDouble(find.match);
         } catch( NumberFormatException e ) {
-          if( vecs.length==1 ) throw new IllegalArgumentException("Not a number: "+find._val);
+          if( vecs.length==1 ) throw new IllegalArgumentException("Not a number: "+find.match);
           ds[i] = Double.longBitsToDouble(0xcafebabe); // Do not match
         }
       }
     }
 
-    Find f = new Find(find._row,ds).doAll(find._fr);
-    find._prev = f._prev;
-    find._next = f._next==Long.MAX_VALUE ? -1 : f._next;
-    return schema(version).fillFromImpl(find);
+    Find f = new Find(find.row,ds).doAll(frame);
+    find.prev = f._prev;
+    find.next = f._next==Long.MAX_VALUE ? -1 : f._next;
+    return find;
   }
 
   private static class Find extends MRTask<Find> {
@@ -85,5 +77,4 @@ class
 
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
-  @Override protected FindV2 schema(int version) { return new FindV2(); }
 }

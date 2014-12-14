@@ -28,7 +28,7 @@
 }
 .verify_dataxy_full <- function(data, x, y, autoencoder) {
   if( missing(data) ) stop('Must specify data')
-  if(class(data) != "H2OParsedData") stop('data must be an H2O parsed dataset')
+  if(class(data) != "h2o.frame") stop('data must be an H2O parsed dataset')
 
   if( missing(x) ) stop('Must specify x')
   if( missing(y) ) stop('Must specify y')
@@ -73,7 +73,7 @@
 
 .verify_datacols <- function(data, cols) {
   if( missing(data) ) stop('Must specify data')
-  if(!(data %i% "H2OFrame")) stop('data must be an H2O parsed dataset')
+  if(!(data %i% "h2o.frame")) stop('data must be an H2O parsed dataset')
 
   if( missing(cols) ) stop('Must specify cols')
   if(!( class(cols) %in% c('numeric', 'character', 'integer') )) stop('cols must
@@ -97,9 +97,9 @@
   return(l)
 }
 
-.h2o.singlerun.internal <- function(algo, data, response, nfolds = 0, validation = new("H2OParsedData", key = as.character(NA)), params = list()) {
+.h2o.singlerun.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
   if(!algo %in% c("GBM", "RF", "DeepLearning", "SpeeDRF")) stop("Unsupported algorithm ", algo)
-  if(missing(validation)) validation = new("H2OParsedData", key = as.character(NA))
+  if(missing(validation)) validation = new("h2o.frame", key = as.character(NA))
   model_obj <- switch(algo, GBM = "H2OGBMModel", RF = "H2ODRFModel", DeepLearning = "H2ODeepLearningModel", SpeeDRF = "H2OSpeeDRFModel")
   model_view <- switch(algo, GBM = .h2o.__PAGE_GBMModelView, RF = .h2o.__PAGE_DRFModelView, DeepLearning = .h2o.__PAGE_DeepLearningModelView, SpeeDRF = .h2o.__PAGE_SpeeDRFModelView)
   results_fun <- switch(algo, GBM = .h2o.__getGBMResults, RF = .h2o.__getDRFResults, DeepLearning = .h2o.__getDeepLearningResults, SpeeDRF = .h2o.__getSpeeDRFResults)
@@ -116,9 +116,9 @@
   new(model_obj, key=dest_key, data=data, model=modelOrig, valid=validation, xval=res_xval)
 }
 
-.h2o.gridsearch.internal <- function(algo, data, response, nfolds = 0, validation = new("H2OParsedData", key = as.character(NA)), params = list()) {
+.h2o.gridsearch.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
   if(!algo %in% c("GBM", "KM", "RF", "DeepLearning", "SpeeDRF")) stop("General grid search not supported for ", algo)
-  if(missing(validation)) validation <- new("H2OParsedData", key = as.character(NA))
+  if(missing(validation)) validation <- new("h2o.frame", key = as.character(NA))
   prog_view <- switch(algo, GBM = .h2o.__PAGE_GBMProgress, KM = .h2o.__PAGE_KM2Progress, RF = .h2o.__PAGE_DRFProgress, DeepLearning = .h2o.__PAGE_DeepLearningProgress, SpeeDRF = .h2o.__PAGE_SpeeDRFProgress)
 
   job_key <- response$job_key
@@ -176,7 +176,7 @@
   for(i in 1:nfolds) {
       resX <- .h2o.__remoteSend(data@h2o, model_view, '_modelKey'=xvalKey[i])
       modelXval <- results_fun(resX[[3]], params)
-      res_xval[[i]] <- new(model_obj, key=xvalKey[i], data=data, model=modelXval, valid=new("H2OParsedData", key=as.character(NA)), xval=list())
+      res_xval[[i]] <- new(model_obj, key=xvalKey[i], data=data, model=modelXval, valid=new("h2o.frame", key=as.character(NA)), xval=list())
     }
   return(res_xval)
 }
@@ -237,9 +237,17 @@
 
 
 
-.parms <- function(client, algo, m) {
+.parms <- function(client, algo, m, envir) {
   P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
   p_val <- list()     # list for all of the algo arguments
+  m <- as.list(m)
+
+  m <- lapply(m, function(i)  {
+                                if( is.name(i) ) i <- get(deparse(i), envir)
+                                if( is.call(i) ) i <- eval(i, envir)
+                                if( is.integer(i) ) i <- as.numeric(i)
+                                i
+                                })
 
   #---------- Check user param types ----------#
   error <- lapply(P, function(i) {
@@ -254,7 +262,7 @@
         "barray" = p_type[2] <- "logical",
         "narray" = p_type[2] <- "numeric")
       #browser()
-      if( length(p_type) > 1) {
+      if( length(p_type) > 1 ) {
         p_type <- p_type[2]
         if( !(m[[i$name]] %i% p_type) )
           e %p0% ("array of" %p% i$name %p% ("must be of type" %p% (p_type %p0% (", but got" %p% (class(m[[i$name]]) %p0% ".\n")))))
@@ -277,7 +285,7 @@
 
   #---------- Create param list to pass ----------#
   p_val <- lapply(m, function(i) {
-    if( i %i% "H2OParsedData" )
+    if( i %i% "h2o.frame" )
       return(i@key)
     i
   })
@@ -287,7 +295,7 @@
   if(length(rj$validation_messages) != 0)
     error <- lapply(rj$validation_messages, function(i) {
       e <- ""
-      if(!i$message_type %in% c("HIDE","INFO")) e %p0% i$message %p0% ".\n"
+      if( !(i$message_type %in% c("HIDE","INFO")) ) e %p0% i$message %p0% ".\n"
       e
     })
    if( !all(error == "") ) stop(error)
@@ -297,12 +305,12 @@
   p_val
 }
 
-.run <- function(client, algo, m) {
-  p_val <- .parms(client, algo, m)
+.run <- function(client, algo, m, envir) {
+  p_val <- .parms(client, algo, m, envir)
 
   res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
 
-  job_key <- res$key$name
+  job_key <- res$job[[1]]$key$name
   dest_key <- res$jobs[[1]]$dest$name
   .h2o.__waitOnJob(client, job_key)
   # Grab model output and flatten one level
@@ -310,7 +318,6 @@
 
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models
-
   .newModel(algo, res_model, client)
 }
 

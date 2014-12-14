@@ -1,6 +1,8 @@
 package water.util;
 
 import water.*;
+import water.api.FrameV2;
+import water.api.KeySchema;
 import water.api.Schema;
 
 import java.lang.reflect.Array;
@@ -96,7 +98,19 @@ public class PojoUtils {
             //
             // You can't use reflection to set an int[] with an Integer[].  Argh.
             // TODO: other types of arrays. . .
-            if (dest_field.getType().getComponentType() == int.class && orig_field.getType().getComponentType() == Integer.class) {
+            if (dest_field.getType().getComponentType() == double.class && orig_field.getType().getComponentType() == Double.class) {
+              //
+              // Assigning an Double[] to an double[]
+              //
+              double[] copy = (double[]) orig_field.get(origin);
+              dest_field.set(dest, copy);
+            } else if (dest_field.getType().getComponentType() == Double.class && orig_field.getType().getComponentType() == double.class) {
+              //
+              // Assigning an double[] to an Double[]
+              //
+              Double[] copy = (Double[]) orig_field.get(origin);
+              dest_field.set(dest, copy);
+            } else if (dest_field.getType().getComponentType() == int.class && orig_field.getType().getComponentType() == Integer.class) {
               //
               // Assigning an Integer[] to an int[]
               //
@@ -108,7 +122,7 @@ public class PojoUtils {
               //
               Integer[] copy = (Integer[]) orig_field.get(origin);
               dest_field.set(dest, copy);
-            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(orig_field.getType().getComponentType())) {
+            } else if (Schema.class.isAssignableFrom(dest_field.getType().getComponentType()) && (Schema.getImplClass((Class<?extends Schema>)dest_field.getType().getComponentType())).isAssignableFrom(orig_field.getType().getComponentType())) {
               //
               // Assigning an array of impl fields to an array of schema fields, e.g. a DeepLearningParameters[] into a DeepLearningParametersV2[]
               //
@@ -116,7 +130,7 @@ public class PojoUtils {
               Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
-                translation[i] = ((Schema)dest_field.getType().newInstance()).fillFromImpl(impl);
+                translation[i] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
@@ -147,16 +161,49 @@ public class PojoUtils {
             //
             Value v = DKV.get((Key) orig_field.get(origin));
             dest_field.set(dest, (null == v ? null : v.get()));
+          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a Keyed (e.g., a Frame or Model) to a KeySchema.
+            //
+            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
+          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // Assigning a KeySchema (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
+            //
+            KeySchema k = (KeySchema)orig_field.get(origin);
+            Value v = DKV.get(Key.make(k.name));
+            dest_field.set(dest, (null == v ? null : v.get()));
+          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a Key to a KeySchema.
+            //
+            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>)dest_field.getType()), (Key)orig_field.get(origin)));
+          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // Assigning a KeySchema to a Key.
+            //
+            KeySchema k = (KeySchema)orig_field.get(origin);
+            dest_field.set(dest, (null == k.name ? null : Key.make(k.name)));
           } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String to a Pattern.
             //
-            dest_field.set(dest, Pattern.compile((String)orig_field.get(origin)));
+            dest_field.set(dest, Pattern.compile((String) orig_field.get(origin)));
           } else if (orig_field.getType() == Pattern.class && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // We are assigning a Pattern to a String.
             //
             dest_field.set(dest, orig_field.get(origin).toString());
+          } else if (dest_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a String to a ColSpecifier.  Note that we currently support only the colname, not a frame name too.
+            //
+            dest_field.set(dest, new FrameV2.ColSpecifierV2((String) orig_field.get(origin)));
+          } else if (orig_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // We are assigning a ColSpecifierV2 to a String.  The column_name gets copied.
+            //
+            dest_field.set(dest, ((FrameV2.ColSpecifierV2)orig_field.get(origin)).column_name);
           } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String into an enum field.
@@ -192,7 +239,7 @@ public class PojoUtils {
             } else {
               if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
                 Schema s = ((Schema)dest_field.get(dest));
-                dest_field.set(dest, Schema.schema(s.schema_version, s.getImplClass()).fillFromImpl(v.get()));
+                dest_field.set(dest, Schema.schema(s.getSchemaVersion(), s.getImplClass()).fillFromImpl(v.get()));
               } else {
                 Log.err("Can't fill Schema of type: " + dest_field.getType() + " with value of type: " + v.getClass() + " fetched from Key: " + origin_key);
                 dest_field.set(dest, null);

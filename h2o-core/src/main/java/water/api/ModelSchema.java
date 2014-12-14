@@ -81,7 +81,7 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
     ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSONStr("algo", algo);
     ab.put1(',');
-    ab.putJSONStr("key", key.toString());
+    ab.putJSON("key", key);
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

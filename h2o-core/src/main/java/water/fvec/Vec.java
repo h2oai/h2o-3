@@ -2,7 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.nbhm.NonBlockingHashMapLong;
-import water.parser.Enum;
+import water.parser.Categorical;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -167,18 +167,18 @@ public class Vec extends Keyed {
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
    *  such as file-backed Vecs. */
-  final long[] _espc;
+  final public long[] _espc;
 
   private String [] _domain;
-  /** Returns the enum toString mapping array, or null if not an Enum column.
+  /** Returns the enum toString mapping array, or null if not an Categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
-   *  @return the enum / factor / categorical mapping array, or null if not a Enum column */
+   *  @return the enum / factor / categorical mapping array, or null if not a Categorical column */
   public final String[] domain() { return _domain; }
   /** Returns the {@code i}th factor for this enum column.
    *  @return The {@code i}th factor */
   public final String factor( long i ) { return _domain[(int)i]; }
-  /** Set the Enum/factor/categorical names.  No range-checking on the actual
+  /** Set the Categorical/factor/categorical names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
   public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_ENUM; }
@@ -195,9 +195,9 @@ public class Vec extends Keyed {
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
 
-  /** True if this is an Enum column.  All enum columns are also {@link #isInt}, but
+  /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
-   *  @return true if this is an Enum column.  */
+   *  @return true if this is an Categorical column.  */
   public final boolean isEnum   (){ return _type==T_ENUM || _domain != null; }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
@@ -220,7 +220,7 @@ public class Vec extends Keyed {
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array). */
-  Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
+  public Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
 
   /** Build a numeric-type or enum-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); enum Vecs need to pass the
@@ -379,7 +379,7 @@ public class Vec extends Keyed {
 
   
   // Make a bunch of compatible zero Vectors
-  Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
+  public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
     Key[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
@@ -880,31 +880,41 @@ public class Vec extends Keyed {
   /** Transform this vector to enum.  If the vector is integer vector then its
    *  domain is collected and transformed to corresponding strings.  If the
    *  vector is enum an identity transformation vector is returned.
-   *  Transformation is done by a {@link TransfVec} which provides a mapping
+   *  Transformation is done by a {@link EnumWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
-   *  @return A new Enum Vec  */
-  public TransfVec toEnum() {
+   *  @return A new Categorical Vec  */
+  public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     // Right now, limited to small dense integers.
     if( min() < 0 || max() > 1000000 ) 
       throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
     long[] domain= new CollectDomain().doAll(this).domain();
-    if( domain.length > Enum.MAX_ENUM_SIZE )
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Enum.MAX_ENUM_SIZE);
+    if( domain.length > Categorical.MAX_ENUM_SIZE )
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
     return adaptTo(ArrayUtils.toString(domain));
   }
 
   /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted
-   *  TransfVec has 'this' as it's masterVec, but returns results in the 'to'
+   *  EnumWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
    *  domain (or just past it, if 'this' has elements not appearing in the 'to'
    *  domain). */
-  public TransfVec adaptTo( String[] domain ) {
-    return new TransfVec(group().addVec(),_espc,domain,this._key);
+  public EnumWrappedVec adaptTo( String[] domain ) {
+    return new EnumWrappedVec(group().addVec(),_espc,domain,this._key);
+  }
+
+  /** Transform this vector to strings.  If the
+   *  vector is enum an identity transformation vector is returned.
+   *  Transformation is done by a {@link StrWrappedVec} which provides a mapping
+   *  between values - without copying the underlying data.
+   *  @return A new String Vec  */
+  public StrWrappedVec toStringVec() {
+    if( !isEnum() ) throw new IllegalArgumentException("String conversion only works on enum columns");
+    return new StrWrappedVec(group().addVec(),_espc,this._key);
   }
 
   /** This Vec does not have dependent hidden Vec it uses.
-   *  @see TransfVec
+   *  @see EnumWrappedVec
    *  @return dependent hidden vector or <code>null</code>  */
 //  public Vec masterVec() { return null; }
 

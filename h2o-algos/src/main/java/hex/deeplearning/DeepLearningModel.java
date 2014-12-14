@@ -2,6 +2,8 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.FrameTask.DataInfo;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
 import water.*;
 import water.api.ModelSchema;
@@ -460,27 +462,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
 
-      if (_valid == null)
-        dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
+      if (!_autoencoder) {
+        if (_valid == null)
+          dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
 
-      if (classification) {
-        dl.hide("_regression_stop", "regression_stop is used only with regression.");
-      } else {
-        dl.hide("_classification_stop", "classification_stop is used only with classification.");
-        dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
-        dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-        dl.hide("_balance_classes", "balance_classes is used only with classification.");
+        if (classification) {
+          dl.hide("_regression_stop", "regression_stop is used only with regression.");
+        } else {
+          dl.hide("_classification_stop", "classification_stop is used only with classification.");
+          dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
+          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+          dl.hide("_balance_classes", "balance_classes is used only with classification.");
+        }
+
+        if( !classification || !_balance_classes )
+          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+
+        if (classification && !_balance_classes || !classification)
+          dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
+
+
+        if (!classification && _valid != null || _valid == null)
+          dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
       }
-
-      if( !classification || !_balance_classes )
-        dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
-
-      if (classification && !_balance_classes || !classification)
-        dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
-
-
-      if (!classification && _valid != null || _valid == null)
-        dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
 
       // Auto-fill defaults
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
@@ -513,8 +517,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         _single_node_mode = false;
       }
 
-      if (_autoencoder)
+      if (_autoencoder) {
         dl.hide("_use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
+        dl.hide("_convert_to_enum", "convert_to_enum is unsupported in combination with autoencoder.");
+      }
       if (!_use_all_factor_levels && _autoencoder ) {
         dl.warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
         _use_all_factor_levels = true;
@@ -591,9 +597,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (_autoencoder && _loss != Loss.MeanSquare) dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-      if (_autoencoder && classification) { dl.error("_classification", "Can only use regression mode for auto-encoder.");}
+      else if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
@@ -1322,13 +1327,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   transient private long _timeLastPrintStart;
   /**
    *
-   * @param train training data from which the model is built (for epoch counting only)
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame train, Frame ftrain, Frame ftest, Key job_key) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key) {
     boolean keep_running;
     try {
       final long now = System.currentTimeMillis();
@@ -1604,26 +1608,46 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public Frame scoreAutoEncoder(Frame frame) {
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
-    adaptFrm.add("Reconstruction.MSE", adaptFrm.anyVec().makeZero());
+    Vec v0 = adaptFrm.anyVec().makeZero();
+    Scope.enter();
+    adaptTestForTrain(adaptFrm,true);
+    adaptFrm.add("Reconstruction.MSE", v0);
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
-          for( int i=0; i<_output._names.length; i++ )
-            tmp[i] = chks[i].at0(row); //original data
-          chks[len].set0(row, score_autoencoder(tmp, null, neurons)); //store the per-row reconstruction error (MSE) in the last column
+          for( int i=0; i<len; i++ )
+            tmp[i] = chks[i].at0(row);
+          //store the per-row reconstruction error (MSE) in the last column
+          chks[len].set0(row, score_autoencoder(tmp, null, neurons));
         }
       }
     }.doAll(adaptFrm);
+    Scope.exit();
 
     // Return just the output columns
-    int x=_output._names.length, y=adaptFrm.numCols();
-    return adaptFrm.extractFrame(x, y);
+    return adaptFrm.extractFrame(len, adaptFrm.numCols());
   }
 
+  @Override public Frame score(Frame fr) {
+    if (!_parms._autoencoder)
+      return super.score(fr);
+    else {
+      Frame adaptFr = new Frame(fr);
+      adaptTestForTrain(adaptFr, true);   // Adapt
+      Frame output = scoreImpl(fr, adaptFr); // Score
 
-//  /**
+      Vec[] vecs = adaptFr.vecs();
+      for (int i = 0; i < vecs.length; i++)
+        if (fr.find(vecs[i]) != -1) // Exists in the original frame?
+          vecs[i] = null;            // Do not delete it
+      adaptFr.delete();
+      return output;
+    }
+  }
+
+  //  /**
 //   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
 //   * @param frame Original data (can contain response, will be ignored)
 //   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
@@ -1726,22 +1750,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return l2;
   }
 
-//  /**
-//   * Compute quantile-based threshold (in reconstruction error) to find outliers
-//   * @param mse Vector containing reconstruction errors
-//   * @param quantile Quantile for cut-off
-//   * @return Threshold in MSE value for a point to be above the quantile
-//   */
-//  public double calcOutlierThreshold(Vec mse, double quantile) {
-//    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
-//    QuantilesPage qp = new QuantilesPage();
-//    qp.column = mse_frame.vec(0);
-//    qp.source_key = mse_frame;
-//    qp.quantile = quantile;
-//    qp.invoke();
-//    DKV.remove(mse_frame._key);
-//    return qp.result;
-//  }
+  /**
+   * Compute quantile-based threshold (in reconstruction error) to find outliers
+   * @param mse Vector containing reconstruction errors
+   * @param quantile Quantile for cut-off
+   * @return Threshold in MSE value for a point to be above the quantile
+   */
+  public double calcOutlierThreshold(Vec mse, double quantile) {
+    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
+    DKV.put(mse_frame._key, mse_frame);
+
+    QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+    parms._train = mse_frame._key;
+    parms._probs = new double[]{quantile};
+    Quantile job = new Quantile(parms).trainModel();
+    QuantileModel kmm = job.get();
+    job.remove();
+    double q = kmm._output._quantiles[0][0];
+    kmm.delete();
+    DKV.remove(mse_frame._key);
+    return q;
+  }
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {

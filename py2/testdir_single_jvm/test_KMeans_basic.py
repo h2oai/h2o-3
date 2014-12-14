@@ -33,10 +33,12 @@ class Basic(unittest.TestCase):
 
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
             timeoutSecs=180, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         expected = [
             ([8.86, 2.43, 35.53, 0.31, 13.22, 1.47, 1.33, 20.06, 13.08, 0.53, 2.12, 128.61, 35.33, 1.57], 49, None), 
@@ -60,9 +62,9 @@ class Basic(unittest.TestCase):
                 'validation_frame': parse_key,
                 'ignored_columns': None,
                 'score_each_iteration': False,
-                'K': 4, 
+                'k': 4,
                 'max_iters': 50,
-                'normalize': False,
+                'standardize': False,
                 'seed': kmeansSeed,
                 'init': 'PlusPlus',
             }
@@ -102,10 +104,12 @@ class Basic(unittest.TestCase):
 
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
             timeoutSecs=180, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         # loop, to see if we get same centers
 
@@ -132,9 +136,9 @@ class Basic(unittest.TestCase):
                 'validation_frame': parse_key,
                 'ignored_columns': '[ID]',
                 'score_each_iteration': False,
-                'K': 3, 
+                'k': 3,
                 'max_iters': 500,
-                'normalize': False,
+                'standardize': False,
                 'seed': kmeansSeed,
                 'init': 'PlusPlus',
             }

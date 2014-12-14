@@ -2,7 +2,7 @@
 #' Retrieve Model Data
 #'
 #' After a model is constructed by H2O, R must create a view of the model. All views are backed by S4 objects that
-#' subclass the H2OModel object (see classes.R for class specifications).
+#' subclass the h2o.model object (see classes.R for class specifications).
 #'
 #' This file contains the set of model getters that fill out and return the appropriate S4 object.
 #'
@@ -329,11 +329,22 @@ function(model) {
 }
 
 .kmeans.builder <- function(json, client) {
-  new("H2OKMeansModel", h2o = client, key = json$key, model = json$output,
-      valid = new("H2OParsedData", h2o = client, key="NA"))
+  new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o = client, key="NA"))
 }
 
 .gbm.builder <- function(json, client) {
-  new("H2OGBMModel", h2o = client, key = json$key, model = json$output,
-      valid = new("H2OParsedData", h2o=client, key="NA"), xval = list())
+  new("H2OGBMModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+}
+
+.glm.builder <- function(json, client) {
+  new("H2OGLMModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+}
+
+.deeplearning.builder <- function(json, client) {
+  new("H2ODeepLearningModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+
 }

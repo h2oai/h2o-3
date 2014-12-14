@@ -39,12 +39,12 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     rows = ko.rows # [78, 5, 41, 76]
     model_category = ko.model_category # Clustering
     iters = ko.iters # 11.0
-    schema_version = ko.schema_version # 2
+    # schema_version = ko.schema_version # 2
     domains = ko.domains # [None, None, None, None, None, None, None, None, None, None, None, None, None, None]
     # 
     names = ko.names # [u'STR', u'OBS', u'AGMT', u'FNDX', u'HIGD', u'DEG', u'CHK', u'AGP1', u'AGMN', u'NLV', u'LIV', u'WT', u'AGLP', u'MST']
-    schema_name = ko.schema_name # KMeansModelOutputV2
-    schema_type = ko.schema_type # KMeansOutput
+    # schema_name = ko.schema_name # KMeansModelOutputV2
+    # schema_type = ko.schema_type # KMeansOutput
     ncats = ko.ncats # 0
     clusters = ko.clusters # [ 4 lists of centers ]
     mse = ko.mse # 505.632581773
@@ -53,11 +53,11 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     if numRows:
         assert numRows==sum(rows)
 
-    if 'K' in parameters:
-        K = parameters['K']
-        assert len(mses) == K
-        assert len(clusters) == K
-        assert len(rows) == K
+    if 'k' in parameters:
+        k = parameters['k']
+        assert len(mses) == k
+        assert len(clusters) == k
+        assert len(rows) == k
 
     if numCols:
         assert len(names) == numCols, \
@@ -88,7 +88,7 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
 
     # create a tuple for each cluster result, then sort by rows for easy comparison
     # maybe should sort by centers?
-    # put a cluster index in there too, (leftmost) so we don't lose teack
+    # put a cluster index in there too, (leftmost) so we don't lose track
     tuples = zip(range(len(clusters)), mses, rows, clusters)
     tuplesSorted = sorted(tuples, key=itemgetter(3))
 
@@ -119,7 +119,7 @@ def bigCheckResults(self, kmeans, csvPathname, parseResult, predictKey, **kwargs
     cluster_variances = model["within_cluster_variances"]
     error = model["total_within_SS"]
     iterations = model["iterations"]
-    normalized = model["normalized"]
+    standardized = model["standardized"]
     max_iter = model["max_iter"]
     kmeansResult = kmeans
 

@@ -2,12 +2,11 @@
 import getpass, inspect, sys, argparse, unittest, os
 from h2o_get_ip import get_ip_address
 
-# print "h2o_args"
+# this should be imported in full to init these before unit_main might be called
+
 # Global disable. used to prevent browsing when running nosetests, or when given -bd arg
 # Defaults to true, if user=jenkins, h2o.unit_main isn't executed, so parse_our_args isn't executed.
 # Since nosetests doesn't execute h2o.unit_main, it should have the browser disabled.
-
-# this should be imported in full to init these before unit_main might be called
 browse_disable = True
 browse_json = False
 verbose = False
@@ -26,28 +25,16 @@ clone_cloud_json = None
 disable_time_stamp = True # change to default to True, for h2o-dev (for now?)
 debug_rest = False
 long_test_case = False
+no_timeout = False
 usecloud = None
 # optionally checks expected size if usecloud is used
 # None means no check
 usecloud_size = None
 
-
-python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
-# no command line args if run with just nose
-python_cmd_args = ""
-# don't really know what it is if nosetests did some stuff. Should be just the test with no args
-python_cmd_line = ""
-python_username = getpass.getuser()
-
 # The stack is deeper with nose, compared to command line with python
 # Walk thru the stack looking for ^test_", since we know tests always start with "test_"
 # from nose case:
 # inspect.stack()[2] (<frame object at 0x11e7150>, 'test_speedrf_many_cols_enum.py', 5, '<module>', ['import h2o, h2o_cmd, h2o_hosts, h2o_rf, h2o_gbm\n'], 0)
-
-# h2o_sandbox.py has some attempts (commented out) at looking for python test names (logged) in h2o stdout
-# to serve as marker boundaries for log scraping (instead of incremental line counting)
-# so good to get this correct (will be used by the h2o_nodes[0].h2o_log_msg() (2/LogAndEcho)
-
 def find_python_test_name():
     python_test_name = "unknown"
     for s in inspect.stack():
@@ -59,9 +46,31 @@ def find_python_test_name():
     return python_test_name
 
 python_test_name = find_python_test_name()
-# print "    Test: %s" % python_test_name
+python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
+python_username = getpass.getuser()
 
+# no command line args if run with just nose
+python_cmd_args = ""
+# don't really know what it is if nosetests did some stuff. Should be just the test with no args
+python_cmd_line = ""
+
+
+# h2o_sandbox.py has some attempts (commented out) at looking for python test names (logged) in h2o stdout
+# to serve as marker boundaries for log scraping (instead of incremental line counting)
+# so good to get this correct (will be used by the h2o_nodes[0].h2o_log_msg() (2/LogAndEcho)
+
+# noop if already done
+# allows use to call it in h2o.setup_random_seed, and h2o.init, to make sure we init the SEED if -s
+# before any use (random can be used in h2o.init)
+# can't guarantee the test runner uses unit_main..so we might as well remove it from unit_main (below)
+parse_args_done = False
 def parse_our_args():
+    global parse_args_done
+    if parse_args_done:
+        print "parse_our_args() already done"
+        return
+    parse_args_done = True
+
     parser = argparse.ArgumentParser()
     # can add more here
     parser.add_argument('-bd', '--browse_disable',
@@ -121,6 +130,9 @@ def parse_our_args():
         help="ip:port of cloud to send tests to instead of starting clouds.")
     parser.add_argument('-ucs', '--usecloud_size',
         help="optionally say the size of the usecloud, code will check size is as expected")
+    parser.add_argument('-nt', '--no_timeout',
+        help="disable all timeout checks and exceptions",
+        action='store_true')
 
     parser.add_argument('unittest_args', nargs='*')
     args = parser.parse_args()
@@ -132,7 +144,7 @@ def parse_our_args():
     global browse_disable, browse_json, verbose, ip_from_cmd_line, port_from_cmd_line, config_json, debugger
     global random_udp_drop
     global random_seed, beta_features, sleep_at_tear_down, abort_after_import
-    global clone_cloud_json, disable_time_stamp, debug_rest, long_test_case, usecloud, usecloud_size
+    global clone_cloud_json, disable_time_stamp, debug_rest, long_test_case, no_timeout, usecloud, usecloud_size
 
     browse_disable = args.browse_disable or getpass.getuser() == 'jenkins'
     browse_json = args.browse_json
@@ -158,6 +170,7 @@ def parse_our_args():
     debug_rest = args.debug_rest
     long_test_case = args.long_test_case
 
+    no_timeout = args.no_timeout
     # Take usecloud from the command line and from the environment.
     # Environment USECLOUD=1 is equivalent to USECLOUD=localhost:54321
     usecloud = args.usecloud
@@ -183,50 +196,30 @@ def parse_our_args():
 
 #
 # unit_main can be called in two different ways.
-# One way is from the main program in the command-line.
-# The second way is from the test class setUpClass() method (this how IDEA/PyCharm calls the test).
-#
-# We want to make sure that in the IDE case that unit_main() is only executed once.
-#
-g_unit_main_already_called = False
-
+# 1) from the main program in the command-line.
+# 2) from the test class setUpClass() method (this how IDEA/PyCharm calls the test).
+# Make sure that in the IDE case that unit_main() is only executed once.
+unit_main_done = False
 def unit_main():
-    global g_unit_main_already_called
-    if g_unit_main_already_called:
+    global unit_main_done
+    if unit_main_done:
+        print "unit_main() already done"
         return
-    g_unit_main_already_called = True
+    unit_main_done = True
 
+    # need this here to do args stripping before unittest sees things?
+    # other calls will be noop-ed..i.e. this will only do work once
     parse_our_args()
-    start_unittest_runner = True
 
-    if False:
-        import traceback
-        frames = traceback.extract_stack()
-        # PyDev remote debugger already active?
-        # http://pydev.org/manual_adv_remote_debugger.html
-        if "pydevd.py" in frames[0][0]:
-            start_unittest_runner = False
-
-        # PyCharm or nose runner already active?
-        for frame in frames:
-            print(frame[0])
-            if "utrunner.py" in frame[0] or "/nose/" in frame[0]:
-                start_unittest_runner = False
-
-    global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
-    # if I remember correctly there was an issue with using sys.argv[0]
-    # under nosetests?.
-    # yes, see above. We just duplicate it here although sys.argv[0] might be fine here
-    # Use the top of stack!
+    # global python_test_name, python_cmd_args, python_cmd_line, python_cmd_ip, python_username
+    global python_test_name, python_cmd_args, python_cmd_line
     python_test_name = find_python_test_name()
     python_cmd_args = " ".join(sys.argv[1:])
     python_cmd_line = "python %s %s" % (python_test_name, python_cmd_args)
-    python_username = getpass.getuser()
-    # depends on ip_from_cmd_line
-    python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
+    # python_username = getpass.getuser()
+    # python_cmd_ip = get_ip_address(ipFromCmdLine=ip_from_cmd_line)
 
-    # if test was run with nosetests, it wouldn't execute unit_main() so we won't see this
+    # if test was run with nosetests, it won't execute unit_main() so we won't see this
     # so this is correct, for stuff run with 'python ..."
     print "\nunit_main. Test: %s    command line: %s" % (python_test_name, python_cmd_line)
-    if start_unittest_runner:
-        unittest.main()
+    unittest.main()

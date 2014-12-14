@@ -153,7 +153,8 @@ function(o) {
 #'                        ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
 #'                        ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
 #'                        ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
-#'                        ‘"cos"’,   ‘"cosh"’,   ‘"sin"’,    ‘"sinh"’,    ‘"tan"’,  ‘"tanh"’,
+#'                        ‘"cos"’,   ‘"cosh"’,   ‘"cospi"’,  ‘"sin"’,     ‘"sinh"’, ‘"sinpi"’,
+#'                        ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
 #'                        ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’, ‘"is.na"’
 #'
 #'      B. .h2o.varop: ‘"round"’, ‘"signif"’
@@ -208,7 +209,7 @@ function(stmnt) {
       op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
-      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
+      else l <- formals(getMethod(as.character(op), "h2o.frame"))[-1]
       if (is.null(l)) stop("Could not find args for the op: " %p0% as.character(op))
       l <- lapply(l, function(i)
       if (length(i=="") != 0) {
@@ -429,14 +430,14 @@ function(s) {
     res %p0% s@op
     res %p% visitor(s@condition)$ast
     body <- .body.visitor(s@body)
-    for (b in body) {res %p% b}  #; res %p0% ";;" }
+    for (b in body) {res %p% b}
     res %p0% ')'
     return(res)
   } else if (s %i% "ASTElse") {
     res %p0% '('
     res %p0% s@op
     body <- .body.visitor(s@body)
-    for (b in body) {res %p% b}  #; res %p0% ";;" }
+    for (b in body) {res %p% b}
     res %p0% ')'
     return(res)
   } else if (s %i% "ASTFor") {
@@ -447,6 +448,15 @@ function(s) {
   } else if (s %i% "character") {
     res %p% s
     return(res)
+  } else if (s %i% "h2o.frame") {
+    tmp <- .get(s)
+    if (tmp %i% "ASTNode") {
+      res %p% visitor(s@ast)$ast
+      return(res)
+    } else {
+      res %p% s
+      return(res)
+    }
   } else if (s %i% "ASTEmpty") {
     res %p% '$' %p0% s@key
   } else {

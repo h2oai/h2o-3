@@ -2,12 +2,14 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
-import water.H2O;
+import water.Job;
 import water.api.Handler;
+import water.api.JobV2;
+import water.api.Schema;
 
-/** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */
+/** TODO: only used by old-school web ui: remove!  ModelBuilderHandler does this for all the algos.  */
 @Deprecated
-public class KMeansHandler extends Handler<KMeans, KMeansV2> {
+public class KMeansHandler extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -15,14 +17,12 @@ public class KMeansHandler extends Handler<KMeans, KMeansV2> {
 
   // TODO: move this into a new ModelBuilderHandler superclass
   // TODO: also add a score method in the new ModelBuilderHandler superclass
-  public KMeansV2 train(int version, KMeans builder) {
+  public KMeansV2 train(int version, KMeansV2 s) {
+    KMeans builder = s.createAndFillImpl();
     KMeansParameters parms = builder._parms;
     assert parms != null; /* impl._job = */
     builder.trainModel();
-    KMeansV2 schema = schema(version).fillFromImpl(builder); // TODO: superclass!
-    schema.job = builder._key;
-    return schema;
+    s.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(builder);
+    return s;
   }
-  @Override protected KMeansV2 schema(int version) { KMeansV2 schema = new KMeansV2(); schema.parameters = schema.createParametersSchema(); return schema; }
-  @Override public void compute2() { throw H2O.fail(); }
 }

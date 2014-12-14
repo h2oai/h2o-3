@@ -6,7 +6,7 @@ import water.*;
 import water.fvec.Frame;
 import water.util.Log;
 
-class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, ModelMetricsHandler.ModelMetricsListSchemaV3> {
+class ModelMetricsHandler extends Handler {
   @Override protected int min_ver() { return 3; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
@@ -189,36 +189,37 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
 
   /** Return a single ModelMetrics. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsList m) {
+  public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsListSchemaV3 s) {
+    ModelMetricsList m = s.createAndFillImpl();
     m.model_metrics = m.fetch();
-    ModelMetricsListSchemaV3 schema = this.schema(version).fillFromImpl(m);
-    return schema;
+    s.fillFromImpl(m);
+    return s;
   }
 
   /** Return all ModelMetrics. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelMetricsListSchemaV3 list(int version, ModelMetricsList ignore) {
-    ModelMetricsList mm = new ModelMetricsList();
-    mm.model = null;
-    mm.frame = null;
-    return fetch(version, mm);
+  public ModelMetricsListSchemaV3 list(int version, ModelMetricsListSchemaV3 s) {
+    s.model = null;
+    s.frame = null;
+    return fetch(version, s);
   }
 
   /**
    * Score a frame with the given model and return just the metrics.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelMetricsListSchemaV3 score(int version, ModelMetricsList parms) {
+  public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
+    ModelMetricsList parms = s.createAndFillImpl();
     ModelMetrics metrics = ModelMetrics.getFromDKV(parms.model, parms.frame);
 
     if (null != metrics) {
       Log.debug("using ModelMetrics from the cache. . .");
-      return this.fetch(version, parms);
+      return this.fetch(version, s);
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
     parms.model.score(parms.frame); // throw away predictions
-    ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+    ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
     // For the others cons one up here to return the predictions frame.
@@ -237,10 +238,11 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
    * Score a frame with the given model and return the metrics AND the prediction frame.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelMetricsListSchemaV3 predict(int version, ModelMetricsList parms) {
+  public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // No caching for predict()
+    ModelMetricsList parms = s.createAndFillImpl();
     Frame predictions = parms.model.score(parms.frame);
-    ModelMetricsListSchemaV3 mm = this.fetch(version, parms);
+    ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
     // For the others cons one up here to return the predictions frame.
@@ -299,16 +301,5 @@ class ModelMetricsHandler extends Handler<ModelMetricsHandler.ModelMetricsList, 
     return s;
   }
   */
-
-
-  @Override protected ModelMetricsListSchemaV3 schema(int version) {
-    switch (version) {
-    case 3:   return new ModelMetricsListSchemaV3();
-    default:  throw H2O.fail("Bad version for ModelMetrics schema: " + version);
-    }
-  }
-
-  // Need to stub this because it's required by H2OCountedCompleter:
-  @Override public void compute2() { throw H2O.fail(); }
 
 }

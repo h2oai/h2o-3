@@ -51,7 +51,7 @@ public class AUC extends Iced {
 //    init();
 //    Vec va = null, vp;
 //    try {
-//      va = vactual.toEnum(); // always returns TransfVec
+//      va = vactual.toEnum(); // always returns EnumWrappedVec
 //      vp = vpredict;
 //      // The vectors are from different groups => align them, but properly delete it after computation
 //      if (!va.group().equals(vp.group())) {

@@ -2,16 +2,19 @@ package hex.api;
 
 import hex.quantile.Quantile;
 import hex.schemas.QuantileV2;
-import water.H2O;
 import water.api.ModelBuilderHandler;
+import water.api.Schema;
 
 public class QuantileBuilderHandler extends ModelBuilderHandler<Quantile, QuantileV2, QuantileV2.QuantileParametersV2> {
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public Schema train(int version, QuantileV2 builderSchema) {
+    return super.do_train(version, builderSchema);
+  }
 
-  @Override protected QuantileV2 schema(int version) {
-    switch (version) {
-      case 2:   { QuantileV2 b = new QuantileV2(); b.parameters = b.createParametersSchema(); return b; }
-      default:  throw H2O.fail("Bad version for ModelBuilder schema: " + version);
-    }
+  /** Required so that Handler.handle() gets the correct schema types. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public QuantileV2 validate_parameters(int version, QuantileV2 builderSchema) {
+    return super.do_validate_parameters(version, builderSchema);
   }
 }
-

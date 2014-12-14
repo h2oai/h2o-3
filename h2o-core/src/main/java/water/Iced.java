@@ -3,18 +3,34 @@ package water;
 import water.util.DocGen.HTML;
 import java.io.*;
 
-/** Auto-serializer base-class using a delegator pattern (the faster option is
- *  to byte-code gen directly in all Iced classes, but this requires all Iced
- *  classes go through a ClassLoader). 
- *  <p>
- *  Iced is a marker class, and {@link Freezable} is the companion marker
- *  interface.  Marked classes have 2-byte integer type associated with them,
- *  and an auto-genned delegate class created to actually do serialization.
- *  Serialization is extremely dense (includes various compressions), and
- *  typically memory-bandwidth bound to generate. 
- *  <p>
- *  H2O uses Iced classes as the primary means of moving Java Objects around
- *  the cluster. */
+/**
+ * H2O uses Iced classes as the primary means of moving Java Objects around
+ * the cluster.
+ * <p>
+ * Auto-serializer base-class using a delegator pattern (the faster option is
+ * to byte-code gen directly in all Iced classes, but this requires all Iced
+ * classes go through a ClassLoader).
+ * <p>
+ * Iced is a marker class, and {@link Freezable} is the companion marker
+ * interface.  Marked classes have 2-byte integer type associated with them,
+ * and an auto-genned delegate class created to actually do byte-stream and
+ * JSON serialization and deserialization.  Byte-stream serialization is
+ * extremely dense (includes various compressions), and typically memory-bandwidth
+ * bound to generate.
+ * <p>
+ * During startup time the Weaver creates a parallel set of classes called
+ * (classname)$Icer.  These provide bytestream and JSON serializers
+ * and deserializers which get called by AutoBuffer.write* and AutoBugger.read*.
+ * <p>
+ * To debug the automagic serialization code create a transient field in your Iced
+ * class called DEBUG_WEAVER.  The generated source code will get written to STDOUT:
+ * <p>
+ * {@code
+ * transient int DEBUG_WEAVER = 1;
+ * }
+ * @see water.Weaver
+ * @see water.AutoBuffer
+ */
 abstract public class Iced<D extends Iced> implements Freezable, Externalizable {
 
   // The serialization flavor / delegate.  Lazily set on first use.

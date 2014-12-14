@@ -41,11 +41,7 @@ function() {
   if(file.exists(commandsLog)) file.remove(commandsLog)
   if(file.exists(errorsLog)) file.remove(errorsLog)
   write.table(SEED, paste(Rsandbox, "/seed", sep = ""), row.names = F, col.names = F)
-  h2o.__LOG_COMMAND <- Rsandbox
-  h2o.__LOG_ERROR   <- Rsandbox
-  h2o.setLogPath(normalizePath(h2o.__LOG_COMMAND), "Command")
-  h2o.setLogPath(normalizePath(h2o.__LOG_ERROR), "Error")
-  h2o.startLogging()  
+  h2o.startLogging(paste(Rsandbox, "/rest.log", sep = ""))
 }
 
 Log.info<-
@@ -199,7 +195,7 @@ withWarnings <- function(expr) {
 doTest<-
 function(testDesc, test) {
     Log.info("======================== Begin Test ===========================\n")
-    conn <<- new("H2OClient", ip=myIP, port=myPort)
+    conn <<- new("h2o.client", ip=myIP, port=myPort)
     assign("conn", conn, globalenv())
     tryCatch(test_that(testDesc, withWarnings(test(conn))), warning = function(w) WARN(w), error =function(e) FAIL(e))
     if (!PASSS) FAIL("Did not reach the end of test. Check Rsandbox/errors.log for warnings and errors.")

@@ -15,8 +15,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_GBM_covtype_train_test(self):
-
+    def test_GBM_basic(self):
         bucket = 'home-0xdiag-datasets'
         importFolderPath = 'standard'
         trainFilename = 'covtype.shuffled.90pct.data'
@@ -24,12 +23,15 @@ class Basic(unittest.TestCase):
         model_key = 'GBMModelKey'
         timeoutSecs = 1800
         csvPathname = importFolderPath + "/" + trainFilename
-
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
             hex_key=train_key, timeoutSecs=timeoutSecs)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         labelListUsed = list(labelList)
         numColsUsed = numCols
@@ -68,9 +70,12 @@ class Basic(unittest.TestCase):
 
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
+        print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
 
         mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-        mm = OutputObj(mmResult, 'mm')
+        mmResultShort = mmResult['model_metrics'][0]
+        del mmResultShort['frame'] # too much!
+        mm = OutputObj(mmResultShort, 'mm')
 
         prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
         pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')

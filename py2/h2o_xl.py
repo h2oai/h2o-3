@@ -10,7 +10,7 @@ debugNoH2O = False
 def debugprint(*args, **kwargs):
     if debugPrintEnable:
         # compatible with print definition
-        for x in args: 
+        for x in args:
             print x,
         for x in kwargs:
             print x,
@@ -27,13 +27,45 @@ def checkAst(expected):
 
 # we init to 1 row/col. (-1) can't figure how how to init to no rows in a single expression
 def astForInit(frame):
-     return '(= !%s (c {#-1}))' % frame
+    return '(= !%s (c {#-1}))' % frame
+    # will this work?
+    # return '(= !%s "null")' % frame
 
 class Xbase(object):
     lastExecResult = {}
     lastResult = None
     defaultAst = "Empty from Xbase init"
     keyWriteHistoryList = []
+
+    def refcntInc(self, *args):
+    # Expr shouldn't be used? but maybe useful redirect.
+        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
+            return
+        if isinstance(self, (int, float, list, tuple)):
+            return
+
+        self.refcnt += 1
+        # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
+        # by making that non-indexed assign look like the indexed assign, things should be easier.
+        # Items can be root?
+        h2p.red_print("refcntInc: %s for" % self.refcnt, id(self), type(self), self)
+        # so we refcnt ourselves once? so if refcnt=1, that's a "root" ?
+        if self.refcnt > 1:
+            h2o.red_print("INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self))
+
+        for a in args:
+            if a:
+                if isinstance(a, list):
+                    for operand in a:
+                        if operand:
+                            operand.refcntInc()
+                else:
+                    a.refcntInc()
+
+    def assignIfRoot(self):
+        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
+            return
+        h2p.red_print("assignIfRoot for", id(self), type(self), self)
 
     # not used
     def json(self): # returns a json string. debugprint(s it too.)
@@ -43,6 +75,9 @@ class Xbase(object):
         return s
 
     def __init__(self):
+        # increment this on every rhs of an object. If an objec still has this == 0, then it's the root object for a rhs.
+        self.refcnt = 0
+
         self.assignDisable = True # easier than making type-dependent decisions in .do()?
         self.funs = False
         self.execExpr = None
@@ -54,11 +89,16 @@ class Xbase(object):
         # .result could be a property that triggers a csv download, if we didn't cache the scalar/list result because it was small?
         # i.e. check if .result_cached was None, when .result property is used (property to avoid the need for ()
         self.result = None
-        self.scalar = None 
+        self.scalar = None
+
+        # refcnt looks at this?
+        self.function = None
+        self.rhs = None
+        self.lhs = None
 
     def __str__(self):
         # this should always be overwritten by the other classes"
-        return self.defaultAst
+        return Xbase.defaultAst
 
     __repr__ = __str__
 
@@ -66,10 +106,10 @@ class Xbase(object):
         debugprint("\n%s __getitem__ start" % type(self))
         # If self is anything other a Key, means it was from a pending eval with no Assign.
         # Assign's should always have been .do()'ed, so views of them become Keys?
-        # Keys with indexed views, become KeyIndexed. 
+        # Keys with indexed views, become KeyIndexed.
         # Fcn operations can happen on KeyIndexed or Key.
 
-        # a = b[0] is just a view. 
+        # a = b[0] is just a view.
         # b[1] = c[3] is a transformation of a dataframe, since b[1:0] will be different view after.
 
         # Keys: If there's no name (None) , one will be created based on the instance id
@@ -109,6 +149,16 @@ class Xbase(object):
 
         return Key(key=lhs.frame)
 
+    # this allows a Key to be used to slice another Key?
+    def __index__(self):
+        return self
+
+    # http://www.siafoo.net/article/57
+    # def __len__(self)
+    # def __contains__(self, item)
+    # def __iter__(self)
+    # def __reversed__(self)
+
     # Only Keys are flexible enough to be index'ed
     def __setitem__(self, items, rhs):
         # Don't try to do it twice, if ilshift was involved
@@ -132,7 +182,7 @@ class Xbase(object):
             debugprint('WARNING: lhs for <<= needs to be Key/KeyIndexed %s %s' % (type(self), self))
             debugprint("coercing lhs to Key")
             lhs = Key() # anonymous
-        
+
         a = self._do_assign(lhs, rhs, 'ilshift')
         debugprint("ilshift _do_assign %s %s" % (lhs, rhs))
         # belt and suspenders? may not be all needed
@@ -148,9 +198,7 @@ class Xbase(object):
         # FIX! add row/col len checks against Key objects
         if not isinstance(self, (Key, KeyIndexed, Fcn, Item)):
             raise TypeError('h2o_xl unsupported operand type(s) for %s: %s' % (funstr, type(self)))
-        else:
-            raise TypeError('h2o_xl unsupported operand type(s) for %s: %s and %s' % \
-                (funstr, type(self)))
+        return Fcn(funstr, self)
 
     def _binary_common(self, funstr, right):
         # funstr is the h2o function string..this function is just fot standard binary ops?
@@ -174,42 +222,42 @@ class Xbase(object):
     def __sub__(self, right):
         return self._binary_common('-', right)
     def __rsub_(self, left):
-        return self.__add__(left)
+        return self.__sub__(left)
 
     def __mul__(self, right):
         return self._binary_common('*', right)
     def __rmul_(self, left):
-        return self.__add__(left)
+        return self.__mul__(left)
 
     def __div__(self, right):
         return self._binary_common('/', right)
     def __rdiv_(self, left):
-        return self.__add__(left) 
+        return self.__div__(left)
 
     def __mod__(self, right):
         return self._binary_common('%', right)
     def __rmod_(self, left):
-        return self.__add__(left)
+        return self.__mod__(left)
 
     def __pow__(self, right):
         return self._binary_common('**', right)
     def __rpow_(self, left):
-        return self.__add__(left)
+        return self.__pow__(left)
 
     def __and__(self, right):
         return self._binary_common('&', right)
     def __rand_(self, left):
-        return self.__add__(left)
+        return self.__and__(left)
 
     def __or__(self, right):
         return self._binary_common('|', right)
     def __ror_(self, left):
-        return self.__add__(left)
+        return self.__or__(left)
 
     def __xor__(self, right):
         return self._binary_common('^', right)
     def __rxor_(self, left):
-        return self.__add__(left)
+        return self.__xor__(left)
 
     # don't use __cmp__ ?
 
@@ -217,18 +265,20 @@ class Xbase(object):
     # none of the extended assigns (since we overload <<=)
     # // is __floordiv (does h2o do that)
     # << and >> are lshift and rshift
-    
+
     # unary
     # -, +, abs, ~, int, float
+    def __invert__(self):
+        # FIX! this isn't right if more than one col?
+        return self._binary_common('^', 1)
     def __neg__(self):
-        return _unary_common('_') # use special Rapids negation function
-    # pos is a no-op? just return self?
-    def __pos__(self):
+        return self._unary_common('_') # use special Rapids negation function
+    def __pos__(self): # pos is a no-op? just return self?
         return self
     def __abs__(self):
-        return _unary_common('abs')
+        return self._unary_common('abs')
     def __int__(self):
-        return _unary_common('trunc')
+        return self._unary_common('trunc')
 
     # does h2o allow conversion to reals? ints to reals?  does it matter *because of compression*
     # (what if enums or strings)
@@ -242,8 +292,8 @@ class Xbase(object):
     # this all work inside h2o
     # FIX! how does a condition on a h2o operation, get used with a python if?
     # these result in function objects, not booleans
-    # maybe h2o_to_boolean(...) expects as boolean h2o function 
-    # or a generic h2o_to_local(..) just gets whatever the response is? 
+    # maybe h2o_to_boolean(...) expects as boolean h2o function
+    # or a generic h2o_to_local(..) just gets whatever the response is?
     # if it's a column, it's a list. If it's a value, it can be used as a boolean
     # maybe LocalAssign()
     # I suppose LocalAssign() could be deduced, by seeing if a Assign() target is Key or not (we do allow string?)
@@ -253,27 +303,27 @@ class Xbase(object):
     # Could do Put, but Assign takes local objects okay? (will it know when to download csv)
     # Put(key, a)
     # or key <<= Put(a)
-    
+
     # these are used for local h2o compare expressions..i.e when they operate on Keys
     def __lt__(self, right):
         return self._binary_common('<', right)
     def __rlt_(self, left):
-        return self.__add__(left)
+        return self.__lt__(left)
 
     def __le__(self, right):
         return self._binary_common('<=', right)
     def __rle_(self, left):
-        return self.__add__(left)
+        return self.__le__(left)
 
     def __gt__(self, right):
         return self._binary_common('<', right)
     def __rgt_(self, left):
-        return self.__add__(left)
+        return self.__gt__(left)
 
     def __ge__(self, right):
         return self._binary_common('<=', right)
     def __rge_(self, left):
-        return self.__add__(left)
+        return self.__ge__(left)
 
     def __eq__(self, right):
         # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))
@@ -317,29 +367,27 @@ class Xbase(object):
         # self.check_do_against_ast()
 
         h2p.green_print("%s .do() ast: %s" % (type(self), execExpr1))
-        if not debugNoH2O: 
+        if not debugNoH2O:
             # functions can be multiple statements in Rapids, need []
             execResult1, result1 = h2e.exec_expr(execExpr=execExpr1, doFuns=self.funs, timeoutSecs=timeoutSecs)
             # look at our secret stash in the base class
             if execResult1['key'] is not None:
                 Xbase.keyWriteHistoryList.append(execExpr1)
 
-            # remember the num_rows/num_cols (maybe update the saved col names 
-            # this could update to None for scalar/string 
+            # remember the num_rows/num_cols (maybe update the saved col names
+            # this could update to None for scalar/string
             # (temporary till we assign to key next in those cases)
             self.numRows = execResult1['num_rows']
             self.numCols = execResult1['num_cols']
             self.scalar = execResult1['scalar']
 
-            # Deal with h2o weirdness. 
+            # Deal with h2o weirdness.
             # If it gave a scalar result and didn't create a key, put that scalar in the key
             # with another assign. Why should I deal with another type that "depends" if the key existed already?
             if self.funs or isinstance(self, (If, IfElse, Return)):
-                print "kevin1"
                 returnResult = None
 
             elif execResult1['key'] is None:
-                print "kevin2"
                 debugprint("Hacking scalar result %s into a key. %s" % (self.scalar, self.frame))
                 if self.scalar is None: # this shouldn't happen? h2o should be giving a scalar result?
                     debugprint("WARNING: %.do() is creating a one-row/oneCol result key, for %s" % (type(self)))
@@ -365,33 +413,30 @@ class Xbase(object):
 
             elif self.numCols==1:
                 if self.numRows<=1024:
-                    print "kevin3"
-                    summaryResult = h2o_cmd.runSummary(key=self.frame, column=0, noPrint=True)
+                    co = h2o_cmd.runSummary(key=self.frame, column=0, noPrint=True)
                     # data json
-                    returnResult = summaryResult['frames'][0]['columns'][0]['data']
+                    returnResult = co.data
                 else:
-                    print "kevin4"
                     raise Exception("Expr-caused Assign.do() wants to return a key with num_rows>1024\n" + \
-                        "Did you really mean it?. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
+                        "Did you really mean it?. frame: %s numRows: %s numCols %s" %\
+                         (self.frame, self.numRows, self.numCols))
             else:
                 if self.numCols==0 and self.numRows==0:
-                    print "kevin5"
                     return None # both assignDisable or not
                 elif self.assignDisable: # Expr modifies Assign with this
-                    print "kevin6"
                     if self.numCols>1:
                         h2p.red_print("Expr-caused Assign.do()  wants to return a key with num_cols>1\n" + \
-                            "not supported. frame: %s numRows: %s numCols %s" % (self.frame, self.numRows, self.numCols))
+                            "not supported. frame: %s numRows: %s numCols %s" % \
+                            (self.frame, self.numRows, self.numCols))
                     # return a nice clean Key that points to the frame
                     returnResult = Key(key=self.frame)
                 else:
-                    print "kevin7"
                     returnResult = Key(key=self.frame)
 
         if debugNoH2O:
             execResult1 = {'debug': True}
             returnResult = None
-        
+
         self.execResult = execResult1
         self.result = returnResult
 
@@ -417,7 +462,7 @@ class Xbase(object):
 
     def __deepcopy__(self, memo):
         # I could use deepcopy()?
-        # here __deepcopy__ fills in the memo dict to avoid excess copying 
+        # here __deepcopy__ fills in the memo dict to avoid excess copying
         # in case the object itself is referenced from its member.
         from copy import deepcopy
         cls = self.__class__
@@ -458,9 +503,11 @@ def translateValue(item="F"):
     else:
         return item
 
+
 #********************************************************************************
 class Item(Xbase):
-    def __init__(self, item, listOk=False):
+    def __init__(self, item, listOk=False, noRefCnt=False):
+
         # self.funs is not resolved until a string resolution?
         # tolerate a list for item? Assume it's a list of things Seq can handle
         if isinstance(item, (list, tuple)):
@@ -470,9 +517,14 @@ class Item(Xbase):
                 if len(item) > 1024:
                     raise Exception("Key is trying to index a h2o frame with a really long list (>1024)" +
                         "Probably don't want that? %s" % item)
+                # Seq and Col don't need to inc refcnt, since they can never be root
                 self.item = Col(Seq(item)) # Seq can take a list or tuple
         else:
             self.item = item
+            if not noRefCnt:
+                self.refcntInc()
+                self.assignIfRoot()
+
 
     def __str__(self):
         item = self.item
@@ -508,13 +560,12 @@ class Item(Xbase):
             # can be a ref , or the start of a string with a ref at the beginning
         # elif number, add #
         else:
-            # print "hello kevin %s %s" % (type(item), item)
             if isinstance(item, (int, float)):
                 # number!
                 itemStr = "#%s" % item # good number!
             else: # not number
                 # if it's just [a-zA-Z0-9_], tack on the $ for probable initial key reference
-                itemStr = "%s" % item 
+                itemStr = "%s" % item
                 if re.match(r"[a-zA-Z0-9_]+$", itemStr):
                     itemStr = "$%s" % item
 
@@ -561,10 +612,10 @@ xFcnOp2Set = set()
 xFcnOp3Set = set([
 'cut', 'round', 'signif', 'trun', 'quantile', 'runif',
 'cbind', 'rbind',
-'ifelse', 
-'apply', 'sapply', 'ddply', 
-'seq', 'seq_len', 'rep_len', 
-'reduce', 'table', 
+'ifelse',
+'apply', 'sapply', 'ddply',
+'seq', 'seq_len', 'rep_len',
+'reduce', 'table',
 'var',
 ])
 
@@ -668,11 +719,11 @@ class Colon(Xbase):
 # key is a string
 # change to init from Xbase not KeyIndexed
 # a Key is the nebulous thing, that can get locked down into a KeyIndexed by indexing..
-# a KeyIndexed can't be re-indexed, or turned back into a Key, 
+# a KeyIndexed can't be re-indexed, or turned back into a Key,
 # until it's executed by rapids (so the Key can be used again)
 # Note we don't actually init a key in h2o with this class. User uses DF() for that if desired.
 class Key(Xbase):
-    def __init__(self, key=None):
+    def __init__(self, key=None, noRefCnt=False):
         if key is None:
             # no h2o name? give it one that's unique for the instance
             key = "knon_" + hex(id(self))
@@ -694,6 +745,11 @@ class Key(Xbase):
         # can have row/col?
         legalKey(frame, "Key")
         self.frame = frame
+
+        if not noRefCnt:
+            self.refcntInc()
+            # how do I know all references to me have done their refcntInc?
+            self.assignIfRoot()
 
         # add to list of created h2o keys (for deletion later?)
         # FIX! should make this a weak dictionary reference? don't want to affect python GC?
@@ -793,9 +849,9 @@ class Key(Xbase):
 # Key can do indexing/slicing. KeyIndexed is fixed at row/col
 class KeyIndexed(Key):
     # row 0/col0 should always exist if we init keys to 0?
-    def __init__(self, frame=None, row=0, col=0, dim=2):
+    def __init__(self, frame=None, row=0, col=0, dim=2, noRefCnt=False):
 
-        super(KeyIndexed, self).__init__()
+        super(KeyIndexed, self).__init__(noRefCnt=True)
 
         # can have row/col?
         legalKey(frame, "KeyIndexed")
@@ -813,7 +869,10 @@ class KeyIndexed(Key):
         # it could put the list into a h2o key, and then do a[b] in hto?
         # row extracts problematic?
 
-        # None translates to "null"
+        if not noRefCnt:
+            self.refcntInc()
+            # how do I know all references to me have done their refcntInc?
+            self.assignIfRoot()
 
     def __str__(self):
         frame = self.frame
@@ -862,11 +921,16 @@ class KeyIndexed(Key):
 # GENIUS or INSANITY: it's good to have the init to have zero rows, to see what blows up
 # create a zero row result with a row slice that is never true.
 class KeyInit(Xbase):
-    def __init__(self, frame):
+    def __init__(self, frame, noRefCnt=False):
         super(KeyInit, self).__init__()
         # guaranteed to be string
         assert isinstance(frame, basestring)
         self.frame = frame
+
+        if not noRefCnt:
+            self.refcntInc()
+            # how do I know all references to me have done their refcntInc?
+            self.assignIfRoot()
 
     def __str__(self):
         # This should give zero row key result. Does that result in Scalar?
@@ -880,12 +944,16 @@ class KeyInit(Xbase):
 # Users uses this? it adds an init
 class DF(Key):
     def __init__(self, key=None, existing=False):
-        super(DF, self).__init__(key)
+        super(DF, self).__init__(key, noRefCnt=True)
         if not existing:
             # actually make the key in h2o with 0 rows
             KeyInit(self.frame).do()
         # if you don't init it, it assumes the name can be use for indexed write, or normal write
         # normal writes always work, even if it really wasn't existing.
+
+        self.refcntInc()
+        # how do I know all references to me have done their refcntInc?
+        self.assignIfRoot()
 
     def __str__(self):
         frame = self.frame
@@ -905,7 +973,11 @@ def legalFunction(function):
 
 # function is a string. operands is a list of items
 class Fcn(Xbase):
-    def __init__(self, function='sum', *operands):
+
+    # Attach an Assign to all root Fcn's
+    # And put it on the pending Assign list, which is flushed at appropriate times.
+    # figure out if this is a root function. Only the root function can create an Assign, which accomplishes a .do()
+    def __init__(self, function='sum', *operands): # don't need noRefCnt here? 
         super(Fcn, self).__init__()
         operandList = unpackOperands(operands, parent="Fcn operands")
 
@@ -929,6 +1001,9 @@ class Fcn(Xbase):
         # can I do a str() here before everything has been initted?
         debugprint("Fcn:", str(self))
 
+        self.refcntInc()
+        self.assignIfRoot()
+
     def __str__(self):
         return "(%s %s)" % (self.function, " ".join(map(str, self.operandList)))
 
@@ -946,6 +1021,11 @@ class Return(Xbase):
         super(Return, self).__init__()
         self.expr = Item(expr)
 
+        if not noRefCnt:
+            self.refcntInc(expr)
+            # how do I know all references to me have done their refcntInc?
+            self.assignIfRoot()
+
     def __str__(self):
         return "%s" % self.expr
 
@@ -956,10 +1036,43 @@ class Return(Xbase):
     def __setitem__(self, items, rhs):
         raise Exception("trying to __setitem__ index a Return? doesn't make sense? %s %s" % (self, items))
 
-
+from weakref import WeakSet
+# always does a .do() on init
 class Assign(Key):
-    # always does a .do() on init
-    def __init__(self, lhs=None, rhs=None, do=True, assignDisable=False, timeoutSecs=30):
+
+    # want to use weak references for tracking instances.
+    # Otherwise the class could likely end up keeping track of instances
+    # that were meant to have been deleted.
+    # A weakref.WeakSet will automatically remove any dead instances from its set.
+
+    # http://stackoverflow.com/questions/12101958/keep-track-of-instances-in-python
+    # 1) Each subclass of ... will keep track of its own instances separately.
+    # 2) The instances set uses weak references to the classs instances,
+    # so if you del or reassign all the other references to an instance elsewhere in your code,
+    # the bookkeeping code will not prevent it from being garbage collected.
+
+    # can put this in the Xbase base class if I want?
+    # pass the instances set to list() before printing.
+    def __new__(cls, *args, **kwargs):
+        instance = Key.__new__(cls, *args, **kwargs)
+        if "instances" not in cls.__dict__:
+            cls.instances = WeakSet()
+        cls.instances.add(instance)
+        return instance
+        # can create a dict from the list with:
+        # foo_vars = {id(instance): instance.foo for instance in Assign.instances}
+
+    @classmethod
+    def get_instances(cls):
+        # the list should go empty after del ... of the instance
+        return list(Assign.instances) #Returns list of all current instances
+
+    def __init__(self, lhs=None, rhs=None, do=True, assignDisable=False, timeoutSecs=30, noRefCnt=False):
+        super(Assign, self).__init__(lhs, noRefCnt=True)
+
+         # this is going to inhibit GC..this probably should be a weakref dict. (but then entries may disappear)
+        Assign.instances.add(self)
+
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
@@ -968,7 +1081,6 @@ class Assign(Key):
         elif not isinstance(lhs, (Key, KeyIndexed, basestring)):
             raise Exception("Assign: lhs not Key/KeyIndexed/string or None %s %s" % (type(lhs), lhs))
 
-        super(Assign, self).__init__(lhs)
 
         # can pass strings
         # all the __getitem__ stuff in Key should modify a Key?
@@ -985,29 +1097,32 @@ class Assign(Key):
         self.assignDisable = assignDisable
 
         # mangling of lists into h2o column vectors of scalars, is done in Item now
-        self.rhs = Item(rhs, listOk=True) 
+        self.rhs = Item(rhs, listOk=True)
 
         debugprint("Assign lhs: %s" % self.lhs)
         debugprint("Assign rhs: %s" % self.rhs)
 
         if do: # param set to false when building functions and don't want auto .do()?
             self.do()
-            # some belt and suspenders. 
+            # some belt and suspenders.
             self.assignDone = True
             if not isinstance(lhs, basestring):
                 # maybe can get rid of this down the road.
                 lhs.assignDone = True
-        return None # init can only return None..just for clarity
+
+        if not noRefCnt:
+            self.refcntInc()
+            # how do I know all references to me have done their refcntInc?
+            self.assignIfRoot()
+
 
     # leading $ is illegal on lhs
     # could check that it's a legal key name
     # FIX! what about checking rhs references have $ for keys.
     def __str__(self):
         if self.assignDisable:
-            print "Hi kevin1"
             return "%s" % self.rhs
         else:
-            print "Hi kevin2"
             # if there is row/col for lhs, have to resolve here?
             # hack: change the rhs reference '$' to the lhs '!'
             # to be 'more correct', only replace the first character
@@ -1022,26 +1137,30 @@ class Assign(Key):
             # KeyIndexed is also Key.
             if isinstance(self.lhs, (Key, basestring)) and not isinstance(self.lhs, KeyIndexed):
                 lhsprefix = '!'
-            else: 
+            else:
                 lhsprefix = ''
             return "(= %s%s %s)" % (lhsprefix, lhsAssign, self.rhs)
 
 
 # can only do one expression/statement per ast.
 # Not currently used
-# NEW: rhsOnly means, when we evaluate, that even thought we travelled to .do() land with a lhs (not previously 
-# existing anon_ Key)...it's not used, and never created, 
+# NEW: rhsOnly means, when we evaluate, that even thought we travelled to .do() land with a lhs (not previously
+# existing anon_ Key)...it's not used, and never created,
 # and the result that's returned from the .do() will either be None (if a key was created by Rapids because result wasn't
 # scalar, or the scalar result. I suppose Rapids could do the expression with the temp key and return that, and then delete
 # the key? (since python doesn't have a name pointing to it, it can't be used. But then some big temps might be created that
 # we don't want? We'll just pass along a assignDisable here that the .do() can decide how to use, when doing assign
 class Expr(Assign):
-    def __init__(self, expr, timeoutSecs=30):
+    def __init__(self, expr, timeoutSecs=30, noRefCnt=False):
         # just be like Assign with no lhs?
         # create an anonymous key name. Only eval it to a key if we have to?
         # i.e. if we can't build up a new expression due to limitations of h2o support
         # suppose we can wait to create that name until we have to create a key
-        super(Expr, self).__init__(lhs=None, rhs=expr, assignDisable=True, timeoutSecs=timeoutSecs)
+        super(Expr, self).__init__(lhs=None, rhs=expr, assignDisable=True, timeoutSecs=timeoutSecs, noRefCnt=True)
+
+        if not noRefCnt:
+            self.refcntInc(expr)
+            self.assignIfRoot()
 
     def __getitem__(self, items):
         raise Exception("trying to __getitem__ index a Expr? doesn't make sense? %s %s" % (self, items))
@@ -1079,6 +1198,9 @@ class Def(Xbase):
         self.exprList = exprList
 
         debugprint("xFcnUser", xFcnUser)
+        self.refcntInc(params, exprs)
+        # how do I know all references to me have done their refcntInc?
+        self.assignIfRoot()
 
     def __str__(self):
         # could check that it's a legal key name
@@ -1090,7 +1212,7 @@ class Def(Xbase):
     __repr__ = __str__
 
 class If(Xbase):
-    def __init__(self, clause, *exprs):
+    def __init__(self, clause, *exprs): # don't need noRefCnt here
         super(If, self).__init__()
         # clause can't be a list
         # exprs can be lists or string
@@ -1105,6 +1227,9 @@ class If(Xbase):
         exprList = unpackOperands(exprs, parent="If exprs")
         self.clause = Item(clause)
         self.exprList = exprList
+        self.refcntInc(clause, exprs)
+        # how do I know all references to me have done their refcntInc?
+        self.assignIfRoot()
 
     def __str__(self):
         exprStr = ";;".join(map(str, self.exprList))
@@ -1117,7 +1242,7 @@ class If(Xbase):
 
 # can only text Expr or a Expr List for ifExpr/ElseExpr
 class IfElse(Xbase):
-    def __init__(self, clause, ifExpr, elseExpr):
+    def __init__(self, clause, ifExpr, elseExpr): # don't need noRefCnt here
         super(IfElse, self).__init__()
 
         ifExprList = unpackOperands(ifExpr, parent="IfElse ifExprs")
@@ -1125,6 +1250,9 @@ class IfElse(Xbase):
         self.clause = Item(clause)
         self.ifExprList = ifExprList
         self.elseExprList = elseExprList
+        self.refcntInc(iclause, ifExpr, elseExpr)
+        # how do I know all references to me have done their refcntInc?
+        self.assignIfRoot()
 
     def __str__(self):
         ifExprStr = ";;".join(map(str, self.ifExprList))
@@ -1156,9 +1284,9 @@ class Cut(Fcn):
 
         vector = Item(vector)
         breaks = Item(breaks) # can be a Seq or a number?
-        labels = self.translateValue(labels) # string? "(a,b]" or FALSE
-        include_lowest = self.translateValue(include_lowest) # boolean
-        right = self.translateValue(right) # boolean
+        labels = translateValue(labels) # string? "(a,b]" or FALSE
+        include_lowest = translateValue(include_lowest) # boolean
+        right = translateValue(right) # boolean
         lab = Item(dig_lab) # integer
         super(Cut, self).__init__("cut", vector, breaks, labels, include_lowest, right, dig_lab)
 
@@ -1199,16 +1327,16 @@ if __name__ == '__main__':
 # Assignment of an object to a single target is recursively defined as follows. If the target is an identifier (name):
 # If the name does not occur in a global statement in the current code block: the name is bound to the object in the current local namespace.
 # Otherwise: the name is bound to the object in the current global namespace.
-# 
+#
 # section 4.1 "Naming and binding" of the Execution model chapter:
 # If a name is bound in a block, it is a local variable of that block.
-# When a name is used in a code block, it is resolved using the nearest enclosing scope. 
+# When a name is used in a code block, it is resolved using the nearest enclosing scope.
 # # If the name refers to a local variable that has not been bound, a UnboundLocalError exception is raised.
 
 # <<= (augmented expression)
 # An augmented assignment evaluates the target (which, unlike normal assignment statements, cannot be an unpacking) and the expression list, performs the binary operation specific to the type of assignment on the two operands, and assigns the result to the original target. The target is only evaluated once.
-# 
+#
 # An augmented assignment expression like x += 1 can be rewritten as x = x + 1 to achieve a similar, but not exactly equal effect. In the augmented version, x is only evaluated once. Also, when possible, the actual operation is performed in-place, meaning that rather than creating a new object and assigning that to the target, the old object is modified instead.
-# 
+#
 # With the exception of assigning to tuples and multiple targets in a single statement, the assignment done by augmented assignment statements is handled the same way as normal assignments. Similarly, with the exception of the possible in-place behavior, the binary operation performed by augmented assignment is the same as the normal binary operations.
-# 
+#

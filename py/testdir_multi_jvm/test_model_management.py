@@ -4,6 +4,8 @@ sys.path.extend(['.','..','py'])
 import h2o, h2o_util
 import os
 import argparse
+import time
+import json
 
 #################
 # Config is below
@@ -40,10 +42,27 @@ h2o.H2O.verboseprint("port" + str(port))
 pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
 def list_to_dict(l, key):
+    '''
+    Given a List and a key to look for in each element return a Dict which maps the value of that key to the element.  
+    Also handles nesting for the key, so you can use this for things like a list of elements which contain H2O Keys and 
+    return a Dict indexed by the 'name" element within the key.
+    list_to_dict([{'key': {'name': 'joe', 'baz': 17}}, {'key': {'name': 'bobby', 'baz': 42}}], 'key/name') =>
+    {'joe': {'key': {'name': 'joe', 'baz': 17}}, 'bobby': {'key': {'name': 'bobby', 'baz': 42}}}
+    '''
     result = {}
     for entry in l:
-        k = entry[key]
-        result[k] = entry
+        # print 'In list_to_dict, entry: ', repr(entry)
+
+        part = entry
+        k = None
+        for keypart in key.split('/'):
+            part = part[keypart]
+            k = keypart
+
+            # print 'for keypart: ', keypart, ' part: ', repr(part)
+
+        result[part] = entry
+    # print 'result: ', repr(result)
     return result
 
 
@@ -64,16 +83,26 @@ def validate_builder(algo, builder):
 def validate_model_builder_result(result, original_params, model_name):
     ''' 
     Validate that a model build result has no parameter validation errors, 
-    and that it has a Job with a Key.
+    and that it has a Job with a Key.  Note that model build will return a
+    Job if successful, and a ModelBuilder with errors if it's not.
     '''
-    if 'validation_error_count' in result:
+
+    if 'validation_error_count' in result and result['validation_error_count'] > 0:
+        # error case
         print 'Parameters validation error for model: ', model_name
         print 'Input parameters: '
         pp.pprint(original_params)
         print 'Returned result: '
         pp.pprint(result)
-    assert 'jobs' in result, "FAIL: Failed to find jobs key for model: " + model_name
-    assert 'key' in result, "FAIL: Failed to find (jobs) key for model: " + model_name
+        assert result['validation_error_count'] == 0, "FAIL: Non-zero validation_error_count for model: " + model_name
+
+    assert 'jobs' in result, "FAIL: Failed to find jobs key for model: " + model_name + ": " + pp.pprint(result)
+    jobs = result['jobs']
+    assert type(jobs) is list, "FAIL: Jobs element for model is not a list: " + model_name + ": " + pp.pprint(result)
+    assert len(jobs) == 1, "FAIL: Jobs list for model is not 1 long: " + model_name + ": " + pp.pprint(result)
+    job = jobs[0]
+    assert type(job) is dict, "FAIL: Job element for model is not a dict: " + model_name + ": " + pp.pprint(result)
+    assert 'key' in job, "FAIL: Failed to find key in job for model: " + model_name + ": " + pp.pprint(result)
 
 
 def validate_validation_messages(result, expected_error_fields):
@@ -97,7 +126,7 @@ def validate_model_exists(model_name, models):
     '''
     Validate that a given model key is found in the models list.
     '''
-    models_dict = list_to_dict(models, 'key')
+    models_dict = list_to_dict(models, 'key/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
 
@@ -107,7 +136,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     Validate that the returned parameters list for a model build contains all the values we passed in as input.
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
-    for k, v in input_parameters.iteritems():
+    for k, expected in input_parameters.iteritems():
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
@@ -116,14 +145,39 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         if k is 'training_frame':
             continue
 
-        expected = str(v)
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
-        if actuals_dict[k]['type'] == 'boolean':
-            expected = expected.lower()
+        actual = actuals_dict[k]['actual_value']
+        actual_type = actuals_dict[k]['type']
 
-        assert expected == actuals_dict[k]['actual_value'], "FAIL: Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actuals_dict[k]['actual_value'])
+        # print repr(actuals_dict[k])
+        if actual_type == 'boolean':
+            expected = bool(expected)
+            actual = True if 'true' == actual else False # true -> True
+        elif actual_type == 'int':
+            expected = int(expected)
+            actual = int(actual)
+        elif actual_type == 'long':
+            expected = long(expected)
+            actual = long(actual)
+        elif actual_type == 'string':
+            expected = str(expected)
+            actual = str(actual)
+        elif actual_type == 'double':
+            expected = float(expected)
+            actual = float(actual)
+        elif actual_type == 'float':
+            expected = float(expected)
+            actual = float(actual)
+        elif actual_type.startswith('Key<'):
+            # For keys we send just a String but receive an object
+            expected = expected
+            actual = json.loads(actual)['name']
+            
+        # TODO: don't do exact comparison of floating point!
+
+        assert expected == actual, "FAIL: Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(expected)) + ", type of actual: " + str(type(actual)) + ")"
     # TODO: training_frame, validation_frame
 
 
@@ -191,7 +245,7 @@ def cleanup(a_node, models=None, frames=None):
     # TODO
     ####################
     # test delete_models
-    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame='prostate_binomial', parameters={'K': 2 }, timeoutSecs=240) # synchronous
+    # jobs = a_node.build_model(algo='kmeans', destination_key='dummy', training_frame='prostate_binomial', parameters={'k': 2 }, timeoutSecs=240) # synchronous
     # a_node.delete_models()
     # models = a_node.models()
 
@@ -237,6 +291,7 @@ class ModelSpec(dict):
     
 
     def build_and_validate_model(self, a_node):
+        before = time.time()
         if verbose: print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params'])
         result = a_node.build_model(algo=self['algo'], destination_key=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
@@ -249,10 +304,11 @@ class ModelSpec(dict):
         assert 'model_category' in model['output'], 'FAIL: Failed to find model_category in model: ' + self['dest_key']
         assert model['output']['model_category'] == self['model_category'], 'FAIL: Expected model_category: ' + self['model_category'] + ' but got: ' + model['output']['model_category'] + ' for model: ' + self['dest_key']
 
-        if verbose: print 'Done building: ' + self['dest_key']
+        if verbose: print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
         return model
 
 
+### TODO: we should be able to have multiple DatasetSpecs that come from a single parse, for efficiency
 class DatasetSpec(dict):
     '''
     Dictionary which specifies the properties of a Frame (Dataset) for a specific use 
@@ -290,7 +346,7 @@ class DatasetSpec(dict):
             pp.pprint(a_node.frames(key=import_result['keys'][0], len=5))
 
         frames = a_node.frames(key=import_result['keys'][0], len=5)['frames']
-        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText"
+        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText: " + repr(frames[0])
         parse_result = a_node.parse(key=import_result['keys'][0], dest_key=self['dest_key']) # TODO: handle multiple files
         key = parse_result['frames'][0]['key']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
@@ -311,7 +367,9 @@ a_node = h2o.H2O(host, port)
 #########
 # Config:
 algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
-algo_additional_default_params = { 'grep' : { 'regex' : '.*' }} # additional params to add to the default params
+algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
+                                   'kmeans' : { 'k' : 2 }
+                                 } # additional params to add to the default params
 clean_up_after = False
 
 h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
@@ -485,7 +543,7 @@ assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile
 # Build and do basic validation checks on models
 ####################################################################################################
 models_to_build = [
-    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], {'K': 2} ),
+    ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], { 'k': 2 } ),
 
     ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], { } ),
 
@@ -493,15 +551,15 @@ models_to_build = [
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
-    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], {'hidden': '[10, 20, 10]' }),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { } ),
-    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { } ),
+    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1 } ),
+    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': '[20, 20]' } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': '[10, 10]' } ),
+    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
 
-    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { } ),
-    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { } ),
-    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { } ),
-    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { } ),
+    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5 } ),
+    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5 } ),
+    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5 } ),
+    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5 } ),
 ]
 
 built_models = {}
@@ -593,7 +651,7 @@ if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame='prostate_binomial')
 assert mm is not None, "FAIL: Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial'
 assert 'model_category' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a model_category."
-assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + mm['model_category']
+assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + str(mm['model_category'])
 assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an AUC."
 assert 'cm' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a CM."
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
@@ -605,12 +663,17 @@ assert 'model_metrics' in mms, 'FAIL: Failed to find model_metrics in result of 
 found_mm = False
 for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
-    assert 'key' in mm['model'], "FAIL: mm[model] does not contain a key: " + repr(mm)
-    assert 'frame' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
-    assert 'key' in mm['frame'], "FAIL: mm[frame] does not contain a key: " + repr(mm)
-    assert 'name' in mm['frame']['key'], "FAIL: mm[frame][key] does not contain a name: " + repr(mm)
-    model_key = mm['model']['key']
-    frame_key = mm['frame']['key']['name'] # TODO: should match
+    assert 'name' in mm['model'], "FAIL: mm[model] isn't a key with a name: " + repr(mm)
+    assert 'type' in mm['model'], "FAIL: mm[model] does not contain a type: " + repr(mm)
+    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm)
+
+    assert 'frame' in mm, "FAIL: mm does not contain a frame element: " + repr(mm)
+    assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)
+    assert 'type' in mm['frame'], "FAIL: mm[frame] does not contain a type: " + repr(mm)
+    assert 'Key<Frame>' == mm['frame']['type'], "FAIL: mm[frame] type is not Key<Frame>: " + repr(mm)
+
+    model_key = mm['model']['name']
+    frame_key = mm['frame']['name'] # TODO: should match
     if model_key == 'deeplearning_prostate_binomial' and frame_key == 'prostate_binomial':
         found_mm = True
 assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binomial' + " and frame: " + 'prostate_binomial'
@@ -663,7 +726,7 @@ frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 
 compatible_models = result['compatible_models']
-models_dict = h2o_util.list_to_dict(compatible_models, 'key')
+models_dict = h2o_util.list_to_dict(compatible_models, 'key/name')
 assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list."
 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."

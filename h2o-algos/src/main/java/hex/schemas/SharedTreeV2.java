@@ -13,7 +13,7 @@ public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedT
 
   public abstract static class SharedTreeParametersV2 extends ModelParametersSchema<SharedTreeParameters, SharedTreeParametersV2> {
     static public String[] own_fields = new String[] {
-      "ntrees", "treeStats", "r2", "mse_train", "mse_test", "cm", "auc", "varimp"
+      "ntrees", "treeStats", "r2", "mse_train", "mse_valid", "cm", "auc", "varimp"
     };
 
     // Output fields
@@ -26,11 +26,11 @@ public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedT
     /** r2 metric on validation set: 1-(MSE(model) / MSE(mean)) */
     public double r2;
 
-    /** Train and test errors per-tree (scored).  Zero index is the no-tree
+    /** Train and validation errors per-tree (scored).  Zero index is the no-tree
      *  error, guessing only the class distribution.  Not all trees are
      *  scored, NaN represents trees not scored. */
     public double mse_train[/*_ntrees+1*/];
-    public double mse_test [/*_ntrees+1*/];
+    public double mse_valid[/*_ntrees+1*/];
 
     /** Confusion Matrix for classification models, or null otherwise */
     public ConfusionMatrix2 cm;

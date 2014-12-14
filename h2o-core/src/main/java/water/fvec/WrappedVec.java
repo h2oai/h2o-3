@@ -6,7 +6,7 @@ import water.*;
  */
 abstract class WrappedVec extends Vec {
   /** A key for underlying vector which contains values which are transformed by this vector. */
-  final Key _masterVecKey;
+  final Key<Vec> _masterVecKey;
   /** Cached instances of underlying vector. */
   transient Vec _masterVec;
   public WrappedVec(Key key, long[] espc, Key masterVecKey ) { this(key,espc,null,masterVecKey);  }

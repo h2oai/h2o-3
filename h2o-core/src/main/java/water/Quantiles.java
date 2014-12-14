@@ -4,6 +4,7 @@ import water.api.API;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.Categorical;
 import water.util.Log;
 
 /**
@@ -30,7 +31,7 @@ public final class Quantiles extends Iced {
   public double _result_single;
 
 
-  public static final int MAX_ENUM_SIZE = water.parser.Enum.MAX_ENUM_SIZE;
+  public static final int MAX_ENUM_SIZE = Categorical.MAX_ENUM_SIZE;
 
   public long      _totalRows;    // non-empty rows per group
   // FIX! not sure if I need to save these here from vec

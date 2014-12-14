@@ -6,7 +6,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param data An \code{\linkS4class{H2OParsedData}} object containing the variables in the model.
+#' @param data An \code{\linkS4class{h2o.frame}} object containing the variables in the model.
 #' @param key (Optional) The unique hex key assigned to the resulting model. If none is given, a key will automatically
 #'        be generated.
 #' @param loss \code{Defaults to "AUTO"} A \code{character} string. The loss function to be implemented. Must be "AUTO"
@@ -18,7 +18,7 @@
 #' @param nbins \code{Defaults to 20} Number of bins to use in building histogram.
 #' @param group_split  #TODO NEED TO FINISH
 #' @param variable_importance #TODO: NEED TO FINISH
-#' @param validation_frame An \code{\link{H2OParsedData}} object indicating the validation dataset used to contruct the
+#' @param validation_frame An \code{\link{h2o.frame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes \code{Defaults to FALSE} logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)
@@ -58,28 +58,25 @@ h2o.gbm <- function(x, y, training_frame,
 {
   parms <- list()
 
-  # Required args: x, y, data
+  # Required args: x, y, training_frame
   if( missing(x) ) stop("argument \"x\" is missing, with no default")
   if( missing(y) ) stop("argument \"y\" is missing, with no default")
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
   if(delete <- (training_frame %i% "ASTNode")) invisible(nrow(training_frame))
 
-  parms <- eval.parent(as.list(match.call()[-1L]))
+  parms <- as.list(match.call()[-1L])
 
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
   args <- .verify_dataxy(training_frame, x, y)
+  parms$x <- args$x_ignore
+  parms$y <- args$y
+  if(!missing(max_after_balance_size) ) parms$max_after_balance_size <- max_after_balance_size #hard-code due to Inf bug
+  
+  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
-  parms[["ignored_columns"]] <- args$x_ignore
-  parms[["response_column"]] <- args$y
-  parms[["training_frame"]] <- training_frame
-  if(!missing(max_after_balance_size) ) parms[["max_after_balance_size"]] <- max_after_balance_size #hard-code due to Inf bug
+  model <- .run(training_frame@h2o, 'gbm', parms, parent.frame())
 
-
-
-  model <- .run(training_frame@h2o, 'gbm', parms)
-
-  if(delete) h2o.rm("data")
+  if(delete) h2o.rm("training_frame")
 
   model
 }
@@ -87,5 +84,4 @@ h2o.gbm <- function(x, y, training_frame,
 #required map for params with different names, assuming it will change in the RESTAPI end
 .gbm.map <- c("x" = "ignored_columns",
               "y" = "response_column",
-              "data" = "training_frame",
               "key" = "destination_key")

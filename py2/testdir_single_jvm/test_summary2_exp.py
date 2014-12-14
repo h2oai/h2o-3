@@ -1,6 +1,7 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
+from h2o_test import OutputObj
 
 print "Same as test_summary2_uniform.py but with exponential distribution on the data"
 DO_TRY_SCIPY = False
@@ -83,12 +84,6 @@ class Basic(unittest.TestCase):
         x = 0
         timeoutSecs = 60
 
-        class Column(object):
-            def __init__(self, column):
-                assert isinstance(column, dict)
-                for k,v in column.iteritems():
-                    setattr(self, k, v) # achieves self.k = v
-
         for (rowCount, colCount, hex_key, rangeMin, rangeMax, expected) in tryList:
             SEEDPERFILE = random.randint(0, sys.maxint)
             x += 1
@@ -97,27 +92,28 @@ class Basic(unittest.TestCase):
             csvPathname = SYNDATASETS_DIR + '/' + csvFilename
 
             print "Creating random", csvPathname, "lambd:", LAMBD
-            (expectedMin, expectedMax) = write_syn_dataset(csvPathname, 
-                rowCount, colCount, lambd=LAMBD, SEED=SEEDPERFILE)
+            (expectedMin, expectedMax) = write_syn_dataset(csvPathname, rowCount, colCount, lambd=LAMBD, SEED=SEEDPERFILE)
             print "expectedMin:", expectedMin, "expectedMax:", expectedMax
-            maxDelta = ((expectedMax - expectedMin)/20.0) / 2.0
+            maxErr = ((expectedMax - expectedMin)/20.0) / 2.0
             # add 5% for fp errors?
-            maxDelta = 1.05 * maxDelta
+            maxErr = 1.05 * maxErr
 
             expected[1] = expectedMin
             expected[5] = expectedMax
 
             csvPathnameFull = h2i.find_folder_and_filename(None, csvPathname, returnFullPath=True)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', 
-                hex_key=hex_key, timeoutSecs=30, doSummary=False)
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, timeoutSecs=30, doSummary=False)
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pA.numRows, pA.numCols, pA.parse_key
 
-            inspect = h2o_cmd.runInspect(key=parse_key)
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-            print "\n" + csvFilename
-            # column 0?
-            summaryResult = h2o_cmd.runSummary(key=hex_key, column='C1')
-            h2o.verboseprint("Summary2 summaryResult:", h2o.dump_json(summaryResult))
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
+            print iA.missingList, iA.labelList, iA.numRows, iA.numCols
+
+            # column 0 not used here
+            assert len(expected) == 6
+            co = h2o_cmd.runSummary(key=hex_key, column=0, expected=expected[1:], maxDelta=maxErr)
+            print co.label, co.type, co.missing, co.domain, sum(co.bins)
 
             # default_pctiles
             # isText
@@ -126,91 +122,18 @@ class Basic(unittest.TestCase):
             # key
             # checksum
 
-            # only one column
-            columns = summaryResult['frames'][0]['columns']
-            default_pctiles = summaryResult['frames'][0]['default_pctiles']
-            co = Column(columns[0])
-            # how are enums binned. Stride of 1? (what about domain values)
-            coList = [
-                co.base,
-                len(co.bins),
-                len(co.data),
-                co.domain,
-                co.label,
-                co.maxs,
-                co.mean,
-                co.mins,
-                co.missing,
-                co.ninfs,
-                co.pctiles,
-                co.pinfs,
-                co.precision,
-                co.sigma,
-                co.str_data,
-                co.stride,
-                co.type,
-                co.zeros,
-                ]
+            # touch all that should be there
+            coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
+                co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-            for c in coList:
-                print c
-
-            print "len(co.bins):", len(co.bins)
-
-            print "co.label:", co.label, "mean (2 places):", h2o_util.twoDecimals(co.mean)
-            # what is precision. -1?
-            print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
-
-            print "FIX! hacking the co.pctiles because it's short by two"
-            pctiles = [0] + co.pctiles + [0]
-            
-            # the thresholds h2o used, should match what we expected
-            if expected[0]:
-                self.assertEqual(co.label, expected[0])
-            if expected[1]:
-                h2o_util.assertApproxEqual(co.mins[0], expected[1], tol=maxDelta, msg='min is not approx. expected')
-            if expected[2]:
-                h2o_util.assertApproxEqual(pctiles[3], expected[2], tol=maxDelta, msg='25th percentile is not approx. expected')
-            if expected[3]:
-                h2o_util.assertApproxEqual(pctiles[5], expected[3], tol=maxDelta, msg='50th percentile (median) is not approx. expected')
-            if expected[4]:
-                h2o_util.assertApproxEqual(pctiles[7], expected[4], tol=maxDelta, msg='75th percentile is not approx. expected')
-            if expected[5]:
-                h2o_util.assertApproxEqual(co.maxs[0], expected[5], tol=maxDelta, msg='max is not approx. expected')
-
-            # figure out the expected max error
-            # use this for comparing to sklearn/sort
-            if expected[1] and expected[5]:
-                expectedRange = expected[5] - expected[1]
-                # because of floor and ceil effects due we potentially lose 2 bins (worst case)
-                # the extra bin for the max value, is an extra bin..ignore
-                expectedBin = expectedRange/(MAX_QBINS-2)
-                maxErr = expectedBin # should we have some fuzz for fp?
-
-            else:
-                print "Test won't calculate max expected error"
-                maxErr = 0
-
-            pt = h2o_util.twoDecimals(pctiles)
-            mx = h2o_util.twoDecimals(co.maxs)
-            mn = h2o_util.twoDecimals(co.mins)
-
-            print "co.label:", co.label, "co.pctiles (2 places):", pt
-            print "default_pctiles:", default_pctiles
-            print "co.label:", co.label, "co.maxs: (2 places):", mx
-            print "co.label:", co.label, "co.mins: (2 places):", mn
-
-            # FIX! we should do an exec and compare using the exec quantile too
-            compareActual = mn[0], pt[3], pt[5], pt[7], mx[0]
-            h2p.green_print("min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
-            print "co.label:", co.label, "co.maxs (2 places):", mx
-            print "co.label:", co.label, "co.mins (2 places):", mn
+            for k,v in co:
+                print k, v
 
             trial += 1
             h2o.nodes[0].remove_all_keys()
 
             scipyCol = 0
-            print "h2oSummary2MaxErr", maxErr
+            print "maxErr", maxErr
             if co.label!='' and expected[scipyCol]:
                 # don't do for enums
                 # also get the median with a sort (h2o_summ.percentileOnSortedlist()
@@ -220,7 +143,7 @@ class Basic(unittest.TestCase):
                     col=scipyCol,
                     datatype='float',
                     quantile=0.5 if DO_MEDIAN else 0.999,
-                    h2oSummary2=pctiles[5 if DO_MEDIAN else 10],
+                    h2oSummary2=co.pctiles[5 if DO_MEDIAN else 10],
                     # h2oQuantilesApprox=qresult_single,
                     # h2oQuantilesExact=qresult,
                     h2oSummary2MaxErr=maxErr,

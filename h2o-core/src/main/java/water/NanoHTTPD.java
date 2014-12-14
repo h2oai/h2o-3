@@ -11,6 +11,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import water.fvec.UploadFileVec;
+
 /**
  * A simple, tiny, nicely embeddable HTTP 1.0 (partially 1.1) server in Java
  *
@@ -556,6 +558,16 @@ public class NanoHTTPD
       return sz;
     }
 
+    private boolean validKeyName(String name) {
+      byte[] arr = name.getBytes();
+      for (byte b : arr) {
+        if (b == '"') return false;
+        if (b == '\\') return false;
+      }
+
+      return true;
+    }
+
     private boolean fileUpload(String boundary, InputStream in, Properties parms, String uri) throws InterruptedException {
       try {
         String line = readLine(in);
@@ -578,26 +590,56 @@ public class NanoHTTPD
           String contentDisposition = item.getProperty("content-disposition");
           if( contentDisposition == null)
             sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but no content-disposition info found. Usage: GET /example/file.html" );
-          String key = parms.getProperty("key");
-          boolean nps = Pattern.matches("/[3-9][0-9]*/NodePersistentStorage.*", uri);
-          if (nps) {
-            Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)");
-            Matcher m = p.matcher(uri);
-            boolean b = m.matches();
-            if (! b) {
-              sendError(HTTP_BADREQUEST, "NodePersistentStorage URL malformed");
+
+          {
+            String key = parms.getProperty("key");
+            boolean nps = Pattern.matches("/[3-9][0-9]*/NodePersistentStorage.*", uri);
+            if (nps) {
+              Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)");
+              Matcher m = p.matcher(uri);
+              boolean b = m.matches();
+              if (!b) {
+                sendError(HTTP_BADREQUEST, "NodePersistentStorage URL malformed");
+              }
+              String categoryName = m.group(1);
+              UUID uuid = java.util.UUID.randomUUID();
+              H2O.getNPS().put(categoryName, uuid.toString(), new InputStreamWrapper(in, boundary.getBytes()));
+              String responsePayload = "{ key_name : \"" + uuid + "\" }";
+              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
+              return true;
             }
-            String categoryName = m.group(1);
-            UUID uuid = java.util.UUID.randomUUID();
-            H2O.getNPS().put(categoryName, uuid.toString(), new InputStreamWrapper(in, boundary.getBytes()));
-            String responsePayload = "{ key_name : \"" + uuid + "\" }";
-            sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
-            return true;
           }
-          else {
-            //UploadFileVec.readPut(key, new InputStreamWrapper(in, boundary.getBytes()));
-            throw H2O.unimpl();
+
+          {
+            String destination_key = parms.getProperty("destination_key");
+            if (destination_key == null) {
+              destination_key = "upload" + Key.rand();
+            }
+            if (!validKeyName(destination_key)) {
+              sendError(HTTP_BADREQUEST, "Invalid key name, contains illegal characters");
+            }
+            boolean uploadFile = Pattern.matches("/PostFile.json", uri) || Pattern.matches("/[1-9][0-9]*/PostFile.json", uri);
+            if (uploadFile) {
+              //
+              // Here is an example of how to upload a file from the command line.
+              //
+              // curl -v -F "file=@allyears2k_headers.zip" "http://localhost:54321/PostFile.json?key=a.zip"
+              //
+              // This call is handled as a POST request in method NanoHTTPD#fileUpload
+              //
+              // JSON Payload returned is:
+              //     { "destination_key": "key_name", "total_bytes": nnn }
+              //
+              UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+              UploadFileVec.readPut(destination_key, new InputStreamWrapper(in, boundary.getBytes()), stats);
+              // TODO: Figure out how to marshal a response here Ray-style so that docs, etc. are generated properly.
+              String responsePayload = "{ \"destination_key\": \"" + destination_key + "\", \"total_bytes\": " + stats.total_bytes + " }\n";
+              sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
+              return true;
+            }
           }
+
+          sendError(HTTP_NOTFOUND, "(Attempt to upload data) URL not found");
         }
       }
       catch (Exception e) {

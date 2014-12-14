@@ -21,7 +21,7 @@ test.slice.colSummary <- function(conn) {
   
   sepalLength <- iris.hex[,1]
   Log.info("Summary on the first column:\n")
-  expect_that(sepalLength, is_a("H2OParsedData"))
+  expect_that(sepalLength, is_a("h2o.frame"))
  
   print(summary(sepalLength))
   Log.info("try mean")
