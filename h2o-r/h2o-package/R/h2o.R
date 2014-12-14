@@ -305,7 +305,9 @@ h2o.clusterInfo <- function(conn) {
   if(missing(conn)) conn <- .retrieveH2O(parent.frame())
   stopifnot(class(conn) == "h2o.client")
   if(! h2o.clusterIsUp(conn)) {
-    message = sprintf("Cannot connect to H2O instance at http://%s:%d", client@ip, client@port)
+    ip = conn@ip
+    port = conn@port
+    message = sprintf("Cannot connect to H2O instance at http://%s:%d", ip, port)
     stop(message)
   }
 
@@ -340,40 +342,56 @@ h2o.clusterInfo <- function(conn) {
   cat("    H2O cluster healthy:      ", clusterHealth, "\n")
 }
 
-#'
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
-.h2o.__checkClientHealth <- function(client) {
-  grabCloudStatus <- function(client) {
-    ip <- client@ip
-    port <- client@port
-    url <- paste("http://", ip, ":", port, "/", .h2o.__CLOUD, sep = "")
-    if(!.uri.exists(url)) stop(paste("H2O connection has been severed. Instance no longer up at address ", ip, ":", port, "/", sep = "", collapse = ""))
-    fromJSON(getURLContent(url))
+.h2o.__checkClientHealth <- function(conn) {
+  grabCloudStatus <- function(conn) {
+    rv = h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
+
+    if (rv$curlError) {
+      ip = conn@ip
+      port = conn@port
+      warning(rv$curlErrorMessage)
+      message = sprintf("H2O connection has been severed.  Cannot connect to instance at http://%s:%d", ip, port)
+      stop(message)
+    }
+
+    if (rv$httpStatusCode != 200) {
+      ip = conn@ip
+      port = conn@port
+      message = sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage)
+      warning(message)
+      message = sprintf("H2O connection has been severed.  Instance unhealthy at http://%s:%d", ip, port)
+      stop(message)
+    }
+
+    tmp = fromJSON(rv$payload)
+    return(tmp)
   }
-  checker <- function(node, client) {
+
+  checker <- function(node, conn) {
     status <- as.logical(node$healthy)
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
     nport <- unlist(strsplit(node$h2o$node, ":"))[2]
-    if(!status) .h2o.__cloudSick(node_name = NULL, client = client)
-    if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, client = client)
+    if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
+    if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 10000) {
         Sys.sleep(5)
-        invisible(lapply(grabCloudStatus(client)$nodes, checker, client))
+        invisible(lapply(grabCloudStatus(conn)$nodes, checker, conn))
     }
     return(0)
   }
-  cloudStatus <- grabCloudStatus(client)
-  if(cloudStatus$bad_nodes != 0) .h2o.__cloudSick(node_name = NULL, client = client)
-  lapply(cloudStatus$nodes, checker, client)
+
+  cloudStatus <- grabCloudStatus(conn)
+  if(cloudStatus$bad_nodes != 0) .h2o.__cloudSick(node_name = NULL, conn = conn)
+  lapply(cloudStatus$nodes, checker, conn)
   return(0)
 }
 
-#'
 #' Helper method to issue a warning.
-.h2o.__cloudSick <- function(node_name = NULL, client) {
-  url <- paste("http://", client@ip, ":", client@port, "/Cloud.html", sep = "")
+.h2o.__cloudSick <- function(node_name = NULL, conn) {
+  url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
   m1 <- "Attempting to execute action on an unhealthy cluster!\n"
   m2 <- ifelse(node_name != NULL, paste("The sick node is identified to be: ", node_name, "\n", sep = "", collapse = ""), "")
   m3 <- paste("Check cloud status here: ", url, sep = "", collapse = "")
