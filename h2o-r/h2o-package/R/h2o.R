@@ -9,6 +9,144 @@
 #   GET & POST
 #-----------------------------------------------------------------------------------------------------------------------
 
+.h2o.__REST_API_VERSION = 3
+
+.skip_if_not_developer <- function() {
+  if (identical(Sys.getenv("USER"), "tomk")) {
+    return()
+  }
+
+  skip("Not a developer")
+}
+
+.h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
+  if (missing(urlSuffix)) stop()
+  stopifnot(class(urlSuffix) == "character")
+
+  if (missing(h2oRestApiVersion) || (h2oRestApiVersion < 0)) {
+    url = sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
+  } else {
+    url = sprintf("http://%s:%s/%d/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
+  }
+
+  return(url)
+}
+
+h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
+  if (missing(urlSuffix)) stop()
+  stopifnot(class(urlSuffix) == "character")
+  if (! missing(parms)) { stopifnot(class(parms) == "list") }
+  if (missing(parms)) {
+    parms = list()
+  }
+
+  url = .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
+
+  # Add parameters to the base URL.
+  i = 1
+  while (i <= length(parms)) {
+    name = names(parms)[i]
+    value = parms[i]
+    escaped_value = curlEscape(value)
+    if (i == 1) {
+      separator = "?"
+    } else {
+      separator = "&"
+    }
+    url = sprintf("%s%s%s=%s", url, separator, name, escaped_value)
+    i = i + 1
+  }
+
+  .__curlError = FALSE
+  .__curlErrorMessage = ""
+  httpStatusCode = ""
+  httpStatusMessage = ""
+  payload = ""
+
+  if (.h2o.isLogging()) {
+    .h2o.logRest("------------------------------------------------------------")
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("GET  %s", url))
+  }
+
+  h = basicHeaderGatherer()
+  tmp = tryCatch(getURL(url = url, headerfunction = h$update),
+                 error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+
+  if (! .__curlError) {
+    httpStatusCode = as.numeric(h$value()["status"])
+    httpStatusMessage = h$value()["statusMessage"]
+    payload = tmp
+  }
+
+  if (.h2o.isLogging()) {
+    .h2o.logRest("")
+    .h2o.logRest(paste("curlError:        ", .__curlError))
+    .h2o.logRest(paste("curlErrorMessage: ", .__curlErrorMessage))
+    .h2o.logRest(paste("httpStatusCode:   ", httpStatusCode))
+    .h2o.logRest(paste("httpStatusMessage:", httpStatusMessage))
+    .h2o.logRest("")
+    .h2o.logRest(payload)
+    .h2o.logRest("")
+  }
+
+  rv = list(url = url,
+            curlError = .__curlError,
+            curlErrorMessage = .__curlErrorMessage,
+            httpStatusCode = httpStatusCode,
+            httpStatusMessage = httpStatusMessage,
+            payload = payload)
+
+  return(rv)
+}
+
+h2o.doGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
+  if (missing(urlSuffix)) stop()
+  stopifnot(class(urlSuffix) == "character")
+
+  if (missing(h2oRestApiVersion)) {
+    h2oRestApiVersion = .h2o.__REST_API_VERSION
+  }
+
+  rv = h2o.doRawGET(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms)
+  return(rv)
+}
+
+h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
+  if (missing(urlSuffix)) stop()
+  stopifnot(class(urlSuffix) == "character")
+
+  rv = h2o.doGET(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms)
+
+  if (rv$curlError) {
+    stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
+  } else if (rv$httpStatusCode != 200) {
+    stop(sprintf("Unexpected HTTP Status code: %d %s (url = %s)", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+  }
+
+  return(rv$payload)
+}
+
+
+#h2o.doRawPOST
+#h2o.doPOST
+#h2o.doSafePOST
+
+#----------------------------------------
+
+
 #'
 #' Make an HTTP request to the H2O backend.
 #'
