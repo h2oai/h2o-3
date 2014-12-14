@@ -85,8 +85,8 @@ class Vec(object):
       if len(i) != len(self):
         raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
       return Vec(self._name+"+"+i._name,Expr("+",self,i))
-    if isinstance(i,int):       # Vec+int
-      if i==0: return self      # Additive identity
+    if isinstance(i,(int,float)): # Vec+int
+      if i==0: return self        # Additive identity
       return Vec(self._name+"+"+str(i),Expr("+",self,i))
     raise NotImplementedError
 
@@ -140,14 +140,22 @@ class Expr(object):
   def __del__(self):
     if self._data is None: print "DELE: Expr never evaluated:",self._name
     if isinstance(self._data,list):
-      print "DELE:", self._name  # Tell cluster to delete temp
+      global _CMD;  
+      s = "DELE: "+self._name+"; "
+      if _CMD:  _CMD += s  # Tell cluster to delete temp as part of larger expression
+      else:  print s       # Tell cluster to delete now
+
+  def eager(self):
+    if self._data is None:
+      global _CMD; assert not _CMD;  _CMD = "{";  self._doit();  print _CMD+"}"; _CMD = None
+    return self._data
 
   # External API for eager; called by all top-level demanders (e.g. print)
   # May trigger (recursive) big-data eval.
-  def eager(self):
-    if self._data is not None: return self._data
-    if isinstance(self._left,Expr): self._left.eager()
-    if isinstance(self._rite,Expr): self._rite.eager()
+  def _doit(self):
+    if self._data is not None: return
+    if isinstance(self._left,Expr): self._left._doit()
+    if isinstance(self._rite,Expr): self._rite._doit()
     if self._op == "+":
       if isinstance(self._left,(int,float)):
         if isinstance(self._rite,(int,float)):  # Small data
@@ -168,9 +176,12 @@ class Expr(object):
     else:
       raise NotImplementedError
     if lname:
-      print "WORK:",self._name,"=",lname,self._op,rname
-    assert self._data
+      global _CMD
+      _CMD += self._name+"= "+lname+" "+self._op+" "+str(rname)+"; "
+    assert self._data is not None
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
-    return self._data
+    return
 
+# Global list of pending expressions and deletes to ship to the cluster
+_CMD = None
