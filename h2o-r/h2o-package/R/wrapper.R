@@ -113,7 +113,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   h2o.clusterInfo(H2Oserver)
   cat("\n")
 
-  if((verH2O = .h2o.__version(H2Oserver)) != (verPkg = packageVersion("h2o"))) {
+  verH2O = h2o.getVersion(H2Oserver)
+  verPkg = packageVersion("h2o")
+  if (verH2O != verPkg) {
     message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
     if (strict_version_check) {
       stop(message)
