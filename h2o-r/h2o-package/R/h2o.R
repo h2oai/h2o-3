@@ -241,19 +241,34 @@ h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #   H2O Server Health & Info
 #-----------------------------------------------------------------------------------------------------------------------
 
+h2o.clusterIsUp <- function(conn) {
+  if (missing(conn)) conn <- .retrieveH2O(parent.frame())
+  if (class(conn) != "h2o.client") stop("client must be a h2o.client object")
+
+  rv = h2o.doGET(conn = conn, urlSuffix = "")
+  if (rv$curlError) {
+    return(FALSE)
+  }
+  if (rv$httpStatusCode != 200) {
+    return(FALSE)
+  }
+  return(TRUE)
+}
+
 #'
 #' Obtain the cluster info.
 #'
-h2o.clusterInfo <- function(client) {
-  if(missing(client)) client <- .retrieveH2O(parent.frame())
-  if(class(client) != "h2o.client") stop("client must be a h2o.client object")
-  myURL <- paste("http://", client@ip, ":", client@port, "/", .h2o.__CLOUD, sep = "")
-  if(!.uri.exists(myURL)) stop("Cannot connect to H2O instance at ", myURL)
+h2o.clusterInfo <- function(conn) {
+  if(missing(conn)) conn <- .retrieveH2O(parent.frame())
+  stopifnot(class(conn) == "h2o.client")
+  if(! h2o.clusterIsUp(conn)) {
+    message = sprintf("Cannot connect to H2O instance at http://%s:%d", client@ip, client@port)
+    stop(message)
+  }
 
   res = NULL
   {
-    res <- fromJSON(getURL(myURL))
-
+    res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
     nodeInfo <- res$nodes
     numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -263,7 +278,7 @@ h2o.clusterInfo <- function(client) {
       # to post its information yet.
       threeSeconds = 3
       Sys.sleep(threeSeconds)
-      res <- fromJSON(getURL(myURL))
+      res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
     }
   }
 
