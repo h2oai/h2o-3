@@ -448,6 +448,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         return new JobV2().fillFromImpl((Job) v.get()); // TODO: version!
       }
 
+    // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
+    // where the frame name is also specified.
+    if ( FrameV2.ColSpecifierV2.class.isAssignableFrom(fclz)) {
+        return new FrameV2.ColSpecifierV2(s);
+    }
+
     if( ModelSchema.class.isAssignableFrom(fclz) )
       throw H2O.fail("Can't yet take ModelSchema as input.");
       /*
@@ -703,7 +709,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
               builder.tableHeader("name", "type", "schema?", "schema", "default", "description", "values", "is member of frames", "is mutually exclusive with");
               first = false;
             }
-            builder.tableRow(field_meta.name,
+            builder.tableRow(
+                    field_meta.name,
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
                     field_meta.is_schema ? field_meta.schema_name : "",

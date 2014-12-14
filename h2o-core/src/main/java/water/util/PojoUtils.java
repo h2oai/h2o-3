@@ -1,6 +1,7 @@
 package water.util;
 
 import water.*;
+import water.api.FrameV2;
 import water.api.KeySchema;
 import water.api.Schema;
 
@@ -164,7 +165,7 @@ public class PojoUtils {
             //
             // Assigning a Keyed (e.g., a Frame or Model) to a KeySchema.
             //
-            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>)dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
+            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
           } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a KeySchema (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
@@ -193,6 +194,16 @@ public class PojoUtils {
             // We are assigning a Pattern to a String.
             //
             dest_field.set(dest, orig_field.get(origin).toString());
+          } else if (dest_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(orig_field.getType())) {
+            //
+            // Assigning a String to a ColSpecifier.  Note that we currently support only the colname, not a frame name too.
+            //
+            dest_field.set(dest, new FrameV2.ColSpecifierV2((String) orig_field.get(origin)));
+          } else if (orig_field.getType() == FrameV2.ColSpecifierV2.class && String.class.isAssignableFrom(dest_field.getType())) {
+            //
+            // We are assigning a ColSpecifierV2 to a String.  The column_name gets copied.
+            //
+            dest_field.set(dest, ((FrameV2.ColSpecifierV2)orig_field.get(origin)).column_name);
           } else if (Enum.class.isAssignableFrom(dest_field.getType()) && String.class.isAssignableFrom(orig_field.getType())) {
             //
             // Assigning a String into an enum field.

@@ -2,7 +2,9 @@ package hex.tree.gbm;
 
 import hex.ConfusionMatrix2;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;

@@ -1,17 +1,20 @@
 package hex.tree;
 
-import java.util.Arrays;
-
 import hex.ModelMetrics;
-import jsr166y.CountedCompleter;
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.ModelUtils;
+import water.util.Timer;
+
+import java.util.Arrays;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }

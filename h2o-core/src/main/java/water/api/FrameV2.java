@@ -3,6 +3,7 @@ package water.api;
 import water.*;
 import water.api.KeyV1.FrameKeyV1;
 import water.fvec.*;
+import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
@@ -42,8 +43,21 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  // Output fields one-per-column
-  protected static class ColV2 extends Schema<Vec, ColV2> {
+  public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
+    public ColSpecifierV2() { }
+    public ColSpecifierV2(String column_name) {
+      this.column_name = column_name;
+    }
+
+    @API(help="Name of the column", direction= API.Direction.INOUT)
+    public String column_name;
+
+    @API(help="List of fields which specify columns that must contain this column", direction= API.Direction.INOUT)
+    public String[] is_member_of_frames;
+
+  }
+
+  public static class ColV2 extends Schema<Vec, ColV2> {
 
     public ColV2() {}
 
