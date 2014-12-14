@@ -18,7 +18,12 @@ class Frame(object):
       print "READ: +",len(self),fname
     # Construct from an array of Vecs already passed in
     elif vecs is not None:
+      vlen = len(vecs[0])
+      for v in vecs:  
+        if not isinstance(v,Vec): raise ValueError("Not a list of Vecs")
+        if len(v)!=vlen: raise ValueError("Vecs not the same size, "+str(vlen)+" vs "+str(len(v)))
       self._vecs = vecs
+    else: raise ValueError("Frame made from CSV file or an array of Vecs only")
 
   # Print [col, cols...]
   def __str__(self): return self._vecs.__repr__()
@@ -112,7 +117,7 @@ class Vec(object):
 # 
 class Expr(object):
   def __init__(self,op,left=None,rite=None):
-    self._op,self._data = (op,None) if isinstance(op,str) else ("csvfile",op)
+    self._op,self._data = (op,None) if isinstance(op,str) else ("rawdata",op)
     self._left = left._expr if isinstance(left,Vec) else left
     self._rite = rite._expr if isinstance(rite,Vec) else rite
     self._name = self._op # Set an initial name, generally overwritten

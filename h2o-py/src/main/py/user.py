@@ -22,6 +22,13 @@ c = a+b
 d = c+c+sum(a)
 e = c+a+1
 print e
+# Note that "d=c+..." keeps the internal C expressions alive, until "d" goes
+# out of scope even as we nuke "c"
 print c
+c = None
+# Internal "Expr(c=a+b)" not dead!
 
 print 1+(a[0]+b[1]).mean()
+
+c = h2o.Frame(vecs=[h2o.Vec("C1",h2o.Expr([1,2,3])),h2o.Vec("C2",h2o.Expr([4,5,6]))])
+print c
