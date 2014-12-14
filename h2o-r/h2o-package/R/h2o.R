@@ -184,93 +184,33 @@ h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #----------------------------------------
 
 
-#'
 #' Make an HTTP request to the H2O backend.
-#'
-.h2o.__remoteSend <- function(client, page, method = "GET", ..., .params = list()) {
-  .h2o.__checkClientHealth(client)
-  ip <- client@ip
-  port <- client@port
-  myURL <- paste("http://", ip, ":", port, "/", page, sep="")
+.h2o.__remoteSend <- function(conn, page, method = "GET", ..., .params = list()) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+  stopifnot(class(method) == "character")
 
-  # Sends the given arguments as URL arguments to the given page on the specified server
-  #
-  # Re-enable POST since we found the bug in NanoHTTPD which was causing POST
-  # payloads to be dropped.
-  #
-#  if(.pkg.env$IS_LOGGING) {
-    # Log list of parameters sent to H2O
-#    .h2o.__logIt(myURL, list(...), "Command")
-#
-#    hg <- basicHeaderGatherer()
-#    tg <- basicTextGatherer()
-#    postForm(myURL, style = "POST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), ...)
-#    temp <- tg$value()
-#
-#    # Log HTTP response from H2O
-#    hh <- hg$value()
-#    s <- paste(hh["Date"], "\nHTTP status code: ", hh["status"], "\n ", temp, sep = "")
-#    s <- paste(s, "\n\n------------------------------------------------------------------\n")
-#
-#    cmdDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_COMMAND))
-#    if(!file.exists(cmdDir)) stop(cmdDir, " directory does not exist")
-#    write(s, file = .pkg.env$h2o.__LOG_COMMAND, append = TRUE)
-#  } else {
+  .h2o.__checkConnectionHealth(conn)
 
-    temp <- list()
-
-    if (length(.params) == 0) .params <- list(...)
-
-    # GET
-    if (method == "GET") {
-      if(length(list(...)) == 0 && length(.params) == 0) {
-        #
-        # TODO: PUT IN A TRY CATCH AND DUMP EVERYTHING FOR DEBUG
-        #
-        tryCatch(
-        temp <- invisible(getURLContent(myURL))
-        , error = function(e) { print("Error!"); print(myURL); print("Keys in H2O:"); print(h2o.ls(client)); print(getURLContent(myURL)); })
-        temp <- invisible(getURLContent(myURL))
-
-      } else
-        temp = invisible(getForm(myURL, .params = .params, .checkParams = FALSE))  # Some H2O params overlap with Curl params
-
-    # POST
-    } else if (method == "POST") {
-      temp <- postForm(myURL, .params = .params,  style = "POST")
-    } else if (method == "HTTPPOST") {
-      hg <- basicHeaderGatherer()
-      tg <- basicTextGatherer()
-      suppressWarnings(postForm(myURL, .checkParams=FALSE, style = "HTTPPOST", .opts = curlOptions(headerfunction = hg$update, writefunc = tg[[1]]), .params =.params))
-      temp <- tg$value()
-    }
-
-    # post-processing
-    after <- gsub('"Infinity"', '"Inf"', temp[1])
-    after <- gsub('"-Infinity"', '"-Inf"', after)
-    if (is.null(after)) stop("`after` was NULL !!")
-    res <- fromJSON(after)
-
-    if(!is.null(res$error)) {
-      if(.pkg.env$IS_LOGGING) .h2o.__writeToFile(res, .pkg.env$h2o.__LOG_ERROR)
-      stop(paste(myURL," returned the following error:\n", .h2o.__formatError(res$error)))
-    }
-  res
-}
-
-# client -- Connection object returned from h2o.init().
-# page   -- URL to access within the H2O server.
-# parms  -- List of parameters to send to the server.
-.h2o.__remoteSendWithParms <- function(client, page, method = "GET", parms) {
-  cmd = ".h2o.__remoteSend(client, page, method =" %p% deparse(method)
-
-  for (i in 1:length(parms)) {
-    thisparmname = names(parms)[i]
-    cmd = sprintf("%s, %s=parms$%s", cmd, thisparmname, thisparmname)
+  if (length(.params) == 0) {
+    .params <- list(...)
   }
-  cmd = sprintf("%s)", cmd)
-  rv = eval(parse(text=cmd))
-  return(rv)
+
+  if (method == "GET") {
+    payload = h2o.doSafeGET(conn = conn, urlSuffix = page, parms = .params)
+    temp = payload
+  } else if (method == "POST") {
+    ip <- conn@ip
+    port <- conn@port
+    myURL <- paste("http://", ip, ":", port, "/", page, sep="")
+    temp <- postForm(myURL, .params = .params,  style = "POST")
+  } else {
+    message = sprintf("Unsupported HTTP method: %s", method)
+    stop(message)
+  }
+
+  res = fromJSON(temp)
+  return(res)
 }
 
 
@@ -345,7 +285,7 @@ h2o.clusterInfo <- function(conn) {
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
-.h2o.__checkClientHealth <- function(conn) {
+.h2o.__checkConnectionHealth <- function(conn) {
   grabCloudStatus <- function(conn) {
     rv = h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
 
@@ -492,26 +432,12 @@ h2o.clusterInfo <- function(conn) {
 }
 
 #------------------------------------ Utilities ------------------------------------#
-.h2o.__writeToFile <- function(res, fileName) {
-  formatVector <- function(vec) {
-    result <- rep(" ", length(vec))
-    nams <- names(vec)
-    for(i in 1:length(vec))
-      result[i] = paste(nams[i], ": ", vec[i], sep="")
-    paste(result, collapse="\n")
-  }
-
-  cat("Writing JSON response to", fileName, "\n")
-  temp <- strsplit(as.character(Sys.time()), " ")[[1]]
-  write(paste(temp[1], temp[2], '\t', formatVector(unlist(res))), file = fileName, append = TRUE)
-}
-
 .h2o.__checkForFactors <- function(object) {
   if(class(object) != "h2o.frame") return(FALSE)
   h2o.anyFactor(object)
 }
 
-.h2o.__version <- function(client) {
+h2o.getVersion <- function(client) {
   res = .h2o.__remoteSend(client, .h2o.__CLOUD)
   res$version
 }
