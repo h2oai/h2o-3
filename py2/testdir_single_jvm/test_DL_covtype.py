@@ -22,7 +22,7 @@ class Basic(unittest.TestCase):
         csvPathname_test  = 'standard/covtype.data'
         hex_key = 'covtype.hex'
         validation_key = 'covtype_v.hex'
-        timeoutSecs = 180
+        timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
         inspectResult = h2o_cmd.runInspect(key=parse_key)
@@ -110,7 +110,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 600
+        timeoutSecs = 60
         start = time.time()
 
         bmResult = h2o.n0.build_model(

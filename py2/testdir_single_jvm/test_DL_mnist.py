@@ -22,7 +22,7 @@ class Basic(unittest.TestCase):
         csvPathname_test  = 'laptop/mnist/test.csv.gz'
         hex_key = 'mnist_train.hex'
         validation_key = 'mnist_test.hex'
-        timeoutSecs = 30
+        timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='bigdata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
         inspectResult = h2o_cmd.runInspect(key=parse_key)
@@ -110,7 +110,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.057 ## expected validation error for the above model
         relTol = 0.20 ## 20% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 600
+        timeoutSecs = 60
         start = time.time()
 
         bmResult = h2o.n0.build_model(

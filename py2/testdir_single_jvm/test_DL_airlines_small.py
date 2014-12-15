@@ -22,7 +22,7 @@ class Basic(unittest.TestCase):
         csvPathname_test  = 'airlines/AirlinesTest.csv.zip'
         hex_key = 'train.hex'
         validation_key = 'validation.hex'
-        timeoutSecs = 30
+        timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='smalldata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
         inspectResult = h2o_cmd.runInspect(key=parse_key)
@@ -48,7 +48,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 30
+        timeoutSecs = 60
         start = time.time()
 
         bmResult = h2o.n0.build_model(
