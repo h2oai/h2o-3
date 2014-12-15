@@ -92,8 +92,8 @@ test_that("doSafePOST works", {
   expect_equal(nchar(rv$payload) >= 500, TRUE)
 })
 
-#test_that("H2O can start", {
-#  .skip_if_not_developer()
-#  h = h2o.init()
-#  h2o.shutdown(h, prompt = FALSE)
-#})
+test_that("H2O can start", {
+  .skip_if_not_developer()
+  h = h2o.init()
+  h2o.shutdown(h, prompt = FALSE)
+})

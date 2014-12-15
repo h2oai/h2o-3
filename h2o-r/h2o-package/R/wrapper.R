@@ -166,13 +166,12 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
     message = sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
     ans = readline(message)
     temp = substr(ans, 1, 1)
-  } else temp = "y"
+  } else {
+    temp = "y"
+  }
   
   if(temp == "Y" || temp == "y") {
-    res = h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__PAGE_SHUTDOWN)
-    res = fromJSON(res)
-    if(!is.null(res$error))
-      stop(paste("Unable to shutdown H2O. Server returned the following error:\n", res$error))
+    h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
   }
   
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
