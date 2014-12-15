@@ -3,7 +3,6 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
-import org.reflections.Reflections;
 import water.api.*;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;

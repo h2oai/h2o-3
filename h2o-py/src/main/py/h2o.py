@@ -1,26 +1,31 @@
 import csv, requests
 
-##############################################################################
-# A Frame will one day be a pointer to an h2o cloud
-# For now, see if we can make (small) 2-D associative arrays,
-# and overload everything.
-class Frame(object):
-  def __init__(self, h2o=None, fname=None, vecs=None):
+###############################################################################
+# Frame represents a 2-D array of data, uniform in each column.  The data may
+# be local, or may be in an H2O cluster.  The data is loaded from a CSV file,
+# and is either a python-process-local file or cluster-local file, or a list of
+# Vecs (columns of data).
+class H2OFrame(object):
+  def __init__(self, localFName=None, remoteFName=None, vecs=None):
     # Read a CSV file
-    if h2o and fname:
-      rawkey = h2o.ImportFile(fname)
-      setup = h2o.ParseSetup(rawkey)
-      hexkey = h2o.Parse(setup)
-      print hexkey
-      #with open(fname, 'rb') as csvfile:
-      #  self._vecs = []
-      #  for name in csvfile.readline().split(','): 
-      #    self._vecs.append(Vec(lead+name.rstrip(), Expr([])))
-      #  for row in csv.reader(csvfile):
-      #    for i,data in enumerate(row):
-      #      self._vecs[i].append(data)
-      #print "READ: +",len(self),fname
-      raise NotImplementedError
+    if remoteFName:
+      if not H2OCONN: raise ValueError("No open h2o connection")
+      rawkey = H2OCONN.ImportFile(remoteFName)
+      setup  = H2OCONN.ParseSetup(rawkey)
+      j = H2OCONN.Parse(setup)
+      hexKey = j['hex']['name']
+      cols = j['columnNames']
+      self._vecs = [Vec(str(col),Expr(hexKey,idx,str(col)))  for idx,col in enumerate(cols)]
+      print "Imported",remoteFName,"into cluster as",hexKey
+    elif localFName:
+      with open(localFName, 'rb') as csvfile:
+        self._vecs = []
+        for name in csvfile.readline().split(','): 
+          self._vecs.append(Vec(name.rstrip(), Expr([])))
+        for row in csv.reader(csvfile):
+          for i,data in enumerate(row):
+            self._vecs[i].append(data)
+      print "Imported",localFName,"into local python process"
     # Construct from an array of Vecs already passed in
     elif vecs is not None:
       vlen = len(vecs[0])
@@ -42,7 +47,7 @@ class Frame(object):
         if i==v._name: return v
       raise ValueError("Name "+i+" not in Frame")
     # Slice; return a Frame not a Vec
-    if isinstance(i,slice): return Frame(vecs=self._vecs[i])
+    if isinstance(i,slice): return H2OFrame(vecs=self._vecs[i])
     raise NotImplementedError
 
   # Number of columns
@@ -117,17 +122,26 @@ class Vec(object):
 
 ##############################################################################
 #
-# A pending to-be-computed expression.  Points to other Exprs in a DAG of
-# pending computations.  Pointed at by at most one Vec (during construction)
-# and no others.  If that Vec goes dead, this computation is known to be an
-# internal tmp; used only in building other Exprs.
+# Exprs - 
+# - A pending to-be-computed BigData expression.  Does not have a Key
+# - An already computed BigData expression.  Does have a Key
+# - A small-data computation, pending or not.
+#
+# Pending computations point to other Exprs in a DAG of pending computations.
+# Pointed at by at most one Vec (during construction) and no others.  If that
+# Vec goes dead, this computation is known to be an internal tmp; used only in
+# building other Exprs.
 # 
 class Expr(object):
+  # Constructor choices:
+  # ( "op"  left rite) - pending calc, awaits left & rite being computed
+  # ( data  None None) - precomputed local small data
+  # (hexkey #num name) - precomputed remote  Big Data
   def __init__(self,op,left=None,rite=None):
     self._op,self._data = (op,None) if isinstance(op,str) else ("rawdata",op)
     self._left = left._expr if isinstance(left,Vec) else left
     self._rite = rite._expr if isinstance(rite,Vec) else rite
-    self._name = self._op # Set an initial name, generally overwritten
+    self._name = self._op       # Set an initial name, generally overwritten
 
   def __len__(self):
     if self._op=="mean": return 1
@@ -139,11 +153,15 @@ class Expr(object):
     return "(["+self._name+"]="+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Expr) else self._rite)+")"
 
   # Eval and print
-  def __repr__(self):
-    return self.eager().__str__()
+  def __repr__(self): return self.eager().__str__()
 
   # Basic indexed or sliced lookup
-  def __getitem__(self,i): return self.eager()[i]
+  def __getitem__(self,i): 
+    x = self.eager()
+    if isinstance(x,list): return x[i]
+    # ([ $frame #row #col)
+    H2OCONN.Rapids("([ $"+str(self._data)+" /#"+str(i)+" /#"+str(self._left)+")")
+    raise NotImplementedError
 
   # Small-data add; result of a (lazy but small) Expr vs a plain int/float
   def __add__ (self,i): return self.eager()+i
@@ -203,7 +221,8 @@ _CMD = None
 #
 # Cluster connection
 #
-class Cluster(object):
+H2OCONN = None # Default connection
+class H2OConnection(object):
   def __init__(self,ip="localhost",port=54321):
     assert isinstance(port,int) and 0 <= port <= 65535
     self._ip = ip
@@ -214,6 +233,8 @@ class Cluster(object):
       ncpus += n['num_cpus']
       mmax  += n['max_mem']
     print "Connected to cloud '"+cld['cloud_name']+"' size",cld['cloud_size'],"ncpus",ncpus,"maxmem",get_human_readable_size(mmax)
+    global H2OCONN
+    H2OCONN = self              # Default connection is last openned
 
   # Dumb url prefix
   def url(self):  return "http://"+self._ip+":"+str(self._port)+"/"
@@ -222,7 +243,7 @@ class Cluster(object):
   # reached, is of a certain size, and is taking basic status commands
   def connect(self,size=1):
     while True:
-      cld = requests.get(self.buildURL("Cloud",{})).json()
+      cld = self.doSafeGet(self.buildURL("Cloud",{}))
       if not cld['cloud_healthy']:
         raise ValueError("Cluster reports unhealthy status",cld)
       if cld['cloud_size'] >= size and cld['consensus']: return cld
@@ -232,8 +253,7 @@ class Cluster(object):
   # Import a single file; very basic error checking
   # Returns h2o Key
   def ImportFile(self,path):
-    j = requests.get(self.url()+"ImportFiles.json",params={'path':path}).json()
-    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    j = self.doSafeGet(self.buildURL("ImportFiles",{'path':path}))
     if j['fails']:  raise ValueError("ImportFiles of "+path+" failed on "+j['fails'])
     return j['keys'][0]
 
@@ -241,8 +261,7 @@ class Cluster(object):
   def ParseSetup(self,rawkey):
     # Unable to use 'requests.params=' syntax because it flattens array
     # parameters, but ParseSetup really expects a real array of Keys.
-    j = requests.get(self.buildURL("ParseSetup",{'srcs':[rawkey]})).json()
-    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    j = self.doSafeGet(self.buildURL("ParseSetup",{'srcs':[rawkey]}))
     if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
@@ -256,11 +275,26 @@ class Cluster(object):
     # Extract only 'name' from each src in the array of srcs
     p['srcs'] = [src['name'] for src in setup['srcs']]
     # Request blocking parse
-    j = requests.get(self.buildURL("Parse",p)).json()
-    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    # TODO: POST vs GET
+    j = self.doSafeGet(self.buildURL("Parse",p))
     if j['job']['status'] != 'DONE': raise ValueError("Parse status expected to be DONE, instead is "+j['job']['status'])
     if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
-    return j['hex']['name']
+    return j
+
+  # 
+  def Rapids(self,expr):
+    print expr.encode('utf-8')
+    j = self.doSafeGet(self.buildURL("Rapids",{"ast":expr.encode('utf-8')}))
+    print j
+    raise NotImplementedError
+
+  # "Safe" REST calls.  Check for errors in a common way
+  def doSafeGet(self,url):
+    r = requests.get(url)
+    # Missing a non-json response check, e.g. 404 check here
+    j = r.json()
+    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    return j
 
   # function to build a URL from a base and a dictionary of params.  'request'
   # has such a thing but it flattens lists and we need the actual list
