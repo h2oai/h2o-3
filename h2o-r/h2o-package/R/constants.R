@@ -194,7 +194,7 @@
 #' Inspect/Summary Endpoints
 #'
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
-.h2o.__FRAMES       <- "3/Frames.json"      # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
+.h2o.__FRAMES       <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
 #'
 #' Administrative Endpoints
@@ -205,7 +205,7 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__MODEL_BUILDERS <- function(algo) "2/ModelBuilders/" %p0% algo %p0% '.json'
+.h2o.__MODEL_BUILDERS <- function(algo) "ModelBuilders/" %p0% algo %p0% '.json'
 
 #'
 #' Algorithm Parameter Endpoints
@@ -214,7 +214,7 @@
 #'
 #' Model Endpoint
 #'
-.h2o.__MODELS       <- "3/Models.json/"
+.h2o.__MODELS       <- "Models.json"
 
 #'
 #' Removal
