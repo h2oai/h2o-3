@@ -29,8 +29,11 @@ public final class ParseDataset2 extends Job<Frame> {
     return parse(okey,keys,delete_on_done,setup(keys[0],singleQuote,checkHeader));
   }
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
+    return parse(okey,keys,delete_on_done,globalSetup,true).get();
+  }
+  public static ParseDataset2 parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
     ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
-    try { return job.get(); }
+    try { if( blocking ) job.get(); return job; } 
     catch( Throwable ex ) {
 
       // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
@@ -49,10 +52,6 @@ public final class ParseDataset2 extends Job<Frame> {
     } finally {
       assert DKV.<Job>getGet(job._key).isStopped();
     }
-  }
-
-  public static ParseDataset2 startParse2(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
-    return forkParseDataset(okey,keys, globalSetup,delete_on_done);
   }
 
   private static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
