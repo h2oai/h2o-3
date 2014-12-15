@@ -340,7 +340,7 @@ h2o.clusterInfo <- function(conn) {
   if(! h2o.clusterIsUp(conn)) {
     ip = conn@ip
     port = conn@port
-    message = sprintf("Cannot connect to H2O instance at http://%s:%d", ip, port)
+    message = sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn))
     stop(message)
   }
 
@@ -386,7 +386,7 @@ h2o.clusterInfo <- function(conn) {
       ip = conn@ip
       port = conn@port
       warning(rv$curlErrorMessage)
-      message = sprintf("H2O connection has been severed.  Cannot connect to instance at http://%s:%d", ip, port)
+      message = sprintf("H2O connection has been severed.  Cannot connect to instance at %s", h2o.getBaseURL(conn))
       stop(message)
     }
 
@@ -395,7 +395,7 @@ h2o.clusterInfo <- function(conn) {
       port = conn@port
       message = sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage)
       warning(message)
-      message = sprintf("H2O connection has been severed.  Instance unhealthy at http://%s:%d", ip, port)
+      message = sprintf("H2O connection has been severed.  Instance unhealthy at %s", h2o.getBaseURL(conn))
       stop(message)
     }
 
@@ -530,8 +530,19 @@ h2o.clusterInfo <- function(conn) {
   h2o.anyFactor(object)
 }
 
-h2o.getVersion <- function(client) {
-  res = .h2o.__remoteSend(client, .h2o.__CLOUD)
+h2o.getBaseURL <- function(conn) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+
+  rv = .h2o.calcBaseURL(conn = conn, urlSuffix = "")
+  return(rv)
+}
+
+h2o.getVersion <- function(conn) {
+  if (missing(conn)) stop()
+  stopifnot(class(conn) == "h2o.client")
+
+  res = .h2o.__remoteSend(conn, .h2o.__CLOUD)
   res$version
 }
 

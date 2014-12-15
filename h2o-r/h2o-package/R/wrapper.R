@@ -74,16 +74,14 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     ice_root = tempdir()
   }
 
-  # Disable Up.json for now, since it doesn't exist in most builds.
-  # Re-enable this sometime a few months from now.
-  # myUpURL = paste("http://", ip, ":", port, "/Up.json", sep="")
-  myUpURL = paste("http://", ip, ":", port, sep="")
-  myURL = paste("http://", ip, ":", port, sep="")
   warnNthreads = FALSE
-  if(!url.exists(myUpURL, .opts = curlOptions(useragent=R.version.string))) {
-    if(!startH2O)
-      stop(paste("Cannot connect to H2O server. Please check that H2O is running at", myURL))
-    else if(ip == "localhost" || ip == "127.0.0.1") {
+  tmpConn = new("h2o.client", ip = ip, port = port)
+  if (! h2o.clusterIsUp(tmpConn)) {
+    if (!startH2O) {
+      message = sprintf("Cannot connect to H2O server. Please check that H2O is running at %s", h2o.getBaseURL(tmpConn))
+      stop(message)
+    }
+    else if (ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
 
       if (nthreads == -2) {
@@ -94,12 +92,12 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       .h2o.startJar(nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size, beta = beta, assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root)
 
       count = 0;
-      while(!url.exists(myURL) && (count < 60)) {
+      while(! h2o.clusterIsUp(conn = tmpConn) && (count < 60)) {
         Sys.sleep(1);
         count = count + 1
       }
 
-      if (!url.exists(myURL)) {
+      if (! h2o.clusterIsUp(conn = tmpConn)) {
         stop("H2O failed to start, stopping execution.")
       }
     } else {
@@ -107,13 +105,12 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     }
   }
 
-  cat("Successfully connected to", myURL, "\n\n")
-  H2Oserver = new("h2o.client", ip = ip, port = port)
-  # Sys.sleep(0.5)    # Give cluster time to come up
-  h2o.clusterInfo(H2Oserver)
+  conn = new("h2o.client", ip = ip, port = port)
+  cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
+  h2o.clusterInfo(conn)
   cat("\n")
 
-  verH2O = h2o.getVersion(H2Oserver)
+  verH2O = h2o.getVersion(conn)
   verPkg = packageVersion("h2o")
   if (verH2O != verPkg) {
     message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
@@ -133,8 +130,8 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("\n")
   }
 
-  assign("SERVER", H2Oserver, .pkg.env)
-  return(H2Oserver)
+  assign("SERVER", conn, .pkg.env)
+  return(conn)
 }
 
 #' Shut Down H2O Instance 
@@ -156,12 +153,14 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' h2o.shutdown(localH2O)
 #' }
 #'
-h2o.shutdown <- function(client, prompt = TRUE) {
-  if(class(client) != "h2o.client") stop("client must be of class h2o.client")
+h2o.shutdown <- function(conn, prompt = TRUE) {
+  if(class(conn) != "h2o.client") stop("conn must be of class h2o.client")
   if(!is.logical(prompt)) stop("prompt must be of class logical")
   
-  myURL = paste("http://", client@ip, ":", client@port, sep="")
-  if(!url.exists(myURL)) stop(paste("There is no H2O instance running at", myURL))
+  if(! h2o.clusterIsUp(conn)) {
+    message = sprintf("There is no H2O instance running at ", h2o.getBaseURL(conn))
+    stop(paste("", myURL))
+  }
   
   if(prompt) {
     ans = readline(paste("Are you sure you want to shutdown the H2O instance running at", myURL, "(Y/N)? "))
@@ -175,7 +174,7 @@ h2o.shutdown <- function(client, prompt = TRUE) {
       stop(paste("Unable to shutdown H2O. Server returned the following error:\n", res$error))
   }
   
-  if((client@ip == "localhost" || client@ip == "127.0.0.1") && .h2o.startedH2O()) {
+  if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
   }
@@ -191,7 +190,8 @@ h2o.clusterStatus <- function(client) {
   if(missing(client) || class(client) != "h2o.client") stop("client must be a h2o.client object")
   .h2o.__checkUp(client)
   myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD, sep = "")
-  res = fromJSON(postForm(myURL, .params = list(quiet="true", skip_ticks="true"), style = "POST", .opts = curlOptions(useragent=R.version.string)))
+  params = list(quiet="true", skip_ticks="true")
+  res = fromJSON(h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
   
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
