@@ -71,36 +71,16 @@ class Basic(unittest.TestCase):
             csvPathnamegz = SYNDATASETS_DIR + '/' + csvFilenamegz
             h2o_util.file_gzip(csvPathname, csvPathnamegz)
 
-            start = time.time()
-            print "Parse start:", csvPathnamegz
             parseResult = h2i.import_parse(path=csvPathnamegz, schema='put', hex_key=hex_key, 
                 timeoutSecs=timeoutSecs, doSummary=DOSUMMARY)
 
-            numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-            if DOSUMMARY:
-                algo = "Parse and Summary:"
-            else:
-                algo = "Parse:"
-            print algo , parse_key, "took", time.time() - start, "seconds"
-
-            print "Inspecting.."
-            start = time.time()
-            inspect = h2o_cmd.runInspect(key=parse_key, timeoutSecs=timeoutSecs)
-            print "Inspect:", parse_key, "took", time.time() - start, "seconds"
-            
-            missingValuesList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-            print "\n" + csvPathnamegz, \
-                "\n    numRows:", "{:,}".format(numRows), \
-                "\n    numCols:", "{:,}".format(numCols)
-
-            self.assertEqual(len(missingValuesList), 0, 
-                "Don't expect any missing values. These cols had some: %s" % missingValuesList)
-            # should match # of cols in header or ??
-            self.assertEqual(numCols, colCount,
-                "parse created result with the wrong number of cols %s %s" % (numCols, colCount))
-            self.assertEqual(numRows, rowCount,
-                "parse created result with the wrong number of rows (header shouldn't count) %s %s" % \
-                (numRows, rowCount))
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pA.numRows
+            print pA.numCols
+            print pA.parse_key
+            # this guy can take json object as first thing, or re-read with key
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
 
 if __name__ == '__main__':
     h2o.unit_main()

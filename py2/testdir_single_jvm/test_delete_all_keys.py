@@ -28,18 +28,18 @@ class Basic(unittest.TestCase):
         for trial in range(2):
             for csvFilename in csvFilenameList:
                 csvPathname = importFolderPath + "/" + csvFilename
-                start = time.time()
+
                 parseResult = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, timeoutSecs=500)
-                elapsed = time.time() - start
-                print csvFilename, "parsed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs), "\n"
-                numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-                print "\n" + csvFilename
+                pA = h2o_cmd.ParseObj(parseResult)
+                iA = h2o_cmd.InspectObj(pA.parse_key)
+                parse_key = pA.parse_key
+                numRows = iA.numRows
+                numCols = iA.numCols
+                labelList = iA.labelList
 
                 h2i.delete_keys_at_all_nodes()
                 print "Delete all keys. Shouldn't be any more?"
                 h2o.nodes[0].remove_all_keys()
-
-
 
             print "\nTrial", trial, "completed\n"
 

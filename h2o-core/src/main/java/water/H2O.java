@@ -384,8 +384,18 @@ final public class H2O {
     System.exit(222);
   }
 
+  private static volatile boolean _shutdownRequested = false;
+
+  public static void requestShutdown() {
+    _shutdownRequested = true;
+  }
+
+  public static boolean getShutdownRequested() {
+    return _shutdownRequested;
+  }
+
   /** Shutdown itself by sending a shutdown UDP packet. */
-  public void shutdown() {
+  public static void shutdown() {
     UDPRebooted.T.shutdown.send(H2O.SELF);
     H2O.exit(0);
   }

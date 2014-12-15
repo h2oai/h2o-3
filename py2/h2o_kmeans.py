@@ -39,12 +39,12 @@ def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
     rows = ko.rows # [78, 5, 41, 76]
     model_category = ko.model_category # Clustering
     iters = ko.iters # 11.0
-    schema_version = ko.schema_version # 2
+    # schema_version = ko.schema_version # 2
     domains = ko.domains # [None, None, None, None, None, None, None, None, None, None, None, None, None, None]
     # 
     names = ko.names # [u'STR', u'OBS', u'AGMT', u'FNDX', u'HIGD', u'DEG', u'CHK', u'AGP1', u'AGMN', u'NLV', u'LIV', u'WT', u'AGLP', u'MST']
-    schema_name = ko.schema_name # KMeansModelOutputV2
-    schema_type = ko.schema_type # KMeansOutput
+    # schema_name = ko.schema_name # KMeansModelOutputV2
+    # schema_type = ko.schema_type # KMeansOutput
     ncats = ko.ncats # 0
     clusters = ko.clusters # [ 4 lists of centers ]
     mse = ko.mse # 505.632581773

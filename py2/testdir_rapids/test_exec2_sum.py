@@ -16,51 +16,51 @@ DO_SUM = False
 if DO_SUM:
     exprList = [
             # 'a=c(1); a = sum(r1[1,])',
-            Assign('a', Col(Seq(1))),
-            Assign('a', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('a', Col(Seq(1)), do=False),
+            Assign('a', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             # 'b=c(1); b = sum(r1[1,])',
-            Assign('b', Col(Seq(1))),
-            Assign('b', Fcn('sum', KeyIndexed('r1', row=1))),
-            # 'd=c(1); d = sum(r1[1,])'(),
-            Assign('d', Col(Seq(1))),
-            Assign('d', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('b', Col(Seq(1)), do=False),
+            Assign('b', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
+            # 'd=c(1); d = sum(r1[1,])'(, do=False),
+            Assign('d', Col(Seq(1)), do=False),
+            Assign('d', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             # 'e=c(1); e = sum(r1[1,])',
-            Assign('e', Col(Seq(1))),
-            Assign('e', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('e', Col(Seq(1)), do=False),
+            Assign('e', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             # 'f=c(1); f = sum(r1[1,])',
-            Assign('f', Col(Seq(1))),
-            Assign('f', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('f', Col(Seq(1)), do=False),
+            Assign('f', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             # 'f=c(1); g = sum(r1[1,])',
-            Assign('g', Col(Seq(1))),
-            Assign('g', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('g', Col(Seq(1)), do=False),
+            Assign('g', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             # 'h=c(1); h = sum(r1[1,])',
-            Assign('h', Col(Seq(1))),
-            Assign('h', Fcn('sum', KeyIndexed('r1', row=1))),
+            Assign('h', Col(Seq(1)), do=False),
+            Assign('h', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
             ]
 else:
     exprList = [
             # 'a=c(1); a = log(r1[1,])',
-            Assign('a', Col(Seq(1))),
+            Assign('a', Col(Seq(1)), do=False),
             # can't force a scalar to have a key be created?
-            Assign('a', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('a', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             # 'b=c(1); b = log(r1[1,])',
-            Assign('b', Col(Seq(1))),
-            Assign('b', Fcn('log', KeyIndexed('r1', row=1))),
-            # 'd=c(1); d = log(r1[1,])'(),
-            Assign('d', Col(Seq(1))),
-            Assign('d', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('b', Col(Seq(1)), do=False),
+            Assign('b', Fcn('log', KeyIndexed('r1', row=1)), do=False),
+            # 'd=c(1); d = log(r1[1,])'(, do=False),
+            Assign('d', Col(Seq(1)), do=False),
+            Assign('d', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             # 'e=c(1); e = log(r1[1,])',
-            Assign('e', Col(Seq(1))),
-            Assign('e', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('e', Col(Seq(1)), do=False),
+            Assign('e', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             # 'f=c(1); f = log(r1[1,])',
-            Assign('f', Col(Seq(1))),
-            Assign('f', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('f', Col(Seq(1)), do=False),
+            Assign('f', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             # 'f=c(1); g = log(r1[1,])',
-            Assign('g', Col(Seq(1))),
-            Assign('g', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('g', Col(Seq(1)), do=False),
+            Assign('g', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             # 'h=c(1); h = log(r1[1,])',
-            Assign('h', Col(Seq(1))),
-            Assign('h', Fcn('log', KeyIndexed('r1', row=1))),
+            Assign('h', Col(Seq(1)), do=False),
+            Assign('h', Fcn('log', KeyIndexed('r1', row=1)), do=False),
             ]
 
 class Basic(unittest.TestCase):
@@ -95,9 +95,8 @@ class Basic(unittest.TestCase):
 
         for execExpr in exprList:
             start = time.time()
-            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=300)
+            execExpr.do()
             print 'exec took', time.time() - start, 'seconds'
-            print "result:", result
 
         h2o.check_sandbox_for_errors()
 

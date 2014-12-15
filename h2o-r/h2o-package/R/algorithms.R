@@ -314,7 +314,7 @@
   dest_key <- res$jobs[[1]]$dest$name
   .h2o.__waitOnJob(client, job_key)
   # Grab model output and flatten one level
-  res_model <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODELS %p0% dest_key)
+  res_model <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODELS %p0% "/" %p0% dest_key)
 
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models

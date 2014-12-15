@@ -1,46 +1,63 @@
 # Initialize functions for R logging
-if(.Platform$OS.type == "windows") {
-  .myPath <- file.path(Sys.getenv("APPDATA"), "h2o")
-} else {
-  .myPath <- file.path(Sys.getenv("HOME"), "Library", "Application Support", "h2o")
+
+.h2o.calcLogFileName <- function() {
+  fileName = paste(tempdir(), "/rest.log", sep='')
+  return(fileName)
 }
 
-.pkg.env$h2o.__LOG_COMMAND <- file.path(.myPath, "commands.log")
-.pkg.env$h2o.__LOG_ERROR   <- file.path(.myPath, "errors.log")
+.h2o.getLogFileName <- function() {
+  if (! is.null(.pkg.env$LOG_FILE_NAME)) {
+    return(.pkg.env$LOG_FILE_NAME)
+  }
 
-h2o.startLogging <- function() {
-  cmdDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_COMMAND))
-  if(!file.exists(cmdDir))
-    stop(cmdDir, " directory does not exist. Please create it or change logging path with h2o.setLogPath")
+  return(.h2o.calcLogFileName())
+}
 
-  errDir <- normalizePath(dirname(.pkg.env$h2o.__LOG_ERROR))
-  if(!file.exists(errDir))
-    stop(errDir, " directory does not exist. Please create it or change logging path with h2o.setLogPath")
+.h2o.isLogging <- function() {
+  if (! .pkg.env$IS_LOGGING) {
+    return(FALSE)
+  }
 
-  cat("Appending to log file", .pkg.env$h2o.__LOG_COMMAND, "\n")
-  cat("Appending to log file", .pkg.env$h2o.__LOG_ERROR, "\n")
+  return(TRUE)
+}
+
+.h2o.logRest <- function(message) {
+  if (! .h2o.isLogging()) {
+    return
+  }
+
+  write(x = message, file = .h2o.getLogFileName(), append = TRUE)
+}
+
+h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
+  # Legacy.  Do nothing.
+}
+
+h2o.startLogging <- function(file) {
+  if (! missing(file)) { stopifnot(class("file") == "character") }
+  if (missing(file)) {
+    logFileName = .h2o.calcLogFileName()
+  } else {
+    logFileName = file
+  }
+  assign("LOG_FILE_NAME", logFileName, .pkg.env)
   assign("IS_LOGGING", TRUE, envir = .pkg.env)
+  cat("Appending REST API transactions to log file", logFileName, "\n")
 }
 
 h2o.stopLogging <- function() {
-  cat("Logging stopped\n")
   assign("IS_LOGGING", FALSE, envir = .pkg.env)
+  cat("Logging stopped\n")
 }
 
-h2o.clearLogs <- function() {
-  file.remove(.pkg.env$h2o.__LOG_COMMAND)
+h2o.clearLog <- function() {
+  file.remove(.h2o.getLogFileName())
+  cat("Removed file ", .h2o.getLogFileName(), "\n")
   file.remove(.pkg.env$h2o.__LOG_ERROR)
 }
 
-h2o.getLogPath <- function(type) {
-  type <- match.arg(type, c("Command", "Error"))
-  switch(type,
-         Command = .pkg.env$h2o.__LOG_COMMAND,
-         Error   = .pkg.env$h2o.__LOG_ERROR)
-}
-
 h2o.openLog <- function(type) {
-  myFile <- h2o.getLogPath(type)
+  myFile <- .h2o.getLogFileName()
   if(!file.exists(myFile))
     stop(myFile, " does not exist")
 
@@ -50,46 +67,17 @@ h2o.openLog <- function(type) {
     system(paste("open '", myFile, "'", sep=""))
 }
 
-h2o.setLogPath <- function(path, type) {
-  if(missing(path) || !is.character(path))
-    stop("path must be a character string")
-  else if(!file.exists(path))
-    stop(path, " directory does not exist")
-
-  type <- match.arg(type, c("Command", "Error"))
-  myVar  <- switch(type, Command = "h2o.__LOG_COMMAND", Error = "h2o.__LOG_ERROR")
-  myFile <- switch(type, Command = "commands.log",      Error = "errors.log")
-  cmd <- file.path(path, myFile)
-  assign(myVar, cmd, envir = .pkg.env)
-}
-
-.h2o.__logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
-  # m is a url if commandOrErr == "Command"
-  if(is.null(tmp) || is.null(get("tmp")))
-    s <- m
-  else {
-    tmp <- get("tmp")
-    nams <- names(tmp)
-    if(length(tmp) > 0L && is.null(nams) && commandOrErr != "Command")
-      nams <- rep.int("[WARN/ERROR]", length(tmp))
-    s <- character(max(length(tmp), length(nams)))
-    for(i in seq_along(tmp))
-      s[i] <- paste0(nams[i], ": ", tmp[[i]], collapse = " ")
-    s <- paste(m, "\n", paste(s, collapse = ", "), ifelse(nzchar(s), "\n", ""))
-  }
-  # if(commandOrErr != "Command") s <- paste(s, '\n')
-  h <- format(Sys.time(), format = "%a %b %d %X %Y %Z", tz = "GMT")
-  if(commandOrErr == "Command")
-    h <- paste(h, ifelse(isPost, "POST", "GET"), sep = "\n")
-  s <- paste(h, "\n", s)
-
-  myFile <- ifelse(commandOrErr == "Command", .pkg.env$h2o.__LOG_COMMAND, .pkg.env$h2o.__LOG_ERROR)
-  myDir <- normalizePath(dirname(myFile))
-  if(!file.exists(myDir))
-    stop(myDir, " directory does not exist")
-  write(s, file = myFile, append = TRUE)
-}
-
+#' Log a message on the server-side logs
+#' 
+#' This is helpful when running several pieces of work one after the other on a single H2O
+#' cluster and you want to make a notation in the H2O server side log where one piece of
+#' work ends and the next piece of work begins.
+#' 
+#' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
+#' 
+#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param message A character string with the message to write to the log.
+#' @seealso \code{\link{h2o.client}}
 h2o.logAndEcho <- function(conn, message) {
   if(!is(conn, "h2o.client"))
     stop("conn must be an h2o.client")

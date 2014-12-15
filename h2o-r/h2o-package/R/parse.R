@@ -101,7 +101,6 @@ h2o.loadModel <- function(object, path="") {
 #' Create new h2o.frame object for predictions
 .h2o.parsedPredData<-
 function(client, predictions) {
-  browser()
   key <- predictions$key$name
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows

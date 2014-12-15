@@ -73,26 +73,15 @@ class Basic(unittest.TestCase):
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
 
-            start = time.time()
-            # does it blow up if it sets columnNames?
             parseResult = h2i.import_parse(path=csvPathname, schema='local', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=False, columnNames=None, intermediateResults=DO_INTERMEDIATE_RESULTS)
-            print "Parse:", csvFilename, "took", time.time() - start, "seconds"
-
-            start = time.time()
-            inspect = h2o_cmd.runInspect(None, hex_key, timeoutSecs=timeoutSecs2)
-            print "Inspect:", hex_key, "took", time.time() - start, "seconds"
-            missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-            print "\n" + csvPathname, \
-                "    numRows:", "{:,}".format(numRows), \
-                "    numCols:", "{:,}".format(numCols)
-
-            # should match # of cols in header or ??
-            self.assertEqual(numCols, colCount,
-                "parse created result with the wrong number of cols %s %s" % (numCols, colCount))
-            self.assertEqual(numRows, rowCount,
-                "parse created result with the wrong number of rows (header shouldn't count) %s %s" % \
-                (numRows, rowCount))
+            pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
+            print pA.numRows
+            print pA.numCols
+            print pA.parse_key
+            # this guy can take json object as first thing, or re-read with key
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
 
             print "Skipping the delete keys for now"
             if 1==0:

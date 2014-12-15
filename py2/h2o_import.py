@@ -432,9 +432,14 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
     assert len(importResult['keys']) >= 1, "No keys imported, maybe bad bucket %s or path %s" % (bucket, path)
     # print "importResult:", importResult
 
+    # get rid of parse timing in tests now
+    start = time.time()
     parseResult = parse_only(node, importPattern, hex_key, importResult['keys'],
         timeoutSecs, retryDelaySecs, initialDelaySecs, pollTimeoutSecs, noise, 
         benchmarkLogging, noPoll, **kwargs)
+    elapsed = time.time() - start
+    print importPattern, "parsed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs), "\n"
+
     verboseprint("parseResult:", dump_json(parseResult))
 
     # do SummaryPage here too, just to get some coverage

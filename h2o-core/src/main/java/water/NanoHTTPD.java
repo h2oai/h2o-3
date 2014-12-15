@@ -785,6 +785,10 @@ public class NanoHTTPD
         // Couldn't write? No can do.
         try { mySocket.close(); } catch( IOException ignore ) { }
       }
+
+      if (H2O.getShutdownRequested()) {
+        H2O.shutdown();
+      }
     }
 
     private Socket mySocket;

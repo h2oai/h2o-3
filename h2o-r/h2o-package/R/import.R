@@ -91,7 +91,6 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
   destination_key = key
   url = paste("http://", object@ip, ":", object@port, "/2/PostFile.json", sep="")
   url = paste(url, "?destination_key=", URLencode(path), sep="")
-  if(file.exists(h2o.getLogPath("Command"))) .h2o.__logIt(url, NULL, "Command")
   if(silent)
     temp = postForm(url, .params = list(fileData = fileUpload(normalizePath(path))))
   else

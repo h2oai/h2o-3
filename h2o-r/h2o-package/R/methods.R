@@ -107,17 +107,6 @@ function(object) {
   invisible(.h2o.__remoteSend(object, .h2o.__REMOVEALL))
 }
 
-#
-# Log a message.
-#
-# Logs a message to the ongoing logging file.
-#
-# @param m A message to be logged
-# @param tmp
-# @param commandOrErr
-# @param isPost A boolean, defaults to TRUE.
-h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) .h2o.__logIt(m, tmp, commandOrErr, isPost)
-
 #'
 #' Make an HTTP request to the H2O backend.
 #'

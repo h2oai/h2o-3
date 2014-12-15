@@ -28,9 +28,12 @@ class Basic(unittest.TestCase):
 
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, hex_key=hex_key, 
             checkHeader=1, timeoutSecs=180, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
+        parse_key = pA.parse_key
+        numRows = iA.numRows
+        numCols = iA.numCols
+        labelList = iA.labelList
 
         expected = []
         allowedDelta = 0

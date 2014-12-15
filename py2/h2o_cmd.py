@@ -253,7 +253,7 @@ class ParseObj(OutputObj):
             assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
         if expectedNumCols is not None:
             assert self.numCols == expectedNumCols, "%s %s" % (self.numCols, expectedNumCols)
-        print "ParseObj created:", self # vars(self)
+        print "ParseObj created for:", self.parse_key # vars(self)
 
 # Let's experiment with creating new objects that are an api I control for generic operations (Inspect)
 class InspectObj(OutputObj):
@@ -268,14 +268,14 @@ class InspectObj(OutputObj):
         # add my stuff
         self.missingList, self.labelList, self.numRows, self.numCols = infoFromInspect(inspectResult)
         if expectedNumRows is not None:
-            assert self.numRows == expectedNumRows
+            assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
         if expectedNumCols is not None:
-            assert self.numCols == expectedNumCols
+            assert self.numCols == expectedNumCols, "%s %s" % (self.numCols, expectedNumCols)
         if expectedMissingList is not None:
-            assert self.missingList == expectedMissingList
+            assert self.missingList == expectedMissingList, "%s %s" % (self.MissingList, expectedMissingList)
         if expectedLabelList is not None:
-            assert self.labelList == expectedLabelList
-        print "InspectObj created" #,  vars(self)
+            assert self.labelList == expectedLabelList, "%s %s" % (self.labelList, expectedLabelList)
+        print "InspectObj created for:", key  #,  vars(self)
 
 
 class SummaryObj(OutputObj):
@@ -327,7 +327,7 @@ class SummaryObj(OutputObj):
 
         # how are enums binned. Stride of 1? (what about domain values)
         # touch all
-        print "vars", vars(self)
+        # print "vars", vars(self)
         coList = [self.base, len(self.bins), len(self.data),
             self.domain, self.label, self.maxs, self.mean, self.mins, self.missing, self.ninfs, self.pctiles,
             self.pinfs, self.precision, self.sigma, self.str_data, self.stride, self.type, self.zeros]
@@ -345,7 +345,7 @@ class SummaryObj(OutputObj):
         self.rows = rows
 
         print "\nSummaryObj for", key, "for colName", colName, "colIndex:", colIndex
-        print "SummaryObj created" # vars(self)
+        print "SummaryObj created for:", key # vars(self)
         
         # now do the assertion checks
         self.check(expectedNumRows, expectedNumCols, 

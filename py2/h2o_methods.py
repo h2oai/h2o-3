@@ -206,10 +206,10 @@ def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2
 #******************************************************************************************8
 def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     # FIX! assume both of these are strings for now, not lists
-    if 'ast' in kwargs: 
-        assert isinstance(kwargs['ast'], basestring), "only string assumed? %s" % ast
-    if 'funs' in kwargs: 
-        assert isinstance(kwargs['funs'], basestring), "only string assumed? %s" % funs
+    if 'ast' in kwargs and kwargs['ast'] is not None:
+        assert isinstance(kwargs['ast'], basestring), "only string assumed? %s" % kwargs['ast']
+    if 'funs' in kwargs and kwargs['funs'] is not None:
+        assert isinstance(kwargs['funs'], basestring), "only string assumed? %s" % kwargs['funs']
 
     # currently runExec only does one or the other
     params_dict = {
