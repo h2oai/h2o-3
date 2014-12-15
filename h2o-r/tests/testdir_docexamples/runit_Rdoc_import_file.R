@@ -3,8 +3,8 @@ source('../h2o-runit.R')
 
 test.rdocstr.golden <- function(H2Oserver) {
 
-irisPath = system.file("extdata", "iris.csv", package="h2o")
-iris.hex = h2o.importFile(H2Oserver, path = irisPath, key = "iris.hex")
+irisPath <- system.file("extdata", "iris.csv", package="h2o")
+iris.hex <- h2o.importFile(H2Oserver, path = irisPath, key = "iris.hex")
 summary(iris.hex)
 
 testEnd()

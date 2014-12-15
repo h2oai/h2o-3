@@ -11,4 +11,3 @@ testEnd()
 }
 
 doTest("R Doc K Means", test.rdocKmeans.golden)
-

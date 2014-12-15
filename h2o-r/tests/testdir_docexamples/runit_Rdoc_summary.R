@@ -4,8 +4,8 @@ source('../h2o-runit.R')
 
 test.rdocsummary.golden <- function(H2Oserver) {
 
-prosPath = system.file("extdata", "prostate.csv", package="h2o")
-prostate.hex = h2o.importFile(H2Oserver, path = prosPath)
+prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prostate.hex <- h2o.importFile(H2Oserver, path = prosPath)
 summary(prostate.hex)
 summary(prostate.hex$GLEASON)
 summary(prostate.hex[,4:6])
