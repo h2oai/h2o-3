@@ -84,7 +84,7 @@ public class RequestServer extends NanoHTTPD {
 
     addToNavbar(register("/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
     addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame.  DEPRECATED: Use POST because of its higher data limit."),"/Parse"      , "Parse",         "Data");
-    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an aribtrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
+    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an arbitrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
 
     // Admin
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
@@ -94,7 +94,7 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
     addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
-    addToNavbar(register("/Shutdown"   ,"GET",ShutdownHandler   .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
+    addToNavbar(register("/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
