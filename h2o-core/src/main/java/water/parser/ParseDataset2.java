@@ -47,10 +47,8 @@ public final class ParseDataset2 extends Job<Frame> {
       // parsing.  Nuke it all - no partial Vecs lying around.
       for( Key k : keys ) Keyed.remove(k,fs);
       fs.blockForPending();
-
-      throw ex;
-    } finally {
       assert DKV.<Job>getGet(job._key).isStopped();
+      throw ex;
     }
   }
 
