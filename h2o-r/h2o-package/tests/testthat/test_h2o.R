@@ -95,5 +95,5 @@ test_that("doSafePOST works", {
 #test_that("H2O can start", {
 #  .skip_if_not_developer()
 #  h = h2o.init()
-#  h2o.shutdown(h)
+#  h2o.shutdown(h, prompt = FALSE)
 #})

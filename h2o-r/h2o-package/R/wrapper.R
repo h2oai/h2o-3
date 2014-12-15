@@ -453,6 +453,12 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
     pkg_path = .h2o.pkg.path
+
+    # Find h2o-jar from testthat tests inside R-Studio.
+    if (length(grep("h2o-dev/h2o-r/h2o$", pkg_path)) == 1) {
+      tmp = substr(pkg_path, 1, nchar(pkg_path) - nchar("h2o-dev/h2o-r/h2o"))
+      return(sprintf("%s/h2o-dev/build/h2o.jar", tmp))
+    }
   }
 
   if (missing(branch)) {
