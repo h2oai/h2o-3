@@ -12,7 +12,7 @@
 .h2o.__REST_API_VERSION = 3
 
 .skip_if_not_developer <- function() {
-  if (identical(Sys.getenv("USER"), "tomk")) {
+  if (Sys.getenv("USER") %in% c("tomk", "amy")) {
     return()
   }
 
