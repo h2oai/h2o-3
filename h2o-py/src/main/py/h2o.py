@@ -10,8 +10,8 @@ class Frame(object):
     if h2o and fname:
       rawkey = h2o.ImportFile(fname)
       setup = h2o.ParseSetup(rawkey)
-      key = h2o.Parse(setup['hexName'],rawkey)
-      print key
+      hexkey = h2o.Parse(setup)
+      print hexkey
       #with open(fname, 'rb') as csvfile:
       #  self._vecs = []
       #  for name in csvfile.readline().split(','): 
@@ -222,7 +222,7 @@ class Cluster(object):
   # reached, is of a certain size, and is taking basic status commands
   def connect(self,size=1):
     while True:
-      cld = requests.get(self.url()+"Cloud.json").json()
+      cld = requests.get(self.buildURL("Cloud",{})).json()
       if not cld['cloud_healthy']:
         raise ValueError("Cluster reports unhealthy status",cld)
       if cld['cloud_size'] >= size and cld['consensus']: return cld
@@ -241,15 +241,45 @@ class Cluster(object):
   def ParseSetup(self,rawkey):
     # Unable to use 'requests.params=' syntax because it flattens array
     # parameters, but ParseSetup really expects a real array of Keys.
-    j = requests.get(self.url()+"ParseSetup.json?srcs=["+rawkey.encode('utf-8')+"]").json()
+    j = requests.get(self.buildURL("ParseSetup",{'srcs':[rawkey]})).json()
     if 'errmsg' in j: raise ValueError(j['errmsg'])
+    if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
   # Trigger a parse; blocking
-  def Parse(self,hexkey,rawkey):
-    j = requests.get(self.url()+"Parse.json?hex="+hexkey.encode('utf-8')+"&srcs=["+rawkey.encode('utf-8')+"]&pType=AUTO").json()
+  def Parse(self,setup):
+    # Some initial parameters
+    p = {'delete_on_done':True,'blocking':True,'hex':setup['hexName']}
+    # Copy selected keys
+    for key in ['ncols','sep','columnNames','pType','checkHeader','singleQuotes']:
+      p[key] = setup[key]
+    # Extract only 'name' from each src in the array of srcs
+    p['srcs'] = [src['name'] for src in setup['srcs']]
+    # Request blocking parse
+    j = requests.get(self.buildURL("Parse",p)).json()
     if 'errmsg' in j: raise ValueError(j['errmsg'])
-    raise NotImplementedError
+    if j['job']['status'] != 'DONE': raise ValueError("Parse status expected to be DONE, instead is "+j['job']['status'])
+    if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
+    return j['hex']['name']
+
+  # function to build a URL from a base and a dictionary of params.  'request'
+  # has such a thing but it flattens lists and we need the actual list
+  # complete with '[]'
+  def buildURL(self,base,params):
+    s = self.url()+base+".json"
+    sep = '?'
+    for k,v in params.items():
+      s += sep + k + "="
+      if isinstance(v,list):
+        sep2 = '['
+        for l in v:
+          s += sep2 + str(l).encode('utf-8')
+          sep2 = ','
+        s += ']'
+      else:
+        s += str(v).encode('utf-8')
+      sep = '&'
+    return s
 
 
 # Simple stackoverflow pretty-printer for big numbers

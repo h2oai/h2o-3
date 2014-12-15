@@ -56,7 +56,6 @@ predict.H2OKMeansModel <- function(object, newdata, ...) {
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
   res <- res$model_metrics[[1]]$predictions
   # Grab info to make data frame
-  browser()
   .h2o.parsedPredData(newdata@h2o, res)
 }
 

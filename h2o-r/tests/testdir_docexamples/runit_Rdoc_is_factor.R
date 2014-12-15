@@ -3,9 +3,9 @@ source('../h2o-runit.R')
 
 test.isfactor.golden <- function(H2Oserver) {
 	
-prosPath = system.file("extdata", "prostate.csv", package="h2o")
-prostate.hex = h2o.importFile(H2Oserver, path = prosPath)
-prostate.hex[,4]=as.factor(prostate.hex[,4])
+prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prostate.hex <- h2o.importFile(H2Oserver, path = prosPath)
+prostate.hex[,4] <- as.factor(prostate.hex[,4])
 is.factor(prostate.hex[,4])
 is.factor(prostate.hex[,3])
 
