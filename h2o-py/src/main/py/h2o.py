@@ -8,16 +8,18 @@ import csv, requests, urllib
 class H2OFrame(object):
   def __init__(self, localFName=None, remoteFName=None, vecs=None):
     # Read a CSV file
-    if remoteFName:
+    if remoteFName:             # Read remotely into cluster
       if not H2OCONN: raise ValueError("No open h2o connection")
       rawkey = H2OCONN.ImportFile(remoteFName)
       setup  = H2OCONN.ParseSetup(rawkey)
-      j = H2OCONN.Parse(setup)
-      hexKey = j['hex']['name']
-      cols = j['columnNames']
-      self._vecs = [Vec(str(col),Expr(hexKey,idx,str(col)))  for idx,col in enumerate(cols)]
-      print "Imported",remoteFName,"into cluster as",hexKey
-    elif localFName:
+      parse  = H2OCONN.Parse(setup)
+      hexKey = parse['hex']['name']
+      cols   = parse['columnNames']
+      fr     = H2OCONN.Frame(hexKey)
+      rows   = fr['frames'][0]['rows']
+      self._vecs = [Vec(str(col),Expr(hexKey,idx,str(col),rows))  for idx,col in enumerate(cols)]
+      print "Imported",remoteFName,"into cluster as",hexKey,"with",rows,"rows and",len(cols),"cols"
+    elif localFName:            # Read locally into python process
       with open(localFName, 'rb') as csvfile:
         self._vecs = []
         for name in csvfile.readline().split(','): 
@@ -137,21 +139,30 @@ class Expr(object):
   # ( "op"  left rite) - pending calc, awaits left & rite being computed
   # ( data  None None) - precomputed local small data
   # (hexkey #num name) - precomputed remote  Big Data
-  def __init__(self,op,left=None,rite=None):
+  def __init__(self,op,left=None,rite=None,length=None):
     self._op,self._data = (op,None) if isinstance(op,str) else ("rawdata",op)
+    assert self.isLocal() or self.isRemote() or self.isPending()
+....left/rite is Expr or None, never scalar....
     self._left = left._expr if isinstance(left,Vec) else left
     self._rite = rite._expr if isinstance(rite,Vec) else rite
     self._name = self._op       # Set an initial name, generally overwritten
+    # Compute length eagerly
+    if self.isRemote():
+      assert length is not None
+      self._len  = length
+    elif self.isLocal:
+      self._len = len(self._data) if isinstance(self._data,list) else 1
+    else:
+      self._len = len(self._left)
+    assert self._len is not None
 
   def isLocal   (self): return isinstance(self._data,(list,int,float))
-  def isRemote  (self): return isinstance(self._data,str )
+  def isRemote  (self): return isinstance(self._data,unicode)
   def isPending (self): return self._data==None
-  def isComputed(self): return self._data!=None
+  def isComputed(self): return not self.isPending()
 
-  def __len__(self):
-    if self._op=="mean": return 1
-    if isinstance(self._data,list): return len(self._data)
-    return len(self._left) if isinstance(self._left,Expr) else len(self._rite)
+  # Length, generally withOUT triggering an eager evaluation
+  def __len__(self):  return self._len
 
   # Print structure without eval'ing
   def debug(self):
@@ -161,6 +172,7 @@ class Expr(object):
   def __repr__(self):
     x = self.eager()
     if self.isLocal():  return x.__str__()
+    # Big Data result.  Download the first bits only before printing.
     raise NotImplementedError
 
   # Basic indexed or sliced lookup
@@ -195,7 +207,9 @@ class Expr(object):
     if self.isComputed(): return
     if isinstance(self._left,Expr): self._left._doit()
     if isinstance(self._rite,Expr): self._rite._doit()
-    if self._left and self._rite and ((self._left.isRemote() and self._rite.isLocal()) or (self._left.isLocal() and self._rite.isRemote())):
+    left = self._left and isinstance(self._left,Expr) and self._left.isRemote()
+    rite = self._rite and isinstance(self._rite,Expr) and self._rite.isRemote()
+    if (left and not rite) or (rite and not left):
       # Need to shuffle a local result over to the cluster
       raise NotImplementedError
 
@@ -299,9 +313,13 @@ class H2OConnection(object):
     if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
     return j
 
-  # 
+  # Fire off a Rapids expression
   def Rapids(self,expr):
     return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
+
+  # Return basic Frame info
+  def Frame(self,hexKey,off=0,length=10):
+    return self.doSafeGet(self.buildURL("3/Frames/"+hexKey+"/columns",{"offset":off,"len":length}))
 
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):
