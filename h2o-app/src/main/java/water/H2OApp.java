@@ -70,16 +70,16 @@ public class H2OApp {
     H2O.registerPOST("/ModelBuilders/word2vec/parameters", Word2VecBuilderHandler.class, "validate_parameters",                     "Validate a set of Word2Vec model builder parameters.");
 
     ModelBuilder.registerModelBuilder("example", Example.class);
-    H2O.registerPOST("/2/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
-    H2O.registerPOST("/2/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
+    H2O.registerPOST("/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
+    H2O.registerPOST("/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
 
     ModelBuilder.registerModelBuilder("quantile", Quantile.class);
-    H2O.registerPOST("/2/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
-    H2O.registerPOST("/2/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
+    H2O.registerPOST("/ModelBuilders/quantile", QuantileBuilderHandler.class, "train","Train a Quantile model on the specified Frame.");
+    H2O.registerPOST("/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
 
     ModelBuilder.registerModelBuilder("grep", Grep.class);
-    H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
-    H2O.registerPOST("/2/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
+    H2O.registerPOST("/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
+    H2O.registerPOST("/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
 
 
     ModelBuilder.registerModelBuilder("splitframe", SplitFrame.class);
