@@ -249,6 +249,9 @@ class ParseObj(OutputObj):
         super(ParseObj, self).__init__(parseResult['frames'][0], "Parse", noPrint=noPrint)
         # add my stuff
         self.numRows, self.numCols, self.parse_key = infoFromParse(parseResult)
+        # h2o_import.py does this for test support
+        if 'python_elapsed' in parseResult:
+            self.python_elapsed = parseResult['python_elapsed']
         if expectedNumRows is not None:
             assert self.numRows == expectedNumRows, "%s %s" % (self.numRows, expectedNumRows)
         if expectedNumCols is not None:

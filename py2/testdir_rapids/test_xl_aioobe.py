@@ -35,19 +35,20 @@ class Basic(unittest.TestCase):
         assert not isinstance(a, Fcn)
         assert not isinstance(a, Assign)
 
-        Assign(a, 0)
-        Assign(b, 0)
-        Assign(c, 0)
+        Assign(a, range(5))
+        Assign(b, range(5))
+        Assign(c, range(5))
         print "lastExecResult:", dump_json(h2o_xl.Xbase.lastExecResult)
 
         assert isinstance(a, Key)
         assert isinstance(b, Key)
         assert isinstance(c, Key)
 
-        print "Referring to non-existent rows causes a problem (AAIOBE)"
+        # print "Referring to non-existent rows causes a problem (AAIOBE)"
+        # not any more..change it to legal case
         Assign(c[1], (a[2] + b[2]))
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= ([ $c1 #1 #1) (+ ([ $a1 #2 #2) ([ $b1 #2 #2)))"
+        astExpected = "(= ([ $c1 #1 #0) (+ ([ $a1 #2 #0) ([ $b1 #2 #0)))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         # print "\nDoes the keyWriteHistoryList work?"

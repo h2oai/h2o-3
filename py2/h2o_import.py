@@ -439,6 +439,7 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
         benchmarkLogging, noPoll, **kwargs)
     elapsed = time.time() - start
     print importPattern, "parsed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs), "\n"
+    parseResult['python_elapsed'] = elapsed
 
     verboseprint("parseResult:", dump_json(parseResult))
 
