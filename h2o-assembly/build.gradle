@@ -15,6 +15,11 @@ fatJar {
 
 // Setup Application plugin
 mainClassName = 'water.H2OApp'
+run {
+  if (project.hasProperty("h2oArgs")) {
+    args Eval.me(h2oArgs)
+  }
+}
 
 //
 // Support make infrastructure by copying the resulting assembly into parent
