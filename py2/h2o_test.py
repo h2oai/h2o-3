@@ -192,35 +192,16 @@ def handleRemoveError(func, path, exc):
 LOG_DIR = get_sandbox_name()
 
 def clean_sandbox():
-    IS_THIS_FASTER = True
     if os.path.exists(LOG_DIR):
-
-        # shutil.rmtree hangs if symlinks in the dir? (in syn_datasets for multifile parse)
-        # use os.remove() first
-        for f in glob.glob(LOG_DIR + '/syn_datasets/*'):
-            verboseprint("cleaning", f)
-            os.remove(f)
-
         # shutil.rmtree fails to delete very long filenames on Windoze
-        ### shutil.rmtree(LOG_DIR)
-        # was this on 3/5/13. This seems reliable on windows+cygwin
-        # I guess I changed back to rmtree below with something to retry, then ignore, remove errors.
-        # is it okay now on windows+cygwin?
-        ### os.system("rm -rf "+LOG_DIR)
+        # look at h2o/py/h2o_test for alternate methods if a problem
+        # remember save_model creates directory now in syn_datasets (maybe should created it in sandbox?)
         print "Removing", LOG_DIR, "(if slow, might be old ice dir spill files)"
         start = time.time()
-        if IS_THIS_FASTER:
-            try:
-                os.system("rm -rf "+LOG_DIR)
-            except OSError:
-                pass
-        else:
-            shutil.rmtree(LOG_DIR, ignore_errors=False, onerror=handleRemoveError)
-
+        shutil.rmtree(LOG_DIR, ignore_errors=False, onerror=handleRemoveError)
         elapsed = time.time() - start
         print "Took %s secs to remove %s" % (elapsed, LOG_DIR)
-        # it should have been removed, but on error it might still be there
-
+    # it should have been removed, but on error it might still be there
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)
 
