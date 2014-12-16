@@ -165,7 +165,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
       } else {
-        final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
+        final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
         if (_parms._n_folds != 0)
@@ -180,8 +180,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
         if ((_parms._valid == null) != (previous._parms._valid == null)
-                || (_parms._valid != null && previous._parms._valid != null
-                    && !_parms._valid.equals(previous._parms._valid))) {
+                || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
         if( isClassifier() != previous._output.isClassifier() )
@@ -230,7 +229,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       trainModel(cp);
 
       // clean up, but don't delete the model
-      Scope.exit(new Key[]{_dest});
+      Scope.exit(dest());
     }
 
 
