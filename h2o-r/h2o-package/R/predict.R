@@ -11,7 +11,7 @@
 #' Model Predict Endpoint
 #'
 .h2o.__PREDICT <- function(modelKey, frameKey) {
-  '3/Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
+  'Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
 }
 
 #'
