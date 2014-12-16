@@ -289,7 +289,7 @@ h2o.table <- function(x, y = NULL) {
   if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
   if (!is.null(y) && !(y %i% "h2o.frame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
-  .force.eval(ast@ast)
+  .force.eval(asxt@ast)
 }
 
 
@@ -481,8 +481,8 @@ setMethod("[<-", "h2o.frame", function(x, i, j, ..., value) {
 
   op <- new("ASTApply", op='=')
   ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-#  .pkg.env[[o@key]] <- o
+  o <- new("h2o.frame", ast = ast, key = x@key, h2o = .retrieveH2O())
+  .force.eval(o@ast,new.assign=F)
   o
 })
 
@@ -1114,10 +1114,7 @@ screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type 
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
 
-setMethod("ifelse", signature(test="h2o.frame", yes="ANY", no="ANY"), function(test, yes, no) {
-  ast <- .h2o.varop("ifelse", test, yes, no)
-  ast
-})
+setMethod("ifelse", signature(test="h2o.frame", yes="ANY", no="ANY"), function(test, yes, no) .h2o.varop("ifelse", test, yes, no) )
 
 #' Combine H2O Datasets by Columns
 #'
@@ -1142,8 +1139,7 @@ NULL
 h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) { l %i% "h2o.frame" }))
   if (any(!klasses)) stop("`cbind` must consist of H2O objects only.")
-  ast <- .h2o.varop("cbind", ...)
-  ast
+  .h2o.varop("cbind", ...)
 }
 
 #' Combine H2O Datasets by Rows
@@ -1169,8 +1165,7 @@ NULL
 h2o.rbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) { l %i% "h2o.frame" }))
   if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
-  ast <- .h2o.varop("rbind", ...)
-  ast
+  .h2o.varop("rbind", ...)
 }
 
 
@@ -1205,6 +1200,7 @@ h2o.rbind <- function(...) {
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
+  envir <- parent.frame()
   if( missing(.data) ) stop('must specify .data')
   if( !(.data %i% "h2o.frame") ) stop('.data must be an h2o data object')
   if( missing(.variables) ) stop('must specify .variables')
@@ -1229,16 +1225,17 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
   vars <- vars - 1
+  
   if( vars < 0 || vars > (ncol(.data)-1) ) stop('Column' %p% vars %p% 'out of range for frame columns' %p% (ncol(.data)) %p0% '.')
 
   # FUN <- deparse(substitute(.fun))
-  # if( .fun %i% 'character' ) FUN <- gsub("\"", "", FUN)
+  # if( .fun %i% 'ccharacter' ) FUN <- gsub("\"", "", FUN)
   # .FUN <- get(FUN)
   # if( !is.function(.FUN) ) stop("FUN must be an R function
   if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun))
   else FUN <- .fun
   .FUN <- NULL
-  if (is.character(FUN)) .FUN <- get(FUN)
+  if (is.character(FUN)) .FUN <- get(FUN, envir = envir)
   if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
   else if(is.null(.FUN) && !is.function(FUN))
     stop("FUN must be an R function")
