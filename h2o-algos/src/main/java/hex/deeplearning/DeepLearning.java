@@ -164,7 +164,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
-
       } else {
         final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
@@ -230,26 +229,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       }
       trainModel(cp);
 
-      // clean up
-      Frame tra_fr = _train;
-      Frame val_fr = _valid;
-      int validlen = val_fr!= null ? val_fr.vecs().length : 0;
-      Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
-      //don't delete the training data
-      for (int i = 0; i< tra_fr.vecs().length; ++i)
-        keep[i] = tra_fr.vecs()[i]._key;
-      keep[tra_fr.vecs().length] = _train._key;
-      //don't delete the validation data
-      for (int i = 0; i< validlen; ++i)
-        keep[i] = val_fr.vecs()[i]._key;
-      if (val_fr != null) keep[tra_fr.vecs().length+1] = _valid._key;
-      //don't delete the model
-      keep[tra_fr.vecs().length+2] = _dest;
-      keep[tra_fr.vecs().length+3] = cp.actual_best_model_key;
-      //don't delete the job
-      keep[tra_fr.vecs().length+4] = self();
-      keep[tra_fr.vecs().length+5] = _progressKey;
-      Scope.exit(keep);
+      // clean up, but don't delete the model
+      Scope.exit(new Key[]{_dest});
     }
 
 
@@ -326,6 +307,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
                   new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
+          model._output.errors = model.scoring_history();
           update(model.actual_train_samples_per_iteration); //update progress
         }
         while (model.doScoring(trainScoreFrame, validScoreFrame, self()));
