@@ -17,21 +17,20 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_DL_covtype(self):
+    def test_DL_airlines_small(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'airlines/AirlinesTrain.csv.zip'
         csvPathname_test  = 'airlines/AirlinesTest.csv.zip'
         hex_key = 'train.hex'
         validation_key = 'validation.hex'
         timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='smalldata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
 
         parseResultV = h2i.import_parse(bucket='smalldata', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRowsV, numColsV, parse_keyV = h2o_cmd.infoFromParse(parseResultV)
-        inspectResultV = h2o_cmd.runInspect(key=parse_keyV)
-        missingListV, labelListV, numRowsV, numColsV = h2o_cmd.infoFromInspect(inspectResultV)
+        pAV = h2o_cmd.ParseObj(parseResultV)
+        iAV = h2o_cmd.InspectObj(pAV.parse_key)
 
         #Making random id
         identifier = ''.join(random.sample(string.ascii_lowercase + string.digits, 10))

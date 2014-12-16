@@ -18,6 +18,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_covtype(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'standard/covtype.data'
         csvPathname_test  = 'standard/covtype.data'
         hex_key = 'covtype.hex'
@@ -116,7 +117,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 60
+        timeoutSecs = 300
         start = time.time()
 
         bmResult = h2o.n0.build_model(
