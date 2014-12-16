@@ -5,6 +5,7 @@ from copy import copy
 
 # can set this in a test to disable the actual exec, just debugprint()
 debugPrintEnable = False
+debugRefPrintEnable = False
 # to work without h2o (just print asts)
 debugNoH2O = False
 def debugprint(*args, **kwargs):
@@ -38,8 +39,9 @@ class Xbase(object):
     keyWriteHistoryList = []
 
     def refcntInc(self, *args):
-    # Expr shouldn't be used? but maybe useful redirect.
-        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
+        # Expr shouldn't be used? but maybe useful redirect.
+        # can't do a = 1 and assume a key is created
+        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF, Col)):
             return
         if isinstance(self, (int, float, list, tuple)):
             return
@@ -48,10 +50,12 @@ class Xbase(object):
         # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
         # by making that non-indexed assign look like the indexed assign, things should be easier.
         # Items can be root?
-        h2p.red_print("refcntInc: %s for" % self.refcnt, id(self), type(self), self)
+        if debugRefPrintEnable:
+            h2p.red_print("refcntInc: %s for" % self.refcnt, id(self), type(self), self)
         # so we refcnt ourselves once? so if refcnt=1, that's a "root" ?
         if self.refcnt > 1:
-            h2o.red_print("INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self))
+            if debugRefPrintEnable:
+                h2o.red_print("INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self))
 
         for a in args:
             if a:
@@ -65,7 +69,8 @@ class Xbase(object):
     def assignIfRoot(self):
         if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
             return
-        h2p.red_print("assignIfRoot for", id(self), type(self), self)
+        if debugRefPrintEnable:
+            h2p.red_print("assignIfRoot for", id(self), type(self), self)
 
     # not used
     def json(self): # returns a json string. debugprint(s it too.)
@@ -327,7 +332,8 @@ class Xbase(object):
 
     def __eq__(self, right):
         # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))
-        return self._binary_common('==', Item(right))
+        print "__eq__", self, right
+        # return self._binary_common('==', Item(right))
         # return NotImplemented
         # if result is NotImplemented:
 
@@ -339,6 +345,7 @@ class Xbase(object):
     # get=True will get the actual result. Easy if it's scalar. Will have to inspect the key to get a col result/
     # if it has more than one col, unsupported for now.
     def do(self, timeoutSecs=30):
+        print "enter .do()"
         if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn, If, IfElse, Return)):
             raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
                 (type(self), self))
@@ -671,7 +678,7 @@ def legalKey(frame, parent):
             raise Exception("%s: frame can't be 'c' %s" % (parent, frameStr))
         if not re.match('[\a-zA-Z0-9_]', frameStr):
             raise Exception("%s: Don't like the chars in your frame %s" % (parent, frameStr))
-    debugprint("%s frame: %s" % (parent, frameStr))
+    debugprint("legalKey %s frame: %s" % (parent, frameStr))
     return True
 
 #********************************************************************************
@@ -745,7 +752,6 @@ class Key(Xbase):
         # can have row/col?
         legalKey(frame, "Key")
         self.frame = frame
-
         if not noRefCnt:
             self.refcntInc()
             # how do I know all references to me have done their refcntInc?
@@ -1070,9 +1076,6 @@ class Assign(Key):
     def __init__(self, lhs=None, rhs=None, do=True, assignDisable=False, timeoutSecs=30, noRefCnt=False):
         super(Assign, self).__init__(lhs, noRefCnt=True)
 
-         # this is going to inhibit GC..this probably should be a weakref dict. (but then entries may disappear)
-        Assign.instances.add(self)
-
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
@@ -1316,6 +1319,7 @@ class Cut(Fcn):
 if __name__ == '__main__':
     debugNoH2O = True
     debugPrintEnable = True
+    debugRefPrintEnable = True
 
 
 # http://eli.thegreenplace.net/2011/05/15/understanding-unboundlocalerror-in-python
