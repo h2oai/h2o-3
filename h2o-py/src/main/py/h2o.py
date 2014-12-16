@@ -1,4 +1,4 @@
-import csv, requests
+import csv, requests, urllib
 
 ###############################################################################
 # Frame represents a 2-D array of data, uniform in each column.  The data may
@@ -143,6 +143,11 @@ class Expr(object):
     self._rite = rite._expr if isinstance(rite,Vec) else rite
     self._name = self._op       # Set an initial name, generally overwritten
 
+  def isLocal   (self): return isinstance(self._data,(list,int,float))
+  def isRemote  (self): return isinstance(self._data,str )
+  def isPending (self): return self._data==None
+  def isComputed(self): return self._data!=None
+
   def __len__(self):
     if self._op=="mean": return 1
     if isinstance(self._data,list): return len(self._data)
@@ -153,15 +158,19 @@ class Expr(object):
     return "(["+self._name+"]="+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Expr) else self._rite)+")"
 
   # Eval and print
-  def __repr__(self): return self.eager().__str__()
+  def __repr__(self):
+    x = self.eager()
+    if self.isLocal():  return x.__str__()
+    raise NotImplementedError
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i): 
     x = self.eager()
-    if isinstance(x,list): return x[i]
+    if self.isLocal(): return x[i]
+    if not isinstance(i,int): raise NotImplementedError  # need a bigdata slice here
     # ([ $frame #row #col)
-    H2OCONN.Rapids("([ $"+str(self._data)+" /#"+str(i)+" /#"+str(self._left)+")")
-    raise NotImplementedError
+    j = H2OCONN.Rapids("([ $"+str(self._data)+" #"+str(i)+" #"+str(self._left)+")")
+    return j['scalar']
 
   # Small-data add; result of a (lazy but small) Expr vs a plain int/float
   def __add__ (self,i): return self.eager()+i
@@ -183,9 +192,13 @@ class Expr(object):
   # External API for eager; called by all top-level demanders (e.g. print)
   # May trigger (recursive) big-data eval.
   def _doit(self):
-    if self._data is not None: return
+    if self.isComputed(): return
     if isinstance(self._left,Expr): self._left._doit()
     if isinstance(self._rite,Expr): self._rite._doit()
+    if self._left and self._rite and ((self._left.isRemote() and self._rite.isLocal()) or (self._left.isLocal() and self._rite.isRemote())):
+      # Need to shuffle a local result over to the cluster
+      raise NotImplementedError
+
     if self._op == "+":
       if isinstance(self._left,(int,float)):
         if isinstance(self._rite,(int,float)):  # Small data
@@ -196,7 +209,12 @@ class Expr(object):
           self._data = [self._left+x for x in self._rite._data]
       elif isinstance(self._rite,(int,float)):
         lname, rname = self._left._name, str(self._rite)
-        self._data = [x+self._rite for x in self._left._data]
+        if self._left.isLocal():  # Small data
+          self._data = [x+self._rite for x in self._left._data]
+        else:                   # Big Data + scalar
+          # (+ ([ $frame "null" #col) rite)
+          j = H2OCONN.Rapids("(+ ([ $"+str(self._left._data)+" \"null\" #"+str(self._left._left)+") #"+str(self._rite)+")")
+          self._data, self._left, self._rite = j['key']['name'], 0, ""
       else:
         lname, rname = self._left._name, self._rite._name
         self._data = [x+y for x,y in zip(self._left._data,self._rite._data)]
@@ -283,10 +301,7 @@ class H2OConnection(object):
 
   # 
   def Rapids(self,expr):
-    print expr.encode('utf-8')
-    j = self.doSafeGet(self.buildURL("Rapids",{"ast":expr.encode('utf-8')}))
-    print j
-    raise NotImplementedError
+    return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
 
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):
