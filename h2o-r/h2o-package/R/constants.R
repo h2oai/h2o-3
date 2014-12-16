@@ -194,18 +194,19 @@
 #' Inspect/Summary Endpoints
 #'
 .h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
-.h2o.__FRAMES       <- "3/Frames.json"      # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
+.h2o.__FRAMES       <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
 #'
 #' Administrative Endpoints
 #'
 .h2o.__JOBS         <- "Jobs.json"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
 .h2o.__CLOUD        <- "Cloud.json"
+.h2o.__SHUTDOWN     <- "Shutdown.json"
 
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__MODEL_BUILDERS <- function(algo) "2/ModelBuilders/" %p0% algo %p0% '.json'
+.h2o.__MODEL_BUILDERS <- function(algo) "ModelBuilders/" %p0% algo %p0% '.json'
 
 #'
 #' Algorithm Parameter Endpoints
@@ -214,7 +215,7 @@
 #'
 #' Model Endpoint
 #'
-.h2o.__MODELS       <- "3/Models.json/"
+.h2o.__MODELS       <- "Models.json"
 
 #'
 #' Removal

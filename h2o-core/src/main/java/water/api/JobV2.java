@@ -46,10 +46,7 @@ public class JobV2 extends Schema<Job, JobV2> {
   // Custom adapters go here
 
   // Version&Schema-specific filling into the impl
-  @Override public Job createImpl( ) {
-    Job j = new Job(key.key(), description);
-    return j;
-  }
+  @Override public Job createImpl( ) { return new Job(key.key(), description); }
 
   // Version&Schema-specific filling from the impl
   @Override public JobV2 fillFromImpl(Job job) {

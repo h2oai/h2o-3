@@ -18,11 +18,12 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_covtype(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'standard/covtype.data'
         csvPathname_test  = 'standard/covtype.data'
         hex_key = 'covtype.hex'
         validation_key = 'covtype_v.hex'
-        timeoutSecs = 180
+        timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -74,9 +75,9 @@ class Basic(unittest.TestCase):
             'rate': None, # double 0.005
             'rate_annealing': None, # double 1.0E-6
             'rate_decay': None, # double 1.0
-            'momentum_start': 0.5, # double 0.0
-            'momentum_ramp': 100000, # double 1000000.0
-            'momentum_stable': 0.9, # double 0.0
+            'momentum_start': None, # double 0.0
+            'momentum_ramp': None, # double 1000000.0
+            'momentum_stable': None, # double 0.0
             'nesterov_accelerated_gradient': None, # boolean true
             'input_dropout_ratio': 0.0, # double 0.0
             'hidden_dropout_ratios': None, # double[] None
@@ -116,7 +117,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 600
+        timeoutSecs = 300
         start = time.time()
 
         bmResult = h2o.n0.build_model(

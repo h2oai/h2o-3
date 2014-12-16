@@ -18,26 +18,18 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_mnist(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'laptop/mnist/train.csv.gz'
         csvPathname_test  = 'laptop/mnist/test.csv.gz'
         hex_key = 'mnist_train.hex'
         validation_key = 'mnist_test.hex'
-        timeoutSecs = 30
+        timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='bigdata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
-        parse_key = pA.parse_key
-        numRows = iA.numRows
         numCols = iA.numCols
         labelList = iA.labelList
-
         parseResultV = h2i.import_parse(bucket='bigdata', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        pV = h2o_cmd.ParseObj(parseResult)
-        iV = h2o_cmd.InspectObj(pA.parse_key)
-        parse_keyV = pV.parse_key
-        numRowsV = iV.numRows
-        numColsV = iV.numCols
-        labelListV = iV.labelList
 
         response = numCols-1
 
@@ -116,7 +108,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.057 ## expected validation error for the above model
         relTol = 0.20 ## 20% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 600
+        timeoutSecs = 60
         start = time.time()
 
         bmResult = h2o.n0.build_model(

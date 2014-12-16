@@ -630,8 +630,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public static class DeepLearningOutput extends SupervisedModel.SupervisedOutput {
     public DeepLearningOutput() { super(); }
     public DeepLearningOutput( DeepLearning b ) { super(b); }
-    //FIXME
-    //add output fields
+    Errors errors;
   }
 
   // Default publically visible Schema is V2
@@ -1288,6 +1287,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
+    _output.errors = last_scored();
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1317,6 +1317,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new Errors();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
+      _output.errors = last_scored();
     }
     assert _key.equals(destKey);
   }

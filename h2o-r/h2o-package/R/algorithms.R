@@ -97,105 +97,6 @@
   return(l)
 }
 
-.h2o.singlerun.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
-  if(!algo %in% c("GBM", "RF", "DeepLearning", "SpeeDRF")) stop("Unsupported algorithm ", algo)
-  if(missing(validation)) validation = new("h2o.frame", key = as.character(NA))
-  model_obj <- switch(algo, GBM = "H2OGBMModel", RF = "H2ODRFModel", DeepLearning = "H2ODeepLearningModel", SpeeDRF = "H2OSpeeDRFModel")
-  model_view <- switch(algo, GBM = .h2o.__PAGE_GBMModelView, RF = .h2o.__PAGE_DRFModelView, DeepLearning = .h2o.__PAGE_DeepLearningModelView, SpeeDRF = .h2o.__PAGE_SpeeDRFModelView)
-  results_fun <- switch(algo, GBM = .h2o.__getGBMResults, RF = .h2o.__getDRFResults, DeepLearning = .h2o.__getDeepLearningResults, SpeeDRF = .h2o.__getSpeeDRFResults)
-
-  job_key <- response$job_key
-  dest_key <- response$destination_key
-  .h2o.__waitOnJob(data@h2o, job_key)
-  # while(!.h2o.__isDone(data@h2o, algo, response)) { Sys.sleep(1) }
-  res2 <- .h2o.__remoteSend(data@h2o, model_view, '_modelKey'=dest_key)
-  modelOrig <- results_fun(res2[[3]], params)
-  if (algo == "DeepLearning" && !is.null(modelOrig$validationKey)) validation@key = modelOrig$validationKey
-
-  res_xval <- .h2o.crossvalidation(algo, data, res2[[3]], nfolds, params)
-  new(model_obj, key=dest_key, data=data, model=modelOrig, valid=validation, xval=res_xval)
-}
-
-.h2o.gridsearch.internal <- function(algo, data, response, nfolds = 0, validation = new("h2o.frame", key = as.character(NA)), params = list()) {
-  if(!algo %in% c("GBM", "KM", "RF", "DeepLearning", "SpeeDRF")) stop("General grid search not supported for ", algo)
-  if(missing(validation)) validation <- new("h2o.frame", key = as.character(NA))
-  prog_view <- switch(algo, GBM = .h2o.__PAGE_GBMProgress, KM = .h2o.__PAGE_KM2Progress, RF = .h2o.__PAGE_DRFProgress, DeepLearning = .h2o.__PAGE_DeepLearningProgress, SpeeDRF = .h2o.__PAGE_SpeeDRFProgress)
-
-  job_key <- response$job_key
-  dest_key <- response$destination_key
-  .h2o.__waitOnJob(data@h2o, job_key)
-  # while(!.h2o.__isDone(data@h2o, algo, response)) { Sys.sleep(1); prog = .h2o.__poll(data@h2o, job_key); setTxtProgressBar(pb, prog) }
-  res2 <- .h2o.__remoteSend(data@h2o, .h2o.__PAGE_GRIDSEARCH, job_key=job_key, destination_key=dest_key)
-  allModels <- res2$jobs; allErrs = res2$prediction_error
-
-  model_obj <- switch(algo, GBM = "H2OGBMModel", KM = "H2OKMeansModel", RF = "H2ODRFModel", DeepLearning = "H2ODeepLearningModel", SpeeDRF = "H2OSpeeDRFModel")
-  grid_obj <- switch(algo, GBM = "H2OGBMGrid", KM = "H2OKMeansGrid", RF = "H2ODRFGrid", DeepLearning = "H2ODeepLearningGrid", SpeeDRF = "H2OSpeeDRFGrid")
-  model_view <- switch(algo, GBM = .h2o.__PAGE_GBMModelView, KM = .h2o.__PAGE_KM2ModelView, RF = .h2o.__PAGE_DRFModelView, DeepLearning = .h2o.__PAGE_DeepLearningModelView, SpeeDRF = .h2o.__PAGE_SpeeDRFModelView)
-  results_fun <- switch(algo, GBM = .h2o.__getGBMResults, KM = .h2o.__getKM2Results, RF = .h2o.__getDRFResults, DeepLearning = .h2o.__getDeepLearningResults, SpeeDRF = .h2o.__getSpeeDRFResults)
-  result <- list(); myModelSum = list()
-  for(i in 1:length(allModels)) {
-    if(algo == "KM")
-      resH <- .h2o.__remoteSend(data@h2o, model_view, model=allModels[[i]]$destination_key)
-    else
-      resH <- .h2o.__remoteSend(data@h2o, model_view, '_modelKey'=allModels[[i]]$destination_key)
-
-    myModelSum[[i]] <- switch(algo, GBM = .h2o.__getGBMSummary(resH[[3]], params), KM = .h2o.__getKM2Summary(resH[[3]]), RF = .h2o.__getDRFSummary(resH[[3]]), DeepLearning = .h2o.__getDeepLearningSummary(resH[[3]]), .h2o.__getSpeeDRFSummary(resH[[3]]))
-    myModelSum[[i]]$prediction_error <- allErrs[[i]]
-    myModelSum[[i]]$run_time <- allModels[[i]]$end_time - allModels[[i]]$start_time
-    modelOrig <- results_fun(resH[[3]], params)
-
-    if(algo == "KM")
-      result[[i]] = new(model_obj, key=allModels[[i]]$destination_key, data=data, model=modelOrig)
-    else {
-      res_xval = .h2o.crossvalidation(algo, data, resH[[3]], nfolds, params)
-      result[[i]] = new(model_obj, key=allModels[[i]]$destination_key, data=data, model=modelOrig, valid=validation, xval=res_xval)
-    }
-  }
-
-  x <- pred_errs_orig <- unlist(lapply(seq_along(myModelSum),  function(x) myModelSum[[x]]$prediction_error))
-  y <- pred_errs <- sort(pred_errs_orig)
-  result <- result[order(match(x,y))]
-  myModelSum <- myModelSum[order(match(x,y))]
-
-  new(grid_obj, key=dest_key, data=data, model=result, sumtable=myModelSum)
-}
-
-.h2o.crossvalidation <- function(algo, data, resModel, nfolds = 0, params = list()) {
-  if(!algo %in% c("GBM", "RF", "DeepLearning", "SpeeDRF")) stop("Cross-validation modeling not supported for ", algo)
-  if(nfolds == 0) return(list())
-
-  model_obj <- switch(algo, GBM = "H2OGBMModel", KM = "H2OKMeansModel", RF = "H2ODRFModel", DeepLearning = "H2ODeepLearningModel", SpeeDRF = "H2OSpeeDRFModel")
-  model_view <- switch(algo, GBM = .h2o.__PAGE_GBMModelView, KM = .h2o.__PAGE_KM2ModelView, RF = .h2o.__PAGE_DRFModelView, DeepLearning = .h2o.__PAGE_DeepLearningModelView, SpeeDRF = .h2o.__PAGE_SpeeDRFModelView)
-  results_fun <- switch(algo, GBM = .h2o.__getGBMResults, KM = .h2o.__getKM2Results, RF = .h2o.__getDRFResults, DeepLearning = .h2o.__getDeepLearningResults, SpeeDRF = .h2o.__getSpeeDRFResults)
-
-  res_xval <- list()
-  if(algo == "DeepLearning")
-    xvalKey <- resModel$model_info$job$xval_models
-  else
-    xvalKey <- resModel$parameters$xval_models
-  for(i in 1:nfolds) {
-      resX <- .h2o.__remoteSend(data@h2o, model_view, '_modelKey'=xvalKey[i])
-      modelXval <- results_fun(resX[[3]], params)
-      res_xval[[i]] <- new(model_obj, key=xvalKey[i], data=data, model=modelXval, valid=new("h2o.frame", key=as.character(NA)), xval=list())
-    }
-  return(res_xval)
-}
-
-.is_singlerun <- function(algo, params = list()) {
-  if(!algo %in% c("GBM", "KM", "RF", "SpeeDRF")) stop("Unrecognized algorithm: ", algo)
-  if(algo == "GBM")
-    my_params <- list(params$n.trees, params$interaction.depth, params$n.minobsinnode, params$shrinkage)
-  else if(algo == "KM")
-    my_params <- list(params$centers, params$iter.max)
-  else if(algo == "RF")
-    my_params <- list(params$ntree, params$depth, params$nodesize, params$sample.rate, params$nbins, params$max.after.balance.size)
-  else if(algo == "SpeeDRF")
-    my_params <- list(params$ntree, params$depth, params$sample.rate, params$nbins)
-
-  isSingle <- all(sapply(my_params, function(x) { length(x) == 1 }))
-  return(isSingle)
-}
-
 .build_cm <- function(cm, actual_names = NULL, predict_names = actual_names, transpose = TRUE) {
   #browser()
   categories <- length(cm)
@@ -238,7 +139,7 @@
 
 
 .parms <- function(client, algo, m, envir) {
-  P <- .h2o.__remoteSend(client, method = "POST",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  P <- .h2o.__remoteSend(client, method = "GET",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
   p_val <- list()     # list for all of the algo arguments
   m <- as.list(m)
 
@@ -314,7 +215,7 @@
   dest_key <- res$jobs[[1]]$dest$name
   .h2o.__waitOnJob(client, job_key)
   # Grab model output and flatten one level
-  res_model <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODELS %p0% dest_key)
+  res_model <- .h2o.__remoteSend(client, method = "GET", .h2o.__MODELS %p0% "/" %p0% dest_key)
 
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models

@@ -19,6 +19,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_basic(self):
+        h2o.nodes[0].remove_all_keys()
         importFolderPath = "logreg"
         csvFilename = "benign.csv"
         hex_key = "benign.hex"
@@ -118,10 +119,12 @@ class Basic(unittest.TestCase):
                 training_frame=parse_key,
                 parameters=parameters, 
                 timeoutSecs=10) 
+            print "bmResult:", dump_json(bmResult)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
+            print "model:", dump_json(model)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')

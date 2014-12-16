@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.rdocsd.golden <- function(H2Oserver) {
+test.rdocsd.golden <- function(localH2O) {
 
-irisPath = system.file("extdata", "iris.csv", package="h2o")
-iris.hex = h2o.importFile(H2Oserver, path = irisPath, key = "iris.hex")
-sd(iris.hex[,4])
+    prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+    prostate.hex <- h2o.importFile(localH2O, path = prosPath)
+    sd(prostate.hex$AGE)
 
 testEnd()
 }

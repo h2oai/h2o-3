@@ -39,7 +39,8 @@ task cleanNodeJsSingleJVMTests(type: Delete) {
     delete "$nodeJsSingleJVMTestsPath/results"
 }
 
-test.dependsOn runNodeJsSingleJVMTests
+// Commented out on 12/15/2014
+// test.dependsOn runNodeJsSingleJVMTests
 clean.dependsOn cleanNodeJsSingleJVMTests
 
 

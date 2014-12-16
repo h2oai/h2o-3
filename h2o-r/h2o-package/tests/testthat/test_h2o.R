@@ -75,8 +75,25 @@ test_that("doSafeGET works", {
   expect_equal(ttFailed, TRUE)
 })
 
-#test_that("H2O can start", {
-#  .skip_if_not_developer()
-#  h = h2o.init()
-#  h2o.shutdown(h)
-#})
+test_that("doSafePOST works", {
+  .skip_if_not_developer()
+  prologue()
+
+  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  payload = h2o.doSafePOST(conn = h, h2oRestApiVersion = -1, urlSuffix = "")
+  expect_equal(nchar(payload) >= 500, TRUE)
+
+  parms = list(arg1="hi", arg2="there")
+  rv = h2o.doRawPOST(conn = h, urlSuffix = "", parms = parms)
+  expect_equal(rv$url, "http://www.omegahat.org:80/")
+  expect_equal(rv$postBody, "arg1=hi&arg2=there")
+  expect_equal(rv$curlError, FALSE)
+  expect_equal(rv$httpStatusCode, 200)
+  expect_equal(nchar(rv$payload) >= 500, TRUE)
+})
+
+test_that("H2O can start", {
+  .skip_if_not_developer()
+  h = h2o.init()
+  h2o.shutdown(h, prompt = FALSE)
+})

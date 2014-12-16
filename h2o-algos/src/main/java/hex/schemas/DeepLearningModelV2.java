@@ -10,7 +10,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
     //FIXME
     //add output fields
-
+    DeepLearningModel.Errors errors;
   } // DeepLearningModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
