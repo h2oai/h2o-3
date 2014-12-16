@@ -148,7 +148,7 @@ class Basic(unittest.TestCase):
                         # colon rhs
                         # '(= !%s  ([ %s %s))' % (t, execExpr, colon),
                         # colon lhs and rhs
-                         #'(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
+                        '(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
                     ]
 
                     for case in cases:
