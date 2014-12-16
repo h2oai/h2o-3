@@ -480,10 +480,10 @@ setMethod("[<-", "h2o.frame", function(x, i, j, ..., value) {
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
-  browser()
   ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
   o <- new("h2o.frame", ast = ast, key = x@key, h2o = .retrieveH2O())
   .force.eval(o@ast,new.assign=F)
+  o
 })
 
 setMethod("$<-", "h2o.frame", function(x, name, value) {
