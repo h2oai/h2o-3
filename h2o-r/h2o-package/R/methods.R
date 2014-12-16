@@ -221,17 +221,23 @@ h2o.getFrame <- function(h2o, key) {
 #                          categorical_fraction = categorical_fraction, factors = factors, integer_fraction = integer_fraction, integer_range = integer_range, missing_fraction = missing_fraction, response_factors = response_factors)
 #  .h2o.exec2(expr = key, h2o = object, dest_key = key)
 #}
-#
-#h2o.splitFrame <- function(data, ratios = 0.75, shuffle = FALSE) {
-#  if(class(data) != "h2o.frame") stop("data must be of class h2o.frame")
-#  if(!is.numeric(ratios)) stop("ratios must be numeric")
-#  if(any(ratios < 0 | ratios > 1)) stop("ratios must be between 0 and 1 exclusive")
-#  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
-#  if(!is.logical(shuffle)) stop("shuffle must be a logical value")
-#
-#  res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_SplitFrame, source = data@key, ratios = ratios, shuffle = as.numeric(shuffle))
-#  lapply(res$split_keys, function(key) { .h2o.exec2(expr = key, h2o = data@h2o, dest_key = key) })
-#}
+
+h2o.splitFrame <- function(data, ratios = 0.75) {
+  if(class(data) != "h2o.frame") stop("data must be of class h2o.frame")
+  if(!is.numeric(ratios)) stop("ratios must be numeric")
+  if(any(ratios < 0 | ratios > 1)) stop("ratios must be between 0 and 1 exclusive")
+  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+
+  res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
+  .h2o.__waitOnJob(client, .get.job(res))
+
+  model.view <- .model.view(.get.dest(res))
+  # must put empty H2OFrame objects into .pkg.env so that GC doesn't nab them up
+  lapply(model.view$models[[1]]$output$splits, function(l) .pkg.env[[l$`_key`$name]] <- new("h2o.frame", key=l$`_key`$name))
+  splits <- lapply(model.view$models[[1]]$output$splits, function(l) h2o.getFrame(l$`_key`$name))
+  names(splits) <- paste("split_", c(ratios, 1 - sum(ratios)),sep="")
+  splits
+}
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
@@ -1163,9 +1169,16 @@ NULL
 
 #' @rdname h2o.rbind
 h2o.rbind <- function(...) {
-  klasses <- unlist(lapply(list(...), function(l) { l %i% "h2o.frame" }))
-  if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
-  .h2o.varop("rbind", ...)
+  l <- unlist(list(...))
+  if (is.list(l)) {
+    klazzez <- unlist(lapply(l, function(i) i %i% "h2o.frame"))
+    if (any(!klazzez)) stop("`rbind` must consist of H2O objects only.")
+    .h2o.varop("rbind", .args=l)
+  } else {
+    klasses <- unlist(lapply(list(...), function(l) l %i% "h2o.frame" ))
+    if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
+    .h2o.varop("rbind", ...)
+  }
 }
 
 

@@ -9,6 +9,8 @@ import hex.glm.GLM;
 import hex.grep.Grep;
 import hex.kmeans.KMeans;
 import hex.quantile.Quantile;
+import hex.schemas.SplitFrameHandler;
+import hex.splitframe.SplitFrame;
 import hex.tree.gbm.GBM;
 import hex.word2vec.Word2Vec;
 
@@ -43,6 +45,7 @@ public class H2OApp {
     H2O.registerGET("/Synonyms",     hex.schemas.SynonymsHandler.class,     "findSynonyms", "/Synonyms", "Synonyms","Synonyms",       "Return the synonyms.");
     H2O.registerGET("/Grep",         hex.schemas.GrepHandler.class,         "train",        "/Grep","Grep","Model",                   "Run Grep on the specified Frame.");
     H2O.registerGET("/Quantile",     hex.schemas.QuantileHandler.class,     "train",        "/Quantile","Quantile","Model",           "Train a Quantile model on the specified Frame.");
+    H2O.registerGET("/SplitFrame",   hex.schemas.SplitFrameHandler.class,   "train",        "/SplitFrame","SplitFrame","Model",       "Split a Frame into disjoint subsets.");
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     // Register the algorithms and their builder handlers:
@@ -77,6 +80,11 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("grep", Grep.class);
     H2O.registerPOST("/2/ModelBuilders/grep", GrepBuilderHandler.class, "train","Search a raw text file for matches");
     H2O.registerPOST("/2/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
+
+
+    ModelBuilder.registerModelBuilder("splitframe", SplitFrame.class);
+    H2O.registerPOST("/ModelBuilders/splitframe", SplitFrameHandler.class, "train", "split a frame into disjoint pieces.");
+    H2O.registerPOST("/ModelBuilders/splitframe/parameters", SplitFrameBuilderHandler.class, "validate_parameters",                   "Validate a set of Split Frame parameters.");
 
     // Done adding menu items; fire up web server
     H2O.finalizeRegistration();
