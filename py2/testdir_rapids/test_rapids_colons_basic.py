@@ -42,12 +42,7 @@ exprList = [
         # different dimensions?
         '(+ $v (sum (+ $v $v) $TRUE))',
         '(cbind $v $v $v $v)',
-        '(#(1))', # why isn't this illegal?
-
-        '#1',
         '(#1)',
-        '((#1))',
-        '(((#1)))',
 
         # okay. not okay if comma separated. seems wrong
         '(+ #1 #2)',
@@ -147,17 +142,18 @@ class Basic(unittest.TestCase):
                     t = "t%s" % trial
                     cases = [
                         # no colon 
-                        '(= !%s %s' % (t, execExpr),
-                        # colon rhs
-                        '(= ([ $%s %s) %s)' % (t, colon, execExpr),
+                        '(= !%s %s)' % (t, execExpr),
                         # colon lhs
-                        '(= !%s  ([ t%s %s))' % (t, execExpr, colon),
+                        # '(= ([ $%s %s) %s)' % (t, colon, execExpr),
+                        # colon rhs
+                        # '(= !%s  ([ %s %s))' % (t, execExpr, colon),
                         # colon lhs and rhs
-                        '(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
+                         #'(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
                     ]
 
                     for case in cases:
                         # init the data frame first to 0 (1 row, 1 col) 
+                        print "\nt:", t, "case:", case
                         # can't init it to empty
                         '(= !%s (c {#0})' % t
                         execResult, result = h2e.exec_expr(h2o.nodes[0], case, resultKey=None, timeoutSecs=4)
