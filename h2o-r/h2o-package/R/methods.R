@@ -1205,6 +1205,7 @@ h2o.rbind <- function(...) {
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
+  envir <- parent.frame()
   if( missing(.data) ) stop('must specify .data')
   if( !(.data %i% "h2o.frame") ) stop('.data must be an h2o data object')
   if( missing(.variables) ) stop('must specify .variables')
@@ -1229,16 +1230,17 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
   vars <- vars - 1
+  
   if( vars < 0 || vars > (ncol(.data)-1) ) stop('Column' %p% vars %p% 'out of range for frame columns' %p% (ncol(.data)) %p0% '.')
 
   # FUN <- deparse(substitute(.fun))
-  # if( .fun %i% 'character' ) FUN <- gsub("\"", "", FUN)
+  # if( .fun %i% 'ccharacter' ) FUN <- gsub("\"", "", FUN)
   # .FUN <- get(FUN)
   # if( !is.function(.FUN) ) stop("FUN must be an R function
   if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun))
   else FUN <- .fun
   .FUN <- NULL
-  if (is.character(FUN)) .FUN <- get(FUN)
+  if (is.character(FUN)) .FUN <- get(FUN, envir = envir)
   if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")
   else if(is.null(.FUN) && !is.function(FUN))
     stop("FUN must be an R function")
