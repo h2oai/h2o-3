@@ -22,6 +22,7 @@ Depends: R (>= 2.13.0),
          devtools,
          roxygen2
 Collate:
+         'utils.R'
          'wrapper.R'
          'constants.R'
          'logging.R'
