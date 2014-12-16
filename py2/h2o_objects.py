@@ -197,6 +197,8 @@ class H2O(object):
             log('Start ' + url + paramsStr)
 
         # file get passed thru kwargs here
+        if h2o_args.no_timeout:
+            timeout = None # infinite
         try:
             if 'post' == cmd:
                 # NOTE == cmd: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
