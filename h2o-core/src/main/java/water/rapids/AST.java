@@ -296,6 +296,11 @@ class ASTSeries extends AST {
       } else {
         _order[o++] = 1;
         if (s.charAt(0) == '#') s = s.substring(1, s.length());
+        try {
+          Long.valueOf(s);
+        } catch (Exception e) {
+          throw new IllegalArgumentException("Invalid input. Value was not long or int: "+s);
+        }
         l_idxs.add(Long.valueOf(s));
       }
     }

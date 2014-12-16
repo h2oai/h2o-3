@@ -289,7 +289,7 @@ h2o.table <- function(x, y = NULL) {
   if (missing(x)) stop("`x` was missing. It must be an H2O Frame.")
   if (!is.null(y) && !(y %i% "h2o.frame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
-  .force.eval(ast@ast)
+  .force.eval(asxt@ast)
 }
 
 
@@ -480,10 +480,10 @@ setMethod("[<-", "h2o.frame", function(x, i, j, ..., value) {
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
+  browser()
   ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
-  o <- new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
-#  .pkg.env[[o@key]] <- o
-  o
+  o <- new("h2o.frame", ast = ast, key = x@key, h2o = .retrieveH2O())
+  .force.eval(o@ast,new.assign=F)
 })
 
 setMethod("$<-", "h2o.frame", function(x, name, value) {
@@ -1114,10 +1114,7 @@ screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type 
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
 
-setMethod("ifelse", signature(test="h2o.frame", yes="ANY", no="ANY"), function(test, yes, no) {
-  ast <- .h2o.varop("ifelse", test, yes, no)
-  ast
-})
+setMethod("ifelse", signature(test="h2o.frame", yes="ANY", no="ANY"), function(test, yes, no) .h2o.varop("ifelse", test, yes, no) )
 
 #' Combine H2O Datasets by Columns
 #'
@@ -1142,8 +1139,7 @@ NULL
 h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) { l %i% "h2o.frame" }))
   if (any(!klasses)) stop("`cbind` must consist of H2O objects only.")
-  ast <- .h2o.varop("cbind", ...)
-  ast
+  .h2o.varop("cbind", ...)
 }
 
 #' Combine H2O Datasets by Rows
@@ -1169,8 +1165,7 @@ NULL
 h2o.rbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) { l %i% "h2o.frame" }))
   if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
-  ast <- .h2o.varop("rbind", ...)
-  ast
+  .h2o.varop("rbind", ...)
 }
 
 
