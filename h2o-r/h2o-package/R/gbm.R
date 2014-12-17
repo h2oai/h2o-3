@@ -73,7 +73,7 @@ h2o.gbm <- function(x, y, training_frame,
   
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
-  model <- .run(training_frame@h2o, 'gbm', parms, parent.frame())
+  .run(training_frame@h2o, 'gbm', parms, parent.frame())
 }
 
 #required map for params with different names, assuming it will change in the RESTAPI end

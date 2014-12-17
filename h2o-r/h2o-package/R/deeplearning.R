@@ -130,8 +130,6 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
   if( missing(y) ) stop("argument \"y\" is missing, with no default")
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  if(delete <- (training_frame %i% "ASTNode")) invisible(nrow(training_frame))
-
   colargs <- .verify_dataxy_full(training_frame, x, y, autoencoder)
 
   parms <- as.list(match.call()[-1L])
@@ -145,11 +143,8 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
   parms$max_after_balance_size <- 1 #hard-code max_after_balance_size until Inf fixed
   # parms$max_w2 <- 1e6 #hard code max_w2 until Inf fixed
 
-  model <- .run(training_frame@h2o, 'deeplearning', parms, parent.frame())
+  .run(training_frame@h2o, 'deeplearning', parms, parent.frame())
 
-  if(delete) h2o.rm("training_frame")
-
-  model
 #  if(nfolds == 1) stop("nfolds cannot be 1")
 #  if(!missing(validation) && class(validation) != "h2o.frame")
 #    stop("validation must be an H2O parsed dataset")
