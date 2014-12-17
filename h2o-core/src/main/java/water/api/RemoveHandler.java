@@ -1,5 +1,6 @@
 package water.api;
 
+import water.DKV;
 import water.Lockable;
 
 public class RemoveHandler extends Handler {
@@ -8,7 +9,11 @@ public class RemoveHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public RemoveV1 remove(int version, RemoveV1 u) {
-    Lockable.delete(u.key.key());
+    try {
+      Lockable.delete(u.key.key());
+    } catch (ClassCastException e) {
+      DKV.remove(u.key.key());
+  }
     return u;
   }
 }
