@@ -66,7 +66,6 @@ h2o.gbm <- function(x, y, training_frame,
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
   parms <- as.list(match.call()[-1L])
-
   args <- .verify_dataxy(training_frame, x, y)
   parms$x <- args$x_ignore
   parms$y <- args$y

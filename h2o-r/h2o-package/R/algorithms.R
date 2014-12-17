@@ -207,9 +207,8 @@
 }
 
 .run <- function(client, algo, m, envir) {
-  m$training_frame <- eval(parse(text=deparse(m$training_frame)), envir = envir)
-  if(!(delete <- (.is.eval(m$training_frame)))) .force.eval(ast = m$training_frame@astQ)
-  print(m$training_frame@key)
+  m$training_frame <- get("training_frame", parent.frame())
+  if( delete <- !((.is.eval(m$training_frame)))) .force.eval(ast = m$training_frame@ast, h2o.ID = m$training_frame@key)
   p_val <- .parms(client, algo, m, envir)
 
   res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
@@ -219,14 +218,11 @@
   .h2o.__waitOnJob(client, job_key)
   # Grab model output and flatten one level
   res_model <- .h2o.__remoteSend(client, method = "GET", .h2o.__MODELS %p0% "/" %p0% dest_key)
-
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models
 
+  if( delete ) h2o.rm(m$training_frame@key)
   .newModel(algo, res_model, client)
 }
 
-
-.newModel <- function(algo, json, client) {
-  do.call(.algo.map[[algo]], list(json, client))
-}
+.newModel <- function(algo, json, client) do.call(.algo.map[[algo]], list(json, client))
