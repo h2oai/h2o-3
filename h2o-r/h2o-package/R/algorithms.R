@@ -207,6 +207,9 @@
 }
 
 .run <- function(client, algo, m, envir) {
+  m$training_frame <- eval(parse(text=deparse(m$training_frame)), envir = envir)
+  if(!(delete <- (.is.eval(m$training_frame)))) .force.eval(ast = m$training_frame@astQ)
+  print(m$training_frame@key)
   p_val <- .parms(client, algo, m, envir)
 
   res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
@@ -219,6 +222,7 @@
 
   res_model <- unlist(res_model, recursive = F)
   res_model <- res_model$models
+
   .newModel(algo, res_model, client)
 }
 
