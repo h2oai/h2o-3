@@ -59,7 +59,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     @Override protected void compute2() {
       try {
         Scope.enter();
-        _parms.lock_frames(DeepLearning.this);
+        _parms.read_lock_frames(DeepLearning.this);
         init(true);
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
@@ -68,7 +68,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         cancel2(t);
         throw t;
       } finally {
-        _parms.unlock_frames(DeepLearning.this);
+        _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
         done();                 // Job done!
       }

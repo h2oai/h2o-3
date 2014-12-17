@@ -60,7 +60,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       float tDiff;
 
       try {
-        _parms.lock_frames(Word2Vec.this);
+        _parms.read_lock_frames(Word2Vec.this);
         init(true);
 
         //The model to be built
@@ -95,7 +95,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        _parms.unlock_frames(Word2Vec.this);
+        _parms.read_unlock_frames(Word2Vec.this);
         done();                 // Job done!
       }
       tryComplete();

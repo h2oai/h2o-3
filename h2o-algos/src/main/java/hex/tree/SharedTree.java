@@ -99,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
-        _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
         init(true);             // Do any expensive tests & conversions now
 
         // New Model?  Or continuing from a checkpoint?
@@ -185,7 +185,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         throw t;
       } finally {
         if( _model != null ) _model.unlock(_key);
-        _parms.unlock_frames(SharedTree.this);
+        _parms.read_unlock_frames(SharedTree.this);
         done();                 // Job done!
         if( _model==null ) Scope.exit();
         else {

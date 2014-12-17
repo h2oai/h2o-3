@@ -84,7 +84,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
       KMeansModel model = null;
       try {
-        _parms.lock_frames(KMeans.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
         init(true);
 
         // The model to be built
@@ -218,7 +218,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        _parms.unlock_frames(KMeans.this);
+        _parms.read_unlock_frames(KMeans.this);
         done();                 // Job done!
       }
       tryComplete();

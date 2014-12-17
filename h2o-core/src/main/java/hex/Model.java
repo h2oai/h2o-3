@@ -72,14 +72,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
 
     /** Read-Lock both training and validation User frames. */
-    public void lock_frames( Job job ) { 
+    public void read_lock_frames(Job job) {
       train().read_lock(job._key);
       if( _valid != null && !_train.equals(_valid) )
         valid().read_lock(job._key);
     }
 
     /** Read-UnLock both training and validation User frames. */
-    public void unlock_frames( Job job ) {
+    public void read_unlock_frames(Job job) {
       Frame tr = train();
       if( tr != null ) tr.unlock(job._key);
       if( _valid != null && !_train.equals(_valid) )

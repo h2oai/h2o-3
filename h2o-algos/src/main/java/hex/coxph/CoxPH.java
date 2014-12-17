@@ -417,7 +417,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
       CoxPHModel model = null;
       try {
         Scope.enter();
-        _parms.lock_frames(CoxPH.this);
+        _parms.read_lock_frames(CoxPH.this);
         init(true);
 
         applyScoringFrameSideEffects();
@@ -493,7 +493,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
         cancel2(t);
         throw t;
       } finally {
-        _parms.unlock_frames(CoxPH.this);
+        _parms.read_unlock_frames(CoxPH.this);
         Scope.exit();
         done();                 // Job done!
       }

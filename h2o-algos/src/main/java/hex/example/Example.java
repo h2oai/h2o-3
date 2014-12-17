@@ -52,7 +52,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
       ExampleModel model = null;
       try {
         Scope.enter();
-        _parms.lock_frames(Example.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(Example.this); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -83,7 +83,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        _parms.unlock_frames(Example.this);
+        _parms.read_unlock_frames(Example.this);
         Scope.exit(model._key);
         done();                 // Job done!
       }

@@ -80,7 +80,7 @@ public class SplitFrame extends ModelBuilder<SplitFrameModel,SplitFrameModel.Spl
     protected void compute2() {
       // Lock all possible data
       Frame dataset = _parms.train();
-      _parms.lock_frames(SplitFrame.this);
+      _parms.read_lock_frames(SplitFrame.this);
       init(true);
       _parms._destKeys = _parms._destKeys != null ? _parms._destKeys : generateNumKeys(dataset._key, _parms._ratios.length + 1);
       assert _parms._destKeys.length == _parms._ratios.length + 1 : "Unexpected number of destination keys.";
@@ -126,7 +126,7 @@ public class SplitFrame extends ModelBuilder<SplitFrameModel,SplitFrameModel.Spl
       });
       tryComplete(); // complete the computation of thrown tasks
       model.unlock(_key);
-      _parms.unlock_frames(SplitFrame.this);
+      _parms.read_unlock_frames(SplitFrame.this);
       boolean exceptional = workersExceptions != null;
       if (model._output._splits != null) {
         for (Frame s : model._output._splits) {
