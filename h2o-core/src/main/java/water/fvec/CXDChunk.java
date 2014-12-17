@@ -18,7 +18,7 @@ public class CXDChunk extends CXIChunk {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
     double d = getFValue(off);
-    if(Double.isNaN(d)) throw new IllegalArgumentException("at8 but value is missing");
+    if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)d;
   }
   @Override protected double atd_impl(int idx) {
@@ -51,7 +51,7 @@ public class CXDChunk extends CXIChunk {
     return new SparseIterator(new Value(){
       @Override public final long asLong(){
         double d = getFValue(_off);
-        if(Double.isNaN(d)) throw new IllegalArgumentException("at8 but value is missing");
+        if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
         return (long)d;
       }
       @Override public final double asDouble() {return getFValue(_off);}

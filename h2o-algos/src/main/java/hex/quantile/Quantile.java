@@ -131,7 +131,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       long   bins [] = _bins =new long  [_nbins];
       double elems[] = _elems=new double[_nbins];
       for( int row=0; row<chk._len; row++ ) {
-        double d = chk.at0(row);
+        double d = chk.atd(row);
         double idx = (d-_lb)/_step;
         if( !(0.0 <= idx && idx < bins.length) ) continue;
         int i = (int)idx;

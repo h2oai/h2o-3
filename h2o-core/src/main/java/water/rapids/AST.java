@@ -635,14 +635,14 @@ class ASTAssign extends AST {
       int col = (int)cols[c];
       // have an enum column
       if (chks[col].vec().isEnum()) {
-        if (s0 == null) { chks[col].setNA0(row); continue; }
+        if (s0 == null) { chks[col].setNA(row); continue; }
         String[] dom = chks[col].vec().domain();
-        if (in(s0, dom)) { chks[col].set0(row, Arrays.asList(dom).indexOf(s0)); continue; }
-        chks[col].setNA0(row); continue;
+        if (in(s0, dom)) { chks[col].set(row, Arrays.asList(dom).indexOf(s0)); continue; }
+        chks[col].setNA(row); continue;
 
         // have a numeric column
       } else if (chks[col].vec().isNumeric()) {
-        if (Double.isNaN(d0) || s0 != null) { chks[col].setNA0(row); continue; }
+        if (Double.isNaN(d0) || s0 != null) { chks[col].setNA(row); continue; }
         chks[col].set(row, d0); continue;
       }
     }
@@ -656,7 +656,7 @@ class ASTAssign extends AST {
       // got an enum trying to set into something else -> NA
       if (cs[c].vec().isEnum()) {
         if (ary.vecs()[col].isEnum()) {
-          ary.vecs()[col].set(row_id, cs[c].at0(row0));
+          ary.vecs()[col].set(row_id, cs[c].atd(row0));
         } else {
           ary.vecs()[col].set(row_id, Double.NaN);
         }
@@ -666,7 +666,7 @@ class ASTAssign extends AST {
       // got numeric trying to set into numeric
       if (cs[c].vec().isNumeric()) {
         if (ary.vecs()[col].isNumeric()) {
-          ary.vecs()[col].set(row_id, cs[c].at0(row0));
+          ary.vecs()[col].set(row_id, cs[c].atd(row0));
         } else {
           ary.vecs()[col].set(row_id, Double.NaN);
         }
@@ -715,7 +715,7 @@ class ASTAssign extends AST {
           @Override public void map(Chunk[] cs, NewChunk[] ncs) {
             Chunk pred = cs[cs.length - 1];
             int rows = cs[0]._len;
-            for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
+            for (int r = 0; r < rows; ++r) if (pred.atd(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
         }.doAll(rr);
         e.cleanup(rr, (Frame) rows);
@@ -751,11 +751,11 @@ class ASTAssign extends AST {
                   int col = (int)cols0[c];
                   // vec is enum
                   if (chks[col].vec().isEnum())
-                    if (!rhs_ary.vecs()[col].isEnum()) { chks[col].setNA0(row); continue; }
+                    if (!rhs_ary.vecs()[col].isEnum()) { chks[col].setNA(row); continue; }
                     // else vec is numeric
                   else if (chks[col].vec().isNumeric())
-                    if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA0(row); continue; }
-                  chks[col].set0(row, rhs_ary.vecs()[col].at(row_id));
+                    if (!rhs_ary.vecs()[col].isNumeric()) { chks[col].setNA(row); continue; }
+                  chks[col].set(row, rhs_ary.vecs()[col].at(row_id));
                 }
               }
             }
@@ -776,7 +776,7 @@ class ASTAssign extends AST {
         Frame pred = new MRTask() {
           @Override public void map(Chunk c, NewChunk nc) {
             for (int r = 0; r < c._len; ++r) {
-              double d = c.at0(r);
+              double d = c.atd(r);
               if (d != 0) nc.addNum(d);
             }
           }
@@ -793,7 +793,7 @@ class ASTAssign extends AST {
             Chunk pred = cs[cs.length-1];
             int rows = cs[0]._len;
             for (int r=0; r<rows; ++r) {
-              long row_id = (long)pred.at0(r) - 1;
+              long row_id = (long)pred.atd(r) - 1;
               replaceRow(cs, r, row_id, cols0, lhs_ary);
             }
           }
@@ -1084,13 +1084,13 @@ class ASTSlice extends AST {
         ? new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
+                if (a0.contains(-i)) cs.set((int) (i - cs.start() - 1), 0); // -1 for indexing
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
+                if (a0.contains(i)) cs.set((int) (i - cs.start()), i + 1);
             }
           }.doAll(v0).getResult()._fr;
       return fr;
@@ -1109,13 +1109,13 @@ class ASTSlice extends AST {
         ? new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(-i)) cs.set0((int) (i - cs.start() - 1), 0); // -1 for indexing
+                if (a0.contains(-i)) cs.set((int) (i - cs.start() - 1), 0); // -1 for indexing
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(i)) cs.set0( (int)(i - cs.start()),i+1);
+                if (a0.contains(i)) cs.set((int) (i - cs.start()), i + 1);
               }
           }.doAll(v0).getResult()._fr;
       return fr;

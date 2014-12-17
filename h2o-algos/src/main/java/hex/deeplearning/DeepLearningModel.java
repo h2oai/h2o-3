@@ -1558,7 +1558,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for( int row=0; row<chks[0]._len; row++ ) {
             float p[] = score_autoencoder(chks, row, tmp, preds, neurons);
             for( int c=0; c<preds.length; c++ )
-              chks[_output._names.length+c].set0(row,p[c]);
+              chks[_output._names.length+c].set(row,p[c]);
           }
         }
       }.doAll(adaptFrm);
@@ -1620,9 +1620,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
-            tmp[i] = chks[i].at0(row);
+            tmp[i] = chks[i].atd(row);
           //store the per-row reconstruction error (MSE) in the last column
-          chks[len].set0(row, score_autoencoder(tmp, null, neurons));
+          chks[len].set(row, score_autoencoder(tmp, null, neurons));
         }
       }
     }.doAll(adaptFrm);
@@ -1687,12 +1687,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
 //        for( int row=0; row<chks[0]._len; row++ ) {
 //          for( int i=0; i<len; i++ )
-//            tmp[i] = chks[i].at0(row);
+//            tmp[i] = chks[i].atd(row);
 //          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
 //          DeepLearningTask.step(-1, neurons, model_info, false, null);
 //          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
 //          for( int c=0; c<df.length; c++ )
-//            chks[_names.length+c].set0(row,out[c]);
+//            chks[_names.length+c].set(row,out[c]);
 //        }
 //      }
 //    }.doAll(adaptFrm);
@@ -1711,7 +1711,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
     for( int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
+      tmp[i] = chks[i].atd(row_in_chunk);
     score_autoencoder(tmp, preds, neurons); // this fills preds, returns MSE error (ignored here)
     return preds;
   }

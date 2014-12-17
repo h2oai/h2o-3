@@ -174,7 +174,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         final double init = _initialPrediction;
         if( init != 0.0 )       // Only non-zero for regression or bernoulli
           new MRTask() {
-            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set0(i, init); }
+            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
           }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
 
         // Sub-class tree-model-builder specific build code
@@ -313,7 +313,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
-    for(int f=0; f<_ncols; f++) data[f] = chks[f].at0(row);
+    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
     return data;
   }
 
@@ -342,9 +342,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     @Override public void map( Chunk chks[] ) {
       Chunk ys = chk_resp(chks);
       for( int row=0; row<ys._len; row++ )
-        if( ys.isNA0(row) )
+        if( ys.isNA(row) )
           for( int t=0; t<_nclass; t++ )
-            chk_nids(chks,t).set0(row,-1);
+            chk_nids(chks,t).set(row, -1);
     }
   }
 

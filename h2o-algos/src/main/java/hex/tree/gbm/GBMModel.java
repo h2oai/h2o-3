@@ -38,7 +38,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=tmp.length;
     for( int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
+      tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }
 

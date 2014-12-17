@@ -209,7 +209,7 @@ public final class Quantiles extends Iced {
 
   public Quantiles add(Chunk chk) {
     for (int i = 0; i < chk._len; i++)
-      add(chk.at0(i));
+      add(chk.atd(i));
     return this;
   }
   public void add(double val) {

@@ -95,7 +95,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       score_decide(chks,nids,nnids);
     else                      // Just flag all the NA rows
       for( int row=0; row<nids._len; row++ )
-        if( isDecidedRow((int)nids.at0(row)) ) nnids[row] = -1;
+        if( isDecidedRow((int)nids.atd(row)) ) nnids[row] = -1;
 
     // Pass 2: accumulate all rows, cols into histograms
     if( _subset ) accum_subset(chks,wrks,nnids);
@@ -124,7 +124,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // giving it an improved prediction).
   private void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
     for( int row=0; row<nids._len; row++ ) { // Over all rows
-      int nid = (int)nids.at80(row);         // Get Node to decide from
+      int nid = (int)nids.at8(row);         // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
         nnids[row] = (nid-_leaf);
         continue;
@@ -137,7 +137,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       if( dn._split._col == -1 ) { // Might have a leftover non-split
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
-        nids.set0(row, xnid);
+        nids.set(row, xnid);
         nnids[row] = xnid-_leaf;
         dn = _tree.decided(nid); // Parent steers us
       }
@@ -146,7 +146,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       nid = dn.ns(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
         int xnid = oob ? nid2Oob(nid) : nid;
-        nids.set0(row, xnid);
+        nids.set(row, xnid);
         nnids[row] = xnid-_leaf;
       } else {
         nnids[row] = nid-_leaf;
@@ -159,11 +159,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];                     // Get Node to decide from
       if( nid >= 0 ) {        // row already predicts perfectly or OOB
-        assert !Double.isNaN(wrks.at0(row)); // Already marked as sampled-away
+        assert !Double.isNaN(wrks.atd(row)); // Already marked as sampled-away
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
-          nhs[col].incr((float)chks[col].at0(row),wrks.at0(row)); // Histogram row/col
+          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
       }
     }
   }
@@ -225,12 +225,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         // Gather min/max, sums and sum-squares.
         for( int xrow=lo; xrow<hi; xrow++ ) {
           int row = rows[xrow];
-          float col_data = (float)chk.at0(row);
+          float col_data = (float)chk.atd(row);
           if( col_data < min ) min = col_data;
           if( col_data > max ) max = col_data;
           int b = rh.bin(col_data); // Compute bin# via linear interpolation
           bins[b]++;                // Bump count in bin
-          double resp = wrks.at0(row);
+          double resp = wrks.atd(row);
           sums[b] += resp;
           ssqs[b] += resp*resp;
         }

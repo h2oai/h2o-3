@@ -3,15 +3,13 @@ package hex;
 import static water.util.ModelUtils.getPredictions;
 import java.util.Arrays;
 import java.util.Random;
-import water.DKV;
+
 import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.DocGen;
-import water.util.Log;
 
 public class HitRatio extends Iced {
   public Frame actual;
@@ -127,14 +125,14 @@ public class HitRatio extends Iced {
 
       // rows
       for( int r=0; r < cs[0]._len; r++ ) {
-        if (cs[0].isNA0(r)) {
+        if (cs[0].isNA(r)) {
           _count--;
           continue;
         }
-        final int actual_label = (int)cs[0].at80(r);
+        final int actual_label = (int)cs[0].at8(r);
 
         //predict K labels
-        for(int p=1; p < cs.length; p++) preds[p] = (float)cs[p].at0(r);
+        for(int p=1; p < cs.length; p++) preds[p] = (float)cs[p].atd(r);
         final int[] pred_labels = getPredictions(_K, preds, tieBreaker);
 
         if (actual_label < cs.length-1) updateHits(_hits, actual_label, pred_labels);

@@ -70,7 +70,7 @@ public class GBMTest extends TestUtil {
     @Override public void map( Chunk resp, Chunk pred ) {
       double sum = 0;
       for( int i=0; i<resp._len; i++ ) {
-        double err = resp.at0(i)-pred.at0(i);
+        double err = resp.atd(i)-pred.atd(i);
         sum += err*err;
       }
       _sum = sum;

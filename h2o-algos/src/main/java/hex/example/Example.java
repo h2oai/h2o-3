@@ -105,7 +105,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
       Arrays.fill(_maxs,-Double.MAX_VALUE);
       for( int col = 0; col < cs.length; col++ )
         for( int row = 0; row < cs[col]._len; row++ )
-          _maxs[col] = Math.max(_maxs[col],cs[col].at0(row));
+          _maxs[col] = Math.max(_maxs[col],cs[col].atd(row));
     }
 
     @Override public void reduce(Max that) {

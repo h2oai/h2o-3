@@ -181,15 +181,15 @@ public class ASTddply extends ASTOp {
           for (int r = 0; r < rows; ++r)
             for (int c = 0; c < cols; ++c)
               if (NACols[c])
-                if (cs[c].isNA0(r)) {
+                if (cs[c].isNA(r)) {
                   xrows.add(r);
                   break;
                 }
           for (int r = 0; r < rows; ++r) {
             if (xrows.contains(r)) continue;
             for (int c = 0; c < cols; ++c) {
-              if (cs[c].vec().isEnum()) nc[c].addEnum((int) cs[c].at80(r));
-              else nc[c].addNum(cs[c].at0(r));
+              if (cs[c].vec().isEnum()) nc[c].addEnum((int) cs[c].at8(r));
+              else nc[c].addNum(cs[c].atd(r));
             }
           }
         }
@@ -210,7 +210,7 @@ public class ASTddply extends ASTOp {
     // Efficiently allow groups to be hashed & hash-probed
     public void fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
-        _ds[c] = chks[(int)cols[c]].at0(row); // Load into working array
+        _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
     }
     private int hash() {

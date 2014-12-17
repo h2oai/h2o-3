@@ -64,8 +64,8 @@ public class ConfusionMatrix2 extends Iced {
       // i.e., Actual levels are at least as big as the predicted levels.
       _arr = new long[_len][_len];
       for( int i=0; i < ca._len; i++ )
-        if( !ca.isNA0(i) ) 
-          _arr[(int)ca.at80(i)][(int)cp.at80(i)]++;
+        if( !ca.isNA(i) )
+          _arr[(int)ca.at8(i)][(int)cp.at8(i)]++;
     }
     @Override public void reduce( CM cm ) { ArrayUtils.add(_arr,cm._arr); }
   }

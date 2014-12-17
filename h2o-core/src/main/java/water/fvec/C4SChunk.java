@@ -20,7 +20,7 @@ public class C4SChunk extends Chunk {
   }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-    if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
+    if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)((res + _bias)*_scale);
   }
   @Override protected final double atd_impl( int i ) {
