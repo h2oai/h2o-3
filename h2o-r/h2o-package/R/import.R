@@ -78,7 +78,7 @@ h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, h
 #' Upload Data
 #'
 #' Upload local files to the H2O instance.
-h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names, silent = TRUE) {
+h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names) {
   if(class(object) != "h2o.client") stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
   if(nchar(path) == 0) stop("path must be a non-empty string")
@@ -86,15 +86,17 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
   if(nchar(key) > 0 && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1] == -1)
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.logical(parse)) stop("parse must be of class logical")
-  if(!is.logical(silent)) stop("silent must be of class logical")
 
-  destination_key = key
-  url = paste("http://", object@ip, ":", object@port, "/2/PostFile.json", sep="")
-  url = paste(url, "?destination_key=", URLencode(path), sep="")
-  if(silent)
-    temp = postForm(url, .params = list(fileData = fileUpload(normalizePath(path))))
-  else
-    temp = postForm(url, .params = list(fileData = fileUpload(normalizePath(path))), .opts = list(verbose = TRUE))
+  urlSuffix = sprintf("PostFile.json?destination_key=%s", curlEscape(path))
+  fileData = fileUpload(normalizePath(path))
+  h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileData = fileData)
+
   rawData = new("H2ORawData", h2o=object, key=path)
-  if(parse) parsedData = h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names) else rawData
+  if (parse) {
+    destination_key = key
+    parsedData = h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names)
+    return(parsedData)
+  } else {
+    return(rawData)
+  }
 }

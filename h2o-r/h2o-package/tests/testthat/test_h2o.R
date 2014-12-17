@@ -92,8 +92,33 @@ test_that("doSafePOST works", {
   expect_equal(nchar(rv$payload) >= 500, TRUE)
 })
 
+doUploadFileTests <- function(h) {
+  df = h2o.uploadFile(h, "../../../../smalldata/iris/iris_wheader.csv")
+  expect_equal(nrow(df), 150)
+  expect_equal(ncol(df), 5)
+
+  ttFailed = FALSE
+  tryCatch({
+    invisible(h2o.uploadFile(h, "/file/does/not/exist.csv"))
+  }, warning = function(x) {
+    ttFailed <<- TRUE
+  }, error = function(x) {
+    ttFailed <<- TRUE
+  })
+  expect_equal(ttFailed, TRUE)
+}
+
 test_that("H2O can start", {
   .skip_if_not_developer()
+  prologue()
+
   h = h2o.init()
+  doUploadFileTests(h)
   h2o.shutdown(h, prompt = FALSE)
+})
+
+test_that("Report that all tests finished running", {
+  .skip_if_not_developer()
+
+  cat("\n\nAll tests finished running.\n")
 })
