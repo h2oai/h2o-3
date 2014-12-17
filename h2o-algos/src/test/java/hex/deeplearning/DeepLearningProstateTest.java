@@ -19,7 +19,7 @@ import java.util.Random;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -244,7 +244,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           String ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+0.5+"))";
                                           Env ev = Exec.exec(ast);
                                           try {
-                                            pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                            pred2 = ev.pop0Ary(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                           } finally {
                                             if (ev!=null) ev.remove_and_unlock();
                                           }
@@ -257,7 +257,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+threshold+"))";
                                           ev = Exec.exec(ast);
                                           try {
-                                            pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                            pred2 = ev.pop0Ary();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                           } finally {
                                             if (ev != null) ev.remove_and_unlock();
                                           }
