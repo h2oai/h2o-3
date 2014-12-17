@@ -10,7 +10,3 @@ test.rdoc_load_model.golden <- function(H2Oserver) {
 }
 
 doTest("R Doc Load Model", test.rdoc_load_model.golden)
-
-prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
-prostate.gbm <- h2o.gbm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, loss = "bernoulli", learn_rate = 0.1)
-gbmmodel.path <- h2o.saveModel(object = prostate.gbm, dir = tempdir())
