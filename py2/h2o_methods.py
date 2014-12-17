@@ -9,9 +9,46 @@ from h2o_test import verboseprint, dump_json, check_sandbox_for_errors, get_sand
 
 import urllib
 
-# print "h2o_methods"
+def poll_job2(self, firstResult, algo=None, timeoutSecs=60, noPoll=False, **kwargs):
+    if noPoll:
+        result = firstResult
+    elif 'validation_error_count' in firstResult:
+        h2p.yellow_print("parameter error in %s" % algo)
+        result = firstResult
+    else:
+        job_result = result1['jobs'][0]
+        job_key = job_result['key']['name']
+        verboseprint("%s job_key: %s" % (algo, job_key))
 
-# this is done before import h2o_ray, which imports h2o_methods!
+        job_result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+        verboseprint(job_result)
+
+        elapsed = time.time() - start
+        print algo, " end on ", training_frame, 'took', time.time() - start, 'seconds'
+        print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
+
+        if job_result:
+            jobs = job_result['jobs'][0]
+            description = jobs['description']
+            dest = jobs['dest']
+            msec = jobs['msec']
+            status = jobs['status']
+            progress = jobs['progress']
+
+            if status=='FAILED':
+                print dump_json(job_result)
+                raise Exception("Taking exception on %s job status: %s %s %s %s" % \
+                    (algo, status, progress, msec, description))
+            result = job_result
+
+        else:
+            raise Exception("build_model didn't get a job_result when it expected one")
+
+    verboseprint("result:", result)
+    h2o_sandbox.check_sandbox_for_errors()
+    return result
+
+# This is done before import h2o_ray, which imports h2o_methods!
 # ignoreNone is used if new = None shouldn't overwrite. Normally it does!
 def check_params_update_kwargs(params_dict, kw, function, print_params, ignoreNone=False):
     # only update params_dict..don't add
@@ -204,6 +241,25 @@ def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2
     return a
 
 #******************************************************************************************8
+def frame_split(self, timeoutSecs=120, noPoll=False, **kwargs):
+    params_dict = {
+        'training_frame': None,
+        'ratios': None,
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'frame_split', print_params=True)
+    firstResult = self.do_json_request('SplitFrame.json', timeout=timeoutSecs, params=params_dict)
+    job_key = firstResult['job']['key']['name']
+
+    if noPoll:
+        h2o_sandbox.check_sandbox_for_errors()
+        return firstResult
+
+    result = self.poll_job(job_key)
+    verboseprint("frame_split result:", dump_json(result))
+    return result
+
+
+#******************************************************************************************8
 def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     # FIX! assume both of these are strings for now, not lists
     if 'ast' in kwargs and kwargs['ast'] is not None:
@@ -267,6 +323,8 @@ H2O.quantiles = quantiles
 H2O.rapids = rapids
 H2O.unlock = unlock
 H2O.get_timeline = get_timeline
+
+H2O.frame_split = frame_split
 
 H2O.log_view = log_view
 H2O.log_download = log_download

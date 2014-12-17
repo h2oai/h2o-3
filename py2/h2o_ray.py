@@ -395,7 +395,7 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
 # should training_frame be required? or in parameters. same with destination_key
 # because validation_frame is in parameters
 def build_model(self, algo, training_frame, parameters, destination_key=None, 
-    timeoutSecs=60, asynchronous=False, **kwargs):
+    timeoutSecs=60, noPoll=False, **kwargs):
     '''
     Build a model on the h2o cluster using the given algorithm, training 
     Frame and model parameters.
@@ -426,13 +426,10 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     start = time.time()
     result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
-    elapsed = time.time() - start
-    print "ModelBuilders end on ", training_frame, 'took', time.time() - start, 'seconds'
-    print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
 
     verboseprint("build_model result", dump_json(result1))
 
-    if asynchronous:
+    if noPoll:
         result = result1
     elif 'validation_error_count' in result1:
         h2p.yellow_print("parameter error in model_builders")
@@ -446,6 +443,10 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
 
         job_result = self.poll_job(job_key, timeoutSecs=timeoutSecs)
         verboseprint(job_result)
+
+        elapsed = time.time() - start
+        print "ModelBuilders end on ", training_frame, 'took', time.time() - start, 'seconds'
+        print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
 
         if job_result:
             jobs = job_result['jobs'][0]
