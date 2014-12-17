@@ -445,7 +445,7 @@ public class ASTddply extends ASTOp {
     RemoteExec(int numgrps, Key key, Key[] rows, String fun, AST[] fun_args ) {
       _key = key; _rows = rows; _numgrps = numgrps; _fun = fun; _fun_args = fun_args;
       // Always 1 higher priority than calling thread... because the caller will
-      // block & burn a thread waiting for this MRTask2 to complete.
+      // block & burn a thread waiting for this MRTask to complete.
       Thread cThr = Thread.currentThread();
       _priority = (byte)((cThr instanceof H2O.FJWThr) ? ((H2O.FJWThr)cThr)._priority+1 : super.priority());
     }

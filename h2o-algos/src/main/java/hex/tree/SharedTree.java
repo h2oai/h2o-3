@@ -216,7 +216,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
-      // nested MRTask2 ScoreBuildHistogram in ScoreBuildOneTree does not try
+      // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
       Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
       fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);
