@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
 
         parameters = {
             'validation_frame': validation_key, # KeyIndexed None
-            'ignored_columns': '["IsDepDelayed_REC"]', # string[] None
+            'ignored_columns': '[IsDepDelayed_REC]', # string[] None
             'score_each_iteration': None, # boolean false
             'response_column': 'IsDepDelayed', # string None
             'do_classification': True, # boolean false
@@ -60,6 +60,10 @@ class Basic(unittest.TestCase):
 
         print 'deep learning took', time.time() - start, 'seconds'
 
+        modelResult = h2o.n0.models(key=model_key)
+        model = OutputObj(modelResult['models'][0]['output'], 'model')
+#        print "model:", dump_json(model)
+
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=validation_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
 
@@ -71,23 +75,13 @@ class Basic(unittest.TestCase):
 
         h2o_cmd.runStoreView()
 
+        actualErr = model['errors']['valid_err']
         print "expected classification error: " + format(expectedErr)
-
-        print "==============================="
-        print "==============================="
-        print "==============================="
-        print "TODO: COMPARE WITH ACTUAL ERROR"
-        print "==============================="
-        print "==============================="
-        print "==============================="
-
-#        actualErr = ...
-#        print "actual   classification error: " + format(actualErr)
+        print "actual   classification error: " + format(actualErr)
 
 #        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
 #            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
 #                            (actualErr, float(relTol)*100, expectedErr))
-
 
 if __name__ == '__main__':
     h2o.unit_main()
