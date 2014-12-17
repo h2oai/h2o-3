@@ -184,7 +184,8 @@
                "long" = "numeric",
                "long[]" = "narray",
                "string" = "character",
-               "string[]" = "sarray")
+               "string[]" = "sarray",
+               "VecSpecifier" = "character")
 
 .algo.map <- c("deeplearning" = ".deeplearning.builder",
                "gbm" = ".gbm.builder",
