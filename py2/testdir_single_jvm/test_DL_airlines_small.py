@@ -79,9 +79,9 @@ class Basic(unittest.TestCase):
         print "expected classification error: " + format(expectedErr)
         print "actual   classification error: " + format(actualErr)
 
-#        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
-#            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
-#                            (actualErr, float(relTol)*100, expectedErr))
+        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
+            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
+                            (actualErr, float(relTol)*100, expectedErr))
 
 if __name__ == '__main__':
     h2o.unit_main()
