@@ -105,11 +105,8 @@ def get_timeline(self):
 # safer if random things are wedged, rather than requiring response
 # so request library might retry and get exception. allow that.
 def shutdown_all(self):
-    print "Not doing Shutdown for now. Just process kill"
-    return True
-
     try:
-        self.do_json_request('Shutdown.json', noExtraErrorCheck=True)
+        self.do_json_request('Shutdown.json', cmd='post', noExtraErrorCheck=True)
     except:
         print "Got exception on Shutdown.json. Ignoring"
         pass
@@ -333,7 +330,6 @@ H2O.put_file = put_file
 
 H2O.remove_all_keys = remove_all_keys
 H2O.remove_key = remove_key
-# H2O.shutdown_all = shutdown_all
 
 # attach some methods from ray
 import h2o_ray

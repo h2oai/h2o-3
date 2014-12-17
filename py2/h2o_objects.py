@@ -603,9 +603,6 @@ class LocalH2O(H2O):
         # send a shutdown request first.
         # since local is used for a lot of buggy new code, also do the ps kill.
         # try/except inside shutdown_all now
-        # new: moved this out..anyone using this should do h2o.nodes[0].shutdown_all first
-        if 1==0:
-            self.shutdown_all()
         if self.is_alive():
             print "\nShutdown didn't work fast enough for local node? : %s. Will kill though" % self
         self.terminate_self_only()
@@ -731,9 +728,6 @@ class RemoteH2O(H2O):
                 return True
 
     def terminate(self):
-        # new, moved this out. anyone using terminate should send h2o shutdown once before this
-        if 1==0:
-            self.shutdown_all()
         self.terminate_self_only()
 
 #*****************************************************************
