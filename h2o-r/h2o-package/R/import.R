@@ -88,8 +88,8 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
   if(!is.logical(parse)) stop("parse must be of class logical")
 
   urlSuffix = sprintf("PostFile.json?destination_key=%s", curlEscape(path))
-  fileData = fileUpload(normalizePath(path))
-  h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileData = fileData)
+  fileUploadInfo = fileUpload(normalizePath(path))
+  h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
 
   rawData = new("H2ORawData", h2o=object, key=path)
   if (parse) {
