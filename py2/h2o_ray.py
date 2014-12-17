@@ -16,7 +16,7 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
         'job_key': job_key
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -197,7 +197,8 @@ def parse(self, key, hex_key=None,
     if noPoll:
         # ??
         h2o_sandbox.check_sandbox_for_errors()
-        return this.jobs(job_key)
+        # return self.jobs(job_key)
+        return parse_result
 
     # does Frame also, while polling
     if intermediateResults:

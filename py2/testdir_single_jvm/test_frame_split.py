@@ -23,7 +23,7 @@ class Basic(unittest.TestCase):
         csvPathname = 'standard/' + csvFilename
         hex_key = "covtype.hex"
 
-        parseResultA = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, hex_key=hex_key, schema='local', timeoutSecs=20)
+        parseResultA = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, hex_key=hex_key, timeoutSecs=20)
         pA = h2o_cmd.ParseObj(parseResultA)
         print pA.numRows
         print pA.numCols
@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(splitMe)
             numRows = iA.numRows
 
-            fsResult = h2o.nodes[0].frame_split(training_frame=splitMe, ratios='[0.5]')
+            fsResult = h2o.n0.frame_split(training_frame=splitMe, ratios='[0.5]')
             fs = OutputObj(fsResult, 'frame_split')
             model_key = fs.jobs[0].dest.name
 
@@ -46,13 +46,6 @@ class Basic(unittest.TestCase):
             model = OutputObj(modelResult['models'][0]['output'], 'frame_split')
             # print "model:", dump_json(model)
             split_keys = [split._key.name for split in model.splits]
-
-            # split0_key = fs['split_keys'][0]
-            # split1_key = fs['split_keys'][1]
-            # split0_rows = fs['split_rows'][0]
-            # split1_rows = fs['split_rows'][1]
-            # split0_ratio = fs['split_ratios'][0]
-            # split1_ratio = fs['split_ratios'][1]
 
             iB = h2o_cmd.InspectObj(split_keys[0])
             iC = h2o_cmd.InspectObj(split_keys[1])
