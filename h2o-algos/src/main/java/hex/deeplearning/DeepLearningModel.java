@@ -1440,6 +1440,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
+        _output.errors = last_scored();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
