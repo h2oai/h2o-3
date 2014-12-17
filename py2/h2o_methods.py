@@ -119,7 +119,7 @@ def shutdown_all(self):
 
 #*******************************************************************************
 def unlock (self, timeoutSecs=30, **kwargs):
-    a = self.do_json_request('2/UnlockKeys.json', params=None, timeout=timeoutSecs)
+    a = self.do_json_request('UnlockKeys.json', params=None, timeout=timeoutSecs)
     return a
     # print "WARNING: faking unlock keys"
     # pass

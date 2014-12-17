@@ -165,6 +165,9 @@ public class LinuxProcFileReader {
     int nset = 0;
     for(int i = 0; i < s.length(); i++) {
       Character ch = s.charAt(i);
+      if (ch == ',') {
+        continue;
+      }
       int x = Integer.parseInt(ch.toString(), 16);
       nset += bits_set[x];
     }
@@ -337,7 +340,7 @@ public class LinuxProcFileReader {
   private void parseProcessStatusFile(String s) {
     if(s == null) return;
     try {
-      Pattern p = Pattern.compile("Cpus_allowed:\\s+([A-Fa-f0-9]+)");
+      Pattern p = Pattern.compile("Cpus_allowed:\\s+([A-Fa-f0-9,]+)");
       Matcher m = p.matcher(s);
       boolean b = m.find();
       if (! b) {

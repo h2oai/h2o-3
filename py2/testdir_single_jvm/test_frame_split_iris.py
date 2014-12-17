@@ -23,7 +23,7 @@ class Basic(unittest.TestCase):
         csvPathname = 'iris/' + csvFilename
         hex_key = "iris.hex"
 
-        parseResultA = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, schema='local', timeoutSecs=10)
+        parseResultA = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, timeoutSecs=10)
 
         print "Just split away and see if anything blows up"
         splitMe = hex_key
@@ -42,7 +42,7 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(splitMe)
             numRows = iA.numRows
 
-            fsResult = h2o.nodes[0].frame_split(training_frame=splitMe, ratios='[0.5]')
+            fsResult = h2o.n0.frame_split(training_frame=splitMe, ratios='[0.5]')
             fs = OutputObj(fsResult, 'frame_split')
             model_key = fs.jobs[0].dest.name
 
@@ -64,7 +64,6 @@ class Basic(unittest.TestCase):
             self.assertLess(abs(split1_rows - split0_rows), 2)
             self.assertEqual(numRows, (split1_rows + split0_rows))
             self.assertEqual(numCols, origNumCols)
-
 
 
 if __name__ == '__main__':
