@@ -47,8 +47,6 @@ class Basic(unittest.TestCase):
             # print "model:", dump_json(model)
             split_keys = [split._key.name for split in model.splits]
 
-
-
             # split0_key = fs['split_keys'][0]
             # split1_key = fs['split_keys'][1]
             # split0_rows = fs['split_rows'][0]
