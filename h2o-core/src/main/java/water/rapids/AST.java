@@ -969,7 +969,7 @@ class ASTAssign extends AST {
           }
         }
         fs.blockForPending();
-        e.cleanup(rhs_ary);
+//        e.cleanup(rhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");
