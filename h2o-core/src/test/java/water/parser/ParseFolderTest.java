@@ -29,7 +29,7 @@ public class ParseFolderTest extends TestUtil {
     NFSFileVec nfs2 = NFSFileVec.make(f);
     Frame fr = null;
     try {
-      fr = water.parser.ParseDataset2.parse(Key.make(),new Key[]{nfs1._key,nfs2._key},false/*delete on done*/,false,0/*guess header*/);
+      fr = ParseDataset.parse(Key.make(), new Key[]{nfs1._key, nfs2._key}, false/*delete on done*/, false, 0/*guess header*/);
     } finally {
       if( fr != null ) fr.delete();
       if( nfs1 != null ) nfs1.remove();

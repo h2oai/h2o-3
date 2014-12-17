@@ -7,7 +7,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 import water.util.Log;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -36,7 +36,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
-          data = ParseDataset2.parse(Key.make("data.hex"), file._key);
+          data = ParseDataset.parse(Key.make("data.hex"), file._key);
 
           // Create holdout test data on clean data (before adding missing values)
           train = data;

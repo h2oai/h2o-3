@@ -41,7 +41,7 @@ import java.util.HashMap;
  *  <p>Example: Make a Frame from a CSV file:<pre>
  *  File file = ...
  *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
- *  Frame fr = water.parser.ParseDataset2.parse(Key.make("myKey"),nfs._key);
+ *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
  *  </pre>
  * 
  *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,

@@ -8,7 +8,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 import water.util.Log;
 
 public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
@@ -21,7 +21,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     long seed = 0xDECAF;
 
     NFSFileVec  nfs = NFSFileVec.make(find_test_file(PATH));
-    Frame train = ParseDataset2.parse(Key.make("train.hex"), nfs._key);
+    Frame train = ParseDataset.parse(Key.make("train.hex"), nfs._key);
 
     DeepLearningModel.DeepLearningParameters p = new DeepLearningModel.DeepLearningParameters();
     p._train = train._key;

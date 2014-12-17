@@ -6,6 +6,8 @@ import org.junit.Test;
 import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
+import water.parser.ParseDataset;
+
 import java.util.concurrent.ExecutionException;
 
 public class PCATest extends TestUtil {
@@ -39,7 +41,7 @@ public class PCATest extends TestUtil {
     try {
       Key kraw = Key.make("basicdata.raw");
       FVecTest.makeByteVec(kraw, "x1,x2,x3\n0,1.0,-120.4\n1,0.5,89.3\n2,0.3333333,291.0\n3,0.25,-2.5\n4,0.20,-2.5\n5,0.1666667,-123.4\n6,0.1428571,-0.1\n7,0.1250000,18.3");
-      fr = water.parser.ParseDataset2.parse(Key.make("basicdata.hex"), kraw);
+      fr = ParseDataset.parse(Key.make("basicdata.hex"), kraw);
 
       PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
       parms._train = fr._key;
@@ -68,7 +70,7 @@ public class PCATest extends TestUtil {
     try {
       Key kraw = Key.make("depdata.raw");
       FVecTest.makeByteVec(kraw, "x1,x2\n0,0\n1,2\n2,4\n3,6\n4,8\n5,10");
-      fr = water.parser.ParseDataset2.parse(kdata, kraw);
+      fr = ParseDataset.parse(kdata, kraw);
 
       PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
       parms._train = fr._key;

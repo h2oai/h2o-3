@@ -48,7 +48,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
     try {
       NFSFileVec nfs1 = NFSFileVec.make(find_test_file("smalldata/junit/iris.csv"));
       NFSFileVec nfs2 = NFSFileVec.make(find_test_file("smalldata/junit/iris.xls"));
-      k1 = water.parser.ParseDataset2.parse(Key.make(),nfs1._key,nfs2._key);
+      k1 = ParseDataset.parse(Key.make(), nfs1._key, nfs2._key);
       assertEquals(  5,k1.numCols());
       assertEquals(150,k1.numRows());
     } finally {

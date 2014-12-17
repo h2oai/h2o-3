@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import water.*;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 
 /** Created by tomasnykodym on 4/1/14. */
 public class RebalanceDatasetTest extends TestUtil {
@@ -13,7 +13,7 @@ public class RebalanceDatasetTest extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));
     Frame fr = null, rebalanced = null;
     try{
-      fr = ParseDataset2.parse(Key.make(), nfs._key);
+      fr = ParseDataset.parse(Key.make(), nfs._key);
       RebalanceDataSet rb = new RebalanceDataSet(fr,rebalancedKey,300);
       H2O.submitTask(rb);
       rb.join();

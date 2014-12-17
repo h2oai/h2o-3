@@ -8,6 +8,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.parser.ParseDataset;
 
 import java.io.File;
 
@@ -84,7 +85,7 @@ public class KMeansTest extends TestUtil {
       File f = find_test_file("../datasets/UCI/UCI-large/covtype/covtype.data");
       if( f==null ) return;     // Ignore if large file not found
       NFSFileVec nfs = NFSFileVec.make(f);
-      fr = water.parser.ParseDataset2.parse(Key.make(),nfs._key);
+      fr = ParseDataset.parse(Key.make(), nfs._key);
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;

@@ -84,14 +84,14 @@ public class ParserTest extends TestUtil {
       for( String ds : dataset ) sb1.append(ds).append("\n");
       Key k1 = makeByteVec(sb1.toString());
       Key r1 = Key.make("r1");
-      ParseDataset2.parse(r1, k1);
+      ParseDataset.parse(r1, k1);
       testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
       for( String ds : dataset ) sb2.append(ds).append("\r\n");
       Key k2 = makeByteVec(sb2.toString());
       Key r2 = Key.make("r2");
-      ParseDataset2.parse(r2, k2);
+      ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
     }
   }
@@ -126,7 +126,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key k = makeByteVec(dataset);
       Key r3 = Key.make();
-      ParseDataset2.parse(r3,k);
+      ParseDataset.parse(r3, k);
       testParsed(r3,exp);
     }
   }
@@ -157,7 +157,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key k = makeByteVec(dataset);
       Key r4 = Key.make();
-      ParseDataset2.parse(r4,k);
+      ParseDataset.parse(r4, k);
       testParsed(r4,exp);
     }
   }
@@ -193,7 +193,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = makeByteVec(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,key);
+      ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
       Assert.assertEquals(" four",cd[0]);
@@ -214,7 +214,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = makeByteVec(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,key);
+      ParseDataset.parse(r, key);
       testParsed(r, expDouble);
     }
   }
@@ -243,7 +243,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       Key key = makeByteVec(dataset);
       Key r = Key.make();
-      ParseDataset2.parse(r,key);
+      ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
       String[] cd = fr.vecs()[2].domain();
       Assert.assertEquals("one",cd[0]);
@@ -291,7 +291,7 @@ public class ParserTest extends TestUtil {
     String[] dataset = getDataForSeparator(separator, data);
     Key key = makeByteVec(dataset);
     Key r = Key.make();
-    ParseDataset2.parse(r,key);
+    ParseDataset.parse(r, key);
     Frame fr = DKV.get(r).get();
     String[] cd = fr.vecs()[3].domain();
     Assert.assertEquals("bar",cd[0]);
@@ -325,7 +325,7 @@ public class ParserTest extends TestUtil {
       for( String ds : dataset ) sb.append(ds).append("\n");
       Key k = makeByteVec(sb.toString());
       Key r5 = Key.make();
-      ParseDataset2.parse(r5, k);
+      ParseDataset.parse(r5, k);
       testParsed(r5, exp);
     }
   }
@@ -456,7 +456,7 @@ public class ParserTest extends TestUtil {
     for( String ds : dataset ) sb.append(ds).append("\n");
     Key k = makeByteVec(sb.toString());
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k);
+    ParseDataset.parse(r1, k);
     testParsed(r1,exp);
   }
 
@@ -536,7 +536,7 @@ public class ParserTest extends TestUtil {
     };
     Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k);
+    ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
   }
 
@@ -595,7 +595,7 @@ public class ParserTest extends TestUtil {
     };
     Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k);
+    ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
   }
 
@@ -613,7 +613,7 @@ public class ParserTest extends TestUtil {
     };
     Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k);
+    ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
   }
 
@@ -631,7 +631,7 @@ public class ParserTest extends TestUtil {
     };
     Key k = makeByteVec(pows10);
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k);
+    ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
   }
 
@@ -662,14 +662,14 @@ public class ParserTest extends TestUtil {
       for( String ds : dataset ) sb1.append(ds).append("\n");
       Key k1 = makeByteVec(sb1.toString());
       Key r1 = Key.make("r1");
-      ParseDataset2.parse(r1, k1);
+      ParseDataset.parse(r1, k1);
       testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
       for( String ds : dataset ) sb2.append(ds).append("\r\n");
       Key k2 = makeByteVec(sb2.toString());
       Key r2 = Key.make("r2");
-      ParseDataset2.parse(r2, k2);
+      ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
     }
   }
@@ -728,7 +728,7 @@ public class ParserTest extends TestUtil {
           try {
             Log.info("Trying to parse " + f);
             NFSFileVec nfs = NFSFileVec.make(find_test_file(f));
-            Frame fr = water.parser.ParseDataset2.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
+            Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
             t.printStackTrace();

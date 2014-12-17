@@ -44,7 +44,7 @@ public class ParserTest2 extends TestUtil {
     };
   
     Key rkey = ParserTest.makeByteVec(data);
-    Frame fr = ParseDataset2.parse(Key.make("na_test.hex"), rkey);
+    Frame fr = ParseDataset.parse(Key.make("na_test.hex"), rkey);
     int nlines = (int)fr.numRows();
     Assert.assertEquals(9,nlines);
     Assert.assertEquals(9,fr.numCols());
@@ -68,14 +68,14 @@ public class ParserTest2 extends TestUtil {
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
     ParseSetup gSetupF = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, -1, null, null);
-    Frame frF = ParseDataset2.parse(Key.make(), new Key[]{k}, false, gSetupF);
+    Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
     String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
     ParseSetup gSetupT = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null, null);
-    Frame frT = ParseDataset2.parse(Key.make(), new Key[]{k},  true, gSetupT);
+    Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
     frT.delete();
   }
@@ -97,7 +97,7 @@ public class ParserTest2 extends TestUtil {
     sb.append("1.0\n");
     for( int i=0; i<50; i++ ) sb.append("0.0\n");
     Key k = ParserTest.makeByteVec(sb.toString());
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,101);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
   
     // Build 100 zero's and 1 non-zero.
     exp = new double[101][1];
@@ -107,7 +107,7 @@ public class ParserTest2 extends TestUtil {
     sb.append("2\n");
     for( int i=0; i<50; i++ ) sb.append("0\n");
     k = ParserTest.makeByteVec(sb.toString());
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,101);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
 
     // Build 100 zero's and some non-zeros.  Last line is truncated.
     for (char sep : SEPARATORS) {
@@ -122,7 +122,7 @@ public class ParserTest2 extends TestUtil {
       for( int i=0; i<49; i++ ) sb.append("0").append(sep).append("0\n");
       sb.append("0");           // Truncated final line
       k = ParserTest.makeByteVec(sb.toString());
-      ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,101);
+      ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
     }
   
     // Build 100000 zero's and some one's
@@ -135,7 +135,7 @@ public class ParserTest2 extends TestUtil {
       exp[i*1001+1000][0]=1;
     }
     k = ParserTest.makeByteVec(sb.toString());
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,100100);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,100100);
   
     // Build 100 zero's, then 100 mix of -1001 & 1001's (to force a
     // sparse-short, that finally inflates to a full dense-short).
@@ -145,7 +145,7 @@ public class ParserTest2 extends TestUtil {
     exp = new double[200][1];
     for( int i=0; i<100; i+=2 ) { exp[i+100][0]=-1001; exp[i+101][0]= 1001; }
     k = ParserTest.makeByteVec(sb.toString());
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,200);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,200);
   }
   
   // test correctnes of sparse chunks
@@ -225,6 +225,6 @@ public class ParserTest2 extends TestUtil {
         ard(0,0,0,0,0,0),
     };
     Key k = ParserTest.makeByteVec(data);
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,33);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,33);
   }
 }
