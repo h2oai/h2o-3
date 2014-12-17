@@ -44,7 +44,7 @@ class Basic(unittest.TestCase):
             'do_classification': True, # boolean false
             'loss': 'CrossEntropy'
         }
-        expectedErr = 0.27 ## expected validation error for the above model
+        expectedErr = 0.32 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
         timeoutSecs = 60
