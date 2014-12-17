@@ -49,7 +49,7 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   @Override public ModelMetrics createImpl() {
 //    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
 //     ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl().get());
-    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl().get(), this.frame.createImpl().get());
+    ModelMetrics m = new ModelMetrics(this.model.createImpl().get(), this.frame.createImpl().get());
     return m;
   }
 
