@@ -415,6 +415,21 @@ setMethod("show", "H2OGBMModel", function(object) {
 })
 
 #'
+#' The H2OQuantileModel class.
+#'
+#' This class represents a quantile model.
+#' @slot valid Object of class \code{\linkS4class{h2o.frame}}, which is the dataset used to build the model.
+#' @aliases H2OQuantileModel
+setClass("H2OQuantileModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+
+#' @rdname H2OQuantileModel-class
+setMethod("show", "H2OQuantileModel", function(object) {
+# print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
+  cat("Quantile Model Key:", object@key, "\n")
+})
+
+#'
 #' The H2OSpeeDRFModel class.
 #'
 #' This class represents a speedrf model. Another random forest model variant.
