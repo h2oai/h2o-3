@@ -2,7 +2,6 @@ package water.util;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,6 +78,7 @@ public class LinuxProcFileReader {
     if (osName == null) {
       return false;
     }
+
     return osName.startsWith(osNamePrefix);
   }
 
@@ -95,8 +95,17 @@ public class LinuxProcFileReader {
    * @return number of CPUs allowed by this process.
    */
   public int getProcessCpusAllowed() {
-    if (! IS_OS_LINUX()) return Runtime.getRuntime().availableProcessors();
-    assert _processCpusAllowed > 0;   return _processCpusAllowed;
+    if (! IS_OS_LINUX()) {
+      return Runtime.getRuntime().availableProcessors();
+    }
+
+    // _processCpusAllowed is not available on CentOS 5 and earlier.
+    // In this case, just return availableProcessors.
+    if (_processCpusAllowed < 0) {
+      return Runtime.getRuntime().availableProcessors();
+    }
+
+    return _processCpusAllowed;
   }
 
   /**
@@ -119,7 +128,7 @@ public class LinuxProcFileReader {
       pid = getProcessId();
       _pid = pid;
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
 
     File f = new File ("/proc/stat");
     if (! f.exists()) {
@@ -135,7 +144,7 @@ public class LinuxProcFileReader {
       parseProcessProcFile(_processData);
       parseProcessStatusFile(_processStatus);
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   /**
@@ -207,7 +216,7 @@ public class LinuxProcFileReader {
     try {
       _systemData = readFile(new File("/proc/stat"));
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   /**
@@ -267,7 +276,7 @@ public class LinuxProcFileReader {
         line = reader.readLine();
       }
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   private void readProcessProcFile(String pid) {
@@ -275,7 +284,7 @@ public class LinuxProcFileReader {
       String s = "/proc/" + pid + "/stat";
       _processData = readFile(new File(s));
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   private void parseProcessProcFile(String s) {
@@ -302,7 +311,7 @@ public class LinuxProcFileReader {
       _processTotalTicks = processUserTicks + processSystemTicks;
       _processRss = Long.parseLong(m.group(24));
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   private void readProcessNumOpenFds(String pid) {
@@ -314,7 +323,7 @@ public class LinuxProcFileReader {
         _processNumOpenFds = arr.length;
       }
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   private void readProcessStatusFile(String pid) {
@@ -322,7 +331,7 @@ public class LinuxProcFileReader {
       String s = "/proc/" + pid + "/status";
       _processStatus = readFile(new File(s));
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   private void parseProcessStatusFile(String s) {
@@ -336,7 +345,7 @@ public class LinuxProcFileReader {
       }
       _processCpusAllowed = numSetBitsHex(m.group(1));
     }
-    catch (Exception xe) {}
+    catch (Exception ignore) {}
   }
 
   /**
